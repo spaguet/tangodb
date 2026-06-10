@@ -1,0 +1,3205 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TangoDB</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ══════════════════════════════════════
+       БОКОВОЕ МЕНЮ (десктоп)
+    ══════════════════════════════════════ */
+    #sidebar {
+      width: 230px;
+      min-width: 230px;
+      background: #1e1e1e;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+    }
+
+    #sidebar .logo {
+      padding: 22px 18px;
+      font-size: 18px;
+      font-weight: bold;
+      border-bottom: 1px solid #333;
+      letter-spacing: 1px;
+    }
+
+    #sidebar nav { flex: 1; overflow-y: auto; }
+
+    #sidebar nav .section-label {
+      font-size: 10px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 18px 18px 6px;
+    }
+
+    #sidebar nav a {
+      display: block;
+      padding: 11px 18px;
+      color: #ccc;
+      text-decoration: none;
+      font-size: 14px;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    #sidebar nav a:hover { background: #2a2a2a; color: #fff; }
+
+    #sidebar nav a.active {
+      background: #2a2a2a;
+      color: #fff;
+      border-left: 3px solid #c8a96e;
+    }
+
+    /* ══════════════════════════════════════
+       ОСНОВНАЯ ОБЛАСТЬ
+    ══════════════════════════════════════ */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #topbar {
+      background: #fff;
+      padding: 16px 28px;
+      border-bottom: 1px solid #ddd;
+      font-size: 18px;
+      font-weight: bold;
+      color: #1e1e1e;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Кнопка меню (только мобайл) */
+    #menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #333;
+      padding: 0;
+      line-height: 1;
+    }
+
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px;
+    }
+
+    /* ══════════════════════════════════════
+       ПАНЕЛИ
+    ══════════════════════════════════════ */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ══════════════════════════════════════
+       КАРТОЧКА
+    ══════════════════════════════════════ */
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      max-width: 600px;
+    }
+
+    .card h2 { font-size: 16px; margin-bottom: 18px; color: #1e1e1e; }
+
+    /* ══════════════════════════════════════
+       ФОРМЫ
+    ══════════════════════════════════════ */
+    .form-group { margin-bottom: 14px; }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.15s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus { border-color: #c8a96e; }
+
+    /* ══════════════════════════════════════
+       КНОПКИ
+    ══════════════════════════════════════ */
+    .btn {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+    .btn-primary  { background: #c8a96e; color: #fff; }
+    .btn-secondary{ background: #e0e0e0; color: #333; }
+    .btn-success  { background: #4caf7d; color: #fff; }
+    .btn-danger   { background: #e05c5c; color: #fff; }
+    .btn-freeze   { background: #5b9bd5; color: #fff; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    /* ══════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════ */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: #1e1e1e;
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+      z-index: 9999;
+    }
+
+    /* ══════════════════════════════════════
+       ТАБЛИЦА
+    ══════════════════════════════════════ */
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+    table th {
+      background: #f5f5f5;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; color: #333; }
+    table tr:hover td { background: #fafafa; }
+
+    .loading { color: #888; font-size: 14px; padding: 20px 0; }
+
+    /* ══════════════════════════════════════
+       БЕЙДЖ
+    ══════════════════════════════════════ */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .badge-tg { background: #e8f4fd; color: #2980b9; }
+
+    /* ══════════════════════════════════════
+       АВТОКОМПЛИТ
+    ══════════════════════════════════════ */
+    .autocomplete-wrap { position: relative; }
+
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-top: none;
+      border-radius: 0 0 5px 5px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 500;
+      display: none;
+    }
+
+    .autocomplete-list.open { display: block; }
+
+    .autocomplete-item {
+      padding: 10px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #333;
+    }
+
+    .autocomplete-item:hover,
+    .autocomplete-item.selected { background: #f5f0e8; color: #1e1e1e; }
+
+    /* ══════════════════════════════════════
+       ПЕРЕКЛЮЧАТЕЛИ ТИПОВ
+    ══════════════════════════════════════ */
+    .type-switcher { display: flex; gap: 10px; margin-bottom: 20px; }
+
+    .type-btn {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      color: #555;
+    }
+
+    .type-btn:hover { border-color: #c8a96e; color: #c8a96e; }
+
+    .type-btn.active {
+      border-color: #c8a96e;
+      background: #c8a96e;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    /* ══════════════════════════════════════
+       ЦЕНА
+    ══════════════════════════════════════ */
+    .price-display {
+      background: #f5f0e8;
+      border-radius: 6px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .price-display .price-label-text { font-size: 13px; color: #888; }
+    .price-display .price-value { font-size: 20px; font-weight: bold; color: #c8a96e; }
+
+    .form-divider { border: none; border-top: 1px solid #f0f0f0; margin: 18px 0; }
+
+    .lessons-switcher { display: flex; gap: 10px; }
+
+    .lessons-btn {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      color: #555;
+    }
+
+    .lessons-btn:hover { border-color: #c8a96e; }
+
+    .lessons-btn.active {
+      border-color: #c8a96e;
+      background: #c8a96e;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    /* ══════════════════════════════════════
+       РАСПИСАНИЕ
+    ══════════════════════════════════════ */
+    .schedule-grid { display: flex; flex-direction: column; gap: 8px; }
+
+    .schedule-day-block { border: 1px solid #eee; border-radius: 6px; overflow: hidden; }
+
+    .schedule-day-header {
+      background: #f5f5f5;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #444;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .schedule-day-header .day-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #c8a96e;
+    }
+
+    .schedule-slot-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      border-top: 1px solid #f0f0f0;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .schedule-slot-row:hover { background: #fafafa; }
+    .schedule-empty { color: #aaa; font-size: 13px; padding: 16px 0; text-align: center; }
+
+    /* ══════════════════════════════════════
+       ЦЕНЫ (раздел)
+    ══════════════════════════════════════ */
+    .prices-group { margin-bottom: 24px; }
+
+    .prices-group-title {
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #888;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f9f9f9;
+      gap: 12px;
+    }
+
+    .price-label { font-size: 14px; color: #333; flex: 1; }
+    .price-sublabel { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+    .price-input-wrap { display: flex; align-items: center; gap: 8px; }
+
+    .price-input-wrap input {
+      width: 130px;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .price-input-wrap input:focus { border-color: #c8a96e; outline: none; }
+    .price-currency { font-size: 12px; color: #888; min-width: 28px; }
+
+    /* ══════════════════════════════════════
+       ЖУРНАЛ ПОСЕЩЕНИЙ
+    ══════════════════════════════════════ */
+    .att-client-card {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+
+    .att-client-card:last-child { margin-bottom: 0; }
+    .att-client-name { font-size: 15px; font-weight: bold; color: #1e1e1e; margin-bottom: 4px; }
+    .att-client-meta { font-size: 12px; color: #aaa; margin-bottom: 12px; }
+
+    .att-btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .att-status-btn {
+      flex: 1;
+      min-width: 90px;
+      padding: 9px 8px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #555;
+      text-align: center;
+    }
+
+    .att-status-btn:hover { opacity: 0.85; }
+    .att-status-btn.selected-present { background: #4caf7d; border-color: #4caf7d; color: #fff; font-weight: bold; }
+    .att-status-btn.selected-absent  { background: #e05c5c; border-color: #e05c5c; color: #fff; font-weight: bold; }
+    .att-status-btn.selected-freeze  { background: #5b9bd5; border-color: #5b9bd5; color: #fff; font-weight: bold; }
+    .att-status-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .att-lessons-badge {
+      display: inline-block;
+      background: #f5f0e8;
+      color: #c8a96e;
+      border-radius: 12px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 6px;
+    }
+
+    .att-empty { color: #aaa; font-size: 14px; text-align: center; padding: 24px 0; }
+
+    /* ══════════════════════════════════════
+       ДЕЙСТВУЮЩИЕ АБОНЕМЕНТЫ
+    ══════════════════════════════════════ */
+    .sub-card {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      background: #fff;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .sub-card:last-child { margin-bottom: 0; }
+    .sub-card-left { flex: 1; min-width: 200px; }
+    .sub-card-name { font-size: 15px; font-weight: bold; color: #1e1e1e; margin-bottom: 4px; }
+    .sub-card-meta { font-size: 12px; color: #aaa; margin-bottom: 10px; line-height: 1.7; }
+    .sub-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 140px; }
+
+    .lessons-bar-wrap { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+
+    .lessons-bar {
+      flex: 1;
+      height: 6px;
+      background: #eee;
+      border-radius: 3px;
+      overflow: hidden;
+      min-width: 80px;
+    }
+
+    .lessons-bar-fill { height: 100%; border-radius: 3px; background: #c8a96e; transition: width 0.3s; }
+    .lessons-bar-fill.low { background: #e05c5c; }
+    .lessons-count { font-size: 13px; font-weight: bold; color: #333; white-space: nowrap; }
+
+    .freeze-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+    .freeze-available { background: #e8f4fd; color: #5b9bd5; }
+    .freeze-used { background: #f5f5f5; color: #aaa; }
+
+    .sub-type-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: bold;
+      background: #f5f0e8;
+      color: #c8a96e;
+      margin-bottom: 6px;
+    }
+
+    .counter-chip { background: #f5f5f5; border-radius: 8px; padding: 8px 16px; font-size: 13px; color: #555; }
+    .counter-chip span { font-weight: bold; font-size: 18px; color: #1e1e1e; margin-right: 4px; }
+
+    /* ══════════════════════════════════════
+       ПЕРСОНАЛЬНЫЕ УРОКИ: ДАТЫ
+    ══════════════════════════════════════ */
+    .p-date-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+
+    .p-date-row input[type="date"] {
+      flex: 1;
+      padding: 9px 12px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .p-date-row input[type="date"]:focus { border-color: #c8a96e; }
+
+    .p-date-remove {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: #ccc;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+
+    .p-date-remove:hover { color: #e05c5c; }
+
+    /* ══════════════════════════════════════
+       ПЕРСОНАЛЬНЫЕ УРОКИ: ПРОСМОТР
+    ══════════════════════════════════════ */
+    .pv-card {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .pv-card:last-child { margin-bottom: 0; }
+    .pv-card.unpaid { border-left: 4px solid #e05c5c; }
+    .pv-card.paid   { border-left: 4px solid #4caf7d; }
+    .pv-card-left { flex: 1; min-width: 200px; }
+    .pv-card-name { font-size: 14px; font-weight: bold; color: #1e1e1e; margin-bottom: 3px; }
+    .pv-card-meta { font-size: 12px; color: #aaa; }
+    .pv-card-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .pv-price { font-size: 16px; font-weight: bold; color: #333; min-width: 110px; text-align: right; }
+
+    .paid-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+    .paid-badge.yes { background: #e8f7ef; color: #4caf7d; }
+    .paid-badge.no  { background: #fdecea; color: #e05c5c; }
+
+    .pv-type-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      background: #f5f0e8;
+      color: #c8a96e;
+      margin-right: 6px;
+    }
+
+    /* ══════════════════════════════════════
+       МОДАЛКА
+    ══════════════════════════════════════ */
+    #edit-modal.open { display: flex !important; }
+
+    /* ══════════════════════════════════════
+       МОБИЛЬНАЯ НАВИГАЦИЯ (нижняя панель)
+    ══════════════════════════════════════ */
+    #mobile-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #1e1e1e;
+      z-index: 800;
+      flex-direction: row;
+      border-top: 1px solid #333;
+      overflow-x: auto;
+    }
+
+    #mobile-nav a {
+      flex: 1;
+      min-width: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 4px 6px;
+      color: #888;
+      text-decoration: none;
+      font-size: 9px;
+      cursor: pointer;
+      border-top: 2px solid transparent;
+      transition: all 0.15s;
+      gap: 3px;
+      white-space: nowrap;
+    }
+
+    #mobile-nav a .nav-icon { font-size: 18px; line-height: 1; }
+    #mobile-nav a.active { color: #c8a96e; border-top-color: #c8a96e; }
+
+    /* Мобильное боковое меню (drawer) */
+    #mobile-drawer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+    }
+
+    #mobile-drawer-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+    }
+
+    #mobile-drawer-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 280px;
+      background: #1e1e1e;
+      overflow-y: auto;
+      padding-bottom: 20px;
+    }
+
+    #mobile-drawer.open { display: block; }
+
+    #mobile-drawer-panel .logo {
+      padding: 22px 18px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #fff;
+      border-bottom: 1px solid #333;
+    }
+
+    #mobile-drawer-panel .section-label {
+      font-size: 10px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 18px 18px 6px;
+    }
+
+    #mobile-drawer-panel a {
+      display: block;
+      padding: 13px 18px;
+      color: #ccc;
+      text-decoration: none;
+      font-size: 15px;
+      border-left: 3px solid transparent;
+      cursor: pointer;
+    }
+
+    #mobile-drawer-panel a.active {
+      background: #2a2a2a;
+      color: #fff;
+      border-left-color: #c8a96e;
+    }
+
+    /* ══════════════════════════════════════
+       МЕДИАЗАПРОСЫ — МОБАЙЛ (≤ 700px)
+    ══════════════════════════════════════ */
+    @media (max-width: 700px) {
+
+      body { overflow: auto; height: auto; display: block; }
+
+      /* Скрыть десктопный сайдбар */
+      #sidebar { display: none; }
+
+      /* Показать кнопку меню и мобильную навигацию */
+      #menu-toggle { display: block; }
+      #mobile-nav  { display: flex; }
+
+      #main {
+        display: block;
+        height: auto;
+        min-height: 100vh;
+        padding-bottom: 65px; /* место под нижнюю панель */
+      }
+
+      #topbar {
+        padding: 14px 16px;
+        font-size: 16px;
+        position: sticky;
+        top: 0;
+        z-index: 700;
+      }
+
+      #content { padding: 16px; overflow: visible; }
+
+      /* Карточки на всю ширину */
+      .card {
+        max-width: 100% !important;
+        padding: 16px;
+        border-radius: 8px;
+      }
+
+      /* Toast внизу над навигацией */
+      #toast { bottom: 75px; right: 12px; left: 12px; text-align: center; }
+
+      /* Таблицы — горизонтальный скролл */
+      #clients-table-wrap { overflow-x: auto; }
+      table { min-width: 480px; }
+
+      /* Цены — вертикально на маленьких экранах */
+      .price-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .price-input-wrap { width: 100%; }
+      .price-input-wrap input { flex: 1; width: auto; }
+
+      /* Расписание — форма добавления вертикально */
+      #sch-add-row { flex-direction: column !important; }
+
+      /* Кнопки посещений крупнее */
+      .att-status-btn { font-size: 12px; padding: 10px 6px; min-width: 80px; }
+
+      /* Абонементы — стек */
+      .sub-card { flex-direction: column; }
+      .sub-card-right { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+
+      /* Персональные уроки просмотр — стек */
+      .pv-card { flex-direction: column; align-items: flex-start; }
+      .pv-card-right { width: 100%; justify-content: space-between; }
+      .pv-price { min-width: auto; text-align: left; }
+
+      /* Счётчики — горизонтальный скролл */
+      #subs-counters,
+      #pv-counters { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+
+      /* Переключатели типов — меньше отступы */
+      .type-btn { padding: 10px 6px; font-size: 13px; }
+      .lessons-btn { padding: 10px 6px; font-size: 13px; }
+
+      /* Модалка на весь экран */
+      #edit-modal > div {
+        width: 95% !important;
+        padding: 20px !important;
+      }
+    }
+
+    /* ── Topbar обновлённый ── */
+    #topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+    }
+
+    #topbar #menu-toggle { flex-shrink: 0; }
+
+    /* ── Кнопки выбора версии hover ── */
+    #version-screen button:hover {
+      background: rgba(200,169,110,0.1);
+    }
+
+    /* Кнопка клиентов скрыта на мобиле (есть в нижней навигации) */
+    @media (max-width: 700px) {
+      #topbar button:last-child { display: none; }
+    }
+
+  /* ── Принудительная мобильная версия ── */
+    body.force-mobile #sidebar     { display: none !important; }
+    body.force-mobile #mobile-nav  { display: flex !important; }
+    body.force-mobile #menu-toggle { display: block !important; }
+    body.force-mobile {
+      overflow: auto !important;
+      height: auto !important;
+      display: block !important;
+    }
+    body.force-mobile #main {
+      display: block !important;
+      height: auto !important;
+      min-height: 100vh;
+      padding-bottom: 65px;
+    }
+    body.force-mobile #topbar {
+      position: sticky;
+      top: 0;
+      z-index: 700;
+      padding: 14px 16px;
+    }
+    body.force-mobile #content  { padding: 16px; overflow: visible; }
+    body.force-mobile .card     { max-width: 100% !important; padding: 16px; }
+    body.force-mobile #toast    { bottom: 75px; right: 12px; left: 12px; text-align: center; }
+    body.force-mobile #clients-table-wrap { overflow-x: auto; }
+    body.force-mobile table     { min-width: 480px; }
+    body.force-mobile .price-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+    body.force-mobile .price-input-wrap { width: 100%; }
+    body.force-mobile .sub-card { flex-direction: column; }
+    body.force-mobile .sub-card-right { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+    body.force-mobile .pv-card  { flex-direction: column; align-items: flex-start; }
+    body.force-mobile .pv-card-right { width: 100%; justify-content: space-between; }
+    body.force-mobile .att-status-btn { font-size: 12px; padding: 10px 6px; }
+    body.force-mobile #subs-counters,
+    body.force-mobile #pv-counters { overflow-x: auto; flex-wrap: nowrap; }
+    body.force-mobile .type-btn   { padding: 10px 6px; font-size: 13px; }
+    body.force-mobile .lessons-btn { padding: 10px 6px; font-size: 13px; }
+    body.force-mobile #edit-modal > div { width: 95% !important; padding: 20px !important; }
+
+    /* ══════════════════════════════════════
+       МОБИЛЬНАЯ ВЕРСИЯ — КРУПНЫЙ МАСШТАБ
+    ══════════════════════════════════════ */
+    body.force-mobile {
+      font-size: 20px !important;
+    }
+
+    /* Топбар */
+    body.force-mobile #topbar {
+      padding: 20px 18px !important;
+      min-height: 72px !important;
+      gap: 14px !important;
+    }
+
+    body.force-mobile #topbar span[style*="Cormorant"] {
+      font-size: 34px !important;
+    }
+
+    body.force-mobile #topbar-title {
+      font-size: 20px !important;
+    }
+
+    body.force-mobile #menu-toggle {
+      font-size: 36px !important;
+    }
+
+    /* Content */
+    body.force-mobile #content {
+      padding: 16px !important;
+    }
+
+    body.force-mobile #main {
+      padding-bottom: 90px !important;
+    }
+
+    /* Карточки */
+    body.force-mobile .card {
+      padding: 24px !important;
+      border-radius: 14px !important;
+      margin-bottom: 18px !important;
+    }
+
+    body.force-mobile .card h2 {
+      font-size: 24px !important;
+      margin-bottom: 24px !important;
+    }
+
+    /* Формы */
+    body.force-mobile .form-group {
+      margin-bottom: 22px !important;
+    }
+
+    body.force-mobile .form-group label {
+      font-size: 16px !important;
+      margin-bottom: 10px !important;
+      letter-spacing: 0.5px !important;
+    }
+
+    body.force-mobile .form-group input,
+    body.force-mobile .form-group select,
+    body.force-mobile input[type="date"],
+    body.force-mobile input[type="month"],
+    body.force-mobile input[type="time"],
+    body.force-mobile input[type="text"],
+    body.force-mobile input[type="number"],
+    body.force-mobile select {
+      font-size: 20px !important;
+      padding: 18px 16px !important;
+      border-radius: 10px !important;
+      min-height: 64px !important;
+    }
+
+    /* Кнопки */
+    body.force-mobile .btn {
+      font-size: 20px !important;
+      padding: 18px 28px !important;
+      border-radius: 10px !important;
+      min-height: 64px !important;
+    }
+
+    body.force-mobile .btn-sm {
+      font-size: 17px !important;
+      padding: 14px 20px !important;
+      min-height: 52px !important;
+    }
+
+    /* Переключатели типов */
+    body.force-mobile .type-switcher {
+      gap: 12px !important;
+      margin-bottom: 24px !important;
+    }
+
+    body.force-mobile .type-btn {
+      font-size: 18px !important;
+      padding: 18px 8px !important;
+      min-height: 64px !important;
+      border-radius: 10px !important;
+      border-width: 3px !important;
+    }
+
+    body.force-mobile .lessons-switcher {
+      gap: 12px !important;
+    }
+
+    body.force-mobile .lessons-btn {
+      font-size: 18px !important;
+      padding: 18px 8px !important;
+      min-height: 64px !important;
+      border-radius: 10px !important;
+      border-width: 3px !important;
+    }
+
+    /* Таблица */
+    body.force-mobile table {
+      font-size: 18px !important;
+      min-width: 560px !important;
+    }
+
+    body.force-mobile table th {
+      font-size: 15px !important;
+      padding: 16px 12px !important;
+    }
+
+    body.force-mobile table td {
+      padding: 18px 12px !important;
+    }
+
+    /* Автокомплит */
+    body.force-mobile .autocomplete-item {
+      font-size: 20px !important;
+      padding: 20px 16px !important;
+      min-height: 64px !important;
+    }
+
+    /* Цена в абонементе */
+    body.force-mobile .price-display {
+      padding: 22px 20px !important;
+      border-radius: 12px !important;
+    }
+
+    body.force-mobile .price-display .price-label-text {
+      font-size: 18px !important;
+    }
+
+    body.force-mobile .price-display .price-value {
+      font-size: 32px !important;
+    }
+
+    body.force-mobile .form-divider {
+      margin: 24px 0 !important;
+    }
+
+    /* Раздел цен */
+    body.force-mobile .prices-group-title {
+      font-size: 15px !important;
+      padding-bottom: 10px !important;
+      margin-bottom: 14px !important;
+    }
+
+    body.force-mobile .price-row {
+      padding: 16px 0 !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 12px !important;
+    }
+
+    body.force-mobile .price-label {
+      font-size: 20px !important;
+    }
+
+    body.force-mobile .price-sublabel {
+      font-size: 16px !important;
+    }
+
+    body.force-mobile .price-input-wrap {
+      width: 100% !important;
+      gap: 10px !important;
+    }
+
+    body.force-mobile .price-input-wrap input {
+      font-size: 20px !important;
+      padding: 16px !important;
+      min-height: 60px !important;
+      width: 100% !important;
+      text-align: left !important;
+    }
+
+    body.force-mobile .price-currency {
+      font-size: 20px !important;
+    }
+
+    /* Расписание */
+    body.force-mobile .schedule-day-header {
+      font-size: 20px !important;
+      padding: 16px 18px !important;
+    }
+
+    body.force-mobile .schedule-day-header .day-dot {
+      width: 12px !important;
+      height: 12px !important;
+    }
+
+    body.force-mobile .schedule-slot-row {
+      font-size: 20px !important;
+      padding: 18px !important;
+    }
+
+    /* Журнал посещений */
+    body.force-mobile .att-client-card {
+      padding: 22px 20px !important;
+      border-radius: 14px !important;
+      margin-bottom: 16px !important;
+    }
+
+    body.force-mobile .att-client-name {
+      font-size: 22px !important;
+      margin-bottom: 8px !important;
+    }
+
+    body.force-mobile .att-client-meta {
+      font-size: 17px !important;
+      margin-bottom: 18px !important;
+      line-height: 1.8 !important;
+    }
+
+    body.force-mobile .att-lessons-badge {
+      font-size: 17px !important;
+      padding: 6px 14px !important;
+    }
+
+    body.force-mobile .att-btn-group {
+      gap: 10px !important;
+    }
+
+    body.force-mobile .att-status-btn {
+      font-size: 18px !important;
+      padding: 18px 8px !important;
+      min-height: 64px !important;
+      border-radius: 10px !important;
+      border-width: 3px !important;
+      min-width: 0 !important;
+    }
+
+    body.force-mobile .att-empty {
+      font-size: 18px !important;
+      padding: 32px 0 !important;
+    }
+
+    /* Действующие абонементы */
+    body.force-mobile .sub-card {
+      padding: 22px 20px !important;
+      border-radius: 14px !important;
+      flex-direction: column !important;
+      gap: 14px !important;
+    }
+
+    body.force-mobile .sub-type-badge {
+      font-size: 16px !important;
+      padding: 6px 14px !important;
+      border-radius: 14px !important;
+      margin-bottom: 8px !important;
+    }
+
+    body.force-mobile .sub-card-name {
+      font-size: 22px !important;
+      margin-bottom: 8px !important;
+    }
+
+    body.force-mobile .sub-card-meta {
+      font-size: 17px !important;
+      line-height: 2 !important;
+    }
+
+    body.force-mobile .sub-card-right {
+      align-items: flex-start !important;
+      flex-direction: row !important;
+      flex-wrap: wrap !important;
+      gap: 12px !important;
+      width: 100% !important;
+    }
+
+    body.force-mobile .lessons-bar-wrap {
+      width: 100% !important;
+    }
+
+    body.force-mobile .lessons-bar {
+      height: 10px !important;
+      border-radius: 5px !important;
+    }
+
+    body.force-mobile .lessons-count {
+      font-size: 20px !important;
+    }
+
+    body.force-mobile .freeze-tag {
+      font-size: 16px !important;
+      padding: 6px 14px !important;
+    }
+
+    body.force-mobile .counter-chip {
+      font-size: 18px !important;
+      padding: 12px 20px !important;
+      border-radius: 10px !important;
+    }
+
+    body.force-mobile .counter-chip span {
+      font-size: 26px !important;
+    }
+
+    body.force-mobile #subs-counters,
+    body.force-mobile #pv-counters {
+      gap: 10px !important;
+      overflow-x: auto !important;
+      flex-wrap: nowrap !important;
+      padding-bottom: 6px !important;
+    }
+
+    /* Поиск */
+    body.force-mobile #subs-search,
+    body.force-mobile #clients-search,
+    body.force-mobile #pv-search {
+      font-size: 20px !important;
+      padding: 18px !important;
+      min-height: 64px !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      border-radius: 10px !important;
+    }
+
+    /* Персональные уроки: продажа */
+    body.force-mobile .p-date-row {
+      gap: 12px !important;
+      margin-bottom: 12px !important;
+    }
+
+    body.force-mobile .p-date-row input[type="date"] {
+      font-size: 20px !important;
+      padding: 18px 16px !important;
+      min-height: 64px !important;
+      border-radius: 10px !important;
+    }
+
+    body.force-mobile .p-date-remove {
+      font-size: 32px !important;
+      padding: 0 10px !important;
+    }
+
+    /* Персональные уроки: просмотр */
+    body.force-mobile .pv-card {
+      padding: 22px 20px !important;
+      border-radius: 14px !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 14px !important;
+    }
+
+    body.force-mobile .pv-type-badge {
+      font-size: 16px !important;
+      padding: 5px 12px !important;
+    }
+
+    body.force-mobile .pv-card-name {
+      font-size: 20px !important;
+      margin-bottom: 6px !important;
+    }
+
+    body.force-mobile .pv-card-meta {
+      font-size: 17px !important;
+    }
+
+    body.force-mobile .pv-card-right {
+      width: 100% !important;
+      justify-content: space-between !important;
+      gap: 10px !important;
+    }
+
+    body.force-mobile .pv-price {
+      font-size: 24px !important;
+      min-width: auto !important;
+      text-align: left !important;
+    }
+
+    body.force-mobile .paid-badge {
+      font-size: 16px !important;
+      padding: 8px 16px !important;
+      border-radius: 14px !important;
+    }
+
+    /* Нижняя навигация */
+    body.force-mobile #mobile-nav {
+      height: 88px !important;
+    }
+
+    body.force-mobile #mobile-nav a {
+      font-size: 13px !important;
+      padding: 12px 4px 10px !important;
+      gap: 5px !important;
+    }
+
+    body.force-mobile #mobile-nav a .nav-icon {
+      font-size: 30px !important;
+    }
+
+    /* Drawer */
+    body.force-mobile #mobile-drawer-panel {
+      width: 320px !important;
+    }
+
+    body.force-mobile #mobile-drawer-panel .logo {
+      font-size: 30px !important;
+      padding: 28px 22px !important;
+    }
+
+    body.force-mobile #mobile-drawer-panel .section-label {
+      font-size: 14px !important;
+      padding: 22px 22px 10px !important;
+    }
+
+    body.force-mobile #mobile-drawer-panel a {
+      font-size: 20px !important;
+      padding: 20px 22px !important;
+      min-height: 64px !important;
+    }
+
+    /* Toast */
+    body.force-mobile #toast {
+      font-size: 18px !important;
+      padding: 18px 28px !important;
+      border-radius: 12px !important;
+      bottom: 100px !important;
+    }
+
+    /* Модалка */
+    body.force-mobile #edit-modal > div {
+      width: 95% !important;
+      padding: 28px !important;
+      border-radius: 14px !important;
+    }
+
+    body.force-mobile #edit-modal h2 {
+      font-size: 24px !important;
+      margin-bottom: 24px !important;
+    }
+
+    /* Выпадающий список дат журнала */
+    body.force-mobile #att-date-select {
+      font-size: 20px !important;
+      padding: 18px 16px !important;
+      min-height: 64px !important;
+    }
+
+    body.force-mobile .badge-tg {
+      font-size: 14px !important;
+      padding: 6px 12px !important;
+    }
+    </style>
+</head>
+<body>
+
+<!-- МОБИЛЬНЫЙ DRAWER -->
+<!-- ЭКРАН ВЫБОРА ВЕРСИИ -->
+<div id="version-screen" style="
+  display:none; position:fixed; inset:0; z-index:9999;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 100%);
+  align-items:center; justify-content:center; flex-direction:column;">
+
+  <div style="text-align:center; margin-bottom:48px">
+    <div style="font-family:'Cormorant Garamond',serif; font-size:52px;
+                color:#c8a96e; letter-spacing:4px; margin-bottom:8px">
+      TangoDB
+    </div>
+    <div style="color:#666; font-size:13px; letter-spacing:2px; text-transform:uppercase">
+      Система управления студией
+    </div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:16px; width:280px">
+    <button onclick="selectVersion('desktop')" style="
+      padding:18px 32px; border:2px solid #c8a96e; border-radius:8px;
+      background:transparent; color:#c8a96e; font-size:16px; cursor:pointer;
+      transition:all 0.2s; letter-spacing:1px">
+      🖥 Версия для компьютера
+    </button>
+    <button onclick="selectVersion('mobile')" style="
+      padding:18px 32px; border:2px solid #888; border-radius:8px;
+      background:transparent; color:#aaa; font-size:16px; cursor:pointer;
+      transition:all 0.2s; letter-spacing:1px">
+      📱 Версия для смартфона
+    </button>
+  </div>
+</div>
+
+<div id="mobile-drawer">
+  <div id="mobile-drawer-overlay" onclick="closeDrawer()"></div>
+  <div id="mobile-drawer-panel">
+    <div class="logo" onclick="returnToVersionScreen(); closeDrawer()" style="cursor:pointer; font-family:'Cormorant Garamond',serif; font-size:22px; letter-spacing:3px; color:#c8a96e">
+    TangoDB
+    </div>
+    <div class="section-label">Клиенты</div>
+    <a onclick="navigate('newClient'); closeDrawer()">＋ Новый клиент</a>
+    <div class="section-label">Абонементы</div>
+    <a onclick="navigate('sellSub'); closeDrawer()">Продажа абонемента</a>
+    <a onclick="navigate('activeSubs'); closeDrawer()">Действующие абонементы</a>
+    <div class="section-label">Занятия</div>
+    <a onclick="navigate('schedule'); closeDrawer()">Расписание</a>
+    <a onclick="navigate('attendance'); closeDrawer()">Журнал посещений</a>
+    <div class="section-label">Персональные уроки</div>
+    <a onclick="navigate('personalSell'); closeDrawer()">Продажа</a>
+    <a onclick="navigate('personalView'); closeDrawer()">Просмотр</a>
+    <div class="section-label">Настройки</div>
+    <a onclick="navigate('prices'); closeDrawer()">Цены</a>
+  </div>
+</div>
+
+<!-- НИЖНЯЯ МОБИЛЬНАЯ НАВИГАЦИЯ -->
+<div id="mobile-nav">
+  <a onclick="navigate('newClient')" id="mnav-newClient">
+    <span class="nav-icon">👤</span>Клиент
+  </a>
+  <a onclick="navigate('sellSub')" id="mnav-sellSub">
+    <span class="nav-icon">🎫</span>Продажа
+  </a>
+  <a onclick="navigate('activeSubs')" id="mnav-activeSubs">
+    <span class="nav-icon">📋</span>Абонем.
+  </a>
+  <a onclick="navigate('attendance')" id="mnav-attendance">
+    <span class="nav-icon">✅</span>Журнал
+  </a>
+  <a onclick="navigate('personalSell')" id="mnav-personalSell">
+    <span class="nav-icon">⭐</span>Персон.
+  </a>
+  <a onclick="navigate('personalView')" id="mnav-personalView">
+    <span class="nav-icon">👁</span>Просмотр
+  </a>
+  <a onclick="navigate('schedule')" id="mnav-schedule">
+    <span class="nav-icon">🗓</span>Расписан.
+  </a>
+  <a onclick="navigate('prices')" id="mnav-prices">
+    <span class="nav-icon">💰</span>Цены
+  </a>
+</div>
+
+<!-- БОКОВОЕ МЕНЮ -->
+<div id="sidebar">
+  <div class="logo" onclick="returnToVersionScreen()" style="cursor:pointer; font-family:'Cormorant Garamond',serif; font-size:22px; letter-spacing:3px; color:#c8a96e">
+  TangoDB
+</div>
+  <nav>
+    <div class="section-label">Клиенты</div>
+    <a onclick="navigate('newClient')" id="nav-newClient">＋ Новый клиент</a>
+
+    <div class="section-label">Абонементы</div>
+    <a onclick="navigate('sellSub')" id="nav-sellSub">Продажа абонемента</a>
+    <a onclick="navigate('activeSubs')" id="nav-activeSubs">Действующие абонементы</a>
+
+    <div class="section-label">Занятия</div>
+    <a onclick="navigate('schedule')" id="nav-schedule">Расписание</a>
+    <a onclick="navigate('attendance')" id="nav-attendance">Журнал посещений</a>
+
+    <div class="section-label">Персональные уроки</div>
+    <a onclick="navigate('personalSell')" id="nav-personalSell">Продажа</a>
+    <a onclick="navigate('personalView')" id="nav-personalView">Просмотр</a>
+
+    <div class="section-label">Настройки</div>
+    <a onclick="navigate('prices')" id="nav-prices">Цены</a>
+  </nav>
+</div>
+
+<!-- ОСНОВНАЯ ОБЛАСТЬ -->
+<div id="main">
+  <div id="topbar">
+    <button id="menu-toggle" onclick="openDrawer()">☰</button>
+    <span style="font-family:'Cormorant Garamond',serif; font-size:20px;
+                 letter-spacing:2px; color:#c8a96e; cursor:pointer; margin-right:auto"
+          onclick="returnToVersionScreen()">TangoDB</span>
+    <span id="topbar-title" style="font-size:16px; font-weight:bold; color:#1e1e1e"></span>
+    <button onclick="navigate('newClient')" style="
+      margin-left:12px; padding:6px 14px; border:1px solid #ddd;
+      border-radius:5px; background:#fff; font-size:13px; cursor:pointer;
+      color:#555; white-space:nowrap">
+      👥 Клиенты
+    </button>
+  </div>
+  <div id="content">
+
+    <!-- 1. НОВЫЙ КЛИЕНТ -->
+    <div class="panel active" id="panel-newClient">
+
+      <!-- Форма добавления -->
+      <div class="card" style="margin-bottom:24px">
+        <h2>Добавить клиента</h2>
+        <div class="form-group">
+          <label>Имя</label>
+          <input type="text" id="nc-firstName" placeholder="Иван">
+        </div>
+        <div class="form-group">
+          <label>Фамилия</label>
+          <input type="text" id="nc-lastName" placeholder="Петров">
+        </div>
+        <div class="form-group">
+          <label>Telegram (ссылка)</label>
+          <input type="text" id="nc-telegram" placeholder="https://t.me/username">
+        </div>
+        <button class="btn btn-primary" onclick="submitNewClient()">Добавить клиента</button>
+      </div>
+
+      <!-- Таблица клиентов -->
+      <div class="card" style="max-width:900px">
+        <h2 style="margin-bottom:16px">Все клиенты</h2>
+
+        <!-- Поиск -->
+        <div class="form-group">
+          <input type="text" id="clients-search"
+                 placeholder="Поиск по имени или фамилии..."
+                 oninput="filterClients()"
+                 style="max-width:320px">
+        </div>
+
+        <div id="clients-table-wrap">
+          <p class="loading">Загрузка...</p>
+        </div>
+      </div>
+
+      <!-- Модалка редактирования -->
+      <div id="edit-modal" style="
+        display:none; position:fixed; inset:0;
+        background:rgba(0,0,0,0.45); z-index:1000;
+        align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:8px; padding:28px; width:360px; box-shadow:0 4px 24px rgba(0,0,0,0.18)">
+          <h2 style="margin-bottom:18px; font-size:16px">Редактировать клиента</h2>
+          <input type="hidden" id="edit-id">
+          <div class="form-group">
+            <label>Имя</label>
+            <input type="text" id="edit-firstName">
+          </div>
+          <div class="form-group">
+            <label>Фамилия</label>
+            <input type="text" id="edit-lastName">
+          </div>
+          <div class="form-group">
+            <label>Telegram</label>
+            <input type="text" id="edit-telegram">
+          </div>
+          <div style="display:flex; gap:10px; margin-top:8px">
+            <button class="btn btn-primary" onclick="submitEditClient()">Сохранить</button>
+            <button class="btn btn-secondary" onclick="closeEditModal()">Отмена</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 2. ПРОДАЖА АБОНЕМЕНТА -->
+    <div class="panel" id="panel-sellSub">
+      <div class="card" style="max-width:560px">
+        <h2 style="margin-bottom:18px">Продажа абонемента</h2>
+
+        <!-- Тип: Соло / Парный -->
+        <div class="form-group">
+          <label>Тип абонемента</label>
+          <div class="type-switcher">
+            <button class="type-btn active" id="subtype-solo" onclick="setSubType('solo')">🧍 Соло</button>
+            <button class="type-btn"        id="subtype-pair" onclick="setSubType('pair')">👫 Парный</button>
+          </div>
+        </div>
+
+        <!-- Клиент 1 -->
+        <div class="form-group">
+          <label id="client1-label">Клиент</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="sub-client1-input"
+                   placeholder="Начни вводить фамилию..."
+                   oninput="acFilter('sub-client1')"
+                   onfocus="acFilter('sub-client1')"
+                   autocomplete="off">
+            <input type="hidden" id="sub-client1-id">
+            <div class="autocomplete-list" id="sub-client1-list"></div>
+          </div>
+        </div>
+
+        <!-- Клиент 2 (только Парный) -->
+        <div class="form-group" id="client2-group" style="display:none">
+          <label>Второй клиент</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="sub-client2-input"
+                   placeholder="Начни вводить фамилию..."
+                   oninput="acFilter('sub-client2')"
+                   onfocus="acFilter('sub-client2')"
+                   autocomplete="off">
+            <input type="hidden" id="sub-client2-id">
+            <div class="autocomplete-list" id="sub-client2-list"></div>
+          </div>
+        </div>
+
+        <hr class="form-divider">
+
+        <!-- Количество уроков -->
+        <div class="form-group">
+          <label>Количество уроков</label>
+          <div class="lessons-switcher" id="lessons-switcher">
+            <button class="lessons-btn" id="lessons-4" onclick="setLessons(4)">4 урока</button>
+            <button class="lessons-btn active" id="lessons-8" onclick="setLessons(8)">8 уроков</button>
+          </div>
+        </div>
+
+        <!-- Месяц парного (только Парный + 8 уроков) -->
+        <div class="form-group" id="pair-month-group" style="display:none">
+          <label>Месяц абонемента (для цены)</label>
+          <div class="type-switcher">
+            <button class="type-btn active" id="pm-1" onclick="setPairMonth(1)">1-й месяц</button>
+            <button class="type-btn"        id="pm-2" onclick="setPairMonth(2)">2-й месяц</button>
+            <button class="type-btn"        id="pm-3" onclick="setPairMonth(3)">3-й месяц</button>
+          </div>
+        </div>
+
+        <!-- Дата активации -->
+        <div class="form-group">
+          <label>Дата активации</label>
+          <input type="date" id="sub-activation-date">
+        </div>
+
+        <hr class="form-divider">
+
+        <!-- Цена -->
+        <div class="price-display" id="sub-price-display">
+          <span class="price-label-text">Стоимость</span>
+          <span class="price-value" id="sub-price-value">—</span>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%" onclick="submitSubscription()">
+          Оформить абонемент
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. ДЕЙСТВУЮЩИЕ АБОНЕМЕНТЫ -->
+    <div class="panel" id="panel-activeSubs">
+
+      <div class="card" style="max-width:900px">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px">
+          <h2 style="margin:0">Действующие абонементы</h2>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <input type="text" id="subs-search"
+                   placeholder="Поиск по имени..."
+                   oninput="filterActiveSubs()"
+                   style="padding:8px 12px; border:1px solid #ddd; border-radius:5px; font-size:14px; width:220px">
+            <button class="btn btn-secondary" onclick="loadActiveSubs()">🔄 Обновить</button>
+          </div>
+        </div>
+
+        <!-- Счётчики -->
+        <div id="subs-counters" style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap"></div>
+
+        <div id="activeSubs-wrap">
+          <p class="loading">Загрузка...</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 4. РАСПИСАНИЕ -->
+    <div class="panel" id="panel-schedule">
+
+      <!-- Форма добавления слота -->
+      <div class="card" style="margin-bottom:24px">
+        <h2>Добавить занятие в расписание</h2>
+
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end">
+          <div class="form-group" style="margin:0; flex:1; min-width:180px">
+            <label>День недели</label>
+            <select id="sch-day">
+              <option value="1">Понедельник</option>
+              <option value="2">Вторник</option>
+              <option value="3">Среда</option>
+              <option value="4">Четверг</option>
+              <option value="5">Пятница</option>
+              <option value="6">Суббота</option>
+              <option value="7">Воскресенье</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0; flex:1; min-width:140px">
+            <label>Время</label>
+            <input type="time" id="sch-time" value="19:00">
+          </div>
+          <div style="padding-bottom:0">
+            <button class="btn btn-primary" onclick="submitScheduleSlot()">Добавить</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Текущее расписание -->
+      <div class="card" style="max-width:600px">
+        <h2 style="margin-bottom:16px">Текущее расписание</h2>
+        <div id="schedule-wrap">
+          <p class="loading">Загрузка...</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 5. ЖУРНАЛ ПОСЕЩЕНИЙ -->
+    <div class="panel" id="panel-attendance">
+
+      <!-- Выбор месяца и даты -->
+      <div class="card" style="margin-bottom:20px; max-width:700px">
+        <h2 style="margin-bottom:16px">Журнал посещений</h2>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end">
+          <div class="form-group" style="margin:0; flex:1; min-width:160px">
+            <label>Месяц</label>
+            <input type="month" id="att-month" onchange="loadAttendanceDates()">
+          </div>
+          <div class="form-group" style="margin:0; flex:2; min-width:200px">
+            <label>Дата занятия</label>
+            <select id="att-date-select" onchange="loadSubsForDate()">
+              <option value="">— выбери дату —</option>
+            </select>
+          </div>
+          <div>
+            <button class="btn btn-secondary" onclick="loadAttendanceDates()">Обновить</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Список клиентов -->
+      <div class="card" style="max-width:700px">
+        <div id="att-clients-wrap">
+          <p class="loading">Выбери дату занятия</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 6. ПЕРСОНАЛЬНЫЕ — ПРОДАЖА -->
+    <div class="panel" id="panel-personalSell">
+      <div class="card" style="max-width:580px">
+        <h2 style="margin-bottom:18px">Персональный урок — Продажа</h2>
+
+        <!-- Тип -->
+        <div class="form-group">
+          <label>Тип урока</label>
+          <div class="type-switcher">
+            <button class="type-btn active" id="ptype-solo" onclick="setPType('solo')">🧍 Соло</button>
+            <button class="type-btn"        id="ptype-pair" onclick="setPType('pair')">👫 Парный</button>
+            <button class="type-btn"        id="ptype-trio" onclick="setPType('trio')">👥 Трио</button>
+          </div>
+        </div>
+
+        <!-- Клиент 1 -->
+        <div class="form-group">
+          <label id="p-client1-label">Клиент</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="p-client1-input"
+                   placeholder="Начни вводить фамилию..."
+                   oninput="pAcFilter('p-client1')"
+                   onfocus="pAcFilter('p-client1')"
+                   autocomplete="off">
+            <input type="hidden" id="p-client1-id">
+            <div class="autocomplete-list" id="p-client1-list"></div>
+          </div>
+        </div>
+
+        <!-- Клиент 2 -->
+        <div class="form-group" id="p-client2-group" style="display:none">
+          <label>Второй клиент</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="p-client2-input"
+                   placeholder="Начни вводить фамилию..."
+                   oninput="pAcFilter('p-client2')"
+                   onfocus="pAcFilter('p-client2')"
+                   autocomplete="off">
+            <input type="hidden" id="p-client2-id">
+            <div class="autocomplete-list" id="p-client2-list"></div>
+          </div>
+        </div>
+
+        <!-- Клиент 3 -->
+        <div class="form-group" id="p-client3-group" style="display:none">
+          <label>Третий клиент</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="p-client3-input"
+                   placeholder="Начни вводить фамилию..."
+                   oninput="pAcFilter('p-client3')"
+                   onfocus="pAcFilter('p-client3')"
+                   autocomplete="off">
+            <input type="hidden" id="p-client3-id">
+            <div class="autocomplete-list" id="p-client3-list"></div>
+          </div>
+        </div>
+
+        <hr class="form-divider">
+
+        <!-- Даты бронирования -->
+        <div class="form-group">
+          <label>Даты бронирования</label>
+          <div id="p-dates-list"></div>
+          <button class="btn btn-secondary" style="margin-top:10px; width:100%"
+            onclick="addDateField()">＋ Добавить дату</button>
+        </div>
+
+        <hr class="form-divider">
+
+        <!-- Стоимость -->
+        <div class="form-group">
+          <label>Стоимость (₫)</label>
+          <div class="price-input-wrap" style="gap:10px">
+            <input type="number" id="p-price" min="0" step="1000"
+                   placeholder="0" style="flex:1">
+            <span class="price-currency">₫</span>
+            <button class="btn btn-secondary btn-sm" onclick="fillPersonalPrice()">
+              Из прайса
+            </button>
+          </div>
+        </div>
+
+        <!-- Кнопки -->
+        <div style="display:flex; gap:10px; margin-top:8px">
+          <button class="btn btn-success" style="flex:1"
+            onclick="submitPersonalLesson(true)">
+            ✅ Бронь (оплачено)
+          </button>
+          <button class="btn btn-secondary" style="flex:1"
+            onclick="submitPersonalLesson(false)">
+            🕐 Бронь без оплаты
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 7. ПЕРСОНАЛЬНЫЕ — ПРОСМОТР -->
+    <div class="panel" id="panel-personalView">
+
+      <div class="card" style="max-width:900px">
+        <div style="display:flex; align-items:center; justify-content:space-between;
+                    margin-bottom:16px; flex-wrap:wrap; gap:12px">
+          <h2 style="margin:0">Персональные уроки</h2>
+          <button class="btn btn-secondary" onclick="loadPersonalView()">🔄 Обновить</button>
+        </div>
+
+        <!-- Фильтры -->
+        <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap">
+          <button class="type-btn active" id="pv-filter-all"
+            onclick="setPvFilter('all')" style="flex:none; padding:8px 18px">
+            Все
+          </button>
+          <button class="type-btn" id="pv-filter-no"
+            onclick="setPvFilter('no')" style="flex:none; padding:8px 18px">
+            💳 Не оплачено
+          </button>
+          <button class="type-btn" id="pv-filter-yes"
+            onclick="setPvFilter('yes')" style="flex:none; padding:8px 18px">
+            ✅ Оплачено
+          </button>
+        </div>
+
+        <!-- Поиск -->
+        <div class="form-group" style="margin-bottom:16px">
+          <input type="text" id="pv-search"
+                 placeholder="Поиск по имени клиента..."
+                 oninput="filterPersonalView()"
+                 style="max-width:320px">
+        </div>
+
+        <!-- Счётчики -->
+        <div id="pv-counters" style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap"></div>
+
+        <!-- Таблица -->
+        <div id="pv-wrap">
+          <p class="loading">Загрузка...</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 8. ЦЕНЫ -->
+    <div class="panel" id="panel-prices">
+      <div class="card" style="max-width:700px">
+        <h2 style="margin-bottom:6px">Управление ценами</h2>
+        <p style="font-size:13px; color:#888; margin-bottom:20px">
+          Измени цену и нажми «Сохранить» напротив нужной строки
+        </p>
+        <div id="prices-wrap">
+          <p class="loading">Загрузка...</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- УВЕДОМЛЕНИЕ -->
+<div id="toast"></div>
+
+<script>
+  // ══════════════════════════════════════
+  //  ВЫБОР ВЕРСИИ
+  // ══════════════════════════════════════
+
+  function initVersionScreen() {
+    const saved = sessionStorage.getItem('tangodb-version');
+    if (saved) {
+      applyVersion(saved);
+    } else {
+      document.getElementById('version-screen').style.display = 'flex';
+    }
+  }
+
+  function selectVersion(v) {
+    sessionStorage.setItem('tangodb-version', v);
+    document.getElementById('version-screen').style.display = 'none';
+    applyVersion(v);
+    navigate('newClient');
+  }
+
+  function applyVersion(v) {
+    if (v === 'mobile') {
+      document.body.classList.add('force-mobile');
+    } else {
+      document.body.classList.remove('force-mobile');
+    }
+  }
+
+  function returnToVersionScreen() {
+    sessionStorage.removeItem('tangodb-version');
+    document.getElementById('version-screen').style.display = 'flex';
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  }
+  // ── Навигация ──
+  const titles = {
+    newClient:    'Новый клиент',
+    sellSub:      'Продажа абонемента',
+    activeSubs:   'Действующие абонементы',
+    schedule:     'Расписание',
+    attendance:   'Журнал посещений',
+    personalSell: 'Персональные уроки — Продажа',
+    personalView: 'Персональные уроки — Просмотр',
+    prices:       'Цены',
+  };
+
+  function navigate(section) {
+    // Закрыть все автокомплиты
+    document.querySelectorAll('.autocomplete-list').forEach(l => l.classList.remove('open'));
+
+    // Панели
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + section).classList.add('active');
+
+    // Десктоп меню
+    document.querySelectorAll('#sidebar nav a').forEach(a => a.classList.remove('active'));
+    const sideLink = document.getElementById('nav-' + section);
+    if (sideLink) sideLink.classList.add('active');
+
+    // Мобильная нижняя навигация
+    document.querySelectorAll('#mobile-nav a').forEach(a => a.classList.remove('active'));
+    const mnavLink = document.getElementById('mnav-' + section);
+    if (mnavLink) mnavLink.classList.add('active');
+
+    // Заголовок
+    const title = titles[section] || '';
+    document.getElementById('topbar-title').textContent = title;
+
+    // Загрузка данных
+    if (section === 'newClient')    loadClients();
+    if (section === 'schedule')     loadSchedule();
+    if (section === 'prices')       loadPrices();
+    if (section === 'sellSub')      loadSellSubData();
+    if (section === 'activeSubs')   loadActiveSubs();
+    if (section === 'attendance')   initAttendance();
+    if (section === 'personalSell') loadPersonalSellData();
+    if (section === 'personalView') loadPersonalView();
+  }
+
+  // Мобильный drawer
+  function openDrawer() {
+    document.getElementById('mobile-drawer').classList.add('open');
+  }
+
+  function closeDrawer() {
+    document.getElementById('mobile-drawer').classList.remove('open');
+  }
+
+  // ── Toast-уведомление ──
+  function showToast(msg, duration = 2500) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', duration);
+  }
+
+  // ── Добавление клиента (заглушка — будет дополнена на Этапе 3) ──
+  // ══════════════════════════════════════
+  //  КЛИЕНТЫ
+  // ══════════════════════════════════════
+  let allClients = [];
+
+  // Загрузка списка клиентов
+  function loadClients() {
+    document.getElementById('clients-table-wrap').innerHTML = '<p class="loading">Загрузка...</p>';
+    google.script.run
+      .withSuccessHandler(data => {
+        allClients = data;
+        renderClientsTable(data);
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .getClients();
+  }
+
+  // Отрисовка таблицы
+  function renderClientsTable(clients) {
+    const wrap = document.getElementById('clients-table-wrap');
+    if (!clients.length) {
+      wrap.innerHTML = '<p class="loading">Клиентов пока нет</p>';
+      return;
+    }
+    let html = `
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Имя</th>
+            <th>Фамилия</th>
+            <th>Telegram</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    clients.forEach((c, i) => {
+      const tgLink = c.Telegram
+        ? `<a href="${c.Telegram}" target="_blank" class="badge badge-tg">Telegram</a>`
+        : '—';
+      html += `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${c.FirstName}</td>
+          <td>${c.LastName}</td>
+          <td>${tgLink}</td>
+          <td style="display:flex; gap:8px">
+            <button class="btn btn-secondary btn-sm"
+              onclick="openEditModal('${c.ID}','${esc(c.FirstName)}','${esc(c.LastName)}','${esc(c.Telegram)}')">
+              ✏️
+            </button>
+            <button class="btn btn-danger btn-sm"
+              onclick="confirmDeleteClient('${c.ID}','${esc(c.FirstName)} ${esc(c.LastName)}')">
+              🗑
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  // Экранирование кавычек для атрибутов
+  function esc(str) {
+    return (str || '').replace(/'/g, "\\'");
+  }
+
+  // Фильтрация по поиску
+  function filterClients() {
+    const q = document.getElementById('clients-search').value.toLowerCase();
+    const filtered = allClients.filter(c =>
+      c.FirstName.toLowerCase().includes(q) ||
+      c.LastName.toLowerCase().includes(q)
+    );
+    renderClientsTable(filtered);
+  }
+
+  // Добавление клиента
+  function submitNewClient() {
+    const first = document.getElementById('nc-firstName').value.trim();
+    const last  = document.getElementById('nc-lastName').value.trim();
+    const tg    = document.getElementById('nc-telegram').value.trim();
+
+    if (!first || !last) { showToast('⚠️ Заполни Имя и Фамилию'); return; }
+
+    showToast('⏳ Сохранение...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ ' + res.error); return; }
+        showToast('✅ Клиент добавлен');
+        document.getElementById('nc-firstName').value = '';
+        document.getElementById('nc-lastName').value  = '';
+        document.getElementById('nc-telegram').value  = '';
+        loadClients();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .addClient(first, last, tg);
+  }
+
+  // Удаление с подтверждением
+  function confirmDeleteClient(id, name) {
+    if (!confirm('Удалить клиента «' + name + '»?')) return;
+    showToast('⏳ Удаление...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ ' + res.error); return; }
+        showToast('✅ Клиент удалён');
+        loadClients();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .deleteClient(id);
+  }
+
+  // Модалка редактирования
+  function openEditModal(id, first, last, tg) {
+    document.getElementById('edit-id').value        = id;
+    document.getElementById('edit-firstName').value = first;
+    document.getElementById('edit-lastName').value  = last;
+    document.getElementById('edit-telegram').value  = tg;
+    document.getElementById('edit-modal').classList.add('open');
+  }
+
+  function closeEditModal() {
+    document.getElementById('edit-modal').classList.remove('open');
+  }
+
+  function submitEditClient() {
+    const id    = document.getElementById('edit-id').value;
+    const first = document.getElementById('edit-firstName').value.trim();
+    const last  = document.getElementById('edit-lastName').value.trim();
+    const tg    = document.getElementById('edit-telegram').value.trim();
+
+    if (!first || !last) { showToast('⚠️ Заполни Имя и Фамилию'); return; }
+
+    showToast('⏳ Сохранение...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ ' + res.error); return; }
+        showToast('✅ Данные обновлены');
+        closeEditModal();
+        loadClients();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .updateClient(id, first, last, tg);
+  }
+
+  // ── Инициализация при загрузке ──
+  loadClients();
+
+  // Показать экран выбора версии
+  initVersionScreen();
+
+  // ══════════════════════════════════════
+  //  РАСПИСАНИЕ
+  // ══════════════════════════════════════
+
+  const DAY_NAMES = {
+    1: 'Понедельник',
+    2: 'Вторник',
+    3: 'Среда',
+    4: 'Четверг',
+    5: 'Пятница',
+    6: 'Суббота',
+    7: 'Воскресенье'
+  };
+
+  // Загрузка расписания
+  function loadSchedule() {
+    document.getElementById('schedule-wrap').innerHTML = '<p class="loading">Загрузка...</p>';
+    google.script.run
+      .withSuccessHandler(function(data) {
+        console.log('Schedule data:', JSON.stringify(data));
+        renderSchedule(data);
+      })
+      .withFailureHandler(function(err) {
+        console.error('Schedule error:', err);
+        document.getElementById('schedule-wrap').innerHTML =
+          '<p style="color:red">Ошибка: ' + err.message + '</p>';
+      })
+      .getSchedule();
+  }
+
+  // Отрисовка расписания сгруппированно по дням
+  function renderSchedule(slots) {
+    const wrap = document.getElementById('schedule-wrap');
+    if (!slots || !slots.length) {
+      wrap.innerHTML = '<p class="schedule-empty">Расписание пока не задано</p>';
+      return;
+    }
+
+    // Группируем по дню недели
+    const grouped = {};
+    slots.forEach(s => {
+      const d = s.DayOfWeek.toString();
+      if (!grouped[d]) grouped[d] = [];
+      grouped[d].push(s.Time);
+    });
+
+    // Сортируем дни
+    const sortedDays = Object.keys(grouped).sort((a, b) => a - b);
+
+    let html = '<div class="schedule-grid">';
+    sortedDays.forEach(day => {
+      const times = grouped[day].sort();
+      html += `
+        <div class="schedule-day-block">
+          <div class="schedule-day-header">
+            <span class="day-dot"></span>
+            ${DAY_NAMES[day]}
+          </div>
+      `;
+      times.forEach(time => {
+        html += `
+          <div class="schedule-slot-row">
+            <span>🕐 ${time}</span>
+            <button class="btn btn-danger btn-sm"
+              onclick="confirmDeleteSlot(${day}, '${time}')">
+              🗑 Удалить
+            </button>
+          </div>
+        `;
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+
+    wrap.innerHTML = html;
+  }
+
+  // Добавить слот
+  function submitScheduleSlot() {
+    const day  = document.getElementById('sch-day').value;
+    const time = document.getElementById('sch-time').value;
+
+    if (!time) { showToast('⚠️ Укажи время'); return; }
+
+    showToast('⏳ Сохранение...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ ' + res.error); return; }
+        showToast('✅ Занятие добавлено');
+        loadSchedule();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .addScheduleSlot(day, time);
+  }
+
+  // Удалить слот с подтверждением
+  function confirmDeleteSlot(day, time) {
+    const name = DAY_NAMES[day];
+    if (!confirm('Удалить занятие: ' + name + ' в ' + time + '?')) return;
+    showToast('⏳ Удаление...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ ' + res.error); return; }
+        showToast('✅ Занятие удалено');
+        loadSchedule();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .deleteScheduleSlot(day, time);
+  }
+
+  // ══════════════════════════════════════
+  //  ЦЕНЫ
+  // ══════════════════════════════════════
+
+  // Человекочитаемые названия типов
+  const PRICE_LABELS = {
+    'solo':           { name: 'Соло',                    sub: '4 занятия',  group: 'Групповые занятия' },
+    'solo_8':         { name: 'Соло',                    sub: '8 занятий',  group: 'Групповые занятия' },
+    'pair_m1':        { name: 'Парный — 1-й месяц',      sub: '8 занятий',  group: 'Групповые занятия' },
+    'pair_m2':        { name: 'Парный — 2-й месяц',      sub: '8 занятий',  group: 'Групповые занятия' },
+    'pair_m3':        { name: 'Парный — 3-й месяц',      sub: '8 занятий',  group: 'Групповые занятия' },
+    'pair_hm':        { name: 'Парный полмесяца',        sub: '4 занятия',  group: 'Групповые занятия' },
+    'personal_solo':  { name: 'Персональный Соло',       sub: '1 занятие',  group: 'Персональные уроки' },
+    'personal_pair':  { name: 'Персональный Парный',     sub: '1 занятие',  group: 'Персональные уроки' },
+    'personal_trio':  { name: 'Персональный Трио',       sub: '1 занятие',  group: 'Персональные уроки' },
+  };
+
+  function getPriceLabelKey(type, lessons) {
+    if (type === 'solo' && lessons == 8) return 'solo_8';
+    return type;
+  }
+
+  function loadPrices() {
+    document.getElementById('prices-wrap').innerHTML = '<p class="loading">Загрузка...</p>';
+    google.script.run
+      .withSuccessHandler(renderPrices)
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .getPrices();
+  }
+
+  function renderPrices(prices) {
+    const wrap = document.getElementById('prices-wrap');
+    if (!prices || !prices.length) {
+      wrap.innerHTML = '<p class="loading">Нет данных</p>';
+      return;
+    }
+
+    // Группируем по категории
+    const groups = {};
+    prices.forEach(p => {
+      const key   = getPriceLabelKey(p.Type, p.Lessons);
+      const label = PRICE_LABELS[key] || { name: p.Type, sub: p.Lessons + ' занятий', group: 'Прочее' };
+      if (!groups[label.group]) groups[label.group] = [];
+      groups[label.group].push({ ...p, label });
+    });
+
+    let html = '';
+    Object.keys(groups).forEach(groupName => {
+      html += `<div class="prices-group">
+        <div class="prices-group-title">${groupName}</div>`;
+
+      groups[groupName].forEach(p => {
+        html += `
+          <div class="price-row">
+            <div class="price-label">
+              ${p.label.name}
+              <div class="price-sublabel">${p.label.sub}</div>
+            </div>
+            <div class="price-input-wrap">
+              <input
+                type="number"
+                id="price-input-${p.Row}"
+                value="${p.Price}"
+                min="0"
+                step="1000"
+              >
+              <span class="price-currency">₫</span>
+              <button class="btn btn-primary btn-sm"
+                onclick="savePrice(${p.Row}, 'price-input-${p.Row}')">
+                Сохранить
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+    });
+
+    wrap.innerHTML = html;
+  }
+
+  function savePrice(rowIndex, inputId) {
+    const val = document.getElementById(inputId).value;
+    if (val === '' || isNaN(val)) { showToast('⚠️ Введи корректную цену'); return; }
+
+    showToast('⏳ Сохранение...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ Ошибка сохранения'); return; }
+        showToast('✅ Цена обновлена');
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .updatePrice(rowIndex, val);
+  }
+
+  // ══════════════════════════════════════
+  //  ПРОДАЖА АБОНЕМЕНТА
+  // ══════════════════════════════════════
+
+  let sellSubClients = [];
+  let sellSubPrices  = [];
+  let currentSubType = 'solo';   // solo | pair
+  let currentLessons = 8;
+  let currentPairMonth = 1;
+
+  // Загрузить данные при открытии раздела
+  function loadSellSubData() {
+    google.script.run
+      .withSuccessHandler(data => {
+        sellSubClients = data.clients || [];
+        sellSubPrices  = data.prices  || [];
+        updateSubPrice();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .getSellSubData();
+
+    // Дата по умолчанию — сегодня
+    const today = new Date();
+    const yyyy  = today.getFullYear();
+    const mm    = String(today.getMonth() + 1).padStart(2, '0');
+    const dd    = String(today.getDate()).padStart(2, '0');
+    document.getElementById('sub-activation-date').value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  // Переключение типа абонемента
+  function setSubType(type) {
+    currentSubType = type;
+    document.getElementById('subtype-solo').classList.toggle('active', type === 'solo');
+    document.getElementById('subtype-pair').classList.toggle('active', type === 'pair');
+
+    // Показать/скрыть клиент 2
+    document.getElementById('client2-group').style.display = type === 'pair' ? 'block' : 'none';
+    document.getElementById('client1-label').textContent   = type === 'pair' ? 'Первый клиент' : 'Клиент';
+
+    // Для парного: 4 урока = pair_hm, 8 = pair_m1/m2/m3
+    updatePairMonthVisibility();
+    updateSubPrice();
+  }
+
+  // Переключение количества уроков
+  function setLessons(count) {
+    currentLessons = count;
+    document.getElementById('lessons-4').classList.toggle('active', count === 4);
+    document.getElementById('lessons-8').classList.toggle('active', count === 8);
+    updatePairMonthVisibility();
+    updateSubPrice();
+  }
+
+  // Переключение месяца парного
+  function setPairMonth(month) {
+    currentPairMonth = month;
+    [1, 2, 3].forEach(m => {
+      document.getElementById('pm-' + m).classList.toggle('active', m === month);
+    });
+    updateSubPrice();
+  }
+
+  // Показать/скрыть выбор месяца парного
+  function updatePairMonthVisibility() {
+    const show = currentSubType === 'pair' && currentLessons === 8;
+    document.getElementById('pair-month-group').style.display = show ? 'block' : 'none';
+  }
+
+  // Рассчитать и показать цену
+  function updateSubPrice() {
+    let found;
+
+    if (currentSubType === 'solo') {
+      found = sellSubPrices.find(p =>
+        p.Type.trim() === 'solo' && parseInt(p.Lessons) === currentLessons
+      );
+    } else if (currentSubType === 'pair') {
+      if (currentLessons === 4) {
+        found = sellSubPrices.find(p => p.Type.trim() === 'pair_hm');
+      } else {
+        const targetType = 'pair_m' + currentPairMonth;
+        found = sellSubPrices.find(p => p.Type.trim() === targetType);
+      }
+    }
+
+    const val = found
+      ? Number(found.Price).toLocaleString('ru-RU') + ' ₫'
+      : '—';
+    document.getElementById('sub-price-value').textContent = val;
+  }
+
+  // ── Автокомплит ──
+  function acFilter(prefix) {
+    const input    = document.getElementById(prefix + '-input').value.toLowerCase();
+    const list     = document.getElementById(prefix + '-list');
+    const filtered = sellSubClients.filter(c =>
+      c.FirstName.toLowerCase().includes(input) ||
+      c.LastName.toLowerCase().includes(input)
+    );
+
+    if (!filtered.length || !input) {
+      list.classList.remove('open');
+      return;
+    }
+
+    list.innerHTML = filtered.slice(0, 10).map(c => `
+      <div class="autocomplete-item"
+        onmousedown="acSelect('${prefix}','${c.ID}','${esc(c.LastName)} ${esc(c.FirstName)}')">
+        ${c.LastName} ${c.FirstName}
+      </div>
+    `).join('');
+
+    list.classList.add('open');
+  }
+
+  function acSelect(prefix, id, name) {
+    document.getElementById(prefix + '-input').value = name;
+    document.getElementById(prefix + '-id').value    = id;
+    document.getElementById(prefix + '-list').classList.remove('open');
+  }
+
+  // Закрывать автокомплит при клике вне
+  document.addEventListener('click', e => {
+    ['sub-client1', 'sub-client2'].forEach(prefix => {
+      const list = document.getElementById(prefix + '-list');
+      if (list && !list.contains(e.target)) {
+        list.classList.remove('open');
+      }
+    });
+  });
+
+  // ── Отправка формы ──
+  function submitSubscription() {
+    const client1Id   = document.getElementById('sub-client1-id').value;
+    const client1Name = document.getElementById('sub-client1-input').value.trim();
+    const client2Id   = document.getElementById('sub-client2-id').value;
+    const client2Name = document.getElementById('sub-client2-input').value.trim();
+    const actDate     = document.getElementById('sub-activation-date').value;
+
+    // Валидация
+    if (!client1Name || !client1Id) {
+      showToast('⚠️ Выбери клиента из списка'); return;
+    }
+    if (currentSubType === 'pair' && (!client2Name || !client2Id)) {
+      showToast('⚠️ Выбери второго клиента из списка'); return;
+    }
+    if (currentSubType === 'pair' && client1Id === client2Id) {
+      showToast('⚠️ Оба клиента одинаковые'); return;
+    }
+    if (!actDate) {
+      showToast('⚠️ Укажи дату активации'); return;
+    }
+
+    // Определяем тип для БД
+    let dbType;
+    if (currentSubType === 'solo') {
+      dbType = 'solo';
+    } else {
+      dbType = currentLessons === 4 ? 'pair_hm' : 'pair';
+    }
+
+    const subData = {
+      type:           dbType,
+      clientId1:      client1Id,
+      clientId2:      currentSubType === 'pair' ? client2Id : '',
+      lessonsTotal:   currentLessons,
+      activationDate: actDate,
+      pairMonth:      (currentSubType === 'pair' && currentLessons === 8) ? currentPairMonth : ''
+    };
+
+    showToast('⏳ Оформление...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ Ошибка: ' + res.error); return; }
+        showToast('✅ Абонемент оформлен');
+        resetSellSubForm();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .addSubscription(subData);
+  }
+
+  // Сброс формы после оформления
+  function resetSellSubForm() {
+    document.getElementById('sub-client1-input').value = '';
+    document.getElementById('sub-client1-id').value    = '';
+    document.getElementById('sub-client2-input').value = '';
+    document.getElementById('sub-client2-id').value    = '';
+    setSubType('solo');
+    setLessons(8);
+    setPairMonth(1);
+    const today = new Date();
+    const yyyy  = today.getFullYear();
+    const mm    = String(today.getMonth() + 1).padStart(2, '0');
+    const dd    = String(today.getDate()).padStart(2, '0');
+    document.getElementById('sub-activation-date').value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  // ══════════════════════════════════════
+  //  ЖУРНАЛ ПОСЕЩЕНИЙ
+  // ══════════════════════════════════════
+
+  let currentAttSubsData = [];
+
+  // Инициализация: ставим текущий месяц
+  function initAttendance() {
+    const monthInput = document.getElementById('att-month');
+    // Ставим текущий месяц только если поле ещё пустое
+    if (!monthInput.value) {
+      const today = new Date();
+      const yyyy  = today.getFullYear();
+      const mm    = String(today.getMonth() + 1).padStart(2, '0');
+      monthInput.value = `${yyyy}-${mm}`;
+    }
+    loadAttendanceDates();
+  }
+
+  // Загрузить даты занятий для выбранного месяца
+  function loadAttendanceDates() {
+    const yearMonth = document.getElementById('att-month').value;
+    if (!yearMonth) { showToast('⚠️ Выбери месяц'); return; }
+
+    const select = document.getElementById('att-date-select');
+    select.innerHTML = '<option value="">⏳ Загрузка...</option>';
+    document.getElementById('att-clients-wrap').innerHTML =
+      '<p class="loading">Выбери дату занятия</p>';
+
+    google.script.run
+      .withSuccessHandler(dates => {
+        select.innerHTML = '<option value="">— выбери дату —</option>';
+        if (!dates || !dates.length) {
+          select.innerHTML = '<option value="">Занятий в этом месяце нет</option>';
+          return;
+        }
+        dates.forEach(d => {
+          const label   = formatDateRu(d.date) + ' (' + d.time + ')';
+          const option  = document.createElement('option');
+          option.value  = d.date + '|' + d.time;
+          option.textContent = label;
+          select.appendChild(option);
+        });
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .getScheduleDatesForMonth(yearMonth);
+  }
+
+  // Загрузить клиентов для выбранной даты
+  function loadSubsForDate() {
+    const val = document.getElementById('att-date-select').value;
+    if (!val) {
+      document.getElementById('att-clients-wrap').innerHTML =
+        '<p class="loading">Выбери дату занятия</p>';
+      return;
+    }
+    const dateStr = val.split('|')[0];
+    document.getElementById('att-clients-wrap').innerHTML =
+      '<p class="loading">Загрузка...</p>';
+
+    google.script.run
+      .withSuccessHandler(subs => {
+        currentAttSubsData = subs || [];
+        renderAttSubs(subs, dateStr);
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .getSubsForDate(dateStr);
+  }
+
+  // Отрисовка карточек клиентов
+  function renderAttSubs(subs, dateStr) {
+    const wrap = document.getElementById('att-clients-wrap');
+    if (!subs || !subs.length) {
+      wrap.innerHTML = '<p class="att-empty">Нет активных абонементов на эту дату</p>';
+      return;
+    }
+
+    let html = '';
+    subs.forEach((s, idx) => {
+      const nameStr  = s.client2 ? `${s.client1} <span style="color:#aaa">&</span> ${s.client2}` : s.client1;
+      const typeStr  = getSubTypeName(s.type);
+      const status   = s.currentStatus;
+
+      const btnPresent = `att-btn-${idx}-present`;
+      const btnAbsent  = `att-btn-${idx}-absent`;
+      const btnFreeze  = `att-btn-${idx}-freeze`;
+
+      const selP = status === 'present' ? 'selected-present' : '';
+      const selA = status === 'absent'  ? 'selected-absent'  : '';
+      const selF = status === 'freeze'  ? 'selected-freeze'  : '';
+
+      const freezeDisabled = !s.canFreeze && status !== 'freeze' ? 'disabled' : '';
+      const freezeTitle    = !s.canFreeze && status !== 'freeze'
+        ? (s.lessonsTotal !== 8 ? 'Заморозка недоступна для 4 уроков' : 'Заморозка уже использована')
+        : '';
+
+      html += `
+        <div class="att-client-card" id="att-card-${idx}">
+          <div class="att-client-name">${nameStr}</div>
+          <div class="att-client-meta">
+            <span class="att-lessons-badge" id="att-left-${idx}">${s.lessonsLeft} из ${s.lessonsTotal}</span>
+            ${typeStr}
+            · с ${formatDateRu(s.activationDate)}
+            ${s.freezeUsed > 0 ? '· <span style="color:#5b9bd5">заморозка использована</span>' : ''}
+          </div>
+          <div class="att-btn-group">
+            <button class="att-status-btn ${selP}" id="${btnPresent}"
+              onclick="submitAttendance(${idx}, '${s.subId}', 'present', '${dateStr}')">
+              ✅ Пришёл
+            </button>
+            <button class="att-status-btn ${selA}" id="${btnAbsent}"
+              onclick="submitAttendance(${idx}, '${s.subId}', 'absent', '${dateStr}')">
+              ❌ Не пришёл
+            </button>
+            <button class="att-status-btn ${selF}" id="${btnFreeze}"
+              onclick="submitAttendance(${idx}, '${s.subId}', 'freeze', '${dateStr}')"
+              ${freezeDisabled} title="${freezeTitle}">
+              ❄️ Заморозка
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    wrap.innerHTML = html;
+  }
+
+  // Отправить отметку
+  function submitAttendance(idx, subId, newStatus, dateStr) {
+    // Немедленно обновляем UI — не ждём сервер
+    ['present', 'absent', 'freeze'].forEach(st => {
+      const btn = document.getElementById(`att-btn-${idx}-${st}`);
+      if (btn) {
+        btn.className = 'att-status-btn';
+        btn.disabled  = true; // блокируем все три на время запроса
+      }
+    });
+    const activeBtn = document.getElementById(`att-btn-${idx}-${newStatus}`);
+    if (activeBtn) activeBtn.className = `att-status-btn selected-${newStatus}`;
+
+    google.script.run
+      .withSuccessHandler(res => {
+        // Разблокируем кнопки
+        ['present', 'absent', 'freeze'].forEach(st => {
+          const btn = document.getElementById(`att-btn-${idx}-${st}`);
+          if (btn) btn.disabled = false;
+        });
+
+        if (!res.success) {
+          showToast('⚠️ ' + res.error);
+          // Откатываем UI при ошибке
+          ['present', 'absent', 'freeze'].forEach(st => {
+            const btn = document.getElementById(`att-btn-${idx}-${st}`);
+            if (btn) btn.className = 'att-status-btn';
+          });
+          const old = currentAttSubsData[idx] ? currentAttSubsData[idx].currentStatus : null;
+          if (old) {
+            const oldBtn = document.getElementById(`att-btn-${idx}-${old}`);
+            if (oldBtn) oldBtn.className = `att-status-btn selected-${old}`;
+          }
+          return;
+        }
+
+        showToast('✅ Отмечено');
+
+        if (res.newLessonsLeft !== undefined) {
+          const badge = document.getElementById(`att-left-${idx}`);
+          const sub   = currentAttSubsData[idx];
+          if (badge && sub) {
+            badge.textContent = res.newLessonsLeft + ' из ' + sub.lessonsTotal;
+            sub.lessonsLeft   = res.newLessonsLeft;
+          }
+        }
+
+        if (currentAttSubsData[idx]) {
+          currentAttSubsData[idx].currentStatus = newStatus;
+        }
+
+        // Блокировать заморозку если использована
+        if (newStatus === 'freeze') {
+          const freezeBtn = document.getElementById(`att-btn-${idx}-freeze`);
+          if (freezeBtn) {
+            freezeBtn.disabled = true;
+            freezeBtn.title    = 'Заморозка уже использована';
+          }
+        }
+      })
+      .withFailureHandler(err => {
+        ['present', 'absent', 'freeze'].forEach(st => {
+          const btn = document.getElementById(`att-btn-${idx}-${st}`);
+          if (btn) btn.disabled = false;
+        });
+        showToast('❌ ' + err.message);
+      })
+      .markAttendance(dateStr, subId, newStatus);
+  }
+
+  // Название типа абонемента
+  function getSubTypeName(type) {
+    const names = {
+      'solo':    'Соло',
+      'pair':    'Парный',
+      'pair_hm': 'Парный (полмесяца)'
+    };
+    return names[type] || type;
+  }
+
+  // Форматировать дату на русском
+  function formatDateRu(dateStr) {
+    const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    const days   = ['вс','пн','вт','ср','чт','пт','сб'];
+    const d = new Date(dateStr + 'T12:00:00');
+    return `${d.getDate()} ${months[d.getMonth()]} (${days[d.getDay()]})`;
+  }
+
+  // ══════════════════════════════════════
+  //  ДЕЙСТВУЮЩИЕ АБОНЕМЕНТЫ
+  // ══════════════════════════════════════
+
+  let allActiveSubs = [];
+
+  function loadActiveSubs() {
+    document.getElementById('activeSubs-wrap').innerHTML = '<p class="loading">Загрузка...</p>';
+    document.getElementById('subs-counters').innerHTML   = '';
+
+    google.script.run
+      .withSuccessHandler(data => {
+        allActiveSubs = data || [];
+        renderCounters(data);
+        renderActiveSubs(data);
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .getActiveSubscriptions();
+  }
+
+  // Счётчики вверху
+  function renderCounters(subs) {
+    const total = subs.length;
+    const solo  = subs.filter(s => s.type === 'solo').length;
+    const pair  = subs.filter(s => s.type === 'pair' || s.type === 'pair_hm').length;
+
+    document.getElementById('subs-counters').innerHTML = `
+      <div class="counter-chip"><span>${total}</span> абонементов</div>
+      <div class="counter-chip"><span>${solo}</span> соло</div>
+      <div class="counter-chip"><span>${pair}</span> парных</div>
+    `;
+  }
+
+  // Поиск
+  function filterActiveSubs() {
+    const q = document.getElementById('subs-search').value.toLowerCase();
+    const filtered = allActiveSubs.filter(s =>
+      s.client1.toLowerCase().includes(q) ||
+      (s.client2 && s.client2.toLowerCase().includes(q))
+    );
+    renderActiveSubs(filtered);
+  }
+
+  // Отрисовка карточек
+  function renderActiveSubs(subs) {
+    const wrap = document.getElementById('activeSubs-wrap');
+    if (!subs || !subs.length) {
+      wrap.innerHTML = '<p class="att-empty">Нет активных абонементов</p>';
+      return;
+    }
+
+    // Сортировка: у кого меньше уроков — сверху
+    const sorted = [...subs].sort((a, b) => a.lessonsLeft - b.lessonsLeft);
+
+    let html = '';
+    sorted.forEach(s => {
+      const pct      = s.lessonsTotal > 0 ? (s.lessonsLeft / s.lessonsTotal * 100) : 0;
+      const lowClass = s.lessonsLeft <= 2 ? 'low' : '';
+      const typeName = getSubTypeName(s.type);
+
+      // Месяц парного
+      let pairMonthStr = '';
+      if ((s.type === 'pair') && s.pairMonth) {
+        pairMonthStr = ` · ${s.pairMonth}-й месяц`;
+      }
+
+      // Заморозка
+      const canFreeze  = s.lessonsTotal === 8;
+      let freezeStr    = '';
+      if (canFreeze) {
+        freezeStr = s.freezeUsed === 0
+          ? '<span class="freeze-tag freeze-available">❄️ заморозка доступна</span>'
+          : '<span class="freeze-tag freeze-used">❄️ заморозка использована</span>';
+      }
+
+      // Telegram ссылки
+      const tg1 = s.client1tg
+        ? ` <a href="${s.client1tg}" target="_blank" class="badge badge-tg" style="font-size:10px">TG</a>` : '';
+      const tg2 = s.client2tg
+        ? ` <a href="${s.client2tg}" target="_blank" class="badge badge-tg" style="font-size:10px">TG</a>` : '';
+
+      const client2Row = s.client2
+        ? `<br>${s.client2}${tg2}` : '';
+
+      html += `
+        <div class="sub-card">
+          <div class="sub-card-left">
+            <div class="sub-type-badge">${typeName}${pairMonthStr}</div>
+            <div class="sub-card-name">
+              ${s.client1}${tg1}${client2Row}
+            </div>
+            <div class="sub-card-meta">
+              Активирован: ${formatDateRu(s.activationDate)}<br>
+              ${freezeStr}
+            </div>
+          </div>
+
+          <div class="sub-card-right">
+            <div class="lessons-bar-wrap">
+              <div class="lessons-bar">
+                <div class="lessons-bar-fill ${lowClass}" style="width:${pct}%"></div>
+              </div>
+              <span class="lessons-count">${s.lessonsLeft} / ${s.lessonsTotal}</span>
+            </div>
+            <button class="btn btn-secondary btn-sm"
+              onclick="confirmFinishSub('${s.subId}', '${esc(s.client1)}')">
+              Завершить
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    wrap.innerHTML = html;
+  }
+
+  // Принудительное завершение
+  function confirmFinishSub(subId, name) {
+    if (!confirm('Завершить абонемент клиента «' + name + '»?\nЭто действие необратимо.')) return;
+    showToast('⏳ Завершение...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ ' + res.error); return; }
+        showToast('✅ Абонемент завершён');
+        loadActiveSubs();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .finishSubscription(subId);
+  }
+
+  // ══════════════════════════════════════
+  //  ПЕРСОНАЛЬНЫЕ УРОКИ — ПРОДАЖА
+  // ══════════════════════════════════════
+
+  let personalClients = [];
+  let personalPrices  = [];
+  let currentPType    = 'solo';
+  let pDateCount      = 0;
+
+  function loadPersonalSellData() {
+    google.script.run
+      .withSuccessHandler(data => {
+        personalClients = data.clients || [];
+        personalPrices  = data.prices  || [];
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .getPersonalSellData();
+
+    // Инициализировать поле даты если пустое
+    if (document.getElementById('p-dates-list').children.length === 0) {
+      addDateField();
+    }
+  }
+
+  // Переключение типа
+  function setPType(type) {
+    currentPType = type;
+    ['solo','pair','trio'].forEach(t => {
+      document.getElementById('ptype-' + t).classList.toggle('active', t === type);
+    });
+
+    document.getElementById('p-client1-label').textContent =
+      type === 'solo' ? 'Клиент' : 'Первый клиент';
+    document.getElementById('p-client2-group').style.display =
+      (type === 'pair' || type === 'trio') ? 'block' : 'none';
+    document.getElementById('p-client3-group').style.display =
+      type === 'trio' ? 'block' : 'none';
+
+    fillPersonalPrice();
+  }
+
+  // Автозаполнение для персональных уроков
+  function pAcFilter(prefix) {
+    const input    = document.getElementById(prefix + '-input').value.toLowerCase();
+    const list     = document.getElementById(prefix + '-list');
+    const filtered = personalClients.filter(c =>
+      c.FirstName.toLowerCase().includes(input) ||
+      c.LastName.toLowerCase().includes(input)
+    );
+
+    if (!filtered.length || !input) {
+      list.classList.remove('open');
+      return;
+    }
+
+    list.innerHTML = filtered.slice(0, 10).map(c => `
+      <div class="autocomplete-item"
+        onmousedown="pAcSelect('${prefix}','${c.ID}','${esc(c.LastName)} ${esc(c.FirstName)}')">
+        ${c.LastName} ${c.FirstName}
+      </div>
+    `).join('');
+
+    list.classList.add('open');
+  }
+
+  function pAcSelect(prefix, id, name) {
+    document.getElementById(prefix + '-input').value = name;
+    document.getElementById(prefix + '-id').value    = id;
+    document.getElementById(prefix + '-list').classList.remove('open');
+  }
+
+  // Закрывать автокомплит при клике вне
+  document.addEventListener('click', e => {
+    ['p-client1','p-client2','p-client3'].forEach(prefix => {
+      const list = document.getElementById(prefix + '-list');
+      if (list && !list.contains(e.target)) {
+        list.classList.remove('open');
+      }
+    });
+  });
+
+  // Добавить поле даты
+  function addDateField() {
+    pDateCount++;
+    const idx      = pDateCount;
+    const today    = new Date();
+    const yyyy     = today.getFullYear();
+    const mm       = String(today.getMonth() + 1).padStart(2, '0');
+    const dd       = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const row = document.createElement('div');
+    row.className = 'p-date-row';
+    row.id        = `p-date-row-${idx}`;
+    row.innerHTML = `
+      <input type="date" id="p-date-${idx}" value="${todayStr}">
+      <button class="p-date-remove" onclick="removeDateField(${idx})" title="Удалить">×</button>
+    `;
+
+    document.getElementById('p-dates-list').appendChild(row);
+  }
+
+  // Удалить поле даты
+  function removeDateField(idx) {
+    const row = document.getElementById(`p-date-row-${idx}`);
+    if (row) row.remove();
+  }
+
+  // Заполнить цену из прайса
+  function fillPersonalPrice() {
+    const typeMap = {
+      solo: 'personal_solo',
+      pair: 'personal_pair',
+      trio: 'personal_trio'
+    };
+    const key   = typeMap[currentPType];
+    const found = personalPrices.find(p => p.Type === key);
+    if (found) {
+      document.getElementById('p-price').value = found.Price;
+    }
+  }
+
+  // Собрать выбранные даты
+  function collectDates() {
+    const rows  = document.getElementById('p-dates-list').querySelectorAll('.p-date-row');
+    const dates = [];
+    rows.forEach(row => {
+      const input = row.querySelector('input[type="date"]');
+      if (input && input.value) dates.push(input.value);
+    });
+    return dates;
+  }
+
+  // Отправить бронирование
+  function submitPersonalLesson(paid) {
+    const c1id   = document.getElementById('p-client1-id').value;
+    const c1name = document.getElementById('p-client1-input').value.trim();
+    const c2id   = document.getElementById('p-client2-id').value;
+    const c2name = document.getElementById('p-client2-input').value.trim();
+    const c3id   = document.getElementById('p-client3-id').value;
+    const c3name = document.getElementById('p-client3-input').value.trim();
+    const price  = document.getElementById('p-price').value;
+    const dates  = collectDates();
+
+    // Валидация
+    if (!c1name || !c1id) {
+      showToast('⚠️ Выбери клиента из списка'); return;
+    }
+    if ((currentPType === 'pair' || currentPType === 'trio') && (!c2name || !c2id)) {
+      showToast('⚠️ Выбери второго клиента'); return;
+    }
+    if (currentPType === 'trio' && (!c3name || !c3id)) {
+      showToast('⚠️ Выбери третьего клиента'); return;
+    }
+    if (!dates.length) {
+      showToast('⚠️ Добавь хотя бы одну дату'); return;
+    }
+    if (!price || isNaN(price)) {
+      showToast('⚠️ Укажи стоимость'); return;
+    }
+
+    const lessonsData = {
+      type:      currentPType,
+      clientId1: c1id,
+      clientId2: (currentPType === 'pair' || currentPType === 'trio') ? c2id : '',
+      clientId3: currentPType === 'trio' ? c3id : '',
+      dates:     dates,
+      price:     price,
+      paid:      paid
+    };
+
+    showToast('⏳ Бронирование...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ ' + res.error); return; }
+        showToast(paid ? '✅ Забронировано и оплачено' : '✅ Забронировано (без оплаты)');
+        resetPersonalForm();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .addPersonalLessons(lessonsData);
+  }
+
+  // Сброс формы
+  function resetPersonalForm() {
+    ['p-client1','p-client2','p-client3'].forEach(p => {
+      const inp = document.getElementById(p + '-input');
+      const hid = document.getElementById(p + '-id');
+      if (inp) inp.value = '';
+      if (hid) hid.value = '';
+    });
+    document.getElementById('p-price').value    = '';
+    document.getElementById('p-dates-list').innerHTML = '';
+    pDateCount = 0;
+    setPType('solo');
+    addDateField();
+  }
+  
+  // ══════════════════════════════════════
+  //  ПЕРСОНАЛЬНЫЕ УРОКИ — ПРОСМОТР
+  // ══════════════════════════════════════
+
+  let allPersonalLessons = [];
+  let currentPvFilter    = 'all';
+
+  function loadPersonalView() {
+    document.getElementById('pv-wrap').innerHTML     = '<p class="loading">Загрузка...</p>';
+    document.getElementById('pv-counters').innerHTML = '';
+
+    google.script.run
+      .withSuccessHandler(data => {
+        allPersonalLessons = data || [];
+        renderPvCounters(data);
+        renderPersonalView(data);
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .getPersonalLessonsForView('all');
+  }
+
+  // Переключение фильтра
+  function setPvFilter(filter) {
+    currentPvFilter = filter;
+    ['all','yes','no'].forEach(f => {
+      document.getElementById('pv-filter-' + f).classList.toggle('active', f === filter);
+    });
+    filterPersonalView();
+  }
+
+  // Поиск + фильтр
+  function filterPersonalView() {
+    const q = document.getElementById('pv-search').value.toLowerCase();
+    let filtered = allPersonalLessons;
+
+    if (currentPvFilter !== 'all') {
+      filtered = filtered.filter(l => l.Paid === currentPvFilter);
+    }
+
+    if (q) {
+      filtered = filtered.filter(l =>
+        l.Client1.toLowerCase().includes(q) ||
+        l.Client2.toLowerCase().includes(q) ||
+        l.Client3.toLowerCase().includes(q)
+      );
+    }
+
+    renderPersonalView(filtered);
+  }
+
+  // Счётчики
+  function renderPvCounters(lessons) {
+    const total    = lessons.length;
+    const unpaid   = lessons.filter(l => l.Paid === 'no').length;
+    const sumPaid  = lessons
+      .filter(l => l.Paid === 'yes')
+      .reduce((acc, l) => acc + (parseFloat(l.Price) || 0), 0);
+    const sumUnpaid = lessons
+      .filter(l => l.Paid === 'no')
+      .reduce((acc, l) => acc + (parseFloat(l.Price) || 0), 0);
+
+    document.getElementById('pv-counters').innerHTML = `
+      <div class="counter-chip">
+        <span>${total}</span> уроков
+      </div>
+      <div class="counter-chip" style="background:#e8f7ef">
+        <span style="color:#4caf7d">${Number(sumPaid).toLocaleString('ru-RU')} ₫</span> оплачено
+      </div>
+      <div class="counter-chip" style="background:#fdecea">
+        <span style="color:#e05c5c">${unpaid}</span> не оплачено
+        · ${Number(sumUnpaid).toLocaleString('ru-RU')} ₫
+      </div>
+    `;
+  }
+
+  // Отрисовка карточек
+  function renderPersonalView(lessons) {
+    const wrap = document.getElementById('pv-wrap');
+
+    if (!lessons || !lessons.length) {
+      wrap.innerHTML = '<p class="att-empty">Нет записей</p>';
+      return;
+    }
+
+    // Группируем по месяцам
+    const groups = {};
+    lessons.forEach(l => {
+      const d     = new Date(l.Date + 'T12:00:00');
+      const key   = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
+      const label = d.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+      if (!groups[key]) groups[key] = { label, items: [] };
+      groups[key].items.push(l);
+    });
+
+    const sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+    let html = '';
+    sortedKeys.forEach(key => {
+      const group     = groups[key];
+      const monthSum  = group.items.reduce((acc, l) => acc + (parseFloat(l.Price) || 0), 0);
+      const unpaidCnt = group.items.filter(l => l.Paid === 'no').length;
+
+      html += `
+        <div style="margin-bottom:20px">
+          <div style="display:flex; align-items:center; justify-content:space-between;
+                      padding:8px 0; border-bottom:2px solid #f0f0f0; margin-bottom:10px">
+            <div style="font-size:13px; font-weight:bold; color:#555; text-transform:capitalize">
+              ${group.label}
+            </div>
+            <div style="font-size:12px; color:#aaa">
+              ${Number(monthSum).toLocaleString('ru-RU')} ₫
+              ${unpaidCnt ? `· <span style="color:#e05c5c">${unpaidCnt} не оплачено</span>` : ''}
+            </div>
+          </div>
+      `;
+
+      group.items.forEach(l => {
+        const isPaid    = l.Paid === 'yes';
+        const cardClass = isPaid ? 'paid' : 'unpaid';
+        const typeStr   = getPvTypeName(l.Type);
+
+        // Имена клиентов
+        let names = l.Client1;
+        if (l.Client2) names += ` & ${l.Client2}`;
+        if (l.Client3) names += ` & ${l.Client3}`;
+
+        const priceStr = Number(l.Price).toLocaleString('ru-RU') + ' ₫';
+
+        html += `
+          <div class="pv-card ${cardClass}">
+            <div class="pv-card-left">
+              <div class="pv-card-name">
+                <span class="pv-type-badge">${typeStr}</span>
+                ${names}
+              </div>
+              <div class="pv-card-meta">${formatDateRu(l.Date)}</div>
+            </div>
+            <div class="pv-card-right">
+              <div class="pv-price">${priceStr}</div>
+              <span class="paid-badge ${l.Paid}">
+                ${isPaid ? '✅ Оплачено' : '💳 Не оплачено'}
+              </span>
+              <button class="btn btn-sm ${isPaid ? 'btn-secondary' : 'btn-success'}"
+                onclick="togglePersonalPaid(${l.Row}, ${isPaid}, this)">
+                ${isPaid ? 'Отменить оплату' : 'Отметить оплату'}
+              </button>
+              <button class="btn btn-danger btn-sm"
+                onclick="confirmDeletePersonal(${l.Row}, '${esc(names)}')">
+                🗑
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+    });
+
+    wrap.innerHTML = html;
+  }
+
+  // Переключить статус оплаты
+  function togglePersonalPaid(rowIndex, currentlyPaid, btn) {
+    const newPaid = !currentlyPaid;
+    showToast('⏳ Сохранение...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ Ошибка'); return; }
+        showToast(newPaid ? '✅ Отмечено как оплачено' : '✅ Оплата отменена');
+        loadPersonalView();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .updatePersonalLessonPaid(rowIndex, newPaid);
+  }
+
+  // Удалить запись
+  function confirmDeletePersonal(rowIndex, names) {
+    if (!confirm('Удалить урок клиента «' + names + '»?')) return;
+    showToast('⏳ Удаление...');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) { showToast('⚠️ Ошибка'); return; }
+        showToast('✅ Запись удалена');
+        loadPersonalView();
+      })
+      .withFailureHandler(err => showToast('❌ ' + err.message))
+      .deletePersonalLessonRow(rowIndex);
+  }
+
+  // Название типа персонального урока
+  function getPvTypeName(type) {
+    const names = { solo: 'Соло', pair: 'Парный', trio: 'Трио' };
+    return names[type] || type;
+  }
+</script>
+
+</body>
+</html>

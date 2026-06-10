@@ -1,0 +1,6 @@
+{
+  "name": "TangoDB",
+  "description": "A luxury studio management service for Argentine Tango schools, tracking client memberships, class schedules, attendance sheets, private lessons, and rate sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
