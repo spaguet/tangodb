@@ -1,17 +1,26 @@
 import AttendancePanel from "../components/AttendancePanel";
-import { useStore } from "../hooks/PlaceholderStoreContext";
+import { useMarkAttendance, useScheduleDates, useSubsForDate } from "../hooks/useAttendance";
 import { useToast } from "../App";
 
 export default function AttendancePage() {
-  const store = useStore();
   const toast = useToast();
-  if (store.loading) return null;
+  const { getScheduleDatesForMonth, isLoading: scheduleLoading } = useScheduleDates();
+  const { getSubsForDate, isLoading: subsLoading } = useSubsForDate();
+  const markAttendanceMutation = useMarkAttendance();
+
+  if (scheduleLoading || subsLoading) return null;
+
+  const onMarkAttendance = async (
+    dateStr: string,
+    subId: string,
+    status: "present" | "absent" | "freeze"
+  ) => markAttendanceMutation.mutateAsync({ dateStr, subId, status });
 
   return (
     <AttendancePanel
-      getScheduleDatesForMonth={store.getScheduleDatesForMonth}
-      getSubsForDate={store.getSubsForDate}
-      onMarkAttendance={store.markAttendance}
+      getScheduleDatesForMonth={getScheduleDatesForMonth}
+      getSubsForDate={getSubsForDate}
+      onMarkAttendance={onMarkAttendance}
       toast={toast}
     />
   );
