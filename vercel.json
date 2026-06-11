@@ -1,0 +1,8 @@
+{
+  "installCommand": "cd tangodb && npm install",
+  "buildCommand": "cd tangodb && npm run build",
+  "outputDirectory": "tangodb/dist",
+  "rewrites": [
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ]
+}
