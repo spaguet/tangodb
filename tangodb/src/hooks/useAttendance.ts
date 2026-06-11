@@ -148,6 +148,30 @@ export function useSubsForDate(dateStr?: string) {
   };
 }
 
+/** Mirrors mark_attendance RPC lesson/freeze deltas for optimistic cache updates */
+function computeAttendanceDeltas(
+  oldStatus: "present" | "absent" | "freeze" | null,
+  newStatus: "present" | "absent" | "freeze"
+): { lessonDelta: number; freezeDelta: number } {
+  let lessonDelta = 0;
+  let freezeDelta = 0;
+
+  if (oldStatus === "present" || oldStatus === "absent") lessonDelta += 1;
+  if (oldStatus === "freeze") freezeDelta -= 1;
+
+  if (newStatus === "present" || newStatus === "absent") lessonDelta -= 1;
+  if (newStatus === "freeze") freezeDelta += 1;
+
+  if (
+    (oldStatus === "present" || oldStatus === "absent") &&
+    (newStatus === "present" || newStatus === "absent")
+  ) {
+    lessonDelta = 0;
+  }
+
+  return { lessonDelta, freezeDelta };
+}
+
 export function useMarkAttendance() {
   const queryClient = useQueryClient();
 
@@ -179,8 +203,82 @@ export function useMarkAttendance() {
         newLessonsLeft: result.newLessonsLeft,
       };
     },
-    onSuccess: (result) => {
-      if (result.success) {
+    onMutate: async ({ dateStr, subId, status }) => {
+      await queryClient.cancelQueries({ queryKey: attendanceQueryKey });
+      await queryClient.cancelQueries({ queryKey: subscriptionsQueryKey });
+
+      const previousAttendance = queryClient.getQueryData<AttendanceRecord[]>(attendanceQueryKey);
+      const previousSubscriptions = queryClient.getQueryData<Subscription[]>(subscriptionsQueryKey);
+
+      const sub = previousSubscriptions?.find((s) => s.id === subId);
+      if (!sub) return { previousAttendance, previousSubscriptions };
+
+      const existing = previousAttendance?.find(
+        (a) => a.date === dateStr && a.subscriptionId === subId
+      );
+      const oldStatus = existing?.attendanceStatus ?? null;
+
+      if (oldStatus === status) {
+        return { previousAttendance, previousSubscriptions };
+      }
+
+      const { lessonDelta, freezeDelta } = computeAttendanceDeltas(oldStatus, status);
+
+      if (status === "freeze" && sub.lessonsTotal !== 8) {
+        return { previousAttendance, previousSubscriptions };
+      }
+      if (status === "freeze" && sub.freezeUsed + freezeDelta > 1) {
+        return { previousAttendance, previousSubscriptions };
+      }
+      if (sub.lessonsLeft + lessonDelta < 0) {
+        return { previousAttendance, previousSubscriptions };
+      }
+
+      const nextAttendance = [...(previousAttendance ?? [])];
+      const attIdx = nextAttendance.findIndex(
+        (a) => a.date === dateStr && a.subscriptionId === subId
+      );
+      if (attIdx >= 0) {
+        nextAttendance[attIdx] = { ...nextAttendance[attIdx], attendanceStatus: status };
+      } else {
+        nextAttendance.push({
+          date: dateStr,
+          subscriptionId: subId,
+          clientDisplay: "",
+          attendanceStatus: status,
+        });
+      }
+      queryClient.setQueryData(attendanceQueryKey, nextAttendance);
+
+      const newLessonsLeft = sub.lessonsLeft + lessonDelta;
+      const newFreezeUsed = sub.freezeUsed + freezeDelta;
+      queryClient.setQueryData<Subscription[]>(
+        subscriptionsQueryKey,
+        (old) =>
+          (old ?? []).map((s) =>
+            s.id === subId
+              ? {
+                  ...s,
+                  lessonsLeft: newLessonsLeft,
+                  freezeUsed: newFreezeUsed,
+                  status: newLessonsLeft === 0 ? "finished" : s.status,
+                }
+              : s
+          )
+      );
+
+      return { previousAttendance, previousSubscriptions };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousAttendance) {
+        queryClient.setQueryData(attendanceQueryKey, context.previousAttendance);
+      }
+      if (context?.previousSubscriptions) {
+        queryClient.setQueryData(subscriptionsQueryKey, context.previousSubscriptions);
+      }
+    },
+    onSettled: (result) => {
+      if (result?.success) {
         void queryClient.invalidateQueries({ queryKey: attendanceQueryKey });
         void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey });
       }
