@@ -4,43 +4,51 @@
  */
 
 import { useState, useEffect } from "react";
-import { Sparkles, Calendar, DollarSign, Search, FolderClosed, Trash2, CheckCircle2, ShieldAlert, BadgePlus, X } from "lucide-react";
-import { Client, PersonalLesson, Price } from "../types";
+import { useNavigate } from "react-router-dom";
+import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, X } from "lucide-react";
+import { useClients } from "../hooks/useClients";
+import { usePrices } from "../hooks/usePrices";
+import {
+  useAddPersonalLessons,
+  useDeletePersonalLesson,
+  usePersonalLessons,
+  useUpdatePersonalPaid,
+} from "../hooks/usePersonalLessons";
+import { useUIStore } from "../store/ui";
+import type { Client, PersonalLesson } from "../types";
 
 interface PersonalLessonsPanelProps {
   initialTab?: "view" | "book";
-  clients: Client[];
-  personalLessons: PersonalLesson[];
-  prices: Price[];
-  onAddPersonalLessons: (lessons: {
-    type: string;
-    clientId1: string;
-    clientId2: string;
-    clientId3: string;
-    dates: string[];
-    price: number;
-    paid: boolean;
-  }) => Promise<{ success: boolean; error?: string }>;
-  onUpdatePersonalPaid: (rowIndex: number, paid: boolean, id?: string) => Promise<{ success: boolean; error?: string }>;
-  onDeletePersonal: (rowIndex: number, id?: string) => Promise<{ success: boolean; error?: string }>;
   toast: (msg: string) => void;
 }
 
 export default function PersonalLessonsPanel({
   initialTab = "view",
-  clients,
-  personalLessons,
-  prices,
-  onAddPersonalLessons,
-  onUpdatePersonalPaid,
-  onDeletePersonal,
   toast,
 }: PersonalLessonsPanelProps) {
+  const navigate = useNavigate();
+  const setPersonalTab = useUIStore((s) => s.setPersonalTab);
+
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const { data: personalLessons = [], isLoading: lessonsLoading } = usePersonalLessons();
+  const { data: prices = [], isLoading: pricesLoading } = usePrices();
+  const addPersonalLessons = useAddPersonalLessons();
+  const updatePersonalPaid = useUpdatePersonalPaid();
+  const deletePersonalLesson = useDeletePersonalLesson();
+
+  const isLoading = clientsLoading || lessonsLoading || pricesLoading;
+
   const [activeTab, setActiveTab] = useState<"book" | "view">(initialTab);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
+
+  const switchTab = (tab: "view" | "book") => {
+    setActiveTab(tab);
+    setPersonalTab(tab);
+    navigate(tab === "book" ? "/personal/book" : "/personal");
+  };
 
   // Selection filter for browse tabs
   const [pvFilter, setPvFilter] = useState<"all" | "yes" | "no">("all");
@@ -151,7 +159,7 @@ export default function PersonalLessonsPanel({
     };
 
     toast("⏳ Резервирование в логе...");
-    const res = await onAddPersonalLessons(payload);
+    const res = await addPersonalLessons.mutateAsync(payload);
     if (!res.success) {
       toast(`⚠️ Ошибка бронирования: ${res.error || "Неизвестная ошибка"}`);
     } else {
@@ -173,7 +181,7 @@ export default function PersonalLessonsPanel({
   const handleTogglePaid = async (lesson: PersonalLesson) => {
     const nextStatus = lesson.paid !== "yes";
     toast("⏳ Переключение статуса...");
-    const res = await onUpdatePersonalPaid(0, nextStatus, lesson.id);
+    const res = await updatePersonalPaid.mutateAsync({ id: lesson.id, paid: nextStatus });
     if (!res.success) {
       toast(`⚠️ Ошибка изменения статуса: ${res.error || ""}`);
     } else {
@@ -186,7 +194,7 @@ export default function PersonalLessonsPanel({
     if (!confirmVal) return;
 
     toast("⏳ Стирание записи...");
-    const res = await onDeletePersonal(0, lesson.id);
+    const res = await deletePersonalLesson.mutateAsync(lesson.id);
     if (!res.success) {
       toast(`⚠️ Ошибка: ${res.error || ""}`);
     } else {
@@ -253,12 +261,14 @@ export default function PersonalLessonsPanel({
 
   const monthlyGroups = groupLessonsByMonth();
 
+  if (isLoading) return null;
+
   return (
     <div className="space-y-6">
       {/* Tab Selectors header */}
       <div className="flex border-b border-stone-200">
         <button
-          onClick={() => setActiveTab("view")}
+          onClick={() => switchTab("view")}
           className={`px-6 py-4.5 font-serif text-base font-bold flex items-center gap-2.5 transition-all outline-none border-b-2 cursor-pointer ${
             activeTab === "view"
               ? "border-wine-800 text-wine-900"
@@ -272,7 +282,7 @@ export default function PersonalLessonsPanel({
           </span>
         </button>
         <button
-          onClick={() => setActiveTab("book")}
+          onClick={() => switchTab("book")}
           className={`px-6 py-4.5 font-serif text-base font-bold flex items-center gap-2.5 transition-all outline-none border-b-2 cursor-pointer ${
             activeTab === "book"
               ? "border-wine-800 text-wine-900"
