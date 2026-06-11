@@ -4,13 +4,11 @@
  */
 
 import { useState } from "react";
-import { CalendarDays, Clock, Trash2, ShieldCheck, CalendarRange } from "lucide-react";
-import { ScheduleSlot } from "../types";
+import { CalendarDays, Clock, Trash2, CalendarRange } from "lucide-react";
+import { useAddScheduleSlot, useDeleteScheduleSlot, useSchedule } from "../hooks/useSchedule";
+import type { ScheduleSlot } from "../types";
 
 interface SchedulePanelProps {
-  schedule: ScheduleSlot[];
-  onAddScheduleSlot: (dayOfWeek: number, time: string) => Promise<{ success: boolean; error?: string }>;
-  onDeleteScheduleSlot: (dayOfWeek: number, time: string) => Promise<{ success: boolean; error?: string }>;
   toast: (msg: string) => void;
 }
 
@@ -21,15 +19,14 @@ const DAY_NAMES = {
   4: "Четверг",
   5: "Пятница",
   6: "Суббота",
-  7: "Воскресенье"
+  7: "Воскресенье",
 };
 
-export default function SchedulePanel({
-  schedule,
-  onAddScheduleSlot,
-  onDeleteScheduleSlot,
-  toast,
-}: SchedulePanelProps) {
+export default function SchedulePanel({ toast }: SchedulePanelProps) {
+  const { data: schedule = [], isLoading } = useSchedule();
+  const addSlot = useAddScheduleSlot();
+  const deleteSlot = useDeleteScheduleSlot();
+
   const [day, setDay] = useState<number>(1);
   const [time, setTime] = useState<string>("19:00");
 
@@ -41,7 +38,7 @@ export default function SchedulePanel({
     }
 
     toast("⏳ Добавление слота...");
-    const res = await onAddScheduleSlot(day, time);
+    const res = await addSlot.mutateAsync({ dayOfWeek: day, time });
     if (!res.success) {
       toast(`⚠️ Ошибка: ${res.error || "Этот слот уже занят"}`);
     } else {
@@ -49,12 +46,19 @@ export default function SchedulePanel({
     }
   };
 
-  const handleRemove = async (dayNum: number, timeVal: string) => {
-    const check = window.confirm(`Удалить групповой класс в ${DAY_NAMES[dayNum as 1 | 2]} в ${timeVal} из расписания?`);
+  const handleRemove = async (slot: ScheduleSlot) => {
+    if (slot.id == null) {
+      toast("⚠️ Не удалось определить слот для удаления.");
+      return;
+    }
+
+    const check = window.confirm(
+      `Удалить групповой класс в ${DAY_NAMES[slot.dayOfWeek as 1 | 2]} в ${slot.time} из расписания?`
+    );
     if (!check) return;
 
     toast("⏳ Удаление слота...");
-    const res = await onDeleteScheduleSlot(dayNum, timeVal);
+    const res = await deleteSlot.mutateAsync(slot.id);
     if (!res.success) {
       toast(`⚠️ Ошибка: ${res.error || "Не удалось удалить слот"}`);
     } else {
@@ -62,23 +66,25 @@ export default function SchedulePanel({
     }
   };
 
-  // Group slots by day
   const groupSlots = () => {
-    const groups: Record<number, string[]> = {};
-    schedule.forEach(s => {
+    const groups: Record<number, ScheduleSlot[]> = {};
+    schedule.forEach((s) => {
       const d = s.dayOfWeek;
       if (!groups[d]) groups[d] = [];
-      groups[d].push(s.time);
+      groups[d].push(s);
     });
     return groups;
   };
 
   const grouped = groupSlots();
-  const sortedDaysKeys = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+  const sortedDaysKeys = Object.keys(grouped)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  if (isLoading) return null;
 
   return (
     <div id="panel-schedule" className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-      {/* COLUMN 1: NEW CLASS SLOT CREATOR */}
       <div className="lg:col-span-4 bg-white rounded-2xl p-6 border border-gold-100 shadow-sm space-y-5">
         <div className="flex items-center gap-2.5 text-wine-900 border-b border-stone-50 pb-3">
           <CalendarDays className="w-5 h-5 text-gold-500" />
@@ -94,7 +100,9 @@ export default function SchedulePanel({
               className="w-full bg-stone-50 border border-stone-200 outline-none rounded-xl px-4 py-3 text-sm focus:border-gold-400 focus:bg-white transition-all appearance-none cursor-pointer font-sans"
             >
               {Object.entries(DAY_NAMES).map(([val, name]) => (
-                <option key={val} value={val}>{name}</option>
+                <option key={val} value={val}>
+                  {name}
+                </option>
               ))}
             </select>
           </div>
@@ -115,14 +123,14 @@ export default function SchedulePanel({
 
           <button
             type="submit"
-            className="w-full py-3.5 bg-gold-400 hover:bg-gold-500 text-stone-900 font-mono text-xs font-bold tracking-widest uppercase rounded-xl transition-all cursor-pointer"
+            disabled={addSlot.isPending}
+            className="w-full py-3.5 bg-gold-400 hover:bg-gold-500 text-stone-900 font-mono text-xs font-bold tracking-widest uppercase rounded-xl transition-all cursor-pointer disabled:opacity-60"
           >
             Вписать в сетку
           </button>
         </form>
       </div>
 
-      {/* COLUMN 2: CURRENT TIMETABLE GRID */}
       <div className="lg:col-span-8 bg-white rounded-2xl p-6 border border-gold-100 shadow-sm space-y-5">
         <div className="flex items-center gap-2.5 text-stone-850 border-b border-stone-50 pb-3">
           <CalendarRange className="w-5 h-5 text-gold-500" />
@@ -132,39 +140,33 @@ export default function SchedulePanel({
         {sortedDaysKeys.length === 0 ? (
           <div className="text-center py-20 text-stone-400 space-y-1.5 font-sans">
             <span className="text-2xl font-serif">🗓</span>
-            <p className="text-sm">Расписание пока пустое. Заполните левую форму, чтобы ученики отображались в журнале.</p>
+            <p className="text-sm">
+              Расписание пока пустое. Заполните левую форму, чтобы ученики отображались в журнале.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-sans">
-            {sortedDaysKeys.map(dayKey => {
-              const times = grouped[dayKey].sort();
+            {sortedDaysKeys.map((dayKey) => {
+              const slots = grouped[dayKey].sort((a, b) => a.time.localeCompare(b.time));
 
               return (
-                <div
-                  key={dayKey}
-                  className="bg-stone-50/50 rounded-2xl border border-stone-100 p-4.5 space-y-3"
-                >
-                  {/* Day Header */}
+                <div key={dayKey} className="bg-stone-50/50 rounded-2xl border border-stone-100 p-4.5 space-y-3">
                   <div className="flex items-center gap-2.5 text-wine-900 pb-2 border-b border-stone-200/40">
                     <span className="w-2 h-2 rounded-full bg-gold-400 shadow-sm shadow-gold-500/20" />
-                    <span className="font-serif font-black text-sm tracking-wide">
-                      {DAY_NAMES[dayKey as 1 | 2]}
-                    </span>
+                    <span className="font-serif font-black text-sm tracking-wide">{DAY_NAMES[dayKey as 1 | 2]}</span>
                   </div>
 
-                  {/* Slots list */}
                   <div className="space-y-2">
-                    {times.map((slotTime, index) => (
+                    {slots.map((slot) => (
                       <div
-                        key={index}
+                        key={slot.id ?? `${slot.dayOfWeek}-${slot.time}`}
                         className="flex items-center justify-between py-1.5 px-2.5 bg-white border border-stone-200/30 rounded-lg text-sm group"
                       >
-                        <span className="font-mono text-stone-700 font-bold">
-                          🕐 {slotTime}
-                        </span>
+                        <span className="font-mono text-stone-700 font-bold">🕐 {slot.time}</span>
                         <button
-                          onClick={() => handleRemove(dayKey, slotTime)}
-                          className="p-1 text-stone-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all cursor-pointer"
+                          onClick={() => handleRemove(slot)}
+                          disabled={deleteSlot.isPending}
+                          className="p-1 text-stone-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all cursor-pointer disabled:opacity-50"
                           title="Убрать слот"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
