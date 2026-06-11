@@ -170,7 +170,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-50 pb-5">
           <div className="flex items-center gap-2.5 text-stone-800">
             <FileText className="w-5 h-5 text-gold-500" />
-            <h2 className="font-serif text-lg font-bold">Реестр Гостей Студии</h2>
+            <h2 className="font-serif text-lg font-bold">Все клиенты</h2>
           </div>
 
           {/* Elegant Search Bar */}

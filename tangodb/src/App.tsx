@@ -40,15 +40,15 @@ const queryClient = new QueryClient({
 });
 
 function getPanelTitle(pathname: string, subscriptionsTab: string, personalTab: string): string {
-  if (pathname === "/") return "Кабинет Администратора";
-  if (pathname === "/clients") return "Реестр Танцоров";
+  if (pathname === "/") return "TangoDB";
+  if (pathname === "/clients") return "Клиенты";
   if (pathname.startsWith("/subscriptions")) {
-    return subscriptionsTab === "sell" ? "Оформить Новый Баланс" : "Действующие Пакеты";
+    return subscriptionsTab === "sell" ? "Продажа абонемента" : "Действующие абонементы";
   }
-  if (pathname === "/schedule") return "Расписание Классов";
-  if (pathname === "/attendance") return "Журнал посещаемости";
+  if (pathname === "/schedule") return "Расписание";
+  if (pathname === "/attendance") return "Журнал Посещений";
   if (pathname.startsWith("/personal")) {
-    return personalTab === "book" ? "Бронь Приватной Сессии" : "Касса Индивидуальных уроков";
+    return personalTab === "book" ? "Продажа персонального урока" : "Персональные уроки";
   }
   if (pathname === "/prices") return "Регулятор Тарифов";
   return "TangoDB";
@@ -107,7 +107,7 @@ function AppLayout() {
             </div>
             <div>
               <h1 className="font-sans text-base font-bold tracking-tight text-slate-800 leading-tight">
-                TangoDB <span className="text-indigo-600 font-medium">Panel</span>
+                TangoDB
               </h1>
               <p className="text-[9px] font-mono tracking-widest text-slate-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
             </div>
@@ -179,7 +179,7 @@ function AppLayout() {
           </button>
           <button onClick={() => go("/personal", undefined, "view")} className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${isActive("/personal") ? "text-indigo-600 font-bold" : "text-slate-400"}`}>
             <Sparkles className="w-5 h-5" />
-            <span className="text-[9px] font-mono uppercase tracking-wider font-semibold">Приваты</span>
+            <span className="text-[8px] font-mono uppercase tracking-wider font-semibold text-center leading-tight max-w-[4.5rem]">Персональные уроки</span>
           </button>
         </div>
 
@@ -212,20 +212,20 @@ function AppLayout() {
             <div onClick={() => setMobileDrawerOpen(false)} className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" />
             <div className="relative flex flex-col w-72 max-w-xs bg-white text-slate-700 p-0 h-full border-l border-slate-200 shadow-xl">
               <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
-                <h3 className="font-sans text-sm font-bold tracking-tight text-slate-800">TangoDB Panel</h3>
+                <h3 className="font-sans text-sm font-bold tracking-tight text-slate-800">TangoDB</h3>
                 <button onClick={() => setMobileDrawerOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg bg-slate-50 cursor-pointer">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <nav className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-                <button onClick={() => go("/")} className="w-full text-left py-1.5 text-xs font-bold uppercase tracking-wide text-slate-800 border-b border-slate-100/60 pb-2">📊 Общий обзор</button>
-                <button onClick={() => go("/clients")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">👤 База Гостей Студии</button>
-                <button onClick={() => go("/subscriptions", "active")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">📋 Действующие Пакеты</button>
-                <button onClick={() => go("/subscriptions/sell", "sell")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">＋ Оформить новый билет</button>
-                <button onClick={() => go("/schedule")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">🗓 Редактор Расписания</button>
-                <button onClick={() => go("/attendance")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">✅ Отметки Посещений</button>
-                <button onClick={() => go("/personal", undefined, "view")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">👁 Просмотр приватников</button>
-                <button onClick={() => go("/personal/book", undefined, "book")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">⭐ Бронь Личного Урока</button>
+                <button onClick={() => go("/")} className="w-full text-left py-1.5 text-xs font-bold uppercase tracking-wide text-slate-800 border-b border-slate-100/60 pb-2">📊 Меню</button>
+                <button onClick={() => go("/clients")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">👤 Клиенты</button>
+                <button onClick={() => go("/subscriptions", "active")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">📋 Действующие абонементы</button>
+                <button onClick={() => go("/subscriptions/sell", "sell")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">＋ Продажа абонемента</button>
+                <button onClick={() => go("/schedule")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">🗓 Расписание</button>
+                <button onClick={() => go("/attendance")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">✅ Журнал Посещений</button>
+                <button onClick={() => go("/personal", undefined, "view")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">👁 Персональные уроки</button>
+                <button onClick={() => go("/personal/book", undefined, "book")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">⭐ Продажа персонального урока</button>
                 <button onClick={() => go("/prices")} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-slate-600 hover:text-indigo-600">💰 Цены и тарифная сетка</button>
                 <button onClick={() => signOut()} className="w-full text-left pl-2.5 py-1 text-xs uppercase tracking-wide font-semibold text-red-600 hover:text-red-700 mt-4">Выйти</button>
               </nav>

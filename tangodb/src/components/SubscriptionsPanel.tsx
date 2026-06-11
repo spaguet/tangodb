@@ -205,31 +205,31 @@ export default function SubscriptionsPanel({
   return (
     <div className="space-y-6">
       {/* Visual toggle header */}
-      <div className="flex border-b border-stone-200">
+      <div className="grid grid-cols-2 border-b border-stone-200">
         <button
           onClick={() => switchTab("active")}
-          className={`px-6 py-4.5 font-serif text-base font-bold flex items-center gap-2.5 transition-all outline-none border-b-2 cursor-pointer ${
+          className={`px-2 sm:px-6 py-3 sm:py-4.5 font-serif text-[11px] sm:text-base font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
             activeTab === "active"
               ? "border-wine-800 text-wine-900"
               : "border-transparent text-stone-400 hover:text-stone-700"
           }`}
         >
-          <FileCheck className="w-5 h-5" />
-          Действующие абонементы
-          <span className="bg-stone-50 text-stone-500 font-mono text-xs px-2 py-0.5 rounded-full border border-stone-100">
+          <FileCheck className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+          <span className="text-center leading-tight">Действующие абонементы</span>
+          <span className="bg-stone-50 text-stone-500 font-mono text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border border-stone-100 shrink-0">
             {activeRecords.length}
           </span>
         </button>
         <button
           onClick={() => switchTab("sell")}
-          className={`px-6 py-4.5 font-serif text-base font-bold flex items-center gap-2.5 transition-all outline-none border-b-2 cursor-pointer ${
+          className={`px-2 sm:px-6 py-3 sm:py-4.5 font-serif text-[11px] sm:text-base font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
             activeTab === "sell"
               ? "border-wine-800 text-wine-900"
               : "border-transparent text-stone-400 hover:text-stone-700"
           }`}
         >
-          <Ticket className="w-5 h-5" />
-          Продажа (Оформление)
+          <Ticket className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+          <span className="text-center leading-tight">Продано</span>
         </button>
       </div>
 

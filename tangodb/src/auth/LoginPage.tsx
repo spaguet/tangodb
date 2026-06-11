@@ -82,7 +82,7 @@ export default function LoginPage() {
             T
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-800">TangoDB Panel</h1>
+            <h1 className="text-lg font-bold text-slate-800">TangoDB</h1>
             <p className="text-xs text-slate-400 font-mono uppercase tracking-wider">Вход через Telegram</p>
           </div>
         </div>
