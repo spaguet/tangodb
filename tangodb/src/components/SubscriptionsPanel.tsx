@@ -229,7 +229,7 @@ export default function SubscriptionsPanel({
           }`}
         >
           <Ticket className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-          <span className="text-center leading-tight">Продано</span>
+          <span className="text-center leading-tight">Продажа</span>
         </button>
       </div>
 
