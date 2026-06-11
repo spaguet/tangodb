@@ -5,7 +5,7 @@
 
 import { motion } from "motion/react";
 import { Users, Ticket, Calendar, DollarSign, AlertCircle, Play } from "lucide-react";
-import { formatClientName, formatCurrency, formatPairName, dowFull, jsDayToIsoDow } from "../lib/utils";
+import { formatClientName, formatCurrency, formatPairName, dowFull, jsDayToIsoDow, pluralizeRu } from "../lib/utils";
 import { Client, Subscription, ScheduleSlot, PersonalLesson } from "../types";
 
 interface DashboardProps {
@@ -29,6 +29,8 @@ export default function Dashboard({
 
   // Warning memberships logic (<= 2 credits remaining)
   const warningSubs = activeSubs.filter((s) => s.lessonsLeft <= 2);
+
+  const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
 
   // Financial calculations
   const totalPaidRevenue = personalLessons
@@ -90,7 +92,7 @@ export default function Dashboard({
           <div>
             <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">Касса персональных</p>
             <h3 className="text-lg font-mono font-bold text-slate-800 leading-tight">{formatCurrency(totalPaidRevenue)}</h3>
-            <p className="text-[10px] text-emerald-650 font-sans mt-0.5 font-medium">оплаченные уроки</p>
+            <p className="text-[10px] text-emerald-600 font-sans mt-0.5 font-medium">оплаченные уроки</p>
           </div>
         </motion.div>
 
@@ -105,7 +107,7 @@ export default function Dashboard({
           <div>
             <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">Ожидает оплаты</p>
             <h3 className="text-lg font-mono font-bold text-rose-700 leading-tight">{formatCurrency(pendingRevenue)}</h3>
-            <p className="text-[10px] text-rose-650 font-sans mt-0.5 font-medium">из приватных сессий</p>
+            <p className="text-[10px] text-rose-600 font-sans mt-0.5 font-medium">из приватных сессий</p>
           </div>
         </motion.div>
       </div>
@@ -149,7 +151,7 @@ export default function Dashboard({
             )}
             <button
               onClick={() => onNavigate("schedule")}
-              className="w-full text-center py-2.5 border border-dashed border-slate-250 hover:border-slate-400 rounded-lg text-slate-500 text-[11px] font-sans hover:bg-slate-50 transition-colors uppercase tracking-wider block font-bold cursor-pointer"
+              className="w-full text-center py-2.5 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-500 text-[11px] font-sans hover:bg-slate-50 transition-colors uppercase tracking-wider block font-bold cursor-pointer"
             >
               Настроить Расписание
             </button>
@@ -164,7 +166,7 @@ export default function Dashboard({
               Заканчиваются занятия (≤ 2)
             </h2>
             <span className="text-[10px] bg-rose-50 text-rose-700 font-mono px-2 py-0.5 rounded font-bold">
-              {warningSubs.length} гость
+              {warningSubs.length} {pluralizeRu(warningSubs.length, ["абонемент", "абонемента", "абонементов"])}
             </span>
           </div>
 
@@ -176,7 +178,6 @@ export default function Dashboard({
             ) : (
               <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
                 {warningSubs.map((sub, i) => {
-                  const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
                   const c1 = clientMap[sub.clientId1];
                   const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
 
@@ -194,7 +195,7 @@ export default function Dashboard({
                             : sub.clientId1}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[9px] font-mono uppercase bg-slate-200 text-slate-705 px-1.5 py-0.5 rounded font-semibold">
+                          <span className="text-[9px] font-mono uppercase bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
                             {sub.type === "solo" ? "Соло" : "Парный"}
                           </span>
                           <span className="text-[10px] text-slate-400 font-sans">
@@ -222,7 +223,7 @@ export default function Dashboard({
                             TG
                           </a>
                         ) : (
-                          <span className="text-slate-350 font-mono text-[10px] select-none italic">без TG</span>
+                          <span className="text-slate-400 font-mono text-[10px] select-none italic">без TG</span>
                         )}
                       </div>
                     </div>

@@ -90,6 +90,35 @@ async function verifyLoginWidget(payload: WidgetPayload, botToken: string): Prom
   return id;
 }
 
+async function ensureTelegramUser(
+  admin: ReturnType<typeof createClient>,
+  telegramId: number
+): Promise<void> {
+  const email = `tg_${telegramId}@tangodb.auth`;
+  const { data: list, error: listError } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  if (listError) throw listError;
+
+  const existing = list.users.find((u) => u.email === email);
+  if (existing) {
+    const { error } = await admin.auth.admin.updateUserById(existing.id, {
+      app_metadata: { ...existing.app_metadata, telegram_id: String(telegramId), provider: "telegram" },
+      user_metadata: { ...existing.user_metadata, telegram_id: telegramId },
+    });
+    if (error) throw error;
+    return;
+  }
+
+  const { error: createError } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    app_metadata: { telegram_id: String(telegramId), provider: "telegram" },
+    user_metadata: { telegram_id: telegramId },
+  });
+  if (createError && !createError.message.toLowerCase().includes("already")) {
+    throw createError;
+  }
+}
+
 async function issueSession(telegramId: number): Promise<{ access_token: string; refresh_token: string } | null> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -102,19 +131,17 @@ async function issueSession(telegramId: number): Promise<{ access_token: string;
 
   const email = `tg_${telegramId}@tangodb.auth`;
 
-  let linkData = await admin.auth.admin.generateLink({ type: "magiclink", email });
+  try {
+    await ensureTelegramUser(admin, telegramId);
+  } catch (err) {
+    console.error("ensureTelegramUser:", err);
+    return null;
+  }
+
+  const linkData = await admin.auth.admin.generateLink({ type: "magiclink", email });
   if (linkData.error) {
-    const { error: createError } = await admin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      app_metadata: { telegram_id: String(telegramId), provider: "telegram" },
-      user_metadata: { telegram_id: telegramId },
-    });
-    if (createError && !createError.message.toLowerCase().includes("already")) {
-      console.error("createUser:", createError.message);
-      return null;
-    }
-    linkData = await admin.auth.admin.generateLink({ type: "magiclink", email });
+    console.error("generateLink:", linkData.error.message);
+    return null;
   }
 
   const hashedToken = linkData.data?.properties?.hashed_token;

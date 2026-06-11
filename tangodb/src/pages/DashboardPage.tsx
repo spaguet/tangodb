@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import Dashboard from "../components/Dashboard";
+import LoadingState from "../components/ui/LoadingState";
 import { useClients } from "../hooks/useClients";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { useSchedule } from "../hooks/useSchedule";
@@ -37,7 +38,7 @@ export default function DashboardPage() {
     navigate(route.path);
   };
 
-  if (isLoading) return null;
+  if (isLoading) return <LoadingState label="Загрузка обзора..." />;
 
   return (
     <Dashboard

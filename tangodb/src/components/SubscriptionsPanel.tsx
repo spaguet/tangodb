@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Ticket, FileCheck, Search, Send } from "lucide-react";
+import { Ticket, FileCheck, Search, Send, Snowflake } from "lucide-react";
 import { useClients } from "../hooks/useClients";
 import { usePrices } from "../hooks/usePrices";
 import {
@@ -15,12 +15,25 @@ import {
 } from "../hooks/useSubscriptions";
 import { formatCurrency } from "../lib/utils";
 import { useUIStore } from "../store/ui";
+import ClientAutocomplete from "./ui/ClientAutocomplete";
+import ConfirmDialog from "./ui/ConfirmDialog";
+import LoadingState from "./ui/LoadingState";
+import type { ToastType } from "../App";
 import type { Client, Price } from "../types";
 
 interface SubscriptionsPanelProps {
   initialTab?: "active" | "sell";
-  toast: (msg: string) => void;
+  toast: (msg: string, type?: ToastType) => void;
 }
+
+const labelCls = "text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold block";
+
+const toggleCls = (selected: boolean) =>
+  `py-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer text-center ${
+    selected
+      ? "border-indigo-500 bg-indigo-50 text-indigo-700 font-bold"
+      : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
+  }`;
 
 export default function SubscriptionsPanel({
   initialTab = "active",
@@ -55,16 +68,13 @@ export default function SubscriptionsPanel({
   const [lessonsCount, setLessonsCount] = useState<4 | 8>(8);
   const [pairMonth, setPairMonth] = useState<1 | 2 | 3>(1);
 
-  // Client Autocomplete states
   const [client1Query, setClient1Query] = useState("");
   const [client1Id, setClient1Id] = useState("");
-  const [client1Suggestions, setClient1Suggestions] = useState<Client[]>([]);
-  const [showC1List, setShowC1List] = useState(false);
-
   const [client2Query, setClient2Query] = useState("");
   const [client2Id, setClient2Id] = useState("");
-  const [client2Suggestions, setClient2Suggestions] = useState<Client[]>([]);
-  const [showC2List, setShowC2List] = useState(false);
+
+  // Early-finish confirmation target
+  const [finishTarget, setFinishTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Date activation - defaults to today
   const [activationDate, setActivationDate] = useState("");
@@ -75,34 +85,6 @@ export default function SubscriptionsPanel({
     const dd = String(today.getDate()).padStart(2, "0");
     setActivationDate(`${today.getFullYear()}-${mm}-${dd}`);
   }, []);
-
-  // Update suggestions based on user input for Client 1
-  useEffect(() => {
-    if (client1Query.trim() === "") {
-      setClient1Suggestions([]);
-      return;
-    }
-    const filtered = clients.filter(
-      (c) =>
-        c.firstName.toLowerCase().includes(client1Query.toLowerCase()) ||
-        c.lastName.toLowerCase().includes(client1Query.toLowerCase())
-    );
-    setClient1Suggestions(filtered.slice(0, 5));
-  }, [client1Query, clients]);
-
-  // Update suggestions based on user input for Client 2
-  useEffect(() => {
-    if (client2Query.trim() === "") {
-      setClient2Suggestions([]);
-      return;
-    }
-    const filtered = clients.filter(
-      (c) =>
-        c.firstName.toLowerCase().includes(client2Query.toLowerCase()) ||
-        c.lastName.toLowerCase().includes(client2Query.toLowerCase())
-    );
-    setClient2Suggestions(filtered.slice(0, 5));
-  }, [client2Query, clients]);
 
   // Pricing engine
   const getSubPrice = (): number => {
@@ -121,22 +103,22 @@ export default function SubscriptionsPanel({
 
   const handleCheckout = async () => {
     if (!client1Query || !client1Id) {
-      toast("⚠️ Выберите главного клиента из поискового списка.");
+      toast("Выберите клиента из поискового списка.", "error");
       return;
     }
 
     if (subType === "pair" && (!client2Query || !client2Id)) {
-      toast("⚠️ Выберите второго парного клиента из списка.");
+      toast("Выберите второго участника пары из списка.", "error");
       return;
     }
 
     if (subType === "pair" && client1Id === client2Id) {
-      toast("⚠️ Оба клиента совпадают. Выберите разных гостей.");
+      toast("Оба клиента совпадают. Выберите разных гостей.", "error");
       return;
     }
 
     if (!activationDate) {
-      toast("⚠️ Укажите дату активации абонемента.");
+      toast("Укажите дату активации абонемента.", "error");
       return;
     }
 
@@ -149,12 +131,11 @@ export default function SubscriptionsPanel({
       pairMonth: subType === "pair" && lessonsCount === 8 ? String(pairMonth) : "",
     };
 
-    toast("⏳ Продажа...");
     const res = await addSubscription.mutateAsync(payload);
     if (!res.success) {
-      toast(`⚠️ Ошибка: ${res.error || "абонемент не оформлен"}`);
+      toast(res.error || "Абонемент не оформлен", "error");
     } else {
-      toast("✅ Абонемент успешно продан и активирован!");
+      toast("Абонемент продан и активирован", "success");
       // Reset form fields
       setClient1Query("");
       setClient1Id("");
@@ -166,23 +147,21 @@ export default function SubscriptionsPanel({
     }
   };
 
-  const handleFinishSub = async (subId: string, clientName: string) => {
-    const check = window.confirm(`Вы уверены, что хотите досрочно завершить абонемент ${clientName}?`);
-    if (!check) return;
-
-    toast("⏳ Завершение...");
-    const res = await finishSubscription.mutateAsync(subId);
+  const handleConfirmFinish = async () => {
+    if (!finishTarget) return;
+    const res = await finishSubscription.mutateAsync(finishTarget.id);
     if (!res.success) {
-      toast(`⚠️ Ошибка: ${res.error || "Не удалось завершить абонемент"}`);
+      toast(res.error || "Не удалось завершить абонемент", "error");
     } else {
-      toast("✅ Абонемент закрыт со статусом 'finished'");
+      toast("Абонемент завершён", "success");
+      setFinishTarget(null);
     }
   };
 
-  // Directory filter for active records
+  // Directory filter for active records (lowest balance first)
   const activeRecords = subscriptions
     .filter((s) => s.status === "active")
-    .sort((a, b) => a.lessonsLeft - b.lessonsLeft); // show struggling/almost complete ones first
+    .sort((a, b) => a.lessonsLeft - b.lessonsLeft);
 
   const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
 
@@ -194,74 +173,79 @@ export default function SubscriptionsPanel({
     return queryStr.includes(search.toLowerCase());
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-stone-400 text-sm font-sans">
-        Загрузка абонементов...
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingState label="Загрузка абонементов..." />;
 
   return (
     <div className="space-y-6">
-      {/* Visual toggle header */}
-      <div className="grid grid-cols-2 border-b border-stone-200">
+      {/* Tab toggle header */}
+      <div className="grid grid-cols-2 border-b border-slate-200">
         <button
           onClick={() => switchTab("active")}
-          className={`px-2 sm:px-6 py-3 sm:py-4.5 font-serif text-[11px] sm:text-base font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
+          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
             activeTab === "active"
-              ? "border-wine-800 text-wine-900"
-              : "border-transparent text-stone-400 hover:text-stone-700"
+              ? "border-indigo-600 text-indigo-700"
+              : "border-transparent text-slate-400 hover:text-slate-600"
           }`}
         >
-          <FileCheck className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+          <FileCheck className="w-4 h-4 shrink-0" />
           <span className="text-center leading-tight">Действующие абонементы</span>
-          <span className="bg-stone-50 text-stone-500 font-mono text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border border-stone-100 shrink-0">
+          <span className="bg-slate-100 text-slate-500 font-mono text-[10px] px-1.5 py-0.5 rounded-full shrink-0">
             {activeRecords.length}
           </span>
         </button>
         <button
           onClick={() => switchTab("sell")}
-          className={`px-2 sm:px-6 py-3 sm:py-4.5 font-serif text-[11px] sm:text-base font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
+          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
             activeTab === "sell"
-              ? "border-wine-800 text-wine-900"
-              : "border-transparent text-stone-400 hover:text-stone-700"
+              ? "border-indigo-600 text-indigo-700"
+              : "border-transparent text-slate-400 hover:text-slate-600"
           }`}
         >
-          <Ticket className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+          <Ticket className="w-4 h-4 shrink-0" />
           <span className="text-center leading-tight">Продажа</span>
         </button>
       </div>
 
       {activeTab === "active" ? (
         /* PANEL 1: VIEW ACTIVE MEMBERSHIPS */
-        <div className="bg-white rounded-2xl p-6 border border-gold-100 shadow-sm space-y-6">
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="font-serif text-xl font-bold text-stone-800">Действующие абонементы</h2>
-              <p className="text-xs text-stone-400 font-sans mt-1">
-                Список студентов с активными пакетами занятий, отсортированный по остатку занятий (меньше всего вверху)
+              <h2 className="text-lg font-bold tracking-tight text-slate-800">Действующие абонементы</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Отсортированы по остатку занятий — требующие продления вверху
               </p>
             </div>
 
-            {/* Subscriptions search bar */}
-            <div className="relative font-sans w-full sm:w-72">
-              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5 pointer-events-none" />
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Поиск по фамилии гостя..."
-                className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 focus:border-gold-400 focus:bg-white outline-none rounded-xl text-xs transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg text-xs transition-all"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredActiveRecords.length === 0 ? (
-              <div className="col-span-2 text-center py-20 text-stone-400 space-y-2">
-                <p className="text-stone-300 font-serif italic text-3xl">🎫</p>
-                <p className="text-sm font-sans">Поиск не дал результатов или активные абонементы отсутствуют в базе.</p>
+              <div className="col-span-2 text-center py-20 text-slate-400 space-y-3">
+                <Ticket className="w-8 h-8 mx-auto text-slate-300" />
+                <p className="text-sm">
+                  {search.trim()
+                    ? "Поиск не дал результатов."
+                    : "Активных абонементов пока нет."}
+                </p>
+                {!search.trim() && (
+                  <button
+                    onClick={() => switchTab("sell")}
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                  >
+                    Продать первый абонемент →
+                  </button>
+                )}
               </div>
             ) : (
               filteredActiveRecords.map((sub) => {
@@ -272,46 +256,40 @@ export default function SubscriptionsPanel({
                   ? `${c1?.lastName || ""} ${c1?.firstName || ""} & ${c2?.lastName || ""} ${c2?.firstName || ""}`
                   : `${c1?.lastName || ""} ${c1?.firstName || ""}`;
 
-                // Progress calculated
                 const progressPct = sub.lessonsTotal > 0 ? (sub.lessonsLeft / sub.lessonsTotal) * 100 : 0;
                 const isAlarm = sub.lessonsLeft <= 2;
 
                 return (
                   <div
                     key={sub.id}
-                    className="border border-stone-100/80 rounded-2xl p-5 bg-stone-50/50 hover:bg-white hover:border-gold-200 hover:shadow-md transition-all flex flex-col justify-between gap-6"
+                    className="border border-slate-200 rounded-xl p-5 bg-white hover:border-indigo-200 hover:shadow-sm transition-all flex flex-col justify-between gap-5"
                   >
-                    <div className="space-y-3.5">
-                      <div className="flex items-center justify-between">
-                        {/* Membership Type Name Badge */}
-                        <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-2.5 py-1 rounded-md bg-gold-100 text-gold-900 border border-gold-200/40">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700">
                           {sub.type === "solo"
                             ? "Соло"
                             : sub.type === "pair_hm"
-                            ? "Пара (Полмесяца)"
+                            ? "Пара · полмесяца"
                             : `Пара · ${sub.pairMonth}-й месяц`}
                         </span>
 
-                        {/* Freeze Badge */}
                         {sub.lessonsTotal === 8 ? (
                           sub.freezeUsed > 0 ? (
-                            <span className="text-[10px] font-mono text-stone-400 bg-stone-100/50 px-2 py-0.5 rounded border border-stone-200/50">
-                              ❄️ Х заморозка использована
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                              <Snowflake className="w-3 h-3" /> заморозка использована
                             </span>
                           ) : (
-                            <span className="text-[10px] font-mono text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
-                              ❄️ заморозка доступна
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
+                              <Snowflake className="w-3 h-3" /> заморозка доступна
                             </span>
                           )
                         ) : null}
                       </div>
 
-                      {/* Client Name Details */}
                       <div>
-                        <h3 className="font-serif text-base font-bold text-stone-850 leading-tight">
-                          {clientNameStr}
-                        </h3>
-                        <p className="text-xs text-stone-400 mt-1 font-mono">
+                        <h3 className="text-sm font-bold text-slate-800 leading-tight">{clientNameStr}</h3>
+                        <p className="text-[11px] text-slate-400 mt-1 font-mono">
                           Активирован: {sub.activationDate || "—"}
                         </p>
                       </div>
@@ -322,7 +300,7 @@ export default function SubscriptionsPanel({
                             href={c1.telegram}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-mono text-[#229ED9] bg-[#229ED9]/5 px-2 py-0.5 rounded"
+                            className="inline-flex items-center gap-1 text-[11px] font-mono text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
                           >
                             <Send className="w-3 h-3" />
                             {c1.firstName}
@@ -333,7 +311,7 @@ export default function SubscriptionsPanel({
                             href={c2.telegram}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-mono text-[#229ED9] bg-[#229ED9]/5 px-2 py-0.5 rounded"
+                            className="inline-flex items-center gap-1 text-[11px] font-mono text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
                           >
                             <Send className="w-3 h-3" />
                             {c2.firstName}
@@ -342,33 +320,32 @@ export default function SubscriptionsPanel({
                       </div>
                     </div>
 
-                    {/* Progress Class bar */}
-                    <div className="space-y-2 border-t border-stone-100/30 pt-4">
-                      <div className="flex items-center justify-between text-xs font-sans">
-                        <span className="text-stone-400">Пройдено занятий</span>
-                        <span className="font-mono font-bold text-stone-800">
-                          {sub.lessonsLeft} <span className="text-stone-400 font-normal">из {sub.lessonsTotal}</span>
+                    <div className="space-y-2 border-t border-slate-100 pt-4">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Осталось занятий</span>
+                        <span className="font-mono font-bold text-slate-800">
+                          {sub.lessonsLeft} <span className="text-slate-400 font-normal">из {sub.lessonsTotal}</span>
                         </span>
                       </div>
-                      <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
-                            isAlarm ? "bg-rose-500" : "bg-gold-400"
+                            isAlarm ? "bg-rose-500" : "bg-indigo-500"
                           }`}
                           style={{ width: `${progressPct}%` }}
                         />
                       </div>
 
-                      <div className="flex items-center justify-between pt-3 text-xs font-mono">
+                      <div className="flex items-center justify-between pt-2 text-xs">
                         {isAlarm ? (
-                          <span className="text-red-500 font-sans font-medium">⚠️ Срочное продление!</span>
+                          <span className="text-rose-600 font-semibold">Пора предложить продление</span>
                         ) : (
-                          <span className="text-stone-400 font-sans font-medium">✨ Стабильный пакет</span>
+                          <span className="text-slate-400">Баланс в норме</span>
                         )}
 
                         <button
-                          onClick={() => handleFinishSub(sub.id, clientNameStr)}
-                          className="text-stone-400 hover:text-stone-700 hover:underline cursor-pointer transition-all uppercase text-[10px]"
+                          onClick={() => setFinishTarget({ id: sub.id, name: clientNameStr })}
+                          className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-mono font-bold"
                         >
                           Завершить
                         </button>
@@ -381,20 +358,22 @@ export default function SubscriptionsPanel({
           </div>
         </div>
       ) : (
-        /* PANEL 2: SELL AND CHECKOUT NEW TICKET */
-        <div className="bg-white rounded-2xl p-6 border border-gold-100 shadow-sm max-w-xl mx-auto space-y-6">
-          <div className="text-center space-y-2 border-b border-stone-50 pb-5">
-            <Ticket className="w-8 h-8 text-gold-500 mx-auto" />
-            <h2 className="font-serif text-xl font-bold text-stone-900">Продажа Абонемента</h2>
-            <p className="text-stone-400 text-xs font-sans">
-              Оформите новый групповой абонемент для клиента, оплата и запись отправятся в Google-базу.
+        /* PANEL 2: SELL NEW SUBSCRIPTION */
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs max-w-xl mx-auto space-y-6">
+          <div className="text-center space-y-2 border-b border-slate-100 pb-5">
+            <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto">
+              <Ticket className="w-5.5 h-5.5 text-indigo-600" />
+            </div>
+            <h2 className="text-lg font-bold tracking-tight text-slate-900">Продажа абонемента</h2>
+            <p className="text-slate-400 text-xs">
+              Оформите новый групповой абонемент — запись сразу попадёт в базу.
             </p>
           </div>
 
-          <div className="space-y-4 font-sans text-sm">
-            {/* Solo vs Pair selective */}
+          <div className="space-y-4 text-sm">
+            {/* Solo vs Pair */}
             <div className="space-y-1.5">
-              <label className="text-xs text-stone-400 font-mono uppercase tracking-wider block">Тип Абонемента</label>
+              <label className={labelCls}>Тип абонемента</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -403,148 +382,75 @@ export default function SubscriptionsPanel({
                     setClient2Id("");
                     setClient2Query("");
                   }}
-                  className={`py-3 rounded-xl border font-sans text-sm font-semibold transition-all cursor-pointer text-center ${
-                    subType === "solo"
-                      ? "border-gold-400 bg-gold-50/50 text-gold-900 font-bold"
-                      : "border-stone-200 text-stone-500 hover:border-gold-200 hover:text-stone-850"
-                  }`}
+                  className={toggleCls(subType === "solo")}
                 >
-                  🧍 Соло (Для одного)
+                  Соло — для одного
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setSubType("pair")}
-                  className={`py-3 rounded-xl border font-sans text-sm font-semibold transition-all cursor-pointer text-center ${
-                    subType === "pair"
-                      ? "border-gold-400 bg-gold-50/50 text-gold-900 font-bold"
-                      : "border-stone-200 text-stone-500 hover:border-gold-200 hover:text-stone-850"
-                  }`}
-                >
-                  👫 Парный (Для пары)
+                <button type="button" onClick={() => setSubType("pair")} className={toggleCls(subType === "pair")}>
+                  Парный — для пары
                 </button>
               </div>
             </div>
 
-            {/* Client Autocomplete Selection */}
-            <div className="space-y-1 relative">
-              <label className="text-xs text-stone-400 font-mono uppercase tracking-wider block">
-                {subType === "pair" ? "Первый участник (Гость)" : "Ученик (Гость)"}
-              </label>
-              <input
-                type="text"
-                value={client1Query}
-                onFocus={() => setShowC1List(true)}
-                onChange={(e) => {
-                  setClient1Query(e.target.value);
-                  setClient1Id("");
-                  setShowC1List(true);
-                }}
-                placeholder="Введите фамилию ученика для поиска..."
-                className="w-full bg-stone-50/50 border border-stone-200 focus:border-gold-400 focus:bg-white outline-none rounded-xl px-4 py-3 text-sm transition-all"
-              />
-              {showC1List && client1Suggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-full bg-white border border-stone-200 rounded-xl shadow-xl z-15 mt-1 overflow-hidden">
-                  {client1Suggestions.map((suggestion) => (
-                    <div
-                      key={suggestion.id}
-                      onClick={() => {
-                        setClient1Id(suggestion.id);
-                        setClient1Query(`${suggestion.lastName} ${suggestion.firstName}`);
-                        setShowC1List(false);
-                      }}
-                      className="cursor-pointer px-4 py-3 hover:bg-gold-50 text-stone-800 text-sm border-b border-stone-50 last:border-0 transition-colors"
-                    >
-                      {suggestion.lastName} {suggestion.firstName}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ClientAutocomplete
+              label={subType === "pair" ? "Первый участник" : "Ученик"}
+              clients={clients}
+              query={client1Query}
+              selectedId={client1Id}
+              onQueryChange={(q) => {
+                setClient1Query(q);
+                setClient1Id("");
+              }}
+              onSelect={(c) => {
+                setClient1Id(c.id);
+                setClient1Query(`${c.lastName} ${c.firstName}`);
+              }}
+            />
 
-            {/* Client 2 (couple) autocomplete */}
             {subType === "pair" && (
-              <div className="space-y-1 relative animate-fade-in">
-                <label className="text-xs text-stone-400 font-mono uppercase tracking-wider block">Второй участник</label>
-                <input
-                  type="text"
-                  value={client2Query}
-                  onFocus={() => setShowC2List(true)}
-                  onChange={(e) => {
-                    setClient2Query(e.target.value);
+              <div className="animate-fade-in">
+                <ClientAutocomplete
+                  label="Второй участник"
+                  clients={clients}
+                  query={client2Query}
+                  selectedId={client2Id}
+                  onQueryChange={(q) => {
+                    setClient2Query(q);
                     setClient2Id("");
-                    setShowC2List(true);
                   }}
-                  placeholder="Введите фамилию партнёра для поиска..."
-                  className="w-full bg-stone-50/50 border border-stone-200 focus:border-gold-400 focus:bg-white outline-none rounded-xl px-4 py-3 text-sm transition-all"
+                  onSelect={(c) => {
+                    setClient2Id(c.id);
+                    setClient2Query(`${c.lastName} ${c.firstName}`);
+                  }}
                 />
-                {showC2List && client2Suggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full bg-white border border-stone-200 rounded-xl shadow-xl z-15 mt-1 overflow-hidden">
-                    {client2Suggestions.map((suggestion) => (
-                      <div
-                        key={suggestion.id}
-                        onClick={() => {
-                          setClient2Id(suggestion.id);
-                          setClient2Query(`${suggestion.lastName} ${suggestion.firstName}`);
-                          setShowC2List(false);
-                        }}
-                        className="cursor-pointer px-4 py-3 hover:bg-gold-50 text-stone-800 text-sm border-b border-stone-50 last:border-0 transition-colors"
-                      >
-                        {suggestion.lastName} {suggestion.firstName}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
 
-            <div className="border-t border-stone-100 my-4 pt-4" />
+            <div className="border-t border-slate-100 my-4 pt-4" />
 
-            {/* Tickets sizes (4 or 8 lessons) */}
+            {/* Package size */}
             <div className="space-y-1.5">
-              <label className="text-xs text-stone-400 font-mono uppercase tracking-wider block">Пакет занятий</label>
+              <label className={labelCls}>Пакет занятий</label>
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setLessonsCount(4)}
-                  className={`py-2.5 rounded-xl border font-sans text-xs font-semibold transition-all cursor-pointer text-center ${
-                    lessonsCount === 4
-                      ? "border-gold-400 bg-gold-50/50 text-gold-900 font-bold"
-                      : "border-stone-200 text-stone-500 hover:border-gold-200 hover:text-stone-850"
-                  }`}
-                >
-                  🎟 4 урока (Срок: Полмесяца)
+                <button type="button" onClick={() => setLessonsCount(4)} className={toggleCls(lessonsCount === 4)}>
+                  4 урока · полмесяца
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setLessonsCount(8)}
-                  className={`py-2.5 rounded-xl border font-sans text-xs font-semibold transition-all cursor-pointer text-center ${
-                    lessonsCount === 8
-                      ? "border-gold-400 bg-gold-50/50 text-gold-900 font-bold"
-                      : "border-stone-200 text-stone-500 hover:border-gold-200 hover:text-stone-850"
-                  }`}
-                >
-                  🎫 8 уроков (Срок: Один месяц)
+                <button type="button" onClick={() => setLessonsCount(8)} className={toggleCls(lessonsCount === 8)}>
+                  8 уроков · месяц
                 </button>
               </div>
             </div>
 
-            {/* Couple months tracking (only on subType couple & 8 classes) */}
             {subType === "pair" && lessonsCount === 8 && (
               <div className="space-y-1.5 animate-fade-in">
-                <label className="text-xs text-stone-400 font-mono uppercase tracking-wider block">
-                  Номер месяца парного обучения (Для расчета тарификации)
-                </label>
+                <label className={labelCls}>Месяц парного обучения (влияет на тариф)</label>
                 <div className="grid grid-cols-3 gap-3">
                   {[1, 2, 3].map((m) => (
                     <button
                       key={m}
                       type="button"
                       onClick={() => setPairMonth(m as 1 | 2 | 3)}
-                      className={`py-2.5 rounded-xl border font-sans text-xs font-semibold transition-all cursor-pointer text-center ${
-                        pairMonth === m
-                          ? "border-gold-400 bg-gold-50/50 text-gold-900 font-bold"
-                          : "border-stone-200 text-stone-500 hover:border-gold-250 hover:text-stone-850"
-                      }`}
+                      className={toggleCls(pairMonth === m)}
                     >
                       {m}-й месяц
                     </button>
@@ -553,38 +459,51 @@ export default function SubscriptionsPanel({
               </div>
             )}
 
-            {/* Activation Dates */}
-            <div className="space-y-1">
-              <label className="text-xs text-stone-400 font-mono uppercase tracking-wider block">Дата Активации</label>
+            <div className="space-y-1.5">
+              <label className={labelCls}>Дата активации</label>
               <input
                 type="date"
                 required
                 value={activationDate}
                 onChange={(e) => setActivationDate(e.target.value)}
-                className="w-full bg-stone-50/50 border border-stone-200 focus:border-gold-400 focus:bg-white outline-none rounded-xl px-4 py-3 text-sm transition-all"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all"
               />
             </div>
 
-            <div className="border-t border-stone-100 my-4 pt-4" />
+            <div className="border-t border-slate-100 my-4 pt-4" />
 
-            {/* Checkout Pricing overview block */}
-            <div className="flex items-center justify-between p-4 bg-gold-100/30 rounded-2xl border border-gold-200/40">
-              <span className="text-stone-600 font-serif font-semibold text-sm">Финальная стоимость</span>
-              <span className="text-xl font-serif font-black text-gold-800">
-                {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "не настроена"}
+            <div className="flex items-center justify-between p-4 bg-indigo-50/60 rounded-xl border border-indigo-100">
+              <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
+              <span className="text-xl font-mono font-bold text-indigo-700">
+                {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "тариф не настроен"}
               </span>
             </div>
 
-            {/* Submission Checkout Trigger */}
             <button
               onClick={handleCheckout}
-              className="w-full py-4 bg-wine-800 hover:bg-wine-900 text-gold-100 font-mono text-xs font-bold tracking-widest uppercase rounded-xl transition-all shadow-md shadow-wine-950/10 cursor-pointer"
+              disabled={addSubscription.isPending}
+              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-mono text-xs font-bold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
             >
-              Продать Абонемент
+              {addSubscription.isPending ? "Оформление..." : "Продать абонемент"}
             </button>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={finishTarget !== null}
+        title="Завершить абонемент досрочно?"
+        description={
+          <>
+            Абонемент <strong className="font-bold text-slate-800">{finishTarget?.name}</strong> будет закрыт со
+            статусом «завершён». Оставшиеся занятия сгорят.
+          </>
+        }
+        confirmLabel="Завершить"
+        pending={finishSubscription.isPending}
+        onConfirm={handleConfirmFinish}
+        onCancel={() => setFinishTarget(null)}
+      />
     </div>
   );
 }

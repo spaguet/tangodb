@@ -1,43 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Redefined Wine color tokens to High Density slate/grey palette */
-  --color-wine-50: #f8fafc;
-  --color-wine-100: #f1f5f9;
-  --color-wine-200: #e2e8f0;
-  --color-wine-300: #cbd5e1;
-  --color-wine-400: #94a3b8;
-  --color-wine-500: #64748b;
-  --color-wine-600: #475569;
-  --color-wine-700: #334155;
-  --color-wine-800: #1e293b;
-  --color-wine-900: #0f172a;
-  --color-wine-950: #0f172a;
+  --animate-fade-in: fade-in 0.2s ease-out;
 
-  /* Redefined Gold color tokens to High Density Indigo palette */
-  --color-gold-50: #f5f3ff;
-  --color-gold-100: #e0e7ff;
-  --color-gold-200: #c7d2fe;
-  --color-gold-300: #a5b4fc;
-  --color-gold-400: #4f46e5;
-  --color-gold-500: #4338ca;
-  --color-gold-600: #3730a3;
-  --color-gold-700: #312e81;
-  --color-gold-800: #1e1b4b;
-  --color-gold-900: #1c1917;
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 @layer base {
   body {
-    background-color: #f8fafc; /* Cool slate-50 background for pristine high density SaaS layout */
+    background-color: #f8fafc; /* slate-50 */
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Visible keyboard focus without relying on per-element classes */
+  :focus-visible {
+    outline: 2px solid #6366f1; /* indigo-500 */
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
@@ -50,9 +44,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-wine-300);
+  background: #cbd5e1; /* slate-300 */
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-gold-400);
+  background: #818cf8; /* indigo-400 */
 }

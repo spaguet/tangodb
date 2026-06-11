@@ -7,11 +7,19 @@ import { useState } from "react";
 import { CalendarDays, Clock, Trash2, CalendarRange } from "lucide-react";
 import { useAddScheduleSlot, useDeleteScheduleSlot, useSchedule } from "../hooks/useSchedule";
 import { dowFull, dowFullEntries } from "../lib/utils";
+import ConfirmDialog from "./ui/ConfirmDialog";
+import LoadingState from "./ui/LoadingState";
+import type { ToastType } from "../App";
 import type { ScheduleSlot } from "../types";
 
 interface SchedulePanelProps {
-  toast: (msg: string) => void;
+  toast: (msg: string, type?: ToastType) => void;
 }
+
+const labelCls = "text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold block";
+
+const fieldCls =
+  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
 
 export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const { data: schedule = [], isLoading } = useSchedule();
@@ -20,40 +28,32 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
   const [day, setDay] = useState<number>(1);
   const [time, setTime] = useState<string>("19:00");
+  const [deleteTarget, setDeleteTarget] = useState<ScheduleSlot | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!time) {
-      toast("⚠️ Укажите время занятия.");
+      toast("Укажите время занятия.", "error");
       return;
     }
 
-    toast("⏳ Добавление слота...");
     const res = await addSlot.mutateAsync({ dayOfWeek: day, time });
     if (!res.success) {
-      toast(`⚠️ Ошибка: ${res.error || "Этот слот уже занят"}`);
+      toast(res.error || "Этот слот уже занят", "error");
     } else {
-      toast(`✅ Добавлен класс: ${dowFull(day)} в ${time}`);
+      toast(`Добавлен класс: ${dowFull(day)} в ${time}`, "success");
     }
   };
 
-  const handleRemove = async (slot: ScheduleSlot) => {
-    if (slot.id == null) {
-      toast("⚠️ Не удалось определить слот для удаления.");
-      return;
-    }
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || deleteTarget.id == null) return;
 
-    const check = window.confirm(
-      `Удалить групповой класс в ${dowFull(slot.dayOfWeek)} в ${slot.time} из расписания?`
-    );
-    if (!check) return;
-
-    toast("⏳ Удаление слота...");
-    const res = await deleteSlot.mutateAsync(slot.id);
+    const res = await deleteSlot.mutateAsync(deleteTarget.id);
     if (!res.success) {
-      toast(`⚠️ Ошибка: ${res.error || "Не удалось удалить слот"}`);
+      toast(res.error || "Не удалось удалить слот", "error");
     } else {
-      toast("🗑 Класс успешно убран из сетки вещания");
+      toast("Класс убран из расписания", "success");
+      setDeleteTarget(null);
     }
   };
 
@@ -72,23 +72,23 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     .map(Number)
     .sort((a, b) => a - b);
 
-  if (isLoading) return null;
+  if (isLoading) return <LoadingState label="Загрузка расписания..." />;
 
   return (
-    <div id="panel-schedule" className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-      <div className="lg:col-span-4 bg-white rounded-2xl p-6 border border-gold-100 shadow-sm space-y-5">
-        <div className="flex items-center gap-2.5 text-wine-900 border-b border-stone-50 pb-3">
-          <CalendarDays className="w-5 h-5 text-gold-500" />
-          <h2 className="font-serif text-lg font-bold">Внести новое занятие</h2>
+    <div id="panel-schedule" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="lg:col-span-4 bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-5">
+        <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
+          <CalendarDays className="w-4.5 h-4.5 text-indigo-500" />
+          <h2 className="text-base font-bold tracking-tight">Внести новое занятие</h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 font-sans text-sm">
-          <div className="space-y-1">
-            <label className="text-xs text-stone-400 font-mono uppercase tracking-wider block">День Недели</label>
+        <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+          <div className="space-y-1.5">
+            <label className={labelCls}>День недели</label>
             <select
               value={day}
               onChange={(e) => setDay(parseInt(e.target.value))}
-              className="w-full bg-stone-50 border border-stone-200 outline-none rounded-xl px-4 py-3 text-sm focus:border-gold-400 focus:bg-white transition-all appearance-none cursor-pointer font-sans"
+              className={`${fieldCls} appearance-none cursor-pointer`}
             >
               {dowFullEntries().map(([val, name]) => (
                 <option key={val} value={val}>
@@ -98,16 +98,16 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
             </select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs text-stone-400 font-mono uppercase tracking-wider block">Время начала</label>
+          <div className="space-y-1.5">
+            <label className={labelCls}>Время начала</label>
             <div className="relative font-mono">
-              <Clock className="w-4 h-4 text-stone-300 absolute left-4 top-3.5 pointer-events-none" />
+              <Clock className="w-4 h-4 text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="time"
                 required
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full bg-stone-50 border border-stone-200 focus:border-gold-400 focus:bg-white outline-none rounded-xl pl-11 pr-4 py-3 text-sm transition-all"
+                className={`${fieldCls} pl-10`}
               />
             </div>
           </div>
@@ -115,50 +115,54 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           <button
             type="submit"
             disabled={addSlot.isPending}
-            className="w-full py-3.5 bg-gold-400 hover:bg-gold-500 text-stone-900 font-mono text-xs font-bold tracking-widest uppercase rounded-xl transition-all cursor-pointer disabled:opacity-60"
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-mono text-xs font-bold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
           >
-            Вписать в сетку
+            {addSlot.isPending ? "Добавление..." : "Вписать в сетку"}
           </button>
         </form>
       </div>
 
-      <div className="lg:col-span-8 bg-white rounded-2xl p-6 border border-gold-100 shadow-sm space-y-5">
-        <div className="flex items-center gap-2.5 text-stone-850 border-b border-stone-50 pb-3">
-          <CalendarRange className="w-5 h-5 text-gold-500" />
-          <h2 className="font-serif text-lg font-bold">Утвержденная Сетка Расписания</h2>
+      <div className="lg:col-span-8 bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-5">
+        <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
+          <CalendarRange className="w-4.5 h-4.5 text-indigo-500" />
+          <h2 className="text-base font-bold tracking-tight">Утверждённая сетка расписания</h2>
         </div>
 
         {sortedDaysKeys.length === 0 ? (
-          <div className="text-center py-20 text-stone-400 space-y-1.5 font-sans">
-            <span className="text-2xl font-serif">🗓</span>
+          <div className="text-center py-20 text-slate-400 space-y-3">
+            <CalendarDays className="w-8 h-8 mx-auto text-slate-300" />
             <p className="text-sm">
-              Расписание пока пустое. Заполните левую форму, чтобы ученики отображались в журнале.
+              Расписание пока пустое. Заполните форму слева, чтобы ученики появились в журнале посещений.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-sans">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {sortedDaysKeys.map((dayKey) => {
               const slots = grouped[dayKey].sort((a, b) => a.time.localeCompare(b.time));
 
               return (
-                <div key={dayKey} className="bg-stone-50/50 rounded-2xl border border-stone-100 p-4.5 space-y-3">
-                  <div className="flex items-center gap-2.5 text-wine-900 pb-2 border-b border-stone-200/40">
-                    <span className="w-2 h-2 rounded-full bg-gold-400 shadow-sm shadow-gold-500/20" />
-                    <span className="font-serif font-black text-sm tracking-wide">{dowFull(dayKey)}</span>
+                <div key={dayKey} className="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-3">
+                  <div className="flex items-center gap-2.5 text-slate-800 pb-2 border-b border-slate-200/60">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                    <span className="font-bold text-sm tracking-tight">{dowFull(dayKey)}</span>
                   </div>
 
                   <div className="space-y-2">
                     {slots.map((slot) => (
                       <div
                         key={slot.id ?? `${slot.dayOfWeek}-${slot.time}`}
-                        className="flex items-center justify-between py-1.5 px-2.5 bg-white border border-stone-200/30 rounded-lg text-sm group"
+                        className="flex items-center justify-between py-1.5 px-2.5 bg-white border border-slate-200/60 rounded-lg text-sm group"
                       >
-                        <span className="font-mono text-stone-700 font-bold">🕐 {slot.time}</span>
+                        <span className="inline-flex items-center gap-1.5 font-mono text-slate-700 font-bold">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          {slot.time}
+                        </span>
                         <button
-                          onClick={() => handleRemove(slot)}
+                          onClick={() => setDeleteTarget(slot)}
                           disabled={deleteSlot.isPending}
-                          className="p-1 text-stone-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all cursor-pointer disabled:opacity-50"
+                          className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all cursor-pointer disabled:opacity-50"
                           title="Убрать слот"
+                          aria-label={`Удалить класс ${dowFull(slot.dayOfWeek)} в ${slot.time}`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -171,6 +175,28 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Удалить класс из расписания?"
+        description={
+          deleteTarget ? (
+            <>
+              Групповой класс{" "}
+              <strong className="font-bold text-slate-800">
+                {dowFull(deleteTarget.dayOfWeek)} в {deleteTarget.time}
+              </strong>{" "}
+              будет убран из сетки. Будущие занятия по этому слоту исчезнут из журнала.
+            </>
+          ) : (
+            ""
+          )
+        }
+        confirmLabel="Удалить"
+        pending={deleteSlot.isPending}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

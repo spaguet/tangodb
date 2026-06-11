@@ -7,10 +7,12 @@ import { useState } from "react";
 import { Coins } from "lucide-react";
 import { usePrices, useUpdatePrice } from "../hooks/usePrices";
 import { formatCurrency } from "../lib/utils";
+import LoadingState from "./ui/LoadingState";
+import type { ToastType } from "../App";
 import type { Price } from "../types";
 
 interface PricesPanelProps {
-  toast: (msg: string) => void;
+  toast: (msg: string, type?: ToastType) => void;
 }
 
 const LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }> = {
@@ -45,25 +47,24 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
     const parsed = parseFloat(rawValue);
     if (isNaN(parsed) || parsed < 0) {
-      toast("⚠️ Введите корректную сумму цены.");
+      toast("Введите корректную сумму.", "error");
       return;
     }
 
     if (parsed === originalValue) {
-      toast("ℹ️ Цена не поменялась.");
+      toast("Цена не изменилась.", "info");
       return;
     }
 
     setSyncingRows((prev) => ({ ...prev, [id]: true }));
-    toast("⏳ Сохранение цены...");
 
     const res = await updatePrice.mutateAsync({ id, newPrice: parsed });
     setSyncingRows((prev) => ({ ...prev, [id]: false }));
 
     if (!res.success) {
-      toast(`⚠️ Ошибка сохранения: ${res.error || "перепроверьте соединение"}`);
+      toast(res.error || "Ошибка сохранения, перепроверьте соединение", "error");
     } else {
-      toast("✅ Новый тариф успешно записан в базу!");
+      toast("Новый тариф записан в базу", "success");
       setEditedPrices((prev) => {
         const next = { ...prev };
         delete next[id];
@@ -101,7 +102,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
   const { groupItems, privateItems } = groupPrices();
 
-  if (isLoading) return null;
+  if (isLoading) return <LoadingState label="Загрузка прайс-листа..." />;
 
   const renderPriceRow = (item: { info: (typeof LABELS_CATALOG)[string]; priceObj: Price }) => {
     const p = item.priceObj;
@@ -113,11 +114,11 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     return (
       <div
         key={priceId}
-        className="p-4 bg-stone-50/50 rounded-xl border border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div className="space-y-1">
-          <h4 className="font-serif font-bold text-stone-800 text-sm leading-tight">{item.info.label}</h4>
-          <p className="text-[11px] text-stone-400 font-mono tracking-tight font-medium">
+          <h4 className="font-bold text-slate-800 text-sm leading-tight">{item.info.label}</h4>
+          <p className="text-[11px] text-slate-400 font-mono tracking-tight font-medium">
             {item.info.sub} · {formatCurrency(p.price)}
           </p>
         </div>
@@ -129,21 +130,22 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               value={currentInputVal}
               disabled={isSyncing}
               onChange={(e) => handleInputChange(priceId, e.target.value)}
-              className="w-full bg-white border border-stone-200 focus:border-gold-400 focus:bg-white outline-none rounded-lg px-2.5 py-1.5 text-xs text-right font-bold pr-6 transition-all"
+              aria-label={`Цена: ${item.info.label}`}
+              className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-2.5 py-1.5 text-xs text-right font-bold pr-6 transition-all disabled:opacity-60"
             />
-            <span className="absolute right-2.5 top-2 text-[10px] font-sans font-medium text-stone-400">₫</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-sans font-medium text-slate-400">₫</span>
           </div>
 
           <button
             onClick={() => handleSavePrice(priceId, p.price)}
             disabled={isSyncing || !isTouched}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer border ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-colors flex items-center gap-1.5 border ${
               isTouched
-                ? "bg-gold-400 hover:bg-gold-500 text-stone-900 border-gold-400"
-                : "bg-stone-100/50 text-stone-300 border-stone-150 cursor-not-allowed"
+                ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 cursor-pointer"
+                : "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed"
             }`}
           >
-            {isSyncing ? "..." : "Save"}
+            {isSyncing ? "..." : "Сохранить"}
           </button>
         </div>
       </div>
@@ -152,33 +154,33 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
   return (
     <div id="panel-prices" className="space-y-6">
-      <div className="bg-white rounded-2xl p-6 border border-gold-100 shadow-sm">
-        <div className="flex items-center gap-2.5 text-stone-900 border-b border-stone-50 pb-3 mb-5">
-          <Coins className="w-5 h-5 text-gold-500" />
+      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3 mb-5">
+          <Coins className="w-4.5 h-4.5 text-indigo-500" />
           <div>
-            <h2 className="font-serif text-lg font-bold">Тарифы и Прайс-лист</h2>
-            <p className="text-stone-400 text-xs font-sans mt-0.5">
-              Отрегулируйте тарифы студии. Они мгновенно обновят стоимость абонементов на кассе оформления.
+            <h2 className="text-base font-bold tracking-tight">Тарифы и прайс-лист</h2>
+            <p className="text-slate-400 text-xs mt-0.5">
+              Изменённые тарифы сразу обновят стоимость на кассе оформления.
             </p>
           </div>
         </div>
 
         {prices.length === 0 ? (
-          <div className="text-center py-16 text-stone-400 italic">Загрузка прайс-листа...</div>
+          <div className="text-center py-16 text-slate-400 text-sm">Прайс-лист пуст.</div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 font-sans">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h3 className="font-serif font-black text-sm text-wine-900 uppercase tracking-widest border-b border-stone-100 pb-2">
+              <h3 className="font-bold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
                 Групповые занятия
               </h3>
-              <div className="space-y-4">{groupItems.map(renderPriceRow)}</div>
+              <div className="space-y-3">{groupItems.map(renderPriceRow)}</div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-serif font-black text-sm text-wine-900 uppercase tracking-widest border-b border-stone-100 pb-2">
-                Индивидуальные уроки (Приваты)
+              <h3 className="font-bold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
+                Индивидуальные уроки
               </h3>
-              <div className="space-y-4">{privateItems.map(renderPriceRow)}</div>
+              <div className="space-y-3">{privateItems.map(renderPriceRow)}</div>
             </div>
           </div>
         )}
