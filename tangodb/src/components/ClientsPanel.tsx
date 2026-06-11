@@ -189,8 +189,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
         {/* Directory grid/table */}
         <div className="overflow-x-auto min-h-[300px]">
           {filteredClients.length === 0 ? (
-            <div className="text-center py-20 text-stone-400 space-y-2">
-              <span className="text-2xl font-serif block">☕</span>
+            <div className="text-center py-20 text-stone-400">
               <p className="text-sm">Танцоры с такими инициалами еще не внесены или отсутствуют.</p>
             </div>
           ) : (

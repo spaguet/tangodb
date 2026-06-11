@@ -44,22 +44,6 @@ export default function Dashboard({
 
   return (
     <div id="panel-dashboard" className="space-y-6">
-      {/* Hero Welcome banner holding the mood */}
-      <div className="relative overflow-hidden bg-slate-900 text-white rounded-xl p-6 md:p-8 shadow-xs border border-slate-800">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(79,70,229,0.15),transparent_60%)] pointer-events-none" />
-        <div className="max-w-2xl space-y-2">
-          <span className="font-mono text-xs text-indigo-400 tracking-wider uppercase block font-semibold">
-            Argentine Tango & Milonga Studio
-          </span>
-          <h1 className="font-sans text-2xl md:text-3xl font-bold tracking-tight leading-none text-white">
-            La Seducción del Tango
-          </h1>
-          <p className="text-slate-300 font-sans text-xs md:text-sm leading-relaxed">
-            Добро пожаловать в панель управления TangoDB. Управляйте расписанием занятий, отмечайте посещения, контролируйте пакеты абонементов клиентов и распределяйте личные репетиции с безупречной элегантностью.
-          </p>
-        </div>
-      </div>
-
       {/* Statistics widgets */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
@@ -141,8 +125,7 @@ export default function Dashboard({
 
           <div className="space-y-2 pt-0.5">
             {todaySlots.length === 0 ? (
-              <div className="text-center py-8 space-y-1">
-                <p className="text-slate-300 font-sans text-2xl">☕</p>
+              <div className="text-center py-8">
                 <p className="text-slate-400 text-xs font-sans">Сегодня групповых занятий нет.</p>
               </div>
             ) : (

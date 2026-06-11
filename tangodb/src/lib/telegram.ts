@@ -21,6 +21,7 @@ declare global {
       WebApp?: {
         initData: string;
         initDataUnsafe?: { user?: TelegramWebAppUser };
+        platform: string;
         ready: () => void;
         expand: () => void;
       };
@@ -28,8 +29,18 @@ declare global {
   }
 }
 
+/** True when opened inside the Telegram client (Mini App). */
+export function isInsideTelegramClient(): boolean {
+  if (typeof window === "undefined") return false;
+  const webApp = window.Telegram?.WebApp;
+  return Boolean(webApp && webApp.platform !== "unknown");
+}
+
+/** True when Telegram passed initData for server-side auth. */
 export function isTelegramWebApp(): boolean {
-  return typeof window !== "undefined" && Boolean(window.Telegram?.WebApp?.initData);
+  if (typeof window === "undefined") return false;
+  const initData = window.Telegram?.WebApp?.initData;
+  return Boolean(initData && initData.length > 0);
 }
 
 export function getTelegramInitData(): string | null {

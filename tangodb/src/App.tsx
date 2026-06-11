@@ -171,7 +171,7 @@ function AppLayout() {
           </button>
           <button onClick={() => go("/subscriptions", "active")} className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${isActive("/subscriptions") ? "text-indigo-600 font-bold" : "text-slate-400"}`}>
             <Ticket className="w-5 h-5" />
-            <span className="text-[9px] font-mono uppercase tracking-wider font-semibold">Билеты</span>
+            <span className="text-[9px] font-mono uppercase tracking-wider font-semibold">Абонементы</span>
           </button>
           <button onClick={() => go("/attendance")} className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${isActive("/attendance") ? "text-indigo-600 font-bold" : "text-slate-400"}`}>
             <Calendar className="w-5 h-5" />
@@ -180,10 +180,6 @@ function AppLayout() {
           <button onClick={() => go("/personal", undefined, "view")} className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${isActive("/personal") ? "text-indigo-600 font-bold" : "text-slate-400"}`}>
             <Sparkles className="w-5 h-5" />
             <span className="text-[9px] font-mono uppercase tracking-wider font-semibold">Приваты</span>
-          </button>
-          <button onClick={() => setMobileDrawerOpen(true)} className="flex flex-col items-center gap-1 text-slate-400 cursor-pointer hover:text-slate-600">
-            <Menu className="w-5 h-5" />
-            <span className="text-[9px] font-mono uppercase tracking-wider font-semibold">Меню</span>
           </button>
         </div>
 

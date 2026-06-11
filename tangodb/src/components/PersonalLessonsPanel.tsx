@@ -360,8 +360,7 @@ export default function PersonalLessonsPanel({
 
             {/* List by Monthly folders */}
             {monthlyGroups.length === 0 ? (
-              <div className="text-center py-20 text-stone-400 space-y-2">
-                <span className="text-3xl font-serif">☕</span>
+              <div className="text-center py-20 text-stone-400">
                 <p className="text-sm font-sans">Приватные уроки с такими критериями отсутствуют.</p>
               </div>
             ) : (

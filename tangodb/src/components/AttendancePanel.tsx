@@ -157,8 +157,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             <p className="text-xs font-sans">Загрузка карточек учеников...</p>
           </div>
         ) : students.length === 0 ? (
-          <div className="text-center py-20 text-stone-400 space-y-2">
-            <p className="text-stone-300 font-serif italic text-3xl">☕</p>
+          <div className="text-center py-20 text-stone-400">
             <p className="text-sm font-sans">
               На выбранную дату нет активных абонементов, либо занятие не укомплектовано.
             </p>

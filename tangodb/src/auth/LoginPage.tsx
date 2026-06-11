@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Send } from "lucide-react";
 import { useAuth } from "./AuthProvider";
-import { getTelegramInitData, initTelegramWebApp, isTelegramWebApp } from "../lib/telegram";
+import {
+  getTelegramInitData,
+  initTelegramWebApp,
+  isInsideTelegramClient,
+  isTelegramWebApp,
+} from "../lib/telegram";
 import type { TelegramLoginWidgetPayload } from "../lib/telegram";
 
 declare global {
@@ -40,7 +45,7 @@ export default function LoginPage() {
   }, [signInWithTelegram, navigate]);
 
   useEffect(() => {
-    if (isTelegramWebApp() || !botUsername || !widgetRef.current) return;
+    if (isInsideTelegramClient() || !botUsername || !widgetRef.current) return;
 
     window.onTelegramAuth = async (user: TelegramLoginWidgetPayload) => {
       setLoading(true);
@@ -61,7 +66,6 @@ export default function LoginPage() {
     script.setAttribute("data-telegram-login", botUsername);
     script.setAttribute("data-size", "large");
     script.setAttribute("data-onauth", "onTelegramAuth(user)");
-    script.setAttribute("data-request-access", "write");
     widgetRef.current.innerHTML = "";
     widgetRef.current.appendChild(script);
 
@@ -96,10 +100,12 @@ export default function LoginPage() {
           </div>
         )}
 
-        {isTelegramWebApp() ? (
+        {isInsideTelegramClient() ? (
           <p className="text-sm text-slate-500 flex items-center gap-2">
             <Send className="w-4 h-4 text-indigo-500" />
-            Открыто в Telegram Mini App — вход выполняется автоматически.
+            {isTelegramWebApp()
+              ? "Открыто в Telegram Mini App — вход выполняется автоматически."
+              : "Открыто в Telegram, но данные авторизации не получены. Проверьте URL Web App в BotFather (https://tangodb.vercel.app)."}
           </p>
         ) : (
           <div className="space-y-3">

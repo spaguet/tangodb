@@ -10,6 +10,7 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import type { TelegramLoginWidgetPayload } from "../lib/telegram";
+import { getTelegramInitData, initTelegramWebApp, isTelegramWebApp } from "../lib/telegram";
 
 interface AuthContextValue {
   session: Session | null;
@@ -28,10 +29,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
+    let cancelled = false;
+
+    async function bootstrapSession() {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+
+      if (data.session) {
+        setSession(data.session);
+        setLoading(false);
+        return;
+      }
+
+      if (isTelegramWebApp()) {
+        initTelegramWebApp();
+        const initData = getTelegramInitData();
+        if (initData) {
+          try {
+            const { data: authData, error } = await supabase.functions.invoke("telegram-auth", {
+              body: { initData },
+            });
+            if (!error && authData?.access_token && authData?.refresh_token) {
+              const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                access_token: authData.access_token,
+                refresh_token: authData.refresh_token,
+              });
+              if (!sessionError && sessionData.session) {
+                setSession(sessionData.session);
+                setLoading(false);
+                return;
+              }
+            }
+          } catch {
+            // LoginPage will show the error
+          }
+        }
+      }
+
+      if (!cancelled) setLoading(false);
+    }
+
+    bootstrapSession();
 
     const {
       data: { subscription },
@@ -40,7 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithTelegram = useCallback(
@@ -49,7 +90,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: payload,
       });
 
-      if (error) throw error;
+      if (error) {
+        const ctx = (error as { context?: Response }).context;
+        if (ctx) {
+          try {
+            const body = await ctx.json();
+            if (body?.error) throw new Error(body.error);
+          } catch (parseErr) {
+            if (parseErr instanceof Error && parseErr.message !== error.message) throw parseErr;
+          }
+        }
+        throw error;
+      }
       if (!data?.access_token || !data?.refresh_token) {
         throw new Error(data?.error ?? "Не удалось получить сессию");
       }
