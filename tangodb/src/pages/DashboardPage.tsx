@@ -1,34 +1,50 @@
 import { useNavigate } from "react-router-dom";
 import Dashboard from "../components/Dashboard";
-import { useStore } from "../hooks/PlaceholderStoreContext";
+import { useClients } from "../hooks/useClients";
+import { usePersonalLessons } from "../hooks/usePersonalLessons";
+import { useSchedule } from "../hooks/useSchedule";
+import { useSubscriptions } from "../hooks/useSubscriptions";
+import { useUIStore } from "../store/ui";
 
 export default function DashboardPage() {
-  const store = useStore();
   const navigate = useNavigate();
+  const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
+  const setPersonalTab = useUIStore((s) => s.setPersonalTab);
+
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const { data: subscriptions = [], isLoading: subsLoading } = useSubscriptions();
+  const { data: schedule = [], isLoading: scheduleLoading } = useSchedule();
+  const { data: personalLessons = [], isLoading: personalLoading } = usePersonalLessons();
+
+  const isLoading = clientsLoading || subsLoading || scheduleLoading || personalLoading;
 
   const handleNavigate = (panel: string) => {
-    const routes: Record<string, string> = {
-      dashboard: "/",
-      newClient: "/clients",
-      sellSub: "/subscriptions/sell",
-      activeSubs: "/subscriptions",
-      schedule: "/schedule",
-      attendance: "/attendance",
-      personalView: "/personal",
-      personalSell: "/personal/book",
-      prices: "/prices",
+    const routes: Record<string, { path: string; subTab?: "active" | "sell"; persTab?: "view" | "book" }> = {
+      dashboard: { path: "/" },
+      newClient: { path: "/clients" },
+      sellSub: { path: "/subscriptions/sell", subTab: "sell" },
+      activeSubs: { path: "/subscriptions", subTab: "active" },
+      schedule: { path: "/schedule" },
+      attendance: { path: "/attendance" },
+      personalView: { path: "/personal", persTab: "view" },
+      personalSell: { path: "/personal/book", persTab: "book" },
+      prices: { path: "/prices" },
     };
-    navigate(routes[panel] ?? "/");
+
+    const route = routes[panel] ?? { path: "/" };
+    if (route.subTab) setSubscriptionsTab(route.subTab);
+    if (route.persTab) setPersonalTab(route.persTab);
+    navigate(route.path);
   };
 
-  if (store.loading) return null;
+  if (isLoading) return null;
 
   return (
     <Dashboard
-      clients={store.clients}
-      subscriptions={store.subscriptions}
-      schedule={store.schedule}
-      personalLessons={store.personalLessons}
+      clients={clients}
+      subscriptions={subscriptions}
+      schedule={schedule}
+      personalLessons={personalLessons}
       onNavigate={handleNavigate}
     />
   );

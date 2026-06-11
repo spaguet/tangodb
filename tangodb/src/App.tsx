@@ -15,7 +15,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./auth/AuthProvider";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import LoginPage from "./auth/LoginPage";
-import { PlaceholderStoreProvider } from "./hooks/PlaceholderStoreContext";
 import { useUIStore } from "./store/ui";
 import DashboardPage from "./pages/DashboardPage";
 import ClientsPage from "./pages/ClientsPage";
@@ -276,10 +275,8 @@ export default function App() {
             <Route
               element={
                 <ProtectedRoute>
-                  <PlaceholderStoreProvider>
-                    <RouteSync />
-                    <Outlet />
-                  </PlaceholderStoreProvider>
+                  <RouteSync />
+                  <Outlet />
                 </ProtectedRoute>
               }
             >
