@@ -7,3 +7,5 @@ coverage/
 .env*
 !.env.example
 tangodb_export.json
+
+.vercel

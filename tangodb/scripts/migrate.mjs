@@ -82,12 +82,42 @@ async function main() {
   const data = JSON.parse(readFileSync(exportPath, 'utf8'));
   const supabase = createClient(supabaseUrl, serviceKey);
 
-  const clients = (data.clients ?? []).map((c) => ({
-    id: String(c.ID),
-    first_name: c.FirstName,
-    last_name: c.LastName,
-    telegram: c.Telegram || '',
-  }));
+  const clientById = new Map();
+  for (const c of data.clients ?? []) {
+    const id = String(c.ID);
+    clientById.set(id, {
+      id,
+      first_name: c.FirstName || '—',
+      last_name: c.LastName || '—',
+      telegram: c.Telegram || '',
+    });
+  }
+
+  // Subscriptions/personal may reference clients removed from the Clients sheet
+  const ensureClient = (id) => {
+    if (!id) return;
+    const key = String(id);
+    if (!clientById.has(key)) {
+      clientById.set(key, {
+        id: key,
+        first_name: 'Удалён',
+        last_name: `(ID ${key.slice(-6)})`,
+        telegram: '',
+      });
+    }
+  };
+
+  for (const s of data.subscriptions ?? []) {
+    ensureClient(s.ClientID1);
+    ensureClient(s.ClientID2);
+  }
+  for (const l of data.personalLessons ?? []) {
+    ensureClient(l.Client1);
+    ensureClient(l.Client2);
+    ensureClient(l.Client3);
+  }
+
+  const clients = [...clientById.values()];
   console.log(`clients: ${clients.length}`);
   if (clients.length) await upsertBatch(supabase, 'clients', clients, { onConflict: 'id' });
 
