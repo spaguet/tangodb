@@ -653,3 +653,23 @@ function deletePersonalLessonRow(rowIndex) {
   sheet.deleteRow(rowIndex);
   return { success: true };
 }
+
+// ══════════════════════════════════════════
+//  ЭКСПОРТ ДАННЫХ (миграция → Supabase)
+// ══════════════════════════════════════════
+
+/** Запустить один раз в редакторе GAS; JSON сохранится в Google Drive */
+function exportAllData() {
+  const output = {
+    clients:          sheetToObjects('Clients'),
+    schedule:         getSchedule(),
+    prices:           getPrices(),
+    subscriptions:    getSubscriptions(),
+    attendance:       getAttendanceRecords(),
+    // sheetToObjects, не getPersonalLessons() — нужны сырые ID в Client1/2/3
+    personalLessons:  sheetToObjects('PersonalLessons')
+  };
+  const json = JSON.stringify(output, null, 2);
+  const file = DriveApp.createFile('tangodb_export.json', json, MimeType.PLAIN_TEXT);
+  Logger.log('Файл создан: ' + file.getUrl());
+}
