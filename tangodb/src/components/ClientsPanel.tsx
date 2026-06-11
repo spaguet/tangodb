@@ -6,23 +6,18 @@
 import { useState } from "react";
 import { Search, UserPlus, FileText, Send, Edit, Trash2, X, AlertOctagon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { Client } from "../types";
+import { useAddClient, useClients, useDeleteClient, useUpdateClient } from "../hooks/useClients";
+import type { Client } from "../types";
 
 interface ClientsPanelProps {
-  clients: Client[];
-  onAddClient: (firstName: string, lastName: string, telegram: string) => Promise<{ success: boolean; error?: string }>;
-  onUpdateClient: (clientId: string, firstName: string, lastName: string, telegram: string) => Promise<{ success: boolean; error?: string }>;
-  onDeleteClient: (clientId: string) => Promise<{ success: boolean; error?: string }>;
   toast: (msg: string) => void;
 }
 
-export default function ClientsPanel({
-  clients,
-  onAddClient,
-  onUpdateClient,
-  onDeleteClient,
-  toast,
-}: ClientsPanelProps) {
+export default function ClientsPanel({ toast }: ClientsPanelProps) {
+  const { data: clients = [], isLoading } = useClients();
+  const addClient = useAddClient();
+  const updateClient = useUpdateClient();
+  const deleteClient = useDeleteClient();
   const [search, setSearch] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -44,7 +39,8 @@ export default function ClientsPanel({
       return;
     }
 
-    const res = await onAddClient(firstName, lastName, telegram);
+    toast("⏳ Добавление клиента...");
+    const res = await addClient.mutateAsync({ firstName, lastName, telegram });
     if (!res.success) {
       toast(`⚠️ ${res.error || "Ошибка добавления"}`);
     } else {
@@ -69,7 +65,13 @@ export default function ClientsPanel({
       return;
     }
 
-    const res = await onUpdateClient(editingClient.id, editFirst, editLast, editTg);
+    toast("⏳ Сохранение...");
+    const res = await updateClient.mutateAsync({
+      clientId: editingClient.id,
+      firstName: editFirst,
+      lastName: editLast,
+      telegram: editTg,
+    });
     if (!res.success) {
       toast(`⚠️ ${res.error || "Ошибка сохранения изменения"}`);
     } else {
@@ -80,7 +82,8 @@ export default function ClientsPanel({
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
-    const res = await onDeleteClient(deleteTarget.id);
+    toast("⏳ Удаление...");
+    const res = await deleteClient.mutateAsync(deleteTarget.id);
     if (!res.success) {
       toast(`⚠️ Ошибка: ${res.error || "Не удалось удалить клиента"}`);
     } else {
@@ -88,6 +91,8 @@ export default function ClientsPanel({
       setDeleteTarget(null);
     }
   };
+
+  if (isLoading) return null;
 
   const filteredClients = clients.filter(
     (c) =>
@@ -342,7 +347,7 @@ export default function ClientsPanel({
                   <strong className="font-bold text-stone-800">
                     {deleteTarget.lastName} {deleteTarget.firstName}
                   </strong>{" "}
-                  и все сопряженные абонементы? Это действие необратимо стёрет данные из Google-таблицы.
+                  и все сопряженные абонементы? Это действие необратимо удалит данные из базы.
                 </p>
               </div>
 
