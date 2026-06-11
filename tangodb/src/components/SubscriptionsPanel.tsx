@@ -3,41 +3,49 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef } from "react";
-import { Ticket, Users, FileCheck, Search, ShieldCheck, HelpCircle, Calendar, Send } from "lucide-react";
-import { Client, Subscription, Price } from "../types";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Ticket, FileCheck, Search, Send } from "lucide-react";
+import { useClients } from "../hooks/useClients";
+import { usePrices } from "../hooks/usePrices";
+import {
+  useAddSubscription,
+  useFinishSubscription,
+  useSubscriptions,
+} from "../hooks/useSubscriptions";
+import { useUIStore } from "../store/ui";
+import type { Client, Price } from "../types";
 
 interface SubscriptionsPanelProps {
   initialTab?: "active" | "sell";
-  clients: Client[];
-  subscriptions: Subscription[];
-  prices: Price[];
-  onAddSubscription: (sub: {
-    type: string;
-    clientId1: string;
-    clientId2: string;
-    lessonsTotal: number;
-    activationDate: string;
-    pairMonth: number | "" | string;
-  }) => Promise<{ success: boolean; id?: string; error?: string }>;
-  onFinishSubscription: (subId: string) => Promise<{ success: boolean; error?: string }>;
   toast: (msg: string) => void;
 }
 
 export default function SubscriptionsPanel({
   initialTab = "active",
-  clients,
-  subscriptions,
-  prices,
-  onAddSubscription,
-  onFinishSubscription,
   toast,
 }: SubscriptionsPanelProps) {
+  const navigate = useNavigate();
+  const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
+
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const { data: subscriptions = [], isLoading: subsLoading } = useSubscriptions();
+  const { data: prices = [], isLoading: pricesLoading } = usePrices();
+  const addSubscription = useAddSubscription();
+  const finishSubscription = useFinishSubscription();
+
+  const isLoading = clientsLoading || subsLoading || pricesLoading;
   const [activeTab, setActiveTab] = useState<"sell" | "active">(initialTab);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
+
+  const switchTab = (tab: "active" | "sell") => {
+    setActiveTab(tab);
+    setSubscriptionsTab(tab);
+    navigate(tab === "sell" ? "/subscriptions/sell" : "/subscriptions");
+  };
 
   const [search, setSearch] = useState("");
 
@@ -143,11 +151,11 @@ export default function SubscriptionsPanel({
       clientId2: subType === "pair" ? client2Id : "",
       lessonsTotal: lessonsCount,
       activationDate,
-      pairMonth: subType === "pair" && lessonsCount === 8 ? pairMonth : ""
+      pairMonth: subType === "pair" && lessonsCount === 8 ? String(pairMonth) : "",
     };
 
     toast("⏳ Продажа...");
-    const res = await onAddSubscription(payload);
+    const res = await addSubscription.mutateAsync(payload);
     if (!res.success) {
       toast(`⚠️ Ошибка: ${res.error || "абонемент не оформлен"}`);
     } else {
@@ -168,7 +176,7 @@ export default function SubscriptionsPanel({
     if (!check) return;
 
     toast("⏳ Завершение...");
-    const res = await onFinishSubscription(subId);
+    const res = await finishSubscription.mutateAsync(subId);
     if (!res.success) {
       toast(`⚠️ Ошибка: ${res.error || "Не удалось завершить абонемент"}`);
     } else {
@@ -191,12 +199,20 @@ export default function SubscriptionsPanel({
     return queryStr.includes(search.toLowerCase());
   });
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-stone-400 text-sm font-sans">
+        Загрузка абонементов...
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Visual toggle header */}
       <div className="flex border-b border-stone-200">
         <button
-          onClick={() => setActiveTab("active")}
+          onClick={() => switchTab("active")}
           className={`px-6 py-4.5 font-serif text-base font-bold flex items-center gap-2.5 transition-all outline-none border-b-2 cursor-pointer ${
             activeTab === "active"
               ? "border-wine-800 text-wine-900"
@@ -210,7 +226,7 @@ export default function SubscriptionsPanel({
           </span>
         </button>
         <button
-          onClick={() => setActiveTab("sell")}
+          onClick={() => switchTab("sell")}
           className={`px-6 py-4.5 font-serif text-base font-bold flex items-center gap-2.5 transition-all outline-none border-b-2 cursor-pointer ${
             activeTab === "sell"
               ? "border-wine-800 text-wine-900"
