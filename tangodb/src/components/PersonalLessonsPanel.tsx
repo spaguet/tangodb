@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, X } from "lucide-react";
 import { useClients } from "../hooks/useClients";
 import { usePrices } from "../hooks/usePrices";
+import { formatCurrency } from "../lib/utils";
 import {
   useAddPersonalLessons,
   useDeletePersonalLesson,
@@ -97,7 +98,7 @@ export default function PersonalLessonsPanel({
     const matched = prices.find(p => p.type.trim() === key);
     if (matched) {
       setCustomPrice(matched.price.toString());
-      toast(`✅ Тарифная сетка: Установлен стандартный прайс ${formatCur(matched.price)}`);
+      toast(`✅ Тарифная сетка: Установлен стандартный прайс ${formatCurrency(matched.price)}`);
     } else {
       toast("⚠️ Тариф для этой конфигурации еще не настроен");
     }
@@ -117,12 +118,6 @@ export default function PersonalLessonsPanel({
     const next = [...dates];
     next[index] = val;
     setDates(next);
-  };
-
-  const formatCur = (num: number) => {
-    return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "VND", maximumFractionDigits: 0 })
-      .format(num)
-      .replace("VND", "₫");
   };
 
   const handleBook = async (immediatePaid: boolean) => {
@@ -307,13 +302,13 @@ export default function PersonalLessonsPanel({
 
             <div className="bg-emerald-50 bg-opacity-40 rounded-2xl p-5 border border-emerald-100 shadow-sm">
               <p className="text-xs text-stone-400 font-mono uppercase tracking-wider">Зачислено в Кассу</p>
-              <h4 className="text-2xl font-serif font-black text-emerald-800 mt-1">{formatCur(totalPaidSum)}</h4>
+              <h4 className="text-2xl font-serif font-black text-emerald-800 mt-1">{formatCurrency(totalPaidSum)}</h4>
               <p className="text-[10px] text-emerald-600 mt-0.5">полученные средства</p>
             </div>
 
             <div className="bg-rose-50 bg-opacity-40 rounded-2xl p-5 border border-rose-100 shadow-sm">
               <p className="text-xs text-stone-400 font-mono uppercase tracking-wider">Ожидаемый Баланс</p>
-              <h4 className="text-2xl font-serif font-black text-rose-800 mt-1">{formatCur(totalUnpaidSum)}</h4>
+              <h4 className="text-2xl font-serif font-black text-rose-800 mt-1">{formatCurrency(totalUnpaidSum)}</h4>
               <p className="text-[10px] text-rose-600 mt-0.5">
                 неоплаченные <span className="font-bold underline">{totalUnpaidCount}</span> броней
               </p>
@@ -383,7 +378,7 @@ export default function PersonalLessonsPanel({
                           {group.label}
                         </span>
                         <span className="text-xs font-mono text-stone-400 font-bold">
-                          Итого за месяц: {formatCur(groupSum)}
+                          Итого за месяц: {formatCurrency(groupSum)}
                           {isUnpaidInGroup && (
                             <span className="text-rose-600 font-sans ml-2"> (есть долг)</span>
                           )}
@@ -415,7 +410,7 @@ export default function PersonalLessonsPanel({
                                   {renderDancersText(l)}
                                 </h4>
                                 <p className="font-mono text-xs font-bold text-stone-500">
-                                  Стоимость: {formatCur(l.price)}
+                                  Стоимость: {formatCurrency(l.price)}
                                 </p>
                               </div>
 

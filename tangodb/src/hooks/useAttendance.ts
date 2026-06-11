@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
+import { formatClientName, jsDayToIsoDow } from "../lib/utils";
 import type { AttendanceRecord, Client, ScheduleSlot, SubForDate, Subscription } from "../types";
 import { useClients } from "./useClients";
 import { useSchedule } from "./useSchedule";
@@ -32,8 +33,7 @@ export function computeScheduleDatesForMonth(
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month - 1, day);
-    const jsDay = date.getDay();
-    const dow = jsDay === 0 ? 7 : jsDay;
+    const dow = jsDayToIsoDow(date.getDay());
 
     schedule.forEach((slot) => {
       if (slot.dayOfWeek === dow) {
@@ -65,8 +65,8 @@ export function computeSubsForDate(
       return {
         subId: s.id,
         type: s.type,
-        client1: c1 ? `${c1.lastName} ${c1.firstName}` : s.clientId1,
-        client2: c2 ? `${c2.lastName} ${c2.firstName}` : "",
+        client1: c1 ? formatClientName(c1.lastName, c1.firstName) : s.clientId1,
+        client2: c2 ? formatClientName(c2.lastName, c2.firstName) : "",
         lessonsLeft: s.lessonsLeft,
         lessonsTotal: s.lessonsTotal,
         freezeUsed: s.freezeUsed,

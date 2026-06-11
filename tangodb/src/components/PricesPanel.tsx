@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { Coins } from "lucide-react";
 import { usePrices, useUpdatePrice } from "../hooks/usePrices";
+import { formatCurrency } from "../lib/utils";
 import type { Price } from "../types";
 
 interface PricesPanelProps {
@@ -71,12 +72,6 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     }
   };
 
-  const formatCur = (num: number) => {
-    return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "VND", maximumFractionDigits: 0 })
-      .format(num)
-      .replace("VND", "₫");
-  };
-
   const groupPrices = () => {
     const groupItems: { info: (typeof LABELS_CATALOG)[string]; priceObj: Price }[] = [];
     const privateItems: { info: (typeof LABELS_CATALOG)[string]; priceObj: Price }[] = [];
@@ -123,7 +118,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         <div className="space-y-1">
           <h4 className="font-serif font-bold text-stone-800 text-sm leading-tight">{item.info.label}</h4>
           <p className="text-[11px] text-stone-400 font-mono tracking-tight font-medium">
-            {item.info.sub} · {formatCur(p.price)}
+            {item.info.sub} · {formatCurrency(p.price)}
           </p>
         </div>
 

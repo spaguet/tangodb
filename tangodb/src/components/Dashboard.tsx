@@ -5,6 +5,7 @@
 
 import { motion } from "motion/react";
 import { Users, Ticket, Calendar, DollarSign, AlertCircle, Play } from "lucide-react";
+import { formatClientName, formatCurrency, formatPairName, dowFull, jsDayToIsoDow } from "../lib/utils";
 import { Client, Subscription, ScheduleSlot, PersonalLesson } from "../types";
 
 interface DashboardProps {
@@ -38,25 +39,8 @@ export default function Dashboard({
     .filter((l) => l.paid === "no")
     .reduce((sum, l) => sum + l.price, 0);
 
-  // Formatting currency (VND ₫)
-  const formatCur = (num: number) => {
-    return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "VND", maximumFractionDigits: 0 })
-      .format(num)
-      .replace("VND", "₫");
-  };
-
-  // Map day numbers of JS to day of the week
-  const getDayName = (dayNum: number) => {
-    const names = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"];
-    return names[dayNum];
-  };
-
-  const getDayOfWeekNumber = () => {
-    const day = new Date().getDay();
-    return day === 0 ? 7 : day;
-  };
-
-  const todaySlots = schedule.filter((s) => s.dayOfWeek === getDayOfWeekNumber());
+  const todayIsoDow = jsDayToIsoDow(new Date().getDay());
+  const todaySlots = schedule.filter((s) => s.dayOfWeek === todayIsoDow);
 
   return (
     <div id="panel-dashboard" className="space-y-6">
@@ -121,7 +105,7 @@ export default function Dashboard({
           </div>
           <div>
             <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">Касса персональных</p>
-            <h3 className="text-lg font-mono font-bold text-slate-800 leading-tight">{formatCur(totalPaidRevenue)}</h3>
+            <h3 className="text-lg font-mono font-bold text-slate-800 leading-tight">{formatCurrency(totalPaidRevenue)}</h3>
             <p className="text-[10px] text-emerald-650 font-sans mt-0.5 font-medium">оплаченные уроки</p>
           </div>
         </motion.div>
@@ -136,7 +120,7 @@ export default function Dashboard({
           </div>
           <div>
             <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">Ожидает оплаты</p>
-            <h3 className="text-lg font-mono font-bold text-rose-700 leading-tight">{formatCur(pendingRevenue)}</h3>
+            <h3 className="text-lg font-mono font-bold text-rose-700 leading-tight">{formatCurrency(pendingRevenue)}</h3>
             <p className="text-[10px] text-rose-650 font-sans mt-0.5 font-medium">из приватных сессий</p>
           </div>
         </motion.div>
@@ -151,7 +135,7 @@ export default function Dashboard({
               <h2 className="font-sans text-sm font-bold tracking-tight">Сегодняшний день</h2>
             </div>
             <span className="text-[10px] font-mono uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold">
-              {getDayName(new Date().getDay())}
+              {dowFull(todayIsoDow)}
             </span>
           </div>
 
@@ -220,8 +204,11 @@ export default function Dashboard({
                     >
                       <div className="space-y-0.5">
                         <div className="font-sans font-bold text-slate-800 text-xs">
-                          {c1 ? `${c1.lastName} ${c1.firstName}` : sub.clientId1}
-                          {c2 ? ` & ${c2.lastName} ${c2.firstName}` : ""}
+                          {c1
+                            ? c2
+                              ? formatPairName(c1.lastName, c1.firstName, c2.lastName, c2.firstName)
+                              : formatClientName(c1.lastName, c1.firstName)
+                            : sub.clientId1}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[9px] font-mono uppercase bg-slate-200 text-slate-705 px-1.5 py-0.5 rounded font-semibold">

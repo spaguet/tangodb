@@ -18,12 +18,22 @@ const DOW_FULL: Record<number, string> = {
   7: "Воскресенье",
 };
 
+/** ISO day-of-week: 1 = Monday … 7 = Sunday */
+export const ISO_DOW_RANGE = [1, 2, 3, 4, 5, 6, 7] as const;
+
+/** Convert JS Date.getDay() (0 = Sun) to ISO (1 = Mon … 7 = Sun) */
+export function jsDayToIsoDow(jsDay: number): number {
+  return jsDay === 0 ? 7 : jsDay;
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("ru-RU", {
     style: "currency",
     currency: "VND",
     maximumFractionDigits: 0,
-  }).format(amount);
+  })
+    .format(amount)
+    .replace("VND", "₫");
 }
 
 export function formatClientName(lastName: string, firstName: string): string {
@@ -45,6 +55,10 @@ export function dowShort(dayOfWeek: number): string {
 
 export function dowFull(dayOfWeek: number): string {
   return DOW_FULL[dayOfWeek] ?? String(dayOfWeek);
+}
+
+export function dowFullEntries(): [number, string][] {
+  return ISO_DOW_RANGE.map((d) => [d, dowFull(d)]);
 }
 
 export function formatDateRu(dateStr: string): string {

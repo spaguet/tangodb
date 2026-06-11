@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
+import { formatClientName } from "../lib/utils";
 import type { ActiveSubscription, Subscription } from "../types";
 import { useClients } from "./useClients";
 
@@ -53,8 +54,8 @@ export function useActiveSubscriptions() {
           subId: s.id,
           type: s.type,
           pairMonth: s.pairMonth,
-          client1: c1 ? `${c1.lastName} ${c1.firstName}` : s.clientId1,
-          client2: c2 ? `${c2.lastName} ${c2.firstName}` : "",
+          client1: c1 ? formatClientName(c1.lastName, c1.firstName) : s.clientId1,
+          client2: c2 ? formatClientName(c2.lastName, c2.firstName) : "",
           client1tg: c1?.telegram || "",
           client2tg: c2?.telegram || "",
           lessonsTotal: s.lessonsTotal,

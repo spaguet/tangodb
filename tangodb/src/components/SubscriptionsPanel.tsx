@@ -13,6 +13,7 @@ import {
   useFinishSubscription,
   useSubscriptions,
 } from "../hooks/useSubscriptions";
+import { formatCurrency } from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import type { Client, Price } from "../types";
 
@@ -116,12 +117,6 @@ export default function SubscriptionsPanel({
       }
     }
     return matched ? matched.price : 0;
-  };
-
-  const formatCur = (num: number) => {
-    return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "VND", maximumFractionDigits: 0 })
-      .format(num)
-      .replace("VND", "₫");
   };
 
   const handleCheckout = async () => {
@@ -576,7 +571,7 @@ export default function SubscriptionsPanel({
             <div className="flex items-center justify-between p-4 bg-gold-100/30 rounded-2xl border border-gold-200/40">
               <span className="text-stone-600 font-serif font-semibold text-sm">Финальная стоимость</span>
               <span className="text-xl font-serif font-black text-gold-800">
-                {getSubPrice() > 0 ? formatCur(getSubPrice()) : "не настроена"}
+                {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "не настроена"}
               </span>
             </div>
 

@@ -6,21 +6,12 @@
 import { useState } from "react";
 import { CalendarDays, Clock, Trash2, CalendarRange } from "lucide-react";
 import { useAddScheduleSlot, useDeleteScheduleSlot, useSchedule } from "../hooks/useSchedule";
+import { dowFull, dowFullEntries } from "../lib/utils";
 import type { ScheduleSlot } from "../types";
 
 interface SchedulePanelProps {
   toast: (msg: string) => void;
 }
-
-const DAY_NAMES = {
-  1: "Понедельник",
-  2: "Вторник",
-  3: "Среда",
-  4: "Четверг",
-  5: "Пятница",
-  6: "Суббота",
-  7: "Воскресенье",
-};
 
 export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const { data: schedule = [], isLoading } = useSchedule();
@@ -42,7 +33,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     if (!res.success) {
       toast(`⚠️ Ошибка: ${res.error || "Этот слот уже занят"}`);
     } else {
-      toast(`✅ Добавлен класс: ${DAY_NAMES[day as 1 | 2]} в ${time}`);
+      toast(`✅ Добавлен класс: ${dowFull(day)} в ${time}`);
     }
   };
 
@@ -53,7 +44,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     }
 
     const check = window.confirm(
-      `Удалить групповой класс в ${DAY_NAMES[slot.dayOfWeek as 1 | 2]} в ${slot.time} из расписания?`
+      `Удалить групповой класс в ${dowFull(slot.dayOfWeek)} в ${slot.time} из расписания?`
     );
     if (!check) return;
 
@@ -99,7 +90,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               onChange={(e) => setDay(parseInt(e.target.value))}
               className="w-full bg-stone-50 border border-stone-200 outline-none rounded-xl px-4 py-3 text-sm focus:border-gold-400 focus:bg-white transition-all appearance-none cursor-pointer font-sans"
             >
-              {Object.entries(DAY_NAMES).map(([val, name]) => (
+              {dowFullEntries().map(([val, name]) => (
                 <option key={val} value={val}>
                   {name}
                 </option>
@@ -153,7 +144,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                 <div key={dayKey} className="bg-stone-50/50 rounded-2xl border border-stone-100 p-4.5 space-y-3">
                   <div className="flex items-center gap-2.5 text-wine-900 pb-2 border-b border-stone-200/40">
                     <span className="w-2 h-2 rounded-full bg-gold-400 shadow-sm shadow-gold-500/20" />
-                    <span className="font-serif font-black text-sm tracking-wide">{DAY_NAMES[dayKey as 1 | 2]}</span>
+                    <span className="font-serif font-black text-sm tracking-wide">{dowFull(dayKey)}</span>
                   </div>
 
                   <div className="space-y-2">
