@@ -208,8 +208,8 @@ function AppLayout() {
             onClick={() => go({ icon: LayoutDashboard, label: "Обзор", path: "/" })}
             className="relative px-5 py-4.5 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors flex items-center gap-3.5"
           >
-            <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-sm shadow-xs">
-              T
+            <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[9px] tracking-tight leading-none shadow-xs">
+              TDB
             </div>
             <div>
               <h1 className="text-base font-semibold tracking-tight text-slate-800 leading-tight">TangoDB</h1>
@@ -297,8 +297,8 @@ function AppLayout() {
               >
                 <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-xs">
-                      T
+                    <div className="w-7 h-7 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[8px] tracking-tight leading-none">
+                      TDB
                     </div>
                     <h3 className="text-sm font-semibold tracking-tight text-slate-800">TangoDB</h3>
                   </div>
