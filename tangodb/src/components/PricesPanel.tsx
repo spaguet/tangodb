@@ -117,29 +117,29 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div className="space-y-1">
-          <h4 className="font-bold text-slate-800 text-sm leading-tight">{item.info.label}</h4>
-          <p className="text-[11px] text-slate-400 font-mono tracking-tight font-medium">
+          <h4 className="font-semibold text-slate-800 text-sm leading-tight">{item.info.label}</h4>
+          <p className="text-[11px] text-slate-400 font-sans tracking-tight font-normal">
             {item.info.sub} · {formatCurrency(p.price)}
           </p>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <div className="relative font-mono w-28 text-right">
+          <div className="relative font-sans w-28 text-right">
             <input
               type="number"
               value={currentInputVal}
               disabled={isSyncing}
               onChange={(e) => handleInputChange(priceId, e.target.value)}
               aria-label={`Цена: ${item.info.label}`}
-              className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-2.5 py-1.5 text-xs text-right font-bold pr-6 transition-all disabled:opacity-60"
+              className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-2.5 py-1.5 text-xs text-right font-semibold pr-6 transition-all disabled:opacity-60"
             />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-sans font-medium text-slate-400">₫</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-sans font-normal text-slate-400">₫</span>
           </div>
 
           <button
             onClick={() => handleSavePrice(priceId, p.price)}
             disabled={isSyncing || !isTouched}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-colors flex items-center gap-1.5 border ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-sans font-semibold uppercase transition-colors flex items-center gap-1.5 border ${
               isTouched
                 ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 cursor-pointer"
                 : "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed"
@@ -158,7 +158,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3 mb-5">
           <Coins className="w-4.5 h-4.5 text-indigo-500" />
           <div>
-            <h2 className="text-base font-bold tracking-tight">Тарифы и прайс-лист</h2>
+            <h2 className="text-base font-semibold tracking-tight">Тарифы и прайс-лист</h2>
             <p className="text-slate-400 text-xs mt-0.5">
               Изменённые тарифы сразу обновят стоимость на кассе оформления.
             </p>
@@ -170,14 +170,14 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h3 className="font-bold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
+              <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
                 Групповые занятия
               </h3>
               <div className="space-y-3">{groupItems.map(renderPriceRow)}</div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-bold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
+              <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
                 Индивидуальные уроки
               </h3>
               <div className="space-y-3">{privateItems.map(renderPriceRow)}</div>

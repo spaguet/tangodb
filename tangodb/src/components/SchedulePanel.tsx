@@ -16,7 +16,7 @@ interface SchedulePanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 const fieldCls =
   "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
@@ -79,7 +79,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       <div className="lg:col-span-4 bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-5">
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
           <CalendarDays className="w-4.5 h-4.5 text-indigo-500" />
-          <h2 className="text-base font-bold tracking-tight">Внести новое занятие</h2>
+          <h2 className="text-base font-semibold tracking-tight">Внести новое занятие</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-sm">
@@ -100,7 +100,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
           <div className="space-y-1.5">
             <label className={labelCls}>Время начала</label>
-            <div className="relative font-mono">
+            <div className="relative font-sans">
               <Clock className="w-4 h-4 text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="time"
@@ -115,7 +115,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           <button
             type="submit"
             disabled={addSlot.isPending}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-mono text-xs font-bold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
           >
             {addSlot.isPending ? "Добавление..." : "Вписать в сетку"}
           </button>
@@ -125,7 +125,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       <div className="lg:col-span-8 bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-5">
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
           <CalendarRange className="w-4.5 h-4.5 text-indigo-500" />
-          <h2 className="text-base font-bold tracking-tight">Утверждённая сетка расписания</h2>
+          <h2 className="text-base font-semibold tracking-tight">Утверждённая сетка расписания</h2>
         </div>
 
         {sortedDaysKeys.length === 0 ? (
@@ -144,7 +144,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                 <div key={dayKey} className="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-3">
                   <div className="flex items-center gap-2.5 text-slate-800 pb-2 border-b border-slate-200/60">
                     <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                    <span className="font-bold text-sm tracking-tight">{dowFull(dayKey)}</span>
+                    <span className="font-semibold text-sm tracking-tight">{dowFull(dayKey)}</span>
                   </div>
 
                   <div className="space-y-2">
@@ -153,7 +153,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                         key={slot.id ?? `${slot.dayOfWeek}-${slot.time}`}
                         className="flex items-center justify-between py-1.5 px-2.5 bg-white border border-slate-200/60 rounded-lg text-sm group"
                       >
-                        <span className="inline-flex items-center gap-1.5 font-mono text-slate-700 font-bold">
+                        <span className="inline-flex items-center gap-1.5 font-sans text-slate-700 font-semibold">
                           <Clock className="w-3.5 h-3.5 text-slate-400" />
                           {slot.time}
                         </span>
@@ -183,7 +183,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           deleteTarget ? (
             <>
               Групповой класс{" "}
-              <strong className="font-bold text-slate-800">
+              <strong className="font-semibold text-slate-800">
                 {dowFull(deleteTarget.dayOfWeek)} в {deleteTarget.time}
               </strong>{" "}
               будет убран из сетки. Будущие занятия по этому слоту исчезнут из журнала.

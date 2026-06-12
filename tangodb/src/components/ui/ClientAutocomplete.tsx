@@ -57,7 +57,7 @@ export default function ClientAutocomplete({
 
   return (
     <div className="space-y-1.5 relative">
-      <label className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold block">{label}</label>
+      <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">{label}</label>
       <div className="relative">
         <input
           type="text"

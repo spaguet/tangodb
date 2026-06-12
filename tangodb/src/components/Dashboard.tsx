@@ -53,8 +53,8 @@ export default function Dashboard({
             <Ticket className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">Абонементы</p>
-            <h3 className="text-xl font-bold text-slate-800 leading-tight">{activeSubs.length}</h3>
+            <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold">Абонементы</p>
+            <h3 className="text-xl font-semibold text-slate-800 leading-tight">{activeSubs.length}</h3>
             <p className="text-[10px] text-slate-500 font-sans mt-0.5">
               <span className="text-indigo-600 font-semibold">{solosCount}</span> соло ·{" "}
               <span className="text-indigo-600 font-semibold">{pairsCount}</span> парных
@@ -71,8 +71,8 @@ export default function Dashboard({
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">Всего клиентов</p>
-            <h3 className="text-xl font-bold text-slate-800 leading-tight">{clients.length}</h3>
+            <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold">Всего клиентов</p>
+            <h3 className="text-xl font-semibold text-slate-800 leading-tight">{clients.length}</h3>
             <p className="text-[10px] text-slate-500 font-sans mt-0.5">карточек в реестре</p>
           </div>
         </motion.div>
@@ -86,9 +86,9 @@ export default function Dashboard({
             <AlertCircle className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">Ожидает оплаты</p>
-            <h3 className="text-lg font-mono font-bold text-rose-700 leading-tight">{formatCurrency(pendingRevenue)}</h3>
-            <p className="text-[10px] text-rose-600 font-sans mt-0.5 font-medium">из приватных сессий</p>
+            <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold">Ожидает оплаты</p>
+            <h3 className="text-lg font-sans font-semibold text-rose-700 leading-tight">{formatCurrency(pendingRevenue)}</h3>
+            <p className="text-[10px] text-rose-600 font-sans mt-0.5 font-normal">из приватных сессий</p>
           </div>
         </motion.div>
       </div>
@@ -99,9 +99,9 @@ export default function Dashboard({
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div className="flex items-center gap-2 text-slate-800">
               <Calendar className="w-4.5 h-4.5 text-indigo-500" />
-              <h2 className="font-sans text-sm font-bold tracking-tight">Сегодняшний день</h2>
+              <h2 className="font-sans text-sm font-semibold tracking-tight">Сегодняшний день</h2>
             </div>
-            <span className="text-[10px] font-mono uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold">
+            <span className="text-[10px] font-sans uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-semibold">
               {dowFull(todayIsoDow)}
             </span>
           </div>
@@ -124,7 +124,7 @@ export default function Dashboard({
                       <p className="text-[10px] text-slate-400">Уровень: Общий</p>
                     </div>
                   </div>
-                  <span className="font-mono text-xs bg-slate-800 text-slate-100 font-bold px-2 py-0.5 rounded">
+                  <span className="font-sans text-xs bg-slate-800 text-slate-100 font-semibold px-2 py-0.5 rounded">
                     {slot.time}
                   </span>
                 </div>
@@ -132,7 +132,7 @@ export default function Dashboard({
             )}
             <button
               onClick={() => onNavigate("schedule")}
-              className="w-full text-center py-2.5 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-500 text-[11px] font-sans hover:bg-slate-50 transition-colors uppercase tracking-wider block font-bold cursor-pointer"
+              className="w-full text-center py-2.5 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-500 text-[11px] font-sans hover:bg-slate-50 transition-colors uppercase tracking-wider block font-semibold cursor-pointer"
             >
               Настроить Расписание
             </button>
@@ -142,11 +142,11 @@ export default function Dashboard({
         {/* Running Out Of credits warning list */}
         <div className="lg:col-span-7 bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs space-y-3.5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <h2 className="font-sans text-sm font-bold text-slate-800 flex items-center gap-2">
+            <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
               <span className="w-2 h-2 bg-rose-600 rounded-full" />
               Заканчиваются занятия (≤ 2)
             </h2>
-            <span className="text-[10px] bg-rose-50 text-rose-700 font-mono px-2 py-0.5 rounded font-bold">
+            <span className="text-[10px] bg-rose-50 text-rose-700 font-sans px-2 py-0.5 rounded font-semibold">
               {warningSubs.length} {pluralizeRu(warningSubs.length, ["абонемент", "абонемента", "абонементов"])}
             </span>
           </div>
@@ -169,7 +169,7 @@ export default function Dashboard({
                       className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 bg-slate-50 rounded-lg gap-3 border border-slate-100"
                     >
                       <div className="space-y-0.5">
-                        <div className="font-sans font-bold text-slate-800 text-xs">
+                        <div className="font-sans font-semibold text-slate-800 text-xs">
                           {c1
                             ? c2
                               ? formatPairName(c1.lastName, c1.firstName, c2.lastName, c2.firstName)
@@ -177,7 +177,7 @@ export default function Dashboard({
                             : sub.clientId1}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[9px] font-mono uppercase bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
+                          <span className="text-[9px] font-sans uppercase bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
                             {sub.type === "solo" ? "Соло" : "Парный"}
                           </span>
                           <span className="text-[10px] text-slate-400 font-sans">
@@ -188,8 +188,8 @@ export default function Dashboard({
 
                       <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                         <div className="text-right">
-                          <p className="text-[9px] font-mono text-slate-400 uppercase leading-none">баланс</p>
-                          <p className="text-sm font-mono font-bold text-rose-700 mt-0.5">
+                          <p className="text-[9px] font-sans text-slate-400 uppercase leading-none">баланс</p>
+                          <p className="text-sm font-sans font-semibold text-rose-700 mt-0.5">
                             {sub.lessonsLeft} <span className="text-[10px] text-slate-400 font-sans">из {sub.lessonsTotal}</span>
                           </p>
                         </div>
@@ -210,7 +210,7 @@ export default function Dashboard({
                             <Send className="w-3.5 h-3.5" />
                           </a>
                         ) : (
-                          <span className="text-slate-400 font-mono text-[10px] select-none italic">без TG</span>
+                          <span className="text-slate-400 font-sans text-[10px] select-none italic">без TG</span>
                         )}
                       </div>
                     </div>

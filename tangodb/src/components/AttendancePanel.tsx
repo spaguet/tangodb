@@ -21,7 +21,7 @@ interface AttendancePanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 const fieldCls =
   "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
@@ -98,7 +98,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     <div id="panel-attendance" className="space-y-6">
       <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-4">
         <div>
-          <h2 className="text-lg font-bold tracking-tight text-slate-800">Журнал посещений</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-slate-800">Журнал посещений</h2>
           <p className="text-xs text-slate-400 mt-0.5">
             Выберите месяц — система подставит дни занятий согласно расписанию.
           </p>
@@ -130,7 +130,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <div className="md:col-span-1">
             <button
               onClick={handleRefresh}
-              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-xs font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Обновить
@@ -141,10 +141,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
       <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-3">
-          <h3 className="text-sm font-bold tracking-tight text-slate-800">
+          <h3 className="text-sm font-semibold tracking-tight text-slate-800">
             {displayDate ? `Танцоры на ${formatAttendanceDate(displayDate)}` : "Класс не выбран"}
           </h3>
-          <span className="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-bold shrink-0">
+          <span className="text-[10px] font-sans bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold shrink-0">
             {students.length} {pluralizeRu(students.length, ["студент", "студента", "студентов"])}
           </span>
         </div>
@@ -171,13 +171,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0"
                 >
                   <div className="space-y-1.5 flex-1 pr-4">
-                    <h4 className="text-sm font-bold text-slate-800 leading-tight">{fullname}</h4>
-                    <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400 font-mono">
-                      <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[10px] uppercase font-bold">
+                    <h4 className="text-sm font-semibold text-slate-800 leading-tight">{fullname}</h4>
+                    <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400 font-sans">
+                      <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[10px] uppercase font-semibold">
                         {st.type === "solo" ? "Соло" : "Парный"}
                       </span>
                       <span>Баланс:</span>
-                      <strong className={`font-bold ${hasLowCredits ? "text-rose-600" : "text-slate-700"}`}>
+                      <strong className={`font-semibold ${hasLowCredits ? "text-rose-600" : "text-slate-700"}`}>
                         {st.lessonsLeft} из {st.lessonsTotal}
                       </strong>
                       <span>· с {st.activationDate}</span>
@@ -188,7 +188,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     <button
                       onClick={() => handleMark(idx, st.subId, "present")}
                       disabled={markAttendance.isPending}
-                      className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all border cursor-pointer disabled:opacity-60 ${
+                      className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                         st.currentStatus === "present"
                           ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
                           : "bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"
@@ -201,7 +201,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     <button
                       onClick={() => handleMark(idx, st.subId, "absent")}
                       disabled={markAttendance.isPending}
-                      className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all border cursor-pointer disabled:opacity-60 ${
+                      className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                         st.currentStatus === "absent"
                           ? "bg-rose-600 border-rose-600 text-white shadow-xs"
                           : "bg-white border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50"
@@ -215,7 +215,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       onClick={() => handleMark(idx, st.subId, "freeze")}
                       disabled={markAttendance.isPending || freezeLocked}
                       title={freezeLocked ? "Заморозка доступна один раз для абонементов на 8 уроков" : "Заморозить занятие"}
-                      className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border disabled:opacity-60 ${
+                      className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border disabled:opacity-60 ${
                         st.currentStatus === "freeze"
                           ? "bg-sky-600 border-sky-600 text-white shadow-xs cursor-pointer"
                           : freezeLocked

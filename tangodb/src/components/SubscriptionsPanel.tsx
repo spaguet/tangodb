@@ -27,12 +27,12 @@ interface SubscriptionsPanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 const toggleCls = (selected: boolean) =>
   `py-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer text-center ${
     selected
-      ? "border-indigo-500 bg-indigo-50 text-indigo-700 font-bold"
+      ? "border-indigo-500 bg-indigo-50 text-indigo-700 font-semibold"
       : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
   }`;
 
@@ -182,7 +182,7 @@ export default function SubscriptionsPanel({
       <div className="grid grid-cols-2 border-b border-slate-200">
         <button
           onClick={() => switchTab("active")}
-          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
+          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
             activeTab === "active"
               ? "border-indigo-600 text-indigo-700"
               : "border-transparent text-slate-400 hover:text-slate-600"
@@ -190,13 +190,13 @@ export default function SubscriptionsPanel({
         >
           <FileCheck className="w-4 h-4 shrink-0" />
           <span className="text-center leading-tight">Действующие абонементы</span>
-          <span className="bg-slate-100 text-slate-500 font-mono text-[10px] px-1.5 py-0.5 rounded-full shrink-0">
+          <span className="bg-slate-100 text-slate-500 font-sans text-[10px] px-1.5 py-0.5 rounded-full shrink-0">
             {activeRecords.length}
           </span>
         </button>
         <button
           onClick={() => switchTab("sell")}
-          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
+          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
             activeTab === "sell"
               ? "border-indigo-600 text-indigo-700"
               : "border-transparent text-slate-400 hover:text-slate-600"
@@ -212,7 +212,7 @@ export default function SubscriptionsPanel({
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold tracking-tight text-slate-800">Действующие абонементы</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-800">Действующие абонементы</h2>
               <p className="text-xs text-slate-400 mt-1">
                 Отсортированы по остатку занятий — требующие продления вверху
               </p>
@@ -267,7 +267,7 @@ export default function SubscriptionsPanel({
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700">
+                        <span className="text-[10px] font-sans font-semibold tracking-wider uppercase px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700">
                           {sub.type === "solo"
                             ? "Соло"
                             : sub.type === "pair_hm"
@@ -277,11 +277,11 @@ export default function SubscriptionsPanel({
 
                         {sub.lessonsTotal === 8 ? (
                           sub.freezeUsed > 0 ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
                               <Snowflake className="w-3 h-3" /> заморозка использована
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
                               <Snowflake className="w-3 h-3" /> заморозка доступна
                             </span>
                           )
@@ -289,8 +289,8 @@ export default function SubscriptionsPanel({
                       </div>
 
                       <div>
-                        <h3 className="text-sm font-bold text-slate-800 leading-tight">{clientNameStr}</h3>
-                        <p className="text-[11px] text-slate-400 mt-1 font-mono">
+                        <h3 className="text-sm font-semibold text-slate-800 leading-tight">{clientNameStr}</h3>
+                        <p className="text-[11px] text-slate-400 mt-1 font-sans">
                           Активирован: {sub.activationDate || "—"}
                         </p>
                       </div>
@@ -305,7 +305,7 @@ export default function SubscriptionsPanel({
                               e.preventDefault();
                               openTelegramContact(c1.telegram);
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] font-mono text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
+                            className="inline-flex items-center gap-1 text-[11px] font-sans text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
                           >
                             <Send className="w-3 h-3" />
                             {c1.firstName}
@@ -320,7 +320,7 @@ export default function SubscriptionsPanel({
                               e.preventDefault();
                               openTelegramContact(c2.telegram);
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] font-mono text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
+                            className="inline-flex items-center gap-1 text-[11px] font-sans text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
                           >
                             <Send className="w-3 h-3" />
                             {c2.firstName}
@@ -332,7 +332,7 @@ export default function SubscriptionsPanel({
                     <div className="space-y-2 border-t border-slate-100 pt-4">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-400">Осталось занятий</span>
-                        <span className="font-mono font-bold text-slate-800">
+                        <span className="font-sans font-semibold text-slate-800">
                           {sub.lessonsLeft} <span className="text-slate-400 font-normal">из {sub.lessonsTotal}</span>
                         </span>
                       </div>
@@ -354,7 +354,7 @@ export default function SubscriptionsPanel({
 
                         <button
                           onClick={() => setFinishTarget({ id: sub.id, name: clientNameStr })}
-                          className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-mono font-bold"
+                          className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold"
                         >
                           Завершить
                         </button>
@@ -373,7 +373,7 @@ export default function SubscriptionsPanel({
             <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto">
               <Ticket className="w-5.5 h-5.5 text-indigo-600" />
             </div>
-            <h2 className="text-lg font-bold tracking-tight text-slate-900">Продажа абонемента</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">Продажа абонемента</h2>
             <p className="text-slate-400 text-xs">
               Оформите новый групповой абонемент — запись сразу попадёт в базу.
             </p>
@@ -483,7 +483,7 @@ export default function SubscriptionsPanel({
 
             <div className="flex items-center justify-between p-4 bg-indigo-50/60 rounded-xl border border-indigo-100">
               <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
-              <span className="text-xl font-mono font-bold text-indigo-700">
+              <span className="text-xl font-sans font-semibold text-indigo-700">
                 {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "тариф не настроен"}
               </span>
             </div>
@@ -491,7 +491,7 @@ export default function SubscriptionsPanel({
             <button
               onClick={handleCheckout}
               disabled={addSubscription.isPending}
-              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-mono text-xs font-bold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
             >
               {addSubscription.isPending ? "Оформление..." : "Продать абонемент"}
             </button>
@@ -504,7 +504,7 @@ export default function SubscriptionsPanel({
         title="Завершить абонемент досрочно?"
         description={
           <>
-            Абонемент <strong className="font-bold text-slate-800">{finishTarget?.name}</strong> будет закрыт со
+            Абонемент <strong className="font-semibold text-slate-800">{finishTarget?.name}</strong> будет закрыт со
             статусом «завершён». Оставшиеся занятия сгорят.
           </>
         }

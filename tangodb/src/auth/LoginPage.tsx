@@ -78,12 +78,12 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6">
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm p-8 space-y-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center text-white font-mono font-bold">
+          <div className="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold">
             T
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-800">TangoDB</h1>
-            <p className="text-xs text-slate-400 font-mono uppercase tracking-wider">Вход через Telegram</p>
+            <h1 className="text-lg font-semibold text-slate-800">TangoDB</h1>
+            <p className="text-xs text-slate-400 font-sans uppercase tracking-wider">Вход через Telegram</p>
           </div>
         </div>
 

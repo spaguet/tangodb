@@ -27,12 +27,12 @@ interface PersonalLessonsPanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 const toggleCls = (selected: boolean) =>
   `py-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer text-center ${
     selected
-      ? "border-indigo-500 bg-indigo-50 text-indigo-700 font-bold"
+      ? "border-indigo-500 bg-indigo-50 text-indigo-700 font-semibold"
       : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
   }`;
 
@@ -280,7 +280,7 @@ export default function PersonalLessonsPanel({
       <div className="grid grid-cols-2 border-b border-slate-200">
         <button
           onClick={() => switchTab("view")}
-          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
+          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
             activeTab === "view"
               ? "border-indigo-600 text-indigo-700"
               : "border-transparent text-slate-400 hover:text-slate-600"
@@ -288,13 +288,13 @@ export default function PersonalLessonsPanel({
         >
           <FolderClosed className="w-4 h-4 shrink-0" />
           <span className="text-center leading-tight">Просмотр</span>
-          <span className="bg-slate-100 text-slate-500 font-mono text-[10px] px-1.5 py-0.5 rounded-full shrink-0">
+          <span className="bg-slate-100 text-slate-500 font-sans text-[10px] px-1.5 py-0.5 rounded-full shrink-0">
             {monthLessonCount}
           </span>
         </button>
         <button
           onClick={() => switchTab("book")}
-          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
+          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
             activeTab === "book"
               ? "border-indigo-600 text-indigo-700"
               : "border-transparent text-slate-400 hover:text-slate-600"
@@ -311,16 +311,16 @@ export default function PersonalLessonsPanel({
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/70">
               <div className="px-4 py-2.5">
-                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold leading-tight">Уроки в этом месяце</p>
-                <h4 className="text-xl font-bold text-slate-800 mt-0.5 leading-none">{monthLessonCount}</h4>
+                <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">Уроки в этом месяце</p>
+                <h4 className="text-xl font-semibold text-slate-800 mt-0.5 leading-none">{monthLessonCount}</h4>
               </div>
               <div className="px-4 py-2.5">
-                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold leading-tight">Оплаченных в этом месяце</p>
-                <h4 className="text-xl font-bold text-emerald-700 mt-0.5 leading-none">{monthPaidCount}</h4>
+                <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">Оплаченных в этом месяце</p>
+                <h4 className="text-xl font-semibold text-emerald-700 mt-0.5 leading-none">{monthPaidCount}</h4>
               </div>
               <div className="px-4 py-2.5">
-                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold leading-tight">Ожидает оплаты</p>
-                <h4 className="text-xl font-mono font-bold text-rose-700 mt-0.5 leading-none">{formatCurrency(totalUnpaidSum)}</h4>
+                <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">Ожидает оплаты</p>
+                <h4 className="text-xl font-sans font-semibold text-rose-700 mt-0.5 leading-none">{formatCurrency(totalUnpaidSum)}</h4>
               </div>
             </div>
           </div>
@@ -332,7 +332,7 @@ export default function PersonalLessonsPanel({
                 <button
                   onClick={() => setPvFilter("all")}
                   className={`px-4 py-1.5 rounded-md cursor-pointer transition-all ${
-                    pvFilter === "all" ? "bg-white text-slate-900 shadow-xs font-bold" : "text-slate-500 hover:text-slate-700"
+                    pvFilter === "all" ? "bg-white text-slate-900 shadow-xs font-semibold" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
                   Все
@@ -340,7 +340,7 @@ export default function PersonalLessonsPanel({
                 <button
                   onClick={() => setPvFilter("yes")}
                   className={`px-4 py-1.5 rounded-md cursor-pointer transition-all ${
-                    pvFilter === "yes" ? "bg-white text-emerald-700 shadow-xs font-bold" : "text-slate-500 hover:text-slate-700"
+                    pvFilter === "yes" ? "bg-white text-emerald-700 shadow-xs font-semibold" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
                   Оплаченные
@@ -348,7 +348,7 @@ export default function PersonalLessonsPanel({
                 <button
                   onClick={() => setPvFilter("no")}
                   className={`px-4 py-1.5 rounded-md cursor-pointer transition-all ${
-                    pvFilter === "no" ? "bg-white text-rose-700 shadow-xs font-bold" : "text-slate-500 hover:text-slate-700"
+                    pvFilter === "no" ? "bg-white text-rose-700 shadow-xs font-semibold" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
                   Неоплаченные
@@ -387,10 +387,10 @@ export default function PersonalLessonsPanel({
                   return (
                     <div key={group.key} className="space-y-3">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <span className="text-xs font-bold text-indigo-700 uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-md">
+                        <span className="text-xs font-semibold text-indigo-700 uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-md">
                           {group.label}
                         </span>
-                        <span className="text-xs font-mono text-slate-400 font-bold">
+                        <span className="text-xs font-sans text-slate-400 font-semibold">
                           Итого за месяц: {formatCurrency(groupSum)}
                           {isUnpaidInGroup && <span className="text-rose-600 font-sans ml-2">(есть долг)</span>}
                         </span>
@@ -414,16 +414,16 @@ export default function PersonalLessonsPanel({
                             >
                               <div className="space-y-1 flex-1 pr-2">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[9px] font-mono tracking-wider font-bold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                                  <span className="text-[9px] font-sans tracking-wider font-semibold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
                                     {l.type === "solo" ? "Соло" : l.type === "pair" ? "Парный" : "Трио"}
                                   </span>
-                                  <span className="inline-flex items-center gap-1 font-mono text-xs text-slate-400">
+                                  <span className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
                                     <CalendarDays className="w-3 h-3" />
                                     {formatDateLabel(l.date)}
                                   </span>
                                 </div>
-                                <p className="text-sm font-bold text-slate-800 leading-tight">{renderClientNames(l)}</p>
-                                <p className="font-mono text-xs font-bold text-slate-500">{formatCurrency(l.price)}</p>
+                                <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
+                                <p className="font-sans text-xs font-semibold text-slate-500">{formatCurrency(l.price)}</p>
                               </div>
 
                               <div className="flex flex-col items-end gap-2">
@@ -431,7 +431,7 @@ export default function PersonalLessonsPanel({
                                   onClick={() => handleTogglePaid(l)}
                                   disabled={updatePersonalPaid.isPending}
                                   title={isPaid ? "Нажмите, чтобы отменить оплату" : "Нажмите, чтобы подтвердить оплату"}
-                                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-bold transition-colors cursor-pointer select-none border disabled:opacity-60 ${
+                                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-sans font-semibold transition-colors cursor-pointer select-none border disabled:opacity-60 ${
                                     isPaid
                                       ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
                                       : "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100"
@@ -467,7 +467,7 @@ export default function PersonalLessonsPanel({
             <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto">
               <Sparkles className="w-5.5 h-5.5 text-indigo-600" />
             </div>
-            <h2 className="text-lg font-bold tracking-tight text-slate-900">Забронировать персональный урок</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">Забронировать персональный урок</h2>
             <p className="text-slate-400 text-xs">
               Можно зарезервировать сразу несколько дат за одно оформление.
             </p>
@@ -572,7 +572,7 @@ export default function PersonalLessonsPanel({
                       required
                       value={dateStr}
                       onChange={(e) => handleDateChange(idx, e.target.value)}
-                      className="flex-1 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2 text-sm transition-all font-mono"
+                      className="flex-1 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2 text-sm transition-all font-sans"
                     />
                     <button
                       type="button"
@@ -589,7 +589,7 @@ export default function PersonalLessonsPanel({
               <button
                 type="button"
                 onClick={handleAddDate}
-                className="w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-mono text-xs font-bold uppercase tracking-wider cursor-pointer"
+                className="w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer"
               >
                 ＋ Добавить дату
               </button>
@@ -603,21 +603,21 @@ export default function PersonalLessonsPanel({
                 <button
                   type="button"
                   onClick={pullStandardPrice}
-                  className="text-[11px] text-indigo-600 hover:text-indigo-700 hover:underline font-mono font-semibold uppercase cursor-pointer"
+                  className="text-[11px] text-indigo-600 hover:text-indigo-700 hover:underline font-sans font-semibold uppercase cursor-pointer"
                 >
                   Взять из прайса
                 </button>
               </div>
 
-              <div className="relative font-mono">
+              <div className="relative font-sans">
                 <input
                   type="number"
                   placeholder="0"
                   value={customPrice}
                   onChange={(e) => setCustomPrice(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg pl-3.5 pr-10 py-2.5 text-sm transition-all font-bold"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg pl-3.5 pr-10 py-2.5 text-sm transition-all font-semibold"
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-sans font-medium pointer-events-none">₫</span>
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-sans font-normal pointer-events-none">₫</span>
               </div>
             </div>
 
@@ -627,7 +627,7 @@ export default function PersonalLessonsPanel({
               <button
                 onClick={() => handleBook(true)}
                 disabled={addPersonalLessons.isPending}
-                className="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-mono text-xs font-bold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                className="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
               >
                 Оплачено · бронь
               </button>
@@ -635,7 +635,7 @@ export default function PersonalLessonsPanel({
               <button
                 onClick={() => handleBook(false)}
                 disabled={addPersonalLessons.isPending}
-                className="py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-xs font-bold tracking-widest uppercase rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className="py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors cursor-pointer disabled:opacity-60"
               >
                 Без оплаты · бронь
               </button>
@@ -650,7 +650,7 @@ export default function PersonalLessonsPanel({
         description={
           deleteTarget ? (
             <>
-              Урок <strong className="font-bold text-slate-800">{renderClientNames(deleteTarget)}</strong> от{" "}
+              Урок <strong className="font-semibold text-slate-800">{renderClientNames(deleteTarget)}</strong> от{" "}
               {formatDateLabel(deleteTarget.date)} будет удалён безвозвратно.
             </>
           ) : (
