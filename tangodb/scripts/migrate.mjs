@@ -112,9 +112,9 @@ async function main() {
     ensureClient(s.ClientID2);
   }
   for (const l of data.personalLessons ?? []) {
-    ensureClient(l.Client1);
-    ensureClient(l.Client2);
-    ensureClient(l.Client3);
+    ensureClient(l.Client1 || l.ClientID1);
+    ensureClient(l.Client2 || l.ClientID2);
+    ensureClient(l.Client3 || l.ClientID3);
   }
 
   const clients = [...clientById.values()];
@@ -171,9 +171,9 @@ async function main() {
   const personal = (data.personalLessons ?? []).map((l) => ({
     id: String(l.ID),
     type: l.Type,
-    client_id1: l.Client1 ? String(l.Client1) : null,
-    client_id2: l.Client2 ? String(l.Client2) : null,
-    client_id3: l.Client3 ? String(l.Client3) : null,
+    client_id1: l.Client1 || l.ClientID1 ? String(l.Client1 || l.ClientID1) : null,
+    client_id2: l.Client2 || l.ClientID2 ? String(l.Client2 || l.ClientID2) : null,
+    client_id3: l.Client3 || l.ClientID3 ? String(l.Client3 || l.ClientID3) : null,
     date: formatDate(l.Date),
     price: parseFloat(l.Price) || 0,
     paid: l.Paid || 'no',

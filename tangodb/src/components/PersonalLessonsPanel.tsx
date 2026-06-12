@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, X, CalendarDays } from "lucide-react";
 import { useClients } from "../hooks/useClients";
 import { usePrices } from "../hooks/usePrices";
-import { formatCurrency } from "../lib/utils";
+import { formatClientName, formatCurrency } from "../lib/utils";
 import {
   useAddPersonalLessons,
   useDeletePersonalLesson,
@@ -201,28 +201,32 @@ export default function PersonalLessonsPanel({
   const monthPaidCount = currentMonthLessons.filter((l) => l.paid === "yes").length;
   const totalUnpaidSum = personalLessons.filter((l) => l.paid === "no").reduce((sum, l) => sum + l.price, 0);
 
-  const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
+  const clientMap = clients.reduce(
+    (acc, c) => ({ ...acc, [String(c.id)]: c }),
+    {} as Record<string, Client>
+  );
 
-  const renderDancersText = (lesson: PersonalLesson) => {
-    const c1 = clientMap[lesson.clientId1];
-    const c2 = lesson.clientId2 ? clientMap[lesson.clientId2] : null;
-    const c3 = lesson.clientId3 ? clientMap[lesson.clientId3] : null;
-
-    let text = c1 ? `${c1.lastName} ${c1.firstName[0]}.` : lesson.clientId1;
-    if (c2) text += ` & ${c2.lastName} ${c2.firstName[0]}.`;
-    if (c3) text += ` & ${c3.lastName} ${c3.firstName[0]}.`;
-    return text;
+  const clientNameFromMap = (clientId: string): string => {
+    const id = clientId.trim();
+    if (!id) return "";
+    const client = clientMap[id];
+    if (client) return formatClientName(client.lastName, client.firstName);
+    if (/[^\d]/.test(id)) return id;
+    return id;
   };
 
   const renderClientNames = (lesson: PersonalLesson) => {
-    const c1 = clientMap[lesson.clientId1];
-    const c2 = lesson.clientId2 ? clientMap[lesson.clientId2] : null;
-    const c3 = lesson.clientId3 ? clientMap[lesson.clientId3] : null;
+    if (lesson.clientDisplay && lesson.clientDisplay !== "Клиент не указан") {
+      return lesson.clientDisplay;
+    }
 
-    let text = c1 ? `${c1.lastName} ${c1.firstName}` : lesson.clientId1;
-    if (c2) text += ` & ${c2.lastName} ${c2.firstName}`;
-    if (c3) text += ` & ${c3.lastName} ${c3.firstName}`;
-    return text;
+    const names = [
+      clientNameFromMap(lesson.clientId1),
+      lesson.clientId2 ? clientNameFromMap(lesson.clientId2) : "",
+      lesson.clientId3 ? clientNameFromMap(lesson.clientId3) : "",
+    ].filter(Boolean);
+
+    return names.length ? names.join(" & ") : "Клиент не указан";
   };
 
   const isUpcomingLesson = (dateStr: string) => {
@@ -243,17 +247,9 @@ export default function PersonalLessonsPanel({
     .filter((l) => pvFilter === "all" || l.paid === pvFilter)
     .filter((l) => {
       if (!search.trim()) return true;
-      const c1Str = clientMap[l.clientId1]
-        ? `${clientMap[l.clientId1].firstName} ${clientMap[l.clientId1].lastName}`
-        : l.clientId1;
-      const c2Str =
-        l.clientId2 && clientMap[l.clientId2]
-          ? `${clientMap[l.clientId2].firstName} ${clientMap[l.clientId2].lastName}`
-          : "";
-      const c3Str =
-        l.clientId3 && clientMap[l.clientId3]
-          ? `${clientMap[l.clientId3].firstName} ${clientMap[l.clientId3].lastName}`
-          : "";
+      const c1Str = clientNameFromMap(l.clientId1);
+      const c2Str = l.clientId2 ? clientNameFromMap(l.clientId2) : "";
+      const c3Str = l.clientId3 ? clientNameFromMap(l.clientId3) : "";
       return `${c1Str} ${c2Str} ${c3Str}`.toLowerCase().includes(search.toLowerCase());
     })
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -654,7 +650,7 @@ export default function PersonalLessonsPanel({
         description={
           deleteTarget ? (
             <>
-              Урок <strong className="font-bold text-slate-800">{renderDancersText(deleteTarget)}</strong> от{" "}
+              Урок <strong className="font-bold text-slate-800">{renderClientNames(deleteTarget)}</strong> от{" "}
               {formatDateLabel(deleteTarget.date)} будет удалён безвозвратно.
             </>
           ) : (

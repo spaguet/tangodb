@@ -49,7 +49,7 @@ for (const s of data.subscriptions ?? []) {
   if (s.ClientID2) refClients.add(String(s.ClientID2));
 }
 for (const l of data.personalLessons ?? []) {
-  for (const k of ['Client1', 'Client2', 'Client3']) {
+  for (const k of ['Client1', 'Client2', 'Client3', 'ClientID1', 'ClientID2', 'ClientID3']) {
     if (l[k]) refClients.add(String(l[k]));
   }
 }

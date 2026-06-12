@@ -1,30 +1,71 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
+import { formatClientName } from "../lib/utils";
 import type { PersonalLesson } from "../types";
 
 export const personalLessonsQueryKey = ["personalLessons"] as const;
 
-const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => ({
-  id: row.id as string,
-  type: row.type as string,
-  clientId1: (row.client_id1 as string) || "",
-  clientId2: (row.client_id2 as string) || "",
-  clientId3: (row.client_id3 as string) || "",
-  date: String(row.date ?? "").slice(0, 10),
-  price: Number(row.price) || 0,
-  paid: (row.paid as "yes" | "no") || "no",
-});
+type ClientJoinRow = { first_name?: string; last_name?: string } | null;
+
+const asId = (value: unknown): string => (value == null ? "" : String(value).trim());
+
+const clientNameFromJoin = (row: ClientJoinRow, fallbackId: string): string => {
+  if (row && (row.last_name || row.first_name)) {
+    return formatClientName(row.last_name ?? "", row.first_name ?? "");
+  }
+  if (!fallbackId) return "";
+  // Legacy rows may store a display name instead of an ID.
+  if (/[^\d]/.test(fallbackId)) return fallbackId;
+  return fallbackId;
+};
+
+const joinClientNames = (parts: string[]): string =>
+  parts.filter(Boolean).join(" & ") || "Клиент не указан";
+
+const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => {
+  const clientId1 = asId(row.client_id1);
+  const clientId2 = asId(row.client_id2);
+  const clientId3 = asId(row.client_id3);
+
+  return {
+    id: row.id as string,
+    type: row.type as string,
+    clientId1,
+    clientId2,
+    clientId3,
+    clientDisplay: joinClientNames([
+      clientNameFromJoin(row.client1 as ClientJoinRow, clientId1),
+      clientId2 ? clientNameFromJoin(row.client2 as ClientJoinRow, clientId2) : "",
+      clientId3 ? clientNameFromJoin(row.client3 as ClientJoinRow, clientId3) : "",
+    ]),
+    date: String(row.date ?? "").slice(0, 10),
+    price: Number(row.price) || 0,
+    paid: (row.paid as "yes" | "no") || "no",
+  };
+};
+
+const personalLessonsSelect =
+  "id, type, client_id1, client_id2, client_id3, date, price, paid, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
 export function usePersonalLessons() {
   return useQuery({
     queryKey: personalLessonsQueryKey,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("personal_lessons")
-        .select("*")
+        .select(personalLessonsSelect)
         .order("date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []).map(mapPersonalLesson);
+
+      if (error) {
+        const fallback = await supabase
+          .from("personal_lessons")
+          .select("*")
+          .order("date", { ascending: false });
+        if (fallback.error) throw fallback.error;
+        data = fallback.data;
+      }
+
+      return (data ?? []).map((row) => mapPersonalLesson(row as Record<string, unknown>));
     },
     staleTime: 30 * 1000,
   });

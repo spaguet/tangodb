@@ -47,6 +47,7 @@ export interface PersonalLesson {
   clientId1: string;
   clientId2: string;
   clientId3: string;
+  clientDisplay: string;
   date: string;
   price: number;
   paid: "yes" | "no";
