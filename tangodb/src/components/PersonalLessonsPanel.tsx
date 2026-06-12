@@ -19,6 +19,7 @@ import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
+import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import type { ToastType } from "../App";
 import type { Client, PersonalLesson } from "../types";
 
@@ -274,41 +275,19 @@ export default function PersonalLessonsPanel({
 
   if (isLoading) return <LoadingState label="Загрузка персональных уроков..." />;
 
+  const personalTabs = [
+    { id: "view", label: "Просмотр", icon: FolderClosed },
+    { id: "book", label: "Забронировать урок", icon: BadgePlus },
+  ] as const;
+
   return (
-    <div className="space-y-6">
-      {/* Tab toggle header */}
-      <div className="grid grid-cols-2 border-b border-slate-200">
-        <button
-          onClick={() => switchTab("view")}
-          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
-            activeTab === "view"
-              ? "border-indigo-600 text-indigo-700"
-              : "border-transparent text-slate-400 hover:text-slate-600"
-          }`}
-        >
-          <FolderClosed className="w-4 h-4 shrink-0" />
-          <span className="text-center leading-tight">Просмотр</span>
-          <span className="bg-slate-100 text-slate-500 font-sans text-[10px] px-1.5 py-0.5 rounded-full shrink-0">
-            {monthLessonCount}
-          </span>
-        </button>
-        <button
-          onClick={() => switchTab("book")}
-          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
-            activeTab === "book"
-              ? "border-indigo-600 text-indigo-700"
-              : "border-transparent text-slate-400 hover:text-slate-600"
-          }`}
-        >
-          <BadgePlus className="w-4 h-4 shrink-0" />
-          <span className="text-center leading-tight">Забронировать урок</span>
-        </button>
-      </div>
+    <div>
+      <PageTabs tabs={[...personalTabs]} activeTab={activeTab} onChange={switchTab} />
 
       {activeTab === "view" ? (
         /* SCREEN 1: BROWSE PRIVATE SESSIONS */
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-b-xl rounded-tr-xl border border-slate-200 border-t-0 shadow-xs overflow-hidden -mt-px">
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/70">
               <div className="px-4 py-2.5">
                 <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">Уроки в этом месяце</p>
@@ -462,7 +441,9 @@ export default function PersonalLessonsPanel({
         </div>
       ) : (
         /* SCREEN 2: PRIVATE LESSON BOOKING FORM */
-        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs max-w-xl mx-auto space-y-6">
+        <div
+          className={`bg-white p-6 border border-slate-200 shadow-xs max-w-xl mx-auto space-y-6 ${pageTabPanelCls(activeTab, "view")}`}
+        >
           <div className="text-center space-y-2 border-b border-slate-100 pb-5">
             <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto">
               <Sparkles className="w-5.5 h-5.5 text-indigo-600" />

@@ -19,6 +19,7 @@ import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
+import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import type { ToastType } from "../App";
 import type { Client, Price } from "../types";
 
@@ -176,40 +177,20 @@ export default function SubscriptionsPanel({
 
   if (isLoading) return <LoadingState label="Загрузка абонементов..." />;
 
+  const subscriptionTabs = [
+    { id: "active", label: "Действующие абонементы", icon: FileCheck },
+    { id: "sell", label: "Продажа", icon: Ticket },
+  ] as const;
+
   return (
-    <div className="space-y-6">
-      {/* Tab toggle header */}
-      <div className="grid grid-cols-2 border-b border-slate-200">
-        <button
-          onClick={() => switchTab("active")}
-          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
-            activeTab === "active"
-              ? "border-indigo-600 text-indigo-700"
-              : "border-transparent text-slate-400 hover:text-slate-600"
-          }`}
-        >
-          <FileCheck className="w-4 h-4 shrink-0" />
-          <span className="text-center leading-tight">Действующие абонементы</span>
-          <span className="bg-slate-100 text-slate-500 font-sans text-[10px] px-1.5 py-0.5 rounded-full shrink-0">
-            {activeRecords.length}
-          </span>
-        </button>
-        <button
-          onClick={() => switchTab("sell")}
-          className={`px-2 sm:px-6 py-3 text-xs sm:text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 transition-all outline-none border-b-2 -mb-px cursor-pointer ${
-            activeTab === "sell"
-              ? "border-indigo-600 text-indigo-700"
-              : "border-transparent text-slate-400 hover:text-slate-600"
-          }`}
-        >
-          <Ticket className="w-4 h-4 shrink-0" />
-          <span className="text-center leading-tight">Продажа</span>
-        </button>
-      </div>
+    <div>
+      <PageTabs tabs={[...subscriptionTabs]} activeTab={activeTab} onChange={switchTab} />
 
       {activeTab === "active" ? (
         /* PANEL 1: VIEW ACTIVE MEMBERSHIPS */
-        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-6">
+        <div
+          className={`bg-white p-6 border border-slate-200 shadow-xs space-y-6 ${pageTabPanelCls(activeTab, "active")}`}
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold tracking-tight text-slate-800">Действующие абонементы</h2>
@@ -368,7 +349,9 @@ export default function SubscriptionsPanel({
         </div>
       ) : (
         /* PANEL 2: SELL NEW SUBSCRIPTION */
-        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs max-w-xl mx-auto space-y-6">
+        <div
+          className={`bg-white p-6 border border-slate-200 shadow-xs max-w-xl mx-auto space-y-6 ${pageTabPanelCls(activeTab, "active")}`}
+        >
           <div className="text-center space-y-2 border-b border-slate-100 pb-5">
             <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto">
               <Ticket className="w-5.5 h-5.5 text-indigo-600" />
