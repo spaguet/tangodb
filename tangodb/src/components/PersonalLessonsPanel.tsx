@@ -214,6 +214,25 @@ export default function PersonalLessonsPanel({
     return text;
   };
 
+  const renderClientNames = (lesson: PersonalLesson) => {
+    const c1 = clientMap[lesson.clientId1];
+    const c2 = lesson.clientId2 ? clientMap[lesson.clientId2] : null;
+    const c3 = lesson.clientId3 ? clientMap[lesson.clientId3] : null;
+
+    let text = c1 ? `${c1.lastName} ${c1.firstName}` : lesson.clientId1;
+    if (c2) text += ` & ${c2.lastName} ${c2.firstName}`;
+    if (c3) text += ` & ${c3.lastName} ${c3.firstName}`;
+    return text;
+  };
+
+  const isUpcomingLesson = (dateStr: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lessonDate = new Date(dateStr + "T12:00:00");
+    lessonDate.setHours(0, 0, 0, 0);
+    return lessonDate >= today;
+  };
+
   const formatDateLabel = (dateStr: string) => {
     const days = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
     const d = new Date(dateStr + "T12:00:00");
@@ -384,15 +403,20 @@ export default function PersonalLessonsPanel({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         {group.items.map((l) => {
                           const isPaid = l.paid === "yes";
+                          const isUpcoming = isUpcomingLesson(l.date);
 
                           return (
                             <div
                               key={l.id}
-                              className={`border rounded-xl p-4 flex items-center justify-between gap-4 transition-all bg-white hover:shadow-sm ${
-                                isPaid ? "border-slate-200" : "border-rose-200"
+                              className={`border rounded-xl p-4 flex items-center justify-between gap-4 transition-all hover:shadow-sm ${
+                                isUpcoming
+                                  ? "bg-emerald-50 border-emerald-200"
+                                  : isPaid
+                                    ? "bg-white border-slate-200"
+                                    : "bg-white border-rose-200"
                               }`}
                             >
-                              <div className="space-y-1.5 flex-1 pr-2">
+                              <div className="space-y-1 flex-1 pr-2">
                                 <div className="flex items-center gap-2">
                                   <span className="text-[9px] font-mono tracking-wider font-bold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
                                     {l.type === "solo" ? "Соло" : l.type === "pair" ? "Парный" : "Трио"}
@@ -402,7 +426,7 @@ export default function PersonalLessonsPanel({
                                     {formatDateLabel(l.date)}
                                   </span>
                                 </div>
-                                <h4 className="text-sm font-bold text-slate-800 leading-tight">{renderDancersText(l)}</h4>
+                                <p className="text-sm font-bold text-slate-800 leading-tight">{renderClientNames(l)}</p>
                                 <p className="font-mono text-xs font-bold text-slate-500">{formatCurrency(l.price)}</p>
                               </div>
 
