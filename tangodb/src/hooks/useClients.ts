@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
+import { normalizeTelegramForStorage } from "../lib/telegram";
 import type { Client } from "../types";
 
 export const clientsQueryKey = ["clients"] as const;
@@ -52,7 +53,7 @@ export function useAddClient() {
         id,
         first_name: fTrim,
         last_name: lTrim,
-        telegram: telegram.trim(),
+        telegram: normalizeTelegramForStorage(telegram),
       });
       if (error) return { success: false as const, error: error.message };
       return { success: true as const, id };
@@ -83,7 +84,7 @@ export function useUpdateClient() {
         .update({
           first_name: firstName.trim(),
           last_name: lastName.trim(),
-          telegram: telegram.trim(),
+          telegram: normalizeTelegramForStorage(telegram),
         })
         .eq("id", clientId);
       if (error) return { success: false as const, error: error.message };

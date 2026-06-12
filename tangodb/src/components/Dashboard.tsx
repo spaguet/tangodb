@@ -4,8 +4,9 @@
  */
 
 import { motion } from "motion/react";
-import { Users, Ticket, Calendar, DollarSign, AlertCircle, Play } from "lucide-react";
+import { Users, Ticket, Calendar, AlertCircle, Send } from "lucide-react";
 import { formatClientName, formatCurrency, formatPairName, dowFull, jsDayToIsoDow, pluralizeRu } from "../lib/utils";
+import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { Client, Subscription, ScheduleSlot, PersonalLesson } from "../types";
 
 interface DashboardProps {
@@ -32,11 +33,6 @@ export default function Dashboard({
 
   const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
 
-  // Financial calculations
-  const totalPaidRevenue = personalLessons
-    .filter((l) => l.paid === "yes")
-    .reduce((sum, l) => sum + l.price, 0);
-
   const pendingRevenue = personalLessons
     .filter((l) => l.paid === "no")
     .reduce((sum, l) => sum + l.price, 0);
@@ -47,7 +43,7 @@ export default function Dashboard({
   return (
     <div id="panel-dashboard" className="space-y-6">
       {/* Statistics widgets */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <motion.div
           whileHover={{ y: -2 }}
           className="bg-white rounded-xl p-4.5 border border-slate-200/90 shadow-xs flex items-center gap-4 cursor-pointer hover:shadow-sm transition-all"
@@ -75,24 +71,9 @@ export default function Dashboard({
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">Всего гостей</p>
+            <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">Всего клиентов</p>
             <h3 className="text-xl font-bold text-slate-800 leading-tight">{clients.length}</h3>
             <p className="text-[10px] text-slate-500 font-sans mt-0.5">карточек в реестре</p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          whileHover={{ y: -2 }}
-          className="bg-white rounded-xl p-4.5 border border-slate-200/90 shadow-xs flex items-center gap-4 cursor-pointer hover:shadow-sm transition-all"
-          onClick={() => onNavigate("personalView")}
-        >
-          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
-            <DollarSign className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">Касса персональных</p>
-            <h3 className="text-lg font-mono font-bold text-slate-800 leading-tight">{formatCurrency(totalPaidRevenue)}</h3>
-            <p className="text-[10px] text-emerald-600 font-sans mt-0.5 font-medium">оплаченные уроки</p>
           </div>
         </motion.div>
 
@@ -180,6 +161,7 @@ export default function Dashboard({
                 {warningSubs.map((sub, i) => {
                   const c1 = clientMap[sub.clientId1];
                   const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
+                  const tgUrl = c1?.telegram ? normalizeTelegramContact(c1.telegram) : null;
 
                   return (
                     <div
@@ -212,15 +194,20 @@ export default function Dashboard({
                           </p>
                         </div>
 
-                        {/* Direct contact link to Telegram */}
-                        {c1?.telegram ? (
+                        {tgUrl && c1 ? (
                           <a
-                            href={c1.telegram}
+                            href={tgUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="bg-[#229ED9] hover:bg-[#1C82B4] text-white px-2.5 py-1 rounded font-mono text-[10px] font-bold transition-all shadow-xs flex items-center gap-1"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              openTelegramContact(c1.telegram);
+                            }}
+                            className="inline-flex items-center justify-center p-1.5 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md transition-colors"
+                            title="Написать в Telegram"
+                            aria-label="Написать в Telegram"
                           >
-                            TG
+                            <Send className="w-3.5 h-3.5" />
                           </a>
                         ) : (
                           <span className="text-slate-400 font-mono text-[10px] select-none italic">без TG</span>

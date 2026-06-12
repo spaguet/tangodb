@@ -294,18 +294,18 @@ export default function PersonalLessonsPanel({
         /* SCREEN 1: BROWSE PRIVATE SESSIONS */
         <div className="space-y-6">
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
-              <div className="p-5">
-                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold">Уроки в этом месяце</p>
-                <h4 className="text-2xl font-bold text-slate-800 mt-1">{monthLessonCount}</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/70">
+              <div className="px-4 py-2.5">
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold leading-tight">Уроки в этом месяце</p>
+                <h4 className="text-xl font-bold text-slate-800 mt-0.5 leading-none">{monthLessonCount}</h4>
               </div>
-              <div className="p-5">
-                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold">Оплаченных в этом месяце</p>
-                <h4 className="text-2xl font-bold text-emerald-700 mt-1">{monthPaidCount}</h4>
+              <div className="px-4 py-2.5">
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold leading-tight">Оплаченных в этом месяце</p>
+                <h4 className="text-xl font-bold text-emerald-700 mt-0.5 leading-none">{monthPaidCount}</h4>
               </div>
-              <div className="p-5">
-                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold">Ожидает оплаты</p>
-                <h4 className="text-2xl font-mono font-bold text-rose-700 mt-1">{formatCurrency(totalUnpaidSum)}</h4>
+              <div className="px-4 py-2.5">
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold leading-tight">Ожидает оплаты</p>
+                <h4 className="text-xl font-mono font-bold text-rose-700 mt-0.5 leading-none">{formatCurrency(totalUnpaidSum)}</h4>
               </div>
             </div>
           </div>

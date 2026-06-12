@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Search, UserPlus, FileText, Send, Edit, Trash2, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAddClient, useClients, useDeleteClient, useUpdateClient } from "../hooks/useClients";
+import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
 import type { ToastType } from "../App";
@@ -235,15 +236,19 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                       {c.lastName} {c.firstName}
                     </td>
                     <td className="py-3">
-                      {c.telegram ? (
+                      {c.telegram && normalizeTelegramContact(c.telegram) ? (
                         <a
-                          href={c.telegram}
+                          href={normalizeTelegramContact(c.telegram)!}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            openTelegramContact(c.telegram);
+                          }}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-mono font-medium transition-colors"
                         >
                           <Send className="w-3 h-3" />
-                          {c.telegram.replace("https://t.me/", "@")}
+                          {formatTelegramDisplay(c.telegram)}
                         </a>
                       ) : (
                         <span className="text-xs text-slate-300 italic font-mono">не указан</span>

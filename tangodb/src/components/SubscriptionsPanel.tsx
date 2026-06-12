@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Ticket, FileCheck, Search, Send, Snowflake } from "lucide-react";
+import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients } from "../hooks/useClients";
 import { usePrices } from "../hooks/usePrices";
 import {
@@ -295,22 +296,30 @@ export default function SubscriptionsPanel({
                       </div>
 
                       <div className="flex gap-2">
-                        {c1?.telegram && (
+                        {c1?.telegram && normalizeTelegramContact(c1.telegram) && (
                           <a
-                            href={c1.telegram}
+                            href={normalizeTelegramContact(c1.telegram)!}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              openTelegramContact(c1.telegram);
+                            }}
                             className="inline-flex items-center gap-1 text-[11px] font-mono text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
                           >
                             <Send className="w-3 h-3" />
                             {c1.firstName}
                           </a>
                         )}
-                        {c2?.telegram && (
+                        {c2?.telegram && normalizeTelegramContact(c2.telegram) && (
                           <a
-                            href={c2.telegram}
+                            href={normalizeTelegramContact(c2.telegram)!}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              openTelegramContact(c2.telegram);
+                            }}
                             className="inline-flex items-center gap-1 text-[11px] font-mono text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
                           >
                             <Send className="w-3 h-3" />
@@ -384,10 +393,10 @@ export default function SubscriptionsPanel({
                   }}
                   className={toggleCls(subType === "solo")}
                 >
-                  Соло — для одного
+                  Один человек
                 </button>
                 <button type="button" onClick={() => setSubType("pair")} className={toggleCls(subType === "pair")}>
-                  Парный — для пары
+                  Для пары
                 </button>
               </div>
             </div>
