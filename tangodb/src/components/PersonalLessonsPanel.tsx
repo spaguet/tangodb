@@ -185,10 +185,20 @@ export default function PersonalLessonsPanel({
     }
   };
 
-  // Cashier totals
-  const totalCount = personalLessons.length;
-  const totalPaidSum = personalLessons.filter((l) => l.paid === "yes").reduce((sum, l) => sum + l.price, 0);
-  const totalUnpaidCount = personalLessons.filter((l) => l.paid === "no").length;
+  const currentYearMonth = (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  })();
+
+  const isCurrentMonth = (dateStr: string) => {
+    const d = new Date(dateStr + "T12:00:00");
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return key === currentYearMonth;
+  };
+
+  const currentMonthLessons = personalLessons.filter((l) => isCurrentMonth(l.date));
+  const monthLessonCount = currentMonthLessons.length;
+  const monthPaidCount = currentMonthLessons.filter((l) => l.paid === "yes").length;
   const totalUnpaidSum = personalLessons.filter((l) => l.paid === "no").reduce((sum, l) => sum + l.price, 0);
 
   const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
@@ -262,9 +272,9 @@ export default function PersonalLessonsPanel({
           }`}
         >
           <FolderClosed className="w-4 h-4 shrink-0" />
-          <span className="text-center leading-tight">Просмотр и касса</span>
+          <span className="text-center leading-tight">Просмотр</span>
           <span className="bg-slate-100 text-slate-500 font-mono text-[10px] px-1.5 py-0.5 rounded-full shrink-0">
-            {personalLessons.length}
+            {monthLessonCount}
           </span>
         </button>
         <button
@@ -281,27 +291,22 @@ export default function PersonalLessonsPanel({
       </div>
 
       {activeTab === "view" ? (
-        /* SCREEN 1: BROWSE PRIVATE SESSIONS AND CASHIER SUMMARY */
+        /* SCREEN 1: BROWSE PRIVATE SESSIONS */
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs">
-              <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold">Всего уроков</p>
-              <h4 className="text-2xl font-bold text-slate-800 mt-1">{totalCount}</h4>
-              <p className="text-[10px] text-slate-500 mt-0.5">сессий в архиве базы</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-5 border border-emerald-200/60 shadow-xs">
-              <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold">Зачислено в кассу</p>
-              <h4 className="text-2xl font-mono font-bold text-emerald-700 mt-1">{formatCurrency(totalPaidSum)}</h4>
-              <p className="text-[10px] text-emerald-600 mt-0.5">полученные средства</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-5 border border-rose-200/60 shadow-xs">
-              <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold">Ожидает оплаты</p>
-              <h4 className="text-2xl font-mono font-bold text-rose-700 mt-1">{formatCurrency(totalUnpaidSum)}</h4>
-              <p className="text-[10px] text-rose-600 mt-0.5">
-                {totalUnpaidCount} неоплаченных броней
-              </p>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+              <div className="p-5">
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold">Уроки в этом месяце</p>
+                <h4 className="text-2xl font-bold text-slate-800 mt-1">{monthLessonCount}</h4>
+              </div>
+              <div className="p-5">
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold">Оплаченных в этом месяце</p>
+                <h4 className="text-2xl font-bold text-emerald-700 mt-1">{monthPaidCount}</h4>
+              </div>
+              <div className="p-5">
+                <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-bold">Ожидает оплаты</p>
+                <h4 className="text-2xl font-mono font-bold text-rose-700 mt-1">{formatCurrency(totalUnpaidSum)}</h4>
+              </div>
             </div>
           </div>
 
