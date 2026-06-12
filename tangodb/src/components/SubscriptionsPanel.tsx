@@ -178,7 +178,7 @@ export default function SubscriptionsPanel({
   if (isLoading) return <LoadingState label="Загрузка абонементов..." />;
 
   const subscriptionTabs = [
-    { id: "active", label: "Действующие абонементы", icon: FileCheck },
+    { id: "active", label: "Просмотр", icon: FileCheck },
     { id: "sell", label: "Продажа", icon: Ticket },
   ] as const;
 

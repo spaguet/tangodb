@@ -277,7 +277,7 @@ export default function PersonalLessonsPanel({
 
   const personalTabs = [
     { id: "view", label: "Просмотр", icon: FolderClosed },
-    { id: "book", label: "Забронировать урок", icon: BadgePlus },
+    { id: "book", label: "Продажа", icon: BadgePlus },
   ] as const;
 
   return (

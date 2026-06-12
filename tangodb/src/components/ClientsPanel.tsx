@@ -219,9 +219,9 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
             <table className="w-full font-sans text-slate-700 text-left">
               <thead>
                 <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
-                  <th className="pb-3 pl-2 font-semibold">#</th>
+                  <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
                   <th className="pb-3 font-semibold">Танцор (Фамилия Имя)</th>
-                  <th className="pb-3 font-semibold">Связь</th>
+                  <th className="pb-3 font-semibold text-center">Связь</th>
                   <th className="pb-3 text-right pr-2 font-semibold">Действия</th>
                 </tr>
               </thead>
@@ -231,11 +231,11 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                     key={c.id}
                     className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
                   >
-                    <td className="py-3 pl-2 font-sans text-xs text-slate-400">{i + 1}</td>
+                    <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
                     <td className="py-3 font-normal text-slate-800">
                       {c.lastName} {c.firstName}
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 text-center">
                       {c.telegram && normalizeTelegramContact(c.telegram) ? (
                         <a
                           href={normalizeTelegramContact(c.telegram)!}
