@@ -273,7 +273,7 @@ function AppLayout() {
             </button>
           </header>
 
-          <section className="flex-1 p-4 sm:p-6 md:p-8 xl:p-10 max-w-7xl w-full mx-auto space-y-8 overflow-y-auto">
+          <section className="flex-1 p-4 sm:p-5 md:p-6 xl:p-8 max-w-7xl w-full mx-auto panel-page-stack overflow-y-auto">
             <Outlet />
           </section>
         </main>

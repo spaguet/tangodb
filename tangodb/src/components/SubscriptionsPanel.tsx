@@ -189,9 +189,9 @@ export default function SubscriptionsPanel({
       {activeTab === "active" ? (
         /* PANEL 1: VIEW ACTIVE MEMBERSHIPS */
         <div
-          className={`bg-white p-6 border border-slate-200 shadow-xs space-y-6 ${pageTabPanelCls(activeTab, "active")}`}
+          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold tracking-tight text-slate-800">Действующие абонементы</h2>
               <p className="text-xs text-slate-400 mt-1">
@@ -211,7 +211,7 @@ export default function SubscriptionsPanel({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {filteredActiveRecords.length === 0 ? (
               <div className="col-span-2 text-center py-20 text-slate-400 space-y-3">
                 <Ticket className="w-8 h-8 mx-auto text-slate-300" />
@@ -350,21 +350,21 @@ export default function SubscriptionsPanel({
       ) : (
         /* PANEL 2: SELL NEW SUBSCRIPTION */
         <div
-          className={`bg-white p-6 border border-slate-200 shadow-xs max-w-xl mx-auto space-y-6 ${pageTabPanelCls(activeTab, "active")}`}
+          className={`bg-white p-4 border border-slate-200 shadow-xs max-w-xl mx-auto panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
         >
-          <div className="text-center space-y-2 border-b border-slate-100 pb-5">
-            <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto">
-              <Ticket className="w-5.5 h-5.5 text-indigo-600" />
+          <div className="panel-form-header">
+            <div className="panel-form-header-icon">
+              <Ticket className="w-5 h-5 text-indigo-600" />
             </div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900">Продажа абонемента</h2>
-            <p className="text-slate-400 text-xs">
+            <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа абонемента</h2>
+            <p className="text-slate-400 text-[11px] leading-snug">
               Оформите новый групповой абонемент — запись сразу попадёт в базу.
             </p>
           </div>
 
-          <div className="space-y-4 text-sm">
+          <div className="panel-form-stack">
             {/* Solo vs Pair */}
-            <div className="space-y-1.5">
+            <div className="field-stack">
               <label className={labelCls}>Тип абонемента</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -418,10 +418,10 @@ export default function SubscriptionsPanel({
               </div>
             )}
 
-            <div className="border-t border-slate-100 my-4 pt-4" />
+            <div className="panel-form-divider" />
 
             {/* Package size */}
-            <div className="space-y-1.5">
+            <div className="field-stack">
               <label className={labelCls}>Пакет занятий</label>
               <div className="grid grid-cols-2 gap-3">
                 <button type="button" onClick={() => setLessonsCount(4)} className={toggleCls(lessonsCount === 4)}>
@@ -434,7 +434,7 @@ export default function SubscriptionsPanel({
             </div>
 
             {subType === "pair" && lessonsCount === 8 && (
-              <div className="space-y-1.5 animate-fade-in">
+              <div className="field-stack animate-fade-in">
                 <label className={labelCls}>Месяц парного обучения (влияет на тариф)</label>
                 <div className="grid grid-cols-3 gap-3">
                   {[1, 2, 3].map((m) => (
@@ -451,7 +451,7 @@ export default function SubscriptionsPanel({
               </div>
             )}
 
-            <div className="space-y-1.5">
+            <div className="field-stack">
               <label className={labelCls}>Дата активации</label>
               <input
                 type="date"
@@ -462,9 +462,7 @@ export default function SubscriptionsPanel({
               />
             </div>
 
-            <div className="border-t border-slate-100 my-4 pt-4" />
-
-            <div className="flex items-center justify-between p-4 bg-indigo-50/60 rounded-xl border border-indigo-100">
+            <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100">
               <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
               <span className="text-xl font-sans font-semibold text-indigo-700">
                 {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "тариф не настроен"}

@@ -75,15 +75,15 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   if (isLoading) return <LoadingState label="Загрузка расписания..." />;
 
   return (
-    <div id="panel-schedule" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      <div className="lg:col-span-4 bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-5">
+    <div id="panel-schedule" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
           <CalendarDays className="w-4.5 h-4.5 text-indigo-500" />
           <h2 className="text-base font-semibold tracking-tight">Внести новое занятие</h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-sm">
-          <div className="space-y-1.5">
+        <form onSubmit={handleSubmit} className="panel-form-stack">
+          <div className="field-stack">
             <label className={labelCls}>День недели</label>
             <select
               value={day}
@@ -98,7 +98,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
             </select>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="field-stack">
             <label className={labelCls}>Время начала</label>
             <div className="relative font-sans">
               <Clock className="w-4 h-4 text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -122,7 +122,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
         </form>
       </div>
 
-      <div className="lg:col-span-8 bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-5">
+      <div className="lg:col-span-8 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
           <CalendarRange className="w-4.5 h-4.5 text-indigo-500" />
           <h2 className="text-base font-semibold tracking-tight">Утверждённая сетка расписания</h2>
@@ -136,7 +136,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {sortedDaysKeys.map((dayKey) => {
               const slots = grouped[dayKey].sort((a, b) => a.time.localeCompare(b.time));
 

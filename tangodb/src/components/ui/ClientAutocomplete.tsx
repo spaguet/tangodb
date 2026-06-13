@@ -56,7 +56,7 @@ export default function ClientAutocomplete({
   const showList = open && suggestions.length > 0;
 
   return (
-    <div className="space-y-1.5 relative">
+    <div className="field-stack relative">
       <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">{label}</label>
       <div className="relative">
         <input

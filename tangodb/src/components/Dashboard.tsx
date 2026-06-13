@@ -59,7 +59,7 @@ export default function Dashboard({
   const monthLabel = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(new Date());
 
   return (
-    <div id="panel-dashboard" className="space-y-6">
+    <div id="panel-dashboard" className="panel-page-stack">
       {/* Statistics widgets */}
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
@@ -117,7 +117,7 @@ export default function Dashboard({
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Today Schedule section */}
         <div className="lg:col-span-5 bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -220,8 +220,8 @@ export default function Dashboard({
                       </div>
 
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-sans text-slate-600 capitalize">
-                          {sub.type === "solo" ? "соло" : "парный"}
+                        <span className="text-[9px] font-sans uppercase bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold shrink-0">
+                          {sub.type === "solo" ? "Соло" : "Парный"}
                         </span>
                         <span className="text-[10px] text-slate-400 font-sans shrink-0">
                           активирован {sub.activationDate}

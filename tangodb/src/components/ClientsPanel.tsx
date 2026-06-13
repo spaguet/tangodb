@@ -116,16 +116,16 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   );
 
   return (
-    <div id="panel-newClient" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <div id="panel-newClient" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
       {/* Sidebar form: Add Guest */}
-      <div className="lg:col-span-4 bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-5">
+      <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
           <UserPlus className="w-4.5 h-4.5 text-indigo-500" />
           <h2 className="text-base font-semibold tracking-tight">Добавить танцора</h2>
         </div>
 
-        <form onSubmit={handleSubmitAdd} className="space-y-4 font-sans">
-          <div className="space-y-1.5">
+        <form onSubmit={handleSubmitAdd} className="panel-form-stack font-sans">
+          <div className="field-stack">
             <label className={labelCls}>Имя</label>
             <input
               type="text"
@@ -137,7 +137,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="field-stack">
             <label className={labelCls}>Фамилия</label>
             <input
               type="text"
@@ -149,7 +149,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="field-stack">
             <label className={labelCls}>Telegram</label>
             <div className="relative">
               <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
@@ -184,7 +184,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       </div>
 
       {/* Main Table details */}
-      <div className="lg:col-span-8 bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-5">
+      <div className="lg:col-span-8 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5 text-slate-800">
             <FileText className="w-4.5 h-4.5 text-indigo-500" />
@@ -298,7 +298,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-6 space-y-5"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-base font-semibold tracking-tight text-slate-900">Редактировать танцора</h3>
@@ -311,18 +311,18 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 </button>
               </div>
 
-              <div className="space-y-4 font-sans text-sm">
-                <div className="space-y-1.5">
+              <div className="panel-form-stack font-sans">
+                <div className="field-stack">
                   <label className={labelCls}>Имя</label>
                   <input type="text" value={editFirst} onChange={(e) => setEditFirst(e.target.value)} className={inputCls} />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="field-stack">
                   <label className={labelCls}>Фамилия</label>
                   <input type="text" value={editLast} onChange={(e) => setEditLast(e.target.value)} className={inputCls} />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="field-stack">
                   <label className={labelCls}>Telegram ссылка</label>
                   <input
                     type="text"

@@ -153,9 +153,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   };
 
   return (
-    <div id="panel-prices" className="space-y-6">
-      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
-        <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3 mb-5">
+    <div id="panel-prices" className="panel-page-stack">
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3 mb-3">
           <Coins className="w-4.5 h-4.5 text-indigo-500" />
           <div>
             <h2 className="text-base font-semibold tracking-tight">Тарифы и прайс-лист</h2>
@@ -168,15 +168,15 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         {prices.length === 0 ? (
           <div className="text-center py-16 text-slate-400 text-sm">Прайс-лист пуст.</div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="panel-card-stack">
               <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
                 Групповые занятия
               </h3>
               <div className="space-y-3">{groupItems.map(renderPriceRow)}</div>
             </div>
 
-            <div className="space-y-4">
+            <div className="panel-card-stack">
               <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
                 Индивидуальные уроки
               </h3>

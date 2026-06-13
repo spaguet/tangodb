@@ -35,6 +35,36 @@
   }
 }
 
+@layer components {
+  .panel-page-stack {
+    @apply space-y-4;
+  }
+
+  .panel-card-stack {
+    @apply space-y-3;
+  }
+
+  .panel-form-stack {
+    @apply space-y-3 text-sm;
+  }
+
+  .field-stack {
+    @apply space-y-1;
+  }
+
+  .panel-form-header {
+    @apply text-center space-y-1 border-b border-slate-100 pb-3;
+  }
+
+  .panel-form-header-icon {
+    @apply w-9 h-9 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto;
+  }
+
+  .panel-form-divider {
+    @apply border-t border-slate-100 pt-3;
+  }
+}
+
 /* Custom layout scrollbars for client tables */
 ::-webkit-scrollbar {
   width: 5px;

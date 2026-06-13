@@ -52,7 +52,7 @@ export default function ConfirmDialog({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 12, opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-slate-200 shadow-xl p-6 max-w-sm w-full space-y-4"
+            className="relative bg-white rounded-xl border border-slate-200 shadow-xl p-4 max-w-sm w-full panel-card-stack"
           >
             <div className="flex items-start gap-3.5">
               <div className="w-10 h-10 shrink-0 bg-rose-50 rounded-full flex items-center justify-center text-rose-600">

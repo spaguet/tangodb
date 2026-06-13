@@ -95,8 +95,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const displayDate = selectedDateVal ? selectedDateVal.split("|")[0] : "";
 
   return (
-    <div id="panel-attendance" className="space-y-6">
-      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs space-y-3">
+    <div id="panel-attendance" className="panel-page-stack">
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div>
           <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений</h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -105,7 +105,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-          <div className="space-y-1.5 md:col-span-1">
+          <div className="field-stack md:col-span-1">
             <label className={labelCls}>Месяц занятий</label>
             <input
               type="month"
@@ -115,7 +115,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             />
           </div>
 
-          <div className="space-y-1.5 md:col-span-2">
+          <div className="field-stack md:col-span-2">
             <label className={labelCls}>Занятие по расписанию</label>
             <select value={selectedDateVal} onChange={(e) => setSelectedDateVal(e.target.value)} className={fieldCls}>
               <option value="">— выберите урок —</option>
@@ -139,7 +139,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-4">
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-3">
           <h3 className="text-sm font-semibold tracking-tight text-slate-800">
             {displayDate ? `Абонементы на ${formatAttendanceDate(displayDate)}` : "Класс не выбран"}

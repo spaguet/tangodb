@@ -286,7 +286,7 @@ export default function PersonalLessonsPanel({
 
       {activeTab === "view" ? (
         /* SCREEN 1: BROWSE PRIVATE SESSIONS */
-        <div className="space-y-6">
+        <div className="panel-page-stack">
           <div className="bg-white rounded-b-xl rounded-tr-xl border border-slate-200 border-t-0 shadow-xs overflow-hidden -mt-px">
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/70">
               <div className="px-4 py-2.5">
@@ -304,8 +304,8 @@ export default function PersonalLessonsPanel({
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               {/* All / Paid / Unpaid filter */}
               <div className="flex bg-slate-100 rounded-lg p-1 text-xs font-semibold gap-1">
                 <button
@@ -358,13 +358,13 @@ export default function PersonalLessonsPanel({
                 </button>
               </div>
             ) : (
-              <div className="space-y-8">
+              <div className="panel-card-stack">
                 {monthlyGroups.map((group) => {
                   const groupSum = group.items.reduce((s, x) => s + x.price, 0);
                   const isUnpaidInGroup = group.items.some((x) => x.paid === "no");
 
                   return (
-                    <div key={group.key} className="space-y-3">
+                    <div key={group.key} className="panel-card-stack">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                         <span className="text-xs font-sans font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md">
                           {group.label}
@@ -375,7 +375,7 @@ export default function PersonalLessonsPanel({
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {group.items.map((l) => {
                           const isPaid = l.paid === "yes";
                           const isUpcoming = isUpcomingLesson(l.date);
@@ -442,20 +442,20 @@ export default function PersonalLessonsPanel({
       ) : (
         /* SCREEN 2: PRIVATE LESSON BOOKING FORM */
         <div
-          className={`bg-white p-6 border border-slate-200 shadow-xs max-w-xl mx-auto space-y-6 ${pageTabPanelCls(activeTab, "view")}`}
+          className={`bg-white p-4 border border-slate-200 shadow-xs max-w-xl mx-auto panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
         >
-          <div className="text-center space-y-2 border-b border-slate-100 pb-5">
-            <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto">
-              <Sparkles className="w-5.5 h-5.5 text-indigo-600" />
+          <div className="panel-form-header">
+            <div className="panel-form-header-icon">
+              <Sparkles className="w-5 h-5 text-indigo-600" />
             </div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900">Забронировать персональный урок</h2>
-            <p className="text-slate-400 text-xs">
+            <h2 className="text-base font-semibold tracking-tight text-slate-900">Забронировать персональный урок</h2>
+            <p className="text-slate-400 text-[11px] leading-snug">
               Можно зарезервировать сразу несколько дат за одно оформление.
             </p>
           </div>
 
-          <div className="space-y-4 text-sm">
-            <div className="space-y-1.5">
+          <div className="panel-form-stack">
+            <div className="field-stack">
               <label className={labelCls}>Участники</label>
               <div className="grid grid-cols-3 gap-3">
                 {[
@@ -540,10 +540,10 @@ export default function PersonalLessonsPanel({
               </div>
             )}
 
-            <div className="border-t border-slate-100 my-4 pt-4" />
+            <div className="panel-form-divider" />
 
             {/* Multi-date controls */}
-            <div className="space-y-2">
+            <div className="field-stack">
               <label className={labelCls}>Даты бронирования</label>
               <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
                 {dates.map((dateStr, idx) => (
@@ -576,9 +576,9 @@ export default function PersonalLessonsPanel({
               </button>
             </div>
 
-            <div className="border-t border-slate-100 my-4 pt-4" />
+            <div className="panel-form-divider" />
 
-            <div className="space-y-1.5">
+            <div className="field-stack">
               <div className="flex items-center justify-between">
                 <label className={labelCls.replace(" block", "")}>Стоимость за 1 урок</label>
                 <button
@@ -602,9 +602,9 @@ export default function PersonalLessonsPanel({
               </div>
             </div>
 
-            <div className="border-t border-slate-100 my-4 pt-4" />
+            <div className="panel-form-divider" />
 
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleBook(true)}
                 disabled={addPersonalLessons.isPending}
