@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, X, Snowflake, Loader2, RefreshCw, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Check, X, Snowflake, Loader2, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   attendanceQueryKey,
   useMarkAttendance,
@@ -13,10 +13,10 @@ import {
   useSubsForDate,
 } from "../hooks/useAttendance";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
-import { dowShort, formatCurrency, jsDayToIsoDow, pluralizeRu } from "../lib/utils";
+import { dowShort, jsDayToIsoDow, pluralizeRu } from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import type { ToastType } from "../App";
-import type { PersonalLesson, SubForDate } from "../types";
+import type { SubForDate } from "../types";
 
 interface AttendancePanelProps {
   toast: (msg: string, type?: ToastType) => void;
@@ -84,13 +84,32 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   );
 
   const personalForDay = useMemo(
-    () => personalLessons.filter((l) => l.date === selectedDate),
+    () =>
+      personalLessons
+        .filter((l) => l.date === selectedDate)
+        .sort((a, b) => a.timeStart.localeCompare(b.timeStart)),
     [personalLessons, selectedDate]
   );
 
+  const dayScheduleEntries = useMemo(() => {
+    const entries = [
+      ...groupLessonsForDay.map((slot) => ({
+        kind: "group" as const,
+        start: slot.time,
+        key: `g-${slot.date}|${slot.time}`,
+        label: `Групповой урок: ${slot.time} – ${slot.timeEnd}`,
+      })),
+      ...personalForDay.map((lesson) => ({
+        kind: "personal" as const,
+        start: lesson.timeStart,
+        key: `p-${lesson.id}`,
+        label: `${lesson.clientDisplay}: ${lesson.timeStart} – ${lesson.timeEnd}`,
+      })),
+    ];
+    return entries.sort((a, b) => a.start.localeCompare(b.start));
+  }, [groupLessonsForDay, personalForDay]);
+
   const hasGroupClass = groupLessonsForDay.length > 0;
-  const hasPersonalLessons = personalForDay.length > 0;
-  const hasAnyRecords = hasGroupClass || hasPersonalLessons;
 
   const { subs: students = [], isLoading: subsLoading } = useSubsForDate(hasGroupClass ? selectedDate : undefined);
   const markAttendance = useMarkAttendance();
@@ -185,45 +204,12 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     toast("Списки посещений обновлены", "info");
   };
 
-  const renderPersonalLesson = (lesson: PersonalLesson) => {
-    const typeLabel = lesson.type === "solo" ? "Соло" : lesson.type === "pair" ? "Парный" : "Трио";
-    return (
-      <div
-        key={lesson.id}
-        className="flex items-center justify-between gap-3 py-3 px-3 bg-violet-50 border border-violet-100 rounded-lg"
-      >
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-            <span className="text-[9px] font-sans tracking-wider font-semibold uppercase bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded">
-              {typeLabel}
-            </span>
-            <span className="text-xs text-slate-500 font-sans">
-              {lesson.timeStart} – {lesson.timeEnd}
-            </span>
-          </div>
-          <p className="text-sm font-semibold text-slate-800">{lesson.clientDisplay}</p>
-          <p className="text-xs text-slate-500 font-sans">{formatCurrency(lesson.price)}</p>
-        </div>
-        <span
-          className={`text-[11px] font-sans font-semibold px-2 py-1 rounded-md shrink-0 ${
-            lesson.paid === "yes"
-              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-              : "bg-rose-50 text-rose-700 border border-rose-200"
-          }`}
-        >
-          {lesson.paid === "yes" ? "Оплачен" : "К оплате"}
-        </span>
-      </div>
-    );
-  };
-
   return (
     <div id="panel-attendance" className="panel-page-stack">
       <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений</h2>
+            <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений и календарь</h2>
             <p className="text-xs text-slate-400 mt-0.5">
               Выберите день в календаре — отобразятся групповые и персональные занятия.
             </p>
@@ -322,47 +308,31 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         {selectedDate && (
           <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
             <p className="text-xs font-semibold text-slate-700">{formatAttendanceDate(selectedDate)}</p>
-            {hasGroupClass ? (
+            {dayScheduleEntries.length > 0 ? (
               <div className="mt-1 space-y-0.5">
-                {groupLessonsForDay.map((slot) => (
-                  <p key={`${slot.date}|${slot.time}`} className="text-xs text-slate-500 font-sans">
-                    Групповой урок: {slot.time} – {slot.timeEnd}
+                {dayScheduleEntries.map((entry) => (
+                  <p
+                    key={entry.key}
+                    className={`text-xs font-sans ${
+                      entry.kind === "group" ? "text-slate-500" : "text-violet-600"
+                    }`}
+                  >
+                    {entry.label}
                   </p>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 mt-0.5 font-sans">Группового урока по расписанию нет</p>
+              <p className="text-xs text-slate-400 mt-0.5 font-sans">На этот день нет записей.</p>
             )}
           </div>
         )}
       </div>
 
-      {!isLoading && !hasAnyRecords && (
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-center py-16 text-slate-400">
-          <p className="text-sm">На этот день нет записей.</p>
-        </div>
-      )}
-
-      {hasPersonalLessons && (
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-3">
-            <h3 className="text-sm font-semibold tracking-tight text-slate-800">
-              Персональные уроки на {formatAttendanceDate(selectedDate)}
-            </h3>
-            <span className="text-[10px] font-sans bg-violet-50 text-violet-700 px-2.5 py-1 rounded-full font-semibold shrink-0 tabular-nums">
-              {personalForDay.length}{" "}
-              {pluralizeRu(personalForDay.length, ["урок", "урока", "уроков"])}
-            </span>
-          </div>
-          <div className="space-y-2">{personalForDay.map(renderPersonalLesson)}</div>
-        </div>
-      )}
-
       {hasGroupClass && (
         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-3">
             <h3 className="text-sm font-semibold tracking-tight text-slate-800">
-              Абонементы на {formatAttendanceDate(selectedDate)}
+              Журнал посещения группового урока на {formatAttendanceDate(selectedDate)}
             </h3>
             <span className="text-[10px] font-sans bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold shrink-0 tabular-nums">
               {students.length} {pluralizeRu(students.length, ["абонемент", "абонемента", "абонементов"])}
