@@ -13,7 +13,7 @@ import {
   useSubsForDate,
 } from "../hooks/useAttendance";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
-import { dowShort, jsDayToIsoDow, pluralizeRu } from "../lib/utils";
+import { dowShort, formatDayMonthRu, jsDayToIsoDow, pluralizeRu } from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import type { ToastType } from "../App";
 import type { SubForDate } from "../types";
@@ -330,13 +330,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
       {hasGroupClass && (
         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-3">
+          <div className="border-b border-slate-100 pb-3 space-y-1">
             <h3 className="text-sm font-semibold tracking-tight text-slate-800">
-              Журнал посещения группового урока на {formatAttendanceDate(selectedDate)}
+              Журнал посещения группового урока
             </h3>
-            <span className="text-[10px] font-sans bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold shrink-0 tabular-nums">
-              {students.length} {pluralizeRu(students.length, ["абонемент", "абонемента", "абонементов"])}
-            </span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-slate-500 font-sans">{formatDayMonthRu(selectedDate)}</span>
+              <span className="text-[10px] font-sans bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold shrink-0 tabular-nums">
+                {students.length} {pluralizeRu(students.length, ["абонемент", "абонемента", "абонементов"])}
+              </span>
+            </div>
           </div>
 
           {isLoading ? (

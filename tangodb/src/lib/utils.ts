@@ -71,6 +71,15 @@ export function pluralizeRu(n: number, forms: [string, string, string]): string 
   return forms[2];
 }
 
+export function formatDayMonthRu(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  if (!y || !m || !d) return dateStr;
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+  }).format(new Date(y, m - 1, d));
+}
+
 export function formatDateRu(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   if (!y || !m || !d) return dateStr;
