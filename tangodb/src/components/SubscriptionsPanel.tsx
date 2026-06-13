@@ -418,7 +418,7 @@ export default function SubscriptionsPanel({
               </div>
             )}
 
-            <div className="panel-form-divider" />
+            <div className="border-t border-slate-100 pt-1.5 -mt-1" />
 
             {/* Package size */}
             <div className="field-stack">
@@ -462,12 +462,16 @@ export default function SubscriptionsPanel({
               />
             </div>
 
+            <div className="panel-form-divider" />
+
             <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100">
               <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
               <span className="text-xl font-sans font-semibold text-indigo-700">
                 {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "тариф не настроен"}
               </span>
             </div>
+
+            <div className="panel-form-divider" />
 
             <button
               onClick={handleCheckout}

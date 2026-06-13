@@ -543,34 +543,36 @@ export default function PersonalLessonsPanel({
             <div className="border-t border-slate-100 pt-1.5 -mt-1" />
 
             {/* Multi-date controls */}
-            <div className="space-y-0.5">
-              <label className={labelCls}>Даты бронирования</label>
-              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
-                {dates.map((dateStr, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <input
-                      type="date"
-                      required
-                      value={dateStr}
-                      onChange={(e) => handleDateChange(idx, e.target.value)}
-                      className="flex-1 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2 text-sm transition-all font-sans"
-                    />
-                    <button
-                      type="button"
-                      disabled={dates.length <= 1}
-                      onClick={() => handleRemoveDate(idx)}
-                      aria-label="Убрать дату"
-                      className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+            <div>
+              <div className="field-stack">
+                <label className={labelCls}>Даты бронирования</label>
+                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                  {dates.map((dateStr, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        required
+                        value={dateStr}
+                        onChange={(e) => handleDateChange(idx, e.target.value)}
+                        className="flex-1 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2 text-sm transition-all font-sans"
+                      />
+                      <button
+                        type="button"
+                        disabled={dates.length <= 1}
+                        onClick={() => handleRemoveDate(idx)}
+                        aria-label="Убрать дату"
+                        className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
               <button
                 type="button"
                 onClick={handleAddDate}
-                className="w-full py-1.5 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                className="w-full mt-2 py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer"
               >
                 ＋ Добавить дату
               </button>
