@@ -3,6 +3,7 @@ import Dashboard from "../components/Dashboard";
 import LoadingState from "../components/ui/LoadingState";
 import { useClients } from "../hooks/useClients";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
+import { usePrices } from "../hooks/usePrices";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptions } from "../hooks/useSubscriptions";
 import { useUIStore } from "../store/ui";
@@ -16,8 +17,9 @@ export default function DashboardPage() {
   const { data: subscriptions = [], isLoading: subsLoading } = useSubscriptions();
   const { data: schedule = [], isLoading: scheduleLoading } = useSchedule();
   const { data: personalLessons = [], isLoading: personalLoading } = usePersonalLessons();
+  const { data: prices = [], isLoading: pricesLoading } = usePrices();
 
-  const isLoading = clientsLoading || subsLoading || scheduleLoading || personalLoading;
+  const isLoading = clientsLoading || subsLoading || scheduleLoading || personalLoading || pricesLoading;
 
   const handleNavigate = (panel: string) => {
     const routes: Record<string, { path: string; subTab?: "active" | "sell"; persTab?: "view" | "book" }> = {
@@ -46,6 +48,7 @@ export default function DashboardPage() {
       subscriptions={subscriptions}
       schedule={schedule}
       personalLessons={personalLessons}
+      prices={prices}
       onNavigate={handleNavigate}
     />
   );

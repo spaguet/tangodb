@@ -80,3 +80,30 @@ export function formatDateRu(dateStr: string): string {
     year: "numeric",
   }).format(new Date(y, m - 1, d));
 }
+
+export function currentYearMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function isDateInYearMonth(dateStr: string, yearMonth: string): boolean {
+  const d = new Date(`${dateStr.slice(0, 10)}T12:00:00`);
+  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return key === yearMonth;
+}
+
+export function getSubscriptionPrice(
+  sub: { type: string; lessonsTotal: number; pairMonth: string },
+  prices: { type: string; lessons: number; price: number }[]
+): number {
+  let matched: { price: number } | undefined;
+  if (sub.type === "solo") {
+    matched = prices.find((p) => p.type.trim() === "solo" && p.lessons === sub.lessonsTotal);
+  } else if (sub.lessonsTotal === 4) {
+    matched = prices.find((p) => p.type.trim() === "pair_hm");
+  } else {
+    const month = sub.pairMonth || "1";
+    matched = prices.find((p) => p.type.trim() === `pair_m${month}`);
+  }
+  return matched?.price ?? 0;
+}

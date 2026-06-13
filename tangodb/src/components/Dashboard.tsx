@@ -4,16 +4,18 @@
  */
 
 import { motion } from "motion/react";
-import { Users, Ticket, Calendar, AlertCircle, Send } from "lucide-react";
-import { formatClientName, formatCurrency, formatPairName, dowFull, jsDayToIsoDow, pluralizeRu } from "../lib/utils";
+import { Users, Ticket, Calendar, AlertCircle, Send, BarChart3 } from "lucide-react";
+import { formatClientName, formatCurrency, formatPairName, dowFull, jsDayToIsoDow, pluralizeRu, currentYearMonth, isDateInYearMonth, getSubscriptionPrice } from "../lib/utils";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
-import { Client, Subscription, ScheduleSlot, PersonalLesson } from "../types";
+import { computeScheduleDatesForMonth } from "../hooks/useAttendance";
+import { Client, Subscription, ScheduleSlot, PersonalLesson, Price } from "../types";
 
 interface DashboardProps {
   clients: Client[];
   subscriptions: Subscription[];
   schedule: ScheduleSlot[];
   personalLessons: PersonalLesson[];
+  prices: Price[];
   onNavigate: (panel: string) => void;
 }
 
@@ -22,6 +24,7 @@ export default function Dashboard({
   subscriptions,
   schedule,
   personalLessons,
+  prices,
   onNavigate,
 }: DashboardProps) {
   const activeSubs = subscriptions.filter((s) => s.status === "active");
@@ -41,6 +44,18 @@ export default function Dashboard({
 
   const todayIsoDow = jsDayToIsoDow(new Date().getDay());
   const todaySlots = schedule.filter((s) => s.dayOfWeek === todayIsoDow);
+
+  const yearMonth = currentYearMonth();
+  const monthGroupLessons = computeScheduleDatesForMonth(schedule, yearMonth).length;
+  const monthSoldSubs = subscriptions.filter((s) => isDateInYearMonth(s.activationDate, yearMonth));
+  const monthSubsRevenue = monthSoldSubs.reduce((sum, s) => sum + getSubscriptionPrice(s, prices), 0);
+  const monthPersonalLessons = personalLessons.filter((l) => isDateInYearMonth(l.date, yearMonth));
+  const monthPersonalCount = monthPersonalLessons.length;
+  const monthPersonalPaidSum = monthPersonalLessons
+    .filter((l) => l.paid === "yes")
+    .reduce((sum, l) => sum + l.price, 0);
+
+  const monthLabel = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(new Date());
 
   return (
     <div id="panel-dashboard" className="space-y-6">
@@ -103,30 +118,30 @@ export default function Dashboard({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Today Schedule section */}
-        <div className="lg:col-span-5 bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs space-y-3.5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div className="lg:col-span-5 bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <div className="flex items-center gap-2 text-slate-800">
-              <Calendar className="w-4.5 h-4.5 text-indigo-500" />
-              <h2 className="font-sans text-sm font-semibold tracking-tight">Сегодняшний день</h2>
+              <Calendar className="w-4 h-4 text-indigo-500" />
+              <h2 className="font-sans text-sm font-semibold tracking-tight">Расписание на сегодня</h2>
             </div>
             <span className="text-[10px] font-sans uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-semibold">
               {dowFull(todayIsoDow)}
             </span>
           </div>
 
-          <div className="space-y-2 pt-0.5">
+          <div className="space-y-1.5 pt-0.5">
             {todaySlots.length === 0 ? (
-              <div className="text-center py-8">
+              <div className="text-center py-4">
                 <p className="text-slate-400 text-xs font-sans">Сегодня групповых занятий нет.</p>
               </div>
             ) : (
               todaySlots.map((slot, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100 font-sans"
+                  className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 font-sans"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                     <div>
                       <p className="text-xs font-semibold text-slate-800">Класс Группового Танго</p>
                       <p className="text-[10px] text-slate-400">Уровень: Общий</p>
@@ -140,19 +155,20 @@ export default function Dashboard({
             )}
             <button
               onClick={() => onNavigate("schedule")}
-              className="w-full text-center py-2.5 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-500 text-[11px] font-sans hover:bg-slate-50 transition-colors uppercase tracking-wider block font-semibold cursor-pointer"
+              className="w-full text-center py-2 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-500 text-[11px] font-sans hover:bg-slate-50 transition-colors uppercase tracking-wider block font-semibold cursor-pointer"
             >
               Настроить Расписание
             </button>
           </div>
         </div>
 
+        <div className="lg:col-span-7 space-y-3">
         {/* Running Out Of credits warning list */}
-        <div className="lg:col-span-7 bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs space-y-3.5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
               <span className="w-2 h-2 bg-rose-600 rounded-full" />
-              Заканчиваются занятия (≤ 2)
+              Заканчивается абонемент (≤ 2)
             </h2>
             <span className="text-[10px] bg-rose-50 text-rose-700 font-sans px-2 py-0.5 rounded font-semibold">
               {warningSubs.length} {pluralizeRu(warningSubs.length, ["абонемент", "абонемента", "абонементов"])}
@@ -161,11 +177,11 @@ export default function Dashboard({
 
           <div className="overflow-x-auto">
             {warningSubs.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 space-y-1">
+              <div className="text-center py-5 text-slate-400 space-y-1">
                 <p className="text-xs">✨ Все абонементы обеспечены достаточным балансом классов.</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
                 {warningSubs.map((sub, i) => {
                   const c1 = clientMap[sub.clientId1];
                   const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
@@ -174,7 +190,7 @@ export default function Dashboard({
                   return (
                     <div
                       key={i}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 bg-slate-50 rounded-lg gap-3 border border-slate-100"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 bg-slate-50 rounded-lg gap-2 border border-slate-100"
                     >
                       <div className="space-y-0.5">
                         <div className="font-sans font-semibold text-slate-800 text-xs">
@@ -227,6 +243,43 @@ export default function Dashboard({
               </div>
             )}
           </div>
+        </div>
+
+        {/* Monthly statistics */}
+        <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-indigo-500" />
+              Статистика за {monthLabel}
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-px bg-slate-200/70 rounded-lg overflow-hidden border border-slate-200/70">
+            <div className="bg-white px-3 py-2.5">
+              <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
+                Групповых уроков
+              </p>
+              <h4 className="text-lg font-semibold text-slate-800 mt-0.5 leading-none">{monthGroupLessons}</h4>
+            </div>
+            <div className="bg-white px-3 py-2.5">
+              <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
+                Продано абонементов
+              </p>
+              <h4 className="text-lg font-semibold text-indigo-700 mt-0.5 leading-none">{formatCurrency(monthSubsRevenue)}</h4>
+            </div>
+            <div className="bg-white px-3 py-2.5">
+              <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
+                Персональных уроков
+              </p>
+              <h4 className="text-lg font-semibold text-slate-800 mt-0.5 leading-none">{monthPersonalCount}</h4>
+            </div>
+            <div className="bg-white px-3 py-2.5">
+              <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
+                Оплачено персональных
+              </p>
+              <h4 className="text-lg font-semibold text-emerald-700 mt-0.5 leading-none">{formatCurrency(monthPersonalPaidSum)}</h4>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </div>
