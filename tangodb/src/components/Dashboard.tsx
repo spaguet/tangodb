@@ -193,52 +193,46 @@ export default function Dashboard({
                       key={i}
                       className="p-2 bg-slate-50 rounded-lg border border-slate-100 space-y-1"
                     >
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="font-sans font-semibold text-slate-800 text-xs min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-sans font-semibold text-slate-800 text-xs min-w-0 truncate">
                           {c1
                             ? c2
                               ? formatPairName(c1.lastName, c1.firstName, c2.lastName, c2.firstName)
                               : formatClientName(c1.lastName, c1.firstName)
                             : sub.clientId1}
-                        </div>
-                        <span className="text-[9px] font-sans uppercase bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold shrink-0">
-                          {sub.type === "solo" ? "Соло" : "Парный"}
+                        </p>
+                        {tgUrl && c1 ? (
+                          <a
+                            href={tgUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              openTelegramContact(c1.telegram);
+                            }}
+                            className="inline-flex items-center justify-center p-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md transition-colors shrink-0"
+                            title="Написать в Telegram"
+                            aria-label="Написать в Telegram"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </a>
+                        ) : null}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-sans text-slate-600 capitalize">
+                          {sub.type === "solo" ? "соло" : "парный"}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-sans shrink-0">
+                          активирован {sub.activationDate}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <p className="text-[10px] font-sans text-slate-500 shrink-0">
-                          Баланс{" "}
-                          <span className="font-semibold text-rose-700">
-                            {sub.lessonsLeft}
-                          </span>
-                          <span className="text-slate-400"> из {sub.lessonsTotal}</span>
-                        </p>
-
-                        <div className="flex items-center gap-2 ml-auto shrink-0">
-                          <span className="text-[10px] text-slate-400 font-sans">
-                            активирован {sub.activationDate}
-                          </span>
-                          {tgUrl && c1 ? (
-                            <a
-                              href={tgUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                openTelegramContact(c1.telegram);
-                              }}
-                              className="inline-flex items-center justify-center p-1.5 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md transition-colors"
-                              title="Написать в Telegram"
-                              aria-label="Написать в Telegram"
-                            >
-                              <Send className="w-3.5 h-3.5" />
-                            </a>
-                          ) : (
-                            <span className="text-slate-400 font-sans text-[10px] select-none italic">без TG</span>
-                          )}
-                        </div>
-                      </div>
+                      <p className="text-[10px] font-sans text-slate-500">
+                        Баланс{" "}
+                        <span className="font-semibold text-rose-700">{sub.lessonsLeft}</span>
+                        <span className="text-slate-400"> из {sub.lessonsTotal}</span>
+                      </p>
                     </div>
                   );
                 })}
