@@ -72,6 +72,8 @@ export default function PersonalLessonsPanel({
   // Booking form states
   const [pType, setPType] = useState<"solo" | "pair" | "trio">("solo");
   const [dates, setDates] = useState<string[]>([""]);
+  const [timeStart, setTimeStart] = useState("14:00");
+  const [timeEnd, setTimeEnd] = useState("15:00");
   const [customPrice, setCustomPrice] = useState("");
 
   const [c1Query, setC1Query] = useState("");
@@ -134,6 +136,14 @@ export default function PersonalLessonsPanel({
       toast("Укажите корректную стоимость урока.", "error");
       return;
     }
+    if (!timeStart || !timeEnd) {
+      toast("Укажите время начала и окончания урока.", "error");
+      return;
+    }
+    if (timeEnd <= timeStart) {
+      toast("Время окончания должно быть позже начала.", "error");
+      return;
+    }
 
     const payload = {
       type: pType,
@@ -141,6 +151,8 @@ export default function PersonalLessonsPanel({
       clientId2: pType === "pair" || pType === "trio" ? c2Id : "",
       clientId3: pType === "trio" ? c3Id : "",
       dates: filteredDates,
+      timeStart,
+      timeEnd,
       price: priceNum,
       paid: immediatePaid,
     };
@@ -161,6 +173,8 @@ export default function PersonalLessonsPanel({
       setC3Id("");
       setDates([""]);
       setCustomPrice("");
+      setTimeStart("14:00");
+      setTimeEnd("15:00");
       setPType("solo");
     }
   };
@@ -398,7 +412,7 @@ export default function PersonalLessonsPanel({
                                   </span>
                                   <span className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
                                     <CalendarDays className="w-3 h-3" />
-                                    {formatDateLabel(l.date)}
+                                    {formatDateLabel(l.date)} · {l.timeStart} – {l.timeEnd}
                                   </span>
                                 </div>
                                 <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
@@ -541,6 +555,29 @@ export default function PersonalLessonsPanel({
             )}
 
             <div className="border-t border-slate-100 pt-1.5 -mt-1" />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="field-stack">
+                <label className={labelCls}>Время начала</label>
+                <input
+                  type="time"
+                  required
+                  value={timeStart}
+                  onChange={(e) => setTimeStart(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2 text-sm transition-all font-sans"
+                />
+              </div>
+              <div className="field-stack">
+                <label className={labelCls}>Время окончания</label>
+                <input
+                  type="time"
+                  required
+                  value={timeEnd}
+                  onChange={(e) => setTimeEnd(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2 text-sm transition-all font-sans"
+                />
+              </div>
+            </div>
 
             {/* Multi-date controls */}
             <div>

@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS schedule (
   id          SERIAL PRIMARY KEY,
   day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
   time        TEXT NOT NULL,
+  time_end    TEXT NOT NULL DEFAULT '21:00',
   UNIQUE (day_of_week, time)
 );
 
@@ -65,6 +66,8 @@ CREATE TABLE IF NOT EXISTS personal_lessons (
   client_id2  TEXT REFERENCES clients(id),
   client_id3  TEXT REFERENCES clients(id),
   date        DATE NOT NULL,
+  time_start  TEXT NOT NULL DEFAULT '14:00',
+  time_end    TEXT NOT NULL DEFAULT '15:00',
   price       NUMERIC NOT NULL DEFAULT 0,
   paid        TEXT NOT NULL DEFAULT 'no' CHECK (paid IN ('yes', 'no')),
   created_at  TIMESTAMPTZ DEFAULT now()

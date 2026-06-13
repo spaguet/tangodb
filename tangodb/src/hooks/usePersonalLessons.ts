@@ -39,13 +39,15 @@ const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => {
       clientId3 ? clientNameFromJoin(row.client3 as ClientJoinRow, clientId3) : "",
     ]),
     date: String(row.date ?? "").slice(0, 10),
+    timeStart: (row.time_start as string) || "14:00",
+    timeEnd: (row.time_end as string) || "15:00",
     price: Number(row.price) || 0,
     paid: (row.paid as "yes" | "no") || "no",
   };
 };
 
 const personalLessonsSelect =
-  "id, type, client_id1, client_id2, client_id3, date, price, paid, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
+  "id, type, client_id1, client_id2, client_id3, date, time_start, time_end, price, paid, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
 export function usePersonalLessons() {
   return useQuery({
@@ -81,6 +83,8 @@ export function useAddPersonalLessons() {
       clientId2: string;
       clientId3: string;
       dates: string[];
+      timeStart: string;
+      timeEnd: string;
       price: number;
       paid: boolean;
     }) => {
@@ -97,6 +101,8 @@ export function useAddPersonalLessons() {
         client_id2: lessons.clientId2 || null,
         client_id3: lessons.clientId3 || null,
         date,
+        time_start: lessons.timeStart,
+        time_end: lessons.timeEnd,
         price: lessons.price,
         paid,
       }));

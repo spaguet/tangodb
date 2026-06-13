@@ -28,20 +28,29 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
   const [day, setDay] = useState<number>(1);
   const [time, setTime] = useState<string>("19:00");
+  const [timeEnd, setTimeEnd] = useState<string>("21:00");
   const [deleteTarget, setDeleteTarget] = useState<ScheduleSlot | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!time) {
-      toast("Укажите время занятия.", "error");
+      toast("Укажите время начала занятия.", "error");
+      return;
+    }
+    if (!timeEnd) {
+      toast("Укажите время окончания занятия.", "error");
+      return;
+    }
+    if (timeEnd <= time) {
+      toast("Время окончания должно быть позже начала.", "error");
       return;
     }
 
-    const res = await addSlot.mutateAsync({ dayOfWeek: day, time });
+    const res = await addSlot.mutateAsync({ dayOfWeek: day, time, timeEnd });
     if (!res.success) {
       toast(res.error || "Этот слот уже занят", "error");
     } else {
-      toast(`Добавлен класс: ${dowFull(day)} в ${time}`, "success");
+      toast(`Добавлен класс: ${dowFull(day)} ${time} – ${timeEnd}`, "success");
     }
   };
 
@@ -112,6 +121,20 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
             </div>
           </div>
 
+          <div className="field-stack">
+            <label className={labelCls}>Время окончания</label>
+            <div className="relative font-sans">
+              <Clock className="w-4 h-4 text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="time"
+                required
+                value={timeEnd}
+                onChange={(e) => setTimeEnd(e.target.value)}
+                className={`${fieldCls} pl-10`}
+              />
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={addSlot.isPending}
@@ -155,7 +178,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                       >
                         <span className="inline-flex items-center gap-1.5 font-sans text-slate-700 font-semibold">
                           <Clock className="w-3.5 h-3.5 text-slate-400" />
-                          {slot.time}
+                          {slot.time} – {slot.timeEnd || "21:00"}
                         </span>
                         <button
                           onClick={() => setDeleteTarget(slot)}
@@ -184,7 +207,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
             <>
               Групповой класс{" "}
               <strong className="font-semibold text-slate-800">
-                {dowFull(deleteTarget.dayOfWeek)} в {deleteTarget.time}
+                {dowFull(deleteTarget.dayOfWeek)} {deleteTarget.time} – {deleteTarget.timeEnd || "21:00"}
               </strong>{" "}
               будет убран из сетки. Будущие занятия по этому слоту исчезнут из журнала.
             </>

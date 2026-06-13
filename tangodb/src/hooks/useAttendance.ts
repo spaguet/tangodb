@@ -20,7 +20,7 @@ const mapAttendanceRecord = (row: Record<string, unknown>): AttendanceRecord => 
 export function computeScheduleDatesForMonth(
   schedule: ScheduleSlot[],
   yearMonth: string
-): { date: string; time: string }[] {
+): { date: string; time: string; timeEnd: string }[] {
   if (!schedule.length || !yearMonth) return [];
 
   const [yearStr, monthStr] = yearMonth.split("-");
@@ -29,7 +29,7 @@ export function computeScheduleDatesForMonth(
   if (!year || !month) return [];
 
   const daysInMonth = new Date(year, month, 0).getDate();
-  const dates: { date: string; time: string }[] = [];
+  const dates: { date: string; time: string; timeEnd: string }[] = [];
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month - 1, day);
@@ -39,7 +39,7 @@ export function computeScheduleDatesForMonth(
       if (slot.dayOfWeek === dow) {
         const dd = String(day).padStart(2, "0");
         const mm = String(month).padStart(2, "0");
-        dates.push({ date: `${year}-${mm}-${dd}`, time: slot.time });
+        dates.push({ date: `${year}-${mm}-${dd}`, time: slot.time, timeEnd: slot.timeEnd || "21:00" });
       }
     });
   }

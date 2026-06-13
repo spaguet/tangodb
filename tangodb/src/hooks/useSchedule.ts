@@ -8,6 +8,7 @@ const mapScheduleSlot = (row: Record<string, unknown>): ScheduleSlot => ({
   id: row.id as number,
   dayOfWeek: row.day_of_week as number,
   time: row.time as string,
+  timeEnd: (row.time_end as string) || "21:00",
 });
 
 export function useSchedule() {
@@ -30,10 +31,19 @@ export function useAddScheduleSlot() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ dayOfWeek, time }: { dayOfWeek: number; time: string }) => {
+    mutationFn: async ({
+      dayOfWeek,
+      time,
+      timeEnd,
+    }: {
+      dayOfWeek: number;
+      time: string;
+      timeEnd: string;
+    }) => {
       const { error } = await supabase.from("schedule").insert({
         day_of_week: dayOfWeek,
         time,
+        time_end: timeEnd,
       });
       if (error) {
         if (error.code === "23505") {

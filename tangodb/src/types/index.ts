@@ -10,6 +10,7 @@ export interface ScheduleSlot {
   id?: number;
   dayOfWeek: number;
   time: string;
+  timeEnd: string;
 }
 
 export interface Price {
@@ -49,6 +50,8 @@ export interface PersonalLesson {
   clientId3: string;
   clientDisplay: string;
   date: string;
+  timeStart: string;
+  timeEnd: string;
   price: number;
   paid: "yes" | "no";
 }
