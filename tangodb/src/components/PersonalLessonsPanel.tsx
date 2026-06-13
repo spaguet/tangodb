@@ -366,11 +366,11 @@ export default function PersonalLessonsPanel({
                   return (
                     <div key={group.key} className="space-y-3">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <span className="text-xs font-semibold text-indigo-700 uppercase tracking-widest bg-indigo-50 px-2.5 py-1 rounded-md">
+                        <span className="text-xs font-sans font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md">
                           {group.label}
                         </span>
                         <span className="text-xs font-sans text-slate-400 font-semibold">
-                          Итого за месяц: {formatCurrency(groupSum)}
+                          Итого: {formatCurrency(groupSum)}
                           {isUnpaidInGroup && <span className="text-rose-600 font-sans ml-2">(есть долг)</span>}
                         </span>
                       </div>

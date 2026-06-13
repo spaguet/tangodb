@@ -96,15 +96,15 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   return (
     <div id="panel-attendance" className="space-y-6">
-      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-4">
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs space-y-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-slate-800">Журнал посещений</h2>
+          <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений</h2>
           <p className="text-xs text-slate-400 mt-0.5">
             Выберите месяц — система подставит дни занятий согласно расписанию.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
           <div className="space-y-1.5 md:col-span-1">
             <label className={labelCls}>Месяц занятий</label>
             <input
@@ -130,7 +130,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <div className="md:col-span-1">
             <button
               onClick={handleRefresh}
-              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Обновить
@@ -142,10 +142,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-3">
           <h3 className="text-sm font-semibold tracking-tight text-slate-800">
-            {displayDate ? `Танцоры на ${formatAttendanceDate(displayDate)}` : "Класс не выбран"}
+            {displayDate ? `Абонементы на ${formatAttendanceDate(displayDate)}` : "Класс не выбран"}
           </h3>
-          <span className="text-[10px] font-sans bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold shrink-0">
-            {students.length} {pluralizeRu(students.length, ["студент", "студента", "студентов"])}
+          <span className="text-[10px] font-sans bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold shrink-0 tabular-nums">
+            {students.length} {pluralizeRu(students.length, ["абонемент", "абонемента", "абонементов"])}
           </span>
         </div>
 
