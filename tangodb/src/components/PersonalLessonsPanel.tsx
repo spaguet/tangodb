@@ -540,10 +540,10 @@ export default function PersonalLessonsPanel({
               </div>
             )}
 
-            <div className="panel-form-divider" />
+            <div className="border-t border-slate-100 pt-1.5 -mt-1" />
 
             {/* Multi-date controls */}
-            <div className="field-stack">
+            <div className="space-y-0.5">
               <label className={labelCls}>Даты бронирования</label>
               <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
                 {dates.map((dateStr, idx) => (
@@ -570,7 +570,7 @@ export default function PersonalLessonsPanel({
               <button
                 type="button"
                 onClick={handleAddDate}
-                className="w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                className="w-full py-1.5 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer"
               >
                 ＋ Добавить дату
               </button>
@@ -608,17 +608,21 @@ export default function PersonalLessonsPanel({
               <button
                 onClick={() => handleBook(true)}
                 disabled={addPersonalLessons.isPending}
-                className="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-sans text-xs font-semibold leading-tight rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
               >
-                Оплачено · бронь
+                Бронь с
+                <br />
+                оплатой
               </button>
 
               <button
                 onClick={() => handleBook(false)}
                 disabled={addPersonalLessons.isPending}
-                className="py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold leading-tight rounded-lg transition-colors cursor-pointer disabled:opacity-60"
               >
-                Без оплаты · бронь
+                Бронь
+                <br />
+                без оплаты
               </button>
             </div>
           </div>
