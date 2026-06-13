@@ -33,9 +33,9 @@ export default function Dashboard({
 
   const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
 
-  const pendingRevenue = personalLessons
-    .filter((l) => l.paid === "no")
-    .reduce((sum, l) => sum + l.price, 0);
+  const unpaidLessons = personalLessons.filter((l) => l.paid === "no");
+  const pendingUnpaidCount = unpaidLessons.length;
+  const pendingRevenue = unpaidLessons.reduce((sum, l) => sum + l.price, 0);
 
   const todayIsoDow = jsDayToIsoDow(new Date().getDay());
   const todaySlots = schedule.filter((s) => s.dayOfWeek === todayIsoDow);
@@ -43,53 +43,57 @@ export default function Dashboard({
   return (
     <div id="panel-dashboard" className="space-y-6">
       {/* Statistics widgets */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <motion.div
-          whileHover={{ y: -2 }}
-          className="bg-white rounded-xl p-4.5 border border-slate-200/90 shadow-xs flex items-center gap-4 cursor-pointer hover:shadow-sm transition-all"
-          onClick={() => onNavigate("activeSubs")}
-        >
-          <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg">
-            <Ticket className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold">Абонементы</p>
-            <h3 className="text-xl font-semibold text-slate-800 leading-tight">{activeSubs.length}</h3>
-            <p className="text-[10px] text-slate-500 font-sans mt-0.5">
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <motion.div
+            whileHover={{ y: -2 }}
+            className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all min-w-0"
+            onClick={() => onNavigate("activeSubs")}
+          >
+            <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold leading-tight">
+              Абонементы
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5 text-xl leading-none">
+              <Ticket className="text-indigo-600 shrink-0 w-[1em] h-[1em]" />
+              <h3 className="font-semibold text-slate-800">{activeSubs.length}</h3>
+            </div>
+            <p className="text-[10px] text-slate-500 font-sans mt-0.5 leading-tight">
               <span className="text-indigo-600 font-semibold">{solosCount}</span> соло ·{" "}
               <span className="text-indigo-600 font-semibold">{pairsCount}</span> парных
             </p>
-          </div>
-        </motion.div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ y: -2 }}
+            className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all min-w-0"
+            onClick={() => onNavigate("newClient")}
+          >
+            <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold leading-tight">
+              Всего клиентов
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5 text-xl leading-none">
+              <Users className="text-indigo-600 shrink-0 w-[1em] h-[1em]" />
+              <h3 className="font-semibold text-slate-800">{clients.length}</h3>
+            </div>
+            <p className="text-[10px] text-slate-500 font-sans mt-0.5 leading-tight">карточек в реестре</p>
+          </motion.div>
+        </div>
 
         <motion.div
           whileHover={{ y: -2 }}
-          className="bg-white rounded-xl p-4.5 border border-slate-200/90 shadow-xs flex items-center gap-4 cursor-pointer hover:shadow-sm transition-all"
-          onClick={() => onNavigate("newClient")}
-        >
-          <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold">Всего клиентов</p>
-            <h3 className="text-xl font-semibold text-slate-800 leading-tight">{clients.length}</h3>
-            <p className="text-[10px] text-slate-500 font-sans mt-0.5">карточек в реестре</p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          whileHover={{ y: -2 }}
-          className="bg-white rounded-xl p-4.5 border border-slate-200/90 shadow-xs flex items-center gap-4 cursor-pointer hover:shadow-sm transition-all"
+          className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all"
           onClick={() => onNavigate("personalView")}
         >
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg">
-            <AlertCircle className="w-5 h-5" />
+          <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold leading-tight">
+            Ожидает оплаты
+          </p>
+          <div className="flex items-center gap-1.5 mt-0.5 text-xl leading-none">
+            <AlertCircle className="text-rose-600 shrink-0 w-[1em] h-[1em]" />
+            <h3 className="font-sans font-semibold text-rose-700">
+              {pendingUnpaidCount} / {formatCurrency(pendingRevenue)}
+            </h3>
           </div>
-          <div>
-            <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold">Ожидает оплаты</p>
-            <h3 className="text-lg font-sans font-semibold text-rose-700 leading-tight">{formatCurrency(pendingRevenue)}</h3>
-            <p className="text-[10px] text-rose-600 font-sans mt-0.5 font-normal">из приватных сессий</p>
-          </div>
+          <p className="text-[10px] text-rose-600 font-sans mt-0.5 font-normal leading-tight">из персональных уроков</p>
         </motion.div>
       </div>
 
