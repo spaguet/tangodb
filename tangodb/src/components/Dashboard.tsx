@@ -36,6 +36,8 @@ export default function Dashboard({
   const unpaidLessons = personalLessons.filter((l) => l.paid === "no");
   const pendingUnpaidCount = unpaidLessons.length;
   const pendingRevenue = unpaidLessons.reduce((sum, l) => sum + l.price, 0);
+  const hasPendingPayment = pendingUnpaidCount > 0 && pendingRevenue > 0;
+  const pendingPaymentColor = hasPendingPayment ? "text-rose-600" : "text-slate-400";
 
   const todayIsoDow = jsDayToIsoDow(new Date().getDay());
   const todaySlots = schedule.filter((s) => s.dayOfWeek === todayIsoDow);
@@ -84,16 +86,18 @@ export default function Dashboard({
           className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all"
           onClick={() => onNavigate("personalView")}
         >
-          <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold leading-tight">
+          <p className={`text-[10px] uppercase font-sans tracking-wider font-semibold leading-tight ${pendingPaymentColor}`}>
             Ожидает оплаты
           </p>
-          <div className="flex items-center gap-1.5 mt-0.5 text-xl leading-none">
-            <AlertCircle className="text-rose-600 shrink-0 w-[1em] h-[1em]" />
-            <h3 className="font-sans font-semibold text-rose-700">
+          <div className={`flex items-center gap-1.5 mt-0.5 text-xl leading-none ${pendingPaymentColor}`}>
+            <AlertCircle className="shrink-0 w-[1em] h-[1em]" />
+            <h3 className="font-sans font-semibold">
               {pendingUnpaidCount} / {formatCurrency(pendingRevenue)}
             </h3>
           </div>
-          <p className="text-[10px] text-rose-600 font-sans mt-0.5 font-normal leading-tight">из персональных уроков</p>
+          <p className={`text-[10px] font-sans mt-0.5 font-normal leading-tight ${pendingPaymentColor}`}>
+            из персональных уроков
+          </p>
         </motion.div>
       </div>
 
