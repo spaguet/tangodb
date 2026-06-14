@@ -15,6 +15,7 @@ import {
   formatClientName,
   formatCurrency,
   formatMonthTitleRu,
+  getPersonalLessonTariffLabel,
   getPriceLabel,
   getPrivateLessonTariffs,
   getPrivatePackageTariffs,
@@ -414,10 +415,6 @@ export default function PersonalLessonsPanel({
     (acc, c) => ({ ...acc, [String(c.id)]: c }),
     {} as Record<string, Client>
   );
-  const disciplineMap = disciplines.reduce(
-    (acc, d) => ({ ...acc, [d.id]: d }),
-    {} as Record<number, (typeof disciplines)[0]>
-  );
 
   const clientNameFromMap = (clientId: string): string => {
     const id = clientId.trim();
@@ -497,7 +494,7 @@ export default function PersonalLessonsPanel({
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-sm font-semibold text-slate-800 capitalize">{formatMonthTitleRu(viewMonth)}</span>
+                <span className="text-sm font-semibold text-slate-800">{formatMonthTitleRu(viewMonth)}</span>
                 {!isViewingCurrentMonth && (
                   <button
                     type="button"
@@ -597,7 +594,7 @@ export default function PersonalLessonsPanel({
             ) : (
               <div className="panel-card-stack">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <span className="text-xs font-sans font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md capitalize">
+                  <span className="text-xs font-sans font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md">
                     {formatMonthTitleRu(viewMonth)}
                   </span>
                   <span className="text-xs font-sans text-slate-400 font-semibold">
@@ -610,13 +607,12 @@ export default function PersonalLessonsPanel({
                   {filteredLessons.map((l) => {
                     const isPaid = l.paid === "yes";
                     const isUpcoming = isUpcomingLesson(l.date);
-                    const disciplineName =
-                      l.disciplineId != null ? disciplineMap[l.disciplineId]?.name : undefined;
+                    const tariffLabel = getPersonalLessonTariffLabel(l, prices, subscriptions);
 
                     return (
                       <div
                         key={l.id}
-                        className={`border rounded-xl p-4 flex items-center justify-between gap-4 transition-all hover:shadow-sm ${
+                        className={`border rounded-xl p-4 space-y-2 transition-all hover:shadow-sm ${
                           isUpcoming
                             ? "bg-emerald-50 border-emerald-200"
                             : isPaid
@@ -624,41 +620,9 @@ export default function PersonalLessonsPanel({
                               : "bg-white border-rose-200"
                         }`}
                       >
-                        <div className="space-y-1 flex-1 pr-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-sans tracking-wider font-semibold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
-                              {l.type === "solo" ? "Соло" : l.type === "pair" ? "Парный" : "Трио"}
-                              {disciplineName ? ` · ${disciplineName}` : ""}
-                            </span>
-                          </div>
-                          <div className="space-y-0.5">
-                            <span className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
-                              <CalendarDays className="w-3 h-3" />
-                              {formatDateLabel(l.date)}
-                            </span>
-                            <p className="font-sans text-xs text-slate-400 pl-4">
-                              {l.timeStart} – {l.timeEnd}
-                            </p>
-                          </div>
-                          <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
-                          <p className="font-sans text-xs font-semibold text-slate-500">{formatCurrency(l.price)}</p>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-2">
-                          <button
-                            onClick={() => handleTogglePaid(l)}
-                            disabled={updatePersonalPaid.isPending}
-                            title={isPaid ? "Нажмите, чтобы отменить оплату" : "Нажмите, чтобы подтвердить оплату"}
-                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-sans font-semibold transition-colors cursor-pointer select-none border disabled:opacity-60 ${
-                              isPaid
-                                ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-                                : "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100"
-                            }`}
-                          >
-                            {isPaid ? "Оплачен" : "К оплате"}
-                          </button>
-
-                          <div className="flex items-center gap-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-sm font-semibold text-slate-800 leading-tight">{tariffLabel}</span>
+                          <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => startEditLesson(l)}
                               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
@@ -677,6 +641,30 @@ export default function PersonalLessonsPanel({
                             </button>
                           </div>
                         </div>
+
+                        <div className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
+                          <CalendarDays className="w-3 h-3 shrink-0" />
+                          {formatDateLabel(l.date)} · {l.timeStart} – {l.timeEnd}
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePaid(l)}
+                            disabled={updatePersonalPaid.isPending}
+                            title={isPaid ? "Нажмите, чтобы отменить оплату" : "Нажмите, чтобы подтвердить оплату"}
+                            className={`text-xs font-sans font-semibold shrink-0 cursor-pointer disabled:opacity-60 ${
+                              isPaid ? "text-emerald-600 hover:text-emerald-700" : "text-rose-600 hover:text-rose-700"
+                            }`}
+                          >
+                            {isPaid ? "Оплачено" : "Не оплачено"}
+                          </button>
+                        </div>
+
+                        <p className={`font-sans text-xs font-semibold ${isPaid ? "text-slate-500" : "text-rose-600"}`}>
+                          {formatCurrency(l.price)}
+                        </p>
                       </div>
                     );
                   })}

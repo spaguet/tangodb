@@ -347,7 +347,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm font-semibold text-slate-800 capitalize">{formatMonthTitleRu(selectedMonth)}</span>
+            <span className="text-sm font-semibold text-slate-800">{formatMonthTitleRu(selectedMonth)}</span>
             <button
               type="button"
               onClick={() => handleMonthNav(1)}

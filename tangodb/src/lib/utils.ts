@@ -42,13 +42,45 @@ export function formatClientName(lastName: string, firstName: string): string {
   return `${lastName} ${firstName}`.trim();
 }
 
-/** «июнь 2026 г.» — прописная «г.» после года */
+/** «Июнь 2026 г.» — месяц с заглавной, «г.» прописными (без CSS capitalize) */
 export function formatMonthTitleRu(yearMonth: string): string {
   const [y, m] = yearMonth.split("-").map(Number);
   if (!y || !m) return yearMonth;
   const date = new Date(y, m - 1, 1);
   const month = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(date);
-  return `${month} ${y} г.`;
+  const monthCap = month.charAt(0).toUpperCase() + month.slice(1);
+  return `${monthCap} ${y}\u00A0г.`;
+}
+
+export function getPersonalLessonTariffLabel(
+  lesson: { type: string; price: number; subscriptionId?: string | null },
+  prices: PriceTariffRef[],
+  subscriptions: Array<{ id: string; priceId?: number | null; type: string; lessonsTotal: number; pairMonth: string }> = []
+): string {
+  if (lesson.subscriptionId) {
+    const sub = subscriptions.find((s) => s.id === lesson.subscriptionId);
+    if (sub) return getSubscriptionTariffLabel(sub, prices);
+  }
+
+  const personalType = `personal_${lesson.type}`;
+  const byPrice = prices.find(
+    (p) =>
+      getPriceCategory(p) === "private" &&
+      p.lessons === 1 &&
+      p.type.trim() === personalType &&
+      p.price === lesson.price
+  );
+  if (byPrice) return getPriceLabel(byPrice);
+
+  const byType = prices.find((p) => p.type.trim() === personalType);
+  if (byType) return getPriceLabel(byType);
+
+  const catalog = PRICE_LABELS_CATALOG[personalType];
+  if (catalog) return catalog.label;
+
+  if (lesson.type === "pair") return "Индивидуальный Парный Урок";
+  if (lesson.type === "trio") return "Индивидуальный Трио Урок";
+  return "Индивидуальный Соло Урок";
 }
 
 export function formatPairName(
