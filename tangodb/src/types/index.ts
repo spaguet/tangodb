@@ -72,6 +72,7 @@ export interface PersonalLesson {
   paid: "yes" | "no";
   disciplineId?: number | null;
   subscriptionId?: string | null;
+  attendanceStatus?: "present" | "absent" | null;
 }
 
 export interface ActiveSubscription {

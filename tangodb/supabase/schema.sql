@@ -74,19 +74,20 @@ CREATE TABLE IF NOT EXISTS attendance (
 );
 
 CREATE TABLE IF NOT EXISTS personal_lessons (
-  id              TEXT PRIMARY KEY,
-  type            TEXT NOT NULL CHECK (type IN ('solo', 'pair', 'trio')),
-  client_id1      TEXT REFERENCES clients(id),
-  client_id2      TEXT REFERENCES clients(id),
-  client_id3      TEXT REFERENCES clients(id),
-  date            DATE NOT NULL,
-  time_start      TEXT NOT NULL DEFAULT '14:00',
-  time_end        TEXT NOT NULL DEFAULT '15:00',
-  price           NUMERIC NOT NULL DEFAULT 0,
-  paid            TEXT NOT NULL DEFAULT 'no' CHECK (paid IN ('yes', 'no')),
-  discipline_id   INTEGER REFERENCES disciplines(id),
-  subscription_id TEXT REFERENCES subscriptions(id),
-  created_at      TIMESTAMPTZ DEFAULT now()
+  id                  TEXT PRIMARY KEY,
+  type                TEXT NOT NULL CHECK (type IN ('solo', 'pair', 'trio')),
+  client_id1          TEXT REFERENCES clients(id),
+  client_id2          TEXT REFERENCES clients(id),
+  client_id3          TEXT REFERENCES clients(id),
+  date                DATE NOT NULL,
+  time_start          TEXT NOT NULL DEFAULT '14:00',
+  time_end            TEXT NOT NULL DEFAULT '15:00',
+  price               NUMERIC NOT NULL DEFAULT 0,
+  paid                TEXT NOT NULL DEFAULT 'no' CHECK (paid IN ('yes', 'no')),
+  discipline_id       INTEGER REFERENCES disciplines(id),
+  subscription_id     TEXT REFERENCES subscriptions(id),
+  attendance_status   TEXT CHECK (attendance_status IS NULL OR attendance_status IN ('present', 'absent')),
+  created_at          TIMESTAMPTZ DEFAULT now()
 );
 
 -- =============================================================================
@@ -187,10 +188,19 @@ DECLARE
   v_display TEXT := '';
   v_c1 RECORD;
   v_c2 RECORD;
+  v_today DATE := CURRENT_DATE;
 BEGIN
+  IF p_date::DATE > v_today THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Отметки доступны только за прошедшие и текущий день');
+  END IF;
+
   SELECT * INTO v_sub FROM subscriptions WHERE id = p_sub_id FOR UPDATE;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', false, 'error', 'Абонемент не найден');
+  END IF;
+
+  IF v_sub.category = 'private' AND p_new_status = 'freeze' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Заморозка недоступна для персональных абонементов');
   END IF;
 
   SELECT attendance_status INTO v_old_status
@@ -259,3 +269,37 @@ $$ LANGUAGE plpgsql;
 
 REVOKE ALL ON FUNCTION mark_attendance(TEXT, TEXT, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION mark_attendance(TEXT, TEXT, TEXT) TO authenticated;
+
+CREATE OR REPLACE FUNCTION mark_personal_lesson_attendance(
+  p_lesson_id TEXT,
+  p_new_status TEXT
+) RETURNS JSONB AS $$
+DECLARE
+  v_lesson RECORD;
+  v_today DATE := CURRENT_DATE;
+BEGIN
+  IF p_new_status NOT IN ('present', 'absent') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Недопустимый статус');
+  END IF;
+
+  SELECT * INTO v_lesson FROM personal_lessons WHERE id = p_lesson_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Урок не найден');
+  END IF;
+
+  IF v_lesson.subscription_id IS NOT NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Используйте отметку через абонемент');
+  END IF;
+
+  IF v_lesson.date > v_today THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Отметки доступны только за прошедшие и текущий день');
+  END IF;
+
+  UPDATE personal_lessons SET attendance_status = p_new_status WHERE id = p_lesson_id;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql;
+
+REVOKE ALL ON FUNCTION mark_personal_lesson_attendance(TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION mark_personal_lesson_attendance(TEXT, TEXT) TO authenticated;

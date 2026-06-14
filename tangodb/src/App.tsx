@@ -118,7 +118,7 @@ function getPanelTitle(pathname: string, subscriptionsTab: string, personalTab: 
   if (pathname.startsWith("/subscriptions")) {
     return subscriptionsTab === "sell" ? "Продажа абонемента" : "Действующие абонементы";
   }
-  if (pathname === "/schedule") return "Расписание";
+  if (pathname === "/schedule") return "Расписание групп";
   if (pathname === "/attendance") return "Журнал посещений и календарь";
   if (pathname.startsWith("/personal")) {
     if (personalTab === "sell") return "Продажа пакета персональных уроков";

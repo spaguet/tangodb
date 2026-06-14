@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -22,7 +23,7 @@ import {
   useScheduleDates,
   useSubsForDate,
 } from "../hooks/useAttendance";
-import { usePersonalLessons } from "../hooks/usePersonalLessons";
+import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
 import { usePrices } from "../hooks/usePrices";
 import {
   dowShort,
@@ -53,6 +54,10 @@ function todayDateStr(): string {
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function isDateMarkable(dateStr: string): boolean {
+  return dateStr <= todayDateStr();
 }
 
 function formatAttendanceDate(dateStr: string): string {
@@ -154,7 +159,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   );
 
   const markAttendance = useMarkAttendance();
+  const markPersonalAttendance = useMarkPersonalLessonAttendance();
   const isLoading = scheduleLoading || personalLoading || pricesLoading;
+  const canMarkAttendance = isDateMarkable(selectedDate);
 
   const calendarCells = useMemo(() => {
     const [year, month] = selectedMonth.split("-").map(Number);
@@ -210,6 +217,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   };
 
   const handleMark = async (subId: string, status: "present" | "absent" | "freeze", student: SubForDate) => {
+    if (!canMarkAttendance) {
+      toast("Отметки доступны только за прошедшие и текущий день.", "error");
+      return;
+    }
+
     if (status === "freeze") {
       if (student.lessonsTotal !== 8) {
         toast("Заморозка доступна только для абонементов на 8 уроков.", "error");
@@ -232,12 +244,27 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     }
   };
 
+  const handleMarkPersonal = async (lessonId: string, status: "present" | "absent") => {
+    if (!canMarkAttendance) {
+      toast("Отметки доступны только за прошедшие и текущий день.", "error");
+      return;
+    }
+
+    const res = await markPersonalAttendance.mutateAsync({ lessonId, status });
+    if (!res.success) {
+      toast(res.error || "Не удалось сохранить отметку", "error");
+    } else {
+      toast(`Отмечено: ${status === "present" ? "присутствие" : "отсутствие"}`, "success");
+    }
+  };
+
   const handleRefresh = () => {
     void queryClient.invalidateQueries({ queryKey: attendanceQueryKey });
+    void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
     toast("Списки посещений обновлены", "info");
   };
 
-  const renderAttendanceRow = (st: SubForDate) => {
+  const renderAttendanceRow = (st: SubForDate, showFreeze: boolean) => {
     const hasLowCredits = st.lessonsLeft <= 2;
     const fullname = st.client2 ? `${st.client1} & ${st.client2}` : st.client1;
     const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
@@ -265,7 +292,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleMark(st.subId, "present", st)}
-            disabled={markAttendance.isPending}
+            disabled={!canMarkAttendance || markAttendance.isPending}
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "present"
                 ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
@@ -278,7 +305,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
           <button
             onClick={() => handleMark(st.subId, "absent", st)}
-            disabled={markAttendance.isPending}
+            disabled={!canMarkAttendance || markAttendance.isPending}
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "absent"
                 ? "bg-rose-600 border-rose-600 text-white shadow-xs"
@@ -286,28 +313,30 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             }`}
           >
             <X className="w-3.5 h-3.5" />
-            Н/П
+            Не пришёл
           </button>
 
-          <button
-            onClick={() => handleMark(st.subId, "freeze", st)}
-            disabled={markAttendance.isPending || freezeLocked}
-            title={
-              freezeLocked
-                ? "Заморозка доступна один раз для абонементов на 8 уроков"
-                : "Заморозить занятие"
-            }
-            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border disabled:opacity-60 ${
-              st.currentStatus === "freeze"
-                ? "bg-sky-600 border-sky-600 text-white shadow-xs cursor-pointer"
-                : freezeLocked
-                  ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed"
-                  : "bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50 cursor-pointer"
-            }`}
-          >
-            <Snowflake className="w-3.5 h-3.5" />
-            Фриз
-          </button>
+          {showFreeze && (
+            <button
+              onClick={() => handleMark(st.subId, "freeze", st)}
+              disabled={!canMarkAttendance || markAttendance.isPending || freezeLocked}
+              title={
+                freezeLocked
+                  ? "Заморозка доступна один раз для абонементов на 8 уроков"
+                  : "Заморозить занятие"
+              }
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border disabled:opacity-60 ${
+                st.currentStatus === "freeze"
+                  ? "bg-sky-600 border-sky-600 text-white shadow-xs cursor-pointer"
+                  : freezeLocked
+                    ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50 cursor-pointer"
+              }`}
+            >
+              <Snowflake className="w-3.5 h-3.5" />
+              Фриз
+            </button>
+          )}
         </div>
       </div>
     );
@@ -317,6 +346,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     selectedLesson?.kind === "group"
       ? `Групповой урок · ${selectedLesson.time} – ${selectedLesson.timeEnd}`
       : selectedLesson?.label ?? "Урок";
+
+  const activePersonalLesson =
+    selectedLesson?.kind === "personal"
+      ? personalLessons.find((l) => l.id === selectedLesson.lesson.id) ?? selectedLesson.lesson
+      : null;
 
   return (
     <div id="panel-attendance" className="panel-page-stack">
@@ -419,11 +453,28 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           </div>
         </div>
 
+        <p className="text-xs text-slate-500 font-sans leading-relaxed">
+          Изменить расписание можно в{" "}
+          <Link to="/schedule" className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline">
+            Расписание групп
+          </Link>{" "}
+          и в{" "}
+          <Link to="/personal" className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline">
+            Персональные уроки
+          </Link>
+          .
+        </p>
+
         {selectedDate && (
           <div className="panel-card-stack">
             <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
               <p className="text-xs font-semibold text-slate-700">{formatAttendanceDate(selectedDate)}</p>
               <p className="text-[10px] text-slate-400 mt-0.5 font-sans">Расписание выбранного дня</p>
+              {!canMarkAttendance && (
+                <p className="text-[10px] text-amber-600 mt-1 font-sans">
+                  Отметки посещаемости доступны только за прошедшие и текущий день.
+                </p>
+              )}
             </div>
 
             {dayScheduleEntries.length > 0 ? (
@@ -495,25 +546,61 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               </div>
 
               <div className="overflow-y-auto px-4 py-3 flex-1">
-                {selectedLesson.kind === "personal" && !selectedLesson.lesson.subscriptionId ? (
-                  <div className="rounded-xl border border-slate-200 p-4 space-y-2">
-                    <p className="text-sm font-semibold text-slate-800">{selectedLesson.lesson.clientDisplay}</p>
-                    <p className="text-xs text-slate-500 font-sans">
-                      Разовый урок · {formatCurrency(selectedLesson.lesson.price)}
-                    </p>
-                    <p className="text-xs font-sans">
-                      Оплата:{" "}
-                      <span
-                        className={
-                          selectedLesson.lesson.paid === "yes" ? "text-emerald-600 font-semibold" : "text-rose-600 font-semibold"
-                        }
-                      >
-                        {selectedLesson.lesson.paid === "yes" ? "оплачен" : "не оплачен"}
-                      </span>
-                    </p>
-                    <p className="text-[11px] text-slate-400 font-sans pt-1">
-                      Для списания с абонемента привяжите его при бронировании урока.
-                    </p>
+                {selectedLesson.kind === "personal" && !selectedLesson.lesson.subscriptionId && activePersonalLesson ? (
+                  <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-800">{activePersonalLesson.clientDisplay}</p>
+                      <p className="text-xs text-slate-500 font-sans">
+                        Разовый урок · {formatCurrency(activePersonalLesson.price)}
+                      </p>
+                      <p className="text-xs font-sans">
+                        Оплата:{" "}
+                        <span
+                          className={
+                            activePersonalLesson.paid === "yes"
+                              ? "text-emerald-600 font-semibold"
+                              : "text-rose-600 font-semibold"
+                          }
+                        >
+                          {activePersonalLesson.paid === "yes" ? "оплачен" : "не оплачен"}
+                        </span>
+                      </p>
+                    </div>
+
+                    {!canMarkAttendance ? (
+                      <p className="text-[11px] text-amber-600 font-sans">
+                        Отметки посещаемости доступны только за прошедшие и текущий день.
+                      </p>
+                    ) : (
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleMarkPersonal(activePersonalLesson.id, "present")}
+                          disabled={markPersonalAttendance.isPending}
+                          className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+                            activePersonalLesson.attendanceStatus === "present"
+                              ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
+                              : "bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"
+                          }`}
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          Пришёл
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMarkPersonal(activePersonalLesson.id, "absent")}
+                          disabled={markPersonalAttendance.isPending}
+                          className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+                            activePersonalLesson.attendanceStatus === "absent"
+                              ? "bg-rose-600 border-rose-600 text-white shadow-xs"
+                              : "bg-white border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50"
+                          }`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          Не пришёл
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : subsLoading || isLoading ? (
                   <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
@@ -526,11 +613,18 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   </div>
                 ) : (
                   <div>
+                    {!canMarkAttendance && (
+                      <p className="text-[11px] text-amber-600 font-sans mb-3">
+                        Отметки посещаемости доступны только за прошедшие и текущий день.
+                      </p>
+                    )}
                     <p className="text-[10px] font-sans bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums">
                       {modalSubs.length}{" "}
                       {pluralizeRu(modalSubs.length, ["абонемент", "абонемента", "абонементов"])}
                     </p>
-                    {modalSubs.map(renderAttendanceRow)}
+                    {modalSubs.map((st) =>
+                      renderAttendanceRow(st, selectedLesson.kind === "group")
+                    )}
                   </div>
                 )}
               </div>
