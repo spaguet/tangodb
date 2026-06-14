@@ -327,20 +327,20 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   return (
     <div id="panel-attendance" className="panel-page-stack">
       <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
-        <div className="flex items-start justify-between gap-3">
-          <div>
+        <div className="panel-card-stack">
+          <div className="flex items-start justify-between gap-3">
             <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений и календарь</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Выберите день, затем урок — откроется журнал с абонементами.
-            </p>
+            <button
+              onClick={handleRefresh}
+              className="shrink-0 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center gap-2"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Обновить
+            </button>
           </div>
-          <button
-            onClick={handleRefresh}
-            className="shrink-0 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center gap-2"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Обновить
-          </button>
+          <p className="w-full text-xs text-slate-400">
+            Выберите день, затем урок — откроется журнал с абонементами.
+          </p>
         </div>
 
         <div className="border border-slate-200 rounded-xl overflow-hidden">

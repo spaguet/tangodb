@@ -168,8 +168,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       return;
     }
 
-    const lessons = newCategory === "group" ? parseInt(newLessons, 10) : 1;
-    if (newCategory === "group" && (isNaN(lessons) || lessons < 1)) {
+    const lessons = parseInt(newLessons, 10);
+    if (isNaN(lessons) || lessons < 1) {
       toast("Укажите количество уроков (не меньше 1).", "error");
       return;
     }
@@ -250,7 +250,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </div>
           <p className="text-[11px] text-slate-400 font-sans tracking-tight font-normal">
             {description}
-            {getPriceCategory(p) === "group" ? ` · ${p.lessons} ${p.lessons === 1 ? "урок" : p.lessons < 5 ? "урока" : "уроков"}` : ""}
+            {(getPriceCategory(p) === "group" || p.lessons > 1)
+              ? ` · ${p.lessons} ${p.lessons === 1 ? "урок" : p.lessons < 5 ? "урока" : "уроков"}`
+              : ""}
             {" · "}
             {formatCurrency(p.price)}
           </p>
@@ -290,24 +292,24 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   return (
     <div id="panel-prices" className="panel-page-stack">
       <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
-        <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3 mb-3">
-          <div className="flex items-center gap-2.5 text-slate-800 min-w-0">
-            <Coins className="w-4.5 h-4.5 text-indigo-500 shrink-0" />
-            <div className="min-w-0">
+        <div className="border-b border-slate-100 pb-3 mb-3 panel-card-stack">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-slate-800 min-w-0">
+              <Coins className="w-4.5 h-4.5 text-indigo-500 shrink-0" />
               <h2 className="text-base font-semibold tracking-tight">Тарифы и прайс-лист</h2>
-              <p className="text-slate-400 text-xs mt-0.5">
-                Изменённые тарифы сразу обновят стоимость на кассе оформления.
-              </p>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Добавить тариф
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowCreateModal(true)}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Добавить тариф
-          </button>
+          <p className="w-full text-slate-400 text-xs">
+            Изменённые тарифы сразу обновят стоимость на кассе оформления.
+          </p>
         </div>
 
         {prices.length === 0 ? (
@@ -478,18 +480,21 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                   />
                 </div>
 
-                {newCategory === "group" && (
-                  <div className="field-stack">
-                    <label className={labelCls}>Количество уроков</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={newLessons}
-                      onChange={(e) => setNewLessons(e.target.value)}
-                      className={inputCls}
-                    />
-                  </div>
-                )}
+                <div className="field-stack">
+                  <label className={labelCls}>Количество уроков</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={newLessons}
+                    onChange={(e) => setNewLessons(e.target.value)}
+                    className={inputCls}
+                  />
+                  {newCategory === "private" && (
+                    <p className="text-[10px] text-slate-400 font-sans mt-1">
+                      1 урок — разовое занятие; больше 1 — абонемент для продажи в персональных уроках.
+                    </p>
+                  )}
+                </div>
 
                 <div className="field-stack">
                   <label className={labelCls}>Стоимость</label>
