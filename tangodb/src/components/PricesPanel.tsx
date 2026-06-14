@@ -22,9 +22,9 @@ const LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }
   pair_m1: { label: "Парный — Месяц 1 (8 уроков)", sub: "Групповые занятия, первый цикл", col: "group" },
   pair_m2: { label: "Парный — Месяц 2 (8 уроков)", sub: "Групповые занятия, второй цикл", col: "group" },
   pair_m3: { label: "Парный — Месяц 3 (8 уроков)", sub: "Групповые занятия, третий цикл", col: "group" },
-  personal_solo: { label: "Индивидуальный Соло Урок", sub: "Приватная сессия (1 ученик)", col: "private" },
-  personal_pair: { label: "Индивидуальный Парный Урок", sub: "Приватная сессия (2 ученика)", col: "private" },
-  personal_trio: { label: "Индивидуальный Трио Урок", sub: "Приватная сессия (3 ученика)", col: "private" },
+  personal_solo: { label: "Индивидуальный Соло Урок", sub: "Приватная сессия (1 клиент)", col: "private" },
+  personal_pair: { label: "Индивидуальный Парный Урок", sub: "Приватная сессия (2 клиента)", col: "private" },
+  personal_trio: { label: "Индивидуальный Трио Урок", sub: "Приватная сессия (3 клиента)", col: "private" },
 };
 
 export default function PricesPanel({ toast }: PricesPanelProps) {

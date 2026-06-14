@@ -345,7 +345,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
               <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
-              <p className="text-xs">Загрузка карточек учеников...</p>
+              <p className="text-xs">Загрузка карточек клиентов...</p>
             </div>
           ) : students.length === 0 ? (
             <div className="text-center py-20 text-slate-400">

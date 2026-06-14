@@ -121,7 +121,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
           <UserPlus className="w-4.5 h-4.5 text-indigo-500" />
-          <h2 className="text-base font-semibold tracking-tight">Добавить танцора</h2>
+          <h2 className="text-base font-semibold tracking-tight">Добавить клиента</h2>
         </div>
 
         <form onSubmit={handleSubmitAdd} className="panel-form-stack font-sans">
@@ -220,7 +220,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               <thead>
                 <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
                   <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
-                  <th className="pb-3 font-semibold">Танцор (Фамилия Имя)</th>
+                  <th className="pb-3 font-semibold">Клиент (Фамилия Имя)</th>
                   <th className="pb-3 font-semibold text-center">Связь</th>
                   <th className="pb-3 text-right pr-2 font-semibold">Действия</th>
                 </tr>
@@ -301,7 +301,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Редактировать танцора</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">Редактировать клиента</h3>
                 <button
                   onClick={() => setEditingClient(null)}
                   aria-label="Закрыть"
@@ -356,10 +356,10 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        title="Удалить танцора?"
+        title="Удалить клиента?"
         description={
           <>
-            Карточка танцора{" "}
+            Карточка клиента{" "}
             <strong className="font-semibold text-slate-800">
               {deleteTarget?.lastName} {deleteTarget?.firstName}
             </strong>{" "}

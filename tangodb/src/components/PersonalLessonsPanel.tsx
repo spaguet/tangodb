@@ -386,7 +386,7 @@ export default function PersonalLessonsPanel({
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Поиск по имени ученика..."
+                  placeholder="Поиск по имени клиента..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg text-xs transition-all"
@@ -531,10 +531,12 @@ export default function PersonalLessonsPanel({
             </div>
 
             <ClientAutocomplete
-              label="Главный ученик"
+              label="Главный клиент"
               clients={clients}
               query={c1Query}
               selectedId={c1Id}
+              showAddClientButton
+              toast={toast}
               onQueryChange={(q) => {
                 setC1Query(q);
                 setC1Id("");
@@ -548,10 +550,12 @@ export default function PersonalLessonsPanel({
             {(pType === "pair" || pType === "trio") && (
               <div className="animate-fade-in">
                 <ClientAutocomplete
-                  label="Второй ученик"
+                  label="Второй клиент"
                   clients={clients}
                   query={c2Query}
                   selectedId={c2Id}
+                  showAddClientButton
+                  toast={toast}
                   onQueryChange={(q) => {
                     setC2Query(q);
                     setC2Id("");
@@ -567,10 +571,12 @@ export default function PersonalLessonsPanel({
             {pType === "trio" && (
               <div className="animate-fade-in">
                 <ClientAutocomplete
-                  label="Третий ученик"
+                  label="Третий клиент"
                   clients={clients}
                   query={c3Query}
                   selectedId={c3Id}
+                  showAddClientButton
+                  toast={toast}
                   onQueryChange={(q) => {
                     setC3Query(q);
                     setC3Id("");

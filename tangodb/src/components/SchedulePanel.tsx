@@ -155,7 +155,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           <div className="text-center py-20 text-slate-400 space-y-3">
             <CalendarDays className="w-8 h-8 mx-auto text-slate-300" />
             <p className="text-sm">
-              Расписание пока пустое. Заполните форму слева, чтобы ученики появились в журнале посещений.
+              Расписание пока пустое. Заполните форму слева, чтобы клиенты появились в журнале посещений.
             </p>
           </div>
         ) : (

@@ -385,10 +385,12 @@ export default function SubscriptionsPanel({
             </div>
 
             <ClientAutocomplete
-              label={subType === "pair" ? "Первый участник" : "Ученик"}
+              label={subType === "pair" ? "Первый участник" : "Клиент"}
               clients={clients}
               query={client1Query}
               selectedId={client1Id}
+              showAddClientButton
+              toast={toast}
               onQueryChange={(q) => {
                 setClient1Query(q);
                 setClient1Id("");
@@ -406,6 +408,8 @@ export default function SubscriptionsPanel({
                   clients={clients}
                   query={client2Query}
                   selectedId={client2Id}
+                  showAddClientButton
+                  toast={toast}
                   onQueryChange={(q) => {
                     setClient2Query(q);
                     setClient2Id("");

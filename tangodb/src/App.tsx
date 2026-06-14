@@ -71,7 +71,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "Гости & Баланс",
     items: [
-      { icon: Users, label: "Все танцоры", path: "/clients" },
+      { icon: Users, label: "Все клиенты", path: "/clients" },
       { icon: Ticket, label: "Абонементы", path: "/subscriptions", subTab: "active" },
       { icon: TicketPlus, label: "Продать абонемент", path: "/subscriptions/sell", subTab: "sell" },
     ],

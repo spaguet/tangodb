@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, UserPlus } from "lucide-react";
+import type { ToastType } from "../../App";
 import type { Client } from "../../types";
+import AddClientModal from "./AddClientModal";
 
 interface ClientAutocompleteProps {
   label: string;
@@ -10,6 +12,8 @@ interface ClientAutocompleteProps {
   selectedId: string;
   onQueryChange: (q: string) => void;
   onSelect: (client: Client) => void;
+  showAddClientButton?: boolean;
+  toast?: (msg: string, type?: ToastType) => void;
 }
 
 export default function ClientAutocomplete({
@@ -20,9 +24,12 @@ export default function ClientAutocomplete({
   selectedId,
   onQueryChange,
   onSelect,
+  showAddClientButton = false,
+  toast,
 }: ClientAutocompleteProps) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   const suggestions = useMemo(() => {
     if (!query.trim() || selectedId) return [];
@@ -98,6 +105,27 @@ export default function ClientAutocomplete({
             </div>
           ))}
         </div>
+      )}
+
+      {showAddClientButton && toast && (
+        <>
+          <button
+            type="button"
+            onClick={() => setAddModalOpen(true)}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer mt-0.5"
+          >
+            <UserPlus className="w-3 h-3" />
+            Добавить клиента
+          </button>
+          <AddClientModal
+            open={addModalOpen}
+            onClose={() => setAddModalOpen(false)}
+            toast={toast}
+            onSuccess={(client) => {
+              onSelect(client);
+            }}
+          />
+        </>
       )}
     </div>
   );
