@@ -28,6 +28,58 @@ export function jsDayToIsoDow(jsDay: number): number {
   return jsDay === 0 ? 7 : jsDay;
 }
 
+/** HH:MM intervals overlap (end exclusive at boundary: 14:00–15:00 vs 15:00–16:00 — no conflict) */
+export function timesOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
+  return start1 < end2 && start2 < end1;
+}
+
+export function findPersonalLessonBookingConflict(
+  date: string,
+  timeStart: string,
+  timeEnd: string,
+  personalLessons: Array<{ id: string; date: string; timeStart: string; timeEnd: string }>,
+  excludeLessonId?: string
+): string | null {
+  for (const lesson of personalLessons) {
+    if (excludeLessonId && lesson.id === excludeLessonId) continue;
+    if (lesson.date !== date) continue;
+    const lessonEnd = lesson.timeEnd || lesson.timeStart;
+    if (timesOverlap(timeStart, timeEnd, lesson.timeStart, lessonEnd)) {
+      return "в это время уже записан персональный урок";
+    }
+  }
+  return null;
+}
+
+export function findGroupScheduleConflictOnDate(
+  date: string,
+  timeStart: string,
+  timeEnd: string,
+  schedule: Array<{ dayOfWeek: number; time: string; timeEnd: string }>
+): string | null {
+  const dow = jsDayToIsoDow(new Date(date + "T12:00:00").getDay());
+  for (const slot of schedule) {
+    if (slot.dayOfWeek !== dow) continue;
+    if (!timesOverlap(timeStart, timeEnd, slot.time, slot.timeEnd || "21:00")) continue;
+    return "в это время уже записан групповой урок";
+  }
+  return null;
+}
+
+export function findBookingScheduleConflict(
+  date: string,
+  timeStart: string,
+  timeEnd: string,
+  personalLessons: Array<{ id: string; date: string; timeStart: string; timeEnd: string }>,
+  schedule: Array<{ dayOfWeek: number; time: string; timeEnd: string }>,
+  excludeLessonId?: string
+): string | null {
+  return (
+    findPersonalLessonBookingConflict(date, timeStart, timeEnd, personalLessons, excludeLessonId) ??
+    findGroupScheduleConflictOnDate(date, timeStart, timeEnd, schedule)
+  );
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("ru-RU", {
     style: "currency",

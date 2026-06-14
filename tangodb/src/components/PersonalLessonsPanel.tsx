@@ -12,6 +12,7 @@ import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
 import {
   deriveSubscriptionTypeFromTariff,
+  findBookingScheduleConflict,
   formatClientName,
   formatCurrency,
   formatMonthTitleRu,
@@ -23,6 +24,7 @@ import {
   tariffNeedsThirdClient,
   tariffParticipantType,
 } from "../lib/utils";
+import { useSchedule } from "../hooks/useSchedule";
 import {
   useAddPersonalLessons,
   useDeletePersonalLesson,
@@ -79,6 +81,7 @@ export default function PersonalLessonsPanel({
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
   const { data: personalLessons = [], isLoading: lessonsLoading } = usePersonalLessons();
+  const { data: schedule = [], isLoading: scheduleLoading } = useSchedule();
   const { data: prices = [], isLoading: pricesLoading } = usePrices();
   const { data: subscriptions = [] } = useSubscriptions();
   const addPersonalLessons = useAddPersonalLessons();
@@ -87,7 +90,7 @@ export default function PersonalLessonsPanel({
   const updatePersonalLesson = useUpdatePersonalLesson();
   const deletePersonalLesson = useDeletePersonalLesson();
 
-  const isLoading = clientsLoading || disciplinesLoading || lessonsLoading || pricesLoading;
+  const isLoading = clientsLoading || disciplinesLoading || lessonsLoading || scheduleLoading || pricesLoading;
 
   const [activeTab, setActiveTab] = useState<"view" | "book" | "sell">(initialTab);
 
@@ -260,6 +263,20 @@ export default function PersonalLessonsPanel({
       return;
     }
 
+    const uniqueDates = new Set(filteredDates);
+    if (uniqueDates.size !== filteredDates.length) {
+      toast("Одна и та же дата указана несколько раз.", "error");
+      return;
+    }
+
+    for (const date of filteredDates) {
+      const conflict = findBookingScheduleConflict(date, timeStart, timeEnd, personalLessons, schedule);
+      if (conflict) {
+        toast(`Конфликт: ${formatDateLabel(date)} ${timeStart} — ${conflict}`, "error");
+        return;
+      }
+    }
+
     const payload = {
       type: pType,
       clientId1: bookingClients[0].id,
@@ -391,6 +408,19 @@ export default function PersonalLessonsPanel({
       return;
     }
 
+    const conflict = findBookingScheduleConflict(
+      editDate,
+      editTimeStart,
+      editTimeEnd,
+      personalLessons,
+      schedule,
+      editTarget.id
+    );
+    if (conflict) {
+      toast(`Конфликт: ${formatDateLabel(editDate)} ${editTimeStart} — ${conflict}`, "error");
+      return;
+    }
+
     const res = await updatePersonalLesson.mutateAsync({
       id: editTarget.id,
       date: editDate,
@@ -473,7 +503,7 @@ export default function PersonalLessonsPanel({
   const personalTabs = [
     { id: "view", label: "Просмотр", icon: FolderClosed },
     { id: "book", label: "Урок", icon: BadgePlus },
-    { id: "sell", label: "Абонемент", icon: Ticket },
+    { id: "sell", label: "Пакет", icon: Ticket },
   ] as const;
 
   return (
@@ -708,7 +738,6 @@ export default function PersonalLessonsPanel({
                       selectedId={client.id}
                       showAddClientButton
                       addClientLinkLabel="Добавить клиента"
-                      modalSubmitLabel="+ ДОБАВИТЬ КЛИЕНТА В БАЗУ"
                       toast={toast}
                       onQueryChange={(q) => {
                         setBookingClients((prev) => {
@@ -903,7 +932,7 @@ export default function PersonalLessonsPanel({
             <div className="panel-form-header-icon">
               <Ticket className="w-5 h-5 text-indigo-600" />
             </div>
-            <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа персонального абонемента</h2>
+            <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа пакета персональных уроков</h2>
             <p className="text-slate-400 text-[11px] leading-snug">
               Пакет персональных уроков — посещения отмечаются в журнале при бронировании.
             </p>

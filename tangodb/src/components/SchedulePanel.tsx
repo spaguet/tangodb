@@ -16,7 +16,7 @@ import {
 } from "../hooks/useSchedule";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
-import { dowFull, dowFullEntries, jsDayToIsoDow } from "../lib/utils";
+import { dowFull, dowFullEntries, jsDayToIsoDow, timesOverlap } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import AppSelect from "./ui/AppSelect";
 import DisciplineSelect from "./ui/DisciplineSelect";
@@ -42,10 +42,6 @@ const iconBtnCls =
 
 const deleteBtnCls =
   "p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer";
-
-function timesOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
-  return start1 < end2 && start2 < end1;
-}
 
 function getSlotConflict(
   slot: EditSlotRow,
