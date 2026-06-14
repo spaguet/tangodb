@@ -111,8 +111,22 @@ ON CONFLICT (telegram_id) DO NOTHING;
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION auth_telegram_id() RETURNS BIGINT AS $$
-  SELECT NULLIF(current_setting('request.jwt.claims', true)::json->>'telegram_id', '')::BIGINT;
+  SELECT COALESCE(
+    NULLIF(auth.jwt()->>'telegram_id', '')::BIGINT,
+    NULLIF(auth.jwt()->'app_metadata'->>'telegram_id', '')::BIGINT,
+    NULLIF(auth.jwt()->'user_metadata'->>'telegram_id', '')::BIGINT,
+    (regexp_match(auth.jwt()->>'email', '^tg_(\d+)@tangodb\.auth$'))[1]::BIGINT
+  );
 $$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION public.is_allowed_teacher() RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.allowed_users
+    WHERE telegram_id = auth_telegram_id() AND is_active
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
+
+GRANT EXECUTE ON FUNCTION public.is_allowed_teacher() TO authenticated;
 
 ALTER TABLE allowed_users ENABLE ROW LEVEL SECURITY;
 
@@ -126,26 +140,26 @@ BEGIN
     EXECUTE format($p$
       DROP POLICY IF EXISTS "teacher_select" ON %I;
       CREATE POLICY "teacher_select" ON %I FOR SELECT
-        USING (auth_telegram_id() IN (SELECT telegram_id FROM allowed_users WHERE is_active))
+        USING (is_allowed_teacher())
     $p$, t, t);
 
     EXECUTE format($p$
       DROP POLICY IF EXISTS "teacher_insert" ON %I;
       CREATE POLICY "teacher_insert" ON %I FOR INSERT
-        WITH CHECK (auth_telegram_id() IN (SELECT telegram_id FROM allowed_users WHERE is_active))
+        WITH CHECK (is_allowed_teacher())
     $p$, t, t);
 
     EXECUTE format($p$
       DROP POLICY IF EXISTS "teacher_update" ON %I;
       CREATE POLICY "teacher_update" ON %I FOR UPDATE
-        USING (auth_telegram_id() IN (SELECT telegram_id FROM allowed_users WHERE is_active))
-        WITH CHECK (auth_telegram_id() IN (SELECT telegram_id FROM allowed_users WHERE is_active))
+        USING (is_allowed_teacher())
+        WITH CHECK (is_allowed_teacher())
     $p$, t, t);
 
     EXECUTE format($p$
       DROP POLICY IF EXISTS "teacher_delete" ON %I;
       CREATE POLICY "teacher_delete" ON %I FOR DELETE
-        USING (auth_telegram_id() IN (SELECT telegram_id FROM allowed_users WHERE is_active))
+        USING (is_allowed_teacher())
     $p$, t, t);
   END LOOP;
 END $$;
