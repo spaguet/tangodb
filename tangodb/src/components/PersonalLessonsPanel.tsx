@@ -745,7 +745,7 @@ export default function PersonalLessonsPanel({
                   onClick={() => setBookingClients((prev) => [...prev, { query: "", id: "" }])}
                   className="w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer"
                 >
-                  ＋ Добавить клиента
+                  ＋ Добавить ещё клиента
                 </button>
               )}
             </div>
