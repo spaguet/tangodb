@@ -42,6 +42,15 @@ export function formatClientName(lastName: string, firstName: string): string {
   return `${lastName} ${firstName}`.trim();
 }
 
+/** «июнь 2026 г.» — прописная «г.» после года */
+export function formatMonthTitleRu(yearMonth: string): string {
+  const [y, m] = yearMonth.split("-").map(Number);
+  if (!y || !m) return yearMonth;
+  const date = new Date(y, m - 1, 1);
+  const month = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(date);
+  return `${month} ${y} г.`;
+}
+
 export function formatPairName(
   lastName1: string,
   firstName1: string,

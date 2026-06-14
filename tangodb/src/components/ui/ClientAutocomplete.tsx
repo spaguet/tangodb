@@ -13,6 +13,8 @@ interface ClientAutocompleteProps {
   onQueryChange: (q: string) => void;
   onSelect: (client: Client) => void;
   showAddClientButton?: boolean;
+  addClientLinkLabel?: string;
+  modalSubmitLabel?: string;
   toast?: (msg: string, type?: ToastType) => void;
 }
 
@@ -25,6 +27,8 @@ export default function ClientAutocomplete({
   onQueryChange,
   onSelect,
   showAddClientButton = false,
+  addClientLinkLabel = "Добавить клиента",
+  modalSubmitLabel = "Внести в базу",
   toast,
 }: ClientAutocompleteProps) {
   const [open, setOpen] = useState(false);
@@ -115,12 +119,13 @@ export default function ClientAutocomplete({
             className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer mt-0.5"
           >
             <UserPlus className="w-3 h-3" />
-            Новый клиент
+            {addClientLinkLabel}
           </button>
           <AddClientModal
             open={addModalOpen}
             onClose={() => setAddModalOpen(false)}
             toast={toast}
+            submitLabel={modalSubmitLabel}
             onSuccess={(client) => {
               onSelect(client);
             }}

@@ -28,6 +28,7 @@ import {
   dowShort,
   formatCurrency,
   formatDayMonthRu,
+  formatMonthTitleRu,
   getSubscriptionTariffLabel,
   jsDayToIsoDow,
   pluralizeRu,
@@ -60,13 +61,6 @@ function formatAttendanceDate(dateStr: string): string {
   const date = new Date(y, m - 1, d);
   const month = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(date);
   return `${d} ${month} (${dowShort(jsDayToIsoDow(date.getDay()))})`;
-}
-
-function formatMonthTitle(yearMonth: string): string {
-  const [y, m] = yearMonth.split("-").map(Number);
-  if (!y || !m) return yearMonth;
-  const date = new Date(y, m - 1, 1);
-  return date.toLocaleString("ru-RU", { month: "long", year: "numeric" });
 }
 
 function shiftMonth(yearMonth: string, delta: number): string {
@@ -353,7 +347,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm font-semibold text-slate-800 capitalize">{formatMonthTitle(selectedMonth)}</span>
+            <span className="text-sm font-semibold text-slate-800 capitalize">{formatMonthTitleRu(selectedMonth)}</span>
             <button
               type="button"
               onClick={() => handleMonthNav(1)}

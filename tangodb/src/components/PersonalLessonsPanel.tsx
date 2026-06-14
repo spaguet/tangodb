@@ -5,7 +5,8 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, X, CalendarDays, ChevronLeft, ChevronRight, Ticket } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, CalendarDays, ChevronLeft, ChevronRight, Ticket, Edit, X } from "lucide-react";
 import { useClients } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
@@ -13,6 +14,7 @@ import {
   deriveSubscriptionTypeFromTariff,
   formatClientName,
   formatCurrency,
+  formatMonthTitleRu,
   getPriceLabel,
   getPrivateLessonTariffs,
   getPrivatePackageTariffs,
@@ -24,6 +26,7 @@ import {
   useAddPersonalLessons,
   useDeletePersonalLesson,
   usePersonalLessons,
+  useUpdatePersonalLesson,
   useUpdatePersonalPaid,
 } from "../hooks/usePersonalLessons";
 import { useAddSubscription, useSubscriptions } from "../hooks/useSubscriptions";
@@ -59,13 +62,6 @@ function lessonYearMonth(dateStr: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function formatMonthTitle(yearMonth: string): string {
-  const [y, m] = yearMonth.split("-").map(Number);
-  if (!y || !m) return yearMonth;
-  const date = new Date(y, m - 1, 1);
-  return date.toLocaleString("ru-RU", { month: "long", year: "numeric" });
-}
-
 function shiftMonth(yearMonth: string, delta: number): string {
   const [y, m] = yearMonth.split("-").map(Number);
   const date = new Date(y, m - 1 + delta, 1);
@@ -87,6 +83,7 @@ export default function PersonalLessonsPanel({
   const addPersonalLessons = useAddPersonalLessons();
   const addSubscription = useAddSubscription();
   const updatePersonalPaid = useUpdatePersonalPaid();
+  const updatePersonalLesson = useUpdatePersonalLesson();
   const deletePersonalLesson = useDeletePersonalLesson();
 
   const isLoading = clientsLoading || disciplinesLoading || lessonsLoading || pricesLoading;
@@ -177,6 +174,10 @@ export default function PersonalLessonsPanel({
   );
 
   const [deleteTarget, setDeleteTarget] = useState<PersonalLesson | null>(null);
+  const [editTarget, setEditTarget] = useState<PersonalLesson | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editTimeStart, setEditTimeStart] = useState("");
+  const [editTimeEnd, setEditTimeEnd] = useState("");
 
   useEffect(() => {
     if (disciplines.length > 0 && disciplineId === "") {
@@ -207,6 +208,11 @@ export default function PersonalLessonsPanel({
   const handleRemoveDate = (index: number) => {
     if (dates.length <= 1) return;
     setDates(dates.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveBookingClient = (index: number) => {
+    if (index <= 0 || bookingClients.length <= 1) return;
+    setBookingClients((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDateChange = (index: number, val: string) => {
@@ -357,6 +363,47 @@ export default function PersonalLessonsPanel({
     }
   };
 
+  const startEditLesson = (lesson: PersonalLesson) => {
+    setEditTarget(lesson);
+    setEditDate(lesson.date);
+    setEditTimeStart(lesson.timeStart);
+    setEditTimeEnd(lesson.timeEnd);
+  };
+
+  useEffect(() => {
+    if (!editTarget) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setEditTarget(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editTarget]);
+
+  const handleSaveEditLesson = async () => {
+    if (!editTarget) return;
+    if (!editDate || !editTimeStart || !editTimeEnd) {
+      toast("Заполните дату и время урока.", "error");
+      return;
+    }
+    if (editTimeEnd <= editTimeStart) {
+      toast("Время окончания должно быть позже начала.", "error");
+      return;
+    }
+
+    const res = await updatePersonalLesson.mutateAsync({
+      id: editTarget.id,
+      date: editDate,
+      timeStart: editTimeStart,
+      timeEnd: editTimeEnd,
+    });
+    if (!res.success) {
+      toast(res.error || "Не удалось сохранить изменения", "error");
+    } else {
+      toast("Урок обновлён", "success");
+      setEditTarget(null);
+    }
+  };
+
   const isViewingCurrentMonth = viewMonth === currentYearMonth();
   const monthLessons = personalLessons.filter((l) => lessonYearMonth(l.date) === viewMonth);
   const monthLessonCount = monthLessons.length;
@@ -419,7 +466,7 @@ export default function PersonalLessonsPanel({
       const c3Str = l.clientId3 ? clientNameFromMap(l.clientId3) : "";
       return `${c1Str} ${c2Str} ${c3Str}`.toLowerCase().includes(search.toLowerCase());
     })
-    .sort((a, b) => a.date.localeCompare(b.date) || a.timeStart.localeCompare(b.timeStart));
+    .sort((a, b) => b.date.localeCompare(a.date) || b.timeStart.localeCompare(a.timeStart));
 
   const monthTotalSum = filteredLessons.reduce((s, l) => s + l.price, 0);
   const hasUnpaidInView = filteredLessons.some((l) => l.paid === "no");
@@ -450,7 +497,7 @@ export default function PersonalLessonsPanel({
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-sm font-semibold text-slate-800 capitalize">{formatMonthTitle(viewMonth)}</span>
+                <span className="text-sm font-semibold text-slate-800 capitalize">{formatMonthTitleRu(viewMonth)}</span>
                 {!isViewingCurrentMonth && (
                   <button
                     type="button"
@@ -537,7 +584,7 @@ export default function PersonalLessonsPanel({
                 <Sparkles className="w-8 h-8 mx-auto text-slate-300" />
                 <p className="text-sm">
                   {monthLessons.length === 0
-                    ? `В ${formatMonthTitle(viewMonth)} персональных уроков нет.`
+                    ? `В ${formatMonthTitleRu(viewMonth)} персональных уроков нет.`
                     : "Персональных уроков с такими критериями нет."}
                 </p>
                 <button
@@ -551,7 +598,7 @@ export default function PersonalLessonsPanel({
               <div className="panel-card-stack">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                   <span className="text-xs font-sans font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md capitalize">
-                    {formatMonthTitle(viewMonth)}
+                    {formatMonthTitleRu(viewMonth)}
                   </span>
                   <span className="text-xs font-sans text-slate-400 font-semibold">
                     Итого: {formatCurrency(monthTotalSum)}
@@ -583,10 +630,15 @@ export default function PersonalLessonsPanel({
                               {l.type === "solo" ? "Соло" : l.type === "pair" ? "Парный" : "Трио"}
                               {disciplineName ? ` · ${disciplineName}` : ""}
                             </span>
+                          </div>
+                          <div className="space-y-0.5">
                             <span className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
                               <CalendarDays className="w-3 h-3" />
-                              {formatDateLabel(l.date)} · {l.timeStart} – {l.timeEnd}
+                              {formatDateLabel(l.date)}
                             </span>
+                            <p className="font-sans text-xs text-slate-400 pl-4">
+                              {l.timeStart} – {l.timeEnd}
+                            </p>
                           </div>
                           <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
                           <p className="font-sans text-xs font-semibold text-slate-500">{formatCurrency(l.price)}</p>
@@ -606,14 +658,24 @@ export default function PersonalLessonsPanel({
                             {isPaid ? "Оплачен" : "К оплате"}
                           </button>
 
-                          <button
-                            onClick={() => setDeleteTarget(l)}
-                            className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            title="Удалить"
-                            aria-label="Удалить бронь"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => startEditLesson(l)}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+                              title="Редактировать"
+                              aria-label="Редактировать урок"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(l)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                              title="Удалить"
+                              aria-label="Удалить бронь"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -648,29 +710,45 @@ export default function PersonalLessonsPanel({
 
             <div className="field-stack">
               {bookingClients.map((client, idx) => (
-                <ClientAutocomplete
-                  key={idx}
-                  label={idx === 0 ? "Имя Фамилия" : `Клиент ${idx + 1}`}
-                  clients={clients}
-                  query={client.query}
-                  selectedId={client.id}
-                  showAddClientButton
-                  toast={toast}
-                  onQueryChange={(q) => {
-                    setBookingClients((prev) => {
-                      const next = [...prev];
-                      next[idx] = { query: q, id: "" };
-                      return next;
-                    });
-                  }}
-                  onSelect={(c) => {
-                    setBookingClients((prev) => {
-                      const next = [...prev];
-                      next[idx] = { query: `${c.lastName} ${c.firstName}`, id: c.id };
-                      return next;
-                    });
-                  }}
-                />
+                <div key={idx} className="flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <ClientAutocomplete
+                      label={idx === 0 ? "Имя Фамилия" : `Клиент ${idx + 1}`}
+                      clients={clients}
+                      query={client.query}
+                      selectedId={client.id}
+                      showAddClientButton
+                      addClientLinkLabel="Добавить клиента"
+                      modalSubmitLabel="+ ДОБАВИТЬ КЛИЕНТА В БАЗУ"
+                      toast={toast}
+                      onQueryChange={(q) => {
+                        setBookingClients((prev) => {
+                          const next = [...prev];
+                          next[idx] = { query: q, id: "" };
+                          return next;
+                        });
+                      }}
+                      onSelect={(c) => {
+                        setBookingClients((prev) => {
+                          const next = [...prev];
+                          next[idx] = { query: `${c.lastName} ${c.firstName}`, id: c.id };
+                          return next;
+                        });
+                      }}
+                    />
+                  </div>
+                  {idx > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveBookingClient(idx)}
+                      className="mt-6 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0"
+                      title="Убрать клиента"
+                      aria-label="Убрать клиента"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               ))}
               {bookingClients.length < 3 && (
                 <button
@@ -727,9 +805,9 @@ export default function PersonalLessonsPanel({
                         disabled={dates.length <= 1}
                         onClick={() => handleRemoveDate(idx)}
                         aria-label="Убрать дату"
-                        className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                       >
-                        <X className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   ))}
@@ -975,6 +1053,92 @@ export default function PersonalLessonsPanel({
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      <AnimatePresence>
+        {editTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditTarget(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ scale: 0.97, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.97, opacity: 0, y: 8 }}
+              transition={{ duration: 0.18 }}
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">Редактировать урок</h3>
+                <button
+                  type="button"
+                  onClick={() => setEditTarget(null)}
+                  aria-label="Закрыть"
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="panel-form-stack font-sans">
+                <div className="field-stack">
+                  <label className={labelCls}>Дата</label>
+                  <input
+                    type="date"
+                    required
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="field-stack">
+                    <label className={labelCls}>Начало</label>
+                    <input
+                      type="time"
+                      required
+                      value={editTimeStart}
+                      onChange={(e) => setEditTimeStart(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2 text-sm transition-all font-sans"
+                    />
+                  </div>
+                  <div className="field-stack">
+                    <label className={labelCls}>Окончание</label>
+                    <input
+                      type="time"
+                      required
+                      value={editTimeEnd}
+                      onChange={(e) => setEditTimeEnd(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2 text-sm transition-all font-sans"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-1 text-xs">
+                <button
+                  type="button"
+                  onClick={handleSaveEditLesson}
+                  disabled={updatePersonalLesson.isPending}
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  {updatePersonalLesson.isPending ? "..." : "Сохранить"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditTarget(null)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
+                >
+                  Отмена
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

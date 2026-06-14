@@ -166,3 +166,35 @@ export function useDeletePersonalLesson() {
     },
   });
 }
+
+export function useUpdatePersonalLesson() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      date,
+      timeStart,
+      timeEnd,
+    }: {
+      id: string;
+      date: string;
+      timeStart: string;
+      timeEnd: string;
+    }) => {
+      const { data, error } = await supabase
+        .from("personal_lessons")
+        .update({ date, time_start: timeStart, time_end: timeEnd })
+        .eq("id", id)
+        .select("id")
+        .maybeSingle();
+
+      if (error) return { success: false as const, error: error.message };
+      if (!data) return { success: false as const, error: "Урок не найден" };
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
+    },
+  });
+}

@@ -14,10 +14,11 @@ interface AddClientModalProps {
   open: boolean;
   onClose: () => void;
   toast: (msg: string, type?: ToastType) => void;
+  submitLabel?: string;
   onSuccess?: (client: Client) => void;
 }
 
-export default function AddClientModal({ open, onClose, toast, onSuccess }: AddClientModalProps) {
+export default function AddClientModal({ open, onClose, toast, submitLabel = "Внести в базу", onSuccess }: AddClientModalProps) {
   const addClient = useAddClient();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -152,7 +153,7 @@ export default function AddClientModal({ open, onClose, toast, onSuccess }: AddC
                   disabled={addClient.isPending}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
-                  {addClient.isPending ? "Добавление..." : "Внести в базу"}
+                  {addClient.isPending ? "Добавление..." : submitLabel}
                 </button>
                 <button
                   type="button"
