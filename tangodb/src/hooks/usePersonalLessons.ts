@@ -44,11 +44,12 @@ const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => {
     price: Number(row.price) || 0,
     paid: (row.paid as "yes" | "no") || "no",
     disciplineId: row.discipline_id != null ? (row.discipline_id as number) : null,
+    subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
   };
 };
 
 const personalLessonsSelect =
-  "id, type, client_id1, client_id2, client_id3, date, time_start, time_end, price, paid, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
+  "id, type, client_id1, client_id2, client_id3, date, time_start, time_end, price, paid, subscription_id, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
 export function usePersonalLessons() {
   return useQuery({
@@ -89,12 +90,13 @@ export function useAddPersonalLessons() {
       price: number;
       paid: boolean;
       disciplineId: number;
+      subscriptionId?: string;
     }) => {
       if (!lessons.dates.length) {
         return { success: false as const, error: "Нет дат для бронирования" };
       }
 
-      const paid = lessons.paid ? "yes" : "no";
+      const paid = lessons.subscriptionId || lessons.paid ? "yes" : "no";
       const baseId = Date.now();
       const rows = lessons.dates.map((date, i) => ({
         id: String(baseId + i),
@@ -105,9 +107,10 @@ export function useAddPersonalLessons() {
         date,
         time_start: lessons.timeStart,
         time_end: lessons.timeEnd,
-        price: lessons.price,
+        price: lessons.subscriptionId ? 0 : lessons.price,
         paid,
         discipline_id: lessons.disciplineId,
+        subscription_id: lessons.subscriptionId || null,
       }));
 
       const { error } = await supabase.from("personal_lessons").insert(rows);

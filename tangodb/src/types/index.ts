@@ -46,6 +46,8 @@ export interface Subscription {
   status: "active" | "finished";
   pairMonth: string;
   disciplineId?: number | null;
+  priceId?: number | null;
+  category: "group" | "private";
 }
 
 export interface AttendanceRecord {
@@ -69,6 +71,7 @@ export interface PersonalLesson {
   price: number;
   paid: "yes" | "no";
   disciplineId?: number | null;
+  subscriptionId?: string | null;
 }
 
 export interface ActiveSubscription {
@@ -97,4 +100,6 @@ export interface SubForDate {
   activationDate: string;
   currentStatus: "present" | "absent" | "freeze" | null;
   canFreeze: boolean;
+  priceId?: number | null;
+  category: "group" | "private";
 }

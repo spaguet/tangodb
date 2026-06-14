@@ -5,7 +5,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, X, Snowflake, Loader2, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  Check,
+  X,
+  Snowflake,
+  Loader2,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  ChevronRight as ChevronRightIcon,
+} from "lucide-react";
 import {
   attendanceQueryKey,
   useMarkAttendance,
@@ -14,14 +24,25 @@ import {
 } from "../hooks/useAttendance";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { usePrices } from "../hooks/usePrices";
-import { dowShort, formatDayMonthRu, getSubscriptionTariffLabel, jsDayToIsoDow, pluralizeRu } from "../lib/utils";
+import {
+  dowShort,
+  formatCurrency,
+  formatDayMonthRu,
+  getSubscriptionTariffLabel,
+  jsDayToIsoDow,
+  pluralizeRu,
+} from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import type { ToastType } from "../App";
-import type { SubForDate } from "../types";
+import type { PersonalLesson, SubForDate } from "../types";
 
 interface AttendancePanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
+
+type DayLessonEntry =
+  | { kind: "group"; key: string; start: string; time: string; timeEnd: string; label: string }
+  | { kind: "personal"; key: string; start: string; lesson: PersonalLesson; label: string };
 
 const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -64,6 +85,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const { data: prices = [], isLoading: pricesLoading } = usePrices();
 
   const [selectedDate, setSelectedDate] = useState(todayDateStr);
+  const [selectedLesson, setSelectedLesson] = useState<DayLessonEntry | null>(null);
 
   useEffect(() => {
     const today = todayDateStr();
@@ -80,6 +102,15 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     }
   }, [selectedDate, selectedMonth, setSelectedMonth]);
 
+  useEffect(() => {
+    if (!selectedLesson) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedLesson(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedLesson]);
+
   const groupLessonsForDay = useMemo(
     () => monthScheduleDates.filter((item) => item.date === selectedDate),
     [monthScheduleDates, selectedDate]
@@ -93,30 +124,43 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     [personalLessons, selectedDate]
   );
 
-  const dayScheduleEntries = useMemo(() => {
-    const entries = [
+  const dayScheduleEntries = useMemo((): DayLessonEntry[] => {
+    const entries: DayLessonEntry[] = [
       ...groupLessonsForDay.map((slot) => ({
         kind: "group" as const,
         start: slot.time,
         key: `g-${slot.date}|${slot.time}`,
-        label: `Групповой урок: ${slot.time} – ${slot.timeEnd}`,
+        time: slot.time,
+        timeEnd: slot.timeEnd,
+        label: `Групповой урок · ${slot.time} – ${slot.timeEnd}`,
       })),
       ...personalForDay.map((lesson) => ({
         kind: "personal" as const,
         start: lesson.timeStart,
         key: `p-${lesson.id}`,
-        label: `${lesson.clientDisplay}: ${lesson.timeStart} – ${lesson.timeEnd}`,
+        lesson,
+        label: `${lesson.clientDisplay} · ${lesson.timeStart} – ${lesson.timeEnd}`,
       })),
     ];
     return entries.sort((a, b) => a.start.localeCompare(b.start));
   }, [groupLessonsForDay, personalForDay]);
 
-  const hasGroupClass = groupLessonsForDay.length > 0;
+  const subsOptions = useMemo(() => {
+    if (!selectedLesson) return undefined;
+    if (selectedLesson.kind === "group") return { category: "group" as const };
+    if (selectedLesson.lesson.subscriptionId) {
+      return { subscriptionIds: [selectedLesson.lesson.subscriptionId] };
+    }
+    return { subscriptionIds: [] as string[] };
+  }, [selectedLesson]);
 
-  const { subs: students = [], isLoading: subsLoading } = useSubsForDate(hasGroupClass ? selectedDate : undefined);
+  const { subs: modalSubs = [], isLoading: subsLoading } = useSubsForDate(
+    selectedLesson ? selectedDate : undefined,
+    subsOptions
+  );
+
   const markAttendance = useMarkAttendance();
-
-  const isLoading = scheduleLoading || subsLoading || personalLoading || pricesLoading;
+  const isLoading = scheduleLoading || personalLoading || pricesLoading;
 
   const calendarCells = useMemo(() => {
     const [year, month] = selectedMonth.split("-").map(Number);
@@ -128,9 +172,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
     const groupDates = new Set(monthScheduleDates.map((d) => d.date));
     const personalDates = new Set(
-      personalLessons
-        .filter((l) => l.date.startsWith(selectedMonth))
-        .map((l) => l.date)
+      personalLessons.filter((l) => l.date.startsWith(selectedMonth)).map((l) => l.date)
     );
 
     const cells: Array<{
@@ -170,15 +212,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     const daysInNext = new Date(y, m, 0).getDate();
     const day = Math.min(currentDay, daysInNext);
     setSelectedDate(`${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+    setSelectedLesson(null);
   };
 
-  const handleMark = async (
-    studentIdx: number,
-    subId: string,
-    status: "present" | "absent" | "freeze"
-  ) => {
-    const student = students[studentIdx];
-
+  const handleMark = async (subId: string, status: "present" | "absent" | "freeze", student: SubForDate) => {
     if (status === "freeze") {
       if (student.lessonsTotal !== 8) {
         toast("Заморозка доступна только для абонементов на 8 уроков.", "error");
@@ -206,6 +243,87 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     toast("Списки посещений обновлены", "info");
   };
 
+  const renderAttendanceRow = (st: SubForDate) => {
+    const hasLowCredits = st.lessonsLeft <= 2;
+    const fullname = st.client2 ? `${st.client1} & ${st.client2}` : st.client1;
+    const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
+    const tariffLabel = getSubscriptionTariffLabel(st, prices);
+
+    return (
+      <div
+        key={st.subId}
+        className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 last:border-0"
+      >
+        <div className="space-y-1.5 flex-1 pr-4">
+          <p className="text-[11px] font-sans font-semibold text-indigo-700 leading-snug">{tariffLabel}</p>
+          <div className="space-y-0.5">
+            <h4 className="text-sm font-semibold text-slate-800 leading-tight">{fullname}</h4>
+            <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400 font-sans">
+              <span>Баланс:</span>
+              <strong className={`font-semibold ${hasLowCredits ? "text-rose-600" : "text-slate-700"}`}>
+                {st.lessonsLeft} из {st.lessonsTotal}
+              </strong>
+              <span>· с {st.activationDate}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleMark(st.subId, "present", st)}
+            disabled={markAttendance.isPending}
+            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+              st.currentStatus === "present"
+                ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
+                : "bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"
+            }`}
+          >
+            <Check className="w-3.5 h-3.5" />
+            Пришёл
+          </button>
+
+          <button
+            onClick={() => handleMark(st.subId, "absent", st)}
+            disabled={markAttendance.isPending}
+            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+              st.currentStatus === "absent"
+                ? "bg-rose-600 border-rose-600 text-white shadow-xs"
+                : "bg-white border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50"
+            }`}
+          >
+            <X className="w-3.5 h-3.5" />
+            Н/П
+          </button>
+
+          <button
+            onClick={() => handleMark(st.subId, "freeze", st)}
+            disabled={markAttendance.isPending || freezeLocked}
+            title={
+              freezeLocked
+                ? "Заморозка доступна один раз для абонементов на 8 уроков"
+                : "Заморозить занятие"
+            }
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border disabled:opacity-60 ${
+              st.currentStatus === "freeze"
+                ? "bg-sky-600 border-sky-600 text-white shadow-xs cursor-pointer"
+                : freezeLocked
+                  ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed"
+                  : "bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50 cursor-pointer"
+            }`}
+          >
+            <Snowflake className="w-3.5 h-3.5" />
+            Фриз
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const modalTitle =
+    selectedLesson?.kind === "group"
+      ? `Групповой урок · ${selectedLesson.time} – ${selectedLesson.timeEnd}`
+      : selectedLesson?.label ?? "Урок";
+
   return (
     <div id="panel-attendance" className="panel-page-stack">
       <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
@@ -213,7 +331,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <div>
             <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений и календарь</h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Выберите день в календаре — отобразятся групповые и персональные занятия.
+              Выберите день, затем урок — откроется журнал с абонементами.
             </p>
           </div>
           <button
@@ -248,10 +366,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
           <div className="grid grid-cols-7 bg-slate-50/50">
             {WEEKDAY_LABELS.map((label) => (
-              <div
-                key={label}
-                className="text-center text-[10px] font-sans font-semibold text-slate-400 uppercase py-2"
-              >
+              <div key={label} className="text-center text-[10px] font-sans font-semibold text-slate-400 uppercase py-2">
                 {label}
               </div>
             ))}
@@ -268,11 +383,12 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 <button
                   key={cell.date}
                   type="button"
-                  onClick={() => setSelectedDate(cell.date!)}
+                  onClick={() => {
+                    setSelectedDate(cell.date!);
+                    setSelectedLesson(null);
+                  }}
                   className={`min-h-[52px] bg-white p-1.5 flex flex-col items-center justify-start gap-1 transition-colors cursor-pointer ${
-                    isSelected
-                      ? "ring-2 ring-inset ring-indigo-500 bg-indigo-50/60"
-                      : "hover:bg-slate-50"
+                    isSelected ? "ring-2 ring-inset ring-indigo-500 bg-indigo-50/60" : "hover:bg-slate-50"
                   }`}
                 >
                   <span
@@ -287,7 +403,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     {cell.day}
                   </span>
                   <div className="flex items-center gap-0.5 min-h-[6px]">
-                    {cell.hasGroup && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" title="Групповой урок" />}
+                    {cell.hasGroup && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" title="Групповой урок" />
+                    )}
                     {cell.hasPersonal && (
                       <span className="w-1.5 h-1.5 rounded-full bg-violet-500" title="Персональный урок" />
                     )}
@@ -308,134 +426,134 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         </div>
 
         {selectedDate && (
-          <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
-            <p className="text-xs font-semibold text-slate-700">{formatAttendanceDate(selectedDate)}</p>
+          <div className="panel-card-stack">
+            <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
+              <p className="text-xs font-semibold text-slate-700">{formatAttendanceDate(selectedDate)}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-sans">Расписание выбранного дня</p>
+            </div>
+
             {dayScheduleEntries.length > 0 ? (
-              <div className="mt-1 space-y-0.5">
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Журнал уроков</h3>
                 {dayScheduleEntries.map((entry) => (
-                  <p
+                  <button
                     key={entry.key}
-                    className={`text-xs font-sans ${
-                      entry.kind === "group" ? "text-slate-500" : "text-violet-600"
+                    type="button"
+                    onClick={() => setSelectedLesson(entry)}
+                    className={`w-full flex items-center justify-between gap-3 p-3 rounded-xl border transition-all cursor-pointer text-left ${
+                      entry.kind === "group"
+                        ? "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40"
+                        : "bg-white border-slate-200 hover:border-violet-300 hover:bg-violet-50/40"
                     }`}
                   >
-                    {entry.label}
-                  </p>
+                    <div className="min-w-0">
+                      <p
+                        className={`text-[10px] font-sans font-semibold uppercase tracking-wider ${
+                          entry.kind === "group" ? "text-indigo-600" : "text-violet-600"
+                        }`}
+                      >
+                        {entry.kind === "group" ? "Групповой" : "Персональный"}
+                        {entry.kind === "personal" && entry.lesson.subscriptionId ? " · абонемент" : ""}
+                      </p>
+                      <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">{entry.label}</p>
+                    </div>
+                    <ChevronRightIcon className="w-4 h-4 text-slate-400 shrink-0" />
+                  </button>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 mt-0.5 font-sans">На этот день нет записей.</p>
+              <p className="text-xs text-slate-400 font-sans text-center py-6">На этот день нет уроков в расписании.</p>
             )}
           </div>
         )}
       </div>
 
-      {hasGroupClass && (
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
-          <div className="border-b border-slate-100 pb-3 space-y-1">
-            <h3 className="text-sm font-semibold tracking-tight text-slate-800">
-              Журнал посещения группового урока
-            </h3>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-xs text-slate-500 font-sans">{formatDayMonthRu(selectedDate)}</span>
-              <span className="text-[10px] font-sans bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold shrink-0 tabular-nums">
-                {students.length} {pluralizeRu(students.length, ["абонемент", "абонемента", "абонементов"])}
-              </span>
-            </div>
-          </div>
+      <AnimatePresence>
+        {selectedLesson && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedLesson(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ scale: 0.97, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.97, opacity: 0, y: 8 }}
+              transition={{ duration: 0.18 }}
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-lg w-full max-h-[85vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 shrink-0">
+                <div>
+                  <h3 className="text-base font-semibold tracking-tight text-slate-900">{modalTitle}</h3>
+                  <p className="text-xs text-slate-400 mt-0.5 font-sans">{formatDayMonthRu(selectedDate)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLesson(null)}
+                  aria-label="Закрыть"
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
-              <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
-              <p className="text-xs">Загрузка карточек клиентов...</p>
-            </div>
-          ) : students.length === 0 ? (
-            <div className="text-center py-20 text-slate-400">
-              <p className="text-sm">На выбранную дату нет активных абонементов.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {students.map((st: SubForDate, idx: number) => {
-                const hasLowCredits = st.lessonsLeft <= 2;
-                const fullname = st.client2 ? `${st.client1} & ${st.client2}` : st.client1;
-                const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
-                const tariffLabel = getSubscriptionTariffLabel(st, prices);
-
-                return (
-                  <div
-                    key={st.subId}
-                    className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0"
-                  >
-                    <div className="space-y-1.5 flex-1 pr-4">
-                      <p className="text-[11px] font-sans font-semibold text-indigo-700 leading-snug">
-                        {tariffLabel}
-                      </p>
-                      <div className="space-y-0.5">
-                        <h4 className="text-sm font-semibold text-slate-800 leading-tight">{fullname}</h4>
-                        <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400 font-sans">
-                          <span>Баланс:</span>
-                          <strong className={`font-semibold ${hasLowCredits ? "text-rose-600" : "text-slate-700"}`}>
-                            {st.lessonsLeft} из {st.lessonsTotal}
-                          </strong>
-                          <span>· с {st.activationDate}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleMark(idx, st.subId, "present")}
-                        disabled={markAttendance.isPending}
-                        className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
-                          st.currentStatus === "present"
-                            ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
-                            : "bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50"
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        Пришёл
-                      </button>
-
-                      <button
-                        onClick={() => handleMark(idx, st.subId, "absent")}
-                        disabled={markAttendance.isPending}
-                        className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
-                          st.currentStatus === "absent"
-                            ? "bg-rose-600 border-rose-600 text-white shadow-xs"
-                            : "bg-white border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50"
-                        }`}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        Н/П
-                      </button>
-
-                      <button
-                        onClick={() => handleMark(idx, st.subId, "freeze")}
-                        disabled={markAttendance.isPending || freezeLocked}
-                        title={
-                          freezeLocked
-                            ? "Заморозка доступна один раз для абонементов на 8 уроков"
-                            : "Заморозить занятие"
+              <div className="overflow-y-auto px-4 py-3 flex-1">
+                {selectedLesson.kind === "personal" && !selectedLesson.lesson.subscriptionId ? (
+                  <div className="rounded-xl border border-slate-200 p-4 space-y-2">
+                    <p className="text-sm font-semibold text-slate-800">{selectedLesson.lesson.clientDisplay}</p>
+                    <p className="text-xs text-slate-500 font-sans">
+                      Разовый урок · {formatCurrency(selectedLesson.lesson.price)}
+                    </p>
+                    <p className="text-xs font-sans">
+                      Оплата:{" "}
+                      <span
+                        className={
+                          selectedLesson.lesson.paid === "yes" ? "text-emerald-600 font-semibold" : "text-rose-600 font-semibold"
                         }
-                        className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border disabled:opacity-60 ${
-                          st.currentStatus === "freeze"
-                            ? "bg-sky-600 border-sky-600 text-white shadow-xs cursor-pointer"
-                            : freezeLocked
-                              ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed"
-                              : "bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50 cursor-pointer"
-                        }`}
                       >
-                        <Snowflake className="w-3.5 h-3.5" />
-                        Фриз
-                      </button>
-                    </div>
+                        {selectedLesson.lesson.paid === "yes" ? "оплачен" : "не оплачен"}
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-sans pt-1">
+                      Для списания с абонемента привяжите его при бронировании урока.
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                ) : subsLoading || isLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
+                    <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
+                    <p className="text-xs">Загрузка абонементов...</p>
+                  </div>
+                ) : modalSubs.length === 0 ? (
+                  <div className="text-center py-16 text-slate-400">
+                    <p className="text-sm">Нет активных абонементов для этого урока.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-[10px] font-sans bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums">
+                      {modalSubs.length}{" "}
+                      {pluralizeRu(modalSubs.length, ["абонемент", "абонемента", "абонементов"])}
+                    </p>
+                    {modalSubs.map(renderAttendanceRow)}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-slate-100 px-4 py-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedLesson(null)}
+                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer"
+                >
+                  Закрыть
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

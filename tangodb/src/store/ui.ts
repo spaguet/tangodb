@@ -4,14 +4,14 @@ interface UIState {
   selectedMonth: string;
   selectedDate: string | null;
   subscriptionsTab: "active" | "sell";
-  personalTab: "view" | "book";
+  personalTab: "view" | "book" | "sell";
   editClientModal: { open: boolean; clientId: string | null };
   personalFilter: "all" | "yes" | "no";
 
   setSelectedMonth: (m: string) => void;
   setSelectedDate: (d: string | null) => void;
   setSubscriptionsTab: (t: "active" | "sell") => void;
-  setPersonalTab: (t: "view" | "book") => void;
+  setPersonalTab: (t: "view" | "book" | "sell") => void;
   openEditClient: (id: string) => void;
   closeEditClient: () => void;
   setPersonalFilter: (f: "all" | "yes" | "no") => void;

@@ -15,7 +15,7 @@ import {
   useFinishSubscription,
   useSubscriptions,
 } from "../hooks/useSubscriptions";
-import { formatCurrency, getSubscriptionTariffLabel } from "../lib/utils";
+import { formatCurrency, deriveSubscriptionTypeFromTariff, getGroupTariffs, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient } from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import ConfirmDialog from "./ui/ConfirmDialog";
@@ -23,7 +23,7 @@ import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import type { ToastType } from "../App";
-import type { Client, Price } from "../types";
+import type { Client } from "../types";
 
 interface SubscriptionsPanelProps {
   initialTab?: "active" | "sell";
@@ -69,9 +69,8 @@ export default function SubscriptionsPanel({
   const [search, setSearch] = useState("");
 
   // Sale form states
-  const [subType, setSubType] = useState<"solo" | "pair">("solo");
-  const [lessonsCount, setLessonsCount] = useState<4 | 8>(8);
-  const [pairMonth, setPairMonth] = useState<1 | 2 | 3>(1);
+  const groupTariffs = getGroupTariffs(prices);
+  const [selectedTariffId, setSelectedTariffId] = useState<number | "">("");
 
   const [client1Query, setClient1Query] = useState("");
   const [client1Id, setClient1Id] = useState("");
@@ -92,39 +91,42 @@ export default function SubscriptionsPanel({
   const [activationDate, setActivationDate] = useState("");
 
   useEffect(() => {
+    if (groupTariffs.length > 0 && selectedTariffId === "") {
+      const defaultTariff =
+        groupTariffs.find((p) => p.id && p.type.trim() === "solo" && p.lessons === 8) ?? groupTariffs[0];
+      if (defaultTariff?.id) setSelectedTariffId(defaultTariff.id);
+    }
+  }, [groupTariffs, selectedTariffId]);
+
+  const selectedTariff = groupTariffs.find((p) => p.id === selectedTariffId);
+  const needsSecondClient = selectedTariff ? tariffNeedsSecondClient(selectedTariff) : false;
+
+  useEffect(() => {
     const today = new Date();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
     const dd = String(today.getDate()).padStart(2, "0");
     setActivationDate(`${today.getFullYear()}-${mm}-${dd}`);
   }, []);
 
-  // Pricing engine
-  const getSubPrice = (): number => {
-    let matched: Price | undefined;
-    if (subType === "solo") {
-      matched = prices.find((p) => p.type.trim() === "solo" && p.lessons === lessonsCount);
-    } else {
-      if (lessonsCount === 4) {
-        matched = prices.find((p) => p.type.trim() === "pair_hm");
-      } else {
-        matched = prices.find((p) => p.type.trim() === `pair_m${pairMonth}`);
-      }
-    }
-    return matched ? matched.price : 0;
-  };
+  const getSubPrice = (): number => selectedTariff?.price ?? 0;
 
   const handleCheckout = async () => {
+    if (!selectedTariff?.id) {
+      toast("Выберите тариф из прайс-листа.", "error");
+      return;
+    }
+
     if (!client1Query || !client1Id) {
       toast("Выберите клиента из поискового списка.", "error");
       return;
     }
 
-    if (subType === "pair" && (!client2Query || !client2Id)) {
+    if (needsSecondClient && (!client2Query || !client2Id)) {
       toast("Выберите второго клиента пары из списка.", "error");
       return;
     }
 
-    if (subType === "pair" && client1Id === client2Id) {
+    if (needsSecondClient && client1Id === client2Id) {
       toast("Оба клиента совпадают. Выберите разных клиентов.", "error");
       return;
     }
@@ -139,14 +141,18 @@ export default function SubscriptionsPanel({
       return;
     }
 
+    const { type, pairMonth } = deriveSubscriptionTypeFromTariff(selectedTariff);
+
     const payload = {
-      type: subType === "solo" ? "solo" : lessonsCount === 4 ? "pair_hm" : "pair",
+      type,
       clientId1: client1Id,
-      clientId2: subType === "pair" ? client2Id : "",
-      lessonsTotal: lessonsCount,
+      clientId2: needsSecondClient ? client2Id : "",
+      lessonsTotal: selectedTariff.lessons,
       activationDate,
-      pairMonth: subType === "pair" && lessonsCount === 8 ? String(pairMonth) : "",
+      pairMonth,
       disciplineId: disciplineId as number,
+      priceId: selectedTariff.id,
+      category: "group" as const,
     };
 
     const res = await addSubscription.mutateAsync(payload);
@@ -154,14 +160,10 @@ export default function SubscriptionsPanel({
       toast(res.error || "Абонемент не оформлен", "error");
     } else {
       toast("Абонемент продан и активирован", "success");
-      // Reset form fields
       setClient1Query("");
       setClient1Id("");
       setClient2Query("");
       setClient2Id("");
-      setSubType("solo");
-      setLessonsCount(8);
-      setPairMonth(1);
     }
   };
 
@@ -277,7 +279,11 @@ export default function SubscriptionsPanel({
                           {tariffLabel}
                         </p>
                         <div className="flex items-center justify-between gap-2 flex-wrap">
-                          {disciplineName ? (
+                          {sub.category === "private" ? (
+                            <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100">
+                              персональный
+                            </span>
+                          ) : disciplineName ? (
                             <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-slate-500">
                               {disciplineName}
                             </span>
@@ -393,25 +399,37 @@ export default function SubscriptionsPanel({
           </div>
 
           <div className="panel-form-stack">
-            {/* Solo vs Pair */}
             <div className="field-stack">
-              <label className={labelCls}>Тип абонемента</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSubType("solo");
-                    setClient2Id("");
-                    setClient2Query("");
-                  }}
-                  className={toggleCls(subType === "solo")}
-                >
-                  Один человек
-                </button>
-                <button type="button" onClick={() => setSubType("pair")} className={toggleCls(subType === "pair")}>
-                  Для пары
-                </button>
-              </div>
+              <label className={labelCls}>Тариф</label>
+              {groupTariffs.length === 0 ? (
+                <p className="text-xs text-slate-400 font-sans">Нет групповых тарифов в прайс-листе.</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {groupTariffs.map((tariff) => (
+                    <button
+                      key={tariff.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTariffId(tariff.id!);
+                        if (!tariffNeedsSecondClient(tariff)) {
+                          setClient2Id("");
+                          setClient2Query("");
+                        }
+                      }}
+                      className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
+                        selectedTariffId === tariff.id
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-slate-800">{getPriceLabel(tariff)}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 font-sans">
+                        {tariff.lessons} занятий · {formatCurrency(tariff.price)}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <DisciplineSelect
@@ -422,7 +440,7 @@ export default function SubscriptionsPanel({
             />
 
             <ClientAutocomplete
-              label={subType === "pair" ? "Первый клиент" : "Клиент"}
+              label={needsSecondClient ? "Первый клиент" : "Клиент"}
               clients={clients}
               query={client1Query}
               selectedId={client1Id}
@@ -438,7 +456,7 @@ export default function SubscriptionsPanel({
               }}
             />
 
-            {subType === "pair" && (
+            {needsSecondClient && (
               <div className="animate-fade-in">
                 <ClientAutocomplete
                   label="Второй клиент"
@@ -460,37 +478,6 @@ export default function SubscriptionsPanel({
             )}
 
             <div className="border-t border-slate-100 pt-1.5 -mt-1" />
-
-            {/* Package size */}
-            <div className="field-stack">
-              <label className={labelCls}>Пакет занятий</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button type="button" onClick={() => setLessonsCount(4)} className={toggleCls(lessonsCount === 4)}>
-                  4 урока · полмесяца
-                </button>
-                <button type="button" onClick={() => setLessonsCount(8)} className={toggleCls(lessonsCount === 8)}>
-                  8 уроков · месяц
-                </button>
-              </div>
-            </div>
-
-            {subType === "pair" && lessonsCount === 8 && (
-              <div className="field-stack animate-fade-in">
-                <label className={labelCls}>Месяц парного обучения (влияет на тариф)</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[1, 2, 3].map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setPairMonth(m as 1 | 2 | 3)}
-                      className={toggleCls(pairMonth === m)}
-                    >
-                      {m}-й месяц
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="field-stack">
               <label className={labelCls}>Дата активации</label>

@@ -49,16 +49,18 @@ CREATE TABLE IF NOT EXISTS prices (
 
 CREATE TABLE IF NOT EXISTS subscriptions (
   id               TEXT PRIMARY KEY,
-  type             TEXT NOT NULL CHECK (type IN ('solo', 'pair', 'pair_hm')),
+  type             TEXT NOT NULL,
   client_id1       TEXT NOT NULL REFERENCES clients(id),
   client_id2       TEXT REFERENCES clients(id),
-  lessons_total    INTEGER NOT NULL CHECK (lessons_total IN (4, 8)),
+  lessons_total    INTEGER NOT NULL CHECK (lessons_total >= 1),
   lessons_left     INTEGER NOT NULL,
   freeze_used      INTEGER NOT NULL DEFAULT 0 CHECK (freeze_used BETWEEN 0 AND 1),
   activation_date  DATE NOT NULL,
   status           TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'finished')),
   pair_month       TEXT DEFAULT '',
   discipline_id    INTEGER REFERENCES disciplines(id),
+  price_id         INTEGER REFERENCES prices(id),
+  category         TEXT NOT NULL DEFAULT 'group' CHECK (category IN ('group', 'private')),
   created_at       TIMESTAMPTZ DEFAULT now()
 );
 
@@ -72,18 +74,19 @@ CREATE TABLE IF NOT EXISTS attendance (
 );
 
 CREATE TABLE IF NOT EXISTS personal_lessons (
-  id          TEXT PRIMARY KEY,
-  type        TEXT NOT NULL CHECK (type IN ('solo', 'pair', 'trio')),
-  client_id1  TEXT REFERENCES clients(id),
-  client_id2  TEXT REFERENCES clients(id),
-  client_id3  TEXT REFERENCES clients(id),
-  date        DATE NOT NULL,
-  time_start  TEXT NOT NULL DEFAULT '14:00',
-  time_end    TEXT NOT NULL DEFAULT '15:00',
-  price       NUMERIC NOT NULL DEFAULT 0,
-  paid           TEXT NOT NULL DEFAULT 'no' CHECK (paid IN ('yes', 'no')),
-  discipline_id  INTEGER REFERENCES disciplines(id),
-  created_at     TIMESTAMPTZ DEFAULT now()
+  id              TEXT PRIMARY KEY,
+  type            TEXT NOT NULL CHECK (type IN ('solo', 'pair', 'trio')),
+  client_id1      TEXT REFERENCES clients(id),
+  client_id2      TEXT REFERENCES clients(id),
+  client_id3      TEXT REFERENCES clients(id),
+  date            DATE NOT NULL,
+  time_start      TEXT NOT NULL DEFAULT '14:00',
+  time_end        TEXT NOT NULL DEFAULT '15:00',
+  price           NUMERIC NOT NULL DEFAULT 0,
+  paid            TEXT NOT NULL DEFAULT 'no' CHECK (paid IN ('yes', 'no')),
+  discipline_id   INTEGER REFERENCES disciplines(id),
+  subscription_id TEXT REFERENCES subscriptions(id),
+  created_at      TIMESTAMPTZ DEFAULT now()
 );
 
 -- =============================================================================

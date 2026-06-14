@@ -2,7 +2,7 @@ import PersonalLessonsPanel from "../components/PersonalLessonsPanel";
 import { useToast } from "../App";
 
 interface PersonalPageProps {
-  initialTab: "view" | "book";
+  initialTab: "view" | "book" | "sell";
 }
 
 export default function PersonalPage({ initialTab }: PersonalPageProps) {

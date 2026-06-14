@@ -51,12 +51,19 @@ export function computeSubsForDate(
   dateStr: string,
   subscriptions: Subscription[],
   clients: Client[],
-  attendance: AttendanceRecord[]
+  attendance: AttendanceRecord[],
+  options?: { category?: "group" | "private"; subscriptionIds?: string[] }
 ): SubForDate[] {
   const clientMap = Object.fromEntries(clients.map((c) => [c.id, c]));
+  const idFilter = options?.subscriptionIds ? new Set(options.subscriptionIds) : null;
 
   return subscriptions
-    .filter((s) => s.status === "active" && s.activationDate <= dateStr && s.lessonsLeft > 0)
+    .filter((s) => {
+      if (s.status !== "active" || s.activationDate > dateStr || s.lessonsLeft <= 0) return false;
+      if (options?.category && s.category !== options.category) return false;
+      if (idFilter && !idFilter.has(s.id)) return false;
+      return true;
+    })
     .map((s) => {
       const c1 = clientMap[s.clientId1];
       const c2 = s.clientId2 ? clientMap[s.clientId2] : null;
@@ -74,6 +81,8 @@ export function computeSubsForDate(
         activationDate: s.activationDate,
         currentStatus: (existing?.attendanceStatus ?? null) as SubForDate["currentStatus"],
         canFreeze: s.lessonsTotal === 8 && s.freezeUsed === 0,
+        priceId: s.priceId,
+        category: s.category,
       };
     });
 }
@@ -113,20 +122,24 @@ export function useScheduleDates(yearMonth?: string) {
   };
 }
 
-export function useSubsForDate(dateStr?: string) {
+export function useSubsForDate(
+  dateStr?: string,
+  options?: { category?: "group" | "private"; subscriptionIds?: string[] }
+) {
   const subscriptionsQuery = useSubscriptions();
   const clientsQuery = useClients();
   const attendanceQuery = useAttendanceRecords();
 
   const getSubsForDate = useCallback(
-    (date: string) =>
+    (date: string, opts?: { category?: "group" | "private"; subscriptionIds?: string[] }) =>
       computeSubsForDate(
         date,
         subscriptionsQuery.data ?? [],
         clientsQuery.data ?? [],
-        attendanceQuery.data ?? []
+        attendanceQuery.data ?? [],
+        opts ?? options
       ),
-    [subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data]
+    [subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, options]
   );
 
   const subs = useMemo(
@@ -136,10 +149,11 @@ export function useSubsForDate(dateStr?: string) {
             dateStr,
             subscriptionsQuery.data ?? [],
             clientsQuery.data ?? [],
-            attendanceQuery.data ?? []
+            attendanceQuery.data ?? [],
+            options
           )
         : undefined,
-    [dateStr, subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data]
+    [dateStr, subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, options]
   );
 
   return {

@@ -5,17 +5,28 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, X, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, X, CalendarDays, ChevronLeft, ChevronRight, Ticket } from "lucide-react";
 import { useClients } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
-import { formatClientName, formatCurrency } from "../lib/utils";
+import {
+  deriveSubscriptionTypeFromTariff,
+  formatClientName,
+  formatCurrency,
+  getPriceLabel,
+  getPrivateLessonTariffs,
+  getPrivatePackageTariffs,
+  tariffNeedsSecondClient,
+  tariffNeedsThirdClient,
+  tariffParticipantType,
+} from "../lib/utils";
 import {
   useAddPersonalLessons,
   useDeletePersonalLesson,
   usePersonalLessons,
   useUpdatePersonalPaid,
 } from "../hooks/usePersonalLessons";
+import { useAddSubscription, useSubscriptions } from "../hooks/useSubscriptions";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import ConfirmDialog from "./ui/ConfirmDialog";
@@ -26,7 +37,7 @@ import type { ToastType } from "../App";
 import type { Client, PersonalLesson } from "../types";
 
 interface PersonalLessonsPanelProps {
-  initialTab?: "view" | "book";
+  initialTab?: "view" | "book" | "sell";
   toast: (msg: string, type?: ToastType) => void;
 }
 
@@ -73,22 +84,26 @@ export default function PersonalLessonsPanel({
   const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
   const { data: personalLessons = [], isLoading: lessonsLoading } = usePersonalLessons();
   const { data: prices = [], isLoading: pricesLoading } = usePrices();
+  const { data: subscriptions = [] } = useSubscriptions();
   const addPersonalLessons = useAddPersonalLessons();
+  const addSubscription = useAddSubscription();
   const updatePersonalPaid = useUpdatePersonalPaid();
   const deletePersonalLesson = useDeletePersonalLesson();
 
   const isLoading = clientsLoading || disciplinesLoading || lessonsLoading || pricesLoading;
 
-  const [activeTab, setActiveTab] = useState<"book" | "view">(initialTab);
+  const [activeTab, setActiveTab] = useState<"view" | "book" | "sell">(initialTab);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  const switchTab = (tab: "view" | "book") => {
+  const switchTab = (tab: "view" | "book" | "sell") => {
     setActiveTab(tab);
     setPersonalTab(tab);
-    navigate(tab === "book" ? "/personal/book" : "/personal");
+    if (tab === "book") navigate("/personal/book");
+    else if (tab === "sell") navigate("/personal/sell");
+    else navigate("/personal");
   };
 
   // Browse filters
@@ -102,6 +117,57 @@ export default function PersonalLessonsPanel({
   const [timeStart, setTimeStart] = useState("14:00");
   const [timeEnd, setTimeEnd] = useState("15:00");
   const [customPrice, setCustomPrice] = useState("");
+  const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<number | "">("");
+  const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
+
+  // Personal subscription sale
+  const packageTariffs = getPrivatePackageTariffs(prices);
+  const lessonTariffs = getPrivateLessonTariffs(prices);
+  const [selectedPackageTariffId, setSelectedPackageTariffId] = useState<number | "">("");
+  const [subClient1Query, setSubClient1Query] = useState("");
+  const [subClient1Id, setSubClient1Id] = useState("");
+  const [subClient2Query, setSubClient2Query] = useState("");
+  const [subClient2Id, setSubClient2Id] = useState("");
+  const [subClient3Query, setSubClient3Query] = useState("");
+  const [subClient3Id, setSubClient3Id] = useState("");
+  const [subDisciplineId, setSubDisciplineId] = useState<number | "">("");
+  const [subActivationDate, setSubActivationDate] = useState("");
+
+  useEffect(() => {
+    if (packageTariffs.length > 0 && selectedPackageTariffId === "") {
+      setSelectedPackageTariffId(packageTariffs[0].id!);
+    }
+    if (lessonTariffs.length > 0 && selectedLessonTariffId === "") {
+      const match = lessonTariffs.find((p) => p.type.trim() === `personal_${pType}`);
+      setSelectedLessonTariffId(match?.id ?? lessonTariffs[0].id!);
+    }
+  }, [packageTariffs, lessonTariffs, selectedPackageTariffId, selectedLessonTariffId, pType]);
+
+  useEffect(() => {
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    setSubActivationDate(`${today.getFullYear()}-${mm}-${dd}`);
+  }, []);
+
+  useEffect(() => {
+    if (disciplines.length > 0 && subDisciplineId === "") {
+      setSubDisciplineId(disciplines[0].id);
+    }
+  }, [disciplines, subDisciplineId]);
+
+  const selectedPackageTariff = packageTariffs.find((p) => p.id === selectedPackageTariffId);
+  const selectedLessonTariff = lessonTariffs.find((p) => p.id === selectedLessonTariffId);
+  const packageNeedsSecond = selectedPackageTariff ? tariffNeedsSecondClient(selectedPackageTariff) : false;
+  const packageNeedsThird = selectedPackageTariff ? tariffNeedsThirdClient(selectedPackageTariff) : false;
+
+  const clientPrivateSubs = subscriptions.filter(
+    (s) =>
+      s.category === "private" &&
+      s.status === "active" &&
+      s.lessonsLeft > 0 &&
+      (s.clientId1 === c1Id || s.clientId2 === c1Id)
+  );
 
   const [c1Query, setC1Query] = useState("");
   const [c1Id, setC1Id] = useState("");
@@ -120,12 +186,23 @@ export default function PersonalLessonsPanel({
   const [deleteTarget, setDeleteTarget] = useState<PersonalLesson | null>(null);
 
   // Pricing helper
-  const pullStandardPrice = () => {
-    const key = `personal_${pType}`;
-    const matched = prices.find((p) => p.type.trim() === key);
+  const applyLessonTariff = (tariffId: number) => {
+    const matched = lessonTariffs.find((p) => p.id === tariffId);
     if (matched) {
+      setSelectedLessonTariffId(tariffId);
       setCustomPrice(matched.price.toString());
-      toast(`Подставлен стандартный тариф: ${formatCurrency(matched.price)}`, "success");
+      const participant = tariffParticipantType(matched);
+      setPType(participant);
+      toast(`Тариф: ${getPriceLabel(matched)} — ${formatCurrency(matched.price)}`, "success");
+    }
+  };
+
+  const pullStandardPrice = () => {
+    const match =
+      lessonTariffs.find((p) => p.id === selectedLessonTariffId) ??
+      lessonTariffs.find((p) => p.type.trim() === `personal_${pType}`);
+    if (match?.id) {
+      applyLessonTariff(match.id);
     } else {
       toast("Тариф для этой конфигурации ещё не настроен", "error");
     }
@@ -169,8 +246,8 @@ export default function PersonalLessonsPanel({
       return;
     }
 
-    const priceNum = parseFloat(customPrice);
-    if (isNaN(priceNum) || priceNum < 0) {
+    const priceNum = linkedSubscriptionId ? 0 : parseFloat(customPrice);
+    if (!linkedSubscriptionId && (isNaN(priceNum) || priceNum < 0)) {
       toast("Укажите корректную стоимость урока.", "error");
       return;
     }
@@ -194,6 +271,7 @@ export default function PersonalLessonsPanel({
       price: priceNum,
       paid: immediatePaid,
       disciplineId: disciplineId as number,
+      subscriptionId: linkedSubscriptionId || undefined,
     };
 
     const res = await addPersonalLessons.mutateAsync(payload);
@@ -212,9 +290,62 @@ export default function PersonalLessonsPanel({
       setC3Id("");
       setDates([""]);
       setCustomPrice("");
+      setLinkedSubscriptionId("");
       setTimeStart("14:00");
       setTimeEnd("15:00");
       setPType("solo");
+    }
+  };
+
+  const handleSellPersonalSub = async () => {
+    if (!selectedPackageTariff?.id) {
+      toast("Выберите тариф абонемента.", "error");
+      return;
+    }
+    if (!subClient1Query || !subClient1Id) {
+      toast("Выберите клиента из списка.", "error");
+      return;
+    }
+    if (packageNeedsSecond && (!subClient2Query || !subClient2Id)) {
+      toast("Выберите второго клиента.", "error");
+      return;
+    }
+    if (packageNeedsThird && (!subClient3Query || !subClient3Id)) {
+      toast("Выберите третьего клиента.", "error");
+      return;
+    }
+    if (!subDisciplineId) {
+      toast("Выберите дисциплину.", "error");
+      return;
+    }
+    if (!subActivationDate) {
+      toast("Укажите дату активации.", "error");
+      return;
+    }
+
+    const { type, pairMonth } = deriveSubscriptionTypeFromTariff(selectedPackageTariff);
+    const res = await addSubscription.mutateAsync({
+      type,
+      clientId1: subClient1Id,
+      clientId2: packageNeedsSecond ? subClient2Id : "",
+      lessonsTotal: selectedPackageTariff.lessons,
+      activationDate: subActivationDate,
+      pairMonth,
+      disciplineId: subDisciplineId as number,
+      priceId: selectedPackageTariff.id,
+      category: "private",
+    });
+
+    if (!res.success) {
+      toast(res.error || "Не удалось оформить абонемент", "error");
+    } else {
+      toast("Персональный абонемент продан", "success");
+      setSubClient1Query("");
+      setSubClient1Id("");
+      setSubClient2Query("");
+      setSubClient2Id("");
+      setSubClient3Query("");
+      setSubClient3Id("");
     }
   };
 
@@ -310,7 +441,8 @@ export default function PersonalLessonsPanel({
 
   const personalTabs = [
     { id: "view", label: "Просмотр", icon: FolderClosed },
-    { id: "book", label: "Продажа", icon: BadgePlus },
+    { id: "book", label: "Урок", icon: BadgePlus },
+    { id: "sell", label: "Абонемент", icon: Ticket },
   ] as const;
 
   return (
@@ -504,7 +636,7 @@ export default function PersonalLessonsPanel({
             )}
           </div>
         </div>
-      ) : (
+      ) : activeTab === "book" ? (
         /* SCREEN 2: PRIVATE LESSON BOOKING FORM */
         <div
           className={`bg-white p-4 border border-slate-200 shadow-xs max-w-xl mx-auto panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
@@ -681,28 +813,81 @@ export default function PersonalLessonsPanel({
 
             <div className="panel-form-divider" />
 
+            {clientPrivateSubs.length > 0 && (
+              <div className="field-stack">
+                <label className={labelCls}>Списать с абонемента</label>
+                <select
+                  value={linkedSubscriptionId}
+                  onChange={(e) => {
+                    setLinkedSubscriptionId(e.target.value);
+                    if (e.target.value) setCustomPrice("0");
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all font-sans"
+                >
+                  <option value="">Разовый урок (без абонемента)</option>
+                  {clientPrivateSubs.map((s) => {
+                    const label = prices.find((p) => p.id === s.priceId);
+                    return (
+                      <option key={s.id} value={s.id}>
+                        {label ? getPriceLabel(label) : "Абонемент"} — осталось {s.lessonsLeft} из {s.lessonsTotal}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+
+            {!linkedSubscriptionId && lessonTariffs.length > 0 && (
+              <div className="field-stack">
+                <label className={labelCls}>Тариф за урок</label>
+                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                  {lessonTariffs.map((tariff) => (
+                    <button
+                      key={tariff.id}
+                      type="button"
+                      onClick={() => applyLessonTariff(tariff.id!)}
+                      className={`w-full text-left p-2.5 rounded-lg border transition-all cursor-pointer ${
+                        selectedLessonTariffId === tariff.id
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <p className="text-xs font-semibold text-slate-800">{getPriceLabel(tariff)}</p>
+                      <p className="text-[10px] text-slate-400 font-sans">{formatCurrency(tariff.price)}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="field-stack">
               <div className="flex items-center justify-between">
                 <label className={labelCls.replace(" block", "")}>Стоимость за 1 урок</label>
-                <button
-                  type="button"
-                  onClick={pullStandardPrice}
-                  className="text-[11px] text-indigo-600 hover:text-indigo-700 hover:underline font-sans font-semibold uppercase cursor-pointer"
-                >
-                  Взять из прайса
-                </button>
+                {!linkedSubscriptionId && (
+                  <button
+                    type="button"
+                    onClick={pullStandardPrice}
+                    className="text-[11px] text-indigo-600 hover:text-indigo-700 hover:underline font-sans font-semibold uppercase cursor-pointer"
+                  >
+                    Взять из прайса
+                  </button>
+                )}
               </div>
 
               <div className="relative font-sans">
                 <input
                   type="number"
                   placeholder="0"
-                  value={customPrice}
+                  value={linkedSubscriptionId ? "0" : customPrice}
+                  disabled={!!linkedSubscriptionId}
                   onChange={(e) => setCustomPrice(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg pl-3.5 pr-10 py-2.5 text-sm transition-all font-semibold"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg pl-3.5 pr-10 py-2.5 text-sm transition-all font-semibold disabled:opacity-60"
                 />
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-sans font-normal pointer-events-none">₫</span>
               </div>
+              {linkedSubscriptionId && (
+                <p className="text-[10px] text-violet-600 font-sans">Урок будет списан с абонемента в журнале посещений.</p>
+              )}
             </div>
 
             <div className="panel-form-divider" />
@@ -728,6 +913,139 @@ export default function PersonalLessonsPanel({
                 без оплаты
               </button>
             </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={`bg-white p-4 border border-slate-200 shadow-xs max-w-xl mx-auto panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
+        >
+          <div className="panel-form-header">
+            <div className="panel-form-header-icon">
+              <Ticket className="w-5 h-5 text-indigo-600" />
+            </div>
+            <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа персонального абонемента</h2>
+            <p className="text-slate-400 text-[11px] leading-snug">
+              Пакет персональных уроков — посещения отмечаются в журнале при бронировании.
+            </p>
+          </div>
+
+          <div className="panel-form-stack">
+            <div className="field-stack">
+              <label className={labelCls}>Тариф абонемента</label>
+              {packageTariffs.length === 0 ? (
+                <p className="text-xs text-slate-400 font-sans">
+                  Нет пакетных тарифов. Создайте персональный тариф с количеством уроков больше 1 в прайс-листе.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {packageTariffs.map((tariff) => (
+                    <button
+                      key={tariff.id}
+                      type="button"
+                      onClick={() => setSelectedPackageTariffId(tariff.id!)}
+                      className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
+                        selectedPackageTariffId === tariff.id
+                          ? "border-violet-500 bg-violet-50"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-slate-800">{getPriceLabel(tariff)}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 font-sans">
+                        {tariff.lessons} занятий · {formatCurrency(tariff.price)}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <DisciplineSelect
+              disciplines={disciplines}
+              value={subDisciplineId}
+              onChange={setSubDisciplineId}
+              toast={toast}
+            />
+
+            <ClientAutocomplete
+              label={packageNeedsSecond ? "Первый клиент" : "Клиент"}
+              clients={clients}
+              query={subClient1Query}
+              selectedId={subClient1Id}
+              showAddClientButton
+              toast={toast}
+              onQueryChange={(q) => {
+                setSubClient1Query(q);
+                setSubClient1Id("");
+              }}
+              onSelect={(c) => {
+                setSubClient1Id(c.id);
+                setSubClient1Query(`${c.lastName} ${c.firstName}`);
+              }}
+            />
+
+            {packageNeedsSecond && (
+              <ClientAutocomplete
+                label="Второй клиент"
+                clients={clients}
+                query={subClient2Query}
+                selectedId={subClient2Id}
+                showAddClientButton
+                toast={toast}
+                onQueryChange={(q) => {
+                  setSubClient2Query(q);
+                  setSubClient2Id("");
+                }}
+                onSelect={(c) => {
+                  setSubClient2Id(c.id);
+                  setSubClient2Query(`${c.lastName} ${c.firstName}`);
+                }}
+              />
+            )}
+
+            {packageNeedsThird && (
+              <ClientAutocomplete
+                label="Третий клиент"
+                clients={clients}
+                query={subClient3Query}
+                selectedId={subClient3Id}
+                showAddClientButton
+                toast={toast}
+                onQueryChange={(q) => {
+                  setSubClient3Query(q);
+                  setSubClient3Id("");
+                }}
+                onSelect={(c) => {
+                  setSubClient3Id(c.id);
+                  setSubClient3Query(`${c.lastName} ${c.firstName}`);
+                }}
+              />
+            )}
+
+            <div className="field-stack">
+              <label className={labelCls}>Дата активации</label>
+              <input
+                type="date"
+                required
+                value={subActivationDate}
+                onChange={(e) => setSubActivationDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-violet-50/60 rounded-xl border border-violet-100">
+              <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
+              <span className="text-xl font-sans font-semibold text-violet-700">
+                {selectedPackageTariff ? formatCurrency(selectedPackageTariff.price) : "—"}
+              </span>
+            </div>
+
+            <button
+              onClick={handleSellPersonalSub}
+              disabled={addSubscription.isPending || packageTariffs.length === 0}
+              className="w-full py-3.5 bg-violet-600 hover:bg-violet-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+            >
+              {addSubscription.isPending ? "Оформление..." : "Продать абонемент"}
+            </button>
           </div>
         </div>
       )}

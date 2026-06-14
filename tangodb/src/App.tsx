@@ -48,7 +48,7 @@ const queryClient = new QueryClient({
 });
 
 type SubTab = "active" | "sell";
-type PersTab = "view" | "book";
+type PersTab = "view" | "book" | "sell";
 
 interface NavItem {
   icon: typeof Users;
@@ -96,7 +96,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Личные занятия",
     items: [
       { icon: Sparkles, label: "Персональные", path: "/personal", persTab: "view" },
-      { icon: TicketPlus, label: "Продать урок", path: "/personal/book", persTab: "book" },
+      { icon: TicketPlus, label: "Урок / абонемент", path: "/personal/book", persTab: "book" },
     ],
   },
   {
@@ -121,7 +121,8 @@ function getPanelTitle(pathname: string, subscriptionsTab: string, personalTab: 
   if (pathname === "/schedule") return "Расписание";
   if (pathname === "/attendance") return "Журнал посещений и календарь";
   if (pathname.startsWith("/personal")) {
-    return personalTab === "book" ? "Продажа персонального урока" : "Персональные уроки";
+    if (personalTab === "sell") return "Продажа персонального абонемента";
+    return personalTab === "book" ? "Бронирование персонального урока" : "Персональные уроки";
   }
   if (pathname === "/prices") return "Тарифы и прайс-лист";
   return "TangoDB";
@@ -377,7 +378,8 @@ function RouteSync() {
   useEffect(() => {
     if (location.pathname === "/subscriptions/sell") setSubscriptionsTab("sell");
     else if (location.pathname === "/subscriptions") setSubscriptionsTab("active");
-    if (location.pathname === "/personal/book") setPersonalTab("book");
+    if (location.pathname === "/personal/sell") setPersonalTab("sell");
+    else if (location.pathname === "/personal/book") setPersonalTab("book");
     else if (location.pathname === "/personal") setPersonalTab("view");
   }, [location.pathname, setSubscriptionsTab, setPersonalTab]);
 
@@ -408,6 +410,7 @@ export default function App() {
                 <Route path="attendance" element={<AttendancePage />} />
                 <Route path="personal" element={<PersonalPage initialTab="view" />} />
                 <Route path="personal/book" element={<PersonalPage initialTab="book" />} />
+                <Route path="personal/sell" element={<PersonalPage initialTab="sell" />} />
                 <Route path="prices" element={<PricesPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
