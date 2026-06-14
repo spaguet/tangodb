@@ -13,7 +13,8 @@ import {
   useSubsForDate,
 } from "../hooks/useAttendance";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
-import { dowShort, formatDayMonthRu, jsDayToIsoDow, pluralizeRu } from "../lib/utils";
+import { usePrices } from "../hooks/usePrices";
+import { dowShort, formatDayMonthRu, getSubscriptionTariffLabel, jsDayToIsoDow, pluralizeRu } from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import type { ToastType } from "../App";
 import type { SubForDate } from "../types";
@@ -60,6 +61,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const { dates: monthScheduleDates = [], isLoading: scheduleLoading } = useScheduleDates(selectedMonth);
   const { data: personalLessons = [], isLoading: personalLoading } = usePersonalLessons();
+  const { data: prices = [], isLoading: pricesLoading } = usePrices();
 
   const [selectedDate, setSelectedDate] = useState(todayDateStr);
 
@@ -114,7 +116,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const { subs: students = [], isLoading: subsLoading } = useSubsForDate(hasGroupClass ? selectedDate : undefined);
   const markAttendance = useMarkAttendance();
 
-  const isLoading = scheduleLoading || subsLoading || personalLoading;
+  const isLoading = scheduleLoading || subsLoading || personalLoading || pricesLoading;
 
   const calendarCells = useMemo(() => {
     const [year, month] = selectedMonth.split("-").map(Number);
@@ -357,6 +359,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 const hasLowCredits = st.lessonsLeft <= 2;
                 const fullname = st.client2 ? `${st.client1} & ${st.client2}` : st.client1;
                 const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
+                const tariffLabel = getSubscriptionTariffLabel(st, prices);
 
                 return (
                   <div
@@ -364,16 +367,18 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 first:pt-0 last:pb-0"
                   >
                     <div className="space-y-1.5 flex-1 pr-4">
-                      <h4 className="text-sm font-semibold text-slate-800 leading-tight">{fullname}</h4>
-                      <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400 font-sans">
-                        <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[10px] uppercase font-semibold">
-                          {st.type === "solo" ? "Соло" : "Парный"}
-                        </span>
-                        <span>Баланс:</span>
-                        <strong className={`font-semibold ${hasLowCredits ? "text-rose-600" : "text-slate-700"}`}>
-                          {st.lessonsLeft} из {st.lessonsTotal}
-                        </strong>
-                        <span>· с {st.activationDate}</span>
+                      <p className="text-[11px] font-sans font-semibold text-indigo-700 leading-snug">
+                        {tariffLabel}
+                      </p>
+                      <div className="space-y-0.5">
+                        <h4 className="text-sm font-semibold text-slate-800 leading-tight">{fullname}</h4>
+                        <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400 font-sans">
+                          <span>Баланс:</span>
+                          <strong className={`font-semibold ${hasLowCredits ? "text-rose-600" : "text-slate-700"}`}>
+                            {st.lessonsLeft} из {st.lessonsTotal}
+                          </strong>
+                          <span>· с {st.activationDate}</span>
+                        </div>
                       </div>
                     </div>
 

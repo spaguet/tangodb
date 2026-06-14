@@ -7,7 +7,13 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Coins, Edit, Trash2, X } from "lucide-react";
 import { useDeletePrice, usePrices, useUpdatePrice, useUpdatePriceMeta } from "../hooks/usePrices";
-import { formatCurrency } from "../lib/utils";
+import {
+  formatCurrency,
+  getPriceCatalogKey,
+  getPriceDescription,
+  getPriceLabel,
+  PRICE_LABELS_CATALOG,
+} from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
 import type { ToastType } from "../App";
@@ -17,36 +23,10 @@ interface PricesPanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
 
-const LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }> = {
-  solo: { label: "Соло Абонемент (4 урока)", sub: "Групповые занятия, полмесяца", col: "group" },
-  solo_8: { label: "Соло Абонемент (8 уроков)", sub: "Групповые занятия, один месяц", col: "group" },
-  pair_hm: { label: "Парный Абонемент (4 урока)", sub: "Групповые занятия, полмесяца", col: "group" },
-  pair_m1: { label: "Парный — Месяц 1 (8 уроков)", sub: "Групповые занятия, первый цикл", col: "group" },
-  pair_m2: { label: "Парный — Месяц 2 (8 уроков)", sub: "Групповые занятия, второй цикл", col: "group" },
-  pair_m3: { label: "Парный — Месяц 3 (8 уроков)", sub: "Групповые занятия, третий цикл", col: "group" },
-  personal_solo: { label: "Индивидуальный Соло Урок", sub: "Приватная сессия (1 клиент)", col: "private" },
-  personal_pair: { label: "Индивидуальный Парный Урок", sub: "Приватная сессия (2 клиента)", col: "private" },
-  personal_trio: { label: "Индивидуальный Трио Урок", sub: "Приватная сессия (3 клиента)", col: "private" },
-};
-
 const inputCls =
   "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
-
-function getCatalogKey(p: Price): string {
-  let lookupKey = p.type.trim();
-  if (lookupKey === "solo" && p.lessons === 8) lookupKey = "solo_8";
-  return lookupKey;
-}
-
-function getPriceLabel(p: Price): string {
-  return p.label?.trim() || LABELS_CATALOG[getCatalogKey(p)]?.label || p.type;
-}
-
-function getPriceDescription(p: Price): string {
-  return p.description?.trim() || LABELS_CATALOG[getCatalogKey(p)]?.sub || `${p.lessons} занятий`;
-}
 
 export default function PricesPanel({ toast }: PricesPanelProps) {
   const { data: prices = [], isLoading } = usePrices();
@@ -148,7 +128,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     const privateItems: { priceObj: Price; col: string }[] = [];
 
     prices.forEach((p) => {
-      const info = LABELS_CATALOG[getCatalogKey(p)] || { col: "other" };
+      const info = PRICE_LABELS_CATALOG[getPriceCatalogKey(p)] || { col: "other" };
       const item = { priceObj: p, col: info.col };
       if (info.col === "private") privateItems.push(item);
       else groupItems.push(item);

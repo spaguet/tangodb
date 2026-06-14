@@ -85,6 +85,7 @@ export interface ActiveSubscription {
 export interface SubForDate {
   subId: string;
   type: string;
+  pairMonth: string;
   client1: string;
   client2: string;
   lessonsLeft: number;

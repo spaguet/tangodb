@@ -65,6 +65,7 @@ export function computeSubsForDate(
       return {
         subId: s.id,
         type: s.type,
+        pairMonth: s.pairMonth,
         client1: c1 ? formatClientName(c1.lastName, c1.firstName) : s.clientId1,
         client2: c2 ? formatClientName(c2.lastName, c2.firstName) : "",
         lessonsLeft: s.lessonsLeft,

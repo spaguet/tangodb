@@ -101,18 +101,77 @@ export function isDateInYearMonth(dateStr: string, yearMonth: string): boolean {
   return key === yearMonth;
 }
 
-export function getSubscriptionPrice(
-  sub: { type: string; lessonsTotal: number; pairMonth: string },
-  prices: { type: string; lessons: number; price: number }[]
-): number {
-  let matched: { price: number } | undefined;
+export interface SubscriptionTariffRef {
+  type: string;
+  lessonsTotal: number;
+  pairMonth: string;
+}
+
+export interface PriceTariffRef {
+  type: string;
+  lessons: number;
+  price: number;
+  label?: string;
+  description?: string;
+}
+
+export const PRICE_LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }> = {
+  solo: { label: "Соло Абонемент (4 урока)", sub: "Групповые занятия, полмесяца", col: "group" },
+  solo_8: { label: "Соло Абонемент (8 уроков)", sub: "Групповые занятия, один месяц", col: "group" },
+  pair_hm: { label: "Парный Абонемент (4 урока)", sub: "Групповые занятия, полмесяца", col: "group" },
+  pair_m1: { label: "Парный — Месяц 1 (8 уроков)", sub: "Групповые занятия, первый цикл", col: "group" },
+  pair_m2: { label: "Парный — Месяц 2 (8 уроков)", sub: "Групповые занятия, второй цикл", col: "group" },
+  pair_m3: { label: "Парный — Месяц 3 (8 уроков)", sub: "Групповые занятия, третий цикл", col: "group" },
+  personal_solo: { label: "Индивидуальный Соло Урок", sub: "Приватная сессия (1 клиент)", col: "private" },
+  personal_pair: { label: "Индивидуальный Парный Урок", sub: "Приватная сессия (2 клиента)", col: "private" },
+  personal_trio: { label: "Индивидуальный Трио Урок", sub: "Приватная сессия (3 клиента)", col: "private" },
+};
+
+export function getPriceCatalogKey(price: Pick<PriceTariffRef, "type" | "lessons">): string {
+  let lookupKey = price.type.trim();
+  if (lookupKey === "solo" && price.lessons === 8) lookupKey = "solo_8";
+  return lookupKey;
+}
+
+export function getPriceLabel(price: PriceTariffRef): string {
+  return price.label?.trim() || PRICE_LABELS_CATALOG[getPriceCatalogKey(price)]?.label || price.type;
+}
+
+export function getPriceDescription(price: PriceTariffRef): string {
+  return (
+    price.description?.trim() ||
+    PRICE_LABELS_CATALOG[getPriceCatalogKey(price)]?.sub ||
+    `${price.lessons} занятий`
+  );
+}
+
+export function findSubscriptionPrice(
+  sub: SubscriptionTariffRef,
+  prices: PriceTariffRef[]
+): PriceTariffRef | undefined {
   if (sub.type === "solo") {
-    matched = prices.find((p) => p.type.trim() === "solo" && p.lessons === sub.lessonsTotal);
-  } else if (sub.lessonsTotal === 4) {
-    matched = prices.find((p) => p.type.trim() === "pair_hm");
-  } else {
-    const month = sub.pairMonth || "1";
-    matched = prices.find((p) => p.type.trim() === `pair_m${month}`);
+    return prices.find((p) => p.type.trim() === "solo" && p.lessons === sub.lessonsTotal);
   }
-  return matched?.price ?? 0;
+  if (sub.lessonsTotal === 4) {
+    return prices.find((p) => p.type.trim() === "pair_hm");
+  }
+  const month = sub.pairMonth || "1";
+  return prices.find((p) => p.type.trim() === `pair_m${month}`);
+}
+
+export function getSubscriptionTariffLabel(
+  sub: SubscriptionTariffRef,
+  prices: PriceTariffRef[]
+): string {
+  const matched = findSubscriptionPrice(sub, prices);
+  if (matched) return getPriceLabel(matched);
+
+  if (sub.type === "solo") return "Соло";
+  if (sub.type === "pair_hm") return "Пара · полмесяца";
+  if (sub.type === "pair") return `Пара · ${sub.pairMonth || "1"}-й месяц`;
+  return sub.type;
+}
+
+export function getSubscriptionPrice(sub: SubscriptionTariffRef, prices: PriceTariffRef[]): number {
+  return findSubscriptionPrice(sub, prices)?.price ?? 0;
 }

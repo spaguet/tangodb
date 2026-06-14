@@ -15,7 +15,7 @@ import {
   useFinishSubscription,
   useSubscriptions,
 } from "../hooks/useSubscriptions";
-import { formatCurrency } from "../lib/utils";
+import { formatCurrency, getSubscriptionTariffLabel } from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import ConfirmDialog from "./ui/ConfirmDialog";
@@ -264,33 +264,39 @@ export default function SubscriptionsPanel({
                 const disciplineName =
                   sub.disciplineId != null ? disciplineMap[sub.disciplineId]?.name : undefined;
 
+                const tariffLabel = getSubscriptionTariffLabel(sub, prices);
+
                 return (
                   <div
                     key={sub.id}
                     className="border border-slate-200 rounded-xl p-5 bg-white hover:border-indigo-200 hover:shadow-sm transition-all flex flex-col justify-between gap-5"
                   >
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-sans font-semibold tracking-wider uppercase px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700">
-                          {sub.type === "solo"
-                            ? "Соло"
-                            : sub.type === "pair_hm"
-                            ? "Пара · полмесяца"
-                            : `Пара · ${sub.pairMonth}-й месяц`}
-                          {disciplineName ? ` · ${disciplineName}` : ""}
-                        </span>
-
-                        {sub.lessonsTotal === 8 ? (
-                          sub.freezeUsed > 0 ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                              <Snowflake className="w-3 h-3" /> заморозка использована
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-sans font-semibold text-indigo-700 leading-snug">
+                          {tariffLabel}
+                        </p>
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          {disciplineName ? (
+                            <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-slate-500">
+                              {disciplineName}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
-                              <Snowflake className="w-3 h-3" /> заморозка доступна
-                            </span>
-                          )
-                        ) : null}
+                            <span />
+                          )}
+
+                          {sub.lessonsTotal === 8 ? (
+                            sub.freezeUsed > 0 ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                                <Snowflake className="w-3 h-3" /> заморозка использована
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
+                                <Snowflake className="w-3 h-3" /> заморозка доступна
+                              </span>
+                            )
+                          ) : null}
+                        </div>
                       </div>
 
                       <div>
