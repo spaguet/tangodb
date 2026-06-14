@@ -1,3 +1,5 @@
+import type { PriceCategory } from "../types";
+
 const DOW_LABELS: Record<number, string> = {
   1: "Пн",
   2: "Вт",
@@ -113,6 +115,7 @@ export interface PriceTariffRef {
   price: number;
   label?: string;
   description?: string;
+  category?: PriceCategory;
 }
 
 export const PRICE_LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }> = {
@@ -131,6 +134,18 @@ export function getPriceCatalogKey(price: Pick<PriceTariffRef, "type" | "lessons
   let lookupKey = price.type.trim();
   if (lookupKey === "solo" && price.lessons === 8) lookupKey = "solo_8";
   return lookupKey;
+}
+
+export function getPriceCategory(price: PriceTariffRef): PriceCategory {
+  if (price.category === "group" || price.category === "private") return price.category;
+  const catalogCol = PRICE_LABELS_CATALOG[getPriceCatalogKey(price)]?.col;
+  if (catalogCol === "private") return "private";
+  return "group";
+}
+
+export function generateTariffTypeKey(): string {
+  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  return `tariff_${id}`;
 }
 
 export function getPriceLabel(price: PriceTariffRef): string {

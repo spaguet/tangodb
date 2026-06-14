@@ -37,12 +37,13 @@ CREATE TABLE IF NOT EXISTS schedule (
 );
 
 CREATE TABLE IF NOT EXISTS prices (
-  id       SERIAL PRIMARY KEY,
-  type     TEXT NOT NULL,
-  lessons  INTEGER NOT NULL,
-  price    NUMERIC NOT NULL DEFAULT 0,
-  label    TEXT,
+  id          SERIAL PRIMARY KEY,
+  type        TEXT NOT NULL,
+  lessons     INTEGER NOT NULL,
+  price       NUMERIC NOT NULL DEFAULT 0,
+  label       TEXT,
   description TEXT,
+  category    TEXT NOT NULL CHECK (category IN ('group', 'private')),
   UNIQUE (type, lessons)
 );
 
@@ -89,16 +90,16 @@ CREATE TABLE IF NOT EXISTS personal_lessons (
 -- 2. Seed data
 -- =============================================================================
 
-INSERT INTO prices (type, lessons, price) VALUES
-  ('solo', 4, 1200000),
-  ('solo', 8, 2100000),
-  ('pair_m1', 8, 3400000),
-  ('pair_m2', 8, 3100000),
-  ('pair_m3', 8, 2800000),
-  ('pair_hm', 4, 1800000),
-  ('personal_solo', 1, 900000),
-  ('personal_pair', 1, 1300000),
-  ('personal_trio', 1, 1600000)
+INSERT INTO prices (type, lessons, price, category) VALUES
+  ('solo', 4, 1200000, 'group'),
+  ('solo', 8, 2100000, 'group'),
+  ('pair_m1', 8, 3400000, 'group'),
+  ('pair_m2', 8, 3100000, 'group'),
+  ('pair_m3', 8, 2800000, 'group'),
+  ('pair_hm', 4, 1800000, 'group'),
+  ('personal_solo', 1, 900000, 'private'),
+  ('personal_pair', 1, 1300000, 'private'),
+  ('personal_trio', 1, 1600000, 'private')
 ON CONFLICT (type, lessons) DO NOTHING;
 
 -- Replace 123456789 with your numeric telegram_id (@userinfobot)

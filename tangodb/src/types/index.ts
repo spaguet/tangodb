@@ -21,6 +21,8 @@ export interface ScheduleSlot {
   disciplineId?: number | null;
 }
 
+export type PriceCategory = "group" | "private";
+
 export interface Price {
   id?: number;
   row?: number;
@@ -29,6 +31,7 @@ export interface Price {
   price: number;
   label?: string;
   description?: string;
+  category: PriceCategory;
 }
 
 export interface Subscription {

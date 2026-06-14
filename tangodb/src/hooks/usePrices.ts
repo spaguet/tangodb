@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Price } from "../types";
+import type { Price, PriceCategory } from "../types";
 
 export const pricesQueryKey = ["prices"] as const;
 
@@ -11,6 +11,7 @@ const mapPrice = (row: Record<string, unknown>): Price => ({
   price: Number(row.price),
   label: (row.label as string) || undefined,
   description: (row.description as string) || undefined,
+  category: row.category as PriceCategory,
 });
 
 export function usePrices() {
@@ -59,6 +60,47 @@ export function useUpdatePriceMeta() {
         .eq("id", id);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) void queryClient.invalidateQueries({ queryKey: pricesQueryKey });
+    },
+  });
+}
+
+export function useCreatePrice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      type,
+      lessons,
+      price,
+      label,
+      description,
+      category,
+    }: {
+      type: string;
+      lessons: number;
+      price: number;
+      label: string;
+      description: string;
+      category: PriceCategory;
+    }) => {
+      const { data, error } = await supabase
+        .from("prices")
+        .insert({
+          type: type.trim(),
+          lessons,
+          price,
+          label: label.trim(),
+          description: description.trim(),
+          category,
+        })
+        .select("*")
+        .single();
+
+      if (error) return { success: false as const, error: error.message };
+      return { success: true as const, price: mapPrice(data) };
     },
     onSuccess: (result) => {
       if (result.success) void queryClient.invalidateQueries({ queryKey: pricesQueryKey });
