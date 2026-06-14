@@ -1,0 +1,33 @@
+---
+description: Единый стиль выпадающих списков в TangoDB
+globs: tangodb/src/**/*.tsx
+alwaysApply: false
+---
+
+# Выпадающие списки (select)
+
+Все `<select>` в приложении оформляются через компонент `AppSelect` из `tangodb/src/components/ui/AppSelect.tsx`.
+
+## Правила
+
+- Не использовать «голый» `<select>` с локальными классами — только `AppSelect` или `selectFieldCls` из того же модуля.
+- Для подписи поля передавать prop `label` (стиль `selectLabelCls`: uppercase, slate-400, 10px).
+- Chevron добавляется обёрткой компонента; не дублировать `appearance-none` и padding справа вручную.
+- `DisciplineSelect` и другие обёртки должны импортировать `selectFieldCls` / `AppSelect`, а не дублировать строки классов.
+
+## Пример
+
+```tsx
+import AppSelect from "./ui/AppSelect";
+
+<AppSelect
+  label="Тариф абонемента"
+  value={selectedId}
+  onChange={(e) => setSelectedId(Number(e.target.value))}
+>
+  <option value="">Выберите тариф...</option>
+  {tariffs.map((t) => (
+    <option key={t.id} value={t.id}>{getPriceLabel(t)}</option>
+  ))}
+</AppSelect>
+```

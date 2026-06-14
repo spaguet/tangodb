@@ -29,6 +29,7 @@ import {
 import { useAddSubscription, useSubscriptions } from "../hooks/useSubscriptions";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
+import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
@@ -43,12 +44,10 @@ interface PersonalLessonsPanelProps {
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
-const toggleCls = (selected: boolean) =>
-  `py-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer text-center ${
-    selected
-      ? "border-indigo-500 bg-indigo-50 text-indigo-700 font-semibold"
-      : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
-  }`;
+interface BookingClientField {
+  query: string;
+  id: string;
+}
 
 function currentYearMonth(): string {
   const now = new Date();
@@ -112,13 +111,18 @@ export default function PersonalLessonsPanel({
   const [search, setSearch] = useState("");
 
   // Booking form states
-  const [pType, setPType] = useState<"solo" | "pair" | "trio">("solo");
+  const [bookingClients, setBookingClients] = useState<BookingClientField[]>([{ query: "", id: "" }]);
   const [dates, setDates] = useState<string[]>([""]);
   const [timeStart, setTimeStart] = useState("14:00");
   const [timeEnd, setTimeEnd] = useState("15:00");
   const [customPrice, setCustomPrice] = useState("");
   const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<number | "">("");
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
+  const [disciplineId, setDisciplineId] = useState<number | "">("");
+
+  const c1Id = bookingClients[0]?.id ?? "";
+  const pType: "solo" | "pair" | "trio" =
+    bookingClients.length >= 3 ? "trio" : bookingClients.length === 2 ? "pair" : "solo";
 
   // Personal subscription sale
   const packageTariffs = getPrivatePackageTariffs(prices);
@@ -134,14 +138,18 @@ export default function PersonalLessonsPanel({
   const [subActivationDate, setSubActivationDate] = useState("");
 
   useEffect(() => {
+    if (lessonTariffs.length > 0 && selectedLessonTariffId === "") {
+      const first = lessonTariffs[0];
+      setSelectedLessonTariffId(first.id!);
+      setCustomPrice(first.price.toString());
+    }
+  }, [lessonTariffs, selectedLessonTariffId]);
+
+  useEffect(() => {
     if (packageTariffs.length > 0 && selectedPackageTariffId === "") {
       setSelectedPackageTariffId(packageTariffs[0].id!);
     }
-    if (lessonTariffs.length > 0 && selectedLessonTariffId === "") {
-      const match = lessonTariffs.find((p) => p.type.trim() === `personal_${pType}`);
-      setSelectedLessonTariffId(match?.id ?? lessonTariffs[0].id!);
-    }
-  }, [packageTariffs, lessonTariffs, selectedPackageTariffId, selectedLessonTariffId, pType]);
+  }, [packageTariffs, selectedPackageTariffId]);
 
   useEffect(() => {
     const today = new Date();
@@ -157,7 +165,6 @@ export default function PersonalLessonsPanel({
   }, [disciplines, subDisciplineId]);
 
   const selectedPackageTariff = packageTariffs.find((p) => p.id === selectedPackageTariffId);
-  const selectedLessonTariff = lessonTariffs.find((p) => p.id === selectedLessonTariffId);
   const packageNeedsSecond = selectedPackageTariff ? tariffNeedsSecondClient(selectedPackageTariff) : false;
   const packageNeedsThird = selectedPackageTariff ? tariffNeedsThirdClient(selectedPackageTariff) : false;
 
@@ -169,21 +176,13 @@ export default function PersonalLessonsPanel({
       (s.clientId1 === c1Id || s.clientId2 === c1Id)
   );
 
-  const [c1Query, setC1Query] = useState("");
-  const [c1Id, setC1Id] = useState("");
-  const [c2Query, setC2Query] = useState("");
-  const [c2Id, setC2Id] = useState("");
-  const [c3Query, setC3Query] = useState("");
-  const [c3Id, setC3Id] = useState("");
-  const [disciplineId, setDisciplineId] = useState<number | "">("");
+  const [deleteTarget, setDeleteTarget] = useState<PersonalLesson | null>(null);
 
   useEffect(() => {
     if (disciplines.length > 0 && disciplineId === "") {
       setDisciplineId(disciplines[0].id);
     }
   }, [disciplines, disciplineId]);
-
-  const [deleteTarget, setDeleteTarget] = useState<PersonalLesson | null>(null);
 
   // Pricing helper
   const applyLessonTariff = (tariffId: number) => {
@@ -192,19 +191,13 @@ export default function PersonalLessonsPanel({
       setSelectedLessonTariffId(tariffId);
       setCustomPrice(matched.price.toString());
       const participant = tariffParticipantType(matched);
-      setPType(participant);
-      toast(`Тариф: ${getPriceLabel(matched)} — ${formatCurrency(matched.price)}`, "success");
-    }
-  };
-
-  const pullStandardPrice = () => {
-    const match =
-      lessonTariffs.find((p) => p.id === selectedLessonTariffId) ??
-      lessonTariffs.find((p) => p.type.trim() === `personal_${pType}`);
-    if (match?.id) {
-      applyLessonTariff(match.id);
-    } else {
-      toast("Тариф для этой конфигурации ещё не настроен", "error");
+      const neededFields = participant === "solo" ? 1 : participant === "pair" ? 2 : 3;
+      setBookingClients((prev) => {
+        const next = [...prev];
+        while (next.length < neededFields) next.push({ query: "", id: "" });
+        while (next.length > neededFields) next.pop();
+        return next;
+      });
     }
   };
 
@@ -223,15 +216,15 @@ export default function PersonalLessonsPanel({
   };
 
   const handleBook = async (immediatePaid: boolean) => {
-    if (!c1Query || !c1Id) {
-      toast("Выберите первого клиента из списка.", "error");
+    if (!bookingClients[0]?.query || !bookingClients[0]?.id) {
+      toast("Выберите клиента из списка.", "error");
       return;
     }
-    if ((pType === "pair" || pType === "trio") && (!c2Query || !c2Id)) {
+    if (bookingClients.length >= 2 && (!bookingClients[1]?.query || !bookingClients[1]?.id)) {
       toast("Выберите второго клиента.", "error");
       return;
     }
-    if (pType === "trio" && (!c3Query || !c3Id)) {
+    if (bookingClients.length >= 3 && (!bookingClients[2]?.query || !bookingClients[2]?.id)) {
       toast("Выберите третьего клиента.", "error");
       return;
     }
@@ -262,9 +255,9 @@ export default function PersonalLessonsPanel({
 
     const payload = {
       type: pType,
-      clientId1: c1Id,
-      clientId2: pType === "pair" || pType === "trio" ? c2Id : "",
-      clientId3: pType === "trio" ? c3Id : "",
+      clientId1: bookingClients[0].id,
+      clientId2: bookingClients.length >= 2 ? bookingClients[1].id : "",
+      clientId3: bookingClients.length >= 3 ? bookingClients[2].id : "",
       dates: filteredDates,
       timeStart,
       timeEnd,
@@ -282,18 +275,12 @@ export default function PersonalLessonsPanel({
         immediatePaid ? "Забронировано и оплачено" : "Внесено в календарь как неоплаченная бронь",
         "success"
       );
-      setC1Query("");
-      setC1Id("");
-      setC2Query("");
-      setC2Id("");
-      setC3Query("");
-      setC3Id("");
+      setBookingClients([{ query: "", id: "" }]);
       setDates([""]);
       setCustomPrice("");
       setLinkedSubscriptionId("");
       setTimeStart("14:00");
       setTimeEnd("15:00");
-      setPType("solo");
     }
   };
 
@@ -652,38 +639,6 @@ export default function PersonalLessonsPanel({
           </div>
 
           <div className="panel-form-stack">
-            <div className="field-stack">
-              <label className={labelCls}>Клиенты</label>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { key: "solo", label: "Соло" },
-                  { key: "pair", label: "Пара" },
-                  { key: "trio", label: "Трио" },
-                ].map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => {
-                      setPType(item.key as "solo" | "pair" | "trio");
-                      if (item.key === "solo") {
-                        setC2Id("");
-                        setC2Query("");
-                        setC3Id("");
-                        setC3Query("");
-                      }
-                      if (item.key === "pair") {
-                        setC3Id("");
-                        setC3Query("");
-                      }
-                    }}
-                    className={toggleCls(pType === item.key)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <DisciplineSelect
               disciplines={disciplines}
               value={disciplineId}
@@ -691,64 +646,42 @@ export default function PersonalLessonsPanel({
               toast={toast}
             />
 
-            <ClientAutocomplete
-              label="Первый клиент"
-              clients={clients}
-              query={c1Query}
-              selectedId={c1Id}
-              showAddClientButton
-              toast={toast}
-              onQueryChange={(q) => {
-                setC1Query(q);
-                setC1Id("");
-              }}
-              onSelect={(c) => {
-                setC1Id(c.id);
-                setC1Query(`${c.lastName} ${c.firstName}`);
-              }}
-            />
-
-            {(pType === "pair" || pType === "trio") && (
-              <div className="animate-fade-in">
+            <div className="field-stack">
+              {bookingClients.map((client, idx) => (
                 <ClientAutocomplete
-                  label="Второй клиент"
+                  key={idx}
+                  label={idx === 0 ? "Имя Фамилия" : `Клиент ${idx + 1}`}
                   clients={clients}
-                  query={c2Query}
-                  selectedId={c2Id}
+                  query={client.query}
+                  selectedId={client.id}
                   showAddClientButton
                   toast={toast}
                   onQueryChange={(q) => {
-                    setC2Query(q);
-                    setC2Id("");
+                    setBookingClients((prev) => {
+                      const next = [...prev];
+                      next[idx] = { query: q, id: "" };
+                      return next;
+                    });
                   }}
                   onSelect={(c) => {
-                    setC2Id(c.id);
-                    setC2Query(`${c.lastName} ${c.firstName}`);
+                    setBookingClients((prev) => {
+                      const next = [...prev];
+                      next[idx] = { query: `${c.lastName} ${c.firstName}`, id: c.id };
+                      return next;
+                    });
                   }}
                 />
-              </div>
-            )}
-
-            {pType === "trio" && (
-              <div className="animate-fade-in">
-                <ClientAutocomplete
-                  label="Третий клиент"
-                  clients={clients}
-                  query={c3Query}
-                  selectedId={c3Id}
-                  showAddClientButton
-                  toast={toast}
-                  onQueryChange={(q) => {
-                    setC3Query(q);
-                    setC3Id("");
-                  }}
-                  onSelect={(c) => {
-                    setC3Id(c.id);
-                    setC3Query(`${c.lastName} ${c.firstName}`);
-                  }}
-                />
-              </div>
-            )}
+              ))}
+              {bookingClients.length < 3 && (
+                <button
+                  type="button"
+                  onClick={() => setBookingClients((prev) => [...prev, { query: "", id: "" }])}
+                  className="w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                >
+                  ＋ Добавить клиента
+                </button>
+              )}
+            </div>
 
             <div className="border-t border-slate-100 pt-1.5 -mt-1" />
 
@@ -814,65 +747,45 @@ export default function PersonalLessonsPanel({
             <div className="panel-form-divider" />
 
             {clientPrivateSubs.length > 0 && (
-              <div className="field-stack">
-                <label className={labelCls}>Списать с абонемента</label>
-                <select
-                  value={linkedSubscriptionId}
-                  onChange={(e) => {
-                    setLinkedSubscriptionId(e.target.value);
-                    if (e.target.value) setCustomPrice("0");
-                  }}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all font-sans"
-                >
-                  <option value="">Разовый урок (без абонемента)</option>
-                  {clientPrivateSubs.map((s) => {
-                    const label = prices.find((p) => p.id === s.priceId);
-                    return (
-                      <option key={s.id} value={s.id}>
-                        {label ? getPriceLabel(label) : "Абонемент"} — осталось {s.lessonsLeft} из {s.lessonsTotal}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
+              <AppSelect
+                label="Списать с абонемента"
+                value={linkedSubscriptionId}
+                onChange={(e) => {
+                  setLinkedSubscriptionId(e.target.value);
+                  if (e.target.value) setCustomPrice("0");
+                }}
+              >
+                <option value="">Разовый урок (без абонемента)</option>
+                {clientPrivateSubs.map((s) => {
+                  const label = prices.find((p) => p.id === s.priceId);
+                  return (
+                    <option key={s.id} value={s.id}>
+                      {label ? getPriceLabel(label) : "Абонемент"} — осталось {s.lessonsLeft} из {s.lessonsTotal}
+                    </option>
+                  );
+                })}
+              </AppSelect>
             )}
 
             {!linkedSubscriptionId && lessonTariffs.length > 0 && (
-              <div className="field-stack">
-                <label className={labelCls}>Тариф за урок</label>
-                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-                  {lessonTariffs.map((tariff) => (
-                    <button
-                      key={tariff.id}
-                      type="button"
-                      onClick={() => applyLessonTariff(tariff.id!)}
-                      className={`w-full text-left p-2.5 rounded-lg border transition-all cursor-pointer ${
-                        selectedLessonTariffId === tariff.id
-                          ? "border-indigo-500 bg-indigo-50"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <p className="text-xs font-semibold text-slate-800">{getPriceLabel(tariff)}</p>
-                      <p className="text-[10px] text-slate-400 font-sans">{formatCurrency(tariff.price)}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <AppSelect
+                label="Тариф за урок"
+                value={selectedLessonTariffId}
+                onChange={(e) => {
+                  const id = parseInt(e.target.value, 10);
+                  if (!Number.isNaN(id)) applyLessonTariff(id);
+                }}
+              >
+                {lessonTariffs.map((tariff) => (
+                  <option key={tariff.id} value={tariff.id!}>
+                    {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
+                  </option>
+                ))}
+              </AppSelect>
             )}
 
             <div className="field-stack">
-              <div className="flex items-center justify-between">
-                <label className={labelCls.replace(" block", "")}>Стоимость за 1 урок</label>
-                {!linkedSubscriptionId && (
-                  <button
-                    type="button"
-                    onClick={pullStandardPrice}
-                    className="text-[11px] text-indigo-600 hover:text-indigo-700 hover:underline font-sans font-semibold uppercase cursor-pointer"
-                  >
-                    Взять из прайса
-                  </button>
-                )}
-              </div>
+              <label className={labelCls.replace(" block", "")}>Стоимость за 1 урок</label>
 
               <div className="relative font-sans">
                 <input
@@ -937,25 +850,19 @@ export default function PersonalLessonsPanel({
                   Нет пакетных тарифов. Создайте персональный тариф с количеством уроков больше 1 в прайс-листе.
                 </p>
               ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <AppSelect
+                  value={selectedPackageTariffId}
+                  onChange={(e) => {
+                    const id = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(id)) setSelectedPackageTariffId(id);
+                  }}
+                >
                   {packageTariffs.map((tariff) => (
-                    <button
-                      key={tariff.id}
-                      type="button"
-                      onClick={() => setSelectedPackageTariffId(tariff.id!)}
-                      className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
-                        selectedPackageTariffId === tariff.id
-                          ? "border-violet-500 bg-violet-50"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <p className="text-sm font-semibold text-slate-800">{getPriceLabel(tariff)}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5 font-sans">
-                        {tariff.lessons} занятий · {formatCurrency(tariff.price)}
-                      </p>
-                    </button>
+                    <option key={tariff.id} value={tariff.id!}>
+                      {getPriceLabel(tariff)} — {tariff.lessons} занятий · {formatCurrency(tariff.price)}
+                    </option>
                   ))}
-                </div>
+                </AppSelect>
               )}
             </div>
 

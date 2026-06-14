@@ -13,11 +13,13 @@ import {
   getPriceCategory,
   getPriceDescription,
   getPriceLabel,
+  getPrivateLessonTariffs,
+  getPrivatePackageTariffs,
 } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
 import type { ToastType } from "../App";
-import type { Price, PriceCategory } from "../types";
+import type { Price } from "../types";
 
 interface PricesPanelProps {
   toast: (msg: string, type?: ToastType) => void;
@@ -28,12 +30,32 @@ const inputCls =
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
-const toggleCls = (selected: boolean) =>
-  `py-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer text-center ${
-    selected
-      ? "border-indigo-500 bg-indigo-50 text-indigo-700 font-semibold"
-      : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
-  }`;
+function TariffCreateSection({
+  title,
+  children,
+  onSubmit,
+  pending,
+}: {
+  title: string;
+  children: React.ReactNode;
+  onSubmit: () => void;
+  pending: boolean;
+}) {
+  return (
+    <section className="border border-slate-100 rounded-xl p-3 space-y-3 bg-slate-50/50">
+      <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{title}</h4>
+      <div className="panel-form-stack">{children}</div>
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={pending}
+        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+      >
+        {pending ? "..." : "Добавить"}
+      </button>
+    </section>
+  );
+}
 
 export default function PricesPanel({ toast }: PricesPanelProps) {
   const { data: prices = [], isLoading } = usePrices();
@@ -49,11 +71,17 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const [editDescription, setEditDescription] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Price | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newCategory, setNewCategory] = useState<PriceCategory>("group");
-  const [newLabel, setNewLabel] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [newLessons, setNewLessons] = useState("8");
-  const [newPrice, setNewPrice] = useState("");
+  const [groupForm, setGroupForm] = useState({ label: "", description: "", lessons: "8", price: "" });
+  const [privateLessonForm, setPrivateLessonForm] = useState({ label: "", description: "", price: "" });
+  const [privatePackageForm, setPrivatePackageForm] = useState({
+    label: "",
+    description: "",
+    lessons: "4",
+    price: "",
+  });
+  const [creatingSection, setCreatingSection] = useState<"group" | "privateLesson" | "privatePackage" | null>(
+    null
+  );
 
   useEffect(() => {
     if (!showCreateModal) return;
@@ -66,11 +94,10 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
   useEffect(() => {
     if (!showCreateModal) {
-      setNewCategory("group");
-      setNewLabel("");
-      setNewDescription("");
-      setNewLessons("8");
-      setNewPrice("");
+      setGroupForm({ label: "", description: "", lessons: "8", price: "" });
+      setPrivateLessonForm({ label: "", description: "", price: "" });
+      setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "" });
+      setCreatingSection(null);
     }
   }, [showCreateModal]);
 
@@ -156,55 +183,64 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     }
   };
 
-  const handleCreateTariff = async () => {
-    if (!newLabel.trim()) {
+  const handleCreateTariff = async (section: "group" | "privateLesson" | "privatePackage") => {
+    const form =
+      section === "group"
+        ? groupForm
+        : section === "privateLesson"
+          ? privateLessonForm
+          : privatePackageForm;
+
+    if (!form.label.trim()) {
       toast("Укажите название тарифа.", "error");
       return;
     }
 
-    const parsedPrice = parseFloat(newPrice);
+    const parsedPrice = parseFloat(form.price);
     if (isNaN(parsedPrice) || parsedPrice < 0) {
       toast("Введите корректную стоимость.", "error");
       return;
     }
 
-    const lessons = parseInt(newLessons, 10);
+    let lessons = 1;
+    if (section === "group") {
+      lessons = parseInt(groupForm.lessons, 10);
+    } else if (section === "privatePackage") {
+      lessons = parseInt(privatePackageForm.lessons, 10);
+    }
     if (isNaN(lessons) || lessons < 1) {
       toast("Укажите количество уроков (не меньше 1).", "error");
       return;
     }
 
+    setCreatingSection(section);
     const res = await createPrice.mutateAsync({
       type: generateTariffTypeKey(),
       lessons,
       price: parsedPrice,
-      label: newLabel,
-      description: newDescription,
-      category: newCategory,
+      label: form.label,
+      description: form.description,
+      category: section === "group" ? "group" : "private",
     });
+    setCreatingSection(null);
 
     if (!res.success) {
       toast(res.error || "Не удалось создать тариф", "error");
     } else {
       toast("Тариф добавлен в прайс-лист", "success");
-      setShowCreateModal(false);
+      if (section === "group") {
+        setGroupForm({ label: "", description: "", lessons: "8", price: "" });
+      } else if (section === "privateLesson") {
+        setPrivateLessonForm({ label: "", description: "", price: "" });
+      } else {
+        setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "" });
+      }
     }
   };
 
-  const groupPrices = () => {
-    const groupItems: { priceObj: Price }[] = [];
-    const privateItems: { priceObj: Price }[] = [];
-
-    prices.forEach((p) => {
-      const item = { priceObj: p };
-      if (getPriceCategory(p) === "private") privateItems.push(item);
-      else groupItems.push(item);
-    });
-
-    return { groupItems, privateItems };
-  };
-
-  const { groupItems, privateItems } = groupPrices();
+  const groupItems = prices.filter((p) => getPriceCategory(p) === "group").map((priceObj) => ({ priceObj }));
+  const privateLessonItems = getPrivateLessonTariffs(prices).map((priceObj) => ({ priceObj }));
+  const privatePackageItems = getPrivatePackageTariffs(prices).map((priceObj) => ({ priceObj }));
 
   if (isLoading) return <LoadingState label="Загрузка прайс-листа..." />;
 
@@ -324,19 +360,44 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="panel-card-stack">
               <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
                 Групповые занятия
               </h3>
-              <div className="space-y-3">{groupItems.map(renderPriceRow)}</div>
+              <div className="space-y-3">
+                {groupItems.length === 0 ? (
+                  <p className="text-xs text-slate-400 font-sans py-2">Нет тарифов</p>
+                ) : (
+                  groupItems.map(renderPriceRow)
+                )}
+              </div>
             </div>
 
             <div className="panel-card-stack">
               <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
                 Индивидуальные уроки
               </h3>
-              <div className="space-y-3">{privateItems.map(renderPriceRow)}</div>
+              <div className="space-y-3">
+                {privateLessonItems.length === 0 ? (
+                  <p className="text-xs text-slate-400 font-sans py-2">Нет тарифов</p>
+                ) : (
+                  privateLessonItems.map(renderPriceRow)
+                )}
+              </div>
+            </div>
+
+            <div className="panel-card-stack">
+              <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
+                Персональные абонементы
+              </h3>
+              <div className="space-y-3">
+                {privatePackageItems.length === 0 ? (
+                  <p className="text-xs text-slate-400 font-sans py-2">Нет тарифов</p>
+                ) : (
+                  privatePackageItems.map(renderPriceRow)
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -424,9 +485,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 sticky top-0 bg-white z-10">
                 <h3 className="text-base font-semibold tracking-tight text-slate-900">Новый тариф</h3>
                 <button
                   type="button"
@@ -438,96 +499,153 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 </button>
               </div>
 
-              <div className="panel-form-stack font-sans">
-                <div className="field-stack">
-                  <label className={labelCls}>Тип</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setNewCategory("group")}
-                      className={toggleCls(newCategory === "group")}
-                    >
-                      Групповые уроки
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNewCategory("private")}
-                      className={toggleCls(newCategory === "private")}
-                    >
-                      Персональные уроки
-                    </button>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-sans">
+                <TariffCreateSection
+                  title="Групповые уроки"
+                  onSubmit={() => handleCreateTariff("group")}
+                  pending={creatingSection === "group"}
+                >
+                  <div className="field-stack">
+                    <label className={labelCls}>Название</label>
+                    <input
+                      type="text"
+                      value={groupForm.label}
+                      onChange={(e) => setGroupForm({ ...groupForm, label: e.target.value })}
+                      className={inputCls}
+                    />
                   </div>
-                </div>
-
-                <div className="field-stack">
-                  <label className={labelCls}>Название</label>
-                  <input
-                    type="text"
-                    value={newLabel}
-                    onChange={(e) => setNewLabel(e.target.value)}
-                    className={inputCls}
-                    autoFocus
-                  />
-                </div>
-
-                <div className="field-stack">
-                  <label className={labelCls}>Описание</label>
-                  <textarea
-                    value={newDescription}
-                    onChange={(e) => setNewDescription(e.target.value)}
-                    rows={2}
-                    className={`${inputCls} resize-none`}
-                  />
-                </div>
-
-                <div className="field-stack">
-                  <label className={labelCls}>Количество уроков</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={newLessons}
-                    onChange={(e) => setNewLessons(e.target.value)}
-                    className={inputCls}
-                  />
-                  {newCategory === "private" && (
-                    <p className="text-[10px] text-slate-400 font-sans mt-1">
-                      1 урок — разовое занятие; больше 1 — абонемент для продажи в персональных уроках.
-                    </p>
-                  )}
-                </div>
-
-                <div className="field-stack">
-                  <label className={labelCls}>Стоимость</label>
-                  <div className="relative">
+                  <div className="field-stack">
+                    <label className={labelCls}>Описание</label>
+                    <textarea
+                      value={groupForm.description}
+                      onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
+                      rows={2}
+                      className={`${inputCls} resize-none`}
+                    />
+                  </div>
+                  <div className="field-stack">
+                    <label className={labelCls}>Количество уроков</label>
                     <input
                       type="number"
-                      min={0}
-                      value={newPrice}
-                      onChange={(e) => setNewPrice(e.target.value)}
-                      className={`${inputCls} pr-8`}
+                      min={1}
+                      value={groupForm.lessons}
+                      onChange={(e) => setGroupForm({ ...groupForm, lessons: e.target.value })}
+                      className={inputCls}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
                   </div>
-                </div>
+                  <div className="field-stack">
+                    <label className={labelCls}>Стоимость</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={0}
+                        value={groupForm.price}
+                        onChange={(e) => setGroupForm({ ...groupForm, price: e.target.value })}
+                        className={`${inputCls} pr-8`}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                    </div>
+                  </div>
+                </TariffCreateSection>
+
+                <TariffCreateSection
+                  title="Персональные уроки"
+                  onSubmit={() => handleCreateTariff("privateLesson")}
+                  pending={creatingSection === "privateLesson"}
+                >
+                  <div className="field-stack">
+                    <label className={labelCls}>Название</label>
+                    <input
+                      type="text"
+                      value={privateLessonForm.label}
+                      onChange={(e) => setPrivateLessonForm({ ...privateLessonForm, label: e.target.value })}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div className="field-stack">
+                    <label className={labelCls}>Описание</label>
+                    <textarea
+                      value={privateLessonForm.description}
+                      onChange={(e) =>
+                        setPrivateLessonForm({ ...privateLessonForm, description: e.target.value })
+                      }
+                      rows={2}
+                      className={`${inputCls} resize-none`}
+                    />
+                  </div>
+                  <div className="field-stack">
+                    <label className={labelCls}>Стоимость</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={0}
+                        value={privateLessonForm.price}
+                        onChange={(e) => setPrivateLessonForm({ ...privateLessonForm, price: e.target.value })}
+                        className={`${inputCls} pr-8`}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                    </div>
+                  </div>
+                </TariffCreateSection>
+
+                <TariffCreateSection
+                  title="Абонемент на персональные уроки"
+                  onSubmit={() => handleCreateTariff("privatePackage")}
+                  pending={creatingSection === "privatePackage"}
+                >
+                  <div className="field-stack">
+                    <label className={labelCls}>Название</label>
+                    <input
+                      type="text"
+                      value={privatePackageForm.label}
+                      onChange={(e) => setPrivatePackageForm({ ...privatePackageForm, label: e.target.value })}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div className="field-stack">
+                    <label className={labelCls}>Описание</label>
+                    <textarea
+                      value={privatePackageForm.description}
+                      onChange={(e) =>
+                        setPrivatePackageForm({ ...privatePackageForm, description: e.target.value })
+                      }
+                      rows={2}
+                      className={`${inputCls} resize-none`}
+                    />
+                  </div>
+                  <div className="field-stack">
+                    <label className={labelCls}>Количество уроков</label>
+                    <input
+                      type="number"
+                      min={2}
+                      value={privatePackageForm.lessons}
+                      onChange={(e) => setPrivatePackageForm({ ...privatePackageForm, lessons: e.target.value })}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div className="field-stack">
+                    <label className={labelCls}>Стоимость</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={0}
+                        value={privatePackageForm.price}
+                        onChange={(e) => setPrivatePackageForm({ ...privatePackageForm, price: e.target.value })}
+                        className={`${inputCls} pr-8`}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                    </div>
+                  </div>
+                </TariffCreateSection>
               </div>
 
-              <div className="flex items-center gap-3 pt-1 text-xs">
-                <button
-                  type="button"
-                  onClick={handleCreateTariff}
-                  disabled={createPrice.isPending}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
-                >
-                  {createPrice.isPending ? "..." : "Подтвердить"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
-                >
-                  Отмена
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer text-xs"
+              >
+                Закрыть
+              </button>
             </motion.div>
           </div>
         )}

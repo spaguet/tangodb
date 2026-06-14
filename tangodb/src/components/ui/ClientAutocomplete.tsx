@@ -115,7 +115,7 @@ export default function ClientAutocomplete({
             className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer mt-0.5"
           >
             <UserPlus className="w-3 h-3" />
-            Добавить клиента
+            Новый клиент
           </button>
           <AddClientModal
             open={addModalOpen}

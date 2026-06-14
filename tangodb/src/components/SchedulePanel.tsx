@@ -18,6 +18,7 @@ import { useDisciplines } from "../hooks/useDisciplines";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { dowFull, dowFullEntries, jsDayToIsoDow } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import AppSelect from "./ui/AppSelect";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import type { ToastType } from "../App";
@@ -260,20 +261,13 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="panel-form-stack">
-          <div className="field-stack">
-            <label className={labelCls}>День недели</label>
-            <select
-              value={day}
-              onChange={(e) => setDay(parseInt(e.target.value))}
-              className={`${fieldCls} appearance-none cursor-pointer`}
-            >
-              {dowFullEntries().map(([val, name]) => (
-                <option key={val} value={val}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <AppSelect label="День недели" value={day} onChange={(e) => setDay(parseInt(e.target.value))}>
+            {dowFullEntries().map(([val, name]) => (
+              <option key={val} value={val}>
+                {name}
+              </option>
+            ))}
+          </AppSelect>
 
           <DisciplineSelect
             disciplines={disciplines}
@@ -445,19 +439,19 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                     return (
                       <div key={slot.key} className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-2">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          <select
+                          <AppSelect
                             value={slot.dayOfWeek}
                             onChange={(e) =>
                               updateEditSlot(slot.key, { dayOfWeek: parseInt(e.target.value) })
                             }
-                            className={`${fieldCls} appearance-none cursor-pointer text-xs py-2`}
+                            className="text-xs py-2"
                           >
                             {dowFullEntries().map(([val, name]) => (
                               <option key={val} value={val}>
                                 {name}
                               </option>
                             ))}
-                          </select>
+                          </AppSelect>
                           <input
                             type="time"
                             value={slot.time}

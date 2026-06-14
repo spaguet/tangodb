@@ -3,11 +3,7 @@ import { Plus } from "lucide-react";
 import type { ToastType } from "../../App";
 import type { Discipline } from "../../types";
 import AddDisciplineModal from "./AddDisciplineModal";
-
-const fieldCls =
-  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
-
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+import AppSelect from "./AppSelect";
 
 interface DisciplineSelectProps {
   label?: string;
@@ -30,15 +26,14 @@ export default function DisciplineSelect({
 
   return (
     <div className="field-stack">
-      <label className={labelCls}>{label}</label>
-      <select
+      <AppSelect
+        label={label}
         value={value}
         required={required}
         onChange={(e) => {
           const next = parseInt(e.target.value, 10);
           if (!Number.isNaN(next)) onChange(next);
         }}
-        className={`${fieldCls} appearance-none cursor-pointer`}
       >
         <option value="" disabled>
           Выберите дисциплину...
@@ -48,7 +43,7 @@ export default function DisciplineSelect({
             {d.name}
           </option>
         ))}
-      </select>
+      </AppSelect>
       <button
         type="button"
         onClick={() => setAddModalOpen(true)}

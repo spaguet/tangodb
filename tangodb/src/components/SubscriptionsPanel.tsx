@@ -18,6 +18,7 @@ import {
 import { formatCurrency, deriveSubscriptionTypeFromTariff, getGroupTariffs, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient } from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
+import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
@@ -31,13 +32,6 @@ interface SubscriptionsPanelProps {
 }
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
-
-const toggleCls = (selected: boolean) =>
-  `py-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer text-center ${
-    selected
-      ? "border-indigo-500 bg-indigo-50 text-indigo-700 font-semibold"
-      : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
-  }`;
 
 export default function SubscriptionsPanel({
   initialTab = "active",
@@ -400,35 +394,29 @@ export default function SubscriptionsPanel({
 
           <div className="panel-form-stack">
             <div className="field-stack">
-              <label className={labelCls}>Тариф</label>
+              <label className={labelCls}>ТАРИФ АБОНЕМЕНТА</label>
               {groupTariffs.length === 0 ? (
                 <p className="text-xs text-slate-400 font-sans">Нет групповых тарифов в прайс-листе.</p>
               ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <AppSelect
+                  value={selectedTariffId}
+                  onChange={(e) => {
+                    const id = parseInt(e.target.value, 10);
+                    if (Number.isNaN(id)) return;
+                    setSelectedTariffId(id);
+                    const tariff = groupTariffs.find((p) => p.id === id);
+                    if (tariff && !tariffNeedsSecondClient(tariff)) {
+                      setClient2Id("");
+                      setClient2Query("");
+                    }
+                  }}
+                >
                   {groupTariffs.map((tariff) => (
-                    <button
-                      key={tariff.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedTariffId(tariff.id!);
-                        if (!tariffNeedsSecondClient(tariff)) {
-                          setClient2Id("");
-                          setClient2Query("");
-                        }
-                      }}
-                      className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
-                        selectedTariffId === tariff.id
-                          ? "border-indigo-500 bg-indigo-50"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <p className="text-sm font-semibold text-slate-800">{getPriceLabel(tariff)}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5 font-sans">
-                        {tariff.lessons} занятий · {formatCurrency(tariff.price)}
-                      </p>
-                    </button>
+                    <option key={tariff.id} value={tariff.id!}>
+                      {getPriceLabel(tariff)} — {tariff.lessons} занятий · {formatCurrency(tariff.price)}
+                    </option>
                   ))}
-                </div>
+                </AppSelect>
               )}
             </div>
 
