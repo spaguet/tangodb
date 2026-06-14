@@ -255,6 +255,8 @@ export default function Dashboard({
           </div>
         </div>
 
+        <DisciplinesPanel toast={toast} />
+
         {/* Monthly statistics */}
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -298,8 +300,6 @@ export default function Dashboard({
         </div>
         </div>
       </div>
-
-      <DisciplinesPanel toast={toast} />
     </div>
   );
 }

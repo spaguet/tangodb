@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS prices (
   type     TEXT NOT NULL,
   lessons  INTEGER NOT NULL,
   price    NUMERIC NOT NULL DEFAULT 0,
+  label    TEXT,
+  description TEXT,
   UNIQUE (type, lessons)
 );
 

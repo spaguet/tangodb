@@ -77,3 +77,83 @@ export function useDeleteScheduleSlot() {
     },
   });
 }
+
+export interface DisciplineScheduleSlotInput {
+  id?: number;
+  dayOfWeek: number;
+  time: string;
+  timeEnd: string;
+}
+
+export function useReplaceDisciplineSchedule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      disciplineId,
+      slots,
+      removedIds,
+    }: {
+      disciplineId: number;
+      slots: DisciplineScheduleSlotInput[];
+      removedIds: number[];
+    }) => {
+      for (const id of removedIds) {
+        const { error } = await supabase.from("schedule").delete().eq("id", id);
+        if (error) return { success: false as const, error: error.message };
+      }
+
+      for (const slot of slots) {
+        if (slot.id != null) {
+          const { error } = await supabase
+            .from("schedule")
+            .update({
+              day_of_week: slot.dayOfWeek,
+              time: slot.time,
+              time_end: slot.timeEnd,
+            })
+            .eq("id", slot.id);
+          if (error) {
+            if (error.code === "23505") {
+              return { success: false as const, error: "Такой день и время уже есть в расписании" };
+            }
+            return { success: false as const, error: error.message };
+          }
+        } else {
+          const { error } = await supabase.from("schedule").insert({
+            day_of_week: slot.dayOfWeek,
+            time: slot.time,
+            time_end: slot.timeEnd,
+            discipline_id: disciplineId,
+          });
+          if (error) {
+            if (error.code === "23505") {
+              return { success: false as const, error: "Такой день и время уже есть в расписании" };
+            }
+            return { success: false as const, error: error.message };
+          }
+        }
+      }
+
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) void queryClient.invalidateQueries({ queryKey: scheduleQueryKey });
+    },
+  });
+}
+
+export function useDeleteDisciplineSchedule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (disciplineId: number) => {
+      const { error } = await supabase.from("schedule").delete().eq("discipline_id", disciplineId);
+      if (error) return { success: false as const, error: error.message };
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) void queryClient.invalidateQueries({ queryKey: scheduleQueryKey });
+    },
+  });
+}

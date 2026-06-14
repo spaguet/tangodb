@@ -252,7 +252,7 @@ function AppLayout() {
               <button
                 key={`${item.path}-${item.line1}`}
                 onClick={() => go(item)}
-                className={`flex flex-col items-center justify-center gap-0 px-1 py-0.5 min-w-0 flex-1 cursor-pointer transition-colors ${
+                className={`flex flex-col items-center justify-center gap-1 px-1 py-0 min-w-0 flex-1 cursor-pointer transition-colors ${
                   active ? "text-indigo-600" : "text-slate-400"
                 }`}
               >

@@ -27,6 +27,8 @@ export interface Price {
   type: string;
   lessons: number;
   price: number;
+  label?: string;
+  description?: string;
 }
 
 export interface Subscription {

@@ -505,6 +505,16 @@ export default function SubscriptionsPanel({
                 {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "тариф не настроен"}
               </span>
             </div>
+            <p className="text-slate-400 text-xs font-sans text-center -mt-1">
+              Для изменения стоимости абонемента перейдите в раздел{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/prices")}
+                className="text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer font-semibold"
+              >
+                Прайс-лист
+              </button>
+            </p>
 
             <div className="panel-form-divider" />
 

@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from "react";
-import { Coins } from "lucide-react";
-import { usePrices, useUpdatePrice } from "../hooks/usePrices";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Coins, Edit, Trash2, X } from "lucide-react";
+import { useDeletePrice, usePrices, useUpdatePrice, useUpdatePriceMeta } from "../hooks/usePrices";
 import { formatCurrency } from "../lib/utils";
+import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
 import type { ToastType } from "../App";
 import type { Price } from "../types";
@@ -27,18 +29,49 @@ const LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }
   personal_trio: { label: "Индивидуальный Трио Урок", sub: "Приватная сессия (3 клиента)", col: "private" },
 };
 
+const inputCls =
+  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
+
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+
+function getCatalogKey(p: Price): string {
+  let lookupKey = p.type.trim();
+  if (lookupKey === "solo" && p.lessons === 8) lookupKey = "solo_8";
+  return lookupKey;
+}
+
+function getPriceLabel(p: Price): string {
+  return p.label?.trim() || LABELS_CATALOG[getCatalogKey(p)]?.label || p.type;
+}
+
+function getPriceDescription(p: Price): string {
+  return p.description?.trim() || LABELS_CATALOG[getCatalogKey(p)]?.sub || `${p.lessons} занятий`;
+}
+
 export default function PricesPanel({ toast }: PricesPanelProps) {
   const { data: prices = [], isLoading } = usePrices();
   const updatePrice = useUpdatePrice();
+  const updatePriceMeta = useUpdatePriceMeta();
+  const deletePrice = useDeletePrice();
 
   const [editedPrices, setEditedPrices] = useState<Record<number, string>>({});
   const [syncingRows, setSyncingRows] = useState<Record<number, boolean>>({});
+  const [editingPrice, setEditingPrice] = useState<Price | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Price | null>(null);
+
+  useEffect(() => {
+    if (!editingPrice) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setEditingPrice(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editingPrice]);
 
   const handleInputChange = (id: number, val: string) => {
-    setEditedPrices({
-      ...editedPrices,
-      [id]: val,
-    });
+    setEditedPrices({ ...editedPrices, [id]: val });
   };
 
   const handleSavePrice = async (id: number, originalValue: number) => {
@@ -57,7 +90,6 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     }
 
     setSyncingRows((prev) => ({ ...prev, [id]: true }));
-
     const res = await updatePrice.mutateAsync({ id, newPrice: parsed });
     setSyncingRows((prev) => ({ ...prev, [id]: false }));
 
@@ -73,28 +105,53 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     }
   };
 
+  const startEditMeta = (p: Price) => {
+    setEditingPrice(p);
+    setEditLabel(getPriceLabel(p));
+    setEditDescription(getPriceDescription(p));
+  };
+
+  const handleSaveMeta = async () => {
+    if (!editingPrice?.id) return;
+    if (!editLabel.trim()) {
+      toast("Укажите название тарифа.", "error");
+      return;
+    }
+
+    const res = await updatePriceMeta.mutateAsync({
+      id: editingPrice.id,
+      label: editLabel,
+      description: editDescription,
+    });
+
+    if (!res.success) {
+      toast(res.error || "Не удалось сохранить", "error");
+    } else {
+      toast("Тариф обновлён", "success");
+      setEditingPrice(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget?.id) return;
+    const res = await deletePrice.mutateAsync(deleteTarget.id);
+    if (!res.success) {
+      toast(res.error || "Не удалось удалить тариф", "error");
+    } else {
+      toast("Тариф удалён", "success");
+      setDeleteTarget(null);
+    }
+  };
+
   const groupPrices = () => {
-    const groupItems: { info: (typeof LABELS_CATALOG)[string]; priceObj: Price }[] = [];
-    const privateItems: { info: (typeof LABELS_CATALOG)[string]; priceObj: Price }[] = [];
+    const groupItems: { priceObj: Price; col: string }[] = [];
+    const privateItems: { priceObj: Price; col: string }[] = [];
 
     prices.forEach((p) => {
-      let lookupKey = p.type.trim();
-      if (lookupKey === "solo" && p.lessons === 8) {
-        lookupKey = "solo_8";
-      }
-
-      const info = LABELS_CATALOG[lookupKey] || {
-        label: p.type,
-        sub: `${p.lessons} занятий`,
-        col: "other",
-      };
-      const item = { info, priceObj: p };
-
-      if (info.col === "private") {
-        privateItems.push(item);
-      } else {
-        groupItems.push(item);
-      }
+      const info = LABELS_CATALOG[getCatalogKey(p)] || { col: "other" };
+      const item = { priceObj: p, col: info.col };
+      if (info.col === "private") privateItems.push(item);
+      else groupItems.push(item);
     });
 
     return { groupItems, privateItems };
@@ -104,36 +161,64 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
   if (isLoading) return <LoadingState label="Загрузка прайс-листа..." />;
 
-  const renderPriceRow = (item: { info: (typeof LABELS_CATALOG)[string]; priceObj: Price }) => {
+  const renderPriceRow = (item: { priceObj: Price }) => {
     const p = item.priceObj;
     const priceId = p.id!;
     const currentInputVal = editedPrices[priceId] !== undefined ? editedPrices[priceId] : p.price.toString();
     const isSyncing = syncingRows[priceId] || false;
     const isTouched = editedPrices[priceId] !== undefined && editedPrices[priceId] !== p.price.toString();
+    const title = getPriceLabel(p);
+    const description = getPriceDescription(p);
 
     return (
       <div
         key={priceId}
         className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
-        <div className="space-y-1">
-          <h4 className="font-semibold text-slate-800 text-sm leading-tight">{item.info.label}</h4>
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex items-start justify-between gap-2">
+            <h4 className="font-semibold text-slate-800 text-sm leading-snug break-words min-w-0 flex-1">
+              {title}
+            </h4>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => startEditMeta(p)}
+                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+                title="Редактировать"
+                aria-label={`Редактировать ${title}`}
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(p)}
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                title="Удалить"
+                aria-label={`Удалить ${title}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
           <p className="text-[11px] text-slate-400 font-sans tracking-tight font-normal">
-            {item.info.sub} · {formatCurrency(p.price)}
+            {description} · {formatCurrency(p.price)}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
           <div className="relative font-sans w-28 text-right">
             <input
               type="number"
               value={currentInputVal}
               disabled={isSyncing}
               onChange={(e) => handleInputChange(priceId, e.target.value)}
-              aria-label={`Цена: ${item.info.label}`}
+              aria-label={`Цена: ${title}`}
               className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-2.5 py-1.5 text-xs text-right font-semibold pr-6 transition-all disabled:opacity-60"
             />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-sans font-normal text-slate-400">₫</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-sans font-normal text-slate-400">
+              ₫
+            </span>
           </div>
 
           <button
@@ -185,6 +270,93 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {editingPrice && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingPrice(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ scale: 0.97, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.97, opacity: 0, y: 8 }}
+              transition={{ duration: 0.18 }}
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">Редактировать тариф</h3>
+                <button
+                  type="button"
+                  onClick={() => setEditingPrice(null)}
+                  aria-label="Закрыть"
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="panel-form-stack font-sans">
+                <div className="field-stack">
+                  <label className={labelCls}>Название</label>
+                  <input type="text" value={editLabel} onChange={(e) => setEditLabel(e.target.value)} className={inputCls} />
+                </div>
+                <div className="field-stack">
+                  <label className={labelCls}>Описание</label>
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    rows={2}
+                    className={`${inputCls} resize-none`}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-1 text-xs">
+                <button
+                  type="button"
+                  onClick={handleSaveMeta}
+                  disabled={updatePriceMeta.isPending}
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  {updatePriceMeta.isPending ? "..." : "Принять"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingPrice(null)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
+                >
+                  Отмена
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Удалить тариф?"
+        description={
+          deleteTarget ? (
+            <>
+              Тариф{" "}
+              <strong className="font-semibold text-slate-800">{getPriceLabel(deleteTarget)}</strong> будет удалён из
+              прайс-листа.
+            </>
+          ) : (
+            ""
+          )
+        }
+        confirmLabel="Удалить"
+        pending={deletePrice.isPending}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

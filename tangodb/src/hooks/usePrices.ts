@@ -9,6 +9,8 @@ const mapPrice = (row: Record<string, unknown>): Price => ({
   type: row.type as string,
   lessons: row.lessons as number,
   price: Number(row.price),
+  label: (row.label as string) || undefined,
+  description: (row.description as string) || undefined,
 });
 
 export function usePrices() {
@@ -29,6 +31,47 @@ export function useUpdatePrice() {
   return useMutation({
     mutationFn: async ({ id, newPrice }: { id: number; newPrice: number }) => {
       const { error } = await supabase.from("prices").update({ price: newPrice }).eq("id", id);
+      if (error) return { success: false as const, error: error.message };
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) void queryClient.invalidateQueries({ queryKey: pricesQueryKey });
+    },
+  });
+}
+
+export function useUpdatePriceMeta() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      label,
+      description,
+    }: {
+      id: number;
+      label: string;
+      description: string;
+    }) => {
+      const { error } = await supabase
+        .from("prices")
+        .update({ label: label.trim(), description: description.trim() })
+        .eq("id", id);
+      if (error) return { success: false as const, error: error.message };
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) void queryClient.invalidateQueries({ queryKey: pricesQueryKey });
+    },
+  });
+}
+
+export function useDeletePrice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase.from("prices").delete().eq("id", id);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
     },
