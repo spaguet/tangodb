@@ -9,6 +9,7 @@ const mapScheduleSlot = (row: Record<string, unknown>): ScheduleSlot => ({
   dayOfWeek: row.day_of_week as number,
   time: row.time as string,
   timeEnd: (row.time_end as string) || "21:00",
+  disciplineId: row.discipline_id != null ? (row.discipline_id as number) : null,
 });
 
 export function useSchedule() {
@@ -35,15 +36,18 @@ export function useAddScheduleSlot() {
       dayOfWeek,
       time,
       timeEnd,
+      disciplineId,
     }: {
       dayOfWeek: number;
       time: string;
       timeEnd: string;
+      disciplineId: number;
     }) => {
       const { error } = await supabase.from("schedule").insert({
         day_of_week: dayOfWeek,
         time,
         time_end: timeEnd,
+        discipline_id: disciplineId,
       });
       if (error) {
         if (error.code === "23505") {

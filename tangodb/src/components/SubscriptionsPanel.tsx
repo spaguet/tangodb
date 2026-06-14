@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Ticket, FileCheck, Search, Send, Snowflake } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients } from "../hooks/useClients";
+import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
 import {
   useAddSubscription,
@@ -18,6 +19,7 @@ import { formatCurrency } from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import type { ToastType } from "../App";
@@ -45,12 +47,13 @@ export default function SubscriptionsPanel({
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
 
   const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
   const { data: subscriptions = [], isLoading: subsLoading } = useSubscriptions();
   const { data: prices = [], isLoading: pricesLoading } = usePrices();
   const addSubscription = useAddSubscription();
   const finishSubscription = useFinishSubscription();
 
-  const isLoading = clientsLoading || subsLoading || pricesLoading;
+  const isLoading = clientsLoading || disciplinesLoading || subsLoading || pricesLoading;
   const [activeTab, setActiveTab] = useState<"sell" | "active">(initialTab);
 
   useEffect(() => {
@@ -74,6 +77,13 @@ export default function SubscriptionsPanel({
   const [client1Id, setClient1Id] = useState("");
   const [client2Query, setClient2Query] = useState("");
   const [client2Id, setClient2Id] = useState("");
+  const [disciplineId, setDisciplineId] = useState<number | "">("");
+
+  useEffect(() => {
+    if (disciplines.length > 0 && disciplineId === "") {
+      setDisciplineId(disciplines[0].id);
+    }
+  }, [disciplines, disciplineId]);
 
   // Early-finish confirmation target
   const [finishTarget, setFinishTarget] = useState<{ id: string; name: string } | null>(null);
@@ -110,12 +120,17 @@ export default function SubscriptionsPanel({
     }
 
     if (subType === "pair" && (!client2Query || !client2Id)) {
-      toast("Выберите второго участника пары из списка.", "error");
+      toast("Выберите второго клиента пары из списка.", "error");
       return;
     }
 
     if (subType === "pair" && client1Id === client2Id) {
-      toast("Оба клиента совпадают. Выберите разных гостей.", "error");
+      toast("Оба клиента совпадают. Выберите разных клиентов.", "error");
+      return;
+    }
+
+    if (!disciplineId) {
+      toast("Выберите дисциплину.", "error");
       return;
     }
 
@@ -131,6 +146,7 @@ export default function SubscriptionsPanel({
       lessonsTotal: lessonsCount,
       activationDate,
       pairMonth: subType === "pair" && lessonsCount === 8 ? String(pairMonth) : "",
+      disciplineId: disciplineId as number,
     };
 
     const res = await addSubscription.mutateAsync(payload);
@@ -166,6 +182,10 @@ export default function SubscriptionsPanel({
     .sort((a, b) => a.lessonsLeft - b.lessonsLeft);
 
   const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
+  const disciplineMap = disciplines.reduce(
+    (acc, d) => ({ ...acc, [d.id]: d }),
+    {} as Record<number, (typeof disciplines)[0]>
+  );
 
   const filteredActiveRecords = activeRecords.filter((sub) => {
     const c1 = clientMap[sub.clientId1];
@@ -205,7 +225,7 @@ export default function SubscriptionsPanel({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Поиск по фамилии гостя..."
+                placeholder="Поиск по фамилии клиента..."
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg text-xs transition-all"
               />
             </div>
@@ -241,6 +261,9 @@ export default function SubscriptionsPanel({
                 const progressPct = sub.lessonsTotal > 0 ? (sub.lessonsLeft / sub.lessonsTotal) * 100 : 0;
                 const isAlarm = sub.lessonsLeft <= 2;
 
+                const disciplineName =
+                  sub.disciplineId != null ? disciplineMap[sub.disciplineId]?.name : undefined;
+
                 return (
                   <div
                     key={sub.id}
@@ -254,6 +277,7 @@ export default function SubscriptionsPanel({
                             : sub.type === "pair_hm"
                             ? "Пара · полмесяца"
                             : `Пара · ${sub.pairMonth}-й месяц`}
+                          {disciplineName ? ` · ${disciplineName}` : ""}
                         </span>
 
                         {sub.lessonsTotal === 8 ? (
@@ -384,8 +408,15 @@ export default function SubscriptionsPanel({
               </div>
             </div>
 
+            <DisciplineSelect
+              disciplines={disciplines}
+              value={disciplineId}
+              onChange={setDisciplineId}
+              toast={toast}
+            />
+
             <ClientAutocomplete
-              label={subType === "pair" ? "Первый участник" : "Клиент"}
+              label={subType === "pair" ? "Первый клиент" : "Клиент"}
               clients={clients}
               query={client1Query}
               selectedId={client1Id}
@@ -404,7 +435,7 @@ export default function SubscriptionsPanel({
             {subType === "pair" && (
               <div className="animate-fade-in">
                 <ClientAutocomplete
-                  label="Второй участник"
+                  label="Второй клиент"
                   clients={clients}
                   query={client2Query}
                   selectedId={client2Id}

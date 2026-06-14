@@ -8,7 +8,9 @@ import { Users, Ticket, Calendar, AlertCircle, Send, BarChart3 } from "lucide-re
 import { formatClientName, formatCurrency, formatPairName, dowFull, jsDayToIsoDow, currentYearMonth, isDateInYearMonth, getSubscriptionPrice } from "../lib/utils";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { computeScheduleDatesForMonth } from "../hooks/useAttendance";
-import { Client, Subscription, ScheduleSlot, PersonalLesson, Price } from "../types";
+import DisciplinesPanel from "./DisciplinesPanel";
+import type { ToastType } from "../App";
+import { Client, Discipline, Subscription, ScheduleSlot, PersonalLesson, Price } from "../types";
 
 interface DashboardProps {
   clients: Client[];
@@ -16,6 +18,8 @@ interface DashboardProps {
   schedule: ScheduleSlot[];
   personalLessons: PersonalLesson[];
   prices: Price[];
+  disciplines: Discipline[];
+  toast: (msg: string, type?: ToastType) => void;
   onNavigate: (panel: string) => void;
 }
 
@@ -25,6 +29,8 @@ export default function Dashboard({
   schedule,
   personalLessons,
   prices,
+  disciplines,
+  toast,
   onNavigate,
 }: DashboardProps) {
   const activeSubs = subscriptions.filter((s) => s.status === "active");
@@ -35,6 +41,7 @@ export default function Dashboard({
   const warningSubs = activeSubs.filter((s) => s.lessonsLeft <= 2);
 
   const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
+  const disciplineMap = disciplines.reduce((acc, d) => ({ ...acc, [d.id]: d }), {} as Record<number, Discipline>);
 
   const unpaidLessons = personalLessons.filter((l) => l.paid === "no");
   const pendingUnpaidCount = unpaidLessons.length;
@@ -136,23 +143,30 @@ export default function Dashboard({
                 <p className="text-slate-400 text-xs font-sans">Сегодня групповых занятий нет.</p>
               </div>
             ) : (
-              todaySlots.map((slot, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 font-sans"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800">Класс Группового Танго</p>
-                      <p className="text-[10px] text-slate-400">Уровень: Общий</p>
+              todaySlots.map((slot, index) => {
+                const disciplineName =
+                  slot.disciplineId != null ? disciplineMap[slot.disciplineId]?.name : "Групповое занятие";
+
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 font-sans"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-slate-800 truncate">{disciplineName}</p>
+                        <p className="text-[10px] text-slate-400">
+                          {slot.time} – {slot.timeEnd || "21:00"}
+                        </p>
+                      </div>
                     </div>
+                    <span className="font-sans text-xs bg-slate-800 text-slate-100 font-semibold px-2 py-0.5 rounded shrink-0">
+                      {slot.time}
+                    </span>
                   </div>
-                  <span className="font-sans text-xs bg-slate-800 text-slate-100 font-semibold px-2 py-0.5 rounded">
-                    {slot.time}
-                  </span>
-                </div>
-              ))
+                );
+              })
             )}
             <button
               onClick={() => onNavigate("schedule")}
@@ -284,6 +298,8 @@ export default function Dashboard({
         </div>
         </div>
       </div>
+
+      <DisciplinesPanel toast={toast} />
     </div>
   );
 }

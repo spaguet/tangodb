@@ -63,15 +63,24 @@ interface NavSection {
   items: NavItem[];
 }
 
+interface MobileTabItem {
+  icon: typeof LayoutDashboard;
+  line1: string;
+  line2: string;
+  path: string;
+  subTab?: SubTab;
+  persTab?: PersTab;
+}
+
 const NAV_SECTIONS: NavSection[] = [
   {
     label: "Аналитика",
-    items: [{ icon: LayoutDashboard, label: "Обзор", path: "/" }],
+    items: [{ icon: LayoutDashboard, label: "Обзор и статистика", path: "/" }],
   },
   {
-    label: "Гости & Баланс",
+    label: "Клиенты & Баланс",
     items: [
-      { icon: Users, label: "Все клиенты", path: "/clients" },
+      { icon: Users, label: "База клиентов", path: "/clients" },
       { icon: Ticket, label: "Абонементы", path: "/subscriptions", subTab: "active" },
       { icon: TicketPlus, label: "Продать абонемент", path: "/subscriptions/sell", subTab: "sell" },
     ],
@@ -79,8 +88,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "Занятия & Журналы",
     items: [
-      { icon: Calendar, label: "Расписание уроков", path: "/schedule" },
-      { icon: CalendarCheck, label: "Отметить класс", path: "/attendance" },
+      { icon: Calendar, label: "Расписание групп", path: "/schedule" },
+      { icon: CalendarCheck, label: "Календарь и журнал", path: "/attendance" },
     ],
   },
   {
@@ -96,8 +105,15 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+const MOBILE_TABS: MobileTabItem[] = [
+  { icon: LayoutDashboard, line1: "ОБЗОР И", line2: "СТАТИСТИКА", path: "/" },
+  { icon: Ticket, line1: "АБОНЕМЕНТЫ", line2: "И ПРОДАЖА", path: "/subscriptions", subTab: "active" },
+  { icon: CalendarCheck, line1: "ЖУРНАЛ", line2: "ПОСЕЩЕНИЙ", path: "/attendance" },
+  { icon: Sparkles, line1: "ПЕРСОНАЛЬНЫЕ", line2: "И ПРОДАЖА", path: "/personal", persTab: "view" },
+];
+
 function getPanelTitle(pathname: string, subscriptionsTab: string, personalTab: string): string {
-  if (pathname === "/") return "Обзор";
+  if (pathname === "/") return "Обзор и статистика";
   if (pathname === "/clients") return "Клиенты";
   if (pathname.startsWith("/subscriptions")) {
     return subscriptionsTab === "sell" ? "Продажа абонемента" : "Действующие абонементы";
@@ -151,7 +167,7 @@ function AppLayout() {
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileDrawerOpen]);
 
-  const go = (item: NavItem) => {
+  const go = (item: NavItem | MobileTabItem) => {
     setMobileDrawerOpen(false);
     if (item.subTab) setSubscriptionsTab(item.subTab);
     if (item.persTab) setPersonalTab(item.persTab);
@@ -225,13 +241,8 @@ function AppLayout() {
         </aside>
 
         {/* Mobile bottom tab bar: most frequent daily actions */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-2 shadow-md pb-[env(safe-area-inset-bottom)]">
-          {[
-            { icon: LayoutDashboard, label: "Обзор", path: "/" } as NavItem,
-            { icon: Ticket, label: "Абонементы", path: "/subscriptions", subTab: "active" } as NavItem,
-            { icon: CalendarCheck, label: "Журнал", path: "/attendance" } as NavItem,
-            { icon: Sparkles, label: "Персональные", path: "/personal", persTab: "view" } as NavItem,
-          ].map((item) => {
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-1 shadow-md pb-[env(safe-area-inset-bottom)]">
+          {MOBILE_TABS.map((item) => {
             const active =
               item.path === "/"
                 ? location.pathname === "/"
@@ -239,14 +250,19 @@ function AppLayout() {
             const Icon = item.icon;
             return (
               <button
-                key={item.label}
+                key={`${item.path}-${item.line1}`}
                 onClick={() => go(item)}
-                className={`flex flex-col items-center gap-1 px-2 py-1 cursor-pointer transition-colors ${
+                className={`flex flex-col items-center justify-center gap-0 px-1 py-0.5 min-w-0 flex-1 cursor-pointer transition-colors ${
                   active ? "text-indigo-600" : "text-slate-400"
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                <span className="text-[9px] font-semibold uppercase tracking-wide leading-none">{item.label}</span>
+                <Icon className="w-5 h-5 shrink-0" />
+                <span className="text-[8px] font-semibold uppercase tracking-wide leading-none text-center">
+                  {item.line1}
+                </span>
+                <span className="text-[8px] font-semibold uppercase tracking-wide leading-none text-center">
+                  {item.line2}
+                </span>
               </button>
             );
           })}

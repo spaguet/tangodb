@@ -43,6 +43,7 @@ const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => {
     timeEnd: (row.time_end as string) || "15:00",
     price: Number(row.price) || 0,
     paid: (row.paid as "yes" | "no") || "no",
+    disciplineId: row.discipline_id != null ? (row.discipline_id as number) : null,
   };
 };
 
@@ -87,6 +88,7 @@ export function useAddPersonalLessons() {
       timeEnd: string;
       price: number;
       paid: boolean;
+      disciplineId: number;
     }) => {
       if (!lessons.dates.length) {
         return { success: false as const, error: "Нет дат для бронирования" };
@@ -105,6 +107,7 @@ export function useAddPersonalLessons() {
         time_end: lessons.timeEnd,
         price: lessons.price,
         paid,
+        discipline_id: lessons.disciplineId,
       }));
 
       const { error } = await supabase.from("personal_lessons").insert(rows);

@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, X, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { useClients } from "../hooks/useClients";
+import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
 import { formatClientName, formatCurrency } from "../lib/utils";
 import {
@@ -18,6 +19,7 @@ import {
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import type { ToastType } from "../App";
@@ -68,13 +70,14 @@ export default function PersonalLessonsPanel({
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
 
   const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
   const { data: personalLessons = [], isLoading: lessonsLoading } = usePersonalLessons();
   const { data: prices = [], isLoading: pricesLoading } = usePrices();
   const addPersonalLessons = useAddPersonalLessons();
   const updatePersonalPaid = useUpdatePersonalPaid();
   const deletePersonalLesson = useDeletePersonalLesson();
 
-  const isLoading = clientsLoading || lessonsLoading || pricesLoading;
+  const isLoading = clientsLoading || disciplinesLoading || lessonsLoading || pricesLoading;
 
   const [activeTab, setActiveTab] = useState<"book" | "view">(initialTab);
 
@@ -106,6 +109,13 @@ export default function PersonalLessonsPanel({
   const [c2Id, setC2Id] = useState("");
   const [c3Query, setC3Query] = useState("");
   const [c3Id, setC3Id] = useState("");
+  const [disciplineId, setDisciplineId] = useState<number | "">("");
+
+  useEffect(() => {
+    if (disciplines.length > 0 && disciplineId === "") {
+      setDisciplineId(disciplines[0].id);
+    }
+  }, [disciplines, disciplineId]);
 
   const [deleteTarget, setDeleteTarget] = useState<PersonalLesson | null>(null);
 
@@ -137,15 +147,19 @@ export default function PersonalLessonsPanel({
 
   const handleBook = async (immediatePaid: boolean) => {
     if (!c1Query || !c1Id) {
-      toast("Выберите главного клиента из списка.", "error");
+      toast("Выберите первого клиента из списка.", "error");
       return;
     }
     if ((pType === "pair" || pType === "trio") && (!c2Query || !c2Id)) {
-      toast("Выберите второго участника.", "error");
+      toast("Выберите второго клиента.", "error");
       return;
     }
     if (pType === "trio" && (!c3Query || !c3Id)) {
-      toast("Выберите третьего участника.", "error");
+      toast("Выберите третьего клиента.", "error");
+      return;
+    }
+    if (!disciplineId) {
+      toast("Выберите дисциплину.", "error");
       return;
     }
 
@@ -179,6 +193,7 @@ export default function PersonalLessonsPanel({
       timeEnd,
       price: priceNum,
       paid: immediatePaid,
+      disciplineId: disciplineId as number,
     };
 
     const res = await addPersonalLessons.mutateAsync(payload);
@@ -233,6 +248,10 @@ export default function PersonalLessonsPanel({
   const clientMap = clients.reduce(
     (acc, c) => ({ ...acc, [String(c.id)]: c }),
     {} as Record<string, Client>
+  );
+  const disciplineMap = disciplines.reduce(
+    (acc, d) => ({ ...acc, [d.id]: d }),
+    {} as Record<number, (typeof disciplines)[0]>
   );
 
   const clientNameFromMap = (clientId: string): string => {
@@ -425,6 +444,8 @@ export default function PersonalLessonsPanel({
                   {filteredLessons.map((l) => {
                     const isPaid = l.paid === "yes";
                     const isUpcoming = isUpcomingLesson(l.date);
+                    const disciplineName =
+                      l.disciplineId != null ? disciplineMap[l.disciplineId]?.name : undefined;
 
                     return (
                       <div
@@ -441,6 +462,7 @@ export default function PersonalLessonsPanel({
                           <div className="flex items-center gap-2">
                             <span className="text-[9px] font-sans tracking-wider font-semibold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
                               {l.type === "solo" ? "Соло" : l.type === "pair" ? "Парный" : "Трио"}
+                              {disciplineName ? ` · ${disciplineName}` : ""}
                             </span>
                             <span className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
                               <CalendarDays className="w-3 h-3" />
@@ -499,7 +521,7 @@ export default function PersonalLessonsPanel({
 
           <div className="panel-form-stack">
             <div className="field-stack">
-              <label className={labelCls}>Участники</label>
+              <label className={labelCls}>Клиенты</label>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { key: "solo", label: "Соло" },
@@ -530,8 +552,15 @@ export default function PersonalLessonsPanel({
               </div>
             </div>
 
+            <DisciplineSelect
+              disciplines={disciplines}
+              value={disciplineId}
+              onChange={setDisciplineId}
+              toast={toast}
+            />
+
             <ClientAutocomplete
-              label="Главный клиент"
+              label="Первый клиент"
               clients={clients}
               query={c1Query}
               selectedId={c1Id}

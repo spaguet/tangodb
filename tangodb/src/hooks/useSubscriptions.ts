@@ -18,6 +18,7 @@ const mapSubscription = (row: Record<string, unknown>): Subscription => ({
   activationDate: String(row.activation_date ?? "").slice(0, 10),
   status: row.status as "active" | "finished",
   pairMonth: row.pair_month != null && row.pair_month !== "" ? String(row.pair_month) : "",
+  disciplineId: row.discipline_id != null ? (row.discipline_id as number) : null,
 });
 
 export function useSubscriptions() {
@@ -85,6 +86,7 @@ export function useAddSubscription() {
       lessonsTotal: number;
       activationDate: string;
       pairMonth: string;
+      disciplineId: number;
     }) => {
       const id = String(Date.now());
       const pairMonth = sub.pairMonth !== "" ? String(sub.pairMonth) : "";
@@ -100,6 +102,7 @@ export function useAddSubscription() {
         activation_date: sub.activationDate,
         status: "active",
         pair_month: pairMonth,
+        discipline_id: sub.disciplineId,
       });
 
       if (error) return { success: false as const, error: error.message };

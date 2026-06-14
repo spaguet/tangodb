@@ -20,12 +20,20 @@ CREATE TABLE IF NOT EXISTS clients (
   created_at  TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS schedule (
+CREATE TABLE IF NOT EXISTS disciplines (
   id          SERIAL PRIMARY KEY,
-  day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
-  time        TEXT NOT NULL,
-  time_end    TEXT NOT NULL DEFAULT '21:00',
-  UNIQUE (day_of_week, time)
+  name        TEXT NOT NULL UNIQUE,
+  description TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS schedule (
+  id             SERIAL PRIMARY KEY,
+  day_of_week    INTEGER NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
+  time           TEXT NOT NULL,
+  time_end       TEXT NOT NULL DEFAULT '21:00',
+  discipline_id  INTEGER REFERENCES disciplines(id),
+  UNIQUE (day_of_week, time, discipline_id)
 );
 
 CREATE TABLE IF NOT EXISTS prices (
@@ -47,6 +55,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   activation_date  DATE NOT NULL,
   status           TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'finished')),
   pair_month       TEXT DEFAULT '',
+  discipline_id    INTEGER REFERENCES disciplines(id),
   created_at       TIMESTAMPTZ DEFAULT now()
 );
 
@@ -69,8 +78,9 @@ CREATE TABLE IF NOT EXISTS personal_lessons (
   time_start  TEXT NOT NULL DEFAULT '14:00',
   time_end    TEXT NOT NULL DEFAULT '15:00',
   price       NUMERIC NOT NULL DEFAULT 0,
-  paid        TEXT NOT NULL DEFAULT 'no' CHECK (paid IN ('yes', 'no')),
-  created_at  TIMESTAMPTZ DEFAULT now()
+  paid           TEXT NOT NULL DEFAULT 'no' CHECK (paid IN ('yes', 'no')),
+  discipline_id  INTEGER REFERENCES disciplines(id),
+  created_at     TIMESTAMPTZ DEFAULT now()
 );
 
 -- =============================================================================
@@ -107,7 +117,7 @@ ALTER TABLE allowed_users ENABLE ROW LEVEL SECURITY;
 DO $$
 DECLARE t TEXT;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['clients','schedule','prices','subscriptions','attendance','personal_lessons']
+  FOREACH t IN ARRAY ARRAY['clients','disciplines','schedule','prices','subscriptions','attendance','personal_lessons']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
 

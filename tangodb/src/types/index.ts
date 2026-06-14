@@ -6,11 +6,19 @@ export interface Client {
   createdAt?: string;
 }
 
+export interface Discipline {
+  id: number;
+  name: string;
+  description: string;
+  createdAt?: string;
+}
+
 export interface ScheduleSlot {
   id?: number;
   dayOfWeek: number;
   time: string;
   timeEnd: string;
+  disciplineId?: number | null;
 }
 
 export interface Price {
@@ -32,6 +40,7 @@ export interface Subscription {
   activationDate: string;
   status: "active" | "finished";
   pairMonth: string;
+  disciplineId?: number | null;
 }
 
 export interface AttendanceRecord {
@@ -54,6 +63,7 @@ export interface PersonalLesson {
   timeEnd: string;
   price: number;
   paid: "yes" | "no";
+  disciplineId?: number | null;
 }
 
 export interface ActiveSubscription {

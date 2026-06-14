@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CalendarDays, Clock, Trash2, CalendarRange } from "lucide-react";
 import { useAddScheduleSlot, useDeleteScheduleSlot, useSchedule } from "../hooks/useSchedule";
+import { useDisciplines } from "../hooks/useDisciplines";
 import { dowFull, dowFullEntries } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import type { ToastType } from "../App";
 import type { ScheduleSlot } from "../types";
@@ -22,14 +24,27 @@ const fieldCls =
   "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
 
 export default function SchedulePanel({ toast }: SchedulePanelProps) {
-  const { data: schedule = [], isLoading } = useSchedule();
+  const { data: schedule = [], isLoading: scheduleLoading } = useSchedule();
+  const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
   const addSlot = useAddScheduleSlot();
   const deleteSlot = useDeleteScheduleSlot();
 
   const [day, setDay] = useState<number>(1);
   const [time, setTime] = useState<string>("19:00");
   const [timeEnd, setTimeEnd] = useState<string>("21:00");
+  const [disciplineId, setDisciplineId] = useState<number | "">("");
   const [deleteTarget, setDeleteTarget] = useState<ScheduleSlot | null>(null);
+
+  useEffect(() => {
+    if (disciplines.length > 0 && disciplineId === "") {
+      setDisciplineId(disciplines[0].id);
+    }
+  }, [disciplines, disciplineId]);
+
+  const disciplineMap = disciplines.reduce(
+    (acc, d) => ({ ...acc, [d.id]: d }),
+    {} as Record<number, (typeof disciplines)[0]>
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,8 +60,12 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       toast("Время окончания должно быть позже начала.", "error");
       return;
     }
+    if (!disciplineId) {
+      toast("Выберите дисциплину.", "error");
+      return;
+    }
 
-    const res = await addSlot.mutateAsync({ dayOfWeek: day, time, timeEnd });
+    const res = await addSlot.mutateAsync({ dayOfWeek: day, time, timeEnd, disciplineId: disciplineId as number });
     if (!res.success) {
       toast(res.error || "Этот слот уже занят", "error");
     } else {
@@ -81,7 +100,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     .map(Number)
     .sort((a, b) => a - b);
 
-  if (isLoading) return <LoadingState label="Загрузка расписания..." />;
+  if (scheduleLoading || disciplinesLoading) return <LoadingState label="Загрузка расписания..." />;
 
   return (
     <div id="panel-schedule" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
@@ -106,6 +125,13 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               ))}
             </select>
           </div>
+
+          <DisciplineSelect
+            disciplines={disciplines}
+            value={disciplineId}
+            onChange={setDisciplineId}
+            toast={toast}
+          />
 
           <div className="field-stack">
             <label className={labelCls}>Время начала</label>
@@ -171,26 +197,36 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                   </div>
 
                   <div className="space-y-2">
-                    {slots.map((slot) => (
+                    {slots.map((slot) => {
+                      const disciplineName =
+                        slot.disciplineId != null ? disciplineMap[slot.disciplineId]?.name : undefined;
+
+                      return (
                       <div
                         key={slot.id ?? `${slot.dayOfWeek}-${slot.time}`}
                         className="flex items-center justify-between py-1.5 px-2.5 bg-white border border-slate-200/60 rounded-lg text-sm group"
                       >
-                        <span className="inline-flex items-center gap-1.5 font-sans text-slate-700 font-semibold">
-                          <Clock className="w-3.5 h-3.5 text-slate-400" />
-                          {slot.time} – {slot.timeEnd || "21:00"}
-                        </span>
+                        <div className="min-w-0">
+                          <span className="inline-flex items-center gap-1.5 font-sans text-slate-700 font-semibold">
+                            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            {slot.time} – {slot.timeEnd || "21:00"}
+                          </span>
+                          {disciplineName && (
+                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">{disciplineName}</p>
+                          )}
+                        </div>
                         <button
                           onClick={() => setDeleteTarget(slot)}
                           disabled={deleteSlot.isPending}
-                          className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all cursor-pointer disabled:opacity-50"
+                          className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all cursor-pointer disabled:opacity-50 shrink-0"
                           title="Убрать слот"
                           aria-label={`Удалить класс ${dowFull(slot.dayOfWeek)} в ${slot.time}`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               );

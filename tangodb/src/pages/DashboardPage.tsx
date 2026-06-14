@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import Dashboard from "../components/Dashboard";
 import LoadingState from "../components/ui/LoadingState";
+import { useToast } from "../App";
 import { useClients } from "../hooks/useClients";
+import { useDisciplines } from "../hooks/useDisciplines";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { usePrices } from "../hooks/usePrices";
 import { useSchedule } from "../hooks/useSchedule";
@@ -10,6 +12,7 @@ import { useUIStore } from "../store/ui";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
 
@@ -18,8 +21,10 @@ export default function DashboardPage() {
   const { data: schedule = [], isLoading: scheduleLoading } = useSchedule();
   const { data: personalLessons = [], isLoading: personalLoading } = usePersonalLessons();
   const { data: prices = [], isLoading: pricesLoading } = usePrices();
+  const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
 
-  const isLoading = clientsLoading || subsLoading || scheduleLoading || personalLoading || pricesLoading;
+  const isLoading =
+    clientsLoading || subsLoading || scheduleLoading || personalLoading || pricesLoading || disciplinesLoading;
 
   const handleNavigate = (panel: string) => {
     const routes: Record<string, { path: string; subTab?: "active" | "sell"; persTab?: "view" | "book" }> = {
@@ -49,6 +54,8 @@ export default function DashboardPage() {
       schedule={schedule}
       personalLessons={personalLessons}
       prices={prices}
+      disciplines={disciplines}
+      toast={toast}
       onNavigate={handleNavigate}
     />
   );
