@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, X, CalendarDays } from "lucide-react";
+import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, X, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { useClients } from "../hooks/useClients";
 import { usePrices } from "../hooks/usePrices";
 import { formatClientName, formatCurrency } from "../lib/utils";
@@ -37,6 +37,29 @@ const toggleCls = (selected: boolean) =>
       : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
   }`;
 
+function currentYearMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function lessonYearMonth(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatMonthTitle(yearMonth: string): string {
+  const [y, m] = yearMonth.split("-").map(Number);
+  if (!y || !m) return yearMonth;
+  const date = new Date(y, m - 1, 1);
+  return date.toLocaleString("ru-RU", { month: "long", year: "numeric" });
+}
+
+function shiftMonth(yearMonth: string, delta: number): string {
+  const [y, m] = yearMonth.split("-").map(Number);
+  const date = new Date(y, m - 1 + delta, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export default function PersonalLessonsPanel({
   initialTab = "view",
   toast,
@@ -66,6 +89,7 @@ export default function PersonalLessonsPanel({
   };
 
   // Browse filters
+  const [viewMonth, setViewMonth] = useState(currentYearMonth);
   const [pvFilter, setPvFilter] = useState<"all" | "yes" | "no">("all");
   const [search, setSearch] = useState("");
 
@@ -200,21 +224,11 @@ export default function PersonalLessonsPanel({
     }
   };
 
-  const currentYearMonth = (() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  })();
-
-  const isCurrentMonth = (dateStr: string) => {
-    const d = new Date(dateStr + "T12:00:00");
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    return key === currentYearMonth;
-  };
-
-  const currentMonthLessons = personalLessons.filter((l) => isCurrentMonth(l.date));
-  const monthLessonCount = currentMonthLessons.length;
-  const monthPaidCount = currentMonthLessons.filter((l) => l.paid === "yes").length;
-  const totalUnpaidSum = personalLessons.filter((l) => l.paid === "no").reduce((sum, l) => sum + l.price, 0);
+  const isViewingCurrentMonth = viewMonth === currentYearMonth();
+  const monthLessons = personalLessons.filter((l) => lessonYearMonth(l.date) === viewMonth);
+  const monthLessonCount = monthLessons.length;
+  const monthPaidCount = monthLessons.filter((l) => l.paid === "yes").length;
+  const monthUnpaidSum = monthLessons.filter((l) => l.paid === "no").reduce((sum, l) => sum + l.price, 0);
 
   const clientMap = clients.reduce(
     (acc, c) => ({ ...acc, [String(c.id)]: c }),
@@ -259,6 +273,7 @@ export default function PersonalLessonsPanel({
   };
 
   const filteredLessons = personalLessons
+    .filter((l) => lessonYearMonth(l.date) === viewMonth)
     .filter((l) => pvFilter === "all" || l.paid === pvFilter)
     .filter((l) => {
       if (!search.trim()) return true;
@@ -267,25 +282,10 @@ export default function PersonalLessonsPanel({
       const c3Str = l.clientId3 ? clientNameFromMap(l.clientId3) : "";
       return `${c1Str} ${c2Str} ${c3Str}`.toLowerCase().includes(search.toLowerCase());
     })
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => a.date.localeCompare(b.date) || a.timeStart.localeCompare(b.timeStart));
 
-  const groupLessonsByMonth = () => {
-    const groups: Record<string, { label: string; items: PersonalLesson[] }> = {};
-    filteredLessons.forEach((l) => {
-      const d = new Date(l.date + "T12:00:00");
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = d.toLocaleString("ru-RU", { month: "long", year: "numeric" });
-      if (!groups[key]) {
-        groups[key] = { label, items: [] };
-      }
-      groups[key].items.push(l);
-    });
-    return Object.keys(groups)
-      .sort((a, b) => b.localeCompare(a))
-      .map((key) => ({ key, ...groups[key] }));
-  };
-
-  const monthlyGroups = groupLessonsByMonth();
+  const monthTotalSum = filteredLessons.reduce((s, l) => s + l.price, 0);
+  const hasUnpaidInView = filteredLessons.some((l) => l.paid === "no");
 
   if (isLoading) return <LoadingState label="Загрузка персональных уроков..." />;
 
@@ -302,18 +302,52 @@ export default function PersonalLessonsPanel({
         /* SCREEN 1: BROWSE PRIVATE SESSIONS */
         <div className="panel-page-stack">
           <div className="bg-white rounded-b-xl rounded-tr-xl border border-slate-200 border-t-0 shadow-xs overflow-hidden -mt-px">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200/70 bg-slate-50/50">
+              <button
+                type="button"
+                onClick={() => setViewMonth((m) => shiftMonth(m, -1))}
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                aria-label="Предыдущий месяц"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-sm font-semibold text-slate-800 capitalize">{formatMonthTitle(viewMonth)}</span>
+                {!isViewingCurrentMonth && (
+                  <button
+                    type="button"
+                    onClick={() => setViewMonth(currentYearMonth())}
+                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                  >
+                    Вернуться к текущему месяцу
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewMonth((m) => shiftMonth(m, 1))}
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                aria-label="Следующий месяц"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/70">
               <div className="px-4 py-2.5">
-                <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">Уроки в этом месяце</p>
+                <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
+                  {isViewingCurrentMonth ? "Уроки в этом месяце" : "Уроков за месяц"}
+                </p>
                 <h4 className="text-xl font-semibold text-slate-800 mt-0.5 leading-none">{monthLessonCount}</h4>
               </div>
               <div className="px-4 py-2.5">
-                <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">Оплаченных в этом месяце</p>
+                <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
+                  {isViewingCurrentMonth ? "Оплаченных в этом месяце" : "Оплаченных за месяц"}
+                </p>
                 <h4 className="text-xl font-semibold text-emerald-700 mt-0.5 leading-none">{monthPaidCount}</h4>
               </div>
               <div className="px-4 py-2.5">
                 <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">Ожидает оплаты</p>
-                <h4 className="text-xl font-sans font-semibold text-rose-700 mt-0.5 leading-none">{formatCurrency(totalUnpaidSum)}</h4>
+                <h4 className="text-xl font-sans font-semibold text-rose-700 mt-0.5 leading-none">{formatCurrency(monthUnpaidSum)}</h4>
               </div>
             </div>
           </div>
@@ -360,10 +394,14 @@ export default function PersonalLessonsPanel({
               </div>
             </div>
 
-            {monthlyGroups.length === 0 ? (
+            {filteredLessons.length === 0 ? (
               <div className="text-center py-20 text-slate-400 space-y-3">
                 <Sparkles className="w-8 h-8 mx-auto text-slate-300" />
-                <p className="text-sm">Персональных уроков с такими критериями нет.</p>
+                <p className="text-sm">
+                  {monthLessons.length === 0
+                    ? `В ${formatMonthTitle(viewMonth)} персональных уроков нет.`
+                    : "Персональных уроков с такими критериями нет."}
+                </p>
                 <button
                   onClick={() => switchTab("book")}
                   className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
@@ -373,82 +411,73 @@ export default function PersonalLessonsPanel({
               </div>
             ) : (
               <div className="panel-card-stack">
-                {monthlyGroups.map((group) => {
-                  const groupSum = group.items.reduce((s, x) => s + x.price, 0);
-                  const isUnpaidInGroup = group.items.some((x) => x.paid === "no");
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="text-xs font-sans font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md capitalize">
+                    {formatMonthTitle(viewMonth)}
+                  </span>
+                  <span className="text-xs font-sans text-slate-400 font-semibold">
+                    Итого: {formatCurrency(monthTotalSum)}
+                    {hasUnpaidInView && <span className="text-rose-600 font-sans ml-2">(есть долг)</span>}
+                  </span>
+                </div>
 
-                  return (
-                    <div key={group.key} className="panel-card-stack">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <span className="text-xs font-sans font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md">
-                          {group.label}
-                        </span>
-                        <span className="text-xs font-sans text-slate-400 font-semibold">
-                          Итого: {formatCurrency(groupSum)}
-                          {isUnpaidInGroup && <span className="text-rose-600 font-sans ml-2">(есть долг)</span>}
-                        </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {filteredLessons.map((l) => {
+                    const isPaid = l.paid === "yes";
+                    const isUpcoming = isUpcomingLesson(l.date);
+
+                    return (
+                      <div
+                        key={l.id}
+                        className={`border rounded-xl p-4 flex items-center justify-between gap-4 transition-all hover:shadow-sm ${
+                          isUpcoming
+                            ? "bg-emerald-50 border-emerald-200"
+                            : isPaid
+                              ? "bg-white border-slate-200"
+                              : "bg-white border-rose-200"
+                        }`}
+                      >
+                        <div className="space-y-1 flex-1 pr-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-sans tracking-wider font-semibold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                              {l.type === "solo" ? "Соло" : l.type === "pair" ? "Парный" : "Трио"}
+                            </span>
+                            <span className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
+                              <CalendarDays className="w-3 h-3" />
+                              {formatDateLabel(l.date)} · {l.timeStart} – {l.timeEnd}
+                            </span>
+                          </div>
+                          <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
+                          <p className="font-sans text-xs font-semibold text-slate-500">{formatCurrency(l.price)}</p>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          <button
+                            onClick={() => handleTogglePaid(l)}
+                            disabled={updatePersonalPaid.isPending}
+                            title={isPaid ? "Нажмите, чтобы отменить оплату" : "Нажмите, чтобы подтвердить оплату"}
+                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-sans font-semibold transition-colors cursor-pointer select-none border disabled:opacity-60 ${
+                              isPaid
+                                ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                                : "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100"
+                            }`}
+                          >
+                            {isPaid ? "Оплачен" : "К оплате"}
+                          </button>
+
+                          <button
+                            onClick={() => setDeleteTarget(l)}
+                            className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Удалить"
+                            aria-label="Удалить бронь"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {group.items.map((l) => {
-                          const isPaid = l.paid === "yes";
-                          const isUpcoming = isUpcomingLesson(l.date);
-
-                          return (
-                            <div
-                              key={l.id}
-                              className={`border rounded-xl p-4 flex items-center justify-between gap-4 transition-all hover:shadow-sm ${
-                                isUpcoming
-                                  ? "bg-emerald-50 border-emerald-200"
-                                  : isPaid
-                                    ? "bg-white border-slate-200"
-                                    : "bg-white border-rose-200"
-                              }`}
-                            >
-                              <div className="space-y-1 flex-1 pr-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[9px] font-sans tracking-wider font-semibold uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
-                                    {l.type === "solo" ? "Соло" : l.type === "pair" ? "Парный" : "Трио"}
-                                  </span>
-                                  <span className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
-                                    <CalendarDays className="w-3 h-3" />
-                                    {formatDateLabel(l.date)} · {l.timeStart} – {l.timeEnd}
-                                  </span>
-                                </div>
-                                <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
-                                <p className="font-sans text-xs font-semibold text-slate-500">{formatCurrency(l.price)}</p>
-                              </div>
-
-                              <div className="flex flex-col items-end gap-2">
-                                <button
-                                  onClick={() => handleTogglePaid(l)}
-                                  disabled={updatePersonalPaid.isPending}
-                                  title={isPaid ? "Нажмите, чтобы отменить оплату" : "Нажмите, чтобы подтвердить оплату"}
-                                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-sans font-semibold transition-colors cursor-pointer select-none border disabled:opacity-60 ${
-                                    isPaid
-                                      ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-                                      : "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100"
-                                  }`}
-                                >
-                                  {isPaid ? "Оплачен" : "К оплате"}
-                                </button>
-
-                                <button
-                                  onClick={() => setDeleteTarget(l)}
-                                  className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                  title="Удалить"
-                                  aria-label="Удалить бронь"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
