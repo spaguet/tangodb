@@ -296,7 +296,11 @@ export default function PersonalLessonsPanel({
       toast(res.error || "Не удалось забронировать", "error");
     } else {
       toast(
-        immediatePaid ? "Забронировано и оплачено" : "Внесено в календарь как неоплаченная бронь",
+        linkedSubscriptionId
+          ? "Урок оформлен, списание с пакета"
+          : immediatePaid
+            ? "Забронировано и оплачено"
+            : "Внесено в календарь как неоплаченная бронь",
         "success"
       );
       setBookingClients([{ query: "", id: "" }]);
@@ -844,7 +848,7 @@ export default function PersonalLessonsPanel({
 
             {clientPrivateSubs.length > 0 && (
               <AppSelect
-                label="Списать с абонемента"
+                label="Списать с пакета"
                 value={linkedSubscriptionId}
                 onChange={(e) => {
                   setLinkedSubscriptionId(e.target.value);
@@ -895,33 +899,43 @@ export default function PersonalLessonsPanel({
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-sans font-normal pointer-events-none">₫</span>
               </div>
               {linkedSubscriptionId && (
-                <p className="text-[10px] text-violet-600 font-sans">Урок будет списан с абонемента в журнале посещений.</p>
+                <p className="text-[10px] text-violet-600 font-sans">Урок будет списан с пакета в журнале посещений.</p>
               )}
             </div>
 
             <div className="panel-form-divider" />
 
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleBook(true)}
-                disabled={addPersonalLessons.isPending}
-                className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-sans text-xs font-semibold leading-tight rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
-              >
-                Бронь с
-                <br />
-                оплатой
-              </button>
-
+            {linkedSubscriptionId ? (
               <button
                 onClick={() => handleBook(false)}
                 disabled={addPersonalLessons.isPending}
-                className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold leading-tight rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
               >
-                Бронь
-                <br />
-                без оплаты
+                {addPersonalLessons.isPending ? "Оформление..." : "Оформить пакет"}
               </button>
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => handleBook(true)}
+                  disabled={addPersonalLessons.isPending}
+                  className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-sans text-xs font-semibold leading-tight rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                >
+                  Бронь с
+                  <br />
+                  оплатой
+                </button>
+
+                <button
+                  onClick={() => handleBook(false)}
+                  disabled={addPersonalLessons.isPending}
+                  className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold leading-tight rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  Бронь
+                  <br />
+                  без оплаты
+                </button>
+              </div>
+            )}
           </div>
         </div>
       ) : (
