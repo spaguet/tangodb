@@ -608,6 +608,7 @@ export default function PersonalLessonsPanel({
                     const isPaid = l.paid === "yes";
                     const isUpcoming = isUpcomingLesson(l.date);
                     const tariffLabel = getPersonalLessonTariffLabel(l, prices, subscriptions);
+                    const amountCls = `font-sans text-xs font-semibold ${isPaid ? "text-slate-500" : "text-rose-600"}`;
 
                     return (
                       <div
@@ -620,10 +621,16 @@ export default function PersonalLessonsPanel({
                               : "bg-white border-rose-200"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-sm font-semibold text-slate-800 leading-tight">{tariffLabel}</span>
-                          <div className="flex items-center gap-1 shrink-0">
+                        <p className={`${amountCls} leading-tight`}>{tariffLabel}</p>
+
+                        <div className="relative">
+                          <div className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
+                            <CalendarDays className="w-3 h-3 shrink-0" />
+                            {formatDateLabel(l.date)} · {l.timeStart} – {l.timeEnd}
+                          </div>
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button
+                              type="button"
                               onClick={() => startEditLesson(l)}
                               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
                               title="Редактировать"
@@ -632,6 +639,7 @@ export default function PersonalLessonsPanel({
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
+                              type="button"
                               onClick={() => setDeleteTarget(l)}
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
                               title="Удалить"
@@ -642,13 +650,10 @@ export default function PersonalLessonsPanel({
                           </div>
                         </div>
 
-                        <div className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
-                          <CalendarDays className="w-3 h-3 shrink-0" />
-                          {formatDateLabel(l.date)} · {l.timeStart} – {l.timeEnd}
-                        </div>
+                        <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
 
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
+                          <p className={amountCls}>{formatCurrency(l.price)}</p>
                           <button
                             type="button"
                             onClick={() => handleTogglePaid(l)}
@@ -661,10 +666,6 @@ export default function PersonalLessonsPanel({
                             {isPaid ? "Оплачено" : "Не оплачено"}
                           </button>
                         </div>
-
-                        <p className={`font-sans text-xs font-semibold ${isPaid ? "text-slate-500" : "text-rose-600"}`}>
-                          {formatCurrency(l.price)}
-                        </p>
                       </div>
                     );
                   })}
