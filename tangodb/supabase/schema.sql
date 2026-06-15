@@ -199,6 +199,10 @@ DECLARE
   v_c3 RECORD;
   v_today DATE := CURRENT_DATE;
 BEGIN
+  IF p_date !~ '^\d{4}-\d{2}-\d{2}$' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Неверный формат даты');
+  END IF;
+
   IF p_date::DATE > v_today THEN
     RETURN jsonb_build_object('success', false, 'error', 'Отметки доступны только за прошедшие и текущий день');
   END IF;
@@ -293,6 +297,10 @@ DECLARE
   v_lesson RECORD;
   v_today DATE := CURRENT_DATE;
 BEGIN
+  IF p_lesson_id IS NULL OR trim(p_lesson_id) = '' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Не указан идентификатор урока');
+  END IF;
+
   IF p_new_status NOT IN ('present', 'absent') THEN
     RETURN jsonb_build_object('success', false, 'error', 'Недопустимый статус');
   END IF;
