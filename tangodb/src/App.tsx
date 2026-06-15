@@ -30,6 +30,7 @@ import SchedulePage from "./pages/SchedulePage";
 import AttendancePage from "./pages/AttendancePage";
 import PersonalPage from "./pages/PersonalPage";
 import PricesPage from "./pages/PricesPage";
+import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -357,7 +358,9 @@ function AppLayout() {
           </header>
 
           <section className="flex-1 p-4 sm:p-5 md:p-6 xl:p-8 max-w-7xl w-full mx-auto panel-page-stack overflow-y-auto">
-            <Outlet />
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
           </section>
         </main>
 
@@ -457,7 +460,7 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
+            <Route path="/login" element={<ErrorBoundary><LoginPage /></ErrorBoundary>} />
             <Route
               element={
                 <ProtectedRoute>
@@ -467,16 +470,16 @@ export default function App() {
               }
             >
               <Route element={<AppLayout />}>
-                <Route index element={<DashboardPage />} />
-                <Route path="clients" element={<ClientsPage />} />
-                <Route path="subscriptions" element={<SubscriptionsPage initialTab="active" />} />
-                <Route path="subscriptions/sell" element={<SubscriptionsPage initialTab="sell" />} />
-                <Route path="schedule" element={<SchedulePage />} />
-                <Route path="attendance" element={<AttendancePage />} />
-                <Route path="personal" element={<PersonalPage initialTab="view" />} />
-                <Route path="personal/sell" element={<PersonalPage initialTab="sell" />} />
+                <Route index element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
+                <Route path="clients" element={<ErrorBoundary><ClientsPage /></ErrorBoundary>} />
+                <Route path="subscriptions" element={<ErrorBoundary><SubscriptionsPage initialTab="active" /></ErrorBoundary>} />
+                <Route path="subscriptions/sell" element={<ErrorBoundary><SubscriptionsPage initialTab="sell" /></ErrorBoundary>} />
+                <Route path="schedule" element={<ErrorBoundary><SchedulePage /></ErrorBoundary>} />
+                <Route path="attendance" element={<ErrorBoundary><AttendancePage /></ErrorBoundary>} />
+                <Route path="personal" element={<ErrorBoundary><PersonalPage initialTab="view" /></ErrorBoundary>} />
+                <Route path="personal/sell" element={<ErrorBoundary><PersonalPage initialTab="sell" /></ErrorBoundary>} />
                 <Route path="personal/book" element={<Navigate to="/personal/sell" replace />} />
-                <Route path="prices" element={<PricesPage />} />
+                <Route path="prices" element={<ErrorBoundary><PricesPage /></ErrorBoundary>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Route>
