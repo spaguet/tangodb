@@ -80,7 +80,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const setSelectedMonth = useUIStore((s) => s.setSelectedMonth);
 
   const { dates: monthScheduleDates = [], isLoading: scheduleLoading } = useScheduleDates(selectedMonth);
-  const { data: personalLessons = [], isLoading: personalLoading } = usePersonalLessons();
+  const { data: personalLessons = [], isLoading: personalLoading } = usePersonalLessons(selectedMonth);
   const { data: prices = [], isLoading: pricesLoading } = usePrices();
 
   const [selectedDate, setSelectedDate] = useState(todayDateStr);
@@ -155,7 +155,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const { subs: modalSubs = [], isLoading: subsLoading } = useSubsForDate(
     selectedLesson ? selectedDate : undefined,
-    subsOptions
+    subsOptions,
+    selectedMonth
   );
 
   const markAttendance = useMarkAttendance();

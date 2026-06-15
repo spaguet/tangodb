@@ -89,14 +89,24 @@ export function computeSubsForDate(
     });
 }
 
-export function useAttendanceRecords() {
+export function useAttendanceRecords(yearMonth?: string) {
   return useQuery({
-    queryKey: attendanceQueryKey,
+    queryKey: yearMonth ? [...attendanceQueryKey, yearMonth] : attendanceQueryKey,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("attendance")
         .select("*")
         .order("date", { ascending: false });
+
+      if (yearMonth) {
+        const [y, m] = yearMonth.split("-").map(Number);
+        const start = `${y}-${String(m).padStart(2, "0")}-01`;
+        const lastDay = new Date(y, m, 0).getDate();
+        const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+        query = query.gte("date", start).lte("date", end);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return (data ?? []).map(mapAttendanceRecord);
     },
@@ -126,11 +136,12 @@ export function useScheduleDates(yearMonth?: string) {
 
 export function useSubsForDate(
   dateStr?: string,
-  options?: { category?: "group" | "private"; subscriptionIds?: string[] }
+  options?: { category?: "group" | "private"; subscriptionIds?: string[] },
+  yearMonth?: string
 ) {
   const subscriptionsQuery = useSubscriptions();
   const clientsQuery = useClients();
-  const attendanceQuery = useAttendanceRecords();
+  const attendanceQuery = useAttendanceRecords(yearMonth);
 
   const getSubsForDate = useCallback(
     (date: string, opts?: { category?: "group" | "private"; subscriptionIds?: string[] }) =>
@@ -224,48 +235,59 @@ export function useMarkAttendance() {
       await queryClient.cancelQueries({ queryKey: attendanceQueryKey });
       await queryClient.cancelQueries({ queryKey: subscriptionsQueryKey });
 
-      const previousAttendance = queryClient.getQueryData<AttendanceRecord[]>(attendanceQueryKey);
+      const previousAttendanceEntries = queryClient.getQueriesData<AttendanceRecord[]>({
+        queryKey: attendanceQueryKey,
+      });
       const previousSubscriptions = queryClient.getQueryData<Subscription[]>(subscriptionsQueryKey);
 
       const sub = previousSubscriptions?.find((s) => s.id === subId);
-      if (!sub) return { previousAttendance, previousSubscriptions };
+      if (!sub) return { previousAttendanceEntries, previousSubscriptions };
 
+      const previousAttendance = previousAttendanceEntries[0]?.[1];
       const existing = previousAttendance?.find(
         (a) => a.date === dateStr && a.subscriptionId === subId
       );
       const oldStatus = existing?.attendanceStatus ?? null;
 
       if (oldStatus === status) {
-        return { previousAttendance, previousSubscriptions };
+        return { previousAttendanceEntries, previousSubscriptions };
       }
 
       const { lessonDelta, freezeDelta } = computeAttendanceDeltas(oldStatus, status);
 
       if (status === "freeze" && sub.lessonsTotal !== 8) {
-        return { previousAttendance, previousSubscriptions };
+        return { previousAttendanceEntries, previousSubscriptions };
       }
       if (status === "freeze" && sub.freezeUsed + freezeDelta > 1) {
-        return { previousAttendance, previousSubscriptions };
+        return { previousAttendanceEntries, previousSubscriptions };
       }
       if (sub.lessonsLeft + lessonDelta < 0) {
-        return { previousAttendance, previousSubscriptions };
+        return { previousAttendanceEntries, previousSubscriptions };
       }
 
-      const nextAttendance = [...(previousAttendance ?? [])];
-      const attIdx = nextAttendance.findIndex(
-        (a) => a.date === dateStr && a.subscriptionId === subId
+      queryClient.setQueriesData<AttendanceRecord[]>(
+        { queryKey: attendanceQueryKey },
+        (old) => {
+          const base = old ?? [];
+          const attIdx = base.findIndex(
+            (a) => a.date === dateStr && a.subscriptionId === subId
+          );
+          if (attIdx >= 0) {
+            const updated = [...base];
+            updated[attIdx] = { ...updated[attIdx], attendanceStatus: status };
+            return updated;
+          }
+          return [
+            ...base,
+            {
+              date: dateStr,
+              subscriptionId: subId,
+              clientDisplay: "",
+              attendanceStatus: status,
+            },
+          ];
+        }
       );
-      if (attIdx >= 0) {
-        nextAttendance[attIdx] = { ...nextAttendance[attIdx], attendanceStatus: status };
-      } else {
-        nextAttendance.push({
-          date: dateStr,
-          subscriptionId: subId,
-          clientDisplay: "",
-          attendanceStatus: status,
-        });
-      }
-      queryClient.setQueryData(attendanceQueryKey, nextAttendance);
 
       const newLessonsLeft = sub.lessonsLeft + lessonDelta;
       const newFreezeUsed = sub.freezeUsed + freezeDelta;
@@ -284,11 +306,13 @@ export function useMarkAttendance() {
           )
       );
 
-      return { previousAttendance, previousSubscriptions };
+      return { previousAttendanceEntries, previousSubscriptions };
     },
     onError: (_err, _vars, context) => {
-      if (context?.previousAttendance) {
-        queryClient.setQueryData(attendanceQueryKey, context.previousAttendance);
+      if (context?.previousAttendanceEntries) {
+        for (const [key, data] of context.previousAttendanceEntries) {
+          queryClient.setQueryData(key, data);
+        }
       }
       if (context?.previousSubscriptions) {
         queryClient.setQueryData(subscriptionsQueryKey, context.previousSubscriptions);

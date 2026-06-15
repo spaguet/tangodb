@@ -52,20 +52,38 @@ const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => {
 const personalLessonsSelect =
   "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, price, paid, subscription_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
-export function usePersonalLessons() {
+export function usePersonalLessons(yearMonth?: string) {
   return useQuery({
-    queryKey: personalLessonsQueryKey,
+    queryKey: yearMonth ? [...personalLessonsQueryKey, yearMonth] : personalLessonsQueryKey,
     queryFn: async () => {
-      let { data, error } = await supabase
+      let query = supabase
         .from("personal_lessons")
         .select(personalLessonsSelect)
         .order("date", { ascending: false });
 
+      if (yearMonth) {
+        const [y, m] = yearMonth.split("-").map(Number);
+        const start = `${y}-${String(m).padStart(2, "0")}-01`;
+        const lastDay = new Date(y, m, 0).getDate();
+        const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+        query = query.gte("date", start).lte("date", end);
+      }
+
+      let { data, error } = await query;
+
       if (error) {
-        const fallback = await supabase
+        let fallbackQuery = supabase
           .from("personal_lessons")
           .select("*")
           .order("date", { ascending: false });
+        if (yearMonth) {
+          const [y, m] = yearMonth.split("-").map(Number);
+          const start = `${y}-${String(m).padStart(2, "0")}-01`;
+          const lastDay = new Date(y, m, 0).getDate();
+          const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+          fallbackQuery = fallbackQuery.gte("date", start).lte("date", end);
+        }
+        const fallback = await fallbackQuery;
         if (fallback.error) throw fallback.error;
         data = fallback.data;
       }
@@ -227,18 +245,22 @@ export function useMarkPersonalLessonAttendance() {
     onMutate: async ({ lessonId, status }) => {
       await queryClient.cancelQueries({ queryKey: personalLessonsQueryKey });
 
-      const previous = queryClient.getQueryData<PersonalLesson[]>(personalLessonsQueryKey);
-      queryClient.setQueryData<PersonalLesson[]>(
-        personalLessonsQueryKey,
+      const previousEntries = queryClient.getQueriesData<PersonalLesson[]>({
+        queryKey: personalLessonsQueryKey,
+      });
+      queryClient.setQueriesData<PersonalLesson[]>(
+        { queryKey: personalLessonsQueryKey },
         (old) =>
           (old ?? []).map((l) => (l.id === lessonId ? { ...l, attendanceStatus: status } : l))
       );
 
-      return { previous };
+      return { previousEntries };
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(personalLessonsQueryKey, context.previous);
+      if (context?.previousEntries) {
+        for (const [key, data] of context.previousEntries) {
+          queryClient.setQueryData(key, data);
+        }
       }
     },
     onSettled: (result) => {
