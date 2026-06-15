@@ -33,7 +33,7 @@ const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider 
 const CREATE_TABS = [
   { id: "group" as const, label: "Групповые уроки" },
   { id: "privateLesson" as const, label: "Персональные уроки" },
-  { id: "privatePackage" as const, label: "Абонемент на персональные уроки" },
+  { id: "privatePackage" as const, label: "ПАКЕТ ПЕРСОНАЛЬНЫХ УРОКОВ" },
 ];
 
 type CreateTabId = (typeof CREATE_TABS)[number]["id"];
