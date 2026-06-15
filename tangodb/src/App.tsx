@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Info,
+  ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -136,6 +137,67 @@ const TOAST_STYLES: Record<ToastType, { icon: typeof Info; accent: string }> = {
   info: { icon: Info, accent: "text-indigo-500" },
 };
 
+function ScrollableNav({ children, refreshKey }: { children: React.ReactNode; refreshKey?: unknown }) {
+  const navRef = useRef<HTMLElement>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+  const updateScrollBtn = useCallback(() => {
+    const el = navRef.current;
+    if (!el) {
+      setShowScrollBtn(false);
+      return;
+    }
+    const overflows = el.scrollHeight > el.clientHeight + 2;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+    setShowScrollBtn(overflows && !atBottom);
+  }, []);
+
+  useEffect(() => {
+    updateScrollBtn();
+    const el = navRef.current;
+    if (!el) return;
+
+    el.addEventListener("scroll", updateScrollBtn, { passive: true });
+    const ro = new ResizeObserver(updateScrollBtn);
+    ro.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", updateScrollBtn);
+      ro.disconnect();
+    };
+  }, [updateScrollBtn]);
+
+  useEffect(() => {
+    updateScrollBtn();
+    const t = setTimeout(updateScrollBtn, 250);
+    return () => clearTimeout(t);
+  }, [refreshKey, updateScrollBtn]);
+
+  const scrollDown = () => {
+    const el = navRef.current;
+    if (!el) return;
+    el.scrollBy({ top: el.clientHeight * 0.65, behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative flex-1 min-h-0">
+      <nav ref={navRef} className="h-full overflow-y-auto px-3 py-4 space-y-4">
+        {children}
+      </nav>
+      {showScrollBtn && (
+        <button
+          type="button"
+          onClick={scrollDown}
+          aria-label="Прокрутить меню вниз"
+          className="absolute bottom-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 shadow-md text-slate-600 hover:text-indigo-600 hover:border-indigo-200 cursor-pointer transition-colors"
+        >
+          <ChevronDown className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -188,8 +250,8 @@ function AppLayout() {
     return location.pathname === item.path;
   };
 
-  const renderNav = () => (
-    <nav className="relative flex-1 overflow-y-auto px-3 py-4 space-y-4">
+  const renderNav = (refreshKey?: unknown) => (
+    <ScrollableNav refreshKey={refreshKey}>
       {NAV_SECTIONS.map((section) => (
         <div key={section.label} className="space-y-0.5">
           <p className="text-[9px] text-slate-400 font-sans tracking-wider uppercase font-semibold px-3 mb-1">
@@ -214,7 +276,7 @@ function AppLayout() {
           })}
         </div>
       ))}
-    </nav>
+    </ScrollableNav>
   );
 
   const ToastIcon = toast ? TOAST_STYLES[toast.type].icon : Info;
@@ -222,7 +284,7 @@ function AppLayout() {
   return (
     <ToastContext.Provider value={showToast}>
       <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased font-sans">
-        <aside className="hidden md:flex flex-col w-64 bg-white text-slate-700 border-r border-slate-200 flex-shrink-0 relative z-30 shadow-xs">
+        <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white text-slate-700 border-r border-slate-200 flex-shrink-0 relative z-30 shadow-xs">
           <div
             onClick={() => go({ icon: LayoutDashboard, label: "Обзор", path: "/" })}
             className="relative px-5 py-4.5 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors flex items-center gap-3.5"
@@ -330,7 +392,7 @@ function AppLayout() {
                   </button>
                 </div>
 
-                {renderNav()}
+                {renderNav(mobileDrawerOpen)}
 
                 <div className="p-3 border-t border-slate-100">
                   <button
