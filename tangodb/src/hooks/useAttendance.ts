@@ -145,6 +145,15 @@ export function useSubsForDate(
   const clientsQuery = useClients();
   const attendanceQuery = useAttendanceRecords(yearMonth);
 
+  const optionsKey = `${options?.category ?? ""}|${(options?.subscriptionIds ?? []).join(",")}`;
+  const stableOptions = useMemo(
+    () =>
+      options
+        ? { category: options.category, subscriptionIds: options.subscriptionIds }
+        : undefined,
+    [optionsKey]
+  );
+
   const getSubsForDate = useCallback(
     (date: string, opts?: { category?: "group" | "private"; subscriptionIds?: string[] }) =>
       computeSubsForDate(
@@ -152,9 +161,9 @@ export function useSubsForDate(
         subscriptionsQuery.data ?? [],
         clientsQuery.data ?? [],
         attendanceQuery.data ?? [],
-        opts ?? options
+        opts ?? stableOptions
       ),
-    [subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, options]
+    [subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, stableOptions]
   );
 
   const subs = useMemo(
@@ -165,10 +174,10 @@ export function useSubsForDate(
             subscriptionsQuery.data ?? [],
             clientsQuery.data ?? [],
             attendanceQuery.data ?? [],
-            options
+            stableOptions
           )
         : undefined,
-    [dateStr, subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, options]
+    [dateStr, subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, stableOptions]
   );
 
   return {
