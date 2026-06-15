@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { motion } from "motion/react";
 import { Users, Ticket, Calendar, AlertCircle, Send, BarChart3 } from "lucide-react";
 import { formatClientName, formatCurrency, dowFull, jsDayToIsoDow, currentYearMonth, isDateInYearMonth, getSubscriptionPrice } from "../lib/utils";
@@ -35,8 +36,14 @@ export default function Dashboard({
   // Warning memberships logic (<= 2 credits remaining)
   const warningSubs = activeSubs.filter((s) => s.lessonsLeft <= 2);
 
-  const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
-  const disciplineMap = disciplines.reduce((acc, d) => ({ ...acc, [d.id]: d }), {} as Record<number, Discipline>);
+  const clientMap = useMemo(
+    () => Object.fromEntries(clients.map((c) => [c.id, c])) as Record<string, Client>,
+    [clients]
+  );
+  const disciplineMap = useMemo(
+    () => Object.fromEntries(disciplines.map((d) => [d.id, d])) as Record<number, Discipline>,
+    [disciplines]
+  );
 
   const unpaidLessons = personalLessons.filter((l) => l.paid === "no");
   const pendingUnpaidCount = unpaidLessons.length;
