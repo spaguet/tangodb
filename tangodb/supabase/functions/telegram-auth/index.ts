@@ -10,6 +10,35 @@ const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
   .map((v) => v.trim())
   .filter(Boolean);
 
+/**
+ * Best-effort in-memory rate limiting. Supabase Edge Functions do not share state
+ * across instances — for production-grade rate limiting use a shared store
+ * (Supabase table/RPC, Upstash Redis, or gateway-level protection).
+ */
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 10;
+const RATE_WINDOW_MS = 60_000;
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
+
+function getClientIp(req: Request): string {
+  const cf = req.headers.get("cf-connecting-ip");
+  if (cf) return cf.trim();
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  return "unknown";
+}
+
 function corsHeadersFor(req: Request): HeadersInit | null {
   const origin = req.headers.get("Origin") ?? "";
   if (!allowedOrigins.length) return null;
@@ -233,6 +262,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Method not allowed" }, 405, req);
   }
 
+  const clientIp = getClientIp(req);
+  if (!checkRateLimit(`ip:${clientIp}`)) {
+    return jsonResponse({ error: "Too many requests" }, 429, req);
+  }
+
   const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
   if (!botToken) {
     return jsonResponse({ error: "TELEGRAM_BOT_TOKEN not configured" }, 500, req);
@@ -253,6 +287,10 @@ Deno.serve(async (req) => {
 
   if (!telegramId) {
     return jsonResponse({ error: "Unauthorized" }, 401, req);
+  }
+
+  if (!checkRateLimit(`tg:${telegramId}`)) {
+    return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
