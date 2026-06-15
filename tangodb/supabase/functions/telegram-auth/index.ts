@@ -5,15 +5,37 @@ const MINI_APP_AUTH_MAX_AGE_SEC = 300;
 /** Login Widget static token — standard 24h window */
 const LOGIN_WIDGET_AUTH_MAX_AGE_SEC = 86_400;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
+  .split(",")
+  .map((v) => v.trim())
+  .filter(Boolean);
 
-function jsonResponse(body: Record<string, unknown>, status = 200): Response {
+function corsHeadersFor(req: Request): HeadersInit | null {
+  const origin = req.headers.get("Origin") ?? "";
+  if (!allowedOrigins.length) return null;
+  if (!origin || !allowedOrigins.includes(origin)) return null;
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
+  };
+}
+
+function corsDeniedStatus(): number {
+  return allowedOrigins.length ? 403 : 500;
+}
+
+function jsonResponse(body: Record<string, unknown>, status: number, req: Request): Response {
+  const cors = corsHeadersFor(req);
+  if (!cors) {
+    return new Response(JSON.stringify(body), {
+      status: corsDeniedStatus(),
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...cors, "Content-Type": "application/json" },
   });
 }
 
@@ -200,23 +222,27 @@ async function issueSession(telegramId: number): Promise<{ access_token: string;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    const cors = corsHeadersFor(req);
+    if (!cors) {
+      return new Response(null, { status: corsDeniedStatus() });
+    }
+    return new Response("ok", { headers: cors });
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return jsonResponse({ error: "Method not allowed" }, 405, req);
   }
 
   const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
   if (!botToken) {
-    return jsonResponse({ error: "TELEGRAM_BOT_TOKEN not configured" }, 500);
+    return jsonResponse({ error: "TELEGRAM_BOT_TOKEN not configured" }, 500, req);
   }
 
   let body: { initData?: string; widgetPayload?: WidgetPayload };
   try {
     body = await req.json();
   } catch {
-    return jsonResponse({ error: "Invalid JSON" }, 400);
+    return jsonResponse({ error: "Invalid JSON" }, 400, req);
   }
 
   const telegramId = body.initData
@@ -226,13 +252,13 @@ Deno.serve(async (req) => {
       : null;
 
   if (!telegramId) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
+    return jsonResponse({ error: "Unauthorized" }, 401, req);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse({ error: "Supabase not configured" }, 500);
+    return jsonResponse({ error: "Supabase not configured" }, 500, req);
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -247,13 +273,13 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (!allowedUser) {
-    return jsonResponse({ error: "Forbidden" }, 403);
+    return jsonResponse({ error: "Forbidden" }, 403, req);
   }
 
   const session = await issueSession(telegramId);
   if (!session) {
-    return jsonResponse({ error: "Failed to create session" }, 500);
+    return jsonResponse({ error: "Failed to create session" }, 500, req);
   }
 
-  return jsonResponse(session);
+  return jsonResponse(session, 200, req);
 });
