@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Ticket, FileCheck, Search, Send, Snowflake } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
@@ -25,7 +25,7 @@ import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import type { ToastType } from "../App";
-import type { Client } from "../types";
+import type { Client, Discipline } from "../types";
 
 interface SubscriptionsPanelProps {
   initialTab?: "active" | "sell";
@@ -184,10 +184,13 @@ export default function SubscriptionsPanel({
     .filter((s) => s.status === "active")
     .sort((a, b) => a.lessonsLeft - b.lessonsLeft);
 
-  const clientMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c }), {} as Record<string, Client>);
-  const disciplineMap = disciplines.reduce(
-    (acc, d) => ({ ...acc, [d.id]: d }),
-    {} as Record<number, (typeof disciplines)[0]>
+  const clientMap = useMemo(
+    () => Object.fromEntries(clients.map((c) => [c.id, c])) as Record<string, Client>,
+    [clients]
+  );
+  const disciplineMap = useMemo(
+    () => Object.fromEntries(disciplines.map((d) => [d.id, d])) as Record<number, Discipline>,
+    [disciplines]
   );
 
   const filteredActiveRecords = activeRecords.filter((sub) => {
