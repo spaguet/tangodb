@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { motion } from "motion/react";
 import { Users, Ticket, Calendar, AlertCircle, Send, BarChart3 } from "lucide-react";
 import { formatClientName, formatCurrency, dowFull, jsDayToIsoDow, currentYearMonth, isDateInYearMonth, getSubscriptionPrice } from "../lib/utils";

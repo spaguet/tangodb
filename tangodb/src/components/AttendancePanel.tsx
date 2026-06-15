@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
