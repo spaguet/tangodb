@@ -78,30 +78,33 @@ const NAV_SECTIONS: NavSection[] = [
     items: [{ icon: LayoutDashboard, label: "Обзор и статистика", path: "/" }],
   },
   {
-    label: "Клиенты & Баланс",
+    label: "Клиенты",
+    items: [{ icon: Users, label: "База клиентов", path: "/clients" }],
+  },
+  {
+    label: "Групповые абонементы",
     items: [
-      { icon: Users, label: "База клиентов", path: "/clients" },
       { icon: Ticket, label: "Абонементы", path: "/subscriptions", subTab: "active" },
-      { icon: TicketPlus, label: "Продать абонемент", path: "/subscriptions/sell", subTab: "sell" },
+      { icon: TicketPlus, label: "Продажа абонемента", path: "/subscriptions/sell", subTab: "sell" },
     ],
   },
   {
-    label: "Занятия & Журналы",
+    label: "Расписание и журнал",
     items: [
       { icon: Calendar, label: "Расписание групп", path: "/schedule" },
       { icon: CalendarCheck, label: "Календарь и журнал", path: "/attendance" },
     ],
   },
   {
-    label: "Личные занятия",
+    label: "Персональные уроки",
     items: [
       { icon: Sparkles, label: "Персональные", path: "/personal", persTab: "view" },
-      { icon: TicketPlus, label: "Продажа", path: "/personal/sell", persTab: "sell" },
+      { icon: TicketPlus, label: "Продажа персонального урока", path: "/personal/sell", persTab: "sell" },
     ],
   },
   {
-    label: "Настройки & База",
-    items: [{ icon: Coins, label: "Прайс-лист", path: "/prices" }],
+    label: "Тарифы",
+    items: [{ icon: Coins, label: "Тарифы и прайс-лист", path: "/prices" }],
   },
 ];
 
