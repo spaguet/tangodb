@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Coins, Edit, Plus, Trash2, X } from "lucide-react";
+import { Coins, Edit, Ticket, Trash2, X } from "lucide-react";
 import { useCreatePrice, useDeletePrice, usePrices, useUpdatePrice, useUpdatePriceMeta } from "../hooks/usePrices";
 import {
   formatCurrency,
@@ -30,20 +30,29 @@ const inputCls =
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
+const CREATE_TABS = [
+  { id: "group" as const, label: "Групповые уроки" },
+  { id: "privateLesson" as const, label: "Персональные уроки" },
+  { id: "privatePackage" as const, label: "Абонемент на персональные уроки" },
+];
+
+type CreateTabId = (typeof CREATE_TABS)[number]["id"];
+
 function TariffCreateSection({
   title,
   children,
   onSubmit,
   pending,
+  compact = false,
 }: {
-  title: string;
+  title?: string;
   children: React.ReactNode;
   onSubmit: () => void;
   pending: boolean;
+  compact?: boolean;
 }) {
-  return (
-    <section className="border border-slate-100 rounded-xl p-3 space-y-3 bg-slate-50/50">
-      <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{title}</h4>
+  const body = (
+    <>
       <div className="panel-form-stack">{children}</div>
       <button
         type="button"
@@ -53,6 +62,17 @@ function TariffCreateSection({
       >
         {pending ? "..." : "Добавить"}
       </button>
+    </>
+  );
+
+  if (compact) {
+    return <div className="space-y-3">{body}</div>;
+  }
+
+  return (
+    <section className="border border-slate-100 rounded-xl p-3 space-y-3 bg-slate-50/50">
+      <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{title}</h4>
+      {body}
     </section>
   );
 }
@@ -82,6 +102,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const [creatingSection, setCreatingSection] = useState<"group" | "privateLesson" | "privatePackage" | null>(
     null
   );
+  const [activeCreateTab, setActiveCreateTab] = useState<CreateTabId>("group");
 
   useEffect(() => {
     if (!showCreateModal) return;
@@ -98,6 +119,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       setPrivateLessonForm({ label: "", description: "", price: "" });
       setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "" });
       setCreatingSection(null);
+      setActiveCreateTab("group");
     }
   }, [showCreateModal]);
 
@@ -242,6 +264,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const privateLessonItems = getPrivateLessonTariffs(prices).map((priceObj) => ({ priceObj }));
   const privatePackageItems = getPrivatePackageTariffs(prices).map((priceObj) => ({ priceObj }));
 
+  const inactiveCreateTabs = CREATE_TABS.filter((tab) => tab.id !== activeCreateTab);
+  const activeCreateTabMeta = CREATE_TABS.find((tab) => tab.id === activeCreateTab)!;
+
   if (isLoading) return <LoadingState label="Загрузка прайс-листа..." />;
 
   const renderPriceRow = (item: { priceObj: Price }) => {
@@ -327,26 +352,25 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
   return (
     <div id="panel-prices" className="panel-page-stack">
-      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
-        <div className="border-b border-slate-100 pb-3 mb-3 panel-card-stack">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2.5 text-slate-800 min-w-0">
-              <Coins className="w-4.5 h-4.5 text-indigo-500 shrink-0" />
-              <h2 className="text-base font-semibold tracking-tight">Тарифы и прайс-лист</h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Добавить тариф
-            </button>
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+        <div className="panel-form-header">
+          <div className="panel-form-header-icon">
+            <Coins className="w-5 h-5 text-indigo-600" />
           </div>
-          <p className="w-full text-slate-400 text-xs">
+          <h2 className="text-base font-semibold tracking-tight text-slate-900">Тарифы и прайс-лист</h2>
+          <p className="text-slate-400 text-[11px] leading-snug">
             Изменённые тарифы сразу обновят стоимость на кассе оформления.
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setShowCreateModal(true)}
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+        >
+          <Ticket className="w-3.5 h-3.5" />
+          Добавить тариф
+        </button>
 
         {prices.length === 0 ? (
           <div className="text-center py-16 text-slate-400 text-sm">
@@ -485,10 +509,15 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 sticky top-0 bg-white z-10">
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Новый тариф</h3>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center shrink-0">
+                    <Coins className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <h3 className="text-base font-semibold tracking-tight text-slate-900">Новый тариф</h3>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
@@ -499,144 +528,168 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-sans">
-                <TariffCreateSection
-                  title="Групповые уроки"
-                  onSubmit={() => handleCreateTariff("group")}
-                  pending={creatingSection === "group"}
-                >
-                  <div className="field-stack">
-                    <label className={labelCls}>Название</label>
-                    <input
-                      type="text"
-                      value={groupForm.label}
-                      onChange={(e) => setGroupForm({ ...groupForm, label: e.target.value })}
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="field-stack">
-                    <label className={labelCls}>Описание</label>
-                    <textarea
-                      value={groupForm.description}
-                      onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
-                      rows={2}
-                      className={`${inputCls} resize-none`}
-                    />
-                  </div>
-                  <div className="field-stack">
-                    <label className={labelCls}>Количество уроков</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={groupForm.lessons}
-                      onChange={(e) => setGroupForm({ ...groupForm, lessons: e.target.value })}
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="field-stack">
-                    <label className={labelCls}>Стоимость</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min={0}
-                        value={groupForm.price}
-                        onChange={(e) => setGroupForm({ ...groupForm, price: e.target.value })}
-                        className={`${inputCls} pr-8`}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
-                    </div>
-                  </div>
-                </TariffCreateSection>
+              <div className="font-sans space-y-1.5">
+                {inactiveCreateTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveCreateTab(tab.id)}
+                    className="w-full text-left px-4 py-2.5 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                  >
+                    {tab.label}
+                  </button>
+                ))}
 
-                <TariffCreateSection
-                  title="Персональные уроки"
-                  onSubmit={() => handleCreateTariff("privateLesson")}
-                  pending={creatingSection === "privateLesson"}
-                >
-                  <div className="field-stack">
-                    <label className={labelCls}>Название</label>
-                    <input
-                      type="text"
-                      value={privateLessonForm.label}
-                      onChange={(e) => setPrivateLessonForm({ ...privateLessonForm, label: e.target.value })}
-                      className={inputCls}
-                    />
+                <div className="border border-indigo-200 rounded-lg overflow-hidden shadow-xs">
+                  <div className="px-4 py-2.5 bg-indigo-50 text-indigo-700 text-xs font-semibold uppercase tracking-wider border-b border-indigo-200">
+                    {activeCreateTabMeta.label}
                   </div>
-                  <div className="field-stack">
-                    <label className={labelCls}>Описание</label>
-                    <textarea
-                      value={privateLessonForm.description}
-                      onChange={(e) =>
-                        setPrivateLessonForm({ ...privateLessonForm, description: e.target.value })
-                      }
-                      rows={2}
-                      className={`${inputCls} resize-none`}
-                    />
-                  </div>
-                  <div className="field-stack">
-                    <label className={labelCls}>Стоимость</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min={0}
-                        value={privateLessonForm.price}
-                        onChange={(e) => setPrivateLessonForm({ ...privateLessonForm, price: e.target.value })}
-                        className={`${inputCls} pr-8`}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
-                    </div>
-                  </div>
-                </TariffCreateSection>
+                  <div className="p-3 bg-white">
+                    {activeCreateTab === "group" && (
+                      <TariffCreateSection
+                        compact
+                        onSubmit={() => handleCreateTariff("group")}
+                        pending={creatingSection === "group"}
+                      >
+                        <div className="field-stack">
+                          <label className={labelCls}>Название</label>
+                          <input
+                            type="text"
+                            value={groupForm.label}
+                            onChange={(e) => setGroupForm({ ...groupForm, label: e.target.value })}
+                            className={inputCls}
+                          />
+                        </div>
+                        <div className="field-stack">
+                          <label className={labelCls}>Описание</label>
+                          <textarea
+                            value={groupForm.description}
+                            onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
+                            rows={2}
+                            className={`${inputCls} resize-none`}
+                          />
+                        </div>
+                        <div className="field-stack">
+                          <label className={labelCls}>Количество уроков</label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={groupForm.lessons}
+                            onChange={(e) => setGroupForm({ ...groupForm, lessons: e.target.value })}
+                            className={inputCls}
+                          />
+                        </div>
+                        <div className="field-stack">
+                          <label className={labelCls}>Стоимость</label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min={0}
+                              value={groupForm.price}
+                              onChange={(e) => setGroupForm({ ...groupForm, price: e.target.value })}
+                              className={`${inputCls} pr-8`}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                          </div>
+                        </div>
+                      </TariffCreateSection>
+                    )}
 
-                <TariffCreateSection
-                  title="Абонемент на персональные уроки"
-                  onSubmit={() => handleCreateTariff("privatePackage")}
-                  pending={creatingSection === "privatePackage"}
-                >
-                  <div className="field-stack">
-                    <label className={labelCls}>Название</label>
-                    <input
-                      type="text"
-                      value={privatePackageForm.label}
-                      onChange={(e) => setPrivatePackageForm({ ...privatePackageForm, label: e.target.value })}
-                      className={inputCls}
-                    />
+                    {activeCreateTab === "privateLesson" && (
+                      <TariffCreateSection
+                        compact
+                        onSubmit={() => handleCreateTariff("privateLesson")}
+                        pending={creatingSection === "privateLesson"}
+                      >
+                        <div className="field-stack">
+                          <label className={labelCls}>Название</label>
+                          <input
+                            type="text"
+                            value={privateLessonForm.label}
+                            onChange={(e) => setPrivateLessonForm({ ...privateLessonForm, label: e.target.value })}
+                            className={inputCls}
+                          />
+                        </div>
+                        <div className="field-stack">
+                          <label className={labelCls}>Описание</label>
+                          <textarea
+                            value={privateLessonForm.description}
+                            onChange={(e) =>
+                              setPrivateLessonForm({ ...privateLessonForm, description: e.target.value })
+                            }
+                            rows={2}
+                            className={`${inputCls} resize-none`}
+                          />
+                        </div>
+                        <div className="field-stack">
+                          <label className={labelCls}>Стоимость</label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min={0}
+                              value={privateLessonForm.price}
+                              onChange={(e) => setPrivateLessonForm({ ...privateLessonForm, price: e.target.value })}
+                              className={`${inputCls} pr-8`}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                          </div>
+                        </div>
+                      </TariffCreateSection>
+                    )}
+
+                    {activeCreateTab === "privatePackage" && (
+                      <TariffCreateSection
+                        compact
+                        onSubmit={() => handleCreateTariff("privatePackage")}
+                        pending={creatingSection === "privatePackage"}
+                      >
+                        <div className="field-stack">
+                          <label className={labelCls}>Название</label>
+                          <input
+                            type="text"
+                            value={privatePackageForm.label}
+                            onChange={(e) => setPrivatePackageForm({ ...privatePackageForm, label: e.target.value })}
+                            className={inputCls}
+                          />
+                        </div>
+                        <div className="field-stack">
+                          <label className={labelCls}>Описание</label>
+                          <textarea
+                            value={privatePackageForm.description}
+                            onChange={(e) =>
+                              setPrivatePackageForm({ ...privatePackageForm, description: e.target.value })
+                            }
+                            rows={2}
+                            className={`${inputCls} resize-none`}
+                          />
+                        </div>
+                        <div className="field-stack">
+                          <label className={labelCls}>Количество уроков</label>
+                          <input
+                            type="number"
+                            min={2}
+                            value={privatePackageForm.lessons}
+                            onChange={(e) => setPrivatePackageForm({ ...privatePackageForm, lessons: e.target.value })}
+                            className={inputCls}
+                          />
+                        </div>
+                        <div className="field-stack">
+                          <label className={labelCls}>Стоимость</label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min={0}
+                              value={privatePackageForm.price}
+                              onChange={(e) => setPrivatePackageForm({ ...privatePackageForm, price: e.target.value })}
+                              className={`${inputCls} pr-8`}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                          </div>
+                        </div>
+                      </TariffCreateSection>
+                    )}
                   </div>
-                  <div className="field-stack">
-                    <label className={labelCls}>Описание</label>
-                    <textarea
-                      value={privatePackageForm.description}
-                      onChange={(e) =>
-                        setPrivatePackageForm({ ...privatePackageForm, description: e.target.value })
-                      }
-                      rows={2}
-                      className={`${inputCls} resize-none`}
-                    />
-                  </div>
-                  <div className="field-stack">
-                    <label className={labelCls}>Количество уроков</label>
-                    <input
-                      type="number"
-                      min={2}
-                      value={privatePackageForm.lessons}
-                      onChange={(e) => setPrivatePackageForm({ ...privatePackageForm, lessons: e.target.value })}
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="field-stack">
-                    <label className={labelCls}>Стоимость</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min={0}
-                        value={privatePackageForm.price}
-                        onChange={(e) => setPrivatePackageForm({ ...privatePackageForm, price: e.target.value })}
-                        className={`${inputCls} pr-8`}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
-                    </div>
-                  </div>
-                </TariffCreateSection>
+                </div>
               </div>
 
               <button

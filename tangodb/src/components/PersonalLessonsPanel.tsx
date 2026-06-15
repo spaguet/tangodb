@@ -827,7 +827,7 @@ export default function PersonalLessonsPanel({
               </button>
             </div>
 
-            <div className="panel-form-divider" />
+            <div className="border-t border-slate-100 pt-1 -mt-1" />
 
             <div className="field-stack">
               <label className={labelCls}>Способ оплаты</label>
@@ -949,7 +949,7 @@ export default function PersonalLessonsPanel({
                   type="button"
                   onClick={() => handleBook(false)}
                   disabled={addPersonalLessons.isPending || !linkedSubscriptionId}
-                  className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
                 >
                   {addPersonalLessons.isPending ? "Оформление..." : "БРОНЬ ПО ПАКЕТУ"}
                 </button>

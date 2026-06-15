@@ -433,6 +433,7 @@ export default function SubscriptionsPanel({
               query={client1Query}
               selectedId={client1Id}
               showAddClientButton
+              addClientLinkLabel="Новый клиент"
               toast={toast}
               onQueryChange={(q) => {
                 setClient1Query(q);
@@ -452,6 +453,7 @@ export default function SubscriptionsPanel({
                   query={client2Query}
                   selectedId={client2Id}
                   showAddClientButton
+                  addClientLinkLabel="Новый клиент"
                   toast={toast}
                   onQueryChange={(q) => {
                     setClient2Query(q);
