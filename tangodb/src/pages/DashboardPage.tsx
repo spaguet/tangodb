@@ -27,7 +27,7 @@ export default function DashboardPage() {
     clientsLoading || subsLoading || scheduleLoading || personalLoading || pricesLoading || disciplinesLoading;
 
   const handleNavigate = (panel: string) => {
-    const routes: Record<string, { path: string; subTab?: "active" | "sell"; persTab?: "view" | "book" }> = {
+    const routes: Record<string, { path: string; subTab?: "active" | "sell"; persTab?: "view" | "sell" }> = {
       dashboard: { path: "/" },
       newClient: { path: "/clients" },
       sellSub: { path: "/subscriptions/sell", subTab: "sell" },
@@ -35,7 +35,7 @@ export default function DashboardPage() {
       schedule: { path: "/schedule" },
       attendance: { path: "/attendance" },
       personalView: { path: "/personal", persTab: "view" },
-      personalSell: { path: "/personal/book", persTab: "book" },
+      personalSell: { path: "/personal/sell", persTab: "sell" },
       prices: { path: "/prices" },
     };
 

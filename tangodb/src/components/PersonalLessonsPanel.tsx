@@ -11,7 +11,6 @@ import { useClients } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
 import {
-  deriveSubscriptionTypeFromTariff,
   findBookingScheduleConflict,
   formatClientName,
   formatCurrency,
@@ -19,11 +18,8 @@ import {
   getPersonalLessonTariffLabel,
   getPriceLabel,
   getPrivateLessonTariffs,
-  getPrivatePackageTariffs,
   getSubscriptionClientIds,
   bookingClientsMatchSubscription,
-  tariffNeedsSecondClient,
-  tariffNeedsThirdClient,
   tariffParticipantType,
 } from "../lib/utils";
 import { useSchedule } from "../hooks/useSchedule";
@@ -34,7 +30,7 @@ import {
   useUpdatePersonalLesson,
   useUpdatePersonalPaid,
 } from "../hooks/usePersonalLessons";
-import { useAddSubscription, useSubscriptions } from "../hooks/useSubscriptions";
+import { useSubscriptions } from "../hooks/useSubscriptions";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import AppSelect from "./ui/AppSelect";
@@ -46,7 +42,7 @@ import type { ToastType } from "../App";
 import type { Client, PersonalLesson, Subscription } from "../types";
 
 interface PersonalLessonsPanelProps {
-  initialTab?: "view" | "book" | "sell";
+  initialTab?: "view" | "sell" | "book";
   toast: (msg: string, type?: ToastType) => void;
 }
 
@@ -79,6 +75,7 @@ export default function PersonalLessonsPanel({
 }: PersonalLessonsPanelProps) {
   const navigate = useNavigate();
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
+  const normalizedInitialTab = initialTab === "book" ? "sell" : initialTab;
 
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
@@ -87,24 +84,23 @@ export default function PersonalLessonsPanel({
   const { data: prices = [], isLoading: pricesLoading } = usePrices();
   const { data: subscriptions = [] } = useSubscriptions();
   const addPersonalLessons = useAddPersonalLessons();
-  const addSubscription = useAddSubscription();
   const updatePersonalPaid = useUpdatePersonalPaid();
   const updatePersonalLesson = useUpdatePersonalLesson();
   const deletePersonalLesson = useDeletePersonalLesson();
 
   const isLoading = clientsLoading || disciplinesLoading || lessonsLoading || scheduleLoading || pricesLoading;
 
-  const [activeTab, setActiveTab] = useState<"view" | "book" | "sell">(initialTab);
+  const [activeTab, setActiveTab] = useState<"view" | "sell">(normalizedInitialTab);
+  const [packageModalOpen, setPackageModalOpen] = useState(false);
 
   useEffect(() => {
-    setActiveTab(initialTab);
-  }, [initialTab]);
+    setActiveTab(normalizedInitialTab);
+  }, [normalizedInitialTab]);
 
-  const switchTab = (tab: "view" | "book" | "sell") => {
+  const switchTab = (tab: "view" | "sell") => {
     setActiveTab(tab);
     setPersonalTab(tab);
-    if (tab === "book") navigate("/personal/book");
-    else if (tab === "sell") navigate("/personal/sell");
+    if (tab === "sell") navigate("/personal/sell");
     else navigate("/personal");
   };
 
@@ -127,18 +123,7 @@ export default function PersonalLessonsPanel({
   const pType: "solo" | "pair" | "trio" =
     bookingClients.length >= 3 ? "trio" : bookingClients.length === 2 ? "pair" : "solo";
 
-  // Personal subscription sale
-  const packageTariffs = getPrivatePackageTariffs(prices);
   const lessonTariffs = getPrivateLessonTariffs(prices);
-  const [selectedPackageTariffId, setSelectedPackageTariffId] = useState<number | "">("");
-  const [subClient1Query, setSubClient1Query] = useState("");
-  const [subClient1Id, setSubClient1Id] = useState("");
-  const [subClient2Query, setSubClient2Query] = useState("");
-  const [subClient2Id, setSubClient2Id] = useState("");
-  const [subClient3Query, setSubClient3Query] = useState("");
-  const [subClient3Id, setSubClient3Id] = useState("");
-  const [subDisciplineId, setSubDisciplineId] = useState<number | "">("");
-  const [subActivationDate, setSubActivationDate] = useState("");
 
   useEffect(() => {
     if (lessonTariffs.length > 0 && selectedLessonTariffId === "") {
@@ -147,29 +132,6 @@ export default function PersonalLessonsPanel({
       setCustomPrice(first.price.toString());
     }
   }, [lessonTariffs, selectedLessonTariffId]);
-
-  useEffect(() => {
-    if (packageTariffs.length > 0 && selectedPackageTariffId === "") {
-      setSelectedPackageTariffId(packageTariffs[0].id!);
-    }
-  }, [packageTariffs, selectedPackageTariffId]);
-
-  useEffect(() => {
-    const today = new Date();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    setSubActivationDate(`${today.getFullYear()}-${mm}-${dd}`);
-  }, []);
-
-  useEffect(() => {
-    if (disciplines.length > 0 && subDisciplineId === "") {
-      setSubDisciplineId(disciplines[0].id);
-    }
-  }, [disciplines, subDisciplineId]);
-
-  const selectedPackageTariff = packageTariffs.find((p) => p.id === selectedPackageTariffId);
-  const packageNeedsSecond = selectedPackageTariff ? tariffNeedsSecondClient(selectedPackageTariff) : false;
-  const packageNeedsThird = selectedPackageTariff ? tariffNeedsThirdClient(selectedPackageTariff) : false;
 
   const clientMap = clients.reduce(
     (acc, c) => ({ ...acc, [String(c.id)]: c }),
@@ -355,59 +317,6 @@ export default function PersonalLessonsPanel({
     }
   };
 
-  const handleSellPersonalSub = async () => {
-    if (!selectedPackageTariff?.id) {
-      toast("Выберите тариф абонемента.", "error");
-      return;
-    }
-    if (!subClient1Query || !subClient1Id) {
-      toast("Выберите клиента из списка.", "error");
-      return;
-    }
-    if (packageNeedsSecond && (!subClient2Query || !subClient2Id)) {
-      toast("Выберите второго клиента.", "error");
-      return;
-    }
-    if (packageNeedsThird && (!subClient3Query || !subClient3Id)) {
-      toast("Выберите третьего клиента.", "error");
-      return;
-    }
-    if (!subDisciplineId) {
-      toast("Выберите дисциплину.", "error");
-      return;
-    }
-    if (!subActivationDate) {
-      toast("Укажите дату активации.", "error");
-      return;
-    }
-
-    const { type, pairMonth } = deriveSubscriptionTypeFromTariff(selectedPackageTariff);
-    const res = await addSubscription.mutateAsync({
-      type,
-      clientId1: subClient1Id,
-      clientId2: packageNeedsSecond ? subClient2Id : "",
-      clientId3: packageNeedsThird ? subClient3Id : "",
-      lessonsTotal: selectedPackageTariff.lessons,
-      activationDate: subActivationDate,
-      pairMonth,
-      disciplineId: subDisciplineId as number,
-      priceId: selectedPackageTariff.id,
-      category: "private",
-    });
-
-    if (!res.success) {
-      toast(res.error || "Не удалось оформить абонемент", "error");
-    } else {
-      toast("Персональный абонемент продан", "success");
-      setSubClient1Query("");
-      setSubClient1Id("");
-      setSubClient2Query("");
-      setSubClient2Id("");
-      setSubClient3Query("");
-      setSubClient3Id("");
-    }
-  };
-
   const handleTogglePaid = async (lesson: PersonalLesson) => {
     const nextStatus = lesson.paid !== "yes";
     const res = await updatePersonalPaid.mutateAsync({ id: lesson.id, paid: nextStatus });
@@ -545,8 +454,7 @@ export default function PersonalLessonsPanel({
 
   const personalTabs = [
     { id: "view", label: "Просмотр", icon: FolderClosed },
-    { id: "book", label: "Урок", icon: BadgePlus },
-    { id: "sell", label: "Пакет", icon: Ticket },
+    { id: "sell", label: "Продажа", icon: BadgePlus },
   ] as const;
 
   return (
@@ -658,7 +566,7 @@ export default function PersonalLessonsPanel({
                     : "Персональных уроков с такими критериями нет."}
                 </p>
                 <button
-                  onClick={() => switchTab("book")}
+                  onClick={() => switchTab("sell")}
                   className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
                 >
                   Забронировать урок →
@@ -747,19 +655,33 @@ export default function PersonalLessonsPanel({
             )}
           </div>
         </div>
-      ) : activeTab === "book" ? (
-        /* SCREEN 2: PRIVATE LESSON BOOKING FORM */
+      ) : (
+        /* Продажа: форма бронирования урока */
         <div
           className={`bg-white p-4 border border-slate-200 shadow-xs max-w-xl mx-auto panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
         >
           <div className="panel-form-header">
-            <div className="panel-form-header-icon">
-              <Sparkles className="w-5 h-5 text-indigo-600" />
+            <div className="flex items-start justify-between gap-3 w-full">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="panel-form-header-icon shrink-0">
+                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-base font-semibold tracking-tight text-slate-900">Забронировать персональный урок</h2>
+                  <p className="text-slate-400 text-[11px] leading-snug">
+                    Можно зарезервировать сразу несколько дат за одно оформление.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPackageModalOpen(true)}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                <Ticket className="w-3.5 h-3.5" />
+                Продать пакет
+              </button>
             </div>
-            <h2 className="text-base font-semibold tracking-tight text-slate-900">Забронировать персональный урок</h2>
-            <p className="text-slate-400 text-[11px] leading-snug">
-              Можно зарезервировать сразу несколько дат за одно оформление.
-            </p>
           </div>
 
           <div className="panel-form-stack">
@@ -997,134 +919,16 @@ export default function PersonalLessonsPanel({
             )}
           </div>
         </div>
-      ) : (
-        <div
-          className={`bg-white p-4 border border-slate-200 shadow-xs max-w-xl mx-auto panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
-        >
-          <div className="panel-form-header">
-            <div className="panel-form-header-icon">
-              <Ticket className="w-5 h-5 text-indigo-600" />
-            </div>
-            <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа пакета персональных уроков</h2>
-            <p className="text-slate-400 text-[11px] leading-snug">
-              Пакет персональных уроков — посещения отмечаются в журнале при бронировании.
-            </p>
-          </div>
-
-          <div className="panel-form-stack">
-            <div className="field-stack">
-              <label className={labelCls}>Тариф абонемента</label>
-              {packageTariffs.length === 0 ? (
-                <p className="text-xs text-slate-400 font-sans">
-                  Нет пакетных тарифов. Создайте персональный тариф с количеством уроков больше 1 в прайс-листе.
-                </p>
-              ) : (
-                <AppSelect
-                  value={selectedPackageTariffId}
-                  onChange={(e) => {
-                    const id = parseInt(e.target.value, 10);
-                    if (!Number.isNaN(id)) setSelectedPackageTariffId(id);
-                  }}
-                >
-                  {packageTariffs.map((tariff) => (
-                    <option key={tariff.id} value={tariff.id!}>
-                      {getPriceLabel(tariff)} — {tariff.lessons} занятий · {formatCurrency(tariff.price)}
-                    </option>
-                  ))}
-                </AppSelect>
-              )}
-            </div>
-
-            <DisciplineSelect
-              disciplines={disciplines}
-              value={subDisciplineId}
-              onChange={setSubDisciplineId}
-              toast={toast}
-            />
-
-            <ClientAutocomplete
-              label={packageNeedsSecond ? "Первый клиент" : "Клиент"}
-              clients={clients}
-              query={subClient1Query}
-              selectedId={subClient1Id}
-              showAddClientButton
-              toast={toast}
-              onQueryChange={(q) => {
-                setSubClient1Query(q);
-                setSubClient1Id("");
-              }}
-              onSelect={(c) => {
-                setSubClient1Id(c.id);
-                setSubClient1Query(`${c.lastName} ${c.firstName}`);
-              }}
-            />
-
-            {packageNeedsSecond && (
-              <ClientAutocomplete
-                label="Второй клиент"
-                clients={clients}
-                query={subClient2Query}
-                selectedId={subClient2Id}
-                showAddClientButton
-                toast={toast}
-                onQueryChange={(q) => {
-                  setSubClient2Query(q);
-                  setSubClient2Id("");
-                }}
-                onSelect={(c) => {
-                  setSubClient2Id(c.id);
-                  setSubClient2Query(`${c.lastName} ${c.firstName}`);
-                }}
-              />
-            )}
-
-            {packageNeedsThird && (
-              <ClientAutocomplete
-                label="Третий клиент"
-                clients={clients}
-                query={subClient3Query}
-                selectedId={subClient3Id}
-                showAddClientButton
-                toast={toast}
-                onQueryChange={(q) => {
-                  setSubClient3Query(q);
-                  setSubClient3Id("");
-                }}
-                onSelect={(c) => {
-                  setSubClient3Id(c.id);
-                  setSubClient3Query(`${c.lastName} ${c.firstName}`);
-                }}
-              />
-            )}
-
-            <div className="field-stack">
-              <label className={labelCls}>Дата активации</label>
-              <input
-                type="date"
-                required
-                value={subActivationDate}
-                onChange={(e) => setSubActivationDate(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all"
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-violet-50/60 rounded-xl border border-violet-100">
-              <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
-              <span className="text-xl font-sans font-semibold text-violet-700">
-                {selectedPackageTariff ? formatCurrency(selectedPackageTariff.price) : "—"}
-              </span>
-            </div>
-
-            <button
-              onClick={handleSellPersonalSub}
-              disabled={addSubscription.isPending || packageTariffs.length === 0}
-              className="w-full py-3.5 bg-violet-600 hover:bg-violet-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
-            >
-              {addSubscription.isPending ? "Оформление..." : "Продать абонемент"}
-            </button>
-          </div>
-        </div>
       )}
+
+      <SellPackageModal
+        open={packageModalOpen}
+        onClose={() => setPackageModalOpen(false)}
+        toast={toast}
+        clients={clients}
+        disciplines={disciplines}
+        prices={prices}
+      />
 
       <ConfirmDialog
         open={deleteTarget !== null}
