@@ -15,7 +15,6 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import {
   attendanceQueryKey,
@@ -503,7 +502,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       </p>
                       <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">{entry.label}</p>
                     </div>
-                    <ChevronRightIcon className="w-4 h-4 text-slate-400 shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                   </button>
                 ))}
               </div>
