@@ -20,6 +20,8 @@ import {
   getPriceLabel,
   getPrivateLessonTariffs,
   getPrivatePackageTariffs,
+  getSubscriptionClientIds,
+  bookingClientsMatchSubscription,
   tariffNeedsSecondClient,
   tariffNeedsThirdClient,
   tariffParticipantType,
@@ -41,7 +43,7 @@ import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import type { ToastType } from "../App";
-import type { Client, PersonalLesson } from "../types";
+import type { Client, PersonalLesson, Subscription } from "../types";
 
 interface PersonalLessonsPanelProps {
   initialTab?: "view" | "book" | "sell";
@@ -121,7 +123,7 @@ export default function PersonalLessonsPanel({
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
   const [disciplineId, setDisciplineId] = useState<number | "">("");
 
-  const c1Id = bookingClients[0]?.id ?? "";
+
   const pType: "solo" | "pair" | "trio" =
     bookingClients.length >= 3 ? "trio" : bookingClients.length === 2 ? "pair" : "solo";
 
@@ -169,13 +171,36 @@ export default function PersonalLessonsPanel({
   const packageNeedsSecond = selectedPackageTariff ? tariffNeedsSecondClient(selectedPackageTariff) : false;
   const packageNeedsThird = selectedPackageTariff ? tariffNeedsThirdClient(selectedPackageTariff) : false;
 
-  const clientPrivateSubs = subscriptions.filter(
-    (s) =>
-      s.category === "private" &&
-      s.status === "active" &&
-      s.lessonsLeft > 0 &&
-      (s.clientId1 === c1Id || s.clientId2 === c1Id)
+  const clientMap = clients.reduce(
+    (acc, c) => ({ ...acc, [String(c.id)]: c }),
+    {} as Record<string, Client>
   );
+
+  const subscriptionOwnerLabel = (sub: Subscription): string =>
+    getSubscriptionClientIds(sub)
+      .map((id) => {
+        const c = clientMap[id];
+        return c ? formatClientName(c.lastName, c.firstName) : id;
+      })
+      .join(" & ");
+
+  const availablePrivateSubs = subscriptions.filter(
+    (s) => s.category === "private" && s.status === "active" && s.lessonsLeft > 0
+  );
+
+  const packageLocked = !!linkedSubscriptionId;
+
+  const applySubscriptionToBooking = (subId: string) => {
+    const sub = subscriptions.find((s) => s.id === subId);
+    if (!sub) return;
+
+    const fields: BookingClientField[] = getSubscriptionClientIds(sub).map((id) => {
+      const c = clientMap[id];
+      return { id, query: c ? formatClientName(c.lastName, c.firstName) : id };
+    });
+    if (fields.length === 0) fields.push({ query: "", id: "" });
+    setBookingClients(fields);
+  };
 
   const [deleteTarget, setDeleteTarget] = useState<PersonalLesson | null>(null);
   const [editTarget, setEditTarget] = useState<PersonalLesson | null>(null);
@@ -263,6 +288,24 @@ export default function PersonalLessonsPanel({
       return;
     }
 
+    if (linkedSubscriptionId) {
+      const linkedSub = subscriptions.find((s) => s.id === linkedSubscriptionId);
+      if (!linkedSub) {
+        toast("Выбранный пакет не найден.", "error");
+        return;
+      }
+      if (
+        !bookingClientsMatchSubscription(linkedSub, {
+          clientId1: bookingClients[0].id,
+          clientId2: bookingClients.length >= 2 ? bookingClients[1].id : "",
+          clientId3: bookingClients.length >= 3 ? bookingClients[2].id : "",
+        })
+      ) {
+        toast("Клиенты урока должны совпадать с владельцами пакета.", "error");
+        return;
+      }
+    }
+
     const uniqueDates = new Set(filteredDates);
     if (uniqueDates.size !== filteredDates.length) {
       toast("Одна и та же дата указана несколько раз.", "error");
@@ -343,6 +386,7 @@ export default function PersonalLessonsPanel({
       type,
       clientId1: subClient1Id,
       clientId2: packageNeedsSecond ? subClient2Id : "",
+      clientId3: packageNeedsThird ? subClient3Id : "",
       lessonsTotal: selectedPackageTariff.lessons,
       activationDate: subActivationDate,
       pairMonth,
@@ -444,11 +488,6 @@ export default function PersonalLessonsPanel({
   const monthLessonCount = monthLessons.length;
   const monthPaidCount = monthLessons.filter((l) => l.paid === "yes").length;
   const monthUnpaidSum = monthLessons.filter((l) => l.paid === "no").reduce((sum, l) => sum + l.price, 0);
-
-  const clientMap = clients.reduce(
-    (acc, c) => ({ ...acc, [String(c.id)]: c }),
-    {} as Record<string, Client>
-  );
 
   const clientNameFromMap = (clientId: string): string => {
     const id = clientId.trim();
@@ -735,31 +774,45 @@ export default function PersonalLessonsPanel({
               {bookingClients.map((client, idx) => (
                 <div key={idx} className="flex items-start gap-2">
                   <div className="flex-1 min-w-0">
-                    <ClientAutocomplete
-                      label={idx === 0 ? "Имя Фамилия" : `Клиент ${idx + 1}`}
-                      clients={clients}
-                      query={client.query}
-                      selectedId={client.id}
-                      showAddClientButton
-                      addClientLinkLabel="Добавить клиента"
-                      toast={toast}
-                      onQueryChange={(q) => {
-                        setBookingClients((prev) => {
-                          const next = [...prev];
-                          next[idx] = { query: q, id: "" };
-                          return next;
-                        });
-                      }}
-                      onSelect={(c) => {
-                        setBookingClients((prev) => {
-                          const next = [...prev];
-                          next[idx] = { query: `${c.lastName} ${c.firstName}`, id: c.id };
-                          return next;
-                        });
-                      }}
-                    />
+                    {packageLocked ? (
+                      <div className="field-stack">
+                        <label className={labelCls}>{idx === 0 ? "Имя Фамилия" : `Клиент ${idx + 1}`}</label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={client.query}
+                          className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-600 cursor-not-allowed"
+                        />
+                      </div>
+                    ) : (
+                      <ClientAutocomplete
+                        label={idx === 0 ? "Имя Фамилия" : `Клиент ${idx + 1}`}
+                        clients={clients}
+                        query={client.query}
+                        selectedId={client.id}
+                        showAddClientButton
+                        addClientLinkLabel="Добавить клиента"
+                        toast={toast}
+                        onQueryChange={(q) => {
+                          setLinkedSubscriptionId("");
+                          setBookingClients((prev) => {
+                            const next = [...prev];
+                            next[idx] = { query: q, id: "" };
+                            return next;
+                          });
+                        }}
+                        onSelect={(c) => {
+                          setLinkedSubscriptionId("");
+                          setBookingClients((prev) => {
+                            const next = [...prev];
+                            next[idx] = { query: `${c.lastName} ${c.firstName}`, id: c.id };
+                            return next;
+                          });
+                        }}
+                      />
+                    )}
                   </div>
-                  {idx > 0 && (
+                  {!packageLocked && idx > 0 && (
                     <button
                       type="button"
                       onClick={() => handleRemoveBookingClient(idx)}
@@ -772,7 +825,7 @@ export default function PersonalLessonsPanel({
                   )}
                 </div>
               ))}
-              {bookingClients.length < 3 && (
+              {!packageLocked && bookingClients.length < 3 && (
                 <button
                   type="button"
                   onClick={() => setBookingClients((prev) => [...prev, { query: "", id: "" }])}
@@ -846,21 +899,25 @@ export default function PersonalLessonsPanel({
 
             <div className="panel-form-divider" />
 
-            {clientPrivateSubs.length > 0 && (
+            {availablePrivateSubs.length > 0 && (
               <AppSelect
                 label="Списать с пакета"
                 value={linkedSubscriptionId}
                 onChange={(e) => {
-                  setLinkedSubscriptionId(e.target.value);
-                  if (e.target.value) setCustomPrice("0");
+                  const subId = e.target.value;
+                  setLinkedSubscriptionId(subId);
+                  if (subId) {
+                    applySubscriptionToBooking(subId);
+                    setCustomPrice("0");
+                  }
                 }}
               >
                 <option value="">Разовый урок (без абонемента)</option>
-                {clientPrivateSubs.map((s) => {
+                {availablePrivateSubs.map((s) => {
                   const label = prices.find((p) => p.id === s.priceId);
                   return (
                     <option key={s.id} value={s.id}>
-                      {label ? getPriceLabel(label) : "Абонемент"} — осталось {s.lessonsLeft} из {s.lessonsTotal}
+                      {subscriptionOwnerLabel(s)} — {label ? getPriceLabel(label) : "Пакет"} — осталось {s.lessonsLeft} из {s.lessonsTotal}
                     </option>
                   );
                 })}
@@ -899,7 +956,9 @@ export default function PersonalLessonsPanel({
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-sans font-normal pointer-events-none">₫</span>
               </div>
               {linkedSubscriptionId && (
-                <p className="text-[10px] text-violet-600 font-sans">Урок будет списан с пакета в журнале посещений.</p>
+                <p className="text-[10px] text-violet-600 font-sans">
+                  Клиенты зафиксированы по пакету. Чтобы изменить состав, выберите «Разовый урок».
+                </p>
               )}
             </div>
 

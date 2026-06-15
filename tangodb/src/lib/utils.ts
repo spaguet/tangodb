@@ -295,6 +295,30 @@ export function deriveSubscriptionTypeFromTariff(
   return { type: t, pairMonth: "" };
 }
 
+export interface SubscriptionClientRef {
+  type: string;
+  clientId1: string;
+  clientId2?: string;
+  clientId3?: string;
+}
+
+export function getSubscriptionClientIds(sub: SubscriptionClientRef): string[] {
+  const ids = [sub.clientId1];
+  if (sub.clientId2) ids.push(sub.clientId2);
+  if (sub.clientId3) ids.push(sub.clientId3);
+  return ids;
+}
+
+export function bookingClientsMatchSubscription(
+  sub: SubscriptionClientRef,
+  booking: { clientId1: string; clientId2?: string; clientId3?: string }
+): boolean {
+  const expected = getSubscriptionClientIds(sub);
+  const actual = [booking.clientId1, booking.clientId2, booking.clientId3].filter(Boolean) as string[];
+  if (expected.length !== actual.length) return false;
+  return expected.every((id, i) => id === actual[i]);
+}
+
 export function findSubscriptionPrice(
   sub: SubscriptionTariffRef,
   prices: PriceTariffRef[]

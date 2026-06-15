@@ -12,6 +12,7 @@ const mapSubscription = (row: Record<string, unknown>): Subscription => ({
   type: row.type as string,
   clientId1: row.client_id1 as string,
   clientId2: (row.client_id2 as string) || "",
+  clientId3: (row.client_id3 as string) || "",
   lessonsTotal: row.lessons_total as number,
   lessonsLeft: row.lessons_left as number,
   freezeUsed: row.freeze_used as number,
@@ -85,6 +86,7 @@ export function useAddSubscription() {
       type: string;
       clientId1: string;
       clientId2: string;
+      clientId3?: string;
       lessonsTotal: number;
       activationDate: string;
       pairMonth: string;
@@ -100,6 +102,7 @@ export function useAddSubscription() {
         type: sub.type,
         client_id1: sub.clientId1,
         client_id2: sub.clientId2 || null,
+        client_id3: sub.clientId3 || null,
         lessons_total: sub.lessonsTotal,
         lessons_left: sub.lessonsTotal,
         freeze_used: 0,

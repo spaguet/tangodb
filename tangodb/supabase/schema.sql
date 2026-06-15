@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   type             TEXT NOT NULL,
   client_id1       TEXT NOT NULL REFERENCES clients(id),
   client_id2       TEXT REFERENCES clients(id),
+  client_id3       TEXT REFERENCES clients(id),
   lessons_total    INTEGER NOT NULL CHECK (lessons_total >= 1),
   lessons_left     INTEGER NOT NULL,
   freeze_used      INTEGER NOT NULL DEFAULT 0 CHECK (freeze_used BETWEEN 0 AND 1),
@@ -188,6 +189,7 @@ DECLARE
   v_display TEXT := '';
   v_c1 RECORD;
   v_c2 RECORD;
+  v_c3 RECORD;
   v_today DATE := CURRENT_DATE;
 BEGIN
   IF p_date::DATE > v_today THEN
@@ -251,6 +253,12 @@ BEGIN
       v_display := v_display || ' & ' || v_c2.last_name || ' ' || v_c2.first_name;
     END IF;
   END IF;
+  IF v_sub.client_id3 IS NOT NULL AND v_sub.client_id3 <> '' THEN
+    SELECT last_name, first_name INTO v_c3 FROM clients WHERE id = v_sub.client_id3;
+    IF FOUND THEN
+      v_display := v_display || ' & ' || v_c3.last_name || ' ' || v_c3.first_name;
+    END IF;
+  END IF;
 
   INSERT INTO attendance (date, subscription_id, client_display, attendance_status)
   VALUES (p_date::DATE, p_sub_id, v_display, p_new_status)
@@ -303,3 +311,62 @@ $$ LANGUAGE plpgsql;
 
 REVOKE ALL ON FUNCTION mark_personal_lesson_attendance(TEXT, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION mark_personal_lesson_attendance(TEXT, TEXT) TO authenticated;
+
+CREATE OR REPLACE FUNCTION validate_personal_lesson_subscription()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_sub RECORD;
+BEGIN
+  IF NEW.subscription_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT * INTO v_sub FROM subscriptions WHERE id = NEW.subscription_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Абонемент не найден';
+  END IF;
+
+  IF v_sub.category <> 'private' THEN
+    RAISE EXCEPTION 'К персональному уроку можно привязать только персональный пакет';
+  END IF;
+
+  IF v_sub.status <> 'active' OR v_sub.lessons_left <= 0 THEN
+    RAISE EXCEPTION 'Пакет неактивен или исчерпан';
+  END IF;
+
+  IF v_sub.type = 'solo' THEN
+    IF NEW.client_id1 IS DISTINCT FROM v_sub.client_id1
+      OR COALESCE(NEW.client_id2, '') <> ''
+      OR COALESCE(NEW.client_id3, '') <> '' THEN
+      RAISE EXCEPTION 'Клиент урока не совпадает с владельцем пакета';
+    END IF;
+  ELSIF v_sub.type = 'pair' THEN
+    IF NEW.client_id1 IS DISTINCT FROM v_sub.client_id1
+      OR NEW.client_id2 IS DISTINCT FROM v_sub.client_id2
+      OR COALESCE(NEW.client_id3, '') <> '' THEN
+      RAISE EXCEPTION 'Клиенты урока не совпадают с владельцами пакета';
+    END IF;
+  ELSIF v_sub.type = 'trio' THEN
+    IF NEW.client_id1 IS DISTINCT FROM v_sub.client_id1
+      OR NEW.client_id2 IS DISTINCT FROM v_sub.client_id2
+      OR NEW.client_id3 IS DISTINCT FROM v_sub.client_id3 THEN
+      RAISE EXCEPTION 'Клиенты урока не совпадают с владельцами пакета';
+    END IF;
+  ELSE
+    IF NEW.client_id1 IS DISTINCT FROM v_sub.client_id1
+      OR COALESCE(NEW.client_id2, '') IS DISTINCT FROM COALESCE(v_sub.client_id2, '')
+      OR COALESCE(NEW.client_id3, '') IS DISTINCT FROM COALESCE(v_sub.client_id3, '') THEN
+      RAISE EXCEPTION 'Клиенты урока не совпадают с владельцами пакета';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS personal_lesson_subscription_guard ON personal_lessons;
+CREATE TRIGGER personal_lesson_subscription_guard
+  BEFORE INSERT OR UPDATE OF subscription_id, client_id1, client_id2, client_id3
+  ON personal_lessons
+  FOR EACH ROW
+  EXECUTE FUNCTION validate_personal_lesson_subscription();

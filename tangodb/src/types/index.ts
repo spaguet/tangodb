@@ -39,6 +39,7 @@ export interface Subscription {
   type: "solo" | "pair" | "pair_hm" | string;
   clientId1: string;
   clientId2: string;
+  clientId3: string;
   lessonsTotal: number;
   lessonsLeft: number;
   freezeUsed: number;
