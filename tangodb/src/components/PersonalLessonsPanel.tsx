@@ -119,6 +119,7 @@ export default function PersonalLessonsPanel({
   const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<number | "">("");
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
   const [disciplineId, setDisciplineId] = useState<number | "">("");
+  const [bookingPaymentMode, setBookingPaymentMode] = useState<"single" | "package" | null>(null);
 
 
   const pType: "solo" | "pair" | "trio" =
@@ -151,7 +152,12 @@ export default function PersonalLessonsPanel({
     (s) => s.category === "private" && s.status === "active" && s.lessonsLeft > 0
   );
 
-  const packageLocked = !!linkedSubscriptionId;
+  const packageLocked = bookingPaymentMode === "package" && !!linkedSubscriptionId;
+
+  const selectBookingPaymentMode = (mode: "single" | "package") => {
+    setBookingPaymentMode(mode);
+    setLinkedSubscriptionId("");
+  };
 
   const applySubscriptionToBooking = (subId: string) => {
     const sub = subscriptions.find((s) => s.id === subId);
@@ -231,14 +237,19 @@ export default function PersonalLessonsPanel({
       return;
     }
 
+    if (bookingPaymentMode === "package" && !linkedSubscriptionId) {
+      toast("Выберите пакет для списания.", "error");
+      return;
+    }
+
     const filteredDates = dates.filter((d) => d !== "");
     if (filteredDates.length === 0) {
       toast("Выберите хотя бы одну дату бронирования.", "error");
       return;
     }
 
-    const priceNum = linkedSubscriptionId ? 0 : parseFloat(customPrice);
-    if (!linkedSubscriptionId && (isNaN(priceNum) || priceNum < 0)) {
+    const priceNum = bookingPaymentMode === "package" ? 0 : parseFloat(customPrice);
+    if (bookingPaymentMode !== "package" && (isNaN(priceNum) || priceNum < 0)) {
       toast("Укажите корректную стоимость урока.", "error");
       return;
     }
@@ -294,7 +305,7 @@ export default function PersonalLessonsPanel({
       price: priceNum,
       paid: immediatePaid,
       disciplineId: disciplineId as number,
-      subscriptionId: linkedSubscriptionId || undefined,
+      subscriptionId: bookingPaymentMode === "package" ? linkedSubscriptionId || undefined : undefined,
     };
 
     const res = await addPersonalLessons.mutateAsync(payload);
@@ -302,7 +313,7 @@ export default function PersonalLessonsPanel({
       toast(res.error || "Не удалось забронировать", "error");
     } else {
       toast(
-        linkedSubscriptionId
+        linkedSubscriptionId && bookingPaymentMode === "package"
           ? "Урок оформлен, списание с пакета"
           : immediatePaid
             ? "Забронировано и оплачено"
@@ -313,6 +324,7 @@ export default function PersonalLessonsPanel({
       setDates([""]);
       setCustomPrice("");
       setLinkedSubscriptionId("");
+      setBookingPaymentMode(null);
       setTimeStart("14:00");
       setTimeEnd("15:00");
     }
@@ -662,28 +674,23 @@ export default function PersonalLessonsPanel({
           className={`bg-white p-4 border border-slate-200 shadow-xs max-w-xl mx-auto panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
         >
           <div className="panel-form-header">
-            <div className="flex items-start justify-between gap-3 w-full">
-              <div className="flex items-start gap-3 min-w-0">
-                <div className="panel-form-header-icon shrink-0">
-                  <Sparkles className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-base font-semibold tracking-tight text-slate-900">Забронировать персональный урок</h2>
-                  <p className="text-slate-400 text-[11px] leading-snug">
-                    Можно зарезервировать сразу несколько дат за одно оформление.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPackageModalOpen(true)}
-                className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
-              >
-                <Ticket className="w-3.5 h-3.5" />
-                Продать пакет
-              </button>
+            <div className="panel-form-header-icon">
+              <Ticket className="w-5 h-5 text-indigo-600" />
             </div>
+            <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа персонального урока</h2>
+            <p className="text-slate-400 text-[11px] leading-snug">
+              Оформите бронирование персонального урока — запись сразу попадёт в календарь.
+            </p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setPackageModalOpen(true)}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+          >
+            <Ticket className="w-3.5 h-3.5" />
+            Продать пакет уроков
+          </button>
 
           <div className="panel-form-stack">
             <DisciplineSelect
@@ -714,10 +721,10 @@ export default function PersonalLessonsPanel({
                         query={client.query}
                         selectedId={client.id}
                         showAddClientButton
-                        addClientLinkLabel="Добавить клиента"
+                        addClientLinkLabel="Новый клиент"
                         toast={toast}
                         onQueryChange={(q) => {
-                          setLinkedSubscriptionId("");
+                          if (packageLocked) return;
                           setBookingClients((prev) => {
                             const next = [...prev];
                             next[idx] = { query: q, id: "" };
@@ -725,7 +732,7 @@ export default function PersonalLessonsPanel({
                           });
                         }}
                         onSelect={(c) => {
-                          setLinkedSubscriptionId("");
+                          if (packageLocked) return;
                           setBookingClients((prev) => {
                             const next = [...prev];
                             next[idx] = { query: `${c.lastName} ${c.firstName}`, id: c.id };
@@ -822,101 +829,131 @@ export default function PersonalLessonsPanel({
 
             <div className="panel-form-divider" />
 
-            {availablePrivateSubs.length > 0 && (
-              <AppSelect
-                label="Списать с пакета"
-                value={linkedSubscriptionId}
-                onChange={(e) => {
-                  const subId = e.target.value;
-                  setLinkedSubscriptionId(subId);
-                  if (subId) {
-                    applySubscriptionToBooking(subId);
-                    setCustomPrice("0");
-                  }
-                }}
-              >
-                <option value="">Разовый урок (без абонемента)</option>
-                {availablePrivateSubs.map((s) => {
-                  const label = prices.find((p) => p.id === s.priceId);
-                  return (
-                    <option key={s.id} value={s.id}>
-                      {subscriptionOwnerLabel(s)} — {label ? getPriceLabel(label) : "Пакет"} — осталось {s.lessonsLeft} из {s.lessonsTotal}
-                    </option>
-                  );
-                })}
-              </AppSelect>
-            )}
-
-            {!linkedSubscriptionId && lessonTariffs.length > 0 && (
-              <AppSelect
-                label="Тариф за урок"
-                value={selectedLessonTariffId}
-                onChange={(e) => {
-                  const id = parseInt(e.target.value, 10);
-                  if (!Number.isNaN(id)) applyLessonTariff(id);
-                }}
-              >
-                {lessonTariffs.map((tariff) => (
-                  <option key={tariff.id} value={tariff.id!}>
-                    {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
-                  </option>
-                ))}
-              </AppSelect>
-            )}
-
             <div className="field-stack">
-              <label className={labelCls.replace(" block", "")}>Стоимость за 1 урок</label>
-
-              <div className="relative font-sans">
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={linkedSubscriptionId ? "0" : customPrice}
-                  disabled={!!linkedSubscriptionId}
-                  onChange={(e) => setCustomPrice(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg pl-3.5 pr-10 py-2.5 text-sm transition-all font-semibold disabled:opacity-60"
-                />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-sans font-normal pointer-events-none">₫</span>
+              <label className={labelCls}>Способ оплаты</label>
+              <div className="flex bg-slate-100 rounded-lg p-1 text-[10px] font-semibold gap-1">
+                <button
+                  type="button"
+                  onClick={() => selectBookingPaymentMode("single")}
+                  className={`flex-1 px-3 py-2 rounded-md cursor-pointer transition-all uppercase tracking-wider ${
+                    bookingPaymentMode === "single"
+                      ? "bg-white text-indigo-700 shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  ОДИН УРОК
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectBookingPaymentMode("package")}
+                  className={`flex-1 px-3 py-2 rounded-md cursor-pointer transition-all uppercase tracking-wider leading-tight ${
+                    bookingPaymentMode === "package"
+                      ? "bg-white text-violet-700 shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  СПИСАТЬ С ПАКЕТА УРОКОВ
+                </button>
               </div>
-              {linkedSubscriptionId && (
-                <p className="text-[10px] text-violet-600 font-sans">
-                  Клиенты зафиксированы по пакету. Чтобы изменить состав, выберите «Разовый урок».
-                </p>
-              )}
             </div>
 
-            <div className="panel-form-divider" />
+            {bookingPaymentMode === "single" && (
+              <>
+                {lessonTariffs.length > 0 && (
+                  <AppSelect
+                    label="Тариф за урок"
+                    value={selectedLessonTariffId}
+                    onChange={(e) => {
+                      const id = parseInt(e.target.value, 10);
+                      if (!Number.isNaN(id)) applyLessonTariff(id);
+                    }}
+                  >
+                    {lessonTariffs.map((tariff) => (
+                      <option key={tariff.id} value={tariff.id!}>
+                        {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
+                      </option>
+                    ))}
+                  </AppSelect>
+                )}
 
-            {linkedSubscriptionId ? (
-              <button
-                onClick={() => handleBook(false)}
-                disabled={addPersonalLessons.isPending}
-                className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
-              >
-                {addPersonalLessons.isPending ? "Оформление..." : "Оформить пакет"}
-              </button>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => handleBook(true)}
-                  disabled={addPersonalLessons.isPending}
-                  className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-sans text-xs font-semibold leading-tight rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
-                >
-                  Бронь с
-                  <br />
-                  оплатой
-                </button>
+                <div className="field-stack">
+                  <label className={labelCls.replace(" block", "")}>Стоимость за 1 урок</label>
+                  <div className="relative font-sans">
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={customPrice}
+                      onChange={(e) => setCustomPrice(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg pl-3.5 pr-10 py-2.5 text-sm transition-all font-semibold"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-sans font-normal pointer-events-none">₫</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleBook(true)}
+                    disabled={addPersonalLessons.isPending}
+                    className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                  >
+                    БРОНЬ С ОПЛАТОЙ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBook(false)}
+                    disabled={addPersonalLessons.isPending}
+                    className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    БРОНЬ БЕЗ ОПЛАТЫ
+                  </button>
+                </div>
+              </>
+            )}
+
+            {bookingPaymentMode === "package" && (
+              <>
+                {availablePrivateSubs.length > 0 ? (
+                  <AppSelect
+                    label="Списать с пакета"
+                    value={linkedSubscriptionId}
+                    onChange={(e) => {
+                      const subId = e.target.value;
+                      setLinkedSubscriptionId(subId);
+                      if (subId) {
+                        applySubscriptionToBooking(subId);
+                      }
+                    }}
+                  >
+                    <option value="">Выберите пакет...</option>
+                    {availablePrivateSubs.map((s) => {
+                      const label = prices.find((p) => p.id === s.priceId);
+                      return (
+                        <option key={s.id} value={s.id}>
+                          {subscriptionOwnerLabel(s)} — {label ? getPriceLabel(label) : "Пакет"} — осталось {s.lessonsLeft} из {s.lessonsTotal}
+                        </option>
+                      );
+                    })}
+                  </AppSelect>
+                ) : (
+                  <p className="text-xs text-slate-400 font-sans">Нет активных пакетов с оставшимися уроками.</p>
+                )}
+
+                {linkedSubscriptionId && (
+                  <p className="text-[10px] text-violet-600 font-sans">
+                    Клиенты зафиксированы по пакету. Чтобы изменить состав, выберите «Один урок».
+                  </p>
+                )}
 
                 <button
+                  type="button"
                   onClick={() => handleBook(false)}
-                  disabled={addPersonalLessons.isPending}
-                  className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold leading-tight rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                  disabled={addPersonalLessons.isPending || !linkedSubscriptionId}
+                  className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
                 >
-                  Бронь
-                  <br />
-                  без оплаты
+                  {addPersonalLessons.isPending ? "Оформление..." : "БРОНЬ ПО ПАКЕТУ"}
                 </button>
-              </div>
+              </>
             )}
           </div>
         </div>
