@@ -1,5 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+/** Telegram Mini App initData — short window per Telegram recommendation */
+const MINI_APP_AUTH_MAX_AGE_SEC = 300;
+/** Login Widget static token — standard 24h window */
+const LOGIN_WIDGET_AUTH_MAX_AGE_SEC = 86_400;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -48,7 +53,7 @@ async function verifyInitData(initData: string, botToken: string): Promise<numbe
   if (bufferToHex(signature) !== hash) return null;
 
   const authDate = Number(params.get("auth_date") ?? 0);
-  if (!authDate || Date.now() / 1000 - authDate > 86_400) return null;
+  if (!authDate || Date.now() / 1000 - authDate > MINI_APP_AUTH_MAX_AGE_SEC) return null;
 
   const userRaw = params.get("user");
   if (!userRaw) return null;
@@ -86,7 +91,7 @@ async function verifyLoginWidget(payload: WidgetPayload, botToken: string): Prom
   const signature = await hmacSha256(secretKey, dataCheckString);
   if (bufferToHex(signature) !== hash) return null;
 
-  if (Date.now() / 1000 - authDate > 86_400) return null;
+  if (Date.now() / 1000 - authDate > LOGIN_WIDGET_AUTH_MAX_AGE_SEC) return null;
   return id;
 }
 
