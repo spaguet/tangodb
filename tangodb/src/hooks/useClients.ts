@@ -48,7 +48,7 @@ export function useAddClient() {
         return { success: false as const, error: "Клиент с таким именем и фамилией уже существует" };
       }
 
-      const id = String(Date.now());
+      const id = crypto.randomUUID();
       const { error } = await supabase.from("clients").insert({
         id,
         first_name: fTrim,

@@ -94,7 +94,7 @@ export function useAddSubscription() {
       priceId?: number | null;
       category?: "group" | "private";
     }) => {
-      const id = String(Date.now());
+      const id = crypto.randomUUID();
       const pairMonth = sub.pairMonth !== "" ? String(sub.pairMonth) : "";
 
       const { error } = await supabase.from("subscriptions").insert({

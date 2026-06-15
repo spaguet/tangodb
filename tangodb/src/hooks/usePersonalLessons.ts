@@ -98,9 +98,8 @@ export function useAddPersonalLessons() {
       }
 
       const paid = lessons.subscriptionId || lessons.paid ? "yes" : "no";
-      const baseId = Date.now();
-      const rows = lessons.dates.map((date, i) => ({
-        id: String(baseId + i),
+      const rows = lessons.dates.map((date) => ({
+        id: crypto.randomUUID(),
         type: lessons.type,
         client_id1: lessons.clientId1 || null,
         client_id2: lessons.clientId2 || null,
