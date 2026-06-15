@@ -33,10 +33,12 @@ import PricesPage from "./pages/PricesPage";
 
 export type ToastType = "success" | "error" | "info";
 
-const ToastContext = createContext<(msg: string, type?: ToastType) => void>(() => {});
+const ToastContext = createContext<((msg: string, type?: ToastType) => void) | null>(null);
 
 export function useToast() {
-  return useContext(ToastContext);
+  const ctx = useContext(ToastContext);
+  if (!ctx) throw new Error("useToast must be used within AppLayout");
+  return ctx;
 }
 
 const queryClient = new QueryClient({
