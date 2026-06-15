@@ -32,9 +32,16 @@ CREATE TABLE IF NOT EXISTS schedule (
   day_of_week    INTEGER NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
   time           TEXT NOT NULL,
   time_end       TEXT NOT NULL DEFAULT '21:00',
-  discipline_id  INTEGER REFERENCES disciplines(id),
-  UNIQUE (day_of_week, time, discipline_id)
+  discipline_id  INTEGER REFERENCES disciplines(id)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS schedule_no_discipline_unique
+  ON schedule (day_of_week, time)
+  WHERE discipline_id IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS schedule_with_discipline_unique
+  ON schedule (day_of_week, time, discipline_id)
+  WHERE discipline_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS prices (
   id          SERIAL PRIMARY KEY,
