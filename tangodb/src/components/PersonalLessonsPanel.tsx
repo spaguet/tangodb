@@ -35,6 +35,7 @@ import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import SellPackageModal from "./ui/SellPackageModal";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
