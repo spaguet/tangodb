@@ -90,21 +90,41 @@ async function verifyLoginWidget(payload: WidgetPayload, botToken: string): Prom
   return id;
 }
 
+async function findAuthUserByEmail(
+  admin: ReturnType<typeof createClient>,
+  email: string
+) {
+  const perPage = 1000;
+  for (let page = 1; ; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+    const existing = data.users.find((u) => u.email === email);
+    if (existing) return existing;
+    if (data.users.length < perPage) return null;
+  }
+}
+
+async function updateTelegramUserMetadata(
+  admin: ReturnType<typeof createClient>,
+  user: { id: string; app_metadata?: Record<string, unknown>; user_metadata?: Record<string, unknown> },
+  telegramId: number
+): Promise<void> {
+  const { error } = await admin.auth.admin.updateUserById(user.id, {
+    app_metadata: { ...user.app_metadata, telegram_id: String(telegramId), provider: "telegram" },
+    user_metadata: { ...user.user_metadata, telegram_id: telegramId },
+  });
+  if (error) throw error;
+}
+
 async function ensureTelegramUser(
   admin: ReturnType<typeof createClient>,
   telegramId: number
 ): Promise<void> {
   const email = `tg_${telegramId}@tangodb.auth`;
-  const { data: list, error: listError } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  if (listError) throw listError;
 
-  const existing = list.users.find((u) => u.email === email);
+  const existing = await findAuthUserByEmail(admin, email);
   if (existing) {
-    const { error } = await admin.auth.admin.updateUserById(existing.id, {
-      app_metadata: { ...existing.app_metadata, telegram_id: String(telegramId), provider: "telegram" },
-      user_metadata: { ...existing.user_metadata, telegram_id: telegramId },
-    });
-    if (error) throw error;
+    await updateTelegramUserMetadata(admin, existing, telegramId);
     return;
   }
 
@@ -114,7 +134,14 @@ async function ensureTelegramUser(
     app_metadata: { telegram_id: String(telegramId), provider: "telegram" },
     user_metadata: { telegram_id: telegramId },
   });
-  if (createError && !createError.message.toLowerCase().includes("already")) {
+  if (createError) {
+    if (createError.message.toLowerCase().includes("already")) {
+      const retryExisting = await findAuthUserByEmail(admin, email);
+      if (retryExisting) {
+        await updateTelegramUserMetadata(admin, retryExisting, telegramId);
+        return;
+      }
+    }
     throw createError;
   }
 }
