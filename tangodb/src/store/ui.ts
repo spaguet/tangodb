@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { currentYearMonth } from "../lib/utils";
 
 interface UIState {
   selectedMonth: string;
@@ -17,14 +18,8 @@ interface UIState {
   setPersonalFilter: (f: "all" | "yes" | "no") => void;
 }
 
-const currentMonth = () => {
-  const now = new Date();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  return `${now.getFullYear()}-${mm}`;
-};
-
 export const useUIStore = create<UIState>((set) => ({
-  selectedMonth: currentMonth(),
+  selectedMonth: currentYearMonth(),
   selectedDate: null,
   subscriptionsTab: "active",
   personalTab: "view",

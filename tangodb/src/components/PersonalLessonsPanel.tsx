@@ -11,6 +11,7 @@ import { useClients } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
 import {
+  currentYearMonth,
   findBookingScheduleConflict,
   formatClientName,
   formatCurrency,
@@ -52,11 +53,6 @@ const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider 
 interface BookingClientField {
   query: string;
   id: string;
-}
-
-function currentYearMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function lessonYearMonth(dateStr: string): string {
