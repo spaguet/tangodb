@@ -50,7 +50,7 @@ const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => {
 };
 
 const personalLessonsSelect =
-  "id, type, client_id1, client_id2, client_id3, date, time_start, time_end, price, paid, subscription_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
+  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, price, paid, subscription_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
 export function usePersonalLessons() {
   return useQuery({
