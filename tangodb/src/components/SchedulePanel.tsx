@@ -21,6 +21,7 @@ import ConfirmDialog from "./ui/ConfirmDialog";
 import AppSelect from "./ui/AppSelect";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
+import QueryErrorState from "./ui/QueryErrorState";
 import type { ToastType } from "../App";
 import type { PersonalLesson, ScheduleSlot } from "../types";
 
@@ -69,9 +70,12 @@ function getSlotConflict(
 }
 
 export default function SchedulePanel({ toast }: SchedulePanelProps) {
-  const { data: schedule = [], isLoading: scheduleLoading } = useSchedule();
-  const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
-  const { data: personalLessons = [], isLoading: personalLoading } = usePersonalLessons();
+  const scheduleQuery = useSchedule();
+  const disciplinesQuery = useDisciplines();
+  const personalLessonsQuery = usePersonalLessons();
+  const { data: schedule = [], isLoading: scheduleLoading, isError: scheduleError, error: scheduleErr } = scheduleQuery;
+  const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
+  const { data: personalLessons = [], isLoading: personalLoading, isError: personalError, error: personalErr } = personalLessonsQuery;
   const addSlot = useAddScheduleSlot();
   const deleteSlot = useDeleteScheduleSlot();
   const replaceDisciplineSchedule = useReplaceDisciplineSchedule();
@@ -245,6 +249,10 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   if (scheduleLoading || disciplinesLoading || personalLoading) {
     return <LoadingState label="Загрузка расписания..." />;
   }
+
+  const isError = scheduleError || disciplinesError || personalError;
+  const error = scheduleErr ?? disciplinesErr ?? personalErr;
+  if (isError) return <QueryErrorState error={error} />;
 
   const editSlotIdSet = new Set(editSlots.map((s) => s.id));
 

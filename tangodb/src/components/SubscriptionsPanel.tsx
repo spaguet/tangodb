@@ -22,6 +22,7 @@ import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
+import QueryErrorState from "./ui/QueryErrorState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import type { ToastType } from "../App";
 import type { Client } from "../types";
@@ -40,14 +41,20 @@ export default function SubscriptionsPanel({
   const navigate = useNavigate();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
 
-  const { data: clients = [], isLoading: clientsLoading } = useClients();
-  const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
-  const { data: subscriptions = [], isLoading: subsLoading } = useSubscriptions();
-  const { data: prices = [], isLoading: pricesLoading } = usePrices();
+  const clientsQuery = useClients();
+  const disciplinesQuery = useDisciplines();
+  const subscriptionsQuery = useSubscriptions();
+  const pricesQuery = usePrices();
+  const { data: clients = [], isLoading: clientsLoading, isError: clientsError, error: clientsErr } = clientsQuery;
+  const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
+  const { data: subscriptions = [], isLoading: subsLoading, isError: subsError, error: subsErr } = subscriptionsQuery;
+  const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
   const addSubscription = useAddSubscription();
   const finishSubscription = useFinishSubscription();
 
   const isLoading = clientsLoading || disciplinesLoading || subsLoading || pricesLoading;
+  const isError = clientsError || disciplinesError || subsError || pricesError;
+  const error = clientsErr ?? disciplinesErr ?? subsErr ?? pricesErr;
   const [activeTab, setActiveTab] = useState<"sell" | "active">(initialTab);
 
   useEffect(() => {
@@ -193,6 +200,7 @@ export default function SubscriptionsPanel({
   });
 
   if (isLoading) return <LoadingState label="Загрузка абонементов..." />;
+  if (isError) return <QueryErrorState error={error} />;
 
   const subscriptionTabs = [
     { id: "active", label: "Просмотр", icon: FileCheck },

@@ -34,6 +34,8 @@ import {
   pluralizeRu,
 } from "../lib/utils";
 import { useUIStore } from "../store/ui";
+import QueryErrorState from "./ui/QueryErrorState";
+import LoadingState from "./ui/LoadingState";
 import type { ToastType } from "../App";
 import type { PersonalLesson, SubForDate } from "../types";
 
@@ -78,9 +80,19 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const selectedMonth = useUIStore((s) => s.selectedMonth);
   const setSelectedMonth = useUIStore((s) => s.setSelectedMonth);
 
-  const { dates: monthScheduleDates = [], isLoading: scheduleLoading } = useScheduleDates(selectedMonth);
-  const { data: personalLessons = [], isLoading: personalLoading } = usePersonalLessons(selectedMonth);
-  const { data: prices = [], isLoading: pricesLoading } = usePrices();
+  const {
+    dates: monthScheduleDates = [],
+    isLoading: scheduleLoading,
+    isError: scheduleError,
+    error: scheduleErr,
+  } = useScheduleDates(selectedMonth);
+  const {
+    data: personalLessons = [],
+    isLoading: personalLoading,
+    isError: personalError,
+    error: personalErr,
+  } = usePersonalLessons(selectedMonth);
+  const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = usePrices();
 
   const [selectedDate, setSelectedDate] = useState(todayDateStr);
   const [selectedLesson, setSelectedLesson] = useState<DayLessonEntry | null>(null);
@@ -152,7 +164,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     return { subscriptionIds: [] as string[] };
   }, [selectedLesson]);
 
-  const { subs: modalSubs = [], isLoading: subsLoading } = useSubsForDate(
+  const { subs: modalSubs = [], isLoading: subsLoading, isError: subsError, error: subsErr } = useSubsForDate(
     selectedLesson ? selectedDate : undefined,
     subsOptions,
     selectedMonth
@@ -161,6 +173,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const markAttendance = useMarkAttendance();
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
   const isLoading = scheduleLoading || personalLoading || pricesLoading;
+  const isError = scheduleError || personalError || pricesError;
+  const error = scheduleErr ?? personalErr ?? pricesErr;
   const canMarkAttendance = isDateMarkable(selectedDate);
 
   const calendarCells = useMemo(() => {
@@ -351,6 +365,22 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     selectedLesson?.kind === "personal"
       ? personalLessons.find((l) => l.id === selectedLesson.lesson.id) ?? selectedLesson.lesson
       : null;
+
+  if (isLoading) {
+    return (
+      <div id="panel-attendance" className="panel-page-stack">
+        <LoadingState label="Загрузка журнала посещений..." />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div id="panel-attendance" className="panel-page-stack">
+        <QueryErrorState error={error} />
+      </div>
+    );
+  }
 
   return (
     <div id="panel-attendance" className="panel-page-stack">
@@ -602,7 +632,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       </div>
                     )}
                   </div>
-                ) : subsLoading || isLoading ? (
+                ) : subsError ? (
+                  <QueryErrorState error={subsErr} />
+                ) : subsLoading ? (
                   <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
                     <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
                     <p className="text-xs">Загрузка абонементов...</p>

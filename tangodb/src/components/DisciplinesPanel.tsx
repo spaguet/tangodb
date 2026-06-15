@@ -8,6 +8,7 @@ import {
 } from "../hooks/useDisciplines";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
+import QueryErrorState from "./ui/QueryErrorState";
 import type { ToastType } from "../App";
 import type { Discipline } from "../types";
 
@@ -21,7 +22,7 @@ interface DisciplinesPanelProps {
 }
 
 export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
-  const { data: disciplines = [], isLoading } = useDisciplines();
+  const { data: disciplines = [], isLoading, isError, error } = useDisciplines();
   const updateDiscipline = useUpdateDiscipline();
   const deleteDiscipline = useDeleteDiscipline();
 
@@ -72,6 +73,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
   };
 
   if (isLoading) return <LoadingState label="Загрузка дисциплин..." />;
+  if (isError) return <QueryErrorState error={error} />;
 
   return (
     <>

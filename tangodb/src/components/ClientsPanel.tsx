@@ -10,6 +10,7 @@ import { useAddClient, useClients, useDeleteClient, useUpdateClient } from "../h
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
+import QueryErrorState from "./ui/QueryErrorState";
 import type { ToastType } from "../App";
 import type { Client } from "../types";
 
@@ -23,7 +24,7 @@ const inputCls =
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 export default function ClientsPanel({ toast }: ClientsPanelProps) {
-  const { data: clients = [], isLoading } = useClients();
+  const { data: clients = [], isLoading, isError, error } = useClients();
   const addClient = useAddClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
@@ -108,6 +109,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   };
 
   if (isLoading) return <LoadingState label="Загрузка клиентов..." />;
+  if (isError) return <QueryErrorState error={error} />;
 
   const filteredClients = clients.filter(
     (c) =>

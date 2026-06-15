@@ -39,6 +39,7 @@ import ConfirmDialog from "./ui/ConfirmDialog";
 import SellPackageModal from "./ui/SellPackageModal";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
+import QueryErrorState from "./ui/QueryErrorState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import type { ToastType } from "../App";
 import type { Client, PersonalLesson, Subscription } from "../types";
@@ -74,11 +75,16 @@ export default function PersonalLessonsPanel({
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
   const normalizedInitialTab = initialTab === "book" ? "sell" : initialTab;
 
-  const { data: clients = [], isLoading: clientsLoading } = useClients();
-  const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
-  const { data: personalLessons = [], isLoading: lessonsLoading } = usePersonalLessons();
-  const { data: schedule = [], isLoading: scheduleLoading } = useSchedule();
-  const { data: prices = [], isLoading: pricesLoading } = usePrices();
+  const clientsQuery = useClients();
+  const disciplinesQuery = useDisciplines();
+  const personalLessonsQuery = usePersonalLessons();
+  const scheduleQuery = useSchedule();
+  const pricesQuery = usePrices();
+  const { data: clients = [], isLoading: clientsLoading, isError: clientsError, error: clientsErr } = clientsQuery;
+  const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
+  const { data: personalLessons = [], isLoading: lessonsLoading, isError: lessonsError, error: lessonsErr } = personalLessonsQuery;
+  const { data: schedule = [], isLoading: scheduleLoading, isError: scheduleError, error: scheduleErr } = scheduleQuery;
+  const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
   const { data: subscriptions = [] } = useSubscriptions();
   const addPersonalLessons = useAddPersonalLessons();
   const updatePersonalPaid = useUpdatePersonalPaid();
@@ -86,6 +92,8 @@ export default function PersonalLessonsPanel({
   const deletePersonalLesson = useDeletePersonalLesson();
 
   const isLoading = clientsLoading || disciplinesLoading || lessonsLoading || scheduleLoading || pricesLoading;
+  const isError = clientsError || disciplinesError || lessonsError || scheduleError || pricesError;
+  const error = clientsErr ?? disciplinesErr ?? lessonsErr ?? scheduleErr ?? pricesErr;
 
   const [activeTab, setActiveTab] = useState<"view" | "sell">(normalizedInitialTab);
   const [packageModalOpen, setPackageModalOpen] = useState(false);
@@ -460,6 +468,7 @@ export default function PersonalLessonsPanel({
   const hasUnpaidInView = filteredLessons.some((l) => l.paid === "no");
 
   if (isLoading) return <LoadingState label="Загрузка персональных уроков..." />;
+  if (isError) return <QueryErrorState error={error} />;
 
   const personalTabs = [
     { id: "view", label: "Просмотр", icon: FolderClosed },

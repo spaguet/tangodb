@@ -131,6 +131,8 @@ export function useScheduleDates(yearMonth?: string) {
     dates,
     getScheduleDatesForMonth,
     isLoading: scheduleQuery.isLoading,
+    isError: scheduleQuery.isError,
+    error: scheduleQuery.error,
   };
 }
 
@@ -173,6 +175,8 @@ export function useSubsForDate(
     subs,
     getSubsForDate,
     isLoading: subscriptionsQuery.isLoading || clientsQuery.isLoading || attendanceQuery.isLoading,
+    isError: subscriptionsQuery.isError || clientsQuery.isError || attendanceQuery.isError,
+    error: subscriptionsQuery.error ?? clientsQuery.error ?? attendanceQuery.error,
   };
 }
 

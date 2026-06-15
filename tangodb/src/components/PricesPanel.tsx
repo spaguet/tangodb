@@ -18,6 +18,7 @@ import {
 } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
+import QueryErrorState from "./ui/QueryErrorState";
 import type { ToastType } from "../App";
 import type { Price } from "../types";
 
@@ -78,7 +79,7 @@ function TariffCreateSection({
 }
 
 export default function PricesPanel({ toast }: PricesPanelProps) {
-  const { data: prices = [], isLoading } = usePrices();
+  const { data: prices = [], isLoading, isError, error } = usePrices();
   const updatePrice = useUpdatePrice();
   const updatePriceMeta = useUpdatePriceMeta();
   const deletePrice = useDeletePrice();
@@ -268,6 +269,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const activeCreateTabMeta = CREATE_TABS.find((tab) => tab.id === activeCreateTab)!;
 
   if (isLoading) return <LoadingState label="Загрузка прайс-листа..." />;
+  if (isError) return <QueryErrorState error={error} />;
 
   const renderPriceRow = (item: { priceObj: Price }) => {
     const p = item.priceObj;
