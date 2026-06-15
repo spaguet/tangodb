@@ -186,8 +186,9 @@ export default function SubscriptionsPanel({
   const filteredActiveRecords = activeRecords.filter((sub) => {
     const c1 = clientMap[sub.clientId1];
     const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
+    const c3 = sub.clientId3 ? clientMap[sub.clientId3] : null;
 
-    const queryStr = `${c1?.firstName || ""} ${c1?.lastName || ""} ${c2?.firstName || ""} ${c2?.lastName || ""}`.toLowerCase();
+    const queryStr = `${c1?.firstName || ""} ${c1?.lastName || ""} ${c2?.firstName || ""} ${c2?.lastName || ""} ${c3?.firstName || ""} ${c3?.lastName || ""}`.toLowerCase();
     return queryStr.includes(search.toLowerCase());
   });
 
@@ -249,10 +250,12 @@ export default function SubscriptionsPanel({
               filteredActiveRecords.map((sub) => {
                 const c1 = clientMap[sub.clientId1];
                 const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
+                const c3 = sub.clientId3 ? clientMap[sub.clientId3] : null;
 
-                const clientNameStr = c2
-                  ? `${c1?.lastName || ""} ${c1?.firstName || ""} & ${c2?.lastName || ""} ${c2?.firstName || ""}`
-                  : `${c1?.lastName || ""} ${c1?.firstName || ""}`;
+                const clientNameStr = [c1, c2, c3]
+                  .filter(Boolean)
+                  .map((c) => `${c!.lastName || ""} ${c!.firstName || ""}`.trim())
+                  .join(" & ");
 
                 const progressPct = sub.lessonsTotal > 0 ? (sub.lessonsLeft / sub.lessonsTotal) * 100 : 0;
                 const isAlarm = sub.lessonsLeft <= 2;
@@ -335,6 +338,21 @@ export default function SubscriptionsPanel({
                           >
                             <Send className="w-3 h-3" />
                             {c2.firstName}
+                          </a>
+                        )}
+                        {c3?.telegram && normalizeTelegramContact(c3.telegram) && (
+                          <a
+                            href={normalizeTelegramContact(c3.telegram)!}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              openTelegramContact(c3.telegram);
+                            }}
+                            className="inline-flex items-center gap-1 text-[11px] font-sans text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
+                          >
+                            <Send className="w-3 h-3" />
+                            {c3.firstName}
                           </a>
                         )}
                       </div>

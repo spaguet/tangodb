@@ -82,8 +82,10 @@ export interface ActiveSubscription {
   pairMonth: string;
   client1: string;
   client2: string;
+  client3: string;
   client1tg: string;
   client2tg: string;
+  client3tg: string;
   lessonsTotal: number;
   lessonsLeft: number;
   freezeUsed: number;
@@ -96,6 +98,7 @@ export interface SubForDate {
   pairMonth: string;
   client1: string;
   client2: string;
+  client3: string;
   lessonsLeft: number;
   lessonsTotal: number;
   freezeUsed: number;

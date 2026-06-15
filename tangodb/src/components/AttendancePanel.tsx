@@ -266,7 +266,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const renderAttendanceRow = (st: SubForDate, showFreeze: boolean) => {
     const hasLowCredits = st.lessonsLeft <= 2;
-    const fullname = st.client2 ? `${st.client1} & ${st.client2}` : st.client1;
+    const fullname = [st.client1, st.client2, st.client3].filter(Boolean).join(" & ");
     const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
     const tariffLabel = getSubscriptionTariffLabel(st, prices);
 

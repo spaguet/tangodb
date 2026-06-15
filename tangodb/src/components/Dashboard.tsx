@@ -5,7 +5,7 @@
 
 import { motion } from "motion/react";
 import { Users, Ticket, Calendar, AlertCircle, Send, BarChart3 } from "lucide-react";
-import { formatClientName, formatCurrency, formatPairName, dowFull, jsDayToIsoDow, currentYearMonth, isDateInYearMonth, getSubscriptionPrice } from "../lib/utils";
+import { formatClientName, formatCurrency, dowFull, jsDayToIsoDow, currentYearMonth, isDateInYearMonth, getSubscriptionPrice } from "../lib/utils";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { computeScheduleDatesForMonth } from "../hooks/useAttendance";
 import DisciplinesPanel from "./DisciplinesPanel";
@@ -200,7 +200,13 @@ export default function Dashboard({
                 {warningSubs.map((sub, i) => {
                   const c1 = clientMap[sub.clientId1];
                   const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
-                  const tgUrl = c1?.telegram ? normalizeTelegramContact(c1.telegram) : null;
+                  const c3 = sub.clientId3 ? clientMap[sub.clientId3] : null;
+                  const clientLabel = c1
+                    ? [c1, c2, c3]
+                        .filter(Boolean)
+                        .map((c) => formatClientName(c!.lastName, c!.firstName))
+                        .join(" & ")
+                    : sub.clientId1;
 
                   return (
                     <div
@@ -209,33 +215,37 @@ export default function Dashboard({
                     >
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-sans font-semibold text-slate-800 text-xs min-w-0 truncate">
-                          {c1
-                            ? c2
-                              ? formatPairName(c1.lastName, c1.firstName, c2.lastName, c2.firstName)
-                              : formatClientName(c1.lastName, c1.firstName)
-                            : sub.clientId1}
+                          {clientLabel}
                         </p>
-                        {tgUrl && c1 ? (
-                          <a
-                            href={tgUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              openTelegramContact(c1.telegram);
-                            }}
-                            className="inline-flex items-center justify-center p-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md transition-colors shrink-0"
-                            title="Написать в Telegram"
-                            aria-label="Написать в Telegram"
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                          </a>
-                        ) : null}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {[c1, c2, c3].map((c) => {
+                            if (!c?.telegram) return null;
+                            const tgUrl = normalizeTelegramContact(c.telegram);
+                            if (!tgUrl) return null;
+                            return (
+                              <a
+                                key={c.id}
+                                href={tgUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  openTelegramContact(c.telegram);
+                                }}
+                                className="inline-flex items-center justify-center p-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md transition-colors"
+                                title={`Написать ${c.firstName} в Telegram`}
+                                aria-label={`Написать ${c.firstName} в Telegram`}
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                              </a>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[9px] font-sans uppercase bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold shrink-0">
-                          {sub.type === "solo" ? "Соло" : "Парный"}
+                          {sub.type === "solo" ? "Соло" : sub.type === "trio" ? "Трио" : "Парный"}
                         </span>
                         <span className="text-[10px] text-slate-400 font-sans shrink-0">
                           активирован {sub.activationDate}

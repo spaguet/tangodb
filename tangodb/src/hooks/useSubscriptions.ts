@@ -53,6 +53,7 @@ export function useActiveSubscriptions() {
       .map((s) => {
         const c1 = clientMap[s.clientId1];
         const c2 = s.clientId2 ? clientMap[s.clientId2] : null;
+        const c3 = s.clientId3 ? clientMap[s.clientId3] : null;
 
         return {
           subId: s.id,
@@ -60,8 +61,10 @@ export function useActiveSubscriptions() {
           pairMonth: s.pairMonth,
           client1: c1 ? formatClientName(c1.lastName, c1.firstName) : s.clientId1,
           client2: c2 ? formatClientName(c2.lastName, c2.firstName) : "",
+          client3: c3 ? formatClientName(c3.lastName, c3.firstName) : "",
           client1tg: c1?.telegram || "",
           client2tg: c2?.telegram || "",
+          client3tg: c3?.telegram || "",
           lessonsTotal: s.lessonsTotal,
           lessonsLeft: s.lessonsLeft,
           freezeUsed: s.freezeUsed,
