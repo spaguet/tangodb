@@ -37,6 +37,24 @@ function shiftMonth(yearMonth: string, delta: number): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function todayDateStr(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+type TodayScheduleEntry =
+  | { kind: "group"; start: string; slot: ScheduleSlot; key: string }
+  | { kind: "personal"; start: string; lesson: PersonalLesson; key: string };
+
+function personalTypeLabel(type: string): string {
+  if (type === "solo") return "Соло";
+  if (type === "trio") return "Трио";
+  return "Парный";
+}
+
 export default function Dashboard({
   clients,
   subscriptions,
@@ -75,7 +93,28 @@ export default function Dashboard({
   const pendingPaymentColor = hasPendingPayment ? "text-rose-600" : "text-slate-400";
 
   const todayIsoDow = jsDayToIsoDow(new Date().getDay());
+  const todayDate = todayDateStr();
   const todaySlots = schedule.filter((s) => s.dayOfWeek === todayIsoDow);
+
+  const todayScheduleEntries = useMemo((): TodayScheduleEntry[] => {
+    const entries: TodayScheduleEntry[] = [
+      ...todaySlots.map((slot, index) => ({
+        kind: "group" as const,
+        start: slot.time,
+        slot,
+        key: `g-${index}-${slot.time}`,
+      })),
+      ...personalLessons
+        .filter((l) => l.date === todayDate)
+        .map((lesson) => ({
+          kind: "personal" as const,
+          start: lesson.timeStart,
+          lesson,
+          key: `p-${lesson.id}`,
+        })),
+    ];
+    return entries.sort((a, b) => a.start.localeCompare(b.start));
+  }, [todaySlots, personalLessons, todayDate]);
 
   const [statsMonth, setStatsMonth] = useState(currentYearMonth);
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
@@ -204,31 +243,62 @@ export default function Dashboard({
           </div>
 
           <div className="space-y-1.5 pt-0.5">
-            {todaySlots.length === 0 ? (
+            {todayScheduleEntries.length === 0 ? (
               <div className="text-center py-4">
-                <p className="text-slate-400 text-xs font-sans">Сегодня групповых занятий нет.</p>
+                <p className="text-slate-400 text-xs font-sans">Сегодня занятий нет.</p>
               </div>
             ) : (
-              todaySlots.map((slot, index) => {
-                const disciplineName =
-                  slot.disciplineId != null ? disciplineMap[slot.disciplineId]?.name : "Групповое занятие";
+              todayScheduleEntries.map((entry) => {
+                if (entry.kind === "group") {
+                  const { slot } = entry;
+                  const disciplineName =
+                    slot.disciplineId != null ? disciplineMap[slot.disciplineId]?.name : "Групповое занятие";
 
+                  return (
+                    <div
+                      key={entry.key}
+                      className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 font-sans"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-slate-800 truncate">{disciplineName}</p>
+                          <p className="text-[10px] text-slate-400">
+                            {slot.time} – {slot.timeEnd || "21:00"}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="font-sans text-xs bg-slate-800 text-slate-100 font-semibold px-2 py-0.5 rounded shrink-0">
+                        {slot.time}
+                      </span>
+                    </div>
+                  );
+                }
+
+                const { lesson } = entry;
                 return (
                   <div
-                    key={index}
-                    className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 font-sans"
+                    key={entry.key}
+                    className="flex items-center justify-between p-2 bg-violet-50/60 rounded-lg border border-violet-100 font-sans cursor-pointer hover:bg-violet-50 transition-colors"
+                    onClick={() => onNavigate("personalView")}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") onNavigate("personalView");
+                    }}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shrink-0" />
+                      <div className="w-1.5 h-1.5 bg-violet-500 rounded-full shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-slate-800 truncate">{disciplineName}</p>
+                        <p className="text-xs font-semibold text-slate-800 truncate">{lesson.clientDisplay}</p>
                         <p className="text-[10px] text-slate-400">
-                          {slot.time} – {slot.timeEnd || "21:00"}
+                          Персональный · {personalTypeLabel(lesson.type)}
+                          {lesson.paid === "no" ? " · не оплачен" : ""}
                         </p>
                       </div>
                     </div>
-                    <span className="font-sans text-xs bg-slate-800 text-slate-100 font-semibold px-2 py-0.5 rounded shrink-0">
-                      {slot.time}
+                    <span className="font-sans text-xs bg-violet-700 text-violet-50 font-semibold px-2 py-0.5 rounded shrink-0">
+                      {lesson.timeStart}
                     </span>
                   </div>
                 );
