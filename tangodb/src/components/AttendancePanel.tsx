@@ -35,6 +35,7 @@ import {
 import { useUIStore } from "../store/ui";
 import QueryErrorState from "./ui/QueryErrorState";
 import LoadingState from "./ui/LoadingState";
+import VirtualList from "./ui/VirtualList";
 import type { ToastType } from "../App";
 import type { PersonalLesson, SubForDate } from "../types";
 
@@ -411,6 +412,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       ? personalLessons.find((l) => l.id === selectedLesson.lesson.id) ?? selectedLesson.lesson
       : null;
 
+  const isPersonalOneOffView =
+    selectedLesson?.kind === "personal" &&
+    !selectedLesson.lesson.subscriptionId &&
+    !!activePersonalLesson;
+
+  const isSubsListView =
+    !!selectedLesson && !isPersonalOneOffView && !subsError && !subsLoading && modalSubs.length > 0;
+
+  const useVirtualSubsList = isSubsListView && modalSubs.length >= 20;
+
   if (isLoading) {
     return (
       <div id="panel-attendance" className="panel-page-stack">
@@ -630,8 +641,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 </button>
               </div>
 
-              <div className="overflow-y-auto px-4 py-3 flex-1">
-                {selectedLesson.kind === "personal" && !selectedLesson.lesson.subscriptionId && activePersonalLesson ? (
+              <div
+                className={`px-4 py-3 flex-1 min-h-0 ${useVirtualSubsList ? "" : "overflow-y-auto"}`}
+              >
+                {isPersonalOneOffView ? (
                   <div className="rounded-xl border border-slate-200 p-4 space-y-3">
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-slate-800">{activePersonalLesson.clientDisplay}</p>
@@ -711,8 +724,20 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       {modalSubs.length}{" "}
                       {pluralizeRu(modalSubs.length, ["абонемент", "абонемента", "абонементов"])}
                     </p>
-                    {modalSubs.map((st) =>
-                      renderAttendanceRow(st, selectedLesson.kind === "group")
+                    {useVirtualSubsList ? (
+                      <VirtualList
+                        items={modalSubs}
+                        estimateSize={96}
+                        maxHeight="min(60vh, 480px)"
+                        getKey={(st) => st.subId}
+                        renderItem={(st) =>
+                          renderAttendanceRow(st, selectedLesson.kind === "group")
+                        }
+                      />
+                    ) : (
+                      modalSubs.map((st) =>
+                        renderAttendanceRow(st, selectedLesson.kind === "group")
+                      )
                     )}
                   </div>
                 )}

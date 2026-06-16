@@ -36,6 +36,7 @@ import SellPackageModal from "./ui/SellPackageModal";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
+import VirtualList from "./ui/VirtualList";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import type { ToastType } from "../App";
 import type { Client, PersonalLesson, Subscription } from "../types";
@@ -483,6 +484,79 @@ export default function PersonalLessonsPanel({
 
   const monthTotalSum = filteredLessons.reduce((s, l) => s + l.price, 0);
   const hasUnpaidInView = filteredLessons.some((l) => l.paid === "no");
+  const useVirtualLessonsList = filteredLessons.length >= 20;
+
+  const renderLessonCard = (l: PersonalLesson) => {
+    const isPaid = l.paid === "yes";
+    const isUpcoming = isUpcomingLesson(l.date);
+    const tariffLabel = getPersonalLessonTariffLabel(l, prices, subscriptions);
+    const amountCls = `font-sans text-xs font-semibold ${isPaid ? "text-slate-500" : "text-rose-600"}`;
+
+    return (
+      <div
+        key={l.id}
+        className={`border rounded-xl p-4 space-y-2 transition-all hover:shadow-sm ${
+          isUpcoming
+            ? "bg-emerald-50 border-emerald-200"
+            : isPaid
+              ? "bg-white border-slate-200"
+              : "bg-white border-rose-200"
+        }`}
+      >
+        <p className={`${amountCls} leading-tight`}>{tariffLabel}</p>
+
+        <div className="relative">
+          <div className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
+            <CalendarDays className="w-3 h-3 shrink-0" />
+            {formatDateLabel(l.date)} · {l.timeStart} – {l.timeEnd}
+          </div>
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => startEditLesson(l)}
+              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+              title="Редактировать"
+              aria-label="Редактировать урок"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(l)}
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+              title="Удалить"
+              aria-label="Удалить бронь"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
+
+        <div className="flex items-center justify-between gap-2">
+          <p className={amountCls}>{formatCurrency(l.price)}</p>
+          <button
+            type="button"
+            onClick={() => handleTogglePaid(l)}
+            disabled={!isOnline || updatePersonalPaid.isPending}
+            title={
+              !isOnline
+                ? "Нет соединения"
+                : isPaid
+                  ? "Нажмите, чтобы отменить оплату"
+                  : "Нажмите, чтобы подтвердить оплату"
+            }
+            className={`text-xs font-sans font-semibold shrink-0 cursor-pointer disabled:opacity-60 ${
+              isPaid ? "text-emerald-600 hover:text-emerald-700" : "text-rose-600 hover:text-rose-700"
+            }`}
+          >
+            {isPaid ? "Оплачено" : "Не оплачено"}
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   if (isLoading) return <LoadingState label="Загрузка персональных уроков..." />;
   if (isError) return <QueryErrorState error={error} />;
@@ -619,73 +693,20 @@ export default function PersonalLessonsPanel({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {filteredLessons.map((l) => {
-                    const isPaid = l.paid === "yes";
-                    const isUpcoming = isUpcomingLesson(l.date);
-                    const tariffLabel = getPersonalLessonTariffLabel(l, prices, subscriptions);
-                    const amountCls = `font-sans text-xs font-semibold ${isPaid ? "text-slate-500" : "text-rose-600"}`;
-
-                    return (
-                      <div
-                        key={l.id}
-                        className={`border rounded-xl p-4 space-y-2 transition-all hover:shadow-sm ${
-                          isUpcoming
-                            ? "bg-emerald-50 border-emerald-200"
-                            : isPaid
-                              ? "bg-white border-slate-200"
-                              : "bg-white border-rose-200"
-                        }`}
-                      >
-                        <p className={`${amountCls} leading-tight`}>{tariffLabel}</p>
-
-                        <div className="relative">
-                          <div className="inline-flex items-center gap-1 font-sans text-xs text-slate-400">
-                            <CalendarDays className="w-3 h-3 shrink-0" />
-                            {formatDateLabel(l.date)} · {l.timeStart} – {l.timeEnd}
-                          </div>
-                          <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => startEditLesson(l)}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-                              title="Редактировать"
-                              aria-label="Редактировать урок"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteTarget(l)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                              title="Удалить"
-                              aria-label="Удалить бронь"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <p className="text-sm font-semibold text-slate-800 leading-tight">{renderClientNames(l)}</p>
-
-                        <div className="flex items-center justify-between gap-2">
-                          <p className={amountCls}>{formatCurrency(l.price)}</p>
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePaid(l)}
-                            disabled={!isOnline || updatePersonalPaid.isPending}
-                            title={!isOnline ? "Нет соединения" : isPaid ? "Нажмите, чтобы отменить оплату" : "Нажмите, чтобы подтвердить оплату"}
-                            className={`text-xs font-sans font-semibold shrink-0 cursor-pointer disabled:opacity-60 ${
-                              isPaid ? "text-emerald-600 hover:text-emerald-700" : "text-rose-600 hover:text-rose-700"
-                            }`}
-                          >
-                            {isPaid ? "Оплачено" : "Не оплачено"}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                {useVirtualLessonsList ? (
+                  <VirtualList
+                    items={filteredLessons}
+                    estimateSize={120}
+                    maxHeight="min(60vh, 480px)"
+                    className="space-y-3"
+                    getKey={(l) => l.id}
+                    renderItem={(l) => renderLessonCard(l)}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {filteredLessons.map((l) => renderLessonCard(l))}
+                  </div>
+                )}
               </div>
             )}
           </div>
