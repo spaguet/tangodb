@@ -16,6 +16,8 @@ import { computeScheduleDatesForMonth } from "../hooks/useAttendance";
 import DisciplinesPanel from "./DisciplinesPanel";
 import type { ToastType } from "../App";
 import { exportAllDashboardCsv } from "../lib/exportDashboardCsv";
+import { revokeManualSaveUrl } from "../lib/exportCsv";
+import CsvExportModal from "./ui/CsvExportModal";
 import { Client, Discipline, Subscription, ScheduleSlot, PersonalLesson, Price, AttendanceRecord } from "../types";
 
 interface DashboardProps {
@@ -48,6 +50,14 @@ export default function Dashboard({
   onNavigate,
 }: DashboardProps) {
   const [exporting, setExporting] = useState(false);
+  const [manualExport, setManualExport] = useState<{ filename: string; blobUrl: string } | null>(null);
+
+  const closeManualExport = () => {
+    setManualExport((current) => {
+      revokeManualSaveUrl(current?.blobUrl);
+      return null;
+    });
+  };
   const activeSubs = subscriptions.filter((s) => s.status === "active");
   const solosCount = activeSubs.filter((s) => s.type === "solo").length;
   const pairsCount = activeSubs.filter((s) => s.type === "pair" || s.type === "pair_hm").length;
@@ -108,10 +118,11 @@ export default function Dashboard({
       });
       if (result.exported === 0) {
         toast("Нечего экспортировать", "error");
+      } else if (result.manualSave) {
+        setManualExport(result.manualSave);
+        toast("Нажмите «Сохранить файл» в окне ниже", "info");
       } else if (result.method === "share") {
         toast("Выберите «Сохранить в Файлы» или другое приложение", "success");
-      } else if (result.method === "open-tab") {
-        toast("Файл открыт — сохраните через «Поделиться» в браузере", "info");
       } else {
         toast(`Скачано файлов: ${result.exported}`, "success");
       }
@@ -410,6 +421,13 @@ export default function Dashboard({
         </div>
         </div>
       </div>
+
+      <CsvExportModal
+        open={manualExport != null}
+        filename={manualExport?.filename ?? ""}
+        blobUrl={manualExport?.blobUrl ?? ""}
+        onClose={closeManualExport}
+      />
     </div>
   );
 }

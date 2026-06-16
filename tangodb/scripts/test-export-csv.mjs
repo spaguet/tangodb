@@ -47,4 +47,9 @@ if (!source.includes("navigator.share")) {
   process.exit(1);
 }
 
+if (!source.includes("method: \"manual\"")) {
+  console.error("FAIL: export must support manual save fallback");
+  process.exit(1);
+}
+
 console.log("OK: export CSV content and download hook validated");

@@ -65,6 +65,7 @@ export interface DashboardExportResult {
   exported: number;
   skipped: string[];
   method?: CsvExportMethod;
+  manualSave?: { filename: string; blobUrl: string };
 }
 
 /** Export all CRM datasets as separate CSV files (sequential downloads). */
@@ -206,7 +207,7 @@ export async function exportAllDashboardCsv(params: DashboardExportParams): Prom
     return { exported: 0, skipped };
   }
 
-  const { count, method } = await exportCsvItems(
+  const { count, method, manualSave } = await exportCsvItems(
     exports.map((item) => ({
       rows: item.rows,
       filename: item.filename,
@@ -215,5 +216,5 @@ export async function exportAllDashboardCsv(params: DashboardExportParams): Prom
     `tangodb_${dateStr}.csv`
   );
 
-  return { exported: count, skipped, method };
+  return { exported: count, skipped, method, manualSave };
 }
