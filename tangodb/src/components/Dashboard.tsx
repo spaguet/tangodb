@@ -95,6 +95,7 @@ export default function Dashboard({
   const todayIsoDow = jsDayToIsoDow(new Date().getDay());
   const todayDate = todayDateStr();
   const todaySlots = schedule.filter((s) => s.dayOfWeek === todayIsoDow);
+  const openAttendanceJournal = () => onNavigate("attendance");
 
   const todayScheduleEntries = useMemo((): TodayScheduleEntry[] => {
     const entries: TodayScheduleEntry[] = [
@@ -257,7 +258,13 @@ export default function Dashboard({
                   return (
                     <div
                       key={entry.key}
-                      className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 font-sans"
+                      className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 font-sans cursor-pointer hover:bg-slate-100/80 transition-colors"
+                      onClick={openAttendanceJournal}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") openAttendanceJournal();
+                      }}
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shrink-0" />
@@ -280,11 +287,11 @@ export default function Dashboard({
                   <div
                     key={entry.key}
                     className="flex items-center justify-between p-2 bg-violet-50/60 rounded-lg border border-violet-100 font-sans cursor-pointer hover:bg-violet-50 transition-colors"
-                    onClick={() => onNavigate("personalView")}
+                    onClick={openAttendanceJournal}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") onNavigate("personalView");
+                      if (e.key === "Enter" || e.key === " ") openAttendanceJournal();
                     }}
                   >
                     <div className="flex items-center gap-2 min-w-0">
