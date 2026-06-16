@@ -42,4 +42,9 @@ if (!source.includes("document.body.appendChild(link)")) {
   process.exit(1);
 }
 
+if (!source.includes("navigator.share")) {
+  console.error("FAIL: mobile export must use Web Share API");
+  process.exit(1);
+}
+
 console.log("OK: export CSV content and download hook validated");

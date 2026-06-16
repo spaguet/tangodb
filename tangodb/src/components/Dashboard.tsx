@@ -108,8 +108,18 @@ export default function Dashboard({
       });
       if (result.exported === 0) {
         toast("Нечего экспортировать", "error");
+      } else if (result.method === "share") {
+        toast("Выберите «Сохранить в Файлы» или другое приложение", "success");
+      } else if (result.method === "open-tab") {
+        toast("Файл открыт — сохраните через «Поделиться» в браузере", "info");
       } else {
         toast(`Скачано файлов: ${result.exported}`, "success");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        toast("Экспорт отменён", "info");
+      } else {
+        toast("Не удалось экспортировать данные", "error");
       }
     } finally {
       setExporting(false);

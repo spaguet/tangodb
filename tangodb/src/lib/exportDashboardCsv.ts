@@ -1,6 +1,7 @@
 import type { AttendanceRecord, Client, PersonalLesson, Subscription } from "../types";
 import { formatClientName } from "./utils";
-import { delay, downloadCsv } from "./exportCsv";
+import { exportCsvItems } from "./exportCsv";
+import type { CsvExportMethod } from "./exportCsv";
 
 const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
   present: "Пришёл",
@@ -63,6 +64,7 @@ export interface DashboardExportParams {
 export interface DashboardExportResult {
   exported: number;
   skipped: string[];
+  method?: CsvExportMethod;
 }
 
 /** Export all CRM datasets as separate CSV files (sequential downloads). */
@@ -70,7 +72,6 @@ export async function exportAllDashboardCsv(params: DashboardExportParams): Prom
   const dateStr = todayDateStr();
   const { statsMonth } = params;
   const skipped: string[] = [];
-  let exported = 0;
 
   const clientMap = Object.fromEntries(params.clients.map((c) => [c.id, c])) as Record<string, Client>;
   const activeClients = params.clients.filter((c) => !c.archivedAt);
@@ -201,13 +202,18 @@ export async function exportAllDashboardCsv(params: DashboardExportParams): Prom
     skipped.push(`персональные уроки за ${statsMonth}`);
   }
 
-  for (const item of exports) {
-    downloadCsv(item.rows, item.filename, item.labels);
-    exported += 1;
-    if (exports.indexOf(item) < exports.length - 1) {
-      await delay(350);
-    }
+  if (exports.length === 0) {
+    return { exported: 0, skipped };
   }
 
-  return { exported, skipped };
+  const { count, method } = await exportCsvItems(
+    exports.map((item) => ({
+      rows: item.rows,
+      filename: item.filename,
+      columnLabels: item.labels,
+    })),
+    `tangodb_${dateStr}.csv`
+  );
+
+  return { exported: count, skipped, method };
 }
