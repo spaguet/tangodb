@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, CalendarDays, ChevronLeft, ChevronRight, Ticket, Edit, X } from "lucide-react";
+import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, CalendarDays, ChevronLeft, ChevronRight, Ticket, Edit, X, Download } from "lucide-react";
+import { downloadCsv } from "../lib/exportCsv";
 import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
@@ -482,6 +483,36 @@ export default function PersonalLessonsPanel({
     })
     .sort((a, b) => b.date.localeCompare(a.date) || b.timeStart.localeCompare(a.timeStart));
 
+  const handleExportCsv = () => {
+    const exportLessons = personalLessons
+      .filter((l) => lessonYearMonth(l.date) === viewMonth)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.timeStart.localeCompare(a.timeStart));
+
+    if (exportLessons.length === 0) {
+      toast("Нечего экспортировать", "error");
+      return;
+    }
+
+    downloadCsv(
+      exportLessons.map((l) => ({
+        date: l.date,
+        time: `${l.timeStart} – ${l.timeEnd}`,
+        clients: renderClientNames(l),
+        paid: l.paid === "yes" ? "Да" : "Нет",
+        price: l.price,
+      })),
+      `personal_lessons_${viewMonth}.csv`,
+      {
+        date: "Дата",
+        time: "Время",
+        clients: "Клиенты",
+        paid: "Оплачено",
+        price: "Сумма",
+      }
+    );
+    toast("Файл скачан", "success");
+  };
+
   const monthTotalSum = filteredLessons.reduce((s, l) => s + l.price, 0);
   const hasUnpaidInView = filteredLessons.some((l) => l.paid === "no");
   const useVirtualLessonsList = filteredLessons.length >= 20;
@@ -574,7 +605,7 @@ export default function PersonalLessonsPanel({
         /* SCREEN 1: BROWSE PRIVATE SESSIONS */
         <div className="panel-page-stack">
           <div className="bg-white rounded-b-xl rounded-tr-xl border border-slate-200 border-t-0 shadow-xs overflow-hidden -mt-px">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200/70 bg-slate-50/50">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200/70 bg-slate-50/50 gap-2">
               <button
                 type="button"
                 onClick={() => setViewMonth((m) => shiftMonth(m, -1))}
@@ -583,7 +614,7 @@ export default function PersonalLessonsPanel({
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <div className="flex flex-col items-center gap-0.5">
+              <div className="flex flex-col items-center gap-0.5 min-w-0">
                 <span className="text-sm font-semibold text-slate-800">{formatMonthTitleRu(viewMonth)}</span>
                 {!isViewingCurrentMonth && (
                   <button
@@ -595,14 +626,24 @@ export default function PersonalLessonsPanel({
                   </button>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setViewMonth((m) => shiftMonth(m, 1))}
-                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                aria-label="Следующий месяц"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleExportCsv}
+                  className="py-1.5 px-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Экспорт CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMonth((m) => shiftMonth(m, 1))}
+                  className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                  aria-label="Следующий месяц"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/70">
               <div className="px-4 py-2.5">
