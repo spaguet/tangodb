@@ -349,7 +349,7 @@ export default function SubscriptionsPanel({
                             <p className="text-[11px] font-sans font-semibold text-indigo-700 leading-snug">
                               {tariffLabel}
                             </p>
-                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
                               {sub.category === "private" ? (
                                 <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100">
                                   персональный
@@ -358,27 +358,27 @@ export default function SubscriptionsPanel({
                                 <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-slate-500">
                                   {disciplineName}
                                 </span>
-                              ) : (
-                                <span />
-                              )}
-
-                              {sub.lessonsTotal === 8 ? (
-                                sub.freezeUsed > 0 ? (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                                    <Snowflake className="w-3 h-3" /> заморозка использована
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
-                                    <Snowflake className="w-3 h-3" /> заморозка доступна
-                                  </span>
-                                )
                               ) : null}
                             </div>
                           </div>
 
-                          <p className="text-[11px] text-slate-400 font-sans">
-                            Активирован: {sub.activationDate || "—"}
-                          </p>
+                          <div className="space-y-1.5">
+                            <p className="text-[11px] text-slate-400 font-sans">
+                              Активирован: {sub.activationDate || "—"}
+                            </p>
+
+                            {sub.lessonsTotal === 8 ? (
+                              sub.freezeUsed > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                                  <Snowflake className="w-3 h-3" /> заморозка использована
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
+                                  <Snowflake className="w-3 h-3" /> заморозка доступна
+                                </span>
+                              )
+                            ) : null}
+                          </div>
 
                           <div className="flex gap-2 flex-wrap">
                             {c1?.telegram && normalizeTelegramContact(c1.telegram) && (
