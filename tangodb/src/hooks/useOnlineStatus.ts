@@ -9,19 +9,40 @@ const CONSECUTIVE_FAILURES_THRESHOLD = 2;
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
 
+function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<Response> {
+  if (typeof AbortSignal !== "undefined" && "timeout" in AbortSignal) {
+    return fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
+
 async function checkSupabaseReachable(): Promise<boolean> {
   if (!supabaseUrl || !supabaseAnonKey) return true;
 
   try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/`, {
-      method: "HEAD",
-      headers: {
-        apikey: supabaseAnonKey,
-        Authorization: `Bearer ${supabaseAnonKey}`,
+    const response = await fetchWithTimeout(
+      `${supabaseUrl}/rest/v1/clients?select=id&limit=0`,
+      {
+        method: "HEAD",
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+          Prefer: "count=none",
+        },
       },
-      signal: AbortSignal.timeout(HEALTH_CHECK_TIMEOUT_MS),
-    });
-    return response.ok;
+      HEALTH_CHECK_TIMEOUT_MS
+    );
+    // 401/403 still mean the server responded; only 5xx or network errors are "down".
+    return response.status > 0 && response.status < 500;
   } catch {
     return false;
   }
