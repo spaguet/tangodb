@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, UserPlus, FileText, Send, Edit, Trash2, X, Download, Users, Archive, RotateCcw } from "lucide-react";
+import { Search, UserPlus, FileText, Send, Edit, Trash2, X, Users, Archive, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   useAddClient,
@@ -19,7 +19,6 @@ import {
   getMutationBlockedMessage,
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
-import { downloadCsv } from "../lib/exportCsv";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
@@ -210,64 +209,6 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       c.lastName.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleExportCsv = () => {
-    if (filteredClients.length === 0) {
-      toast("Нечего экспортировать", "error");
-      return;
-    }
-
-    const today = new Date();
-    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-    downloadCsv(
-      filteredClients.map((c) => ({
-        id: c.id,
-        lastName: c.lastName,
-        firstName: c.firstName,
-        telegram: c.telegram,
-        createdAt: c.createdAt ?? "",
-      })),
-      `clients_${dateStr}.csv`,
-      {
-        id: "ID",
-        lastName: "Фамилия",
-        firstName: "Имя",
-        telegram: "Telegram",
-        createdAt: "Дата создания",
-      }
-    );
-    toast("Файл скачан", "success");
-  };
-
-  const handleExportArchiveCsv = () => {
-    if (filteredArchivedClients.length === 0) {
-      toast("Нечего экспортировать", "error");
-      return;
-    }
-
-    const today = new Date();
-    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-    downloadCsv(
-      filteredArchivedClients.map((c) => ({
-        id: c.id,
-        lastName: c.lastName,
-        firstName: c.firstName,
-        telegram: c.telegram,
-        archivedAt: c.archivedAt ? formatArchivedAt(c.archivedAt) : "",
-      })),
-      `clients_archive_${dateStr}.csv`,
-      {
-        id: "ID",
-        lastName: "Фамилия",
-        firstName: "Имя",
-        telegram: "Telegram",
-        archivedAt: "Дата архивации",
-      }
-    );
-    toast("Файл скачан", "success");
-  };
-
   return (
     <div id="panel-newClient" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
       {/* Sidebar form: Add Guest */}
@@ -366,14 +307,6 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                   className={`${inputCls} pl-10 text-xs`}
                 />
               </div>
-              <button
-                type="button"
-                onClick={activeTab === "active" ? handleExportCsv : handleExportArchiveCsv}
-                className="shrink-0 py-2.5 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Экспорт CSV
-              </button>
             </div>
           </div>
 

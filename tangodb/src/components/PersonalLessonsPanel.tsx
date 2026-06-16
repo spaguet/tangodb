@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, CalendarDays, ChevronLeft, ChevronRight, Ticket, Edit, X, Download } from "lucide-react";
-import { downloadCsv } from "../lib/exportCsv";
+import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, CalendarDays, ChevronLeft, ChevronRight, Ticket, Edit, X } from "lucide-react";
 import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
@@ -485,36 +484,6 @@ export default function PersonalLessonsPanel({
     })
     .sort((a, b) => b.date.localeCompare(a.date) || b.timeStart.localeCompare(a.timeStart));
 
-  const handleExportCsv = () => {
-    const exportLessons = personalLessons
-      .filter((l) => lessonYearMonth(l.date) === viewMonth)
-      .sort((a, b) => b.date.localeCompare(a.date) || b.timeStart.localeCompare(a.timeStart));
-
-    if (exportLessons.length === 0) {
-      toast("Нечего экспортировать", "error");
-      return;
-    }
-
-    downloadCsv(
-      exportLessons.map((l) => ({
-        date: l.date,
-        time: `${l.timeStart} – ${l.timeEnd}`,
-        clients: renderClientNames(l),
-        paid: l.paid === "yes" ? "Да" : "Нет",
-        price: l.price,
-      })),
-      `personal_lessons_${viewMonth}.csv`,
-      {
-        date: "Дата",
-        time: "Время",
-        clients: "Клиенты",
-        paid: "Оплачено",
-        price: "Сумма",
-      }
-    );
-    toast("Файл скачан", "success");
-  };
-
   const monthTotalSum = filteredLessons.reduce((s, l) => s + l.price, 0);
   const hasUnpaidInView = filteredLessons.some((l) => l.paid === "no");
   const useVirtualLessonsList = filteredLessons.length >= 20;
@@ -628,14 +597,6 @@ export default function PersonalLessonsPanel({
                 )}
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleExportCsv}
-                  className="py-1.5 px-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Экспорт CSV
-                </button>
                 <button
                   type="button"
                   onClick={() => setViewMonth((m) => shiftMonth(m, 1))}

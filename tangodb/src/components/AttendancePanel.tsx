@@ -10,16 +10,13 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  Download,
 } from "lucide-react";
 import {
   attendanceQueryKey,
-  useAttendanceRecords,
   useMarkAttendance,
   useScheduleDates,
   useSubsForDate,
 } from "../hooks/useAttendance";
-import { downloadCsv } from "../lib/exportCsv";
 import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
 import {
   getConnectionBlockReason,
@@ -98,7 +95,6 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     error: personalErr,
   } = usePersonalLessons(selectedMonth);
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = usePrices();
-  const { data: attendanceRecords = [] } = useAttendanceRecords(selectedMonth);
 
   const [selectedDate, setSelectedDate] = useState(todayDateStr);
   const [selectedLesson, setSelectedLesson] = useState<DayLessonEntry | null>(null);
@@ -292,36 +288,6 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     toast("Списки посещений обновлены", "info");
   };
 
-  const attendanceStatusLabels: Record<string, string> = {
-    present: "Пришёл",
-    absent: "Не пришёл",
-    freeze: "Заморозка",
-  };
-
-  const handleExportCsv = () => {
-    if (attendanceRecords.length === 0) {
-      toast("Нечего экспортировать", "error");
-      return;
-    }
-
-    downloadCsv(
-      attendanceRecords.map((record) => ({
-        date: record.date,
-        subscriptionId: record.subscriptionId,
-        clientDisplay: record.clientDisplay,
-        status: attendanceStatusLabels[record.attendanceStatus] ?? record.attendanceStatus,
-      })),
-      `attendance_${selectedMonth}.csv`,
-      {
-        date: "Дата",
-        subscriptionId: "ID абонемента",
-        clientDisplay: "Клиенты",
-        status: "Статус",
-      }
-    );
-    toast("Файл скачан", "success");
-  };
-
   const renderAttendanceRow = (st: SubForDate, showFreeze: boolean) => {
     const hasLowCredits = st.lessonsLeft <= 2;
     const fullname = [st.client1, st.client2, st.client3].filter(Boolean).join(" & ");
@@ -469,24 +435,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-sm font-semibold text-slate-800">{formatMonthTitleRu(selectedMonth)}</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleExportCsv}
-                className="py-1.5 px-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Экспорт CSV
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMonthNav(1)}
-                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                aria-label="Следующий месяц"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => handleMonthNav(1)}
+              className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              aria-label="Следующий месяц"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
 
           <div className="grid grid-cols-7 bg-slate-50/50">

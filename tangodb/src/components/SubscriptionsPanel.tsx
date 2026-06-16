@@ -5,8 +5,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Ticket, FileCheck, Search, Send, Snowflake, Download } from "lucide-react";
-import { downloadCsv } from "../lib/exportCsv";
+import { Ticket, FileCheck, Search, Send, Snowflake } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
@@ -210,46 +209,6 @@ export default function SubscriptionsPanel({
     [disciplines]
   );
 
-  const clientNameForExport = (id: string): string => {
-    const c = clientMap[id];
-    return c ? formatClientName(c.lastName, c.firstName) : id;
-  };
-
-  const handleExportCsv = () => {
-    if (activeRecords.length === 0) {
-      toast("Нечего экспортировать", "error");
-      return;
-    }
-
-    const today = new Date();
-    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-    downloadCsv(
-      activeRecords.map((sub) => ({
-        id: sub.id,
-        type: sub.type,
-        client1: clientNameForExport(sub.clientId1),
-        client2: sub.clientId2 ? clientNameForExport(sub.clientId2) : "",
-        client3: sub.clientId3 ? clientNameForExport(sub.clientId3) : "",
-        lessonsLeft: sub.lessonsLeft,
-        status: sub.status === "active" ? "Активен" : "Завершён",
-        activationDate: sub.activationDate ?? "",
-      })),
-      `subscriptions_${dateStr}.csv`,
-      {
-        id: "ID",
-        type: "Тип",
-        client1: "Клиент 1",
-        client2: "Клиент 2",
-        client3: "Клиент 3",
-        lessonsLeft: "Уроков осталось",
-        status: "Статус",
-        activationDate: "Дата активации",
-      }
-    );
-    toast("Файл скачан", "success");
-  };
-
   const filteredActiveRecords = activeRecords.filter((sub) => {
     const c1 = clientMap[sub.clientId1];
     const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
@@ -295,14 +254,6 @@ export default function SubscriptionsPanel({
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg text-xs transition-all"
                 />
               </div>
-              <button
-                type="button"
-                onClick={handleExportCsv}
-                className="shrink-0 py-2.5 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Экспорт CSV
-              </button>
             </div>
           </div>
 
