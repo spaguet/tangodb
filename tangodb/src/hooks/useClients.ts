@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { reportClientError } from "../lib/reportClientError";
 import { supabase } from "../lib/supabase";
 import { normalizeTelegramForStorage } from "../lib/telegram";
 import type { Client } from "../types";
@@ -85,6 +86,9 @@ export function useAddClient() {
     onSuccess: (result) => {
       if (result.success) void queryClient.invalidateQueries({ queryKey: clientsQueryKey });
     },
+    onError: (error) => {
+      reportClientError(error, { area: "mutation", action: "useAddClient" });
+    },
   });
 }
 
@@ -135,6 +139,9 @@ export function useArchiveClient() {
     },
     onSuccess: (result) => {
       if (result.success) void queryClient.invalidateQueries({ queryKey: clientsQueryKey });
+    },
+    onError: (error) => {
+      reportClientError(error, { area: "mutation", action: "useArchiveClient" });
     },
   });
 }

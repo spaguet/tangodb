@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
+import { reportClientError } from "../lib/reportClientError";
 import { formatClientName, jsDayToIsoDow } from "../lib/utils";
 import type { AttendanceRecord, Client, ScheduleSlot, SubForDate, Subscription } from "../types";
 import { useClientDirectory } from "./useClients";
@@ -321,7 +322,8 @@ export function useMarkAttendance() {
 
       return { previousAttendanceEntries, previousSubscriptions };
     },
-    onError: (_err, _vars, context) => {
+    onError: (error, _vars, context) => {
+      reportClientError(error, { area: "mutation", action: "useMarkAttendance" });
       if (context?.previousAttendanceEntries) {
         for (const [key, data] of context.previousAttendanceEntries) {
           queryClient.setQueryData(key, data);
