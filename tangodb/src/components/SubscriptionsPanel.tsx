@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Ticket, FileCheck, Search, Send, Snowflake } from "lucide-react";
+import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
@@ -76,6 +76,7 @@ export default function SubscriptionsPanel({
   };
 
   const [search, setSearch] = useState("");
+  const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
 
   // Sale form states
   const groupTariffs = getGroupTariffs(prices);
@@ -294,132 +295,162 @@ export default function SubscriptionsPanel({
 
                 const tariffLabel = getSubscriptionTariffLabel(sub, prices);
 
+                const isExpanded = expandedSubId === sub.id;
+
                 return (
                   <div
                     key={sub.id}
-                    className="border border-slate-200 rounded-xl p-5 bg-white hover:border-indigo-200 hover:shadow-sm transition-all flex flex-col justify-between gap-5"
+                    className={`border rounded-xl bg-white transition-all ${
+                      isExpanded
+                        ? "border-indigo-200 shadow-sm p-5"
+                        : "border-slate-200 p-4 hover:border-indigo-200 hover:shadow-sm"
+                    }`}
                   >
-                    <div className="space-y-3">
-                      <div className="space-y-1">
-                        <p className="text-[11px] font-sans font-semibold text-indigo-700 leading-snug">
-                          {tariffLabel}
-                        </p>
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          {sub.category === "private" ? (
-                            <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100">
-                              персональный
-                            </span>
-                          ) : disciplineName ? (
-                            <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-slate-500">
-                              {disciplineName}
-                            </span>
-                          ) : (
-                            <span />
-                          )}
-
-                          {sub.lessonsTotal === 8 ? (
-                            sub.freezeUsed > 0 ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                                <Snowflake className="w-3 h-3" /> заморозка использована
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
-                                <Snowflake className="w-3 h-3" /> заморозка доступна
-                              </span>
-                            )
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-semibold text-slate-800 leading-tight">{clientNameStr}</h3>
-                        <p className="text-[11px] text-slate-400 mt-1 font-sans">
-                          Активирован: {sub.activationDate || "—"}
-                        </p>
-                      </div>
-
-                      <div className="flex gap-2">
-                        {c1?.telegram && normalizeTelegramContact(c1.telegram) && (
-                          <a
-                            href={normalizeTelegramContact(c1.telegram)!}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              openTelegramContact(c1.telegram);
-                            }}
-                            className="inline-flex items-center gap-1 text-[11px] font-sans text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
-                          >
-                            <Send className="w-3 h-3" />
-                            {c1.firstName}
-                          </a>
-                        )}
-                        {c2?.telegram && normalizeTelegramContact(c2.telegram) && (
-                          <a
-                            href={normalizeTelegramContact(c2.telegram)!}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              openTelegramContact(c2.telegram);
-                            }}
-                            className="inline-flex items-center gap-1 text-[11px] font-sans text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
-                          >
-                            <Send className="w-3 h-3" />
-                            {c2.firstName}
-                          </a>
-                        )}
-                        {c3?.telegram && normalizeTelegramContact(c3.telegram) && (
-                          <a
-                            href={normalizeTelegramContact(c3.telegram)!}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              openTelegramContact(c3.telegram);
-                            }}
-                            className="inline-flex items-center gap-1 text-[11px] font-sans text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
-                          >
-                            <Send className="w-3 h-3" />
-                            {c3.firstName}
-                          </a>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 border-t border-slate-100 pt-4">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400">Осталось занятий</span>
-                        <span className="font-sans font-semibold text-slate-800">
-                          {sub.lessonsLeft} <span className="text-slate-400 font-normal">из {sub.lessonsTotal}</span>
-                        </span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${
-                            isAlarm ? "bg-rose-500" : "bg-indigo-500"
+                    <button
+                      type="button"
+                      onClick={() => setExpandedSubId(isExpanded ? null : sub.id)}
+                      className="w-full text-left cursor-pointer space-y-2"
+                      aria-expanded={isExpanded}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-sm font-semibold text-slate-800 leading-tight min-w-0">
+                          {clientNameStr}
+                        </h3>
+                        <ChevronDown
+                          className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                            isExpanded ? "rotate-180" : ""
                           }`}
-                          style={{ width: `${progressPct}%` }}
                         />
                       </div>
 
-                      <div className="flex items-center justify-between pt-2 text-xs">
-                        {isAlarm ? (
-                          <span className="text-rose-600 font-semibold">Пора предложить продление</span>
-                        ) : (
-                          <span className="text-slate-400">Баланс в норме</span>
-                        )}
-
-                        <button
-                          onClick={() => setFinishTarget({ id: sub.id, name: clientNameStr })}
-                          disabled={connectionState !== "online"}
-                          title={getConnectionBlockReason(connectionState)}
-                          className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
-                        >
-                          Завершить
-                        </button>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400">Осталось занятий</span>
+                          <span className="font-sans font-semibold text-slate-800">
+                            {sub.lessonsLeft}{" "}
+                            <span className="text-slate-400 font-normal">из {sub.lessonsTotal}</span>
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              isAlarm ? "bg-rose-500" : "bg-indigo-500"
+                            }`}
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    </button>
+
+                    {isExpanded && (
+                      <div className="mt-4 pt-4 border-t border-slate-100 space-y-4 animate-fade-in">
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-sans font-semibold text-indigo-700 leading-snug">
+                              {tariffLabel}
+                            </p>
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              {sub.category === "private" ? (
+                                <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100">
+                                  персональный
+                                </span>
+                              ) : disciplineName ? (
+                                <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-slate-500">
+                                  {disciplineName}
+                                </span>
+                              ) : (
+                                <span />
+                              )}
+
+                              {sub.lessonsTotal === 8 ? (
+                                sub.freezeUsed > 0 ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                                    <Snowflake className="w-3 h-3" /> заморозка использована
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
+                                    <Snowflake className="w-3 h-3" /> заморозка доступна
+                                  </span>
+                                )
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <p className="text-[11px] text-slate-400 font-sans">
+                            Активирован: {sub.activationDate || "—"}
+                          </p>
+
+                          <div className="flex gap-2 flex-wrap">
+                            {c1?.telegram && normalizeTelegramContact(c1.telegram) && (
+                              <a
+                                href={normalizeTelegramContact(c1.telegram)!}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openTelegramContact(c1.telegram);
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] font-sans text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
+                              >
+                                <Send className="w-3 h-3" />
+                                {c1.firstName}
+                              </a>
+                            )}
+                            {c2?.telegram && normalizeTelegramContact(c2.telegram) && (
+                              <a
+                                href={normalizeTelegramContact(c2.telegram)!}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openTelegramContact(c2.telegram);
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] font-sans text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
+                              >
+                                <Send className="w-3 h-3" />
+                                {c2.firstName}
+                              </a>
+                            )}
+                            {c3?.telegram && normalizeTelegramContact(c3.telegram) && (
+                              <a
+                                href={normalizeTelegramContact(c3.telegram)!}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openTelegramContact(c3.telegram);
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] font-sans text-[#1C82B4] bg-[#229ED9]/10 hover:bg-[#229ED9]/20 px-2 py-0.5 rounded transition-colors"
+                              >
+                                <Send className="w-3 h-3" />
+                                {c3.firstName}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 text-xs">
+                          {isAlarm ? (
+                            <span className="text-rose-600 font-semibold">Пора предложить продление</span>
+                          ) : (
+                            <span className="text-slate-400">Баланс в норме</span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => setFinishTarget({ id: sub.id, name: clientNameStr })}
+                            disabled={connectionState !== "online"}
+                            title={getConnectionBlockReason(connectionState)}
+                            className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                          >
+                            Завершить
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })
