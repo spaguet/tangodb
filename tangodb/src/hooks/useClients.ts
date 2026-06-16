@@ -71,7 +71,15 @@ export function useAddClient() {
         last_name: lTrim,
         telegram: normalizeTelegramForStorage(telegram),
       });
-      if (error) return { success: false as const, error: error.message };
+      if (error) {
+        if (error.code === "23505") {
+          return {
+            success: false as const,
+            error: "Клиент с таким именем и фамилией уже существует",
+          };
+        }
+        return { success: false as const, error: error.message };
+      }
       return { success: true as const, id };
     },
     onSuccess: (result) => {

@@ -25,6 +25,10 @@ CREATE INDEX IF NOT EXISTS idx_clients_active_last_name
   ON clients (last_name)
   WHERE archived_at IS NULL;
 
+CREATE UNIQUE INDEX IF NOT EXISTS clients_active_name_unique
+  ON clients (lower(trim(last_name)), lower(trim(first_name)))
+  WHERE archived_at IS NULL;
+
 CREATE TABLE IF NOT EXISTS disciplines (
   id          SERIAL PRIMARY KEY,
   name        TEXT NOT NULL UNIQUE,
