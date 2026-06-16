@@ -138,3 +138,22 @@ export function useArchiveClient() {
     },
   });
 }
+
+export function useRestoreClient() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (clientId: string) => {
+      const { error } = await supabase
+        .from("clients")
+        .update({ archived_at: null })
+        .eq("id", clientId)
+        .not("archived_at", "is", null);
+      if (error) return { success: false as const, error: error.message };
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) void queryClient.invalidateQueries({ queryKey: clientsQueryKey });
+    },
+  });
+}

@@ -3,15 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useState } from "react";
-import { Search, UserPlus, FileText, Send, Edit, Trash2, X, Download } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, UserPlus, FileText, Send, Edit, Trash2, X, Download, Users, Archive, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { useAddClient, useArchiveClient, useClients, useUpdateClient } from "../hooks/useClients";
+import {
+  useAddClient,
+  useArchiveClient,
+  useClientDirectory,
+  useClients,
+  useRestoreClient,
+  useUpdateClient,
+} from "../hooks/useClients";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { downloadCsv } from "../lib/exportCsv";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
+import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import QueryErrorState from "./ui/QueryErrorState";
 import type { ToastType } from "../App";
 import type { Client } from "../types";
@@ -27,12 +35,44 @@ const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider 
 
 const OFFLINE_TOAST = "Нет соединения. Действие недоступно offline";
 
+const clientTabs = [
+  { id: "active", label: "Активные", icon: Users },
+  { id: "archive", label: "Архив", icon: Archive },
+] as const;
+
+type ClientTab = (typeof clientTabs)[number]["id"];
+
+function formatArchivedAt(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("ru-RU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const { isOnline } = useOnlineStatus();
-  const { data: clients = [], isLoading, isError, error } = useClients();
+  const [activeTab, setActiveTab] = useState<ClientTab>("active");
+  const {
+    data: clients = [],
+    isLoading: activeLoading,
+    isError: activeError,
+    error: activeQueryError,
+  } = useClients();
+  const {
+    data: directoryClients = [],
+    isLoading: directoryLoading,
+    isError: directoryError,
+    error: directoryQueryError,
+  } = useClientDirectory();
   const addClient = useAddClient();
   const updateClient = useUpdateClient();
   const archiveClient = useArchiveClient();
+  const restoreClient = useRestoreClient();
   const [search, setSearch] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -46,6 +86,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
   // Delete confirm state
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<Client | null>(null);
 
   useEffect(() => {
     if (!editingClient) return;
@@ -125,10 +166,43 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
     }
   };
 
+  const handleConfirmRestore = async () => {
+    if (!restoreTarget) return;
+    if (!isOnline) {
+      toast(OFFLINE_TOAST, "error");
+      return;
+    }
+    const res = await restoreClient.mutateAsync(restoreTarget.id);
+    if (!res.success) {
+      toast(res.error || "Не удалось восстановить клиента", "error");
+    } else {
+      toast(`Клиент ${restoreTarget.lastName} ${restoreTarget.firstName} восстановлен`, "success");
+      setRestoreTarget(null);
+    }
+  };
+
+  const archivedClients = useMemo(
+    () =>
+      directoryClients
+        .filter((c) => c.archivedAt)
+        .sort((a, b) => (b.archivedAt ?? "").localeCompare(a.archivedAt ?? "")),
+    [directoryClients]
+  );
+
+  const isLoading = activeTab === "active" ? activeLoading : directoryLoading;
+  const isError = activeTab === "active" ? activeError : directoryError;
+  const error = activeTab === "active" ? activeQueryError : directoryQueryError;
+
   if (isLoading) return <LoadingState label="Загрузка клиентов..." />;
   if (isError) return <QueryErrorState error={error} />;
 
   const filteredClients = clients.filter(
+    (c) =>
+      c.firstName.toLowerCase().includes(search.toLowerCase()) ||
+      c.lastName.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredArchivedClients = archivedClients.filter(
     (c) =>
       c.firstName.toLowerCase().includes(search.toLowerCase()) ||
       c.lastName.toLowerCase().includes(search.toLowerCase())
@@ -158,6 +232,35 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
         firstName: "Имя",
         telegram: "Telegram",
         createdAt: "Дата создания",
+      }
+    );
+    toast("Файл скачан", "success");
+  };
+
+  const handleExportArchiveCsv = () => {
+    if (filteredArchivedClients.length === 0) {
+      toast("Нечего экспортировать", "error");
+      return;
+    }
+
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+    downloadCsv(
+      filteredArchivedClients.map((c) => ({
+        id: c.id,
+        lastName: c.lastName,
+        firstName: c.firstName,
+        telegram: c.telegram,
+        archivedAt: c.archivedAt ? formatArchivedAt(c.archivedAt) : "",
+      })),
+      `clients_archive_${dateStr}.csv`,
+      {
+        id: "ID",
+        lastName: "Фамилия",
+        firstName: "Имя",
+        telegram: "Telegram",
+        archivedAt: "Дата архивации",
       }
     );
     toast("Файл скачан", "success");
@@ -233,111 +336,189 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       </div>
 
       {/* Main Table details */}
-      <div className="lg:col-span-8 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-2.5 text-slate-800">
-            <FileText className="w-4.5 h-4.5 text-indigo-500" />
-            <h2 className="text-base font-semibold tracking-tight">Все клиенты</h2>
-            <span className="text-[10px] font-sans bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">
-              {clients.length}
-            </span>
+      <div className="lg:col-span-8 flex flex-col">
+        <PageTabs tabs={[...clientTabs]} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as ClientTab)} />
+
+        <div
+          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2.5 text-slate-800">
+              <FileText className="w-4.5 h-4.5 text-indigo-500" />
+              <h2 className="text-base font-semibold tracking-tight">
+                {activeTab === "active" ? "Активные клиенты" : "Архив клиентов"}
+              </h2>
+              <span className="text-[10px] font-sans bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">
+                {activeTab === "active" ? clients.length : archivedClients.length}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto font-sans">
+              <div className="relative w-full sm:w-72">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Поиск по имени или фамилии..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className={`${inputCls} pl-10 text-xs`}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={activeTab === "active" ? handleExportCsv : handleExportArchiveCsv}
+                className="shrink-0 py-2.5 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Экспорт CSV
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto font-sans">
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Поиск по имени или фамилии..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className={`${inputCls} pl-10 text-xs`}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleExportCsv}
-              className="shrink-0 py-2.5 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Экспорт CSV
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto min-h-[300px]">
-          {filteredClients.length === 0 ? (
-            <div className="text-center py-20 text-slate-400 space-y-1">
-              <p className="text-sm">
-                {search.trim()
-                  ? `По запросу «${search}» никого не найдено.`
-                  : "В базе пока нет клиентов — добавьте первого через форму слева."}
-              </p>
-            </div>
-          ) : (
-            <table className="w-full font-sans text-slate-700 text-left">
-              <thead>
-                <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
-                  <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
-                  <th className="pb-3 font-semibold">Клиент (Фамилия Имя)</th>
-                  <th className="pb-3 font-semibold text-center">Связь</th>
-                  <th className="pb-3 text-right pr-2 font-semibold">Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredClients.map((c, i) => (
-                  <tr
-                    key={c.id}
-                    className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
-                  >
-                    <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
-                    <td className="py-3 font-normal text-slate-800">
-                      {c.lastName} {c.firstName}
-                    </td>
-                    <td className="py-3 text-center">
-                      {c.telegram && normalizeTelegramContact(c.telegram) ? (
-                        <a
-                          href={normalizeTelegramContact(c.telegram)!}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            openTelegramContact(c.telegram);
-                          }}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans font-normal transition-colors"
-                        >
-                          <Send className="w-3 h-3" />
-                          {formatTelegramDisplay(c.telegram)}
-                        </a>
-                      ) : (
-                        <span className="text-xs text-slate-300 italic font-sans">не указан</span>
-                      )}
-                    </td>
-                    <td className="py-3 text-right pr-2">
-                      <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => startEdit(c)}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-                          title="Редактировать"
-                          aria-label={`Редактировать ${c.lastName} ${c.firstName}`}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(c)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                          title="Архивировать"
-                          aria-label={`Архивировать ${c.lastName} ${c.firstName}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+          <div className="overflow-x-auto min-h-[300px]">
+            {activeTab === "active" ? (
+              filteredClients.length === 0 ? (
+                <div className="text-center py-20 text-slate-400 space-y-1">
+                  <p className="text-sm">
+                    {search.trim()
+                      ? `По запросу «${search}» никого не найдено.`
+                      : "В базе пока нет клиентов — добавьте первого через форму слева."}
+                  </p>
+                </div>
+              ) : (
+                <table className="w-full font-sans text-slate-700 text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
+                      <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
+                      <th className="pb-3 font-semibold">Клиент (Фамилия Имя)</th>
+                      <th className="pb-3 font-semibold text-center">Связь</th>
+                      <th className="pb-3 text-right pr-2 font-semibold">Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredClients.map((c, i) => (
+                      <tr
+                        key={c.id}
+                        className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
+                      >
+                        <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
+                        <td className="py-3 font-normal text-slate-800">
+                          {c.lastName} {c.firstName}
+                        </td>
+                        <td className="py-3 text-center">
+                          {c.telegram && normalizeTelegramContact(c.telegram) ? (
+                            <a
+                              href={normalizeTelegramContact(c.telegram)!}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openTelegramContact(c.telegram);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans font-normal transition-colors"
+                            >
+                              <Send className="w-3 h-3" />
+                              {formatTelegramDisplay(c.telegram)}
+                            </a>
+                          ) : (
+                            <span className="text-xs text-slate-300 italic font-sans">не указан</span>
+                          )}
+                        </td>
+                        <td className="py-3 text-right pr-2">
+                          <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => startEdit(c)}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+                              title="Редактировать"
+                              aria-label={`Редактировать ${c.lastName} ${c.firstName}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(c)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                              title="Архивировать"
+                              aria-label={`Архивировать ${c.lastName} ${c.firstName}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )
+            ) : filteredArchivedClients.length === 0 ? (
+              <div className="text-center py-20 text-slate-400 space-y-1">
+                <p className="text-sm">
+                  {search.trim()
+                    ? `По запросу «${search}» никого не найдено.`
+                    : "В архиве пока нет клиентов."}
+                </p>
+              </div>
+            ) : (
+              <table className="w-full font-sans text-slate-700 text-left">
+                <thead>
+                  <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
+                    <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
+                    <th className="pb-3 font-semibold">Фамилия</th>
+                    <th className="pb-3 font-semibold">Имя</th>
+                    <th className="pb-3 font-semibold text-center">Telegram</th>
+                    <th className="pb-3 font-semibold">Дата архивации</th>
+                    <th className="pb-3 text-right pr-2 font-semibold">Действия</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody>
+                  {filteredArchivedClients.map((c, i) => (
+                    <tr
+                      key={c.id}
+                      className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
+                    >
+                      <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
+                      <td className="py-3 font-normal text-slate-800">{c.lastName}</td>
+                      <td className="py-3 font-normal text-slate-800">{c.firstName}</td>
+                      <td className="py-3 text-center">
+                        {c.telegram && normalizeTelegramContact(c.telegram) ? (
+                          <a
+                            href={normalizeTelegramContact(c.telegram)!}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              openTelegramContact(c.telegram);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans font-normal transition-colors"
+                          >
+                            <Send className="w-3 h-3" />
+                            {formatTelegramDisplay(c.telegram)}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-300 italic font-sans">не указан</span>
+                        )}
+                      </td>
+                      <td className="py-3 text-slate-600 text-xs font-sans">
+                        {c.archivedAt ? formatArchivedAt(c.archivedAt) : "—"}
+                      </td>
+                      <td className="py-3 text-right pr-2">
+                        <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => setRestoreTarget(c)}
+                            disabled={!isOnline}
+                            title={!isOnline ? "Нет соединения" : "Восстановить"}
+                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label={`Восстановить ${c.lastName} ${c.firstName}`}
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
 
@@ -431,6 +612,25 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
         pending={archiveClient.isPending}
         onConfirm={handleConfirmArchive}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={restoreTarget !== null}
+        title="Восстановить клиента?"
+        description={
+          <>
+            Клиент{" "}
+            <strong className="font-semibold text-slate-800">
+              {restoreTarget?.lastName} {restoreTarget?.firstName}
+            </strong>{" "}
+            снова появится в списке активных.
+          </>
+        }
+        confirmLabel="Восстановить"
+        cancelLabel="Отмена"
+        pending={restoreClient.isPending}
+        onConfirm={handleConfirmRestore}
+        onCancel={() => setRestoreTarget(null)}
       />
     </div>
   );
