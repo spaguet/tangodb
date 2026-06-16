@@ -4,9 +4,10 @@
  */
 
 import { useEffect, useState } from "react";
-import { Search, UserPlus, FileText, Send, Edit, Trash2, X } from "lucide-react";
+import { Search, UserPlus, FileText, Send, Edit, Trash2, X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAddClient, useClients, useDeleteClient, useUpdateClient } from "../hooks/useClients";
+import { downloadCsv } from "../lib/exportCsv";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LoadingState from "./ui/LoadingState";
@@ -117,6 +118,35 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       c.lastName.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleExportCsv = () => {
+    if (filteredClients.length === 0) {
+      toast("Нечего экспортировать", "error");
+      return;
+    }
+
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+    downloadCsv(
+      filteredClients.map((c) => ({
+        id: c.id,
+        lastName: c.lastName,
+        firstName: c.firstName,
+        telegram: c.telegram,
+        createdAt: c.createdAt ?? "",
+      })),
+      `clients_${dateStr}.csv`,
+      {
+        id: "ID",
+        lastName: "Фамилия",
+        firstName: "Имя",
+        telegram: "Telegram",
+        createdAt: "Дата создания",
+      }
+    );
+    toast("Файл скачан", "success");
+  };
+
   return (
     <div id="panel-newClient" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
       {/* Sidebar form: Add Guest */}
@@ -196,15 +226,25 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
             </span>
           </div>
 
-          <div className="relative w-full sm:w-72 font-sans">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Поиск по имени или фамилии..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className={`${inputCls} pl-10 text-xs`}
-            />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto font-sans">
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Поиск по имени или фамилии..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={`${inputCls} pl-10 text-xs`}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="shrink-0 py-2.5 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Экспорт CSV
+            </button>
           </div>
         </div>
 
