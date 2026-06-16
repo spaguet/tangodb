@@ -209,6 +209,7 @@ export default function SellPackageModal({
                 query={subClient1Query}
                 selectedId={subClient1Id}
                 showAddClientButton
+                addClientLinkLabel="Новый клиент"
                 toast={toast}
                 onQueryChange={(q) => {
                   setSubClient1Query(q);
@@ -227,6 +228,7 @@ export default function SellPackageModal({
                   query={subClient2Query}
                   selectedId={subClient2Id}
                   showAddClientButton
+                  addClientLinkLabel="Новый клиент"
                   toast={toast}
                   onQueryChange={(q) => {
                     setSubClient2Query(q);
@@ -246,6 +248,7 @@ export default function SellPackageModal({
                   query={subClient3Query}
                   selectedId={subClient3Id}
                   showAddClientButton
+                  addClientLinkLabel="Новый клиент"
                   toast={toast}
                   onQueryChange={(q) => {
                     setSubClient3Query(q);
@@ -282,7 +285,7 @@ export default function SellPackageModal({
                 disabled={addSubscription.isPending || packageTariffs.length === 0}
                 className="w-full py-3.5 bg-violet-600 hover:bg-violet-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
               >
-                {addSubscription.isPending ? "Оформление..." : "Продать абонемент"}
+                {addSubscription.isPending ? "Оформление..." : "ПРОДАТЬ ПАКЕТ"}
               </button>
             </div>
           </motion.div>
