@@ -215,7 +215,7 @@ function AppLayout() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: ToastType } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { isOnline, justReconnected } = useOnlineStatus();
+  const { connectionState, justReconnected } = useOnlineStatus();
 
   const showToast = useCallback((msg: string, type: ToastType = "info") => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -366,7 +366,7 @@ function AppLayout() {
             </button>
           </header>
 
-          <OfflineBanner isOnline={isOnline} />
+          <OfflineBanner connectionState={connectionState} />
 
           <section className="flex-1 p-4 sm:p-5 md:p-6 xl:p-8 max-w-7xl w-full mx-auto panel-page-stack overflow-y-auto">
             <ErrorBoundary>

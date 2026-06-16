@@ -14,7 +14,11 @@ import {
   useRestoreClient,
   useUpdateClient,
 } from "../hooks/useClients";
-import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import {
+  getConnectionBlockReason,
+  getMutationBlockedMessage,
+  useOnlineStatus,
+} from "../hooks/useOnlineStatus";
 import { downloadCsv } from "../lib/exportCsv";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import ConfirmDialog from "./ui/ConfirmDialog";
@@ -32,8 +36,6 @@ const inputCls =
   "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
-
-const OFFLINE_TOAST = "Нет соединения. Действие недоступно offline";
 
 const clientTabs = [
   { id: "active", label: "Активные", icon: Users },
@@ -55,7 +57,7 @@ function formatArchivedAt(iso: string): string {
 }
 
 export default function ClientsPanel({ toast }: ClientsPanelProps) {
-  const { isOnline } = useOnlineStatus();
+  const { connectionState } = useOnlineStatus();
   const [activeTab, setActiveTab] = useState<ClientTab>("active");
   const {
     data: clients = [],
@@ -99,8 +101,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
   const handleSubmitAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isOnline) {
-      toast(OFFLINE_TOAST, "error");
+    if (connectionState !== "online") {
+      toast(getMutationBlockedMessage(connectionState), "error");
       return;
     }
     if (!firstName.trim() || !lastName.trim()) {
@@ -128,8 +130,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
   const handleSaveEdit = async () => {
     if (!editingClient) return;
-    if (!isOnline) {
-      toast(OFFLINE_TOAST, "error");
+    if (connectionState !== "online") {
+      toast(getMutationBlockedMessage(connectionState), "error");
       return;
     }
     if (!editFirst.trim() || !editLast.trim()) {
@@ -153,8 +155,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
   const handleConfirmArchive = async () => {
     if (!deleteTarget) return;
-    if (!isOnline) {
-      toast(OFFLINE_TOAST, "error");
+    if (connectionState !== "online") {
+      toast(getMutationBlockedMessage(connectionState), "error");
       return;
     }
     const res = await archiveClient.mutateAsync(deleteTarget.id);
@@ -168,8 +170,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
   const handleConfirmRestore = async () => {
     if (!restoreTarget) return;
-    if (!isOnline) {
-      toast(OFFLINE_TOAST, "error");
+    if (connectionState !== "online") {
+      toast(getMutationBlockedMessage(connectionState), "error");
       return;
     }
     const res = await restoreClient.mutateAsync(restoreTarget.id);
@@ -326,8 +328,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
           <button
             type="submit"
-            disabled={!isOnline || addClient.isPending}
-            title={!isOnline ? "Нет соединения" : undefined}
+            disabled={connectionState !== "online" || addClient.isPending}
+            title={getConnectionBlockReason(connectionState)}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
           >
             {addClient.isPending ? "Добавление..." : "Внести в базу"}
@@ -504,8 +506,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                         <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => setRestoreTarget(c)}
-                            disabled={!isOnline}
-                            title={!isOnline ? "Нет соединения" : "Восстановить"}
+                            disabled={connectionState !== "online"}
+                            title={getConnectionBlockReason(connectionState) ?? "Восстановить"}
                             className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                             aria-label={`Восстановить ${c.lastName} ${c.firstName}`}
                           >
@@ -577,8 +579,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               <div className="flex items-center gap-3 pt-1 text-xs">
                 <button
                   onClick={handleSaveEdit}
-                  disabled={!isOnline || updateClient.isPending}
-                  title={!isOnline ? "Нет соединения" : undefined}
+                  disabled={connectionState !== "online" || updateClient.isPending}
+                  title={getConnectionBlockReason(connectionState)}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
                   {updateClient.isPending ? "..." : "Сохранить"}

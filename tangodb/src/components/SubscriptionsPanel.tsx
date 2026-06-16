@@ -16,7 +16,11 @@ import {
   useFinishSubscription,
   useSubscriptions,
 } from "../hooks/useSubscriptions";
-import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import {
+  getConnectionBlockReason,
+  getMutationBlockedMessage,
+  useOnlineStatus,
+} from "../hooks/useOnlineStatus";
 import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, getGroupTariffs, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient } from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
@@ -36,14 +40,12 @@ interface SubscriptionsPanelProps {
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
-const OFFLINE_TOAST = "Нет соединения. Действие недоступно offline";
-
 export default function SubscriptionsPanel({
   initialTab = "active",
   toast,
 }: SubscriptionsPanelProps) {
   const navigate = useNavigate();
-  const { isOnline } = useOnlineStatus();
+  const { connectionState } = useOnlineStatus();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
 
   const activeClientsQuery = useClients();
@@ -119,8 +121,8 @@ export default function SubscriptionsPanel({
   const getSubPrice = (): number => selectedTariff?.price ?? 0;
 
   const handleCheckout = async () => {
-    if (!isOnline) {
-      toast(OFFLINE_TOAST, "error");
+    if (connectionState !== "online") {
+      toast(getMutationBlockedMessage(connectionState), "error");
       return;
     }
     if (!selectedTariff?.id) {
@@ -181,8 +183,8 @@ export default function SubscriptionsPanel({
 
   const handleConfirmFinish = async () => {
     if (!finishTarget) return;
-    if (!isOnline) {
-      toast(OFFLINE_TOAST, "error");
+    if (connectionState !== "online") {
+      toast(getMutationBlockedMessage(connectionState), "error");
       return;
     }
     const res = await finishSubscription.mutateAsync(finishTarget.id);
@@ -459,8 +461,8 @@ export default function SubscriptionsPanel({
 
                         <button
                           onClick={() => setFinishTarget({ id: sub.id, name: clientNameStr })}
-                          disabled={!isOnline}
-                          title={!isOnline ? "Нет соединения" : undefined}
+                          disabled={connectionState !== "online"}
+                          title={getConnectionBlockReason(connectionState)}
                           className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
                         >
                           Завершить
@@ -599,8 +601,8 @@ export default function SubscriptionsPanel({
 
             <button
               onClick={handleCheckout}
-              disabled={!isOnline || addSubscription.isPending}
-              title={!isOnline ? "Нет соединения" : undefined}
+              disabled={connectionState !== "online" || addSubscription.isPending}
+              title={getConnectionBlockReason(connectionState)}
               className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
             >
               {addSubscription.isPending ? "Оформление..." : "Продать абонемент"}
