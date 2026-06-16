@@ -21,6 +21,7 @@ import {
 } from "../hooks/useAttendance";
 import { downloadCsv } from "../lib/exportCsv";
 import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { usePrices } from "../hooks/usePrices";
 import {
   dowShort,
@@ -46,6 +47,8 @@ type DayLessonEntry =
   | { kind: "personal"; key: string; start: string; lesson: PersonalLesson; label: string };
 
 const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+const OFFLINE_TOAST = "Нет соединения. Действие недоступно offline";
 
 function todayDateStr(): string {
   const now = new Date();
@@ -75,6 +78,7 @@ function shiftMonth(yearMonth: string, delta: number): string {
 
 export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const queryClient = useQueryClient();
+  const { isOnline } = useOnlineStatus();
   const selectedMonth = useUIStore((s) => s.selectedMonth);
   const setSelectedMonth = useUIStore((s) => s.setSelectedMonth);
 
@@ -230,6 +234,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   };
 
   const handleMark = async (subId: string, status: "present" | "absent" | "freeze", student: SubForDate) => {
+    if (!isOnline) {
+      toast(OFFLINE_TOAST, "error");
+      return;
+    }
     if (!canMarkAttendance) {
       toast("Отметки доступны только за прошедшие и текущий день.", "error");
       return;
@@ -258,6 +266,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   };
 
   const handleMarkPersonal = async (lessonId: string, status: "present" | "absent") => {
+    if (!isOnline) {
+      toast(OFFLINE_TOAST, "error");
+      return;
+    }
     if (!canMarkAttendance) {
       toast("Отметки доступны только за прошедшие и текущий день.", "error");
       return;
@@ -335,7 +347,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleMark(st.subId, "present", st)}
-            disabled={!canMarkAttendance || markAttendance.isPending}
+            disabled={!isOnline || !canMarkAttendance || markAttendance.isPending}
+            title={!isOnline ? "Нет соединения" : undefined}
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "present"
                 ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
@@ -348,7 +361,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
           <button
             onClick={() => handleMark(st.subId, "absent", st)}
-            disabled={!canMarkAttendance || markAttendance.isPending}
+            disabled={!isOnline || !canMarkAttendance || markAttendance.isPending}
+            title={!isOnline ? "Нет соединения" : undefined}
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "absent"
                 ? "bg-rose-600 border-rose-600 text-white shadow-xs"
@@ -362,11 +376,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           {showFreeze && (
             <button
               onClick={() => handleMark(st.subId, "freeze", st)}
-              disabled={!canMarkAttendance || markAttendance.isPending || freezeLocked}
+              disabled={!isOnline || !canMarkAttendance || markAttendance.isPending || freezeLocked}
               title={
-                freezeLocked
-                  ? "Заморозка доступна один раз для абонементов на 8 уроков"
-                  : "Заморозить занятие"
+                !isOnline
+                  ? "Нет соединения"
+                  : freezeLocked
+                    ? "Заморозка доступна один раз для абонементов на 8 уроков"
+                    : "Заморозить занятие"
               }
               className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border disabled:opacity-60 ${
                 st.currentStatus === "freeze"
@@ -645,7 +661,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                         <button
                           type="button"
                           onClick={() => handleMarkPersonal(activePersonalLesson.id, "present")}
-                          disabled={markPersonalAttendance.isPending}
+                          disabled={!isOnline || markPersonalAttendance.isPending}
+                          title={!isOnline ? "Нет соединения" : undefined}
                           className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                             activePersonalLesson.attendanceStatus === "present"
                               ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
@@ -658,7 +675,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                         <button
                           type="button"
                           onClick={() => handleMarkPersonal(activePersonalLesson.id, "absent")}
-                          disabled={markPersonalAttendance.isPending}
+                          disabled={!isOnline || markPersonalAttendance.isPending}
+                          title={!isOnline ? "Нет соединения" : undefined}
                           className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                             activePersonalLesson.attendanceStatus === "absent"
                               ? "bg-rose-600 border-rose-600 text-white shadow-xs"

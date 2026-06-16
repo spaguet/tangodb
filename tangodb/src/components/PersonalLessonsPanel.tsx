@@ -26,6 +26,7 @@ import {
   useUpdatePersonalLesson,
   useUpdatePersonalPaid,
 } from "../hooks/usePersonalLessons";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { useSubscriptions } from "../hooks/useSubscriptions";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
@@ -45,6 +46,8 @@ interface PersonalLessonsPanelProps {
 }
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+
+const OFFLINE_TOAST = "Нет соединения. Действие недоступно offline";
 
 interface BookingClientField {
   query: string;
@@ -67,6 +70,7 @@ export default function PersonalLessonsPanel({
   toast,
 }: PersonalLessonsPanelProps) {
   const navigate = useNavigate();
+  const { isOnline } = useOnlineStatus();
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
   const normalizedInitialTab = initialTab === "book" ? "sell" : initialTab;
 
@@ -219,6 +223,10 @@ export default function PersonalLessonsPanel({
   };
 
   const handleBook = async (immediatePaid: boolean) => {
+    if (!isOnline) {
+      toast(OFFLINE_TOAST, "error");
+      return;
+    }
     if (!bookingClients[0]?.query || !bookingClients[0]?.id) {
       toast("Выберите клиента из списка.", "error");
       return;
@@ -330,6 +338,10 @@ export default function PersonalLessonsPanel({
   };
 
   const handleTogglePaid = async (lesson: PersonalLesson) => {
+    if (!isOnline) {
+      toast(OFFLINE_TOAST, "error");
+      return;
+    }
     const nextStatus = lesson.paid !== "yes";
     const res = await updatePersonalPaid.mutateAsync({ id: lesson.id, paid: nextStatus });
     if (!res.success) {
@@ -341,6 +353,10 @@ export default function PersonalLessonsPanel({
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
+    if (!isOnline) {
+      toast(OFFLINE_TOAST, "error");
+      return;
+    }
     const res = await deletePersonalLesson.mutateAsync(deleteTarget.id);
     if (!res.success) {
       toast(res.error || "Не удалось удалить запись", "error");
@@ -368,6 +384,10 @@ export default function PersonalLessonsPanel({
 
   const handleSaveEditLesson = async () => {
     if (!editTarget) return;
+    if (!isOnline) {
+      toast(OFFLINE_TOAST, "error");
+      return;
+    }
     if (!editDate || !editTimeStart || !editTimeEnd) {
       toast("Заполните дату и время урока.", "error");
       return;
@@ -651,8 +671,8 @@ export default function PersonalLessonsPanel({
                           <button
                             type="button"
                             onClick={() => handleTogglePaid(l)}
-                            disabled={updatePersonalPaid.isPending}
-                            title={isPaid ? "Нажмите, чтобы отменить оплату" : "Нажмите, чтобы подтвердить оплату"}
+                            disabled={!isOnline || updatePersonalPaid.isPending}
+                            title={!isOnline ? "Нет соединения" : isPaid ? "Нажмите, чтобы отменить оплату" : "Нажмите, чтобы подтвердить оплату"}
                             className={`text-xs font-sans font-semibold shrink-0 cursor-pointer disabled:opacity-60 ${
                               isPaid ? "text-emerald-600 hover:text-emerald-700" : "text-rose-600 hover:text-rose-700"
                             }`}
@@ -894,7 +914,8 @@ export default function PersonalLessonsPanel({
                   <button
                     type="button"
                     onClick={() => handleBook(true)}
-                    disabled={addPersonalLessons.isPending}
+                    disabled={!isOnline || addPersonalLessons.isPending}
+                    title={!isOnline ? "Нет соединения" : undefined}
                     className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
                   >
                     БРОНЬ С ОПЛАТОЙ
@@ -902,7 +923,8 @@ export default function PersonalLessonsPanel({
                   <button
                     type="button"
                     onClick={() => handleBook(false)}
-                    disabled={addPersonalLessons.isPending}
+                    disabled={!isOnline || addPersonalLessons.isPending}
+                    title={!isOnline ? "Нет соединения" : undefined}
                     className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                   >
                     БРОНЬ БЕЗ ОПЛАТЫ
@@ -948,7 +970,8 @@ export default function PersonalLessonsPanel({
                 <button
                   type="button"
                   onClick={() => handleBook(false)}
-                  disabled={addPersonalLessons.isPending || !linkedSubscriptionId}
+                  disabled={!isOnline || addPersonalLessons.isPending || !linkedSubscriptionId}
+                  title={!isOnline ? "Нет соединения" : undefined}
                   className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
                 >
                   {addPersonalLessons.isPending ? "Оформление..." : "БРОНЬ ПО ПАКЕТУ"}
@@ -1055,7 +1078,8 @@ export default function PersonalLessonsPanel({
                 <button
                   type="button"
                   onClick={handleSaveEditLesson}
-                  disabled={updatePersonalLesson.isPending}
+                  disabled={!isOnline || updatePersonalLesson.isPending}
+                  title={!isOnline ? "Нет соединения" : undefined}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
                   {updatePersonalLesson.isPending ? "..." : "Сохранить"}

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Search, UserPlus, FileText, Send, Edit, Trash2, X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAddClient, useClients, useDeleteClient, useUpdateClient } from "../hooks/useClients";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { downloadCsv } from "../lib/exportCsv";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import ConfirmDialog from "./ui/ConfirmDialog";
@@ -24,7 +25,10 @@ const inputCls =
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
+const OFFLINE_TOAST = "Нет соединения. Действие недоступно offline";
+
 export default function ClientsPanel({ toast }: ClientsPanelProps) {
+  const { isOnline } = useOnlineStatus();
   const { data: clients = [], isLoading, isError, error } = useClients();
   const addClient = useAddClient();
   const updateClient = useUpdateClient();
@@ -54,6 +58,10 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
   const handleSubmitAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOnline) {
+      toast(OFFLINE_TOAST, "error");
+      return;
+    }
     if (!firstName.trim() || !lastName.trim()) {
       toast("Заполните имя и фамилию — это обязательные поля.", "error");
       return;
@@ -79,6 +87,10 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
   const handleSaveEdit = async () => {
     if (!editingClient) return;
+    if (!isOnline) {
+      toast(OFFLINE_TOAST, "error");
+      return;
+    }
     if (!editFirst.trim() || !editLast.trim()) {
       toast("Имя и фамилия не могут быть пустыми.", "error");
       return;
@@ -100,6 +112,10 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
+    if (!isOnline) {
+      toast(OFFLINE_TOAST, "error");
+      return;
+    }
     const res = await deleteClient.mutateAsync(deleteTarget.id);
     if (!res.success) {
       toast(res.error || "Не удалось удалить клиента", "error");
@@ -207,7 +223,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
           <button
             type="submit"
-            disabled={addClient.isPending}
+            disabled={!isOnline || addClient.isPending}
+            title={!isOnline ? "Нет соединения" : undefined}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
           >
             {addClient.isPending ? "Добавление..." : "Внести в базу"}
@@ -379,7 +396,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               <div className="flex items-center gap-3 pt-1 text-xs">
                 <button
                   onClick={handleSaveEdit}
-                  disabled={updateClient.isPending}
+                  disabled={!isOnline || updateClient.isPending}
+                  title={!isOnline ? "Нет соединения" : undefined}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
                   {updateClient.isPending ? "..." : "Сохранить"}
