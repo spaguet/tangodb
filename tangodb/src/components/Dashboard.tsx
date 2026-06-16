@@ -1,7 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Users, Ticket, Calendar, AlertCircle, Send, BarChart3 } from "lucide-react";
-import { formatClientName, formatCurrency, dowFull, jsDayToIsoDow, currentYearMonth, isDateInYearMonth, getSubscriptionPrice } from "../lib/utils";
+import { Users, Ticket, Calendar, AlertCircle, Send, BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  formatClientName,
+  formatCurrency,
+  dowFull,
+  jsDayToIsoDow,
+  currentYearMonth,
+  formatMonthTitleRu,
+  isDateInYearMonth,
+  getSubscriptionPrice,
+} from "../lib/utils";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { computeScheduleDatesForMonth } from "../hooks/useAttendance";
 import DisciplinesPanel from "./DisciplinesPanel";
@@ -17,6 +26,12 @@ interface DashboardProps {
   disciplines: Discipline[];
   toast: (msg: string, type?: ToastType) => void;
   onNavigate: (panel: string) => void;
+}
+
+function shiftMonth(yearMonth: string, delta: number): string {
+  const [y, m] = yearMonth.split("-").map(Number);
+  const date = new Date(y, m - 1 + delta, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export default function Dashboard({
@@ -54,18 +69,27 @@ export default function Dashboard({
   const todayIsoDow = jsDayToIsoDow(new Date().getDay());
   const todaySlots = schedule.filter((s) => s.dayOfWeek === todayIsoDow);
 
-  const yearMonth = currentYearMonth();
-  const monthGroupLessons = computeScheduleDatesForMonth(schedule, yearMonth).length;
-  const monthSoldSubs = subscriptions.filter((s) => isDateInYearMonth(s.activationDate, yearMonth));
-  const monthSubsRevenue = monthSoldSubs.reduce((sum, s) => sum + getSubscriptionPrice(s, prices), 0);
-  const monthPersonalLessons = personalLessons.filter((l) => isDateInYearMonth(l.date, yearMonth));
-  const monthPersonalCount = monthPersonalLessons.length;
-  const monthPersonalPaidSum = monthPersonalLessons
-    .filter((l) => l.paid === "yes")
-    .reduce((sum, l) => sum + l.price, 0);
-  const monthTotalRevenue = monthSubsRevenue + monthPersonalPaidSum;
+  const [statsMonth, setStatsMonth] = useState(currentYearMonth);
+  const isViewingCurrentMonth = statsMonth === currentYearMonth();
 
-  const monthLabel = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(new Date());
+  const monthStats = useMemo(() => {
+    const monthGroupLessons = computeScheduleDatesForMonth(schedule, statsMonth).length;
+    const monthSoldSubs = subscriptions.filter((s) => isDateInYearMonth(s.activationDate, statsMonth));
+    const monthSubsRevenue = monthSoldSubs.reduce((sum, s) => sum + getSubscriptionPrice(s, prices), 0);
+    const monthPersonalLessons = personalLessons.filter((l) => isDateInYearMonth(l.date, statsMonth));
+    const monthPersonalCount = monthPersonalLessons.length;
+    const monthPersonalPaidSum = monthPersonalLessons
+      .filter((l) => l.paid === "yes")
+      .reduce((sum, l) => sum + l.price, 0);
+    const monthTotalRevenue = monthSubsRevenue + monthPersonalPaidSum;
+    return {
+      monthGroupLessons,
+      monthSubsRevenue,
+      monthPersonalCount,
+      monthPersonalPaidSum,
+      monthTotalRevenue,
+    };
+  }, [schedule, statsMonth, subscriptions, personalLessons, prices]);
 
   return (
     <div id="panel-dashboard" className="panel-page-stack">
@@ -271,42 +295,72 @@ export default function Dashboard({
 
         {/* Monthly statistics */}
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+            <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2 shrink-0">
               <BarChart3 className="w-4 h-4 text-indigo-500" />
-              Статистика за {monthLabel}
+              Статистика
             </h2>
+            <div className="flex items-center gap-1 min-w-0">
+              <button
+                type="button"
+                onClick={() => setStatsMonth((m) => shiftMonth(m, -1))}
+                className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shrink-0"
+                aria-label="Предыдущий месяц"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex flex-col items-center min-w-0">
+                <span className="text-xs font-semibold text-slate-800 truncate">{formatMonthTitleRu(statsMonth)}</span>
+                {!isViewingCurrentMonth && (
+                  <button
+                    type="button"
+                    onClick={() => setStatsMonth(currentYearMonth())}
+                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer whitespace-nowrap"
+                  >
+                    Текущий месяц
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setStatsMonth((m) => shiftMonth(m, 1))}
+                className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shrink-0"
+                aria-label="Следующий месяц"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-px bg-slate-200/70 rounded-lg overflow-hidden border border-slate-200/70">
             <div className="bg-white px-3 py-2.5">
               <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
                 Групповых уроков
               </p>
-              <h4 className="text-lg font-semibold text-slate-800 mt-0.5 leading-none">{monthGroupLessons}</h4>
+              <h4 className="text-lg font-semibold text-slate-800 mt-0.5 leading-none">{monthStats.monthGroupLessons}</h4>
             </div>
             <div className="bg-white px-3 py-2.5">
               <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
                 Продано абонементов
               </p>
-              <h4 className="text-lg font-semibold text-indigo-700 mt-0.5 leading-none">{formatCurrency(monthSubsRevenue)}</h4>
+              <h4 className="text-lg font-semibold text-indigo-700 mt-0.5 leading-none">{formatCurrency(monthStats.monthSubsRevenue)}</h4>
             </div>
             <div className="bg-white px-3 py-2.5">
               <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
                 Персональных уроков
               </p>
-              <h4 className="text-lg font-semibold text-slate-800 mt-0.5 leading-none">{monthPersonalCount}</h4>
+              <h4 className="text-lg font-semibold text-slate-800 mt-0.5 leading-none">{monthStats.monthPersonalCount}</h4>
             </div>
             <div className="bg-white px-3 py-2.5">
               <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
                 Оплачено персональных
               </p>
-              <h4 className="text-lg font-semibold text-emerald-700 mt-0.5 leading-none">{formatCurrency(monthPersonalPaidSum)}</h4>
+              <h4 className="text-lg font-semibold text-emerald-700 mt-0.5 leading-none">{formatCurrency(monthStats.monthPersonalPaidSum)}</h4>
             </div>
             <div className="bg-white px-3 py-2.5 col-span-2">
               <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
                 Общий доход за месяц
               </p>
-              <h4 className="text-lg font-semibold text-slate-900 mt-0.5 leading-none">{formatCurrency(monthTotalRevenue)}</h4>
+              <h4 className="text-lg font-semibold text-slate-900 mt-0.5 leading-none">{formatCurrency(monthStats.monthTotalRevenue)}</h4>
             </div>
           </div>
         </div>
