@@ -4,6 +4,7 @@ export interface Client {
   lastName: string;
   telegram: string;
   createdAt?: string;
+  archivedAt?: string | null;
 }
 
 export interface Discipline {

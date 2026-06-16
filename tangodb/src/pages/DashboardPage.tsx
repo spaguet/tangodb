@@ -3,7 +3,7 @@ import Dashboard from "../components/Dashboard";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import { useToast } from "../App";
-import { useClients } from "../hooks/useClients";
+import { useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { usePrices } from "../hooks/usePrices";
@@ -17,7 +17,7 @@ export default function DashboardPage() {
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
 
-  const clientsQuery = useClients();
+  const clientsQuery = useClientDirectory();
   const subscriptionsQuery = useSubscriptions();
   const scheduleQuery = useSchedule();
   const personalLessonsQuery = usePersonalLessons();

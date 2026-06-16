@@ -5,25 +5,37 @@ import type { Client } from "../types";
 
 export const clientsQueryKey = ["clients"] as const;
 
+export function clientsListQueryKey(includeArchived: boolean) {
+  return [...clientsQueryKey, { includeArchived }] as const;
+}
+
 const mapClient = (row: Record<string, unknown>): Client => ({
   id: row.id as string,
   firstName: row.first_name as string,
   lastName: row.last_name as string,
   telegram: (row.telegram as string) || "",
   createdAt: row.created_at as string | undefined,
+  archivedAt: (row.archived_at as string | null) ?? null,
 });
 
-export function useClients() {
+export function useClients(options?: { includeArchived?: boolean }) {
+  const includeArchived = options?.includeArchived ?? false;
+
   return useQuery({
-    queryKey: clientsQueryKey,
+    queryKey: clientsListQueryKey(includeArchived),
     queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("*").order("last_name");
+      let query = supabase.from("clients").select("*").order("last_name");
+      if (!includeArchived) query = query.is("archived_at", null);
+      const { data, error } = await query;
       if (error) throw error;
       return (data ?? []).map(mapClient);
     },
     staleTime: 5 * 60 * 1000,
   });
 }
+
+export const useActiveClients = () => useClients();
+export const useClientDirectory = () => useClients({ includeArchived: true });
 
 export function useAddClient() {
   const queryClient = useQueryClient();
@@ -40,9 +52,13 @@ export function useAddClient() {
     }) => {
       const fTrim = firstName.trim();
       const lTrim = lastName.trim();
-      const cached = queryClient.getQueryData<Client[]>(clientsQueryKey) ?? [];
+      const cached =
+        queryClient.getQueryData<Client[]>(clientsListQueryKey(false)) ?? [];
       const exists = cached.some(
-        (c) => c.firstName.toLowerCase() === fTrim.toLowerCase() && c.lastName.toLowerCase() === lTrim.toLowerCase()
+        (c) =>
+          !c.archivedAt &&
+          c.firstName.toLowerCase() === fTrim.toLowerCase() &&
+          c.lastName.toLowerCase() === lTrim.toLowerCase()
       );
       if (exists) {
         return { success: false as const, error: "Клиент с таким именем и фамилией уже существует" };
@@ -96,18 +112,17 @@ export function useUpdateClient() {
   });
 }
 
-export function useDeleteClient() {
+export function useArchiveClient() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (clientId: string) => {
-      const { error } = await supabase.from("clients").delete().eq("id", clientId);
-      if (error) {
-        if (error.code === "23503") {
-          return { success: false as const, error: "Клиент используется в абонементах или уроках" };
-        }
-        return { success: false as const, error: error.message };
-      }
+      const { error } = await supabase
+        .from("clients")
+        .update({ archived_at: new Date().toISOString() })
+        .eq("id", clientId)
+        .is("archived_at", null);
+      if (error) return { success: false as const, error: error.message };
       return { success: true as const };
     },
     onSuccess: (result) => {

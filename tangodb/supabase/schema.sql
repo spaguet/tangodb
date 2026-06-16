@@ -17,8 +17,13 @@ CREATE TABLE IF NOT EXISTS clients (
   first_name  TEXT NOT NULL,
   last_name   TEXT NOT NULL,
   telegram    TEXT DEFAULT '',
-  created_at  TIMESTAMPTZ DEFAULT now()
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  archived_at TIMESTAMPTZ NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_clients_active_last_name
+  ON clients (last_name)
+  WHERE archived_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS disciplines (
   id          SERIAL PRIMARY KEY,
@@ -415,6 +420,11 @@ BEGIN
   RETURN COALESCE(NEW, OLD);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS audit_clients ON clients;
+CREATE TRIGGER audit_clients
+  AFTER INSERT OR UPDATE OR DELETE ON clients
+  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
 
 DROP TRIGGER IF EXISTS audit_subscriptions ON subscriptions;
 CREATE TRIGGER audit_subscriptions

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { formatClientName, jsDayToIsoDow } from "../lib/utils";
 import type { AttendanceRecord, Client, ScheduleSlot, SubForDate, Subscription } from "../types";
-import { useClients } from "./useClients";
+import { useClientDirectory } from "./useClients";
 import { useSchedule } from "./useSchedule";
 import { subscriptionsQueryKey, useSubscriptions } from "./useSubscriptions";
 
@@ -142,7 +142,7 @@ export function useSubsForDate(
   yearMonth?: string
 ) {
   const subscriptionsQuery = useSubscriptions();
-  const clientsQuery = useClients();
+  const clientsQuery = useClientDirectory();
   const attendanceQuery = useAttendanceRecords(yearMonth);
 
   const optionsKey = `${options?.category ?? ""}|${(options?.subscriptionIds ?? []).join(",")}`;

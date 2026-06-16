@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, CalendarDays, ChevronLeft, ChevronRight, Ticket, Edit, X } from "lucide-react";
-import { useClients } from "../hooks/useClients";
+import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
 import {
@@ -74,12 +74,14 @@ export default function PersonalLessonsPanel({
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
   const normalizedInitialTab = initialTab === "book" ? "sell" : initialTab;
 
-  const clientsQuery = useClients();
+  const activeClientsQuery = useClients();
+  const directoryClientsQuery = useClientDirectory();
   const disciplinesQuery = useDisciplines();
   const personalLessonsQuery = usePersonalLessons();
   const scheduleQuery = useSchedule();
   const pricesQuery = usePrices();
-  const { data: clients = [], isLoading: clientsLoading, isError: clientsError, error: clientsErr } = clientsQuery;
+  const { data: activeClients = [], isLoading: activeClientsLoading, isError: activeClientsError, error: activeClientsErr } = activeClientsQuery;
+  const { data: directoryClients = [], isLoading: directoryClientsLoading, isError: directoryClientsError, error: directoryClientsErr } = directoryClientsQuery;
   const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
   const { data: personalLessons = [], isLoading: lessonsLoading, isError: lessonsError, error: lessonsErr } = personalLessonsQuery;
   const { data: schedule = [], isLoading: scheduleLoading, isError: scheduleError, error: scheduleErr } = scheduleQuery;
@@ -90,9 +92,9 @@ export default function PersonalLessonsPanel({
   const updatePersonalLesson = useUpdatePersonalLesson();
   const deletePersonalLesson = useDeletePersonalLesson();
 
-  const isLoading = clientsLoading || disciplinesLoading || lessonsLoading || scheduleLoading || pricesLoading;
-  const isError = clientsError || disciplinesError || lessonsError || scheduleError || pricesError;
-  const error = clientsErr ?? disciplinesErr ?? lessonsErr ?? scheduleErr ?? pricesErr;
+  const isLoading = activeClientsLoading || directoryClientsLoading || disciplinesLoading || lessonsLoading || scheduleLoading || pricesLoading;
+  const isError = activeClientsError || directoryClientsError || disciplinesError || lessonsError || scheduleError || pricesError;
+  const error = activeClientsErr ?? directoryClientsErr ?? disciplinesErr ?? lessonsErr ?? scheduleErr ?? pricesErr;
 
   const [activeTab, setActiveTab] = useState<"view" | "sell">(normalizedInitialTab);
   const [packageModalOpen, setPackageModalOpen] = useState(false);
@@ -138,7 +140,7 @@ export default function PersonalLessonsPanel({
     }
   }, [lessonTariffs, selectedLessonTariffId]);
 
-  const clientMap = clients.reduce(
+  const clientMap = directoryClients.reduce(
     (acc, c) => ({ ...acc, [String(c.id)]: c }),
     {} as Record<string, Client>
   );
@@ -737,7 +739,7 @@ export default function PersonalLessonsPanel({
                     ) : (
                       <ClientAutocomplete
                         label={idx === 0 ? "Имя Фамилия" : `Клиент ${idx + 1}`}
-                        clients={clients}
+                        clients={activeClients}
                         query={client.query}
                         selectedId={client.id}
                         showAddClientButton
@@ -986,7 +988,7 @@ export default function PersonalLessonsPanel({
         open={packageModalOpen}
         onClose={() => setPackageModalOpen(false)}
         toast={toast}
-        clients={clients}
+        clients={activeClients}
         disciplines={disciplines}
         prices={prices}
       />

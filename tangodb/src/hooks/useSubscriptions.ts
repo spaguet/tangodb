@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { formatClientName } from "../lib/utils";
 import type { ActiveSubscription, Subscription } from "../types";
-import { useClients } from "./useClients";
+import { useClientDirectory } from "./useClients";
 
 export const subscriptionsQueryKey = ["subscriptions"] as const;
 
@@ -41,7 +41,7 @@ export function useSubscriptions() {
 
 export function useActiveSubscriptions() {
   const subscriptionsQuery = useSubscriptions();
-  const clientsQuery = useClients();
+  const clientsQuery = useClientDirectory();
 
   const data = useMemo((): ActiveSubscription[] => {
     const subscriptions = subscriptionsQuery.data ?? [];

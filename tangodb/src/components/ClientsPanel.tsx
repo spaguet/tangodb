@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { Search, UserPlus, FileText, Send, Edit, Trash2, X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { useAddClient, useClients, useDeleteClient, useUpdateClient } from "../hooks/useClients";
+import { useAddClient, useArchiveClient, useClients, useUpdateClient } from "../hooks/useClients";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { downloadCsv } from "../lib/exportCsv";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
@@ -32,7 +32,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const { data: clients = [], isLoading, isError, error } = useClients();
   const addClient = useAddClient();
   const updateClient = useUpdateClient();
-  const deleteClient = useDeleteClient();
+  const archiveClient = useArchiveClient();
   const [search, setSearch] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -110,17 +110,17 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
     }
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmArchive = async () => {
     if (!deleteTarget) return;
     if (!isOnline) {
       toast(OFFLINE_TOAST, "error");
       return;
     }
-    const res = await deleteClient.mutateAsync(deleteTarget.id);
+    const res = await archiveClient.mutateAsync(deleteTarget.id);
     if (!res.success) {
-      toast(res.error || "Не удалось удалить клиента", "error");
+      toast(res.error || "Не удалось архивировать клиента", "error");
     } else {
-      toast(`Клиент ${deleteTarget.lastName} ${deleteTarget.firstName} удалён`, "success");
+      toast(`Клиент ${deleteTarget.lastName} ${deleteTarget.firstName} архивирован`, "success");
       setDeleteTarget(null);
     }
   };
@@ -326,8 +326,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                         <button
                           onClick={() => setDeleteTarget(c)}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                          title="Удалить из базы"
-                          aria-label={`Удалить ${c.lastName} ${c.firstName}`}
+                          title="Архивировать"
+                          aria-label={`Архивировать ${c.lastName} ${c.firstName}`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -416,20 +416,20 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        title="Удалить клиента?"
+        title="Архивировать клиента?"
         description={
           <>
             Карточка клиента{" "}
             <strong className="font-semibold text-slate-800">
               {deleteTarget?.lastName} {deleteTarget?.firstName}
             </strong>{" "}
-            и все связанные абонементы будут удалены безвозвратно.
+            будет скрыта из списков и автокомплитов. История абонементов и уроков сохранится.
           </>
         }
-        confirmLabel="Удалить"
+        confirmLabel="Архивировать"
         cancelLabel="Оставить"
-        pending={deleteClient.isPending}
-        onConfirm={handleConfirmDelete}
+        pending={archiveClient.isPending}
+        onConfirm={handleConfirmArchive}
         onCancel={() => setDeleteTarget(null)}
       />
     </div>

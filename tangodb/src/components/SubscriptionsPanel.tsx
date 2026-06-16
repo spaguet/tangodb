@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Ticket, FileCheck, Search, Send, Snowflake } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
-import { useClients } from "../hooks/useClients";
+import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
 import {
@@ -45,20 +45,22 @@ export default function SubscriptionsPanel({
   const { isOnline } = useOnlineStatus();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
 
-  const clientsQuery = useClients();
+  const activeClientsQuery = useClients();
+  const directoryClientsQuery = useClientDirectory();
   const disciplinesQuery = useDisciplines();
   const subscriptionsQuery = useSubscriptions();
   const pricesQuery = usePrices();
-  const { data: clients = [], isLoading: clientsLoading, isError: clientsError, error: clientsErr } = clientsQuery;
+  const { data: activeClients = [], isLoading: activeClientsLoading, isError: activeClientsError, error: activeClientsErr } = activeClientsQuery;
+  const { data: directoryClients = [], isLoading: directoryClientsLoading, isError: directoryClientsError, error: directoryClientsErr } = directoryClientsQuery;
   const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
   const { data: subscriptions = [], isLoading: subsLoading, isError: subsError, error: subsErr } = subscriptionsQuery;
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
   const addSubscription = useAddSubscription();
   const finishSubscription = useFinishSubscription();
 
-  const isLoading = clientsLoading || disciplinesLoading || subsLoading || pricesLoading;
-  const isError = clientsError || disciplinesError || subsError || pricesError;
-  const error = clientsErr ?? disciplinesErr ?? subsErr ?? pricesErr;
+  const isLoading = activeClientsLoading || directoryClientsLoading || disciplinesLoading || subsLoading || pricesLoading;
+  const isError = activeClientsError || directoryClientsError || disciplinesError || subsError || pricesError;
+  const error = activeClientsErr ?? directoryClientsErr ?? disciplinesErr ?? subsErr ?? pricesErr;
   const [activeTab, setActiveTab] = useState<"sell" | "active">(initialTab);
 
   useEffect(() => {
@@ -197,8 +199,8 @@ export default function SubscriptionsPanel({
     .sort((a, b) => a.lessonsLeft - b.lessonsLeft);
 
   const clientMap = useMemo(
-    () => Object.fromEntries(clients.map((c) => [c.id, c])) as Record<string, Client>,
-    [clients]
+    () => Object.fromEntries(directoryClients.map((c) => [c.id, c])) as Record<string, Client>,
+    [directoryClients]
   );
   const disciplineMap = useMemo(
     () => Object.fromEntries(disciplines.map((d) => [d.id, d])) as Record<number, Discipline>,
@@ -472,7 +474,7 @@ export default function SubscriptionsPanel({
 
             <ClientAutocomplete
               label={needsSecondClient ? "Первый клиент" : "Клиент"}
-              clients={clients}
+              clients={activeClients}
               query={client1Query}
               selectedId={client1Id}
               showAddClientButton
@@ -492,7 +494,7 @@ export default function SubscriptionsPanel({
               <div className="animate-fade-in">
                 <ClientAutocomplete
                   label="Второй клиент"
-                  clients={clients}
+                  clients={activeClients}
                   query={client2Query}
                   selectedId={client2Id}
                   showAddClientButton
