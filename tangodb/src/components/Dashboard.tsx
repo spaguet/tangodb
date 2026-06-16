@@ -16,7 +16,6 @@ import { computeScheduleDatesForMonth } from "../hooks/useAttendance";
 import DisciplinesPanel from "./DisciplinesPanel";
 import type { ToastType } from "../App";
 import { exportAllDashboardCsv } from "../lib/exportDashboardCsv";
-import { revokeManualSaveUrl } from "../lib/exportCsv";
 import CsvExportModal from "./ui/CsvExportModal";
 import { Client, Discipline, Subscription, ScheduleSlot, PersonalLesson, Price, AttendanceRecord } from "../types";
 
@@ -50,14 +49,9 @@ export default function Dashboard({
   onNavigate,
 }: DashboardProps) {
   const [exporting, setExporting] = useState(false);
-  const [manualExport, setManualExport] = useState<{ filename: string; blobUrl: string } | null>(null);
+  const [manualExport, setManualExport] = useState<{ filename: string; content: string } | null>(null);
 
-  const closeManualExport = () => {
-    setManualExport((current) => {
-      revokeManualSaveUrl(current?.blobUrl);
-      return null;
-    });
-  };
+  const closeManualExport = () => setManualExport(null);
   const activeSubs = subscriptions.filter((s) => s.status === "active");
   const solosCount = activeSubs.filter((s) => s.type === "solo").length;
   const pairsCount = activeSubs.filter((s) => s.type === "pair" || s.type === "pair_hm").length;
@@ -120,7 +114,7 @@ export default function Dashboard({
         toast("Нечего экспортировать", "error");
       } else if (result.manualSave) {
         setManualExport(result.manualSave);
-        toast("Нажмите «Сохранить файл» в окне ниже", "info");
+        toast("Нажмите кнопку в окне ниже", "info");
       } else if (result.method === "share") {
         toast("Выберите «Сохранить в Файлы» или другое приложение", "success");
       } else {
@@ -425,8 +419,9 @@ export default function Dashboard({
       <CsvExportModal
         open={manualExport != null}
         filename={manualExport?.filename ?? ""}
-        blobUrl={manualExport?.blobUrl ?? ""}
+        content={manualExport?.content ?? ""}
         onClose={closeManualExport}
+        onStatus={toast}
       />
     </div>
   );

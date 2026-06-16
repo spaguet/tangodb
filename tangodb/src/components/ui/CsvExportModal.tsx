@@ -1,15 +1,28 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Download, X } from "lucide-react";
+import { Copy, Share2, X } from "lucide-react";
+import type { ToastType } from "../../App";
+import { copyCsvToClipboard, saveCsvFromUserGesture } from "../../lib/exportCsv";
+import { hasTelegramDownloadFile, isInsideTelegramClient } from "../../lib/telegram";
 
 interface CsvExportModalProps {
   open: boolean;
   filename: string;
-  blobUrl: string;
+  content: string;
   onClose: () => void;
+  onStatus: (msg: string, type?: ToastType) => void;
 }
 
-export default function CsvExportModal({ open, filename, blobUrl, onClose }: CsvExportModalProps) {
+export default function CsvExportModal({
+  open,
+  filename,
+  content,
+  onClose,
+  onStatus,
+}: CsvExportModalProps) {
+  const [saving, setSaving] = useState(false);
+  const [copying, setCopying] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -18,6 +31,52 @@ export default function CsvExportModal({ open, filename, blobUrl, onClose }: Csv
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const result = await saveCsvFromUserGesture(content, filename);
+      switch (result) {
+        case "shared":
+          onStatus("Выберите «Сохранить в Файлы» или другое приложение", "success");
+          onClose();
+          break;
+        case "telegram":
+          onStatus("Загрузка файла началась в Telegram", "success");
+          onClose();
+          break;
+        case "clipboard":
+          onStatus("CSV скопирован — вставьте в Excel или Numbers", "success");
+          break;
+        case "cancelled":
+          onStatus("Сохранение отменено", "info");
+          break;
+        case "failed":
+          onStatus("Не удалось сохранить — попробуйте «Скопировать»", "error");
+          break;
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    setCopying(true);
+    try {
+      const ok = await copyCsvToClipboard(content);
+      onStatus(
+        ok ? "CSV скопирован — вставьте в Excel или Numbers" : "Не удалось скопировать",
+        ok ? "success" : "error"
+      );
+    } finally {
+      setCopying(false);
+    }
+  };
+
+  const primaryLabel =
+    isInsideTelegramClient() && hasTelegramDownloadFile()
+      ? "Скачать через Telegram"
+      : "Поделиться / Сохранить";
 
   return (
     <AnimatePresence>
@@ -47,10 +106,12 @@ export default function CsvExportModal({ open, filename, blobUrl, onClose }: Csv
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <h2 id="csv-export-title" className="text-base font-semibold text-slate-800">
-                  Сохранить CSV
+                  Экспорт CSV
                 </h2>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Нажмите кнопку ниже — откроется меню «Поделиться» или сохранение файла.
+                  {isInsideTelegramClient() && hasTelegramDownloadFile()
+                    ? "Нажмите кнопку — файл скачается через Telegram или откроется меню «Поделиться»."
+                    : "Нажмите кнопку — откроется меню «Поделиться», выберите «Сохранить в Файлы»."}
                 </p>
               </div>
               <button
@@ -67,14 +128,27 @@ export default function CsvExportModal({ open, filename, blobUrl, onClose }: Csv
               {filename}
             </p>
 
-            <a
-              href={blobUrl}
-              download={filename}
-              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Сохранить файл
-            </a>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving || copying}
+                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-sans text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Share2 className="w-4 h-4" />
+                {saving ? "Открываем…" : primaryLabel}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopy}
+                disabled={saving || copying}
+                className="w-full py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-60 text-slate-700 font-sans text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Copy className="w-4 h-4" />
+                {copying ? "Копируем…" : "Скопировать"}
+              </button>
+            </div>
           </motion.div>
         </div>
       )}

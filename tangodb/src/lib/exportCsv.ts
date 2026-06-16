@@ -1,4 +1,9 @@
-import { isInsideTelegramClient } from "./telegram";
+import { supabase } from "./supabase";
+import {
+  downloadFileViaTelegram,
+  hasTelegramDownloadFile,
+  isInsideTelegramClient,
+} from "./telegram";
 
 const CSV_SEPARATOR = ";";
 const CSV_BOM = "\uFEFF";
@@ -33,6 +38,7 @@ export function buildCsvContent(
 }
 
 export type CsvExportMethod = "share" | "download" | "manual";
+export type CsvSaveResult = "shared" | "telegram" | "clipboard" | "failed" | "cancelled";
 
 export interface CsvExportItem {
   rows: Record<string, string | number | null | undefined>[];
@@ -40,10 +46,15 @@ export interface CsvExportItem {
   columnLabels?: Record<string, string>;
 }
 
+export interface CsvManualSave {
+  filename: string;
+  content: string;
+}
+
 export interface CsvExportResult {
   count: number;
   method: CsvExportMethod;
-  manualSave?: { filename: string; blobUrl: string };
+  manualSave?: CsvManualSave;
 }
 
 export function isMobileExportContext(): boolean {
@@ -95,6 +106,10 @@ function mergeCsvExportItems(items: CsvExportItem[], mergedFilename: string): { 
   };
 }
 
+function sanitizeStorageFilename(filename: string): string {
+  return filename.replace(/[^\w.\-]/g, "_").replace(/_+/g, "_") || "export.csv";
+}
+
 function downloadViaAnchor(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -109,13 +124,6 @@ function downloadViaAnchor(blob: Blob, filename: string): void {
     link.remove();
     URL.revokeObjectURL(url);
   }, 250);
-}
-
-function createManualSave(blob: Blob, filename: string): CsvExportResult["manualSave"] {
-  return {
-    filename,
-    blobUrl: URL.createObjectURL(blob),
-  };
 }
 
 async function sharePayload(data: ShareData): Promise<"shared" | "failed" | "cancelled"> {
@@ -139,7 +147,70 @@ async function tryShareText(content: string, title: string): Promise<"shared" | 
   return sharePayload({ title, text: trimmed });
 }
 
-/** Export one or more CSV files; uses Share sheet on mobile/Telegram. */
+async function uploadCsvSignedUrl(content: string, filename: string): Promise<string | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const safeName = sanitizeStorageFilename(filename);
+  const path = `${user.id}/${Date.now()}_${safeName}`;
+  const blob = createCsvBlob(content);
+
+  const { error: uploadError } = await supabase.storage.from("exports").upload(path, blob, {
+    contentType: "text/csv;charset=utf-8",
+    upsert: true,
+  });
+  if (uploadError) return null;
+
+  const { data, error: signError } = await supabase.storage.from("exports").createSignedUrl(path, 300);
+  if (signError || !data?.signedUrl) return null;
+
+  window.setTimeout(() => {
+    void supabase.storage.from("exports").remove([path]);
+  }, 120_000);
+
+  return data.signedUrl;
+}
+
+export async function copyCsvToClipboard(content: string): Promise<boolean> {
+  if (!navigator.clipboard?.writeText) return false;
+  try {
+    await navigator.clipboard.writeText(content);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Save CSV from a direct user tap (Telegram download / Share / clipboard). */
+export async function saveCsvFromUserGesture(content: string, filename: string): Promise<CsvSaveResult> {
+  if (isInsideTelegramClient() && hasTelegramDownloadFile()) {
+    const signedUrl = await uploadCsvSignedUrl(content, filename);
+    if (signedUrl) {
+      const started = await downloadFileViaTelegram(signedUrl, filename);
+      if (started) return "telegram";
+    }
+  }
+
+  const file = createCsvFile(content, filename);
+
+  if (file) {
+    const shared = await tryShareFiles([file]);
+    if (shared === "shared") return "shared";
+    if (shared === "cancelled") return "cancelled";
+  }
+
+  const sharedText = await tryShareText(content, filename);
+  if (sharedText === "shared") return "shared";
+  if (sharedText === "cancelled") return "cancelled";
+
+  if (await copyCsvToClipboard(content)) return "clipboard";
+
+  return "failed";
+}
+
+/** Export one or more CSV files; on mobile opens manual save sheet. */
 export async function exportCsvItems(
   items: CsvExportItem[],
   mergedFilename?: string
@@ -151,31 +222,13 @@ export async function exportCsvItems(
     mergedFilename ?? (items.length === 1 ? items[0].filename : "tangodb_export.csv")
   );
   const mergedBlob = createCsvBlob(merged.content);
-  const mergedFile = createCsvFile(merged.content, merged.filename);
   const useMobileFlow = isMobileExportContext();
 
   if (useMobileFlow) {
-    if (mergedFile) {
-      const shared = await tryShareFiles([mergedFile]);
-      if (shared === "shared") return { count: items.length, method: "share" };
-      if (shared === "cancelled") throw new DOMException("Share cancelled", "AbortError");
-    }
-
-    const files = items.map(csvFileFromItem).filter((file): file is File => file != null);
-    if (files.length > 0) {
-      const shared = await tryShareFiles(files);
-      if (shared === "shared") return { count: items.length, method: "share" };
-      if (shared === "cancelled") throw new DOMException("Share cancelled", "AbortError");
-    }
-
-    const sharedText = await tryShareText(merged.content, merged.filename);
-    if (sharedText === "shared") return { count: items.length, method: "share" };
-    if (sharedText === "cancelled") throw new DOMException("Share cancelled", "AbortError");
-
     return {
       count: items.length,
       method: "manual",
-      manualSave: createManualSave(mergedBlob, merged.filename),
+      manualSave: { filename: merged.filename, content: merged.content },
     };
   }
 
@@ -187,7 +240,7 @@ export async function exportCsvItems(
       return {
         count: items.length,
         method: "manual",
-        manualSave: createManualSave(mergedBlob, merged.filename),
+        manualSave: { filename: merged.filename, content: merged.content },
       };
     }
   }
@@ -213,8 +266,4 @@ export async function downloadCsv(
 
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
-export function revokeManualSaveUrl(blobUrl: string | undefined): void {
-  if (blobUrl) URL.revokeObjectURL(blobUrl);
 }

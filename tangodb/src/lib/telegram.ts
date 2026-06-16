@@ -26,6 +26,10 @@ declare global {
         expand: () => void;
         openTelegramLink?: (url: string) => void;
         openLink?: (url: string) => void;
+        downloadFile?: (
+          params: { url: string; file_name: string },
+          callback?: (status: "downloading" | "cancelled" | "failed" | "success") => void
+        ) => void;
       };
     };
   }
@@ -108,4 +112,24 @@ export function initTelegramWebApp(): void {
   if (!webApp) return;
   webApp.ready();
   webApp.expand();
+}
+
+export function hasTelegramDownloadFile(): boolean {
+  return typeof window.Telegram?.WebApp?.downloadFile === "function";
+}
+
+/** Native file download inside Telegram (Bot API 8.0+, HTTPS URL required). */
+export function downloadFileViaTelegram(url: string, fileName: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const downloadFile = window.Telegram?.WebApp?.downloadFile;
+    if (!downloadFile) {
+      resolve(false);
+      return;
+    }
+
+    downloadFile({ url, file_name: fileName }, (status) => {
+      if (status === "success" || status === "downloading") resolve(true);
+      else if (status === "cancelled" || status === "failed") resolve(false);
+    });
+  });
 }

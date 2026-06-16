@@ -1,7 +1,7 @@
 import type { AttendanceRecord, Client, PersonalLesson, Subscription } from "../types";
 import { formatClientName } from "./utils";
 import { exportCsvItems } from "./exportCsv";
-import type { CsvExportMethod } from "./exportCsv";
+import type { CsvExportMethod, CsvManualSave } from "./exportCsv";
 
 const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
   present: "Пришёл",
@@ -65,7 +65,7 @@ export interface DashboardExportResult {
   exported: number;
   skipped: string[];
   method?: CsvExportMethod;
-  manualSave?: { filename: string; blobUrl: string };
+  manualSave?: CsvManualSave;
 }
 
 /** Export all CRM datasets as separate CSV files (sequential downloads). */

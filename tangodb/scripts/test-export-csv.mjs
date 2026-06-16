@@ -47,8 +47,13 @@ if (!source.includes("navigator.share")) {
   process.exit(1);
 }
 
-if (!source.includes("method: \"manual\"")) {
-  console.error("FAIL: export must support manual save fallback");
+if (!source.includes("saveCsvFromUserGesture")) {
+  console.error("FAIL: export must support user-gesture save");
+  process.exit(1);
+}
+
+if (!source.includes("downloadFileViaTelegram")) {
+  console.error("FAIL: Telegram downloadFile integration missing");
   process.exit(1);
 }
 
