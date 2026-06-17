@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "migrate": "node scripts/migrate.mjs",
-    "test:db": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_tenant_rls_test.sql"
+    "test:db": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_tenant_rls_test.sql",
+    "test:db:keys": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_access_key_test.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
