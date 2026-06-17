@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { formatClientName } from "../lib/utils";
 import type { ActiveSubscription, Subscription } from "../types";
 import { useClientDirectory } from "./useClients";
+import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const subscriptionsQueryKey = ["subscriptions"] as const;
 
@@ -25,8 +26,11 @@ const mapSubscription = (row: Record<string, unknown>): Subscription => ({
 });
 
 export function useSubscriptions() {
+  const { enabled, withOrgId } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: subscriptionsQueryKey,
+    queryKey: withOrgId(subscriptionsQueryKey),
+    enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscriptions")

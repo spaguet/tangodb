@@ -4,11 +4,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { getSiteUrl } from "../lib/siteUrl";
 import type { TelegramLoginWidgetPayload } from "../lib/telegram";
 import { getTelegramInitData, initTelegramWebApp, isTelegramWebApp } from "../lib/telegram";
 
@@ -19,6 +21,10 @@ interface AuthContextValue {
     initData?: string;
     widgetPayload?: TelegramLoginWidgetPayload;
   }) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  resetPasswordForEmail: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -116,13 +122,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  }, []);
+
+  const signUpWithEmail = useCallback(async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${getSiteUrl()}/auth/verify-email`,
+      },
+    });
+    if (error) throw error;
+    return { needsEmailConfirmation: !data.session };
+  }, []);
+
+  const resetPasswordForEmail = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${getSiteUrl()}/auth/reset-password`,
+    });
+    if (error) throw error;
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
   }, []);
 
   const value = useMemo(
-    () => ({ session, loading, signInWithTelegram, signOut }),
-    [session, loading, signInWithTelegram, signOut]
+    () => ({
+      session,
+      loading,
+      signInWithTelegram,
+      signInWithEmail,
+      signUpWithEmail,
+      resetPasswordForEmail,
+      updatePassword,
+      signOut,
+    }),
+    [
+      session,
+      loading,
+      signInWithTelegram,
+      signInWithEmail,
+      signUpWithEmail,
+      resetPasswordForEmail,
+      updatePassword,
+      signOut,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

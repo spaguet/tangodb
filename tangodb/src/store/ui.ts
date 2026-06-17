@@ -18,13 +18,17 @@ interface UIState {
   setPersonalFilter: (f: "all" | "yes" | "no") => void;
 }
 
-export const useUIStore = create<UIState>((set) => ({
+const defaultUIState = {
   selectedMonth: currentYearMonth(),
-  selectedDate: null,
-  subscriptionsTab: "active",
-  personalTab: "view",
-  editClientModal: { open: false, clientId: null },
-  personalFilter: "all",
+  selectedDate: null as string | null,
+  subscriptionsTab: "active" as const,
+  personalTab: "view" as const,
+  editClientModal: { open: false, clientId: null as string | null },
+  personalFilter: "all" as const,
+};
+
+export const useUIStore = create<UIState>((set) => ({
+  ...defaultUIState,
 
   setSelectedMonth: (m) => set({ selectedMonth: m }),
   setSelectedDate: (d) => set({ selectedDate: d }),
@@ -34,3 +38,7 @@ export const useUIStore = create<UIState>((set) => ({
   closeEditClient: () => set({ editClientModal: { open: false, clientId: null } }),
   setPersonalFilter: (f) => set({ personalFilter: f }),
 }));
+
+export function resetUIStore() {
+  useUIStore.setState(defaultUIState);
+}

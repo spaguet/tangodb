@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { Discipline } from "../types";
+import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const disciplinesQueryKey = ["disciplines"] as const;
 
@@ -12,8 +13,11 @@ const mapDiscipline = (row: Record<string, unknown>): Discipline => ({
 });
 
 export function useDisciplines() {
+  const { enabled, withOrgId } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: disciplinesQueryKey,
+    queryKey: withOrgId(disciplinesQueryKey),
+    enabled,
     queryFn: async () => {
       const { data, error } = await supabase.from("disciplines").select("*").order("name");
       if (error) throw error;
@@ -25,13 +29,14 @@ export function useDisciplines() {
 
 export function useAddDiscipline() {
   const queryClient = useQueryClient();
+  const { withOrgId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({ name, description }: { name: string; description: string }) => {
       const trimmed = name.trim();
       if (!trimmed) return { success: false as const, error: "Укажите название дисциплины" };
 
-      const cached = queryClient.getQueryData<Discipline[]>(disciplinesQueryKey) ?? [];
+      const cached = queryClient.getQueryData<Discipline[]>(withOrgId(disciplinesQueryKey)) ?? [];
       if (cached.some((d) => d.name.toLowerCase() === trimmed.toLowerCase())) {
         return { success: false as const, error: "Такая дисциплина уже есть" };
       }

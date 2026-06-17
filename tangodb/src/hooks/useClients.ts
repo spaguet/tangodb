@@ -3,6 +3,7 @@ import { reportClientError } from "../lib/reportClientError";
 import { supabase } from "../lib/supabase";
 import { normalizeTelegramForStorage } from "../lib/telegram";
 import type { Client } from "../types";
+import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const clientsQueryKey = ["clients"] as const;
 
@@ -21,9 +22,11 @@ const mapClient = (row: Record<string, unknown>): Client => ({
 
 export function useClients(options?: { includeArchived?: boolean }) {
   const includeArchived = options?.includeArchived ?? false;
+  const { enabled, withOrgId } = useOrgQueryScope();
 
   return useQuery({
-    queryKey: clientsListQueryKey(includeArchived),
+    queryKey: withOrgId(clientsListQueryKey(includeArchived)),
+    enabled,
     queryFn: async () => {
       let query = supabase.from("clients").select("*").order("last_name");
       if (!includeArchived) query = query.is("archived_at", null);
@@ -40,6 +43,7 @@ export const useClientDirectory = () => useClients({ includeArchived: true });
 
 export function useAddClient() {
   const queryClient = useQueryClient();
+  const { withOrgId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
@@ -54,7 +58,7 @@ export function useAddClient() {
       const fTrim = firstName.trim();
       const lTrim = lastName.trim();
       const cached =
-        queryClient.getQueryData<Client[]>(clientsListQueryKey(false)) ?? [];
+        queryClient.getQueryData<Client[]>(withOrgId(clientsListQueryKey(false))) ?? [];
       const exists = cached.some(
         (c) =>
           !c.archivedAt &&

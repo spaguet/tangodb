@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { ScheduleSlot } from "../types";
+import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const scheduleQueryKey = ["schedule"] as const;
 
@@ -13,8 +14,11 @@ const mapScheduleSlot = (row: Record<string, unknown>): ScheduleSlot => ({
 });
 
 export function useSchedule() {
+  const { enabled, withOrgId } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: scheduleQueryKey,
+    queryKey: withOrgId(scheduleQueryKey),
+    enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schedule")

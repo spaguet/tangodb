@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { Price, PriceCategory } from "../types";
+import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const pricesQueryKey = ["prices"] as const;
 
@@ -15,8 +16,11 @@ const mapPrice = (row: Record<string, unknown>): Price => ({
 });
 
 export function usePrices() {
+  const { enabled, withOrgId } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: pricesQueryKey,
+    queryKey: withOrgId(pricesQueryKey),
+    enabled,
     queryFn: async () => {
       const { data, error } = await supabase.from("prices").select("*").order("type").order("lessons");
       if (error) throw error;

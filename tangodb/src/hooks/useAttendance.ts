@@ -7,6 +7,7 @@ import type { AttendanceRecord, Client, ScheduleSlot, SubForDate, Subscription }
 import { useClientDirectory } from "./useClients";
 import { useSchedule } from "./useSchedule";
 import { subscriptionsQueryKey, useSubscriptions } from "./useSubscriptions";
+import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const attendanceQueryKey = ["attendance"] as const;
 
@@ -91,8 +92,12 @@ export function computeSubsForDate(
 }
 
 export function useAttendanceRecords(yearMonth?: string) {
+  const { enabled, withOrgId } = useOrgQueryScope();
+  const baseKey = yearMonth ? [...attendanceQueryKey, yearMonth] : attendanceQueryKey;
+
   return useQuery({
-    queryKey: yearMonth ? [...attendanceQueryKey, yearMonth] : attendanceQueryKey,
+    queryKey: withOrgId(baseKey),
+    enabled,
     queryFn: async () => {
       let query = supabase
         .from("attendance")
@@ -216,6 +221,9 @@ function computeAttendanceDeltas(
 
 export function useMarkAttendance() {
   const queryClient = useQueryClient();
+  const { withOrgId } = useOrgQueryScope();
+  const scopedAttendanceKey = withOrgId(attendanceQueryKey);
+  const scopedSubscriptionsKey = withOrgId(subscriptionsQueryKey);
 
   return useMutation({
     mutationFn: async ({
@@ -246,13 +254,13 @@ export function useMarkAttendance() {
       };
     },
     onMutate: async ({ dateStr, subId, status }) => {
-      await queryClient.cancelQueries({ queryKey: attendanceQueryKey });
-      await queryClient.cancelQueries({ queryKey: subscriptionsQueryKey });
+      await queryClient.cancelQueries({ queryKey: scopedAttendanceKey });
+      await queryClient.cancelQueries({ queryKey: scopedSubscriptionsKey });
 
       const previousAttendanceEntries = queryClient.getQueriesData<AttendanceRecord[]>({
-        queryKey: attendanceQueryKey,
+        queryKey: scopedAttendanceKey,
       });
-      const previousSubscriptions = queryClient.getQueryData<Subscription[]>(subscriptionsQueryKey);
+      const previousSubscriptions = queryClient.getQueryData<Subscription[]>(scopedSubscriptionsKey);
 
       const sub = previousSubscriptions?.find((s) => s.id === subId);
       if (!sub) return { previousAttendanceEntries, previousSubscriptions };
@@ -280,7 +288,7 @@ export function useMarkAttendance() {
       }
 
       queryClient.setQueriesData<AttendanceRecord[]>(
-        { queryKey: attendanceQueryKey },
+        { queryKey: scopedAttendanceKey },
         (old) => {
           const base = old ?? [];
           const attIdx = base.findIndex(
@@ -306,7 +314,7 @@ export function useMarkAttendance() {
       const newLessonsLeft = sub.lessonsLeft + lessonDelta;
       const newFreezeUsed = sub.freezeUsed + freezeDelta;
       queryClient.setQueryData<Subscription[]>(
-        subscriptionsQueryKey,
+        scopedSubscriptionsKey,
         (old) =>
           (old ?? []).map((s) =>
             s.id === subId
@@ -330,7 +338,7 @@ export function useMarkAttendance() {
         }
       }
       if (context?.previousSubscriptions) {
-        queryClient.setQueryData(subscriptionsQueryKey, context.previousSubscriptions);
+        queryClient.setQueryData(scopedSubscriptionsKey, context.previousSubscriptions);
       }
     },
     onSettled: (result) => {

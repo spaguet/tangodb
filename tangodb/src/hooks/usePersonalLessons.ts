@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { formatClientName } from "../lib/utils";
 import type { PersonalLesson } from "../types";
+import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const personalLessonsQueryKey = ["personalLessons"] as const;
 
@@ -53,8 +54,12 @@ const personalLessonsSelect =
   "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, price, paid, subscription_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
 export function usePersonalLessons(yearMonth?: string) {
+  const { enabled, withOrgId } = useOrgQueryScope();
+  const baseKey = yearMonth ? [...personalLessonsQueryKey, yearMonth] : personalLessonsQueryKey;
+
   return useQuery({
-    queryKey: yearMonth ? [...personalLessonsQueryKey, yearMonth] : personalLessonsQueryKey,
+    queryKey: withOrgId(baseKey),
+    enabled,
     queryFn: async () => {
       let query = supabase
         .from("personal_lessons")

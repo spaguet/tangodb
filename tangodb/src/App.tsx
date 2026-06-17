@@ -18,10 +18,25 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 import { AuthProvider, useAuth } from "./auth/AuthProvider";
-import { ProtectedRoute } from "./auth/ProtectedRoute";
+import {
+  AuthFlowRoute,
+  GuestRoute,
+  OrgWorkspaceRoute,
+} from "./auth/ProtectedRoute";
 import LoginPage from "./auth/LoginPage";
+import RegisterPage from "./auth/RegisterPage";
+import ForgotPasswordPage from "./auth/ForgotPasswordPage";
+import ResetPasswordPage from "./auth/ResetPasswordPage";
+import VerifyEmailPage from "./auth/VerifyEmailPage";
+import ActivateKeyPage from "./auth/ActivateKeyPage";
+import SelectOrganizationPage from "./auth/SelectOrganizationPage";
+import LicenseRequiredPage from "./auth/LicenseRequiredPage";
+import OnboardingWizardPage from "./auth/OnboardingWizardPage";
+import { OrganizationProvider } from "./organization/OrganizationProvider";
+import OrgSwitcher from "./organization/OrgSwitcher";
 import { useUIStore } from "./store/ui";
 import DashboardPage from "./pages/DashboardPage";
 import ClientsPage from "./pages/ClientsPage";
@@ -32,6 +47,7 @@ import PersonalPage from "./pages/PersonalPage";
 import PricesPage from "./pages/PricesPage";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import OfflineBanner from "./components/ui/OfflineBanner";
+import ReadOnlyBanner from "./components/ui/ReadOnlyBanner";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 
 export type ToastType = "success" | "error" | "info";
@@ -43,15 +59,6 @@ export function useToast() {
   if (!ctx) throw new Error("useToast must be used within AppLayout");
   return ctx;
 }
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      retry: 1,
-    },
-  },
-});
 
 type SubTab = "active" | "sell";
 type PersTab = "view" | "sell";
@@ -295,6 +302,7 @@ function AppLayout() {
 
   return (
     <ToastContext.Provider value={showToast}>
+      <RouteSync />
       <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased font-sans">
         <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white text-slate-700 border-r border-slate-200 flex-shrink-0 relative z-30 shadow-xs">
           <div
@@ -357,16 +365,20 @@ function AppLayout() {
               </button>
               <h2 className="text-base font-semibold text-slate-800 tracking-tight leading-tight">{panelTitle}</h2>
             </div>
-            <button
-              onClick={() => signOut()}
-              className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Выйти
-            </button>
+            <div className="flex items-center gap-2">
+              <OrgSwitcher />
+              <button
+                onClick={() => signOut()}
+                className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Выйти
+              </button>
+            </div>
           </header>
 
           <OfflineBanner connectionState={connectionState} />
+          <ReadOnlyBanner />
 
           <section className="flex-1 p-4 sm:p-5 md:p-6 xl:p-8 max-w-7xl w-full mx-auto panel-page-stack overflow-y-auto">
             <ErrorBoundary>
@@ -469,33 +481,62 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<ErrorBoundary><LoginPage /></ErrorBoundary>} />
-            <Route
-              element={
-                <ProtectedRoute>
-                  <RouteSync />
-                  <Outlet />
-                </ProtectedRoute>
-              }
-            >
-              <Route element={<AppLayout />}>
-                <Route index element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
-                <Route path="clients" element={<ErrorBoundary><ClientsPage /></ErrorBoundary>} />
-                <Route path="subscriptions" element={<ErrorBoundary><SubscriptionsPage initialTab="active" /></ErrorBoundary>} />
-                <Route path="subscriptions/sell" element={<ErrorBoundary><SubscriptionsPage initialTab="sell" /></ErrorBoundary>} />
-                <Route path="schedule" element={<ErrorBoundary><SchedulePage /></ErrorBoundary>} />
-                <Route path="attendance" element={<ErrorBoundary><AttendancePage /></ErrorBoundary>} />
-                <Route path="personal" element={<ErrorBoundary><PersonalPage initialTab="view" /></ErrorBoundary>} />
-                <Route path="personal/sell" element={<ErrorBoundary><PersonalPage initialTab="sell" /></ErrorBoundary>} />
-                <Route path="personal/book" element={<Navigate to="/personal/sell" replace />} />
-                <Route path="prices" element={<ErrorBoundary><PricesPage /></ErrorBoundary>} />
-                <Route path="*" element={<Navigate to="/" replace />} />
+        <OrganizationProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route
+                path="/login"
+                element={
+                  <GuestRoute>
+                    <ErrorBoundary>
+                      <LoginPage />
+                    </ErrorBoundary>
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <GuestRoute>
+                    <ErrorBoundary>
+                      <RegisterPage />
+                    </ErrorBoundary>
+                  </GuestRoute>
+                }
+              />
+              <Route path="/auth/forgot-password" element={<ErrorBoundary><ForgotPasswordPage /></ErrorBoundary>} />
+              <Route path="/auth/reset-password" element={<ErrorBoundary><ResetPasswordPage /></ErrorBoundary>} />
+              <Route path="/auth/verify-email" element={<ErrorBoundary><VerifyEmailPage /></ErrorBoundary>} />
+
+              <Route element={<AuthFlowRoute />}>
+                <Route path="/activate-key" element={<ErrorBoundary><ActivateKeyPage /></ErrorBoundary>} />
+                <Route path="/select-organization" element={<ErrorBoundary><SelectOrganizationPage /></ErrorBoundary>} />
               </Route>
-            </Route>
-          </Routes>
-        </BrowserRouter>
+
+              <Route
+                element={
+                  <OrgWorkspaceRoute />
+                }
+              >
+                <Route path="/onboarding" element={<ErrorBoundary><OnboardingWizardPage /></ErrorBoundary>} />
+                <Route path="/license-required" element={<ErrorBoundary><LicenseRequiredPage /></ErrorBoundary>} />
+                <Route element={<AppLayout />}>
+                  <Route index element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
+                  <Route path="clients" element={<ErrorBoundary><ClientsPage /></ErrorBoundary>} />
+                  <Route path="subscriptions" element={<ErrorBoundary><SubscriptionsPage initialTab="active" /></ErrorBoundary>} />
+                  <Route path="subscriptions/sell" element={<ErrorBoundary><SubscriptionsPage initialTab="sell" /></ErrorBoundary>} />
+                  <Route path="schedule" element={<ErrorBoundary><SchedulePage /></ErrorBoundary>} />
+                  <Route path="attendance" element={<ErrorBoundary><AttendancePage /></ErrorBoundary>} />
+                  <Route path="personal" element={<ErrorBoundary><PersonalPage initialTab="view" /></ErrorBoundary>} />
+                  <Route path="personal/sell" element={<ErrorBoundary><PersonalPage initialTab="sell" /></ErrorBoundary>} />
+                  <Route path="personal/book" element={<Navigate to="/personal/sell" replace />} />
+                  <Route path="prices" element={<ErrorBoundary><PricesPage /></ErrorBoundary>} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </OrganizationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
