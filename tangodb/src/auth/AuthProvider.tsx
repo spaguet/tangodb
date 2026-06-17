@@ -30,6 +30,28 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+async function applyTelegramAuthResponse(data: {
+  access_token?: string;
+  refresh_token?: string;
+  needs_org_picker?: boolean;
+  error?: string;
+}): Promise<void> {
+  if (!data?.access_token || !data?.refresh_token) {
+    throw new Error(data?.error ?? "Не удалось получить сессию");
+  }
+
+  const { error: sessionError } = await supabase.auth.setSession({
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+  });
+  if (sessionError) throw sessionError;
+
+  if (!data.needs_org_picker) {
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) throw refreshError;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,14 +78,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               body: { initData },
             });
             if (!error && authData?.access_token && authData?.refresh_token) {
-              const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-                access_token: authData.access_token,
-                refresh_token: authData.refresh_token,
-              });
-              if (!sessionError && sessionData.session) {
-                setSession(sessionData.session);
-                setLoading(false);
-                return;
+              try {
+                await applyTelegramAuthResponse(authData);
+                const { data: sessionData } = await supabase.auth.getSession();
+                if (sessionData.session) {
+                  setSession(sessionData.session);
+                  setLoading(false);
+                  return;
+                }
+              } catch {
+                // LoginPage will show the error
               }
             }
           } catch {
@@ -101,23 +125,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (ctx) {
           try {
             const body = await ctx.json();
-            if (body?.error) throw new Error(body.error);
+            if (body?.error) {
+              const message =
+                body.error === "Forbidden"
+                  ? "Нет доступа к организации. Активируйте ключ или попросите приглашение."
+                  : body.error === "Unauthorized"
+                    ? "Не удалось подтвердить вход через Telegram"
+                    : body.error;
+              throw new Error(message);
+            }
           } catch (parseErr) {
             if (parseErr instanceof Error && parseErr.message !== error.message) throw parseErr;
           }
         }
         throw error;
       }
-      if (!data?.access_token || !data?.refresh_token) {
-        throw new Error(data?.error ?? "Не удалось получить сессию");
-      }
 
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-      });
-
-      if (sessionError) throw sessionError;
+      await applyTelegramAuthResponse(data);
     },
     []
   );
