@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "migrate": "node scripts/migrate.mjs"
+    "migrate": "node scripts/migrate.mjs",
+    "test:db": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_tenant_rls_test.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
