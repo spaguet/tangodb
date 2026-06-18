@@ -10,14 +10,33 @@ import {
   AuthField,
   AuthLayout,
   AuthLink,
+  AuthSuccess,
 } from "./AuthLayout";
+
+function parseActivationError(err: unknown): string {
+  if (!(err instanceof Error)) return "Не удалось активировать ключ";
+
+  const message = err.message;
+  if (message === "Invalid access key") return "Неверный или уже использованный ключ";
+  if (message.includes("email required")) {
+    return "Привяжите email к аккаунту (Telegram) или войдите по email/паролю.";
+  }
+  if (message === "origin_not_allowed") {
+    return "Ошибка CORS: проверьте ALLOWED_ORIGINS для URL приложения.";
+  }
+  if (message.includes("Edge Function")) {
+    return "Сервис активации недоступен. Попробуйте позже или обновите страницу.";
+  }
+  return message;
+}
 
 export default function ActivateKeyPage() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { memberships, organizationId, refreshOrganization } = useOrganization();
+  const { memberships, organizationId, setActiveOrganization, refreshOrganization } = useOrganization();
   const [key, setKey] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const hasMembership = memberships.length > 0;
@@ -27,6 +46,7 @@ export default function ActivateKeyPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke("activate-access-key", {
@@ -36,31 +56,28 @@ export default function ActivateKeyPage() {
       if (fnError) {
         const ctx = (fnError as { context?: Response }).context;
         if (ctx) {
-          try {
-            const body = await ctx.json();
-            if (body?.error) throw new Error(body.error);
-          } catch (parseErr) {
-            if (parseErr instanceof Error && parseErr.message !== fnError.message) throw parseErr;
-          }
+          const body = (await ctx.json().catch(() => null)) as { error?: string } | null;
+          if (body?.error) throw new Error(body.error);
         }
         throw fnError;
       }
 
       if (!data?.ok) {
-        throw new Error(data?.error ?? "Не удалось активировать ключ");
+        throw new Error(typeof data?.error === "string" ? data.error : "Не удалось активировать ключ");
       }
 
-      await supabase.auth.refreshSession();
+      const orgId = typeof data.organization_id === "string" ? data.organization_id : null;
+      if (!orgId) {
+        throw new Error("Организация не создана — попробуйте снова");
+      }
+
+      setSuccess("Ключ принят, настраиваем доступ…");
+      await setActiveOrganization(orgId);
       await refreshOrganization();
 
-      if (data.upgraded) {
-        navigate("/", { replace: true });
-      } else {
-        navigate("/onboarding", { replace: true });
-      }
+      navigate(data.upgraded ? "/" : "/onboarding", { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Не удалось активировать ключ";
-      setError(message === "Invalid access key" ? "Неверный или уже использованный ключ" : message);
+      setError(parseActivationError(err));
     } finally {
       setLoading(false);
     }
@@ -92,13 +109,14 @@ export default function ActivateKeyPage() {
       </div>
 
       <AuthError message={error} />
+      <AuthSuccess message={success} />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthField
           label="Ключ доступа"
           value={key}
           onChange={setKey}
-          placeholder="TDB-DEMO-XXXX-XXXX-XXXX"
+          placeholder="TDB-LIFE-XXXX-XXXX-XXXX"
           required
         />
         <AuthButton loading={loading}>Активировать</AuthButton>

@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePermissions } from "../hooks/usePermissions";
+import { getOrganizationIdFromSession } from "../lib/authClaims";
 import { panelIdFromPath, settingsSectionFromPath, canAccessSettingsSection, type SettingsSectionId } from "../lib/permissions";
 
 function LoadingScreen({ label }: { label: string }) {
@@ -61,6 +62,7 @@ export function OrgWorkspaceRoute() {
     needsOnboarding,
   } = useOrganization();
   const location = useLocation();
+  const jwtOrganizationId = getOrganizationIdFromSession(session);
 
   if (authLoading || membershipsLoading) {
     return <LoadingScreen label="Загрузка профиля..." />;
@@ -70,6 +72,7 @@ export function OrgWorkspaceRoute() {
 
   if (memberships.length === 0) {
     if (location.pathname === "/activate-key") return <Outlet />;
+    if (location.pathname === "/onboarding" && jwtOrganizationId) return <Outlet />;
     return <Navigate to="/activate-key" replace />;
   }
 
