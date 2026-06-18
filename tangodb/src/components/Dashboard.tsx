@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Users, Ticket, Calendar, AlertCircle, Send, BarChart3, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Users, Ticket, Calendar, AlertCircle, Send, BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   formatClientName,
   formatCurrency,
@@ -13,21 +13,16 @@ import {
 } from "../lib/utils";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { computeScheduleDatesForMonth } from "../hooks/useAttendance";
-import DisciplinesPanel from "./DisciplinesPanel";
 import type { ToastType } from "../App";
-import { exportAllDashboardCsv } from "../lib/exportDashboardCsv";
-import CsvExportModal from "./ui/CsvExportModal";
-import RequirePermission from "./RequirePermission";
-import { Client, Discipline, Subscription, ScheduleSlot, PersonalLesson, Price, AttendanceRecord } from "../types";
+import { Client, Subscription, ScheduleSlot, PersonalLesson, Price } from "../types";
+import { useOrganization } from "../organization/OrganizationProvider";
 
 interface DashboardProps {
   clients: Client[];
   subscriptions: Subscription[];
   schedule: ScheduleSlot[];
   personalLessons: PersonalLesson[];
-  attendanceRecords: AttendanceRecord[];
   prices: Price[];
-  disciplines: Discipline[];
   toast: (msg: string, type?: ToastType) => void;
   onNavigate: (panel: string) => void;
 }
@@ -61,30 +56,24 @@ export default function Dashboard({
   subscriptions,
   schedule,
   personalLessons,
-  attendanceRecords,
   prices,
-  disciplines,
   toast,
   onNavigate,
 }: DashboardProps) {
-  const [exporting, setExporting] = useState(false);
-  const [manualExport, setManualExport] = useState<{ filename: string; content: string } | null>(null);
+  const { settings } = useOrganization();
+  const lowBalanceThreshold = settings?.low_balance_threshold ?? 2;
+  const [statsMonth, setStatsMonth] = useState(currentYearMonth());
+  const isViewingCurrentMonth = statsMonth === currentYearMonth();
 
-  const closeManualExport = () => setManualExport(null);
   const activeSubs = subscriptions.filter((s) => s.status === "active");
   const solosCount = activeSubs.filter((s) => s.type === "solo").length;
   const pairsCount = activeSubs.filter((s) => s.type === "pair" || s.type === "pair_hm").length;
 
-  // Warning memberships logic (<= 2 credits remaining)
-  const warningSubs = activeSubs.filter((s) => s.lessonsLeft <= 2);
+  const warningSubs = activeSubs.filter((s) => s.lessonsLeft <= lowBalanceThreshold);
 
   const clientMap = useMemo(
     () => Object.fromEntries(clients.map((c) => [c.id, c])) as Record<string, Client>,
     [clients]
-  );
-  const disciplineMap = useMemo(
-    () => Object.fromEntries(disciplines.map((d) => [d.id, d])) as Record<number, Discipline>,
-    [disciplines]
   );
 
   const unpaidLessons = personalLessons.filter((l) => l.paid === "no");
@@ -118,9 +107,6 @@ export default function Dashboard({
     return entries.sort((a, b) => a.start.localeCompare(b.start));
   }, [todaySlots, personalLessons, todayDate]);
 
-  const [statsMonth, setStatsMonth] = useState(currentYearMonth);
-  const isViewingCurrentMonth = statsMonth === currentYearMonth();
-
   const monthStats = useMemo(() => {
     const monthGroupLessons = computeScheduleDatesForMonth(schedule, statsMonth).length;
     const monthSoldSubs = subscriptions.filter((s) => isDateInYearMonth(s.activationDate, statsMonth));
@@ -139,38 +125,6 @@ export default function Dashboard({
       monthTotalRevenue,
     };
   }, [schedule, statsMonth, subscriptions, personalLessons, prices]);
-
-  const handleExportCsv = async () => {
-    if (exporting) return;
-    setExporting(true);
-    try {
-      const result = await exportAllDashboardCsv({
-        clients,
-        subscriptions,
-        personalLessons,
-        attendanceRecords,
-        statsMonth,
-      });
-      if (result.exported === 0) {
-        toast("Нечего экспортировать", "error");
-      } else if (result.manualSave) {
-        setManualExport(result.manualSave);
-        toast("Нажмите кнопку в окне ниже", "info");
-      } else if (result.method === "share") {
-        toast("Выберите «Сохранить в Файлы» или другое приложение", "success");
-      } else {
-        toast(`Скачано файлов: ${result.exported}`, "success");
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        toast("Экспорт отменён", "info");
-      } else {
-        toast("Не удалось экспортировать данные", "error");
-      }
-    } finally {
-      setExporting(false);
-    }
-  };
 
   return (
     <div id="panel-dashboard" className="panel-page-stack">
@@ -253,8 +207,7 @@ export default function Dashboard({
               todayScheduleEntries.map((entry) => {
                 if (entry.kind === "group") {
                   const { slot } = entry;
-                  const disciplineName =
-                    slot.disciplineId != null ? disciplineMap[slot.disciplineId]?.name : "Групповое занятие";
+                  const disciplineName = "Групповое занятие";
 
                   return (
                     <div
@@ -327,7 +280,7 @@ export default function Dashboard({
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
               <span className="w-2 h-2 bg-rose-600 rounded-full" />
-              Заканчивается абонемент (≤ 2)
+              Заканчивается абонемент (≤ {lowBalanceThreshold})
             </h2>
             <span className="text-[10px] bg-rose-50 text-rose-700 font-sans px-2 py-0.5 rounded font-semibold tabular-nums">
               {warningSubs.length}
@@ -409,8 +362,6 @@ export default function Dashboard({
           </div>
         </div>
 
-        <DisciplinesPanel toast={toast} />
-
         {/* Monthly statistics */}
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
           <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
@@ -419,17 +370,6 @@ export default function Dashboard({
               Статистика
             </h2>
             <div className="flex items-center gap-1 min-w-0">
-              <RequirePermission action="dashboard.export">
-              <button
-                type="button"
-                onClick={handleExportCsv}
-                disabled={exporting}
-                className="py-1.5 px-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-sans text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60 shrink-0"
-              >
-                <Download className="w-3.5 h-3.5" />
-                {exporting ? "Экспорт..." : "Экспорт CSV"}
-              </button>
-              </RequirePermission>
               <button
                 type="button"
                 onClick={() => setStatsMonth((m) => shiftMonth(m, -1))}
@@ -495,14 +435,6 @@ export default function Dashboard({
         </div>
         </div>
       </div>
-
-      <CsvExportModal
-        open={manualExport != null}
-        filename={manualExport?.filename ?? ""}
-        content={manualExport?.content ?? ""}
-        onClose={closeManualExport}
-        onStatus={toast}
-      />
     </div>
   );
 }

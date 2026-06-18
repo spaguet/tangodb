@@ -4,10 +4,8 @@ import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import { useToast } from "../App";
 import { useClientDirectory } from "../hooks/useClients";
-import { useDisciplines } from "../hooks/useDisciplines";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { usePrices } from "../hooks/usePrices";
-import { useAttendanceRecords } from "../hooks/useAttendance";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptions } from "../hooks/useSubscriptions";
 import { useUIStore } from "../store/ui";
@@ -25,22 +23,18 @@ export default function DashboardPage() {
   const scheduleQuery = useSchedule();
   const personalLessonsQuery = usePersonalLessons();
   const pricesQuery = usePrices();
-  const disciplinesQuery = useDisciplines();
-  const attendanceQuery = useAttendanceRecords();
 
   const { data: clients = [], isLoading: clientsLoading, isError: clientsError, error: clientsErr } = clientsQuery;
   const { data: subscriptions = [], isLoading: subsLoading, isError: subsError, error: subsErr } = subscriptionsQuery;
   const { data: schedule = [], isLoading: scheduleLoading, isError: scheduleError, error: scheduleErr } = scheduleQuery;
   const { data: personalLessons = [], isLoading: personalLoading, isError: personalError, error: personalErr } = personalLessonsQuery;
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
-  const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
-  const { data: attendanceRecords = [], isLoading: attendanceLoading, isError: attendanceError, error: attendanceErr } = attendanceQuery;
 
   const isLoading =
-    clientsLoading || subsLoading || scheduleLoading || personalLoading || pricesLoading || disciplinesLoading || attendanceLoading;
+    clientsLoading || subsLoading || scheduleLoading || personalLoading || pricesLoading;
   const isError =
-    clientsError || subsError || scheduleError || personalError || pricesError || disciplinesError || attendanceError;
-  const error = clientsErr ?? subsErr ?? scheduleErr ?? personalErr ?? pricesErr ?? disciplinesErr ?? attendanceErr;
+    clientsError || subsError || scheduleError || personalError || pricesError;
+  const error = clientsErr ?? subsErr ?? scheduleErr ?? personalErr ?? pricesErr;
 
   const handleNavigate = (panel: string) => {
     const routes: Record<string, { path: string; subTab?: "active" | "sell"; persTab?: "view" | "sell" }> = {
@@ -71,9 +65,7 @@ export default function DashboardPage() {
       subscriptions={subscriptions}
       schedule={schedule}
       personalLessons={personalLessons}
-      attendanceRecords={attendanceRecords}
       prices={prices}
-      disciplines={disciplines}
       toast={toast}
       onNavigate={handleNavigate}
     />

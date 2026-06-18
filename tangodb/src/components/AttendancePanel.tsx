@@ -24,6 +24,12 @@ import {
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
+import { useSettings } from "../settings/SettingsProvider";
+import {
+  canApplyFreeze,
+  freezeAlreadyUsedMessage,
+  freezeUnavailableMessage,
+} from "../lib/freezePolicy";
 import { usePrices } from "../hooks/usePrices";
 import {
   dowShort,
@@ -176,6 +182,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const markAttendance = useMarkAttendance();
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
   const { can } = usePermissions();
+  const { freezePolicy } = useSettings();
   const isLoading = scheduleLoading || personalLoading || pricesLoading;
   const isError = scheduleError || personalError || pricesError;
   const error = scheduleErr ?? personalErr ?? pricesErr;
@@ -245,12 +252,12 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     }
 
     if (status === "freeze") {
-      if (student.lessonsTotal !== 8) {
-        toast("Заморозка доступна только для абонементов на 8 уроков.", "error");
+      if (!canApplyFreeze(student.lessonsTotal, student.freezeUsed, freezePolicy)) {
+        toast(freezeUnavailableMessage(freezePolicy), "error");
         return;
       }
-      if (student.freezeUsed > 0 && student.currentStatus !== "freeze") {
-        toast("Заморозка по этому абонементу уже использована.", "error");
+      if (student.freezeUsed >= freezePolicy.freezeMaxCount && student.currentStatus !== "freeze") {
+        toast(freezeAlreadyUsedMessage(freezePolicy), "error");
         return;
       }
     }

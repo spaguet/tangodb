@@ -17,7 +17,18 @@ export type PanelId =
   | "attendance"
   | "personal"
   | "personal_sell"
-  | "prices";
+  | "prices"
+  | "settings";
+
+export type SettingsSectionId =
+  | "general"
+  | "organization"
+  | "subscriptions"
+  | "disciplines"
+  | "locations"
+  | "data"
+  | "team"
+  | "license";
 
 export type PermissionAction =
   | "clients.read"
@@ -231,6 +242,49 @@ export function canAccessPanel(
       return can(role, "personal_lessons.sell", options);
     case "prices":
       return can(role, "prices.read", options);
+    case "settings":
+      return can(role, "settings.manage", options) || can(role, "dashboard.export", options) || can(role, "license.view", options) || can(role, "disciplines.read", options);
+    default:
+      return false;
+  }
+}
+
+export function settingsSectionFromPath(pathname: string): SettingsSectionId | null {
+  const match = pathname.match(/^\/settings\/([^/]+)/);
+  if (!match) return null;
+  const section = match[1] as SettingsSectionId;
+  const valid: SettingsSectionId[] = [
+    "general",
+    "organization",
+    "subscriptions",
+    "disciplines",
+    "locations",
+    "data",
+    "team",
+    "license",
+  ];
+  return valid.includes(section) ? section : null;
+}
+
+export function canAccessSettingsSection(
+  role: MemberRole | null,
+  section: SettingsSectionId,
+  options?: PermissionOptions
+): boolean {
+  switch (section) {
+    case "general":
+    case "organization":
+    case "subscriptions":
+    case "locations":
+      return can(role, "settings.manage", options);
+    case "disciplines":
+      return can(role, "disciplines.read", options);
+    case "data":
+      return can(role, "dashboard.export", options);
+    case "team":
+      return can(role, "team.manage", options);
+    case "license":
+      return can(role, "license.view", options);
     default:
       return false;
   }
@@ -246,5 +300,6 @@ export function panelIdFromPath(pathname: string): PanelId {
   if (pathname === "/personal/sell") return "personal_sell";
   if (pathname.startsWith("/personal")) return "personal";
   if (pathname === "/prices") return "prices";
+  if (pathname.startsWith("/settings")) return "settings";
   return "dashboard";
 }

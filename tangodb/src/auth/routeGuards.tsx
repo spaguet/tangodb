@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePermissions } from "../hooks/usePermissions";
-import { panelIdFromPath } from "../lib/permissions";
+import { panelIdFromPath, settingsSectionFromPath, canAccessSettingsSection, type SettingsSectionId } from "../lib/permissions";
 
 function LoadingScreen({ label }: { label: string }) {
   return (
@@ -92,8 +92,22 @@ export function OrgWorkspaceRoute() {
 
 export function PanelAccessRoute() {
   const location = useLocation();
-  const { canAccessPanel } = usePermissions();
+  const { canAccessPanel, role, scope, isReadOnly } = usePermissions();
+  const { settings } = useOrganization();
   const panel = panelIdFromPath(location.pathname);
+  const settingsSection = settingsSectionFromPath(location.pathname);
+
+  const options = {
+    scope,
+    teachersCanManageDisciplines: settings?.teachers_can_manage_disciplines ?? false,
+    isReadOnly,
+  };
+
+  if (settingsSection && !canAccessSettingsSection(role, settingsSection, options)) {
+    const fallbackSections: SettingsSectionId[] = ["data", "license", "disciplines", "general", "organization", "subscriptions", "locations", "team"];
+    const fallback = fallbackSections.find((section) => canAccessSettingsSection(role, section, options));
+    return <Navigate to={fallback ? `/settings/${fallback}` : "/"} replace />;
+  }
 
   if (!canAccessPanel(panel)) {
     return <Navigate to="/" replace />;

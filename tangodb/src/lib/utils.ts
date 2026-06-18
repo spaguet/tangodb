@@ -80,15 +80,7 @@ export function findBookingScheduleConflict(
   );
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  })
-    .format(amount)
-    .replace("VND", "₫");
-}
+export { formatCurrencyActive as formatCurrency } from "./format";
 
 export function formatClientName(lastName: string, firstName: string): string {
   return `${lastName} ${firstName}`.trim();

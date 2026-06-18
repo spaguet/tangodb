@@ -3,11 +3,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { reportClientError } from "../lib/reportClientError";
 import { formatClientName, jsDayToIsoDow } from "../lib/utils";
+import {
+  canApplyFreeze,
+  DEFAULT_FREEZE_POLICY,
+  type FreezePolicy,
+  wouldExceedFreezeLimit,
+} from "../lib/freezePolicy";
 import type { AttendanceRecord, Client, ScheduleSlot, SubForDate, Subscription } from "../types";
 import { useClientDirectory } from "./useClients";
 import { useSchedule } from "./useSchedule";
 import { subscriptionsQueryKey, useSubscriptions } from "./useSubscriptions";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { useSettings } from "../settings/SettingsProvider";
 
 export const attendanceQueryKey = ["attendance"] as const;
 
@@ -54,7 +61,8 @@ export function computeSubsForDate(
   subscriptions: Subscription[],
   clients: Client[],
   attendance: AttendanceRecord[],
-  options?: { category?: "group" | "private"; subscriptionIds?: string[] }
+  options?: { category?: "group" | "private"; subscriptionIds?: string[] },
+  freezePolicy: FreezePolicy = DEFAULT_FREEZE_POLICY
 ): SubForDate[] {
   const clientMap = Object.fromEntries(clients.map((c) => [c.id, c]));
   const idFilter = options?.subscriptionIds ? new Set(options.subscriptionIds) : null;
@@ -84,7 +92,7 @@ export function computeSubsForDate(
         freezeUsed: s.freezeUsed,
         activationDate: s.activationDate,
         currentStatus: (existing?.attendanceStatus ?? null) as SubForDate["currentStatus"],
-        canFreeze: s.lessonsTotal === 8 && s.freezeUsed === 0,
+        canFreeze: canApplyFreeze(s.lessonsTotal, s.freezeUsed, freezePolicy),
         priceId: s.priceId,
         category: s.category,
       };
@@ -150,6 +158,7 @@ export function useSubsForDate(
   const subscriptionsQuery = useSubscriptions();
   const clientsQuery = useClientDirectory();
   const attendanceQuery = useAttendanceRecords(yearMonth);
+  const { freezePolicy } = useSettings();
 
   const optionsKey = `${options?.category ?? ""}|${(options?.subscriptionIds ?? []).join(",")}`;
   const stableOptions = useMemo(
@@ -167,9 +176,10 @@ export function useSubsForDate(
         subscriptionsQuery.data ?? [],
         clientsQuery.data ?? [],
         attendanceQuery.data ?? [],
-        opts ?? stableOptions
+        opts ?? stableOptions,
+        freezePolicy
       ),
-    [subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, stableOptions]
+    [subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, stableOptions, freezePolicy]
   );
 
   const subs = useMemo(
@@ -180,10 +190,11 @@ export function useSubsForDate(
             subscriptionsQuery.data ?? [],
             clientsQuery.data ?? [],
             attendanceQuery.data ?? [],
-            stableOptions
+            stableOptions,
+            freezePolicy
           )
         : undefined,
-    [dateStr, subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, stableOptions]
+    [dateStr, subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, stableOptions, freezePolicy]
   );
 
   return {
@@ -222,6 +233,7 @@ function computeAttendanceDeltas(
 export function useMarkAttendance() {
   const queryClient = useQueryClient();
   const { withOrgId } = useOrgQueryScope();
+  const { freezePolicy } = useSettings();
   const scopedAttendanceKey = withOrgId(attendanceQueryKey);
   const scopedSubscriptionsKey = withOrgId(subscriptionsQueryKey);
 
@@ -277,10 +289,10 @@ export function useMarkAttendance() {
 
       const { lessonDelta, freezeDelta } = computeAttendanceDeltas(oldStatus, status);
 
-      if (status === "freeze" && sub.lessonsTotal !== 8) {
+      if (status === "freeze" && !canApplyFreeze(sub.lessonsTotal, sub.freezeUsed, freezePolicy)) {
         return { previousAttendanceEntries, previousSubscriptions };
       }
-      if (status === "freeze" && sub.freezeUsed + freezeDelta > 1) {
+      if (status === "freeze" && wouldExceedFreezeLimit(sub.freezeUsed, freezeDelta, freezePolicy)) {
         return { previousAttendanceEntries, previousSubscriptions };
       }
       if (sub.lessonsLeft + lessonDelta < 0) {

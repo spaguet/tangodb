@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   Info,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -37,6 +38,17 @@ import SelectOrganizationPage from "./auth/SelectOrganizationPage";
 import LicenseRequiredPage from "./auth/LicenseRequiredPage";
 import OnboardingWizardPage from "./auth/OnboardingWizardPage";
 import { OrganizationProvider } from "./organization/OrganizationProvider";
+import { SettingsProvider } from "./settings/SettingsProvider";
+import SettingsLayout from "./settings/SettingsLayout";
+import SettingsIndexRedirect from "./settings/SettingsIndexRedirect";
+import GeneralSettingsPage from "./settings/pages/GeneralSettingsPage";
+import OrganizationSettingsPage from "./settings/pages/OrganizationSettingsPage";
+import SubscriptionSettingsPage from "./settings/pages/SubscriptionSettingsPage";
+import DisciplinesSettingsPage from "./settings/pages/DisciplinesSettingsPage";
+import LocationsSettingsPage from "./settings/pages/LocationsSettingsPage";
+import DataExportPage from "./settings/pages/DataExportPage";
+import TeamSettingsPage from "./settings/pages/TeamSettingsPage";
+import LicenseSettingsPage from "./settings/pages/LicenseSettingsPage";
 import OrgSwitcher from "./organization/OrgSwitcher";
 import { useUIStore } from "./store/ui";
 import DashboardPage from "./pages/DashboardPage";
@@ -122,6 +134,10 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Тарифы",
     items: [{ icon: Coins, label: "Тарифы и прайс-лист", path: "/prices" }],
   },
+  {
+    label: "Настройки",
+    items: [{ icon: Settings, label: "Настройки CRM", path: "/settings" }],
+  },
 ];
 
 const MOBILE_TABS: MobileTabItem[] = [
@@ -143,6 +159,15 @@ function getPanelTitle(pathname: string, subscriptionsTab: string, personalTab: 
     return personalTab === "sell" ? "Продажа персонального урока" : "Персональные уроки";
   }
   if (pathname === "/prices") return "Тарифы и прайс-лист";
+  if (pathname.startsWith("/settings/general")) return "Настройки · Общие";
+  if (pathname.startsWith("/settings/organization")) return "Настройки · Организация";
+  if (pathname.startsWith("/settings/subscriptions")) return "Настройки · Абонементы";
+  if (pathname.startsWith("/settings/disciplines")) return "Настройки · Направления";
+  if (pathname.startsWith("/settings/locations")) return "Настройки · Локации";
+  if (pathname.startsWith("/settings/data")) return "Настройки · Экспорт данных";
+  if (pathname.startsWith("/settings/team")) return "Настройки · Команда";
+  if (pathname.startsWith("/settings/license")) return "Настройки · Лицензия";
+  if (pathname.startsWith("/settings")) return "Настройки CRM";
   return "TangoDB";
 }
 
@@ -264,6 +289,7 @@ function AppLayout() {
 
   const isItemActive = (item: NavItem) => {
     if (item.path === "/") return location.pathname === "/";
+    if (item.path.startsWith("/settings")) return location.pathname.startsWith("/settings");
     if (item.path.startsWith("/subscriptions")) {
       return location.pathname.startsWith("/subscriptions") && subscriptionsTab === item.subTab;
     }
@@ -491,6 +517,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <OrganizationProvider>
+          <SettingsProvider>
           <BrowserRouter>
             <Routes>
               <Route
@@ -541,12 +568,24 @@ export default function App() {
                   <Route path="personal/sell" element={<ErrorBoundary><PersonalPage initialTab="sell" /></ErrorBoundary>} />
                   <Route path="personal/book" element={<Navigate to="/personal/sell" replace />} />
                   <Route path="prices" element={<ErrorBoundary><PricesPage /></ErrorBoundary>} />
+                  <Route path="settings" element={<ErrorBoundary><SettingsLayout /></ErrorBoundary>}>
+                    <Route index element={<ErrorBoundary><SettingsIndexRedirect /></ErrorBoundary>} />
+                    <Route path="general" element={<ErrorBoundary><GeneralSettingsPage /></ErrorBoundary>} />
+                    <Route path="organization" element={<ErrorBoundary><OrganizationSettingsPage /></ErrorBoundary>} />
+                    <Route path="subscriptions" element={<ErrorBoundary><SubscriptionSettingsPage /></ErrorBoundary>} />
+                    <Route path="disciplines" element={<ErrorBoundary><DisciplinesSettingsPage /></ErrorBoundary>} />
+                    <Route path="locations" element={<ErrorBoundary><LocationsSettingsPage /></ErrorBoundary>} />
+                    <Route path="data" element={<ErrorBoundary><DataExportPage /></ErrorBoundary>} />
+                    <Route path="team" element={<ErrorBoundary><TeamSettingsPage /></ErrorBoundary>} />
+                    <Route path="license" element={<ErrorBoundary><LicenseSettingsPage /></ErrorBoundary>} />
+                  </Route>
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
                 </Route>
               </Route>
             </Routes>
           </BrowserRouter>
+          </SettingsProvider>
         </OrganizationProvider>
       </AuthProvider>
     </QueryClientProvider>
