@@ -1,0 +1,13 @@
+Фаза 0 — Подготовка
+Фаза 1A — Tenant Core + Licensing + Active Org + RLS
+Фаза 1A-L — Demo/Lifetime Key Activation
+Фаза 1B — Email Auth + Onboarding + Org Picker
+Фаза 1C — Telegram Auth v2
+Фаза 2A — Business Schema ✓
+Фаза 2B — RBAC/RLS + RPC
+Фаза 2C — Frontend Permissions + Hooks
+Фаза 3 — Settings CRM
+Фаза 4 — Team Invites + Dev Console
+Фаза 5 — Version Migration
+Фаза 6 — Import Tooling
+Фаза 7 — SaaS Subscription
