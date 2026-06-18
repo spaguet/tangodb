@@ -67,7 +67,7 @@ BEGIN
       'sub', v_user_a::text,
       'organization_id', v_org_a::text,
       'member_id', v_member_a::text,
-      'role', 'owner'
+      'member_role', 'owner'
     )::text,
     true
   );
@@ -95,7 +95,7 @@ BEGIN
       'sub', v_retention_user::text,
       'organization_id', v_retention_org::text,
       'member_id', v_retention_member::text,
-      'role', 'owner'
+      'member_role', 'owner'
     )::text,
     true
   );

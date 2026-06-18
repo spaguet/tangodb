@@ -29,7 +29,7 @@ export function getMemberIdFromSession(session: Session | null): string | null {
 }
 
 export function getMemberRoleFromSession(session: Session | null): MemberRole | null {
-  const role = readClaim(session, "role");
+  const role = readClaim(session, "member_role") ?? readClaim(session, "role");
   if (
     role === "owner" ||
     role === "director" ||
