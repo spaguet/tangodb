@@ -36,6 +36,7 @@ const AUTH_FLOW_PATHS = new Set([
   "/activate-key",
   "/select-organization",
   "/register",
+  "/accept-invite",
   "/auth/forgot-password",
   "/auth/reset-password",
   "/auth/verify-email",

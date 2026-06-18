@@ -36,6 +36,7 @@ import VerifyEmailPage from "./auth/VerifyEmailPage";
 import ActivateKeyPage from "./auth/ActivateKeyPage";
 import SelectOrganizationPage from "./auth/SelectOrganizationPage";
 import LicenseRequiredPage from "./auth/LicenseRequiredPage";
+import AcceptInvitePage from "./auth/AcceptInvitePage";
 import OnboardingWizardPage from "./auth/OnboardingWizardPage";
 import { OrganizationProvider } from "./organization/OrganizationProvider";
 import { SettingsProvider } from "./settings/SettingsProvider";
@@ -543,6 +544,7 @@ export default function App() {
               <Route path="/auth/forgot-password" element={<ErrorBoundary><ForgotPasswordPage /></ErrorBoundary>} />
               <Route path="/auth/reset-password" element={<ErrorBoundary><ResetPasswordPage /></ErrorBoundary>} />
               <Route path="/auth/verify-email" element={<ErrorBoundary><VerifyEmailPage /></ErrorBoundary>} />
+              <Route path="/accept-invite" element={<ErrorBoundary><AcceptInvitePage /></ErrorBoundary>} />
 
               <Route element={<AuthFlowRoute />}>
                 <Route path="/activate-key" element={<ErrorBoundary><ActivateKeyPage /></ErrorBoundary>} />
