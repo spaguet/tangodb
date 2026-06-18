@@ -34,10 +34,16 @@ function parseActivationError(err: unknown): string {
   return message;
 }
 
+function activationErrorFromBody(body: { error?: string; debug?: string } | null): Error | null {
+  if (!body?.error) return null;
+  const message = body.debug ? `${body.error}: ${body.debug}` : body.error;
+  return new Error(message);
+}
+
 export default function ActivateKeyPage() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { memberships, organizationId, setActiveOrganization, refreshOrganization } = useOrganization();
+  const { memberships, organizationId, refreshOrganization } = useOrganization();
   const [key, setKey] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -60,8 +66,9 @@ export default function ActivateKeyPage() {
       if (fnError) {
         const ctx = (fnError as { context?: Response }).context;
         if (ctx) {
-          const body = (await ctx.json().catch(() => null)) as { error?: string } | null;
-          if (body?.error) throw new Error(body.error);
+          const body = (await ctx.json().catch(() => null)) as { error?: string; debug?: string } | null;
+          const parsedError = activationErrorFromBody(body);
+          if (parsedError) throw parsedError;
         }
         throw fnError;
       }
@@ -76,11 +83,13 @@ export default function ActivateKeyPage() {
       }
 
       setSuccess("Ключ принят, настраиваем доступ…");
-      await setActiveOrganization(orgId);
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) throw refreshError;
       await refreshOrganization();
 
       navigate(data.upgraded ? "/" : "/onboarding", { replace: true });
     } catch (err) {
+      setSuccess(null);
       setError(parseActivationError(err));
     } finally {
       setLoading(false);

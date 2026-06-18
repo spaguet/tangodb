@@ -9,6 +9,33 @@ import { createServiceClient, createUserClient, logEvent } from "../_shared/supa
 
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 15 * 60_000;
+const ACTIVATION_DEBUG = (Deno.env.get("ACTIVATION_DEBUG") ?? "true") === "true";
+
+type ActivationAuditMetadata = Record<string, string | number | boolean | null>;
+
+async function auditActivation(
+  admin: ReturnType<typeof createServiceClient>,
+  action: string,
+  actorUserId: string | null,
+  metadata: ActivationAuditMetadata,
+  targetId?: string | null
+): Promise<void> {
+  const { error } = await admin.from("platform_audit_log").insert({
+    actor_user_id: actorUserId,
+    action,
+    target_type: "activation",
+    target_id: targetId ?? null,
+    metadata,
+  });
+  if (error) {
+    logEvent("activation_audit_error", { code: error.code ?? "unknown", action });
+  }
+}
+
+function debugMessage(message: string, code: string | null): string | undefined {
+  if (!ACTIVATION_DEBUG) return undefined;
+  return code ? `${code}: ${message}` : message;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions(req);
@@ -66,7 +93,14 @@ Deno.serve(async (req) => {
 
   if (error) {
     const message = error.message ?? "Activation failed";
-    logEvent("activate_key_error", { code: error.code ?? "unknown", message });
+    const code = error.code ?? "unknown";
+    logEvent("activate_key_error", { code, message });
+    await auditActivation(admin, "activation.error", userData.user.id, {
+      code,
+      message,
+      email_domain: email.includes("@") ? email.split("@")[1] : null,
+      client_ip: clientIp,
+    });
     if (
       message.includes("invalid access key") ||
       message.includes("different CRM version") ||
@@ -74,18 +108,50 @@ Deno.serve(async (req) => {
       message.includes("email required")
     ) {
       logEvent("activate_key_rejected", { reason: "validation" });
-      return jsonResponse({ error: "Invalid access key" }, 400, req);
+      await auditActivation(admin, "activation.rejected", userData.user.id, {
+        reason: "validation",
+        code,
+        message,
+        email_domain: email.includes("@") ? email.split("@")[1] : null,
+        client_ip: clientIp,
+      });
+      return jsonResponse(
+        { error: "Invalid access key", debug: debugMessage(message, code) },
+        400,
+        req
+      );
     }
     if (message.includes("not authenticated")) {
-      return jsonResponse({ error: "Session expired" }, 401, req);
+      return jsonResponse(
+        { error: "Session expired", debug: debugMessage(message, code) },
+        401,
+        req
+      );
     }
-    return jsonResponse({ error: "Activation failed" }, 500, req);
+    return jsonResponse(
+      { error: "Activation failed", debug: debugMessage(message, code) },
+      500,
+      req
+    );
   }
 
   logEvent("activate_key_success", {
     key_type: typeof data?.key_type === "string" ? data.key_type : "unknown",
     upgraded: Boolean(data?.upgraded),
   });
+  await auditActivation(
+    admin,
+    "activation.success",
+    userData.user.id,
+    {
+      key_type: typeof data?.key_type === "string" ? data.key_type : "unknown",
+      status: typeof data?.status === "string" ? data.status : null,
+      upgraded: Boolean(data?.upgraded),
+      email_domain: email.includes("@") ? email.split("@")[1] : null,
+      client_ip: clientIp,
+    },
+    typeof data?.organization_id === "string" ? data.organization_id : null
+  );
 
   return jsonResponse({ ok: true, ...(data as Record<string, unknown>) }, 200, req);
 });

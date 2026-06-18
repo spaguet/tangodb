@@ -9,6 +9,7 @@ import KeysPage from "./pages/KeysPage";
 import OrgsPage from "./pages/OrgsPage";
 import MigrationsPage from "./pages/MigrationsPage";
 import BillingPage from "./pages/BillingPage";
+import ErrorsPage from "./pages/ErrorsPage";
 import Layout from "./components/Layout";
 import type { Session } from "@supabase/supabase-js";
 
@@ -52,6 +53,7 @@ function App() {
           <Route path="orgs" element={<OrgsPage />} />
           <Route path="billing" element={<BillingPage />} />
           <Route path="migrations" element={<MigrationsPage />} />
+          <Route path="errors" element={<ErrorsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
