@@ -8,6 +8,8 @@ interface OrgRow {
   status: string;
   demo_expires_at: string | null;
   created_at: string;
+  crm_version_code: string | null;
+  schema_version_locked: boolean;
 }
 
 export default function OrgsPage() {
@@ -72,6 +74,7 @@ export default function OrgsPage() {
           <thead className="bg-slate-900 text-slate-500 text-left">
             <tr>
               <th className="px-4 py-2 font-medium">Name</th>
+              <th className="px-4 py-2 font-medium">Version</th>
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium">Created</th>
             </tr>
@@ -80,6 +83,12 @@ export default function OrgsPage() {
             {orgs.map((o) => (
               <tr key={o.id} className="border-t border-slate-800">
                 <td className="px-4 py-2 text-slate-200">{o.name}</td>
+                <td className="px-4 py-2 text-slate-400">
+                  {o.crm_version_code ?? "—"}
+                  {o.schema_version_locked && (
+                    <span className="ml-1 text-xs text-amber-400">locked</span>
+                  )}
+                </td>
                 <td className="px-4 py-2">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
                     {o.status}
@@ -92,7 +101,7 @@ export default function OrgsPage() {
             ))}
             {orgs.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
                   Run search to load organizations
                 </td>
               </tr>

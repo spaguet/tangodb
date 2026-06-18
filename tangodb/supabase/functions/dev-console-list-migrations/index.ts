@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   }
 
   const clientIp = getClientIp(req);
-  if (!checkRateLimit(`dev-console-orgs:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+  if (!checkRateLimit(`dev-console-migrations:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS)) {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
@@ -32,42 +32,34 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Forbidden" }, 403, req);
   }
 
-  let body: { query?: string; status?: string; limit?: number };
+  let body: { organization_id?: string; limit?: number };
   try {
     body = await req.json();
   } catch {
     body = {};
   }
 
-  const q = (body.query ?? "").trim();
-  const status = (body.status ?? "").trim();
   const limit = Math.min(Math.max(body.limit ?? 50, 1), 100);
-
   const admin = createServiceClient();
+
   let query = admin
-    .from("organizations")
+    .from("organization_version_migrations")
     .select(
-      "id, name, slug, status, demo_expires_at, data_purge_at, created_at, owner_user_id, schema_version_locked, crm_version_id, crm_product_versions(code)"
+      "id, organization_id, from_version_id, to_version_id, status, dry_run, started_at, completed_at, error_message, metadata, previous_status, initiated_by"
     )
-    .order("created_at", { ascending: false })
+    .order("started_at", { ascending: false })
     .limit(limit);
 
-  if (status) query = query.eq("status", status);
-  if (q) query = query.or(`name.ilike.%${q}%,slug.ilike.%${q}%`);
+  if (body.organization_id) {
+    query = query.eq("organization_id", body.organization_id);
+  }
 
   const { data, error } = await query;
 
   if (error) {
-    logEvent("dev_console_orgs_error", { code: error.code ?? "unknown" });
-    return jsonResponse({ error: "Search failed" }, 500, req);
+    logEvent("dev_console_migrations_list_error", { code: error.code ?? "unknown" });
+    return jsonResponse({ error: "Failed to load migrations" }, 500, req);
   }
 
-  const organizations = (data ?? []).map((row) => {
-    const version = row.crm_product_versions as { code: string } | { code: string }[] | null;
-    const code = Array.isArray(version) ? version[0]?.code : version?.code;
-    const { crm_product_versions: _v, ...rest } = row as Record<string, unknown>;
-    return { ...rest, crm_version_code: code ?? null };
-  });
-
-  return jsonResponse({ ok: true, organizations }, 200, req);
+  return jsonResponse({ ok: true, migrations: data ?? [] }, 200, req);
 });

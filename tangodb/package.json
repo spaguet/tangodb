@@ -12,7 +12,8 @@
     "test:db": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_tenant_rls_test.sql",
     "test:db:keys": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_access_key_test.sql",
     "test:db:business": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_business_schema_test.sql",
-    "test:db:rls": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_business_rls_test.sql"
+    "test:db:rls": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_business_rls_test.sql",
+    "test:db:migration": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_version_migration_test.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",

@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { Key, LayoutDashboard, Building2, LogOut } from "lucide-react";
+import { Key, LayoutDashboard, Building2, ArrowLeftRight, LogOut } from "lucide-react";
 
 interface LayoutProps {
   onSignOut: () => void;
@@ -26,6 +26,9 @@ export default function Layout({ onSignOut }: LayoutProps) {
         </NavLink>
         <NavLink to="/orgs" className={linkCls}>
           <Building2 className="w-4 h-4" /> Organizations
+        </NavLink>
+        <NavLink to="/migrations" className={linkCls}>
+          <ArrowLeftRight className="w-4 h-4" /> Migrations
         </NavLink>
         <button
           type="button"
