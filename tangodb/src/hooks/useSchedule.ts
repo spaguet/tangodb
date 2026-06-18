@@ -13,6 +13,8 @@ const mapScheduleSlot = (row: Record<string, unknown>): ScheduleSlot => ({
   disciplineId: row.discipline_id != null ? (row.discipline_id as number) : null,
 });
 
+const scheduleTable = "schedule_slots" as const;
+
 export function useSchedule() {
   const { enabled, withOrgId } = useOrgQueryScope();
 
@@ -21,7 +23,7 @@ export function useSchedule() {
     enabled,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("schedule")
+        .from(scheduleTable)
         .select("*")
         .order("day_of_week")
         .order("time");
@@ -34,6 +36,7 @@ export function useSchedule() {
 
 export function useAddScheduleSlot() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
@@ -47,7 +50,12 @@ export function useAddScheduleSlot() {
       timeEnd: string;
       disciplineId: number;
     }) => {
-      const { error } = await supabase.from("schedule").insert({
+      if (!organizationId) {
+        return { success: false as const, error: "Организация не выбрана" };
+      }
+
+      const { error } = await supabase.from(scheduleTable).insert({
+        organization_id: organizationId,
         day_of_week: dayOfWeek,
         time,
         time_end: timeEnd,
@@ -72,7 +80,7 @@ export function useDeleteScheduleSlot() {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      const { error } = await supabase.from("schedule").delete().eq("id", id);
+      const { error } = await supabase.from(scheduleTable).delete().eq("id", id);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
     },
@@ -91,6 +99,7 @@ export interface DisciplineScheduleSlotInput {
 
 export function useReplaceDisciplineSchedule() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
@@ -102,15 +111,19 @@ export function useReplaceDisciplineSchedule() {
       slots: DisciplineScheduleSlotInput[];
       removedIds: number[];
     }) => {
+      if (!organizationId) {
+        return { success: false as const, error: "Организация не выбрана" };
+      }
+
       for (const id of removedIds) {
-        const { error } = await supabase.from("schedule").delete().eq("id", id);
+        const { error } = await supabase.from(scheduleTable).delete().eq("id", id);
         if (error) return { success: false as const, error: error.message };
       }
 
       for (const slot of slots) {
         if (slot.id != null) {
           const { error } = await supabase
-            .from("schedule")
+            .from(scheduleTable)
             .update({
               day_of_week: slot.dayOfWeek,
               time: slot.time,
@@ -124,7 +137,8 @@ export function useReplaceDisciplineSchedule() {
             return { success: false as const, error: error.message };
           }
         } else {
-          const { error } = await supabase.from("schedule").insert({
+          const { error } = await supabase.from(scheduleTable).insert({
+            organization_id: organizationId,
             day_of_week: slot.dayOfWeek,
             time: slot.time,
             time_end: slot.timeEnd,
@@ -152,7 +166,7 @@ export function useDeleteDisciplineSchedule() {
 
   return useMutation({
     mutationFn: async (disciplineId: number) => {
-      const { error } = await supabase.from("schedule").delete().eq("discipline_id", disciplineId);
+      const { error } = await supabase.from(scheduleTable).delete().eq("discipline_id", disciplineId);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
     },
