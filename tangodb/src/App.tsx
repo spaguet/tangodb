@@ -318,13 +318,14 @@ function AppLayout() {
               <button
                 key={item.label}
                 onClick={() => go(item)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                className={`w-full flex items-center justify-start gap-3 px-3 py-2 rounded-md text-xs font-semibold tracking-wide text-left transition-all cursor-pointer ${
                   active
                     ? "bg-indigo-50 text-indigo-700 font-semibold border-l-2 border-indigo-600 pl-2.5"
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5 shrink-0" /> {item.label}
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="min-w-0 leading-snug">{item.label}</span>
               </button>
             );
           })}
