@@ -1,13 +1,79 @@
 Фаза 0 — Подготовка
+
 Фаза 1A — Tenant Core + Licensing + Active Org + RLS
+
 Фаза 1A-L — Demo/Lifetime Key Activation
+
 Фаза 1B — Email Auth + Onboarding + Org Picker
+
 Фаза 1C — Telegram Auth v2
+
 Фаза 2A — Business Schema ✓
+
 Фаза 2B — RBAC/RLS + RPC ✓
+
 Фаза 2C — Frontend Permissions + Hooks ✓
+
 Фаза 3 — Settings CRM ✓
+
 Фаза 4 — Team Invites + Dev Console ✓
+
 Фаза 5 — Version Migration
+
 Фаза 6 — Import Tooling
+
 Фаза 7 — SaaS Subscription
+
+
+
+--- Ручная настройка после Фазы 4 (Dev Console) ---
+
+
+
+[x] 1.3 DEV_CONSOLE_ALLOWLIST — albertkoall@gmail.com (Supabase Secrets)
+
+[x] 1.4 ALLOWED_ORIGINS — CRM + localhost (пока без prod URL Dev Console):
+
+    https://tangodb.vercel.app,http://127.0.0.1:3000,http://127.0.0.1:3001
+
+[x] 2. Developer access — albertkoall@gmail.com (Auth user confirmed + platform_role=developer)
+
+[ ] 3. Dev Console локально — tangodb-dev-console/.env.local + npm run dev → :3001
+    (env создан; lint/build OK; dev-сервер :3001 отдаёт 200 — войти albertkoall@gmail.com)
+
+[ ] 4. Dev Console на Vercel — отдельный проект tangodb-dev-console ✓
+    URL: https://tangodb-dev-console.vercel.app
+    Root Directory = tangodb-dev-console; Install = npm install (НЕ cd tangodb!)
+    vercel.json в tangodb-dev-console/ задаёт build без cd
+
+[x] 5. ALLOWED_ORIGINS с prod Dev Console:
+    https://tangodb.vercel.app,http://127.0.0.1:3000,http://127.0.0.1:3001,https://tangodb-dev-console.vercel.app
+
+--- Vercel Dev Console (если Override заблокирован) ---
+
+1. Project Name: tangodb-dev-console
+2. Root Directory: нажать Edit → выбрать папку tangodb-dev-console (не ./)
+3. Framework Preset: Vite (должен определиться сам)
+4. Build / Output / Install — оставить дефолты Vite (npm install, npm run build, dist)
+5. Environment Variables (см. блок «API keys» ниже):
+   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_MAIN_APP_URL
+6. Deploy
+
+--- API keys для Vercel / .env (НЕ путать с JWT Secret) ---
+
+JWT Secret (Legacy) — секрет ПОДПИСИ токенов. Не копируется, только Rotate. В Vite НЕ нужен.
+
+Нужен один из двух ПУБЛИЧНЫХ client keys (низкие права, как anon):
+
+A) Legacy anon key — JWT, начинается с eyJ...
+   Dashboard → Project Settings → API → Legacy API Keys → anon → Reveal / Copy
+   (или уже есть в tangodb/.env.local как VITE_SUPABASE_ANON_KEY — тот же для Dev Console)
+
+B) Новый Publishable key — sb_publishable_...
+   Dashboard → Project Settings → API Keys → Publishable key → Copy
+   Подставляется в VITE_SUPABASE_ANON_KEY (имя переменной можно не менять)
+
+Для Vercel Dev Console: скопируйте то же значение, что уже работает в CRM на tangodb.vercel.app.
+
+Альтернатива: после создания проекта → Settings → General → Root Directory → tangodb-dev-console → Save → Redeploy
+
