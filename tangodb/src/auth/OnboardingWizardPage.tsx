@@ -83,31 +83,39 @@ export default function OnboardingWizardPage() {
     setError(null);
 
     try {
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) throw refreshError;
+
       const pairCycleEnabled = modules.pair_subscriptions;
 
-      const [orgRes, settingsRes] = await Promise.all([
-        supabase.from("organizations").update({ name: orgName.trim() }).eq("id", organizationId),
-        supabase
-          .from("organization_settings")
-          .update({
-            org_preset: preset,
-            locale,
-            currency_code: currencyCode,
-            modules,
-            pair_cycle_enabled: pairCycleEnabled,
-            branding_name: orgName.trim(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("organization_id", organizationId),
-      ]);
+      const { data, error: rpcError } = await supabase.rpc("complete_organization_onboarding", {
+        p_organization_id: organizationId,
+        p_name: orgName.trim(),
+        p_org_preset: preset,
+        p_locale: locale,
+        p_currency_code: currencyCode,
+        p_modules: modules,
+        p_pair_cycle_enabled: pairCycleEnabled,
+      });
 
-      if (orgRes.error) throw orgRes.error;
-      if (settingsRes.error) throw settingsRes.error;
+      if (rpcError) throw rpcError;
+      if (!data || (data as { ok?: boolean }).ok !== true) {
+        throw new Error("Не удалось сохранить настройки");
+      }
 
       await refreshOrganization();
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось сохранить настройки");
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" &&
+              err !== null &&
+              "message" in err &&
+              typeof (err as { message: unknown }).message === "string"
+            ? (err as { message: string }).message
+            : "Не удалось сохранить настройки";
+      setError(message);
     } finally {
       setLoading(false);
     }
