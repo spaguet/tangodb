@@ -5,7 +5,7 @@ import {
   jsonResponse,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
-import { createUserClient, logEvent } from "../_shared/supabase.ts";
+import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 15 * 60_000;
@@ -54,25 +54,31 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
-  const keyHash = await hashAccessKey(plaintextKey, pepper);
+  const keyHash = await hashAccessKey(plaintextKey.replace(/\s+/g, ""), pepper);
   const orgName = body.org_name?.trim() || null;
 
-  const { data, error } = await supabase.rpc("activate_access_key", {
+  const admin = createServiceClient();
+  const { data, error } = await admin.rpc("activate_access_key", {
     p_key_hash: keyHash,
     p_org_name: orgName,
+    p_user_id: userData.user.id,
   });
 
   if (error) {
     const message = error.message ?? "Activation failed";
+    logEvent("activate_key_error", { code: error.code ?? "unknown", message });
     if (
       message.includes("invalid access key") ||
       message.includes("different CRM version") ||
+      message.includes("crm version not configured") ||
       message.includes("email required")
     ) {
       logEvent("activate_key_rejected", { reason: "validation" });
       return jsonResponse({ error: "Invalid access key" }, 400, req);
     }
-    logEvent("activate_key_error", { code: error.code ?? "unknown" });
+    if (message.includes("not authenticated")) {
+      return jsonResponse({ error: "Session expired" }, 401, req);
+    }
     return jsonResponse({ error: "Activation failed" }, 500, req);
   }
 

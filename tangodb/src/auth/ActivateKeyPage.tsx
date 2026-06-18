@@ -18,6 +18,10 @@ function parseActivationError(err: unknown): string {
 
   const message = err.message;
   if (message === "Invalid access key") return "Неверный или уже использованный ключ";
+  if (message === "Session expired") return "Сессия истекла — выйдите и войдите снова.";
+  if (message === "Activation failed") {
+    return "Ошибка активации на сервере. Сгенерируйте новый ключ в Dev Console и попробуйте снова.";
+  }
   if (message.includes("email required")) {
     return "Привяжите email к аккаунту (Telegram) или войдите по email/паролю.";
   }
@@ -50,7 +54,7 @@ export default function ActivateKeyPage() {
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke("activate-access-key", {
-        body: { key: key.trim() },
+        body: { key: key.trim().replace(/\s+/g, "") },
       });
 
       if (fnError) {
