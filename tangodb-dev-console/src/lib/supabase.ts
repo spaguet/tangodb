@@ -19,6 +19,7 @@ export async function invokeDevFunction<T>(
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
+      apikey: anonKey,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body ?? {}),

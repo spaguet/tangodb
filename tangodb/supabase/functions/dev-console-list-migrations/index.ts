@@ -28,8 +28,8 @@ Deno.serve(async (req) => {
 
   const userClient = createUserClient(authHeader);
   const { data: userData, error: userError } = await userClient.auth.getUser();
-  if (userError || !userData.user || !isDeveloper(userData.user)) {
-    return jsonResponse({ error: "Forbidden" }, 403, req);
+  if (userError || !userData.user || !isDeveloper(userData.user, authHeader)) {
+    return jsonResponse({ error: "developer_access_required" }, 403, req);
   }
 
   let body: { organization_id?: string; limit?: number };

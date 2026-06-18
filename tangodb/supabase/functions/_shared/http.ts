@@ -26,10 +26,13 @@ export function jsonResponse(
 ): Response {
   const cors = corsHeadersFor(req);
   if (!cors) {
-    return new Response(JSON.stringify(body), {
-      status: corsDeniedStatus(),
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ ...body, error: body.error ?? "origin_not_allowed" }),
+      {
+        status: corsDeniedStatus(),
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
   return new Response(JSON.stringify(body), {
     status,

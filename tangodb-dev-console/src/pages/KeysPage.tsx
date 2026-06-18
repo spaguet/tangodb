@@ -38,9 +38,22 @@ export default function KeysPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const errorHint =
+    error === "Forbidden" ||
+    error === "developer_access_required" ||
+    error === "origin_not_allowed"
+      ? error === "origin_not_allowed"
+        ? "Добавьте https://tangodb-dev-console.vercel.app в ALLOWED_ORIGINS (Supabase Secrets)."
+        : "Выйдите и войдите снова (albertkoall@gmail.com). Supabase Auth → Users → app_metadata: platform_role=developer. Или проверьте DEV_CONSOLE_ALLOWLIST."
+      : null;
+
   return (
     <div className="max-w-lg space-y-6">
       <h2 className="text-2xl font-bold text-white">Lifetime keys</h2>
+      <p className="text-xs text-slate-500">
+        Ключ показывается здесь один раз — на email не отправляется. Скопируйте и передайте клиенту или
+        вставьте на странице активации CRM.
+      </p>
 
       <div className="flex gap-2">
         <button
@@ -115,7 +128,12 @@ export default function KeysPage() {
         </button>
       </div>
 
-      {error && <p className="text-sm text-rose-400">{error}</p>}
+      {error && (
+        <div className="text-sm text-rose-400 space-y-1">
+          <p>{error}</p>
+          {errorHint && <p className="text-xs text-slate-400">{errorHint}</p>}
+        </div>
+      )}
 
       {generatedKey && (
         <div className="p-4 bg-emerald-950/50 border border-emerald-800 rounded-xl space-y-2">
