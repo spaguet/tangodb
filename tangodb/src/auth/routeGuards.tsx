@@ -114,6 +114,9 @@ export function PanelAccessRoute() {
   }
 
   if (!canAccessPanel(panel)) {
+    if (panel === "dashboard") {
+      return <LoadingScreen label="Загрузка доступа..." />;
+    }
     return <Navigate to="/" replace />;
   }
 

@@ -103,6 +103,9 @@ export default function OnboardingWizardPage() {
         throw new Error("Не удалось сохранить настройки");
       }
 
+      const { error: postRefreshError } = await supabase.auth.refreshSession();
+      if (postRefreshError) throw postRefreshError;
+
       await refreshOrganization();
       navigate("/", { replace: true });
     } catch (err) {

@@ -105,9 +105,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const autoSelectAttempted = useRef<string | null>(null);
 
-  const organizationId = getOrganizationIdFromSession(session);
-  const memberId = getMemberIdFromSession(session);
-  const role = getMemberRoleFromSession(session);
+  const sessionOrganizationId = getOrganizationIdFromSession(session);
 
   const {
     data: memberships = [],
@@ -147,6 +145,15 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       return (data ?? []).map((row) => mapMembership(row as Record<string, unknown>));
     },
   });
+
+  const membership = useMemo(
+    () => memberships.find((m) => m.organization_id === sessionOrganizationId) ?? null,
+    [memberships, sessionOrganizationId]
+  );
+
+  const organizationId = sessionOrganizationId;
+  const memberId = getMemberIdFromSession(session) ?? membership?.id ?? null;
+  const role = getMemberRoleFromSession(session) ?? membership?.role ?? null;
 
   const {
     data: orgBundle,
@@ -262,10 +269,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const license = orgBundle?.license ?? null;
   const subscription = orgBundle?.subscription ?? null;
 
-  const membership = useMemo(
-    () => memberships.find((m) => m.organization_id === organizationId) ?? null,
-    [memberships, organizationId]
-  );
   const scope = membership?.scope ?? EMPTY_TEACHER_SCOPE;
 
   const needsOnboarding =

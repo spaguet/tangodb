@@ -29,15 +29,21 @@ export function getMemberIdFromSession(session: Session | null): string | null {
 }
 
 export function getMemberRoleFromSession(session: Session | null): MemberRole | null {
-  const role = readClaim(session, "member_role") ?? readClaim(session, "role");
-  if (
-    role === "owner" ||
-    role === "director" ||
-    role === "admin" ||
-    role === "teacher" ||
-    role === "accountant"
-  ) {
-    return role;
-  }
+  const memberRole = readClaim(session, "member_role");
+  if (isMemberRole(memberRole)) return memberRole;
+
+  const legacyRole = readClaim(session, "role");
+  if (isMemberRole(legacyRole)) return legacyRole;
+
   return null;
+}
+
+function isMemberRole(value: string | null): value is MemberRole {
+  return (
+    value === "owner" ||
+    value === "director" ||
+    value === "admin" ||
+    value === "teacher" ||
+    value === "accountant"
+  );
 }
