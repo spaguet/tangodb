@@ -42,12 +42,12 @@
   Миграция: 20260626000001_v2_organization_subscriptions
   Тест: npm run test:db:subscription
 
---- Ручная настройка после Фазы 7 (Stripe) ---
+--- Ручная настройка после Фазы 7 (Stripe) — ВЫПОЛНЕНО ✓ ---
 
-[ ] STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET — Supabase Secrets
-[ ] STRIPE_PRICE_ID_MONTHLY, STRIPE_PRICE_ID_YEARLY — Supabase Secrets
-[ ] Stripe Dashboard → Webhook → https://<project>.supabase.co/functions/v1/stripe-webhook
-[ ] Deploy Edge Functions: create-subscription-checkout, stripe-webhook, dev-console-search-billing, dev-console-adjust-subscription
+[x] STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET — Supabase Secrets (2026-06-18)
+[x] STRIPE_PRICE_ID_MONTHLY, STRIPE_PRICE_ID_YEARLY — Supabase Secrets (2026-06-18)
+[x] Stripe Dashboard → Webhook → https://gizfpiujqjwbjtqfstbj.supabase.co/functions/v1/stripe-webhook
+[x] Deploy Edge Functions: create-subscription-checkout, stripe-webhook, dev-console-search-billing, dev-console-adjust-subscription
 
 --- Ручная настройка после Фазы 4 (Dev Console) — ВЫПОЛНЕНО ✓ ---
 

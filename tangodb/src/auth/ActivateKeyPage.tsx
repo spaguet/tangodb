@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { KeyRound } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "./AuthProvider";
 import { useOrganization } from "../organization/OrganizationProvider";
 import {
   AuthButton,
@@ -13,10 +14,14 @@ import {
 
 export default function ActivateKeyPage() {
   const navigate = useNavigate();
-  const { refreshOrganization } = useOrganization();
+  const { signOut } = useAuth();
+  const { memberships, organizationId, refreshOrganization } = useOrganization();
   const [key, setKey] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const hasMembership = memberships.length > 0;
+  const crmPath = !hasMembership ? null : organizationId ? "/" : "/select-organization";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,11 +68,27 @@ export default function ActivateKeyPage() {
 
   return (
     <AuthLayout title="TangoDB" subtitle="Активация ключа">
-      <div className="flex items-start gap-3 text-sm text-slate-500 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
-        <KeyRound className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-        <p>
-          Введите демо- или лицензионный ключ. Для демо email аккаунта должен совпадать с email заявки.
-        </p>
+      <div className="space-y-3 text-sm text-slate-600">
+        <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+          <KeyRound className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+          <p>
+            После входа нужно активировать ключ — так создаётся ваша организация в CRM.
+          </p>
+        </div>
+        <ul className="text-xs text-slate-500 space-y-1.5 list-disc pl-4">
+          <li>
+            <strong className="text-slate-600">Демо-ключ</strong> — email аккаунта должен совпадать с email
+            заявки.
+          </li>
+          <li>
+            <strong className="text-slate-600">Lifetime-ключ</strong> — пожизненный доступ (из письма после
+            покупки).
+          </li>
+          <li>
+            Подписка Stripe (месяц/год) оформляется позже в{" "}
+            <strong className="text-slate-600">Настройки → Лицензия</strong>, когда организация уже создана.
+          </li>
+        </ul>
       </div>
 
       <AuthError message={error} />
@@ -83,9 +104,28 @@ export default function ActivateKeyPage() {
         <AuthButton loading={loading}>Активировать</AuthButton>
       </form>
 
-      <p className="text-sm text-slate-500 text-center">
-        <AuthLink to="/">В CRM</AuthLink>
-      </p>
+      <div className="text-sm text-slate-500 text-center space-y-2">
+        {crmPath ? (
+          <p>
+            <AuthLink to={crmPath}>В CRM</AuthLink>
+          </p>
+        ) : (
+          <p className="text-xs">
+            CRM откроется после активации ключа или принятия приглашения в команду.
+          </p>
+        )}
+        <p>
+          <AuthLink to="/accept-invite">Есть приглашение в команду?</AuthLink>
+          {" · "}
+          <button
+            type="button"
+            onClick={() => void signOut().then(() => navigate("/login", { replace: true }))}
+            className="text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer"
+          >
+            Выйти
+          </button>
+        </p>
+      </div>
     </AuthLayout>
   );
 }
