@@ -26,9 +26,13 @@
   Миграции: 20260625000001_version_migration_scripts, 20260625000002_v2_version_migration
   Тест: npm run test:db:migration
 
-Фаза 6 — Import Tooling          ← следующий этап
+Фаза 6 — Import Tooling ✓
+  E-1: scripts/import-org.mjs — --dry-run, --apply, --resume-from; mapping в .import-mappings/{slug}.json
+  E-2: tangodb_import_TZ.md — mapping legacy-gas / v2-json → v2 schema
+  E-3: dry-run fixture — npm run import:org:validate-fixture (scripts/fixtures/minimal-export.json)
+  npm: import:org:dry-run, import:org, import:org:validate-fixture
 
-Фаза 7 — SaaS Subscription
+Фаза 7 — SaaS Subscription          ← следующий этап
 
 
 

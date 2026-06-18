@@ -1,0 +1,60 @@
+{
+  "clients": [
+    { "ID": "c1", "FirstName": "Maria", "LastName": "Test", "Telegram": "@maria" },
+    { "ID": "c2", "FirstName": "Ivan", "LastName": "Test", "Telegram": "" }
+  ],
+  "schedule": [
+    { "DayOfWeek": 1, "Time": "19:00" },
+    { "DayOfWeek": 3, "Time": "20:00" }
+  ],
+  "prices": [
+    { "Type": "solo", "Lessons": 8, "Price": 2100000, "Row": 1 },
+    { "Type": "pair_m1", "Lessons": 8, "Price": 3400000, "Row": 2 }
+  ],
+  "subscriptions": [
+    {
+      "ID": "sub1",
+      "Type": "solo",
+      "ClientID1": "c1",
+      "ClientID2": null,
+      "LessonsTotal": 8,
+      "LessonsLeft": 5,
+      "FreezeUsed": 0,
+      "ActivationDate": "2026-01-15",
+      "Status": "active",
+      "PairMonth": ""
+    },
+    {
+      "ID": "sub2",
+      "Type": "pair",
+      "ClientID1": "c1",
+      "ClientID2": "c2",
+      "LessonsTotal": 8,
+      "LessonsLeft": 8,
+      "FreezeUsed": 0,
+      "ActivationDate": "2026-02-01",
+      "Status": "active",
+      "PairMonth": "m1"
+    }
+  ],
+  "attendance": [
+    {
+      "Date": "2026-02-10",
+      "SubscriptionID": "sub1",
+      "ClientDisplay": "Test Maria",
+      "AttendanceStatus": "present"
+    }
+  ],
+  "personalLessons": [
+    {
+      "ID": "pl1",
+      "Type": "solo",
+      "Client1": "c1",
+      "Client2": null,
+      "Client3": null,
+      "Date": "2026-02-12",
+      "Price": 900000,
+      "Paid": "yes"
+    }
+  ]
+}
