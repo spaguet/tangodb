@@ -18,8 +18,10 @@ import { supabase } from "../lib/supabase";
 import { resetUIStore } from "../store/ui";
 import type {
   MemberRole,
+  OrganizationLicense,
   OrganizationMember,
   OrganizationSettings,
+  OrganizationSubscription,
   OrganizationSummary,
   OrgStatus,
   TeacherScope,
@@ -38,6 +40,8 @@ interface OrganizationContextValue {
   scope: TeacherScope;
   organization: OrganizationSummary | null;
   settings: OrganizationSettings | null;
+  license: OrganizationLicense | null;
+  subscription: OrganizationSubscription | null;
   orgLoading: boolean;
   needsOnboarding: boolean;
   isReadOnly: boolean;
@@ -152,17 +156,29 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     queryKey: ["organization-context", organizationId],
     enabled: !!organizationId,
     queryFn: async () => {
-      const [orgRes, settingsRes] = await Promise.all([
+      const [orgRes, settingsRes, licenseRes, subscriptionRes] = await Promise.all([
         supabase
           .from("organizations")
           .select("id, name, slug, status, demo_expires_at, data_purge_at")
           .eq("id", organizationId!)
           .maybeSingle(),
         supabase.from("organization_settings").select("*").eq("organization_id", organizationId!).maybeSingle(),
+        supabase
+          .from("organization_licenses")
+          .select("license_type, activated_at, expires_at")
+          .eq("organization_id", organizationId!)
+          .maybeSingle(),
+        supabase
+          .from("organization_subscriptions")
+          .select("plan, billing_period, status, provider, current_period_start, current_period_end")
+          .eq("organization_id", organizationId!)
+          .maybeSingle(),
       ]);
 
       if (orgRes.error) throw orgRes.error;
       if (settingsRes.error) throw settingsRes.error;
+      if (licenseRes.error) throw licenseRes.error;
+      if (subscriptionRes.error) throw subscriptionRes.error;
 
       const organization = orgRes.data
         ? ({
@@ -179,7 +195,26 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         ? mapSettings(settingsRes.data as Record<string, unknown>)
         : null;
 
-      return { organization, settings };
+      const license = licenseRes.data
+        ? ({
+            license_type: licenseRes.data.license_type as OrganizationLicense["license_type"],
+            activated_at: licenseRes.data.activated_at as string,
+            expires_at: (licenseRes.data.expires_at as string | null) ?? null,
+          } satisfies OrganizationLicense)
+        : null;
+
+      const subscription = subscriptionRes.data
+        ? ({
+            plan: subscriptionRes.data.plan as string,
+            billing_period: subscriptionRes.data.billing_period as OrganizationSubscription["billing_period"],
+            status: subscriptionRes.data.status as OrganizationSubscription["status"],
+            provider: subscriptionRes.data.provider as string,
+            current_period_start: (subscriptionRes.data.current_period_start as string | null) ?? null,
+            current_period_end: (subscriptionRes.data.current_period_end as string | null) ?? null,
+          } satisfies OrganizationSubscription)
+        : null;
+
+      return { organization, settings, license, subscription };
     },
   });
 
@@ -224,6 +259,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   const organization = orgBundle?.organization ?? null;
   const settings = orgBundle?.settings ?? null;
+  const license = orgBundle?.license ?? null;
+  const subscription = orgBundle?.subscription ?? null;
 
   const membership = useMemo(
     () => memberships.find((m) => m.organization_id === organizationId) ?? null,
@@ -236,7 +273,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     role === "owner" &&
     PLACEHOLDER_ORG_NAMES.includes(organization.name as (typeof PLACEHOLDER_ORG_NAMES)[number]);
 
-  const isReadOnly = organization?.status === "demo_retention";
+  const isReadOnly =
+    organization?.status === "demo_retention" ||
+    (organization?.status === "licensed" &&
+      license?.license_type === "subscription" &&
+      subscription?.status === "past_due");
 
   const value = useMemo(
     () => ({
@@ -249,6 +290,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       scope,
       organization,
       settings,
+      license,
+      subscription,
       orgLoading,
       needsOnboarding,
       isReadOnly,
@@ -265,6 +308,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       scope,
       organization,
       settings,
+      license,
+      subscription,
       orgLoading,
       needsOnboarding,
       isReadOnly,

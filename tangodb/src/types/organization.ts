@@ -2,6 +2,27 @@ export type MemberRole = "owner" | "director" | "admin" | "teacher" | "accountan
 
 export type OrgStatus = "demo_active" | "demo_retention" | "licensed" | "suspended" | "purged";
 
+export type LicenseType = "lifetime" | "subscription";
+
+export type SubscriptionStatus = "active" | "past_due" | "canceled";
+
+export type BillingPeriod = "monthly" | "yearly";
+
+export interface OrganizationLicense {
+  license_type: LicenseType;
+  activated_at: string;
+  expires_at: string | null;
+}
+
+export interface OrganizationSubscription {
+  plan: string;
+  billing_period: BillingPeriod;
+  status: SubscriptionStatus;
+  provider: string;
+  current_period_start: string | null;
+  current_period_end: string | null;
+}
+
 export type OrgPreset = "dance_school" | "solo_teacher" | "sport_section" | "gymnastics_club" | "custom";
 
 export interface TeacherScope {

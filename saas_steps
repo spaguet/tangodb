@@ -32,9 +32,22 @@
   E-3: dry-run fixture — npm run import:org:validate-fixture (scripts/fixtures/minimal-export.json)
   npm: import:org:dry-run, import:org, import:org:validate-fixture
 
-Фаза 7 — SaaS Subscription          ← следующий этап
+Фаза 7 — SaaS Subscription ✓
+  S-1: organization_subscriptions + billing_webhook_events + sync_organization_subscription RPC
+  S-1: Edge create-subscription-checkout, stripe-webhook; Stripe via STRIPE_* env + price IDs
+  S-2: /settings/license — тариф (monthly/yearly), статус подписки, lifetime grandfathering UI
+  S-3: organization_allows_writes — lifetime OR active subscription; past_due read-only
+  Dev Console /billing — search, manual status adjust + platform_audit_log
+  Edge: dev-console-search-billing, dev-console-adjust-subscription
+  Миграция: 20260626000001_v2_organization_subscriptions
+  Тест: npm run test:db:subscription
 
+--- Ручная настройка после Фазы 7 (Stripe) ---
 
+[ ] STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET — Supabase Secrets
+[ ] STRIPE_PRICE_ID_MONTHLY, STRIPE_PRICE_ID_YEARLY — Supabase Secrets
+[ ] Stripe Dashboard → Webhook → https://<project>.supabase.co/functions/v1/stripe-webhook
+[ ] Deploy Edge Functions: create-subscription-checkout, stripe-webhook, dev-console-search-billing, dev-console-adjust-subscription
 
 --- Ручная настройка после Фазы 4 (Dev Console) — ВЫПОЛНЕНО ✓ ---
 
