@@ -23,6 +23,7 @@ import {
   getMutationBlockedMessage,
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
+import { usePermissions } from "../hooks/usePermissions";
 import { usePrices } from "../hooks/usePrices";
 import {
   dowShort,
@@ -174,10 +175,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const markAttendance = useMarkAttendance();
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
+  const { can } = usePermissions();
   const isLoading = scheduleLoading || personalLoading || pricesLoading;
   const isError = scheduleError || personalError || pricesError;
   const error = scheduleErr ?? personalErr ?? pricesErr;
-  const canMarkAttendance = isDateMarkable(selectedDate);
+  const canMarkAttendance = isDateMarkable(selectedDate) && can("attendance.write");
 
   const calendarCells = useMemo(() => {
     const [year, month] = selectedMonth.split("-").map(Number);

@@ -25,6 +25,7 @@ import {
   AuthFlowRoute,
   GuestRoute,
   OrgWorkspaceRoute,
+  PanelAccessRoute,
 } from "./auth/ProtectedRoute";
 import LoginPage from "./auth/LoginPage";
 import RegisterPage from "./auth/RegisterPage";
@@ -49,6 +50,8 @@ import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import OfflineBanner from "./components/ui/OfflineBanner";
 import ReadOnlyBanner from "./components/ui/ReadOnlyBanner";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
+import { usePermissions } from "./hooks/usePermissions";
+import { panelIdFromPath } from "./lib/permissions";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -214,6 +217,7 @@ function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
+  const { canAccessPanel } = usePermissions();
   const subscriptionsTab = useUIStore((s) => s.subscriptionsTab);
   const personalTab = useUIStore((s) => s.personalTab);
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
@@ -271,12 +275,16 @@ function AppLayout() {
 
   const renderNav = (refreshKey?: unknown) => (
     <ScrollableNav refreshKey={refreshKey}>
-      {NAV_SECTIONS.map((section) => (
+      {NAV_SECTIONS.map((section) => {
+        const visibleItems = section.items.filter((item) => canAccessPanel(panelIdFromPath(item.path)));
+        if (visibleItems.length === 0) return null;
+
+        return (
         <div key={section.label} className="space-y-0.5">
           <p className="text-[9px] text-slate-400 font-sans tracking-wider uppercase font-semibold px-3 mb-1">
             {section.label}
           </p>
-          {section.items.map((item) => {
+          {visibleItems.map((item) => {
             const active = isItemActive(item);
             const Icon = item.icon;
             return (
@@ -294,7 +302,8 @@ function AppLayout() {
             );
           })}
         </div>
-      ))}
+        );
+      })}
     </ScrollableNav>
   );
 
@@ -327,7 +336,7 @@ function AppLayout() {
 
         {/* Mobile bottom tab bar: most frequent daily actions */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-1 shadow-md pb-[env(safe-area-inset-bottom)]">
-          {MOBILE_TABS.map((item) => {
+          {MOBILE_TABS.filter((item) => canAccessPanel(panelIdFromPath(item.path))).map((item) => {
             const active =
               item.path === "/"
                 ? location.pathname === "/"
@@ -520,6 +529,7 @@ export default function App() {
               >
                 <Route path="/onboarding" element={<ErrorBoundary><OnboardingWizardPage /></ErrorBoundary>} />
                 <Route path="/license-required" element={<ErrorBoundary><LicenseRequiredPage /></ErrorBoundary>} />
+                <Route element={<PanelAccessRoute />}>
                 <Route element={<AppLayout />}>
                   <Route index element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
                   <Route path="clients" element={<ErrorBoundary><ClientsPage /></ErrorBoundary>} />
@@ -532,6 +542,7 @@ export default function App() {
                   <Route path="personal/book" element={<Navigate to="/personal/sell" replace />} />
                   <Route path="prices" element={<ErrorBoundary><PricesPage /></ErrorBoundary>} />
                   <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
                 </Route>
               </Route>
             </Routes>

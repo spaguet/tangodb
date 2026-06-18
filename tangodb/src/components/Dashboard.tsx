@@ -17,6 +17,7 @@ import DisciplinesPanel from "./DisciplinesPanel";
 import type { ToastType } from "../App";
 import { exportAllDashboardCsv } from "../lib/exportDashboardCsv";
 import CsvExportModal from "./ui/CsvExportModal";
+import RequirePermission from "./RequirePermission";
 import { Client, Discipline, Subscription, ScheduleSlot, PersonalLesson, Price, AttendanceRecord } from "../types";
 
 interface DashboardProps {
@@ -418,6 +419,7 @@ export default function Dashboard({
               Статистика
             </h2>
             <div className="flex items-center gap-1 min-w-0">
+              <RequirePermission action="dashboard.export">
               <button
                 type="button"
                 onClick={handleExportCsv}
@@ -427,6 +429,7 @@ export default function Dashboard({
                 <Download className="w-3.5 h-3.5" />
                 {exporting ? "Экспорт..." : "Экспорт CSV"}
               </button>
+              </RequirePermission>
               <button
                 type="button"
                 onClick={() => setStatsMonth((m) => shiftMonth(m, -1))}

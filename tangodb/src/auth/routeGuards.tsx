@@ -1,6 +1,8 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { usePermissions } from "../hooks/usePermissions";
+import { panelIdFromPath } from "../lib/permissions";
 
 function LoadingScreen({ label }: { label: string }) {
   return (
@@ -82,6 +84,18 @@ export function OrgWorkspaceRoute() {
   }
 
   if (!needsOnboarding && location.pathname === "/onboarding") {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+}
+
+export function PanelAccessRoute() {
+  const location = useLocation();
+  const { canAccessPanel } = usePermissions();
+  const panel = panelIdFromPath(location.pathname);
+
+  if (!canAccessPanel(panel)) {
     return <Navigate to="/" replace />;
   }
 

@@ -24,7 +24,7 @@ import type {
   OrgStatus,
   TeacherScope,
 } from "../types/organization";
-import { PLACEHOLDER_ORG_NAMES } from "../types/organization";
+import { EMPTY_TEACHER_SCOPE, PLACEHOLDER_ORG_NAMES } from "../types/organization";
 
 export const membershipsQueryKey = ["organization-memberships"] as const;
 
@@ -34,6 +34,8 @@ interface OrganizationContextValue {
   organizationId: string | null;
   memberId: string | null;
   role: MemberRole | null;
+  membership: OrganizationMember | null;
+  scope: TeacherScope;
   organization: OrganizationSummary | null;
   settings: OrganizationSettings | null;
   orgLoading: boolean;
@@ -223,6 +225,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const organization = orgBundle?.organization ?? null;
   const settings = orgBundle?.settings ?? null;
 
+  const membership = useMemo(
+    () => memberships.find((m) => m.organization_id === organizationId) ?? null,
+    [memberships, organizationId]
+  );
+  const scope = membership?.scope ?? EMPTY_TEACHER_SCOPE;
+
   const needsOnboarding =
     !!organization &&
     role === "owner" &&
@@ -237,6 +245,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       organizationId,
       memberId,
       role,
+      membership,
+      scope,
       organization,
       settings,
       orgLoading,
@@ -251,6 +261,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       organizationId,
       memberId,
       role,
+      membership,
+      scope,
       organization,
       settings,
       orgLoading,

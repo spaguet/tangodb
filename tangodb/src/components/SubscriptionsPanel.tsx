@@ -20,6 +20,7 @@ import {
   getMutationBlockedMessage,
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
+import { usePermissions } from "../hooks/usePermissions";
 import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, getGroupTariffs, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient } from "../lib/utils";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
@@ -29,6 +30,7 @@ import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
+import RequirePermission from "./RequirePermission";
 import type { ToastType } from "../App";
 import type { Client, Discipline } from "../types";
 
@@ -59,6 +61,7 @@ export default function SubscriptionsPanel({
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
   const addSubscription = useAddSubscription();
   const finishSubscription = useFinishSubscription();
+  const { canAccessPanel } = usePermissions();
 
   const isLoading = activeClientsLoading || directoryClientsLoading || disciplinesLoading || subsLoading || pricesLoading;
   const isError = activeClientsError || directoryClientsError || disciplinesError || subsError || pricesError;
@@ -224,7 +227,9 @@ export default function SubscriptionsPanel({
 
   const subscriptionTabs = [
     { id: "active", label: "Просмотр", icon: FileCheck },
-    { id: "sell", label: "Продажа", icon: Ticket },
+    ...(canAccessPanel("subscriptions_sell")
+      ? [{ id: "sell" as const, label: "Продажа", icon: Ticket }]
+      : []),
   ] as const;
 
   return (
@@ -439,6 +444,7 @@ export default function SubscriptionsPanel({
                             <span className="text-slate-400">Баланс в норме</span>
                           )}
 
+                          <RequirePermission action="subscriptions.write">
                           <button
                             type="button"
                             onClick={() => setFinishTarget({ id: sub.id, name: clientNameStr })}
@@ -448,6 +454,7 @@ export default function SubscriptionsPanel({
                           >
                             Завершить
                           </button>
+                          </RequirePermission>
                         </div>
                       </div>
                     )}

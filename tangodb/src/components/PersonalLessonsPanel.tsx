@@ -42,6 +42,7 @@ import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import VirtualList from "./ui/VirtualList";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
+import { usePermissions } from "../hooks/usePermissions";
 import type { ToastType } from "../App";
 import type { Client, PersonalLesson, Subscription } from "../types";
 
@@ -94,6 +95,8 @@ export default function PersonalLessonsPanel({
   const updatePersonalPaid = useUpdatePersonalPaid();
   const updatePersonalLesson = useUpdatePersonalLesson();
   const deletePersonalLesson = useDeletePersonalLesson();
+  const { canAccessPanel, can } = usePermissions();
+  const canWritePersonal = can("personal_lessons.write");
 
   const isLoading = activeClientsLoading || directoryClientsLoading || disciplinesLoading || lessonsLoading || scheduleLoading || pricesLoading;
   const isError = activeClientsError || directoryClientsError || disciplinesError || lessonsError || scheduleError || pricesError;
@@ -513,6 +516,8 @@ export default function PersonalLessonsPanel({
             {formatDateLabel(l.date)} · {l.timeStart} – {l.timeEnd}
           </div>
           <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {canWritePersonal && (
+            <>
             <button
               type="button"
               onClick={() => startEditLesson(l)}
@@ -531,6 +536,8 @@ export default function PersonalLessonsPanel({
             >
               <Trash2 className="w-4 h-4" />
             </button>
+            </>
+            )}
           </div>
         </div>
 
@@ -538,6 +545,7 @@ export default function PersonalLessonsPanel({
 
         <div className="flex items-center justify-between gap-2">
           <p className={amountCls}>{formatCurrency(l.price)}</p>
+          {canWritePersonal ? (
           <button
             type="button"
             onClick={() => handleTogglePaid(l)}
@@ -554,6 +562,11 @@ export default function PersonalLessonsPanel({
           >
             {isPaid ? "Оплачено" : "Не оплачено"}
           </button>
+          ) : (
+            <span className={`text-xs font-sans font-semibold shrink-0 ${isPaid ? "text-emerald-600" : "text-rose-600"}`}>
+              {isPaid ? "Оплачено" : "Не оплачено"}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -564,7 +577,9 @@ export default function PersonalLessonsPanel({
 
   const personalTabs = [
     { id: "view", label: "Просмотр", icon: FolderClosed },
-    { id: "sell", label: "Продажа", icon: BadgePlus },
+    ...(canAccessPanel("personal_sell")
+      ? [{ id: "sell" as const, label: "Продажа", icon: BadgePlus }]
+      : []),
   ] as const;
 
   return (

@@ -18,10 +18,12 @@ import { useDisciplines } from "../hooks/useDisciplines";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { dowFull, dowFullEntries, jsDayToIsoDow, timesOverlap } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import RequirePermission from "./RequirePermission";
 import AppSelect from "./ui/AppSelect";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
+import { usePermissions } from "../hooks/usePermissions";
 import type { ToastType } from "../App";
 import type { PersonalLesson, ScheduleSlot } from "../types";
 
@@ -80,6 +82,8 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const deleteSlot = useDeleteScheduleSlot();
   const replaceDisciplineSchedule = useReplaceDisciplineSchedule();
   const deleteDisciplineSchedule = useDeleteDisciplineSchedule();
+  const { can } = usePermissions();
+  const canWriteSchedule = can("schedule.write");
 
   const [day, setDay] = useState<number>(1);
   const [time, setTime] = useState<string>("19:00");
@@ -258,6 +262,14 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
   return (
     <div id="panel-schedule" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <RequirePermission
+        action="schedule.write"
+        fallback={
+          <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
+            Изменение расписания недоступно для вашей роли или организация в режиме только чтения.
+          </div>
+        }
+      >
       <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
           <CalendarDays className="w-4.5 h-4.5 text-indigo-500" />
@@ -317,6 +329,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           </button>
         </form>
       </div>
+      </RequirePermission>
 
       <div className="lg:col-span-8 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="border-b border-slate-100 pb-3 space-y-1">
@@ -345,7 +358,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                   <p className="font-semibold text-sm tracking-tight text-slate-800 break-words min-w-0 flex-1">
                     {group.name}
                   </p>
-                  {group.disciplineId != null && (
+                  {group.disciplineId != null && canWriteSchedule && (
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"

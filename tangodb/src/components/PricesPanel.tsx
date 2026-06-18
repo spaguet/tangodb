@@ -17,8 +17,10 @@ import {
   getPrivatePackageTariffs,
 } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
+import { usePermissions } from "../hooks/usePermissions";
 import type { ToastType } from "../App";
 import type { Price } from "../types";
 
@@ -80,6 +82,8 @@ function TariffCreateSection({
 
 export default function PricesPanel({ toast }: PricesPanelProps) {
   const { data: prices = [], isLoading, isError, error } = usePrices();
+  const { can } = usePermissions();
+  const canWritePrices = can("prices.write");
   const updatePrice = useUpdatePrice();
   const updatePriceMeta = useUpdatePriceMeta();
   const deletePrice = useDeletePrice();
@@ -286,10 +290,11 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-2">
             <h4 className="font-semibold text-slate-800 text-sm leading-snug break-words min-w-0 flex-1">
               {title}
             </h4>
+            {canWritePrices && (
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
@@ -310,6 +315,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
+            )}
           </div>
           <p className="text-[11px] text-slate-400 font-sans tracking-tight font-normal">
             {description}
@@ -322,6 +328,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+          {canWritePrices ? (
+          <>
           <div className="relative font-sans w-28 text-right">
             <input
               type="number"
@@ -347,6 +355,10 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           >
             {isSyncing ? "..." : "Сохранить"}
           </button>
+          </>
+          ) : (
+            <span className="text-sm font-semibold text-slate-700">{formatCurrency(p.price)}</span>
+          )}
         </div>
       </div>
     );
@@ -365,6 +377,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </p>
         </div>
 
+        <RequirePermission action="prices.write">
         <button
           type="button"
           onClick={() => setShowCreateModal(true)}
@@ -373,6 +386,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           <Ticket className="w-3.5 h-3.5" />
           Добавить тариф
         </button>
+        </RequirePermission>
 
         {prices.length === 0 ? (
           <div className="text-center py-16 text-slate-400 text-sm">

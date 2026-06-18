@@ -5,7 +5,7 @@
 Фаза 1C — Telegram Auth v2
 Фаза 2A — Business Schema ✓
 Фаза 2B — RBAC/RLS + RPC ✓
-Фаза 2C — Frontend Permissions + Hooks
+Фаза 2C — Frontend Permissions + Hooks ✓
 Фаза 3 — Settings CRM
 Фаза 4 — Team Invites + Dev Console
 Фаза 5 — Version Migration

@@ -21,6 +21,7 @@ import {
 } from "../hooks/useOnlineStatus";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import QueryErrorState from "./ui/QueryErrorState";
@@ -212,6 +213,14 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   return (
     <div id="panel-newClient" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
       {/* Sidebar form: Add Guest */}
+      <RequirePermission
+        action="clients.write"
+        fallback={
+          <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
+            Добавление клиентов недоступно для вашей роли или организация в режиме только чтения.
+          </div>
+        }
+      >
       <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
           <UserPlus className="w-4.5 h-4.5 text-indigo-500" />
@@ -277,6 +286,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
           </button>
         </form>
       </div>
+      </RequirePermission>
 
       {/* Main Table details */}
       <div className="lg:col-span-8 flex flex-col">
@@ -360,6 +370,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                           )}
                         </td>
                         <td className="py-3 text-right pr-2">
+                          <RequirePermission action="clients.write">
                           <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => startEdit(c)}
@@ -378,6 +389,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
+                          </RequirePermission>
                         </td>
                       </tr>
                     ))}
@@ -436,6 +448,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                         {c.archivedAt ? formatArchivedAt(c.archivedAt) : "—"}
                       </td>
                       <td className="py-3 text-right pr-2">
+                        <RequirePermission action="clients.write">
                         <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => setRestoreTarget(c)}
@@ -447,6 +460,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                             <RotateCcw className="w-4 h-4" />
                           </button>
                         </div>
+                        </RequirePermission>
                       </td>
                     </tr>
                   ))}

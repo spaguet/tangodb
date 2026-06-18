@@ -7,6 +7,7 @@ import {
   useUpdateDiscipline,
 } from "../hooks/useDisciplines";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import type { ToastType } from "../App";
@@ -107,6 +108,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                     <p className="text-[11px] text-slate-300 italic mt-0.5">без описания</p>
                   )}
                 </div>
+                <RequirePermission action="disciplines.write" context={{ disciplineId: String(d.id) }}>
                 <div className="flex items-center gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
@@ -127,6 +129,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
+                </RequirePermission>
               </div>
             ))}
           </div>

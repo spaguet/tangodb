@@ -1,7 +1,7 @@
 import { useOrganization } from "../organization/OrganizationProvider";
 
 export function useOrgQueryScope() {
-  const { organizationId } = useOrganization();
+  const { organizationId, orgLoading } = useOrganization();
 
   function withOrgId<T extends readonly unknown[]>(base: T) {
     return (organizationId ? [...base, organizationId] : base) as readonly unknown[];
@@ -9,7 +9,7 @@ export function useOrgQueryScope() {
 
   return {
     organizationId,
-    enabled: !!organizationId,
+    enabled: !!organizationId && !orgLoading,
     withOrgId,
   };
 }

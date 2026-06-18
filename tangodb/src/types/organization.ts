@@ -63,6 +63,14 @@ export interface OrganizationSettings {
   updated_at: string;
 }
 
+export const EMPTY_TEACHER_SCOPE: TeacherScope = {
+  discipline_ids: [],
+  location_ids: [],
+  all_disciplines: false,
+  all_locations: false,
+  can_view_all_clients: false,
+};
+
 export const PLACEHOLDER_ORG_NAMES = ["Demo Organization", "Organization"] as const;
 
 export const PRESET_MODULES: Record<OrgPreset, OrgModules> = {

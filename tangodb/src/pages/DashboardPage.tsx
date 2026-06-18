@@ -11,10 +11,12 @@ import { useAttendanceRecords } from "../hooks/useAttendance";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptions } from "../hooks/useSubscriptions";
 import { useUIStore } from "../store/ui";
+import { useOrganization } from "../organization/OrganizationProvider";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { orgLoading, organizationId } = useOrganization();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
 
@@ -59,6 +61,7 @@ export default function DashboardPage() {
     navigate(route.path);
   };
 
+  if (orgLoading || !organizationId) return <LoadingState label="Загрузка организации..." />;
   if (isLoading) return <LoadingState label="Загрузка обзора..." />;
   if (isError) return <QueryErrorState error={error} />;
 
