@@ -287,7 +287,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     return (
       <div
         key={priceId}
-        className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 h-full min-w-[20rem]"
+        className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between gap-4 h-full"
       >
         <div className="min-w-0 flex-1 space-y-1">
             <div className="flex items-start justify-between gap-2">
@@ -327,7 +327,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0 sm:ml-auto">
+        <div className="flex items-center gap-2 w-full justify-end shrink-0 mt-auto">
           {canWritePrices ? (
           <>
           <div className="relative font-sans w-36 text-right">
@@ -372,7 +372,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       {items.length === 0 ? (
         <p className="text-xs text-slate-400 font-sans py-2">Нет тарифов</p>
       ) : (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(20rem,1fr))]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
           {items.map(renderPriceRow)}
         </div>
       )}
