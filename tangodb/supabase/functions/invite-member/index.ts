@@ -1,3 +1,4 @@
+import { sendTransactionalEmail } from "../_shared/email.ts";
 import { hashInviteToken, generateInviteToken } from "../_shared/inviteToken.ts";
 import {
   getClientIp,
@@ -20,15 +21,13 @@ async function sendInviteEmail(
   orgName: string
 ): Promise<boolean> {
   const subject = `TangoDB — приглашение в ${orgName}`;
-  const body =
+  const text =
     `Здравствуйте!\n\n` +
     `Вас пригласили в организацию «${orgName}» в TangoDB CRM.\n\n` +
     `Примите приглашение: ${inviteUrl}\n\n` +
     `Ссылка действует 7 дней.\n`;
 
-  logEvent("invite_email_stub", { recipient_domain: email.split("@")[1] ?? "unknown" });
-  console.log(JSON.stringify({ notification: "invite_email", subject, body_length: body.length }));
-  return false;
+  return sendTransactionalEmail({ to: email, subject, text });
 }
 
 Deno.serve(async (req) => {

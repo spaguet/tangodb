@@ -8,9 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
-## Записи
-
-2026-06-19 — Персональные уроки: clientDisplay из справочника клиентов вместо UUID (JOIN clients не работает с composite FK v2).
+2026-06-19 — Приглашения в команду: отправка email через Resend (invite-member, request-demo-key); UI предупреждает, если письмо не ушло. clientDisplay из справочника клиентов вместо UUID (JOIN clients не работает с composite FK v2).
 2026-06-19 — Действующие абонементы: в карточке отображаются посещения и пропуски (из attendance и personal_lessons), стиль как у «Активирован».
 2026-06-19 — Журнал посещений: групповые абонементы фильтруются по disciplineId слота расписания; mark_attendance проверяет направление при отметке.
 2026-06-19 — UUID v2: типы id/disciplineId/priceId как string в types, hooks, SchedulePanel, PersonalLessonsPanel, DisciplineSelect — единообразие с Supabase без parseInt.

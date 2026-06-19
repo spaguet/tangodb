@@ -60,7 +60,10 @@ export default function TeamSettingsPage() {
       });
       setEmail("");
       setLastInviteUrl(result.invite_url ?? null);
-      showToast(t("team.inviteSuccess"), "success");
+      showToast(
+        result.email_sent ? t("team.inviteEmailSent") : t("team.inviteManualHint"),
+        result.email_sent ? "success" : "info"
+      );
     } catch (err) {
       showToast(err instanceof Error ? err.message : t("team.inviteError"), "error");
     }

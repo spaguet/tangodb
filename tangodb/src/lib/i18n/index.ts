@@ -14,6 +14,8 @@ export type I18nKey =
   | "team.changeRole"
   | "team.audit"
   | "team.inviteSuccess"
+  | "team.inviteEmailSent"
+  | "team.inviteManualHint"
   | "team.inviteError"
   | "team.noMembers"
   | "team.inactive"
@@ -41,6 +43,8 @@ const RU: Record<I18nKey, string> = {
   "team.changeRole": "Изменить роль",
   "team.audit": "Журнал изменений",
   "team.inviteSuccess": "Приглашение создано",
+  "team.inviteEmailSent": "Приглашение отправлено на email",
+  "team.inviteManualHint": "Письмо не отправлено — скопируйте ссылку и передайте преподавателю",
   "team.inviteError": "Не удалось отправить приглашение",
   "team.noMembers": "Нет участников",
   "team.inactive": "Неактивен",
@@ -69,6 +73,8 @@ const EN: Record<I18nKey, string> = {
   "team.changeRole": "Change role",
   "team.audit": "Change log",
   "team.inviteSuccess": "Invite created",
+  "team.inviteEmailSent": "Invite sent to email",
+  "team.inviteManualHint": "Email not sent — copy the link and share it with the teacher",
   "team.inviteError": "Failed to send invite",
   "team.noMembers": "No members",
   "team.inactive": "Inactive",
@@ -97,6 +103,8 @@ const VI: Record<I18nKey, string> = {
   "team.changeRole": "Đổi vai trò",
   "team.audit": "Nhật ký thay đổi",
   "team.inviteSuccess": "Đã tạo lời mời",
+  "team.inviteEmailSent": "Đã gửi lời mời qua email",
+  "team.inviteManualHint": "Email chưa gửi — sao chép liên kết và gửi cho giáo viên",
   "team.inviteError": "Không gửi được lời mời",
   "team.noMembers": "Không có thành viên",
   "team.inactive": "Không hoạt động",

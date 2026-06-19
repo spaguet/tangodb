@@ -2,6 +2,7 @@ import {
   generateAccessKey,
   hashAccessKey,
 } from "../_shared/accessKey.ts";
+import { sendTransactionalEmail } from "../_shared/email.ts";
 import {
   getClientIp,
   handleOptions,
@@ -18,16 +19,13 @@ const RATE_WINDOW_MS = 15 * 60_000;
 async function sendDemoKeyEmail(email: string, key: string): Promise<boolean> {
   const siteUrl = Deno.env.get("SITE_URL") ?? "https://tangodb.vercel.app";
   const subject = "TangoDB — ваш демо-ключ на 30 дней";
-  const body =
+  const text =
     `Здравствуйте!\n\n` +
     `Ваш демо-ключ TangoDB: ${key}\n\n` +
     `Зарегистрируйтесь с этим email и активируйте ключ: ${siteUrl}/activate-key\n\n` +
     `Ключ показывается один раз. Демо — 30 дней полного доступа.\n`;
 
-  // Stub: production should wire SMTP/Resend. Log intent without secrets.
-  logEvent("demo_key_email_stub", { recipient_domain: email.split("@")[1] ?? "unknown" });
-  console.log(JSON.stringify({ notification: "demo_key_email", subject, body_length: body.length }));
-  return false;
+  return sendTransactionalEmail({ to: email, subject, text });
 }
 
 Deno.serve(async (req) => {
