@@ -356,7 +356,7 @@ export default function SubscriptionsPanel({
                             </p>
                             <div className="flex items-center gap-2 flex-wrap">
                               {sub.category === "private" ? (
-                                <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-violet-600 bg-violet-50 px-2 py-0.5 rounded border border-violet-100">
+                                <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
                                   персональный
                                 </span>
                               ) : disciplineName ? (

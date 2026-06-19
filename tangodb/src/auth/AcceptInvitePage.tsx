@@ -104,7 +104,7 @@ export default function AcceptInvitePage() {
           </div>
         )}
         {status === "success" && (
-          <p className="text-sm text-emerald-600 font-medium">{message}</p>
+          <p className="text-sm text-indigo-600 font-medium">{message}</p>
         )}
         {status === "error" && (
           <>

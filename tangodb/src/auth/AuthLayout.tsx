@@ -117,7 +117,7 @@ export function AuthError({ message }: { message: string | null }) {
 export function AuthSuccess({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+    <div className="text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
       {message}
     </div>
   );

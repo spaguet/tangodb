@@ -19,7 +19,7 @@ function formatDate(iso: string | null | undefined): string {
 const STATUS_LABELS: Record<string, { label: string; tone: string }> = {
   demo_active: { label: "Демо (активно)", tone: "text-indigo-700 bg-indigo-50 border-indigo-100" },
   demo_retention: { label: "Демо (только просмотр)", tone: "text-amber-800 bg-amber-50 border-amber-100" },
-  licensed: { label: "Лицензия активна", tone: "text-emerald-700 bg-emerald-50 border-emerald-100" },
+  licensed: { label: "Лицензия активна", tone: "text-indigo-700 bg-indigo-50 border-indigo-100" },
   suspended: { label: "Приостановлено", tone: "text-slate-600 bg-slate-100 border-slate-200" },
   purged: { label: "Данные удалены", tone: "text-slate-500 bg-slate-50 border-slate-200" },
 };

@@ -1,0 +1,18 @@
+---
+description: Как агент работает с памятью проекта
+alwaysApply: false
+---
+
+# Индекс памяти
+
+`.cursor/docs/ai/AI_CONTEXT.md`    — читать первым всегда
+`.cursor/docs/ai/architecture.md`  — задачи по структуре проекта
+`.cursor/docs/ai/design_system.md` — задачи по UI/UX
+`.cursor/docs/ai/lessons.md`       — если задача похожа на прошлые ошибки
+`.cursor/docs/ai/decision_log.md`  — если нужно понять, почему что-то сделано именно так
+`.cursor/docs/ai/changelog.md`     — история изменений
+
+# Правило
+
+Определи тип задачи → прочитай только нужный файл.
+Не загружай всё сразу.

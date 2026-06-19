@@ -381,7 +381,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         <button
           type="button"
           onClick={() => setShowCreateModal(true)}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
         >
           <Ticket className="w-3.5 h-3.5" />
           Добавить тариф

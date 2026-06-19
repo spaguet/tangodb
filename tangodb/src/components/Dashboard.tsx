@@ -221,7 +221,7 @@ export default function Dashboard({
                       }}
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shrink-0" />
+                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-slate-800 truncate">{disciplineName}</p>
                           <p className="text-[10px] text-slate-400">
@@ -240,7 +240,7 @@ export default function Dashboard({
                 return (
                   <div
                     key={entry.key}
-                    className="flex items-center justify-between p-2 bg-violet-50/60 rounded-lg border border-violet-100 font-sans cursor-pointer hover:bg-violet-50 transition-colors"
+                    className="flex items-center justify-between p-2 bg-indigo-50/60 rounded-lg border border-indigo-100 font-sans cursor-pointer hover:bg-indigo-50 transition-colors"
                     onClick={openAttendanceJournal}
                     role="button"
                     tabIndex={0}
@@ -249,7 +249,7 @@ export default function Dashboard({
                     }}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-1.5 h-1.5 bg-violet-500 rounded-full shrink-0" />
+                      <div className="w-1.5 h-1.5 bg-indigo-700 rounded-full shrink-0" />
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-slate-800 truncate">{lesson.clientDisplay}</p>
                         <p className="text-[10px] text-slate-400">
@@ -258,7 +258,7 @@ export default function Dashboard({
                         </p>
                       </div>
                     </div>
-                    <span className="font-sans text-xs bg-violet-700 text-violet-50 font-semibold px-2 py-0.5 rounded shrink-0">
+                    <span className="font-sans text-xs bg-indigo-700 text-indigo-50 font-semibold px-2 py-0.5 rounded shrink-0">
                       {lesson.timeStart}
                     </span>
                   </div>
@@ -423,7 +423,7 @@ export default function Dashboard({
               <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
                 Оплачено персональных
               </p>
-              <h4 className="text-lg font-semibold text-emerald-700 mt-0.5 leading-none">{formatCurrency(monthStats.monthPersonalPaidSum)}</h4>
+              <h4 className="text-lg font-semibold text-indigo-700 mt-0.5 leading-none">{formatCurrency(monthStats.monthPersonalPaidSum)}</h4>
             </div>
             <div className="bg-white px-3 py-2.5 col-span-2">
               <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">

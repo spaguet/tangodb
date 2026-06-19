@@ -152,8 +152,8 @@ export default function SellPackageModal({
           >
             <div className="sticky top-0 z-10 flex items-start justify-between gap-3 p-4 border-b border-slate-100 bg-white">
               <div className="flex items-start gap-3 min-w-0">
-                <div className="p-2 rounded-lg bg-violet-50 shrink-0">
-                  <Ticket className="w-5 h-5 text-violet-600" />
+                <div className="p-2 rounded-lg bg-indigo-50 shrink-0">
+                  <Ticket className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа пакета</h2>
@@ -272,9 +272,9 @@ export default function SellPackageModal({
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-violet-50/60 rounded-xl border border-violet-100">
+              <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100">
                 <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
-                <span className="text-xl font-sans font-semibold text-violet-700">
+                <span className="text-xl font-sans font-semibold text-indigo-700">
                   {selectedPackageTariff ? formatCurrency(selectedPackageTariff.price) : "—"}
                 </span>
               </div>
@@ -283,7 +283,7 @@ export default function SellPackageModal({
                 type="button"
                 onClick={handleSell}
                 disabled={addSubscription.isPending || packageTariffs.length === 0}
-                className="w-full py-3.5 bg-violet-600 hover:bg-violet-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
               >
                 {addSubscription.isPending ? "Оформление..." : "ПРОДАТЬ ПАКЕТ"}
               </button>

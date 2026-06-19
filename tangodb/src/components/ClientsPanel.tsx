@@ -454,7 +454,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                             onClick={() => setRestoreTarget(c)}
                             disabled={connectionState !== "online"}
                             title={getConnectionBlockReason(connectionState) ?? "Восстановить"}
-                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                             aria-label={`Восстановить ${c.lastName} ${c.firstName}`}
                           >
                             <RotateCcw className="w-4 h-4" />

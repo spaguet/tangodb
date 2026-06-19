@@ -502,7 +502,7 @@ export default function PersonalLessonsPanel({
         key={l.id}
         className={`border rounded-xl p-4 space-y-2 transition-all hover:shadow-sm ${
           isUpcoming
-            ? "bg-emerald-50 border-emerald-200"
+            ? "bg-indigo-50 border-indigo-200"
             : isPaid
               ? "bg-white border-slate-200"
               : "bg-white border-rose-200"
@@ -557,13 +557,13 @@ export default function PersonalLessonsPanel({
                 : "Нажмите, чтобы подтвердить оплату")
             }
             className={`text-xs font-sans font-semibold shrink-0 cursor-pointer disabled:opacity-60 ${
-              isPaid ? "text-emerald-600 hover:text-emerald-700" : "text-rose-600 hover:text-rose-700"
+              isPaid ? "text-indigo-600 hover:text-indigo-700" : "text-rose-600 hover:text-rose-700"
             }`}
           >
             {isPaid ? "Оплачено" : "Не оплачено"}
           </button>
           ) : (
-            <span className={`text-xs font-sans font-semibold shrink-0 ${isPaid ? "text-emerald-600" : "text-rose-600"}`}>
+            <span className={`text-xs font-sans font-semibold shrink-0 ${isPaid ? "text-indigo-600" : "text-rose-600"}`}>
               {isPaid ? "Оплачено" : "Не оплачено"}
             </span>
           )}
@@ -633,7 +633,7 @@ export default function PersonalLessonsPanel({
                 <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">
                   {isViewingCurrentMonth ? "Оплаченных в этом месяце" : "Оплаченных за месяц"}
                 </p>
-                <h4 className="text-xl font-semibold text-emerald-700 mt-0.5 leading-none">{monthPaidCount}</h4>
+                <h4 className="text-xl font-semibold text-indigo-700 mt-0.5 leading-none">{monthPaidCount}</h4>
               </div>
               <div className="px-4 py-2.5">
                 <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold leading-tight">Ожидает оплаты</p>
@@ -657,7 +657,7 @@ export default function PersonalLessonsPanel({
                 <button
                   onClick={() => setPvFilter("yes")}
                   className={`px-4 py-1.5 rounded-md cursor-pointer transition-all ${
-                    pvFilter === "yes" ? "bg-white text-emerald-700 shadow-xs font-semibold" : "text-slate-500 hover:text-slate-700"
+                    pvFilter === "yes" ? "bg-white text-indigo-700 shadow-xs font-semibold" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
                   Оплаченные
@@ -747,7 +747,7 @@ export default function PersonalLessonsPanel({
           <button
             type="button"
             onClick={() => setPackageModalOpen(true)}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
           >
             <Ticket className="w-3.5 h-3.5" />
             Продать пакет уроков
@@ -957,7 +957,7 @@ export default function PersonalLessonsPanel({
                     onClick={() => handleBook(true)}
                     disabled={connectionState !== "online" || addPersonalLessons.isPending}
                     title={getConnectionBlockReason(connectionState)}
-                    className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                    className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
                   >
                     БРОНЬ С ОПЛАТОЙ
                   </button>
@@ -1003,7 +1003,7 @@ export default function PersonalLessonsPanel({
                 )}
 
                 {linkedSubscriptionId && (
-                  <p className="text-[10px] text-violet-600 font-sans">
+                  <p className="text-[10px] text-indigo-600 font-sans">
                     Клиенты зафиксированы по пакету. Чтобы изменить состав, выберите «Один урок».
                   </p>
                 )}
