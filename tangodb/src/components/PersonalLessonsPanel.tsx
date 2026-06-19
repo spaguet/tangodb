@@ -731,29 +731,29 @@ export default function PersonalLessonsPanel({
         </div>
       ) : (
         /* Продажа: форма бронирования урока */
-        <div
-          className={`bg-white p-4 border border-slate-200 shadow-xs max-w-xl mx-auto panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
-        >
-          <div className="panel-form-header">
+        <div className="bg-white p-4 border border-slate-200 shadow-xs panel-card-stack panel-sell-under-tabs">
+          <div className="panel-form-header panel-form-header-wide-md">
             <div className="panel-form-header-icon">
               <Ticket className="w-5 h-5 text-indigo-600" />
             </div>
-            <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа персонального урока</h2>
-            <p className="text-slate-400 text-[11px] leading-snug">
-              Оформите бронирование персонального урока — запись сразу попадёт в календарь.
-            </p>
+            <div className="panel-form-header-text">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа персонального урока</h2>
+              <p className="text-slate-400 text-[11px] leading-snug">
+                Оформите бронирование персонального урока — запись сразу попадёт в календарь.
+              </p>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={() => setPackageModalOpen(true)}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer panel-form-full-row-md md:col-span-2"
           >
             <Ticket className="w-3.5 h-3.5" />
             Продать пакет уроков
           </button>
 
-          <div className="panel-form-stack">
+          <div className="panel-form-stack panel-form-stack-wide-md">
             <DisciplineSelect
               disciplines={disciplines}
               value={disciplineId}
@@ -761,7 +761,7 @@ export default function PersonalLessonsPanel({
               toast={toast}
             />
 
-            <div className="field-stack">
+            <div className="field-stack panel-form-full-row-md">
               {bookingClients.map((client, idx) => (
                 <div key={idx} className="flex items-start gap-2">
                   <div className="flex-1 min-w-0">
@@ -827,9 +827,9 @@ export default function PersonalLessonsPanel({
               )}
             </div>
 
-            <div className="border-t border-slate-100 pt-1.5 -mt-1" />
+            <div className="border-t border-slate-100 pt-1.5 -mt-1 panel-form-full-row-md" />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 panel-form-full-row-md">
               <div className="field-stack">
                 <label className={labelCls}>Время начала</label>
                 <input
@@ -853,7 +853,7 @@ export default function PersonalLessonsPanel({
             </div>
 
             {/* Multi-date controls */}
-            <div>
+            <div className="panel-form-full-row-md">
               <div className="field-stack">
                 <label className={labelCls}>Даты бронирования</label>
                 <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
@@ -888,9 +888,9 @@ export default function PersonalLessonsPanel({
               </button>
             </div>
 
-            <div className="border-t border-slate-100 pt-1 -mt-1" />
+            <div className="border-t border-slate-100 pt-1 -mt-1 panel-form-full-row-md" />
 
-            <div className="field-stack">
+            <div className="field-stack panel-form-full-row-md">
               <label className={labelCls}>Способ оплаты</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
@@ -919,7 +919,7 @@ export default function PersonalLessonsPanel({
             </div>
 
             {bookingPaymentMode === "single" && (
-              <>
+              <div className="panel-form-full-row-md md:col-span-2 panel-form-stack md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-3">
                 {lessonTariffs.length > 0 && (
                   <AppSelect
                     label="Тариф за урок"
@@ -951,7 +951,7 @@ export default function PersonalLessonsPanel({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 panel-form-full-row-md">
                   <button
                     type="button"
                     onClick={() => handleBook(true)}
@@ -971,11 +971,11 @@ export default function PersonalLessonsPanel({
                     БРОНЬ БЕЗ ОПЛАТЫ
                   </button>
                 </div>
-              </>
+              </div>
             )}
 
             {bookingPaymentMode === "package" && (
-              <>
+              <div className="panel-form-full-row-md md:col-span-2 panel-form-stack">
                 {availablePrivateSubs.length > 0 ? (
                   <AppSelect
                     label="Списать с пакета"
@@ -1017,7 +1017,7 @@ export default function PersonalLessonsPanel({
                 >
                   {addPersonalLessons.isPending ? "Оформление..." : "БРОНЬ ПО ПАКЕТУ"}
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>

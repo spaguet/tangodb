@@ -14,3 +14,4 @@ YYYY-MM-DD — краткое описание (причина / контекс�
 2026-06-19 — Типографика nav/logo: text-[8px]/text-[9px] заменены на text-[10px]/text-[11px] для читаемости и соответствия design system.
 2026-06-19 — Аудит design system: CsvExportModal rounded-xl, ClientAutocomplete dropdown z-50, иконки stat-карточек Dashboard w-5 h-5.
 2026-06-19 — Empty state: PricesPanel, DisciplinesPanel и AttendancePanel приведены к эталону (py-20, иконка w-8, text-sm).
+2026-06-19 — Sell-панели и popup на md+: полная ширина под PageTabs, двухколоночные формы, шире модали; мобильный layout без изменений.

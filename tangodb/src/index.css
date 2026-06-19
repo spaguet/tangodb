@@ -63,6 +63,40 @@
   .panel-form-divider {
     @apply border-t border-slate-100 pt-3;
   }
+
+  /* Sell forms: mobile — centered card; md+ — full width under PageTabs */
+  .panel-sell-under-tabs {
+    @apply max-w-xl mx-auto rounded-b-xl rounded-t-xl border-t border-slate-200 md:max-w-none md:mx-0 md:border-t-0 md:-mt-px md:rounded-t-none;
+  }
+
+  .panel-form-header-wide-md {
+    @apply text-center space-y-1 border-b border-slate-100 pb-3 md:text-left md:flex md:items-start md:gap-3 md:space-y-0;
+  }
+
+  .panel-form-header-wide-md .panel-form-header-icon {
+    @apply md:mx-0 md:shrink-0;
+  }
+
+  .panel-form-header-wide-md .panel-form-header-text {
+    @apply md:min-w-0 md:flex-1;
+  }
+
+  .panel-form-stack-wide-md {
+    @apply md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-3;
+  }
+
+  .panel-form-full-row-md {
+    @apply md:col-span-2;
+  }
+
+  /* Popups in sell flows: wider on tablet/desktop, unchanged on mobile */
+  .modal-wide-md {
+    @apply md:max-w-2xl;
+  }
+
+  .modal-wide-md-sm {
+    @apply md:max-w-lg;
+  }
 }
 
 /* Custom layout scrollbars for client tables */

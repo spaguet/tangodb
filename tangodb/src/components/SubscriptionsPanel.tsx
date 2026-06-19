@@ -466,20 +466,20 @@ export default function SubscriptionsPanel({
         </div>
       ) : (
         /* PANEL 2: SELL NEW SUBSCRIPTION */
-        <div
-          className={`bg-white p-4 border border-slate-200 shadow-xs max-w-xl mx-auto panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
-        >
-          <div className="panel-form-header">
+        <div className="bg-white p-4 border border-slate-200 shadow-xs panel-card-stack panel-sell-under-tabs">
+          <div className="panel-form-header panel-form-header-wide-md">
             <div className="panel-form-header-icon">
               <Ticket className="w-5 h-5 text-indigo-600" />
             </div>
-            <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа абонемента</h2>
-            <p className="text-slate-400 text-[11px] leading-snug">
-              Оформите новый групповой абонемент — запись сразу попадёт в базу.
-            </p>
+            <div className="panel-form-header-text">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа абонемента</h2>
+              <p className="text-slate-400 text-[11px] leading-snug">
+                Оформите новый групповой абонемент — запись сразу попадёт в базу.
+              </p>
+            </div>
           </div>
 
-          <div className="panel-form-stack">
+          <div className="panel-form-stack panel-form-stack-wide-md">
             <div className="field-stack">
               <label className={labelCls}>ТАРИФ АБОНЕМЕНТА</label>
               {groupTariffs.length === 0 ? (
@@ -514,26 +514,28 @@ export default function SubscriptionsPanel({
               toast={toast}
             />
 
-            <ClientAutocomplete
-              label={needsSecondClient ? "Первый клиент" : "Клиент"}
-              clients={activeClients}
-              query={client1Query}
-              selectedId={client1Id}
-              showAddClientButton
-              addClientLinkLabel="Новый клиент"
-              toast={toast}
-              onQueryChange={(q) => {
-                setClient1Query(q);
-                setClient1Id("");
-              }}
-              onSelect={(c) => {
-                setClient1Id(c.id);
-                setClient1Query(`${c.lastName} ${c.firstName}`);
-              }}
-            />
+            <div className="panel-form-full-row-md">
+              <ClientAutocomplete
+                label={needsSecondClient ? "Первый клиент" : "Клиент"}
+                clients={activeClients}
+                query={client1Query}
+                selectedId={client1Id}
+                showAddClientButton
+                addClientLinkLabel="Новый клиент"
+                toast={toast}
+                onQueryChange={(q) => {
+                  setClient1Query(q);
+                  setClient1Id("");
+                }}
+                onSelect={(c) => {
+                  setClient1Id(c.id);
+                  setClient1Query(`${c.lastName} ${c.firstName}`);
+                }}
+              />
+            </div>
 
             {needsSecondClient && (
-              <div className="animate-fade-in">
+              <div className="animate-fade-in panel-form-full-row-md">
                 <ClientAutocomplete
                   label="Второй клиент"
                   clients={activeClients}
@@ -554,7 +556,7 @@ export default function SubscriptionsPanel({
               </div>
             )}
 
-            <div className="border-t border-slate-100 pt-1.5 -mt-1" />
+            <div className="border-t border-slate-100 pt-1.5 -mt-1 panel-form-full-row-md" />
 
             <div className="field-stack">
               <label className={labelCls}>Дата активации</label>
@@ -567,15 +569,15 @@ export default function SubscriptionsPanel({
               />
             </div>
 
-            <div className="panel-form-divider" />
+            <div className="panel-form-divider panel-form-full-row-md" />
 
-            <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100">
+            <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 panel-form-full-row-md">
               <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
               <span className="text-xl font-sans font-semibold text-indigo-700">
                 {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "тариф не настроен"}
               </span>
             </div>
-            <p className="text-slate-400 text-xs font-sans text-center -mt-1">
+            <p className="text-slate-400 text-xs font-sans text-center -mt-1 panel-form-full-row-md">
               Для изменения стоимости абонемента перейдите в раздел{" "}
               <button
                 type="button"
@@ -586,13 +588,13 @@ export default function SubscriptionsPanel({
               </button>
             </p>
 
-            <div className="panel-form-divider" />
+            <div className="panel-form-divider panel-form-full-row-md" />
 
             <button
               onClick={handleCheckout}
               disabled={connectionState !== "online" || addSubscription.isPending}
               title={getConnectionBlockReason(connectionState)}
-              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60 panel-form-full-row-md"
             >
               {addSubscription.isPending ? "Оформление..." : "Продать абонемент"}
             </button>

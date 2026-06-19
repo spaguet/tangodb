@@ -148,9 +148,9 @@ export default function SellPackageModal({
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
-            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-xl"
+            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-xl modal-wide-md"
           >
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 p-4 border-b border-slate-100 bg-white">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 p-4 border-b border-slate-100 bg-white md:items-center">
               <div className="flex items-start gap-3 min-w-0">
                 <div className="p-2 rounded-lg bg-indigo-50 shrink-0">
                   <Ticket className="w-5 h-5 text-indigo-600" />
@@ -172,7 +172,7 @@ export default function SellPackageModal({
               </button>
             </div>
 
-            <div className="p-4 panel-form-stack">
+            <div className="p-4 panel-form-stack panel-form-stack-wide-md">
               <div className="field-stack">
                 <label className={labelCls}>Тариф абонемента</label>
                 {packageTariffs.length === 0 ? (
@@ -203,6 +203,7 @@ export default function SellPackageModal({
                 toast={toast}
               />
 
+              <div className="panel-form-full-row-md">
               <ClientAutocomplete
                 label={packageNeedsSecond ? "Первый клиент" : "Клиент"}
                 clients={clients}
@@ -220,8 +221,10 @@ export default function SellPackageModal({
                   setSubClient1Query(formatClientName(c.lastName, c.firstName));
                 }}
               />
+              </div>
 
               {packageNeedsSecond && (
+                <div className="panel-form-full-row-md">
                 <ClientAutocomplete
                   label="Второй клиент"
                   clients={clients}
@@ -239,9 +242,11 @@ export default function SellPackageModal({
                     setSubClient2Query(formatClientName(c.lastName, c.firstName));
                   }}
                 />
+                </div>
               )}
 
               {packageNeedsThird && (
+                <div className="panel-form-full-row-md">
                 <ClientAutocomplete
                   label="Третий клиент"
                   clients={clients}
@@ -259,9 +264,10 @@ export default function SellPackageModal({
                     setSubClient3Query(formatClientName(c.lastName, c.firstName));
                   }}
                 />
+                </div>
               )}
 
-              <div className="field-stack">
+              <div className="field-stack panel-form-full-row-md">
                 <label className={labelCls}>Дата активации</label>
                 <input
                   type="date"
@@ -272,7 +278,7 @@ export default function SellPackageModal({
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100">
+              <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 panel-form-full-row-md">
                 <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
                 <span className="text-xl font-sans font-semibold text-indigo-700">
                   {selectedPackageTariff ? formatCurrency(selectedPackageTariff.price) : "—"}
@@ -283,7 +289,7 @@ export default function SellPackageModal({
                 type="button"
                 onClick={handleSell}
                 disabled={addSubscription.isPending || packageTariffs.length === 0}
-                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60 panel-form-full-row-md"
               >
                 {addSubscription.isPending ? "Оформление..." : "ПРОДАТЬ ПАКЕТ"}
               </button>
