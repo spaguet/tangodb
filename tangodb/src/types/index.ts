@@ -20,6 +20,7 @@ export interface ScheduleSlot {
   time: string;
   timeEnd: string;
   disciplineId?: number | null;
+  groupName?: string;
 }
 
 export type PriceCategory = "group" | "private";

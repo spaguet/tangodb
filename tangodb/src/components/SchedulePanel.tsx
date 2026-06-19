@@ -7,12 +7,12 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Clock, Trash2, CalendarRange, Edit, X } from "lucide-react";
 import {
-  useAddScheduleSlot,
-  useDeleteDisciplineSchedule,
+  useAddGroupSchedule,
+  useDeleteGroupSchedule,
   useDeleteScheduleSlot,
-  useReplaceDisciplineSchedule,
+  useReplaceGroupSchedule,
   useSchedule,
-  type DisciplineScheduleSlotInput,
+  type GroupScheduleSlotInput,
 } from "../hooks/useSchedule";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
@@ -31,8 +31,24 @@ interface SchedulePanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
 
-interface EditSlotRow extends DisciplineScheduleSlotInput {
+interface EditSlotRow extends GroupScheduleSlotInput {
   key: string;
+}
+
+interface DayFormRow {
+  key: string;
+  day: number;
+  time: string;
+  timeEnd: string;
+}
+
+interface ScheduleGroup {
+  groupKey: string;
+  groupName: string;
+  disciplineId: number | null;
+  displayName: string;
+  disciplineLabel: string;
+  slots: ScheduleSlot[];
 }
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
@@ -45,6 +61,19 @@ const iconBtnCls =
 
 const deleteBtnCls =
   "p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer";
+
+const addDayBtnCls =
+  "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
+
+function makeDayRow(): DayFormRow {
+  return { key: crypto.randomUUID(), day: 1, time: "19:00", timeEnd: "21:00" };
+}
+
+function scheduleGroupKey(slot: ScheduleSlot): string {
+  const groupName = slot.groupName ?? "";
+  const disciplineId = slot.disciplineId ?? "none";
+  return `${groupName}::${disciplineId}`;
+}
 
 function getSlotConflict(
   slot: EditSlotRow,
@@ -78,20 +107,19 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const { data: schedule = [], isLoading: scheduleLoading, isError: scheduleError, error: scheduleErr } = scheduleQuery;
   const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
   const { data: personalLessons = [], isLoading: personalLoading, isError: personalError, error: personalErr } = personalLessonsQuery;
-  const addSlot = useAddScheduleSlot();
+  const addGroupSchedule = useAddGroupSchedule();
   const deleteSlot = useDeleteScheduleSlot();
-  const replaceDisciplineSchedule = useReplaceDisciplineSchedule();
-  const deleteDisciplineSchedule = useDeleteDisciplineSchedule();
+  const replaceGroupSchedule = useReplaceGroupSchedule();
+  const deleteGroupSchedule = useDeleteGroupSchedule();
   const { can } = usePermissions();
   const canWriteSchedule = can("schedule.write");
 
-  const [day, setDay] = useState<number>(1);
-  const [time, setTime] = useState<string>("19:00");
-  const [timeEnd, setTimeEnd] = useState<string>("21:00");
+  const [groupName, setGroupName] = useState("");
   const [disciplineId, setDisciplineId] = useState<number | "">("");
+  const [dayRows, setDayRows] = useState<DayFormRow[]>(() => [makeDayRow()]);
   const [deleteTarget, setDeleteTarget] = useState<ScheduleSlot | null>(null);
-  const [deleteDisciplineTarget, setDeleteDisciplineTarget] = useState<{ id: number; name: string } | null>(null);
-  const [editingDiscipline, setEditingDiscipline] = useState<{ id: number; name: string } | null>(null);
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState<ScheduleGroup | null>(null);
+  const [editingGroup, setEditingGroup] = useState<ScheduleGroup | null>(null);
   const [editSlots, setEditSlots] = useState<EditSlotRow[]>([]);
   const [originalSlotIds, setOriginalSlotIds] = useState<number[]>([]);
 
@@ -102,52 +130,69 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   }, [disciplines, disciplineId]);
 
   useEffect(() => {
-    if (!editingDiscipline) return;
+    if (!editingGroup) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setEditingDiscipline(null);
+      if (e.key === "Escape") setEditingGroup(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editingDiscipline]);
+  }, [editingGroup]);
 
   const disciplineMap = disciplines.reduce(
     (acc, d) => ({ ...acc, [d.id]: d }),
     {} as Record<number, (typeof disciplines)[0]>
   );
 
-  const disciplineGroups = useMemo(() => {
-    const groups = new Map<number | "none", ScheduleSlot[]>();
+  const scheduleGroups = useMemo((): ScheduleGroup[] => {
+    const groups = new Map<string, ScheduleSlot[]>();
 
     schedule.forEach((slot) => {
-      const key = slot.disciplineId ?? "none";
+      const key = scheduleGroupKey(slot);
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(slot);
     });
 
     return Array.from(groups.entries())
-      .map(([key, slots]) => ({
-        disciplineId: key === "none" ? null : key,
-        name:
-          key === "none"
-            ? "Без дисциплины"
-            : disciplineMap[key as number]?.name || `Дисциплина #${key}`,
-        slots: slots.sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.time.localeCompare(b.time)),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name, "ru"));
+      .map(([groupKey, slots]) => {
+        const first = slots[0];
+        const disciplineId = first.disciplineId ?? null;
+        const groupName = first.groupName ?? "";
+        const disciplineLabel =
+          disciplineId != null
+            ? disciplineMap[disciplineId]?.name || `Дисциплина #${disciplineId}`
+            : "Без дисциплины";
+        const displayName = groupName || disciplineLabel;
+
+        return {
+          groupKey,
+          groupName,
+          disciplineId,
+          displayName,
+          disciplineLabel,
+          slots: slots.sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.time.localeCompare(b.time)),
+        };
+      })
+      .sort((a, b) => a.displayName.localeCompare(b.displayName, "ru"));
   }, [schedule, disciplineMap]);
+
+  const updateDayRow = (key: string, patch: Partial<DayFormRow>) => {
+    setDayRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
+  };
+
+  const handleAddDayRow = () => {
+    setDayRows((prev) => [...prev, makeDayRow()]);
+  };
+
+  const handleRemoveDayRow = (key: string) => {
+    setDayRows((prev) => (prev.length <= 1 ? prev : prev.filter((row) => row.key !== key)));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!time) {
-      toast("Укажите время начала занятия.", "error");
-      return;
-    }
-    if (!timeEnd) {
-      toast("Укажите время окончания занятия.", "error");
-      return;
-    }
-    if (timeEnd <= time) {
-      toast("Время окончания должно быть позже начала.", "error");
+
+    const trimmedGroup = groupName.trim();
+    if (!trimmedGroup) {
+      toast("Укажите название группы.", "error");
       return;
     }
     if (!disciplineId) {
@@ -155,11 +200,33 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       return;
     }
 
-    const res = await addSlot.mutateAsync({ dayOfWeek: day, time, timeEnd, disciplineId: disciplineId as number });
+    for (const row of dayRows) {
+      if (!row.time || !row.timeEnd) {
+        toast("Заполните время для всех дней.", "error");
+        return;
+      }
+      if (row.timeEnd <= row.time) {
+        toast("Время окончания должно быть позже начала.", "error");
+        return;
+      }
+    }
+
+    const res = await addGroupSchedule.mutateAsync({
+      groupName: trimmedGroup,
+      disciplineId: disciplineId as number,
+      days: dayRows.map(({ day, time, timeEnd }) => ({
+        dayOfWeek: day,
+        time,
+        timeEnd,
+      })),
+    });
+
     if (!res.success) {
-      toast(res.error || "Этот слот уже занят", "error");
+      toast(res.error || "Не удалось добавить занятия", "error");
     } else {
-      toast(`Добавлен класс: ${dowFull(day)} ${time} – ${timeEnd}`, "success");
+      toast(`Группа «${trimmedGroup}» добавлена в расписание`, "success");
+      setGroupName("");
+      setDayRows([makeDayRow()]);
     }
   };
 
@@ -175,13 +242,12 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     }
   };
 
-  const startEditDiscipline = (disciplineKey: number | null, name: string) => {
-    if (disciplineKey == null) return;
-    const slots = schedule.filter((s) => s.disciplineId === disciplineKey);
-    setEditingDiscipline({ id: disciplineKey, name });
-    setOriginalSlotIds(slots.map((s) => s.id!).filter(Boolean));
+  const startEditGroup = (group: ScheduleGroup) => {
+    if (group.disciplineId == null) return;
+    setEditingGroup(group);
+    setOriginalSlotIds(group.slots.map((s) => s.id!).filter(Boolean));
     setEditSlots(
-      slots.map((s) => ({
+      group.slots.map((s) => ({
         key: String(s.id ?? `${s.dayOfWeek}-${s.time}`),
         id: s.id,
         dayOfWeek: s.dayOfWeek,
@@ -191,19 +257,23 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     );
   };
 
-  const handleConfirmDisciplineDelete = async () => {
-    if (!deleteDisciplineTarget) return;
-    const res = await deleteDisciplineSchedule.mutateAsync(deleteDisciplineTarget.id);
+  const handleConfirmGroupDelete = async () => {
+    if (!deleteGroupTarget || deleteGroupTarget.disciplineId == null) return;
+
+    const res = await deleteGroupSchedule.mutateAsync({
+      groupName: deleteGroupTarget.groupName,
+      disciplineId: deleteGroupTarget.disciplineId,
+    });
     if (!res.success) {
-      toast(res.error || "Не удалось удалить расписание дисциплины", "error");
+      toast(res.error || "Не удалось удалить расписание группы", "error");
     } else {
-      toast(`Расписание «${deleteDisciplineTarget.name}» удалено`, "success");
-      setDeleteDisciplineTarget(null);
+      toast(`Расписание «${deleteGroupTarget.displayName}» удалено`, "success");
+      setDeleteGroupTarget(null);
     }
   };
 
-  const handleSaveDisciplineEdit = async () => {
-    if (!editingDiscipline) return;
+  const handleSaveGroupEdit = async () => {
+    if (!editingGroup || editingGroup.disciplineId == null) return;
 
     for (const slot of editSlots) {
       if (!slot.time || !slot.timeEnd) {
@@ -218,7 +288,13 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
     const editIds = new Set(editSlots.map((s) => s.id));
     for (const slot of editSlots) {
-      const conflict = getSlotConflict(slot, editingDiscipline.id, schedule, personalLessons, editIds);
+      const conflict = getSlotConflict(
+        slot,
+        editingGroup.disciplineId,
+        schedule,
+        personalLessons,
+        editIds
+      );
       if (conflict) {
         toast(`Конфликт: ${dowFull(slot.dayOfWeek)} ${slot.time} — ${conflict}`, "error");
         return;
@@ -227,8 +303,9 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
     const removedIds = originalSlotIds.filter((id) => !editSlots.some((s) => s.id === id));
 
-    const res = await replaceDisciplineSchedule.mutateAsync({
-      disciplineId: editingDiscipline.id,
+    const res = await replaceGroupSchedule.mutateAsync({
+      groupName: editingGroup.groupName,
+      disciplineId: editingGroup.disciplineId,
       slots: editSlots.map(({ dayOfWeek, time: t, timeEnd: te, id }) => ({
         id,
         dayOfWeek,
@@ -242,7 +319,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       toast(res.error || "Не удалось сохранить расписание", "error");
     } else {
       toast("Расписание обновлено", "success");
-      setEditingDiscipline(null);
+      setEditingGroup(null);
     }
   };
 
@@ -270,65 +347,104 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           </div>
         }
       >
-      <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
-        <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
-          <CalendarDays className="w-4.5 h-4.5 text-indigo-500" />
-          <h2 className="text-base font-semibold tracking-tight">Внести новое занятие</h2>
-        </div>
+        <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+          <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
+            <CalendarDays className="w-4.5 h-4.5 text-indigo-500" />
+            <h2 className="text-base font-semibold tracking-tight">Внести новое занятие</h2>
+          </div>
 
-        <form onSubmit={handleSubmit} className="panel-form-stack">
-          <AppSelect label="День недели" value={day} onChange={(e) => setDay(parseInt(e.target.value))}>
-            {dowFullEntries().map(([val, name]) => (
-              <option key={val} value={val}>
-                {name}
-              </option>
+          <form onSubmit={handleSubmit} className="panel-form-stack">
+            <div className="field-stack">
+              <label className={labelCls}>Название группы</label>
+              <input
+                type="text"
+                required
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="Например, Старшая группа"
+                className={fieldCls}
+              />
+            </div>
+
+            <DisciplineSelect
+              disciplines={disciplines}
+              value={disciplineId}
+              onChange={setDisciplineId}
+              toast={toast}
+            />
+
+            {dayRows.map((row) => (
+              <div key={row.key} className="space-y-3 pt-1 border-t border-slate-100 first:border-t-0 first:pt-0">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <AppSelect
+                      label="День недели"
+                      value={row.day}
+                      onChange={(e) => updateDayRow(row.key, { day: parseInt(e.target.value, 10) })}
+                    >
+                      {dowFullEntries().map(([val, name]) => (
+                        <option key={val} value={val}>
+                          {name}
+                        </option>
+                      ))}
+                    </AppSelect>
+                  </div>
+                  {dayRows.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDayRow(row.key)}
+                      aria-label="Убрать день"
+                      className="mt-6 p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="field-stack">
+                    <label className={labelCls}>Время начала</label>
+                    <div className="relative font-sans">
+                      <Clock className="w-4 h-4 text-slate-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="time"
+                        required
+                        value={row.time}
+                        onChange={(e) => updateDayRow(row.key, { time: e.target.value })}
+                        className={`${fieldCls} pl-9 py-2 text-sm`}
+                      />
+                    </div>
+                  </div>
+                  <div className="field-stack">
+                    <label className={labelCls}>Время окончания</label>
+                    <div className="relative font-sans">
+                      <Clock className="w-4 h-4 text-slate-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="time"
+                        required
+                        value={row.timeEnd}
+                        onChange={(e) => updateDayRow(row.key, { timeEnd: e.target.value })}
+                        className={`${fieldCls} pl-9 py-2 text-sm`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
-          </AppSelect>
 
-          <DisciplineSelect
-            disciplines={disciplines}
-            value={disciplineId}
-            onChange={setDisciplineId}
-            toast={toast}
-          />
+            <button type="button" onClick={handleAddDayRow} className={addDayBtnCls}>
+              ＋ Добавить день
+            </button>
 
-          <div className="field-stack">
-            <label className={labelCls}>Время начала</label>
-            <div className="relative font-sans">
-              <Clock className="w-4 h-4 text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="time"
-                required
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className={`${fieldCls} pl-10`}
-              />
-            </div>
-          </div>
-
-          <div className="field-stack">
-            <label className={labelCls}>Время окончания</label>
-            <div className="relative font-sans">
-              <Clock className="w-4 h-4 text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="time"
-                required
-                value={timeEnd}
-                onChange={(e) => setTimeEnd(e.target.value)}
-                className={`${fieldCls} pl-10`}
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={addSlot.isPending}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
-          >
-            {addSlot.isPending ? "Добавление..." : "Вписать в сетку"}
-          </button>
-        </form>
-      </div>
+            <button
+              type="submit"
+              disabled={addGroupSchedule.isPending}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+            >
+              {addGroupSchedule.isPending ? "Добавление..." : "Вписать в сетку"}
+            </button>
+          </form>
+        </div>
       </RequirePermission>
 
       <div className="lg:col-span-8 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
@@ -340,7 +456,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           <p className="text-slate-400 text-xs font-sans pl-7">Групповые уроки</p>
         </div>
 
-        {disciplineGroups.length === 0 ? (
+        {scheduleGroups.length === 0 ? (
           <div className="text-center py-20 text-slate-400 space-y-3">
             <CalendarDays className="w-8 h-8 mx-auto text-slate-300" />
             <p className="text-sm">
@@ -349,34 +465,37 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            {disciplineGroups.map((group) => (
+            {scheduleGroups.map((group) => (
               <div
-                key={group.disciplineId ?? "none"}
+                key={group.groupKey}
                 className="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-2"
               >
                 <div className="flex items-start justify-between gap-3 pb-2 border-b border-slate-200/60">
-                  <p className="font-semibold text-sm tracking-tight text-slate-800 break-words min-w-0 flex-1">
-                    {group.name}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm tracking-tight text-slate-800 break-words">
+                      {group.displayName}
+                    </p>
+                    {group.groupName && (
+                      <p className="text-[10px] text-slate-400 font-sans mt-0.5">{group.disciplineLabel}</p>
+                    )}
+                  </div>
                   {group.disciplineId != null && canWriteSchedule && (
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
-                        onClick={() => startEditDiscipline(group.disciplineId, group.name)}
+                        onClick={() => startEditGroup(group)}
                         className={iconBtnCls}
                         title="Редактировать"
-                        aria-label={`Редактировать расписание ${group.name}`}
+                        aria-label={`Редактировать расписание ${group.displayName}`}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
-                        onClick={() =>
-                          setDeleteDisciplineTarget({ id: group.disciplineId!, name: group.name })
-                        }
+                        onClick={() => setDeleteGroupTarget(group)}
                         className={deleteBtnCls}
                         title="Удалить"
-                        aria-label={`Удалить расписание ${group.name}`}
+                        aria-label={`Удалить расписание ${group.displayName}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -408,13 +527,13 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       </div>
 
       <AnimatePresence>
-        {editingDiscipline && (
+        {editingGroup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setEditingDiscipline(null)}
+              onClick={() => setEditingGroup(null)}
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
             />
             <motion.div
@@ -425,12 +544,17 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-semibold tracking-tight text-slate-900 break-words min-w-0 pr-2">
-                  {editingDiscipline.name}
-                </h3>
+                <div className="min-w-0 pr-2">
+                  <h3 className="text-base font-semibold tracking-tight text-slate-900 break-words">
+                    {editingGroup.displayName}
+                  </h3>
+                  {editingGroup.groupName && (
+                    <p className="text-[10px] text-slate-400 font-sans mt-0.5">{editingGroup.disciplineLabel}</p>
+                  )}
+                </div>
                 <button
                   type="button"
-                  onClick={() => setEditingDiscipline(null)}
+                  onClick={() => setEditingGroup(null)}
                   aria-label="Закрыть"
                   className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
                 >
@@ -444,10 +568,10 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                 ) : (
                   editSlots.map((slot) => {
                     const conflict =
-                      editingDiscipline &&
+                      editingGroup.disciplineId != null &&
                       getSlotConflict(
                         slot,
-                        editingDiscipline.id,
+                        editingGroup.disciplineId,
                         schedule,
                         personalLessons,
                         editSlotIdSet
@@ -459,7 +583,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                           <AppSelect
                             value={slot.dayOfWeek}
                             onChange={(e) =>
-                              updateEditSlot(slot.key, { dayOfWeek: parseInt(e.target.value) })
+                              updateEditSlot(slot.key, { dayOfWeek: parseInt(e.target.value, 10) })
                             }
                             className="text-xs py-2"
                           >
@@ -492,15 +616,15 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               <div className="flex items-center gap-3 pt-1 text-xs">
                 <button
                   type="button"
-                  onClick={handleSaveDisciplineEdit}
-                  disabled={replaceDisciplineSchedule.isPending || editSlots.length === 0}
+                  onClick={handleSaveGroupEdit}
+                  disabled={replaceGroupSchedule.isPending || editSlots.length === 0}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
-                  {replaceDisciplineSchedule.isPending ? "..." : "Подтвердить"}
+                  {replaceGroupSchedule.isPending ? "..." : "Подтвердить"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditingDiscipline(null)}
+                  onClick={() => setEditingGroup(null)}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
                 >
                   Отмена
@@ -534,23 +658,23 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       />
 
       <ConfirmDialog
-        open={deleteDisciplineTarget !== null}
-        title="Удалить расписание дисциплины?"
+        open={deleteGroupTarget !== null}
+        title="Удалить расписание группы?"
         description={
-          deleteDisciplineTarget ? (
+          deleteGroupTarget ? (
             <>
-              Все групповые занятия дисциплины{" "}
-              <strong className="font-semibold text-slate-800">{deleteDisciplineTarget.name}</strong> будут убраны из
-              сетки.
+              Все групповые занятия{" "}
+              <strong className="font-semibold text-slate-800">{deleteGroupTarget.displayName}</strong> будут убраны
+              из сетки.
             </>
           ) : (
             ""
           )
         }
         confirmLabel="Удалить"
-        pending={deleteDisciplineSchedule.isPending}
-        onConfirm={handleConfirmDisciplineDelete}
-        onCancel={() => setDeleteDisciplineTarget(null)}
+        pending={deleteGroupSchedule.isPending}
+        onConfirm={handleConfirmGroupDelete}
+        onCancel={() => setDeleteGroupTarget(null)}
       />
     </div>
   );

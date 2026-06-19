@@ -207,7 +207,7 @@ export default function Dashboard({
               todayScheduleEntries.map((entry) => {
                 if (entry.kind === "group") {
                   const { slot } = entry;
-                  const disciplineName = "Групповое занятие";
+                  const disciplineName = slot.groupName || "Групповое занятие";
 
                   return (
                     <div
@@ -279,10 +279,16 @@ export default function Dashboard({
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-              <span className="w-2 h-2 bg-rose-600 rounded-full" />
+              <span
+                className={`w-2 h-2 rounded-full ${warningSubs.length === 0 ? "bg-slate-400" : "bg-rose-600"}`}
+              />
               Заканчивается абонемент (≤ {lowBalanceThreshold})
             </h2>
-            <span className="text-[10px] bg-rose-50 text-rose-700 font-sans px-2 py-0.5 rounded font-semibold tabular-nums">
+            <span
+              className={`text-[10px] font-sans px-2 py-0.5 rounded font-semibold tabular-nums ${
+                warningSubs.length === 0 ? "bg-slate-100 text-slate-400" : "bg-rose-50 text-rose-700"
+              }`}
+            >
               {warningSubs.length}
             </span>
           </div>
@@ -290,7 +296,7 @@ export default function Dashboard({
           <div className="overflow-x-auto">
             {warningSubs.length === 0 ? (
               <div className="text-center py-5 text-slate-400 space-y-1">
-                <p className="text-xs">✨ Все абонементы обеспечены достаточным балансом классов.</p>
+                <p className="text-xs">Нет заканчивающихся абонементов.</p>
               </div>
             ) : (
               <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">

@@ -11,9 +11,26 @@ const mapScheduleSlot = (row: Record<string, unknown>): ScheduleSlot => ({
   time: row.time as string,
   timeEnd: (row.time_end as string) || "21:00",
   disciplineId: row.discipline_id != null ? (row.discipline_id as number) : null,
+  groupName: ((row.group_name as string) || "").trim() || undefined,
 });
 
 const scheduleTable = "schedule_slots" as const;
+
+export interface ScheduleDayInput {
+  dayOfWeek: number;
+  time: string;
+  timeEnd: string;
+}
+
+export interface GroupScheduleSlotInput {
+  id?: number;
+  dayOfWeek: number;
+  time: string;
+  timeEnd: string;
+}
+
+/** @deprecated alias */
+export type DisciplineScheduleSlotInput = GroupScheduleSlotInput;
 
 export function useSchedule() {
   const { enabled, withOrgId } = useOrgQueryScope();
@@ -34,33 +51,42 @@ export function useSchedule() {
   });
 }
 
-export function useAddScheduleSlot() {
+export function useAddGroupSchedule() {
   const queryClient = useQueryClient();
   const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
-      dayOfWeek,
-      time,
-      timeEnd,
+      groupName,
       disciplineId,
+      days,
     }: {
-      dayOfWeek: number;
-      time: string;
-      timeEnd: string;
+      groupName: string;
       disciplineId: number;
+      days: ScheduleDayInput[];
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "Организация не выбрана" };
       }
 
-      const { error } = await supabase.from(scheduleTable).insert({
+      const trimmedGroup = groupName.trim();
+      if (!trimmedGroup) {
+        return { success: false as const, error: "Укажите название группы" };
+      }
+      if (days.length === 0) {
+        return { success: false as const, error: "Добавьте хотя бы один день" };
+      }
+
+      const rows = days.map((day) => ({
         organization_id: organizationId,
-        day_of_week: dayOfWeek,
-        time,
-        time_end: timeEnd,
+        day_of_week: day.dayOfWeek,
+        time: day.time,
+        time_end: day.timeEnd,
         discipline_id: disciplineId,
-      });
+        group_name: trimmedGroup,
+      }));
+
+      const { error } = await supabase.from(scheduleTable).insert(rows);
       if (error) {
         if (error.code === "23505") {
           return { success: false as const, error: "Такой день и время уже есть в расписании" };
@@ -90,30 +116,27 @@ export function useDeleteScheduleSlot() {
   });
 }
 
-export interface DisciplineScheduleSlotInput {
-  id?: number;
-  dayOfWeek: number;
-  time: string;
-  timeEnd: string;
-}
-
-export function useReplaceDisciplineSchedule() {
+export function useReplaceGroupSchedule() {
   const queryClient = useQueryClient();
   const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
+      groupName,
       disciplineId,
       slots,
       removedIds,
     }: {
+      groupName: string;
       disciplineId: number;
-      slots: DisciplineScheduleSlotInput[];
+      slots: GroupScheduleSlotInput[];
       removedIds: number[];
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "Организация не выбрана" };
       }
+
+      const trimmedGroup = groupName.trim();
 
       for (const id of removedIds) {
         const { error } = await supabase.from(scheduleTable).delete().eq("id", id);
@@ -121,15 +144,16 @@ export function useReplaceDisciplineSchedule() {
       }
 
       for (const slot of slots) {
+        const payload = {
+          day_of_week: slot.dayOfWeek,
+          time: slot.time,
+          time_end: slot.timeEnd,
+          group_name: trimmedGroup,
+          discipline_id: disciplineId,
+        };
+
         if (slot.id != null) {
-          const { error } = await supabase
-            .from(scheduleTable)
-            .update({
-              day_of_week: slot.dayOfWeek,
-              time: slot.time,
-              time_end: slot.timeEnd,
-            })
-            .eq("id", slot.id);
+          const { error } = await supabase.from(scheduleTable).update(payload).eq("id", slot.id);
           if (error) {
             if (error.code === "23505") {
               return { success: false as const, error: "Такой день и время уже есть в расписании" };
@@ -139,10 +163,7 @@ export function useReplaceDisciplineSchedule() {
         } else {
           const { error } = await supabase.from(scheduleTable).insert({
             organization_id: organizationId,
-            day_of_week: slot.dayOfWeek,
-            time: slot.time,
-            time_end: slot.timeEnd,
-            discipline_id: disciplineId,
+            ...payload,
           });
           if (error) {
             if (error.code === "23505") {
@@ -161,12 +182,27 @@ export function useReplaceDisciplineSchedule() {
   });
 }
 
-export function useDeleteDisciplineSchedule() {
+export function useDeleteGroupSchedule() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (disciplineId: number) => {
-      const { error } = await supabase.from(scheduleTable).delete().eq("discipline_id", disciplineId);
+    mutationFn: async ({
+      groupName,
+      disciplineId,
+    }: {
+      groupName: string;
+      disciplineId: number;
+    }) => {
+      const trimmed = groupName.trim();
+      let query = supabase.from(scheduleTable).delete().eq("discipline_id", disciplineId);
+
+      if (trimmed) {
+        query = query.eq("group_name", trimmed);
+      } else {
+        query = query.or('group_name.is.null,group_name.eq.""');
+      }
+
+      const { error } = await query;
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
     },

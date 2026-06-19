@@ -152,7 +152,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         key: `g-${slot.date}|${slot.time}`,
         time: slot.time,
         timeEnd: slot.timeEnd,
-        label: `Групповой урок · ${slot.time} – ${slot.timeEnd}`,
+        label: slot.groupName
+          ? `${slot.groupName} · ${slot.time} – ${slot.timeEnd}`
+          : `Групповой урок · ${slot.time} – ${slot.timeEnd}`,
       })),
       ...personalForDay.map((lesson) => ({
         kind: "personal" as const,
