@@ -389,12 +389,13 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         </RequirePermission>
 
         {prices.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-sm">
-            <p>Прайс-лист пуст.</p>
+          <div className="text-center py-20 text-slate-400 space-y-3">
+            <Ticket className="w-8 h-8 mx-auto text-slate-300" />
+            <p className="text-sm">Прайс-лист пуст.</p>
             <button
               type="button"
               onClick={() => setShowCreateModal(true)}
-              className="mt-3 text-indigo-600 hover:text-indigo-700 text-xs font-semibold uppercase tracking-wider cursor-pointer"
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
             >
               Добавить первый тариф
             </button>

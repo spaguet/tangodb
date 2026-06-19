@@ -10,6 +10,7 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  Ticket,
 } from "lucide-react";
 import {
   attendanceQueryKey,
@@ -676,7 +677,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     <p className="text-xs">Загрузка абонементов...</p>
                   </div>
                 ) : modalSubs.length === 0 ? (
-                  <div className="text-center py-16 text-slate-400">
+                  <div className="text-center py-20 text-slate-400 space-y-3">
+                    <Ticket className="w-8 h-8 mx-auto text-slate-300" />
                     <p className="text-sm">Нет активных абонементов для этого урока.</p>
                   </div>
                 ) : (

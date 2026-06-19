@@ -90,9 +90,12 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
         </div>
 
         {disciplines.length === 0 ? (
-          <p className="text-xs text-slate-400 py-4 text-center">
-            Дисциплин пока нет — добавьте при оформлении продажи или в расписании.
-          </p>
+          <div className="text-center py-20 text-slate-400 space-y-3">
+            <BookOpen className="w-8 h-8 mx-auto text-slate-300" />
+            <p className="text-sm">
+              Дисциплин пока нет — добавьте при оформлении продажи или в расписании.
+            </p>
+          </div>
         ) : (
           <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
             {disciplines.map((d) => (
