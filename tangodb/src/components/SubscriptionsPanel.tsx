@@ -11,6 +11,11 @@ import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
 import {
+  computeSubscriptionAttendanceStats,
+  useAttendanceRecords,
+} from "../hooks/useAttendance";
+import { usePersonalLessons } from "../hooks/usePersonalLessons";
+import {
   useAddSubscription,
   useFinishSubscription,
   useSubscriptions,
@@ -56,19 +61,54 @@ export default function SubscriptionsPanel({
   const disciplinesQuery = useDisciplines();
   const subscriptionsQuery = useSubscriptions();
   const pricesQuery = usePrices();
+  const attendanceQuery = useAttendanceRecords();
+  const personalLessonsQuery = usePersonalLessons();
   const { data: activeClients = [], isLoading: activeClientsLoading, isError: activeClientsError, error: activeClientsErr } = activeClientsQuery;
   const { data: directoryClients = [], isLoading: directoryClientsLoading, isError: directoryClientsError, error: directoryClientsErr } = directoryClientsQuery;
   const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
   const { data: subscriptions = [], isLoading: subsLoading, isError: subsError, error: subsErr } = subscriptionsQuery;
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
+  const {
+    data: attendanceRecords = [],
+    isLoading: attendanceLoading,
+    isError: attendanceError,
+    error: attendanceErr,
+  } = attendanceQuery;
+  const {
+    data: personalLessons = [],
+    isLoading: personalLessonsLoading,
+    isError: personalLessonsError,
+    error: personalLessonsErr,
+  } = personalLessonsQuery;
   const addSubscription = useAddSubscription();
   const finishSubscription = useFinishSubscription();
   const { canAccessPanel } = usePermissions();
   const { settings } = useSettings();
 
-  const isLoading = activeClientsLoading || directoryClientsLoading || disciplinesLoading || subsLoading || pricesLoading;
-  const isError = activeClientsError || directoryClientsError || disciplinesError || subsError || pricesError;
-  const error = activeClientsErr ?? directoryClientsErr ?? disciplinesErr ?? subsErr ?? pricesErr;
+  const isLoading =
+    activeClientsLoading ||
+    directoryClientsLoading ||
+    disciplinesLoading ||
+    subsLoading ||
+    pricesLoading ||
+    attendanceLoading ||
+    personalLessonsLoading;
+  const isError =
+    activeClientsError ||
+    directoryClientsError ||
+    disciplinesError ||
+    subsError ||
+    pricesError ||
+    attendanceError ||
+    personalLessonsError;
+  const error =
+    activeClientsErr ??
+    directoryClientsErr ??
+    disciplinesErr ??
+    subsErr ??
+    pricesErr ??
+    attendanceErr ??
+    personalLessonsErr;
   const [activeTab, setActiveTab] = useState<"sell" | "active">(initialTab);
 
   useEffect(() => {
@@ -227,6 +267,11 @@ export default function SubscriptionsPanel({
     [disciplines]
   );
 
+  const attendanceStatsBySubId = useMemo(
+    () => computeSubscriptionAttendanceStats(attendanceRecords, personalLessons),
+    [attendanceRecords, personalLessons]
+  );
+
   const filteredActiveRecords = activeRecords.filter((sub) => {
     const c1 = clientMap[sub.clientId1];
     const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
@@ -315,6 +360,7 @@ export default function SubscriptionsPanel({
                 const tariffLabel = getSubscriptionTariffLabel(sub, prices);
 
                 const isExpanded = expandedSubId === sub.id;
+                const attendanceStats = attendanceStatsBySubId[sub.id] ?? { visits: 0, absences: 0 };
 
                 return (
                   <div
@@ -384,6 +430,9 @@ export default function SubscriptionsPanel({
                           <div className="space-y-1.5">
                             <p className="text-[11px] text-slate-400 font-sans">
                               Активирован: {sub.activationDate || "—"}
+                            </p>
+                            <p className="text-[11px] text-slate-400 font-sans">
+                              Посещений: {attendanceStats.visits} · Пропусков: {attendanceStats.absences}
                             </p>
 
                             {sub.lessonsTotal === 8 ? (

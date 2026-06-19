@@ -9,7 +9,14 @@ import {
   type FreezePolicy,
   wouldExceedFreezeLimit,
 } from "../lib/freezePolicy";
-import type { AttendanceRecord, Client, ScheduleSlot, SubForDate, Subscription } from "../types";
+import type {
+  AttendanceRecord,
+  Client,
+  PersonalLesson,
+  ScheduleSlot,
+  SubForDate,
+  Subscription,
+} from "../types";
 import { useClientDirectory } from "./useClients";
 import { useSchedule } from "./useSchedule";
 import { subscriptionsQueryKey, useSubscriptions } from "./useSubscriptions";
@@ -117,6 +124,36 @@ export function computeSubsForDate(
         category: s.category,
       };
     });
+}
+
+export type SubscriptionAttendanceStats = {
+  visits: number;
+  absences: number;
+};
+
+export function computeSubscriptionAttendanceStats(
+  attendance: AttendanceRecord[],
+  personalLessons: PersonalLesson[] = []
+): Record<string, SubscriptionAttendanceStats> {
+  const stats: Record<string, SubscriptionAttendanceStats> = {};
+
+  const bump = (subId: string, field: "visits" | "absences") => {
+    if (!stats[subId]) stats[subId] = { visits: 0, absences: 0 };
+    stats[subId][field] += 1;
+  };
+
+  for (const record of attendance) {
+    if (record.attendanceStatus === "present") bump(record.subscriptionId, "visits");
+    else if (record.attendanceStatus === "absent") bump(record.subscriptionId, "absences");
+  }
+
+  for (const lesson of personalLessons) {
+    if (!lesson.subscriptionId || !lesson.attendanceStatus) continue;
+    if (lesson.attendanceStatus === "present") bump(lesson.subscriptionId, "visits");
+    else if (lesson.attendanceStatus === "absent") bump(lesson.subscriptionId, "absences");
+  }
+
+  return stats;
 }
 
 export function useAttendanceRecords(yearMonth?: string) {
