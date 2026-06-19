@@ -53,7 +53,15 @@ interface AttendancePanelProps {
 }
 
 type DayLessonEntry =
-  | { kind: "group"; key: string; start: string; time: string; timeEnd: string; label: string }
+  | {
+      kind: "group";
+      key: string;
+      start: string;
+      time: string;
+      timeEnd: string;
+      label: string;
+      disciplineId?: string | null;
+    }
   | { kind: "personal"; key: string; start: string; lesson: PersonalLesson; label: string };
 
 const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -149,9 +157,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       ...groupLessonsForDay.map((slot) => ({
         kind: "group" as const,
         start: slot.time,
-        key: `g-${slot.date}|${slot.time}`,
+        key: `g-${slot.date}|${slot.time}|${slot.disciplineId ?? "none"}`,
         time: slot.time,
         timeEnd: slot.timeEnd,
+        disciplineId: slot.disciplineId ?? null,
         label: slot.groupName
           ? `${slot.groupName} · ${slot.time} – ${slot.timeEnd}`
           : `Групповой урок · ${slot.time} – ${slot.timeEnd}`,
@@ -169,7 +178,12 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const subsOptions = useMemo(() => {
     if (!selectedLesson) return undefined;
-    if (selectedLesson.kind === "group") return { category: "group" as const };
+    if (selectedLesson.kind === "group") {
+      return {
+        category: "group" as const,
+        disciplineId: selectedLesson.disciplineId ?? null,
+      };
+    }
     if (selectedLesson.lesson.subscriptionId) {
       return { subscriptionIds: [selectedLesson.lesson.subscriptionId] };
     }
@@ -265,7 +279,15 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       }
     }
 
-    const res = await markAttendance.mutateAsync({ dateStr: selectedDate, subId, status });
+    const disciplineId =
+      selectedLesson?.kind === "group" ? selectedLesson.disciplineId ?? null : null;
+
+    const res = await markAttendance.mutateAsync({
+      dateStr: selectedDate,
+      subId,
+      status,
+      disciplineId,
+    });
     if (!res.success) {
       toast(res.error || "Не удалось сохранить отметку", "error");
     } else {

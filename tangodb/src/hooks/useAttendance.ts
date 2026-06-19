@@ -26,10 +26,18 @@ const mapAttendanceRecord = (row: Record<string, unknown>): AttendanceRecord => 
   attendanceStatus: row.attendance_status as "present" | "absent" | "freeze",
 });
 
+export type ScheduleDateEntry = {
+  date: string;
+  time: string;
+  timeEnd: string;
+  groupName?: string;
+  disciplineId?: string | null;
+};
+
 export function computeScheduleDatesForMonth(
   schedule: ScheduleSlot[],
   yearMonth: string
-): { date: string; time: string; timeEnd: string; groupName?: string }[] {
+): ScheduleDateEntry[] {
   if (!schedule.length || !yearMonth) return [];
 
   const [yearStr, monthStr] = yearMonth.split("-");
@@ -38,7 +46,7 @@ export function computeScheduleDatesForMonth(
   if (!year || !month) return [];
 
   const daysInMonth = new Date(year, month, 0).getDate();
-  const dates: { date: string; time: string; timeEnd: string; groupName?: string }[] = [];
+  const dates: ScheduleDateEntry[] = [];
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month - 1, day);
@@ -53,6 +61,7 @@ export function computeScheduleDatesForMonth(
           time: slot.time,
           timeEnd: slot.timeEnd || "21:00",
           groupName: slot.groupName,
+          disciplineId: slot.disciplineId ?? null,
         });
       }
     });
@@ -66,17 +75,23 @@ export function computeSubsForDate(
   subscriptions: Subscription[],
   clients: Client[],
   attendance: AttendanceRecord[],
-  options?: { category?: "group" | "private"; subscriptionIds?: string[] },
+  options?: {
+    category?: "group" | "private";
+    subscriptionIds?: string[];
+    disciplineId?: string | null;
+  },
   freezePolicy: FreezePolicy = DEFAULT_FREEZE_POLICY
 ): SubForDate[] {
   const clientMap = Object.fromEntries(clients.map((c) => [c.id, c]));
   const idFilter = options?.subscriptionIds ? new Set(options.subscriptionIds) : null;
+  const disciplineFilter = options?.disciplineId ?? null;
 
   return subscriptions
     .filter((s) => {
       if (s.status !== "active" || s.activationDate > dateStr || s.lessonsLeft <= 0) return false;
       if (options?.category && s.category !== options.category) return false;
       if (idFilter && !idFilter.has(s.id)) return false;
+      if (disciplineFilter != null && s.disciplineId !== disciplineFilter) return false;
       return true;
     })
     .map((s) => {
@@ -155,9 +170,15 @@ export function useScheduleDates(yearMonth?: string) {
   };
 }
 
+export type SubsForDateOptions = {
+  category?: "group" | "private";
+  subscriptionIds?: string[];
+  disciplineId?: string | null;
+};
+
 export function useSubsForDate(
   dateStr?: string,
-  options?: { category?: "group" | "private"; subscriptionIds?: string[] },
+  options?: SubsForDateOptions,
   yearMonth?: string
 ) {
   const subscriptionsQuery = useSubscriptions();
@@ -165,17 +186,21 @@ export function useSubsForDate(
   const attendanceQuery = useAttendanceRecords(yearMonth);
   const { freezePolicy } = useSettings();
 
-  const optionsKey = `${options?.category ?? ""}|${(options?.subscriptionIds ?? []).join(",")}`;
+  const optionsKey = `${options?.category ?? ""}|${options?.disciplineId ?? ""}|${(options?.subscriptionIds ?? []).join(",")}`;
   const stableOptions = useMemo(
     () =>
       options
-        ? { category: options.category, subscriptionIds: options.subscriptionIds }
+        ? {
+            category: options.category,
+            subscriptionIds: options.subscriptionIds,
+            disciplineId: options.disciplineId,
+          }
         : undefined,
     [optionsKey]
   );
 
   const getSubsForDate = useCallback(
-    (date: string, opts?: { category?: "group" | "private"; subscriptionIds?: string[] }) =>
+    (date: string, opts?: SubsForDateOptions) =>
       computeSubsForDate(
         date,
         subscriptionsQuery.data ?? [],
@@ -247,15 +272,18 @@ export function useMarkAttendance() {
       dateStr,
       subId,
       status,
+      disciplineId,
     }: {
       dateStr: string;
       subId: string;
       status: "present" | "absent" | "freeze";
+      disciplineId?: string | null;
     }) => {
       const { data, error } = await supabase.rpc("mark_attendance", {
         p_date: dateStr,
         p_sub_id: subId,
         p_new_status: status,
+        p_discipline_id: disciplineId ?? null,
       });
 
       if (error) return { success: false as const, error: error.message };

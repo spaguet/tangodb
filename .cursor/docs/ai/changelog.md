@@ -10,6 +10,7 @@ YYYY-MM-DD — краткое описание (причина / контекс�
 
 ## Записи
 
+2026-06-19 — Журнал посещений: групповые абонементы фильтруются по disciplineId слота расписания; mark_attendance проверяет направление при отметке.
 2026-06-19 — UUID v2: типы id/disciplineId/priceId как string в types, hooks, SchedulePanel, PersonalLessonsPanel, DisciplineSelect — единообразие с Supabase без parseInt.
 2026-06-19 — Парные абонементы: создание тарифов solo/pair (pair_hm, pair_m1), продажа двум клиентам, фильтр по modules.pair_subscriptions; убран UI цикла m1/m2/m3.
 2026-06-19 — Продажа абонемента: pair_month как m1/m2/m3 (не "1"), кастомные tariff_* → type solo — исправлен CHECK subscriptions.
