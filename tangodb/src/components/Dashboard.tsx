@@ -140,7 +140,7 @@ export default function Dashboard({
               Абонементы
             </p>
             <div className="flex items-center gap-1.5 mt-0.5 text-xl leading-none">
-              <Ticket className="text-indigo-600 shrink-0 w-[1em] h-[1em]" />
+              <Ticket className="text-indigo-600 shrink-0 w-5 h-5" />
               <h3 className="font-semibold text-slate-800">{activeSubs.length}</h3>
             </div>
             <p className="text-[10px] text-slate-500 font-sans mt-0.5 leading-tight">
@@ -158,7 +158,7 @@ export default function Dashboard({
               Всего клиентов
             </p>
             <div className="flex items-center gap-1.5 mt-0.5 text-xl leading-none">
-              <Users className="text-indigo-600 shrink-0 w-[1em] h-[1em]" />
+              <Users className="text-indigo-600 shrink-0 w-5 h-5" />
               <h3 className="font-semibold text-slate-800">{clients.length}</h3>
             </div>
             <p className="text-[10px] text-slate-500 font-sans mt-0.5 leading-tight">карточек в реестре</p>
@@ -174,7 +174,7 @@ export default function Dashboard({
             Ожидает оплаты
           </p>
           <div className={`flex items-center gap-1.5 mt-0.5 text-xl leading-none ${pendingPaymentColor}`}>
-            <AlertCircle className="shrink-0 w-[1em] h-[1em]" />
+            <AlertCircle className="shrink-0 w-5 h-5" />
             <h3 className="font-sans font-semibold">
               {pendingUnpaidCount} / {formatCurrency(pendingRevenue)}
             </h3>
@@ -341,7 +341,7 @@ export default function Dashboard({
                       </div>
 
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[9px] font-sans uppercase bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold shrink-0">
+                        <span className="text-[10px] font-sans uppercase bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold shrink-0">
                           {sub.type === "solo" ? "Соло" : sub.type === "trio" ? "Трио" : "Парный"}
                         </span>
                         <span className="text-[10px] text-slate-400 font-sans shrink-0">

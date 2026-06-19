@@ -19,6 +19,38 @@
 
 ---
 
+## Брейкпоинты
+
+| Префикс Tailwind | px | Поведение в проекте |
+|------------------|----|---------------------|
+| (базовый) | < 640px | Мобильный layout, нижняя навигация |
+| `sm:` | ≥ 640px | Увеличенные горизонтальные паддинги, часть кнопок header |
+| `md:` | ≥ 768px | **Sidebar вместо drawer**, основной flex-row layout |
+| `lg:` | ≥ 1024px | Двухколоночные сетки панелей (`lg:grid-cols-12`, `lg:col-span-*`) |
+| `xl:` | ≥ 1280px | Увеличенный padding контента (`xl:p-8`) |
+
+Sidebar и desktop-layout — от `md:`. Сетки форм/дашборда — от `lg:`.
+
+---
+
+## Z-index слои
+
+Явная шкала по фактическому использованию в коде. Не добавлять произвольные значения вне таблицы.
+
+| Слой | Значение | Применение |
+|------|----------|------------|
+| `z-0` | 0 | Базовый поток |
+| `z-10` | 10 | Кнопка «прокрутить вниз» внутри контента |
+| `z-20` | 20 | Sticky header |
+| `z-30` | 30 | Desktop sidebar |
+| `z-40` | 40 | Mobile bottom nav; backdrop dropdown (`OrgSwitcher`) |
+| `z-50` | 50 | Модали (контейнер + backdrop внутри), mobile drawer, меню dropdown |
+| `z-[60]` | 60 | Toast-уведомления |
+
+**Правила:** toast всегда выше модалей. Backdrop модали — внутри того же `z-50` контейнера, не отдельным слоем.
+
+---
+
 ## Цветовая палитра
 
 ### Нейтральные (slate)
@@ -28,7 +60,7 @@
 | `slate-50` | Фон страницы (`body`, `AppLayout`) |
 | `slate-100` | Разделители, фон неактивных табов, hover sidebar |
 | `slate-200` | Границы карточек, полей, header, sidebar |
-| `slate-300` | Пунктирные границы, scrollbar thumb |
+| `slate-300` | Пунктирные границы, scrollbar thumb, иконки empty state |
 | `slate-400` | Вторичный текст, плейсхолдеры, метки полей |
 | `slate-500` | Подписи, вторичные кнопки |
 | `slate-600` | Текст навигации, иконки |
@@ -42,7 +74,7 @@
 
 | Токен | Hex (примерно) | Назначение |
 |-------|----------------|------------|
-| `indigo-50` | `#eef2ff` | Фон активного пункта меню, highlight-карточки, success-баннеры |
+| `indigo-50` | `#eef2ff` | Фон активного пункта меню, highlight-карточки, статус «оплачено» |
 | `indigo-100` | `#e0e7ff` | Focus ring полей (`ring-indigo-100`), границы accent-блоков |
 | `indigo-200` | `#c7d2fe` | Hover border, spinner track |
 | `indigo-300` | `#a5b4fc` | Hover border карточек расписания |
@@ -52,14 +84,15 @@
 | `indigo-700` | `#4338ca` | Активный текст nav, значения статистики, персональные уроки |
 | `indigo-800` | `#3730a3` | Hover ссылок |
 
+> **Примечание о семантике:** indigo намеренно используется и для интерактивных состояний (CTA), и для позитивных статусов («оплачено», «присутствие»). Это осознанный выбор в пользу минималистичной палитры. Чтобы различать: интерактивные элементы имеют hover/cursor-pointer, статусные — нет.
+
 ### Семантические
 
 | Роль | Tailwind | Когда |
 |------|----------|-------|
-| Ошибка / предупреждение / долг | `rose-50`, `rose-100`, `rose-600`, `rose-700` | Ошибки, неоплаченные уроки, низкий баланс, destructive |
+| Ошибка / долг / destructive | `rose-50`, `rose-100`, `rose-600`, `rose-700` | Ошибки, неоплаченные уроки, низкий баланс |
 | Предупреждение (лицензия) | `amber-50`, `amber-100`, `amber-800` | Demo retention, осторожные статусы |
-| Информация | `indigo-500`, `indigo-600` | Toast info, подсказки, ссылки |
-| Успех / оплачено / присутствие | `indigo-600`, `indigo-700`, `indigo-50` | Toast success, оплаченные уроки, «был на занятии» |
+| Информация / успех | `indigo-500`, `indigo-600`, `indigo-50` | Toast info/success, оплаченные уроки, присутствие |
 | Telegram | `#229ED9` / `#1C82B4` | Только для кнопок Telegram (исключение из палитры) |
 
 ### Различие типов занятий (оба — indigo)
@@ -87,31 +120,50 @@
 
 | Класс | px | Назначение |
 |-------|-----|------------|
-| `text-[8px]` | 8 | Мобильные tab labels |
-| `text-[9px]` | 9 | Sidebar subtitle, секции nav |
-| `text-[10px]` | 10 | **Метки полей**, uppercase badges, stat labels |
-| `text-[11px]` | 11 | Мелкий UI-текст |
+| `text-[10px]` | 10 | **Минимум системы.** Метки полей, uppercase badges, stat labels, mobile tab labels |
+| `text-[11px]` | 11 | Sidebar subtitle, секции nav, logo badge |
 | `text-xs` | 12 | Toast, вторичный текст, табы |
-| `text-sm` | 14 | Поля ввода, основной UI |
+| `text-sm` | 14 | Поля ввода, основной UI, текст empty state |
 | `text-base` | 16 | Заголовок sidebar, panel title |
 | `text-lg` | 18 | Значения статистики |
 | `text-xl` | 20 | Крупные числа |
-| `text-2xl` | 24 | — |
+
+> **Минимальный размер — `text-[10px]`.** Не использовать `text-[8px]` или `text-[9px]`.
 
 ### Начертания
 
 | Класс | Использование |
 |-------|---------------|
-| `font-normal` | Toast body |
-| `font-semibold` | Заголовки, кнопки, nav, значения |
+| `font-normal` | Toast body, основной текст |
+| `font-semibold` | Заголовки, кнопки, nav, значения, метки |
 | `font-bold` | Редко (dev-console) |
 
 ### Стили текста
 
 - **Метки полей:** `text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold`
-- **Секции sidebar:** `text-[9px] text-slate-400 uppercase tracking-wider font-semibold`
+- **Секции sidebar:** `text-[11px] text-slate-400 uppercase tracking-wider font-semibold`
+- **Sidebar subtitle / logo badge:** `text-[11px]`
+- **Mobile tab labels:** `text-[10px] font-semibold uppercase tracking-wide`
 - **Заголовок панели:** `text-base font-semibold text-slate-800 tracking-tight`
 - **Uppercase CTA:** `text-xs font-semibold uppercase tracking-wider` или `tracking-widest`
+
+---
+
+## Иконки
+
+Библиотека: `lucide-react`.
+
+| Контекст | Размер |
+|----------|--------|
+| Внутри кнопки (CTA), nav, icon button, search | `w-4 h-4` |
+| Компактные inline-иконки (Send, Snowflake) | `w-3 h-3` |
+| Мелкие inline (Ticket в badge) | `w-3.5 h-3.5` |
+| Заголовки секций, stat cards, modal close | `w-5 h-5` |
+| Empty state | `w-8 h-8` |
+| Крупные иллюстративные | `w-6 h-6` |
+| Loader (спиннер) | `w-7 h-7` |
+
+**Правило:** использовать Tailwind-классы (`w-4 h-4`), не произвольные `w-[16px]`. Для нового кода — `w-4` по умолчанию; `w-3`/`w-3.5` только для плотных inline-элементов в таблицах.
 
 ---
 
@@ -135,7 +187,7 @@
 | Padding карточки | `p-3.5`, `p-4`, `px-3 py-2.5` |
 | Gap сетки виджетов | `gap-3`, `gap-4` |
 | Sidebar width | `w-64` (256px) |
-| Content padding | `px-4 sm:px-6` |
+| Content padding | `px-4 sm:px-6`, секция `p-4 sm:p-5 md:p-6 xl:p-8` |
 | Max modal width | `max-w-lg`, `max-w-sm` |
 
 ### Сетка dashboard
@@ -165,7 +217,7 @@
 | `shadow-xs` | Карточки, sidebar, header, primary buttons |
 | `shadow-sm` | Hover карточек |
 | `shadow-md` | Mobile nav, scroll button |
-| `shadow-lg` | Toast, drawer |
+| `shadow-lg` | Toast, drawer, dropdown |
 | `shadow-xl` | Modals, mobile drawer |
 
 ---
@@ -269,7 +321,7 @@ text-slate-600 hover:bg-slate-50 hover:text-slate-950
 
 **Logo badge:**
 ```
-w-8 h-8 bg-indigo-600 rounded text-white font-semibold text-[9px] shadow-xs
+w-8 h-8 bg-indigo-600 rounded text-white font-semibold text-[11px] shadow-xs
 ```
 
 ### Page tabs (`PageTabs.tsx`)
@@ -285,7 +337,7 @@ w-8 h-8 bg-indigo-600 rounded text-white font-semibold text-[9px] shadow-xs
 | error | `text-rose-600` |
 | info | `text-indigo-500` |
 
-Контейнер: `bg-white border border-slate-200 rounded-xl shadow-lg text-xs`.
+Контейнер: `bg-white border border-slate-200 rounded-xl shadow-lg text-xs z-[60]`.
 
 ### Badges / статусы
 
@@ -314,24 +366,47 @@ text-[10px] uppercase bg-indigo-50 text-indigo-700 font-semibold
 ### Модальные окна
 
 ```
-bg-white rounded-xl border border-slate-200 shadow-xl
+bg-white rounded-xl border border-slate-200 shadow-xl z-50
 max-h-[90vh] overflow-y-auto
 ```
 
-Backdrop: `bg-slate-900/40 backdrop-blur-xs`
+Контейнер: `fixed inset-0 z-50 flex items-center justify-center p-4`.
 
-### Attendance toggle (был / не был)
+Backdrop (внутри контейнера): `absolute inset-0 bg-slate-900/40 backdrop-blur-xs`.
+
+### Attendance toggle
 
 | Состояние | «Был» | «Не был» |
 |-----------|-------|----------|
 | Active | `bg-indigo-600 border-indigo-600 text-white` | `bg-rose-600 border-rose-600 text-white` |
 | Inactive | `hover:border-indigo-300 hover:bg-indigo-50` | `hover:border-rose-300 hover:bg-rose-50` |
 
-### Loader
+### Пустое состояние (Empty State)
 
+Эталон: `SchedulePanel.tsx`, `PersonalLessonsPanel.tsx`.
+
+```
+text-center py-20 text-slate-400 space-y-3
+```
+
+Структура:
+- Иконка: `w-8 h-8 mx-auto text-slate-300`
+- Текст: `text-sm`
+- CTA (опционально): текстовая ссылка `text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline` или Primary button
+
+### Скелетон / загрузка
+
+Spinner (короткие операции, полноэкранная загрузка):
 ```
 Loader2 w-7 h-7 text-indigo-500 animate-spin
 ```
+
+Skeleton-блоки (если нужна структура до загрузки):
+```
+bg-slate-100 rounded-lg animate-pulse
+```
+
+Пульсирующая точка «live» (Dashboard): `w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse`.
 
 ---
 
@@ -344,9 +419,13 @@ Loader2 w-7 h-7 text-indigo-500 animate-spin
 5. **Карточки панелей** — `rounded-xl`, не `rounded-2xl`.
 6. **CTA-кнопки** — uppercase + tracking-wider/widest.
 7. **Метки полей** — всегда 10px, uppercase, slate-400.
-8. **Персональные vs групповые** — различать оттенком indigo (500 vs 700), не другим цветом.
-9. **Новые UI-компоненты** — в `tangodb/src/components/ui/`, следовать существующим паттернам.
-10. При изменении палитры — обновить этот файл.
+8. **Минимальный размер шрифта** — `text-[10px]`. Не использовать `text-[8px]` или `text-[9px]`.
+9. **Персональные vs групповые** — различать оттенком indigo (500 vs 700), не другим цветом.
+10. **Z-index** — только из таблицы слоёв.
+11. **Иконки** — размеры по таблице; для нового кода по умолчанию `w-4 h-4`.
+12. **Пустые списки** — использовать паттерн Empty State, не оставлять пустой контейнер без пояснения.
+13. **Новые UI-компоненты** — в `tangodb/src/components/ui/`, следовать существующим паттернам.
+14. При изменении палитры или добавлении токена — обновить этот файл.
 
 ---
 
@@ -361,11 +440,14 @@ Loader2 w-7 h-7 text-indigo-500 animate-spin
 | Dashboard widgets | `tangodb/src/components/Dashboard.tsx` |
 | Auth forms | `tangodb/src/auth/AuthLayout.tsx` |
 | Primary forms | `tangodb/src/components/SchedulePanel.tsx` |
+| Empty state | `tangodb/src/components/SchedulePanel.tsx`, `PersonalLessonsPanel.tsx` |
 
 ---
 
-## Записи
+## Changelog
 
-```
-2026-06-19 — Унификация палитры: violet/emerald заменены на indigo; rose сохранён для ошибок. Документ заполнен.
-```
+| Дата | Изменение |
+|------|-----------|
+| 2026-06-19 | Унификация палитры: violet/emerald заменены на indigo; rose сохранён для ошибок. Документ заполнен. |
+| 2026-06-19 | Ревью: добавлены брейкпоинты, z-index, иконки, empty state, skeleton; пояснение семантики indigo; правила агента расширены. Z-index и брейкпоинты сверены с кодом. |
+| 2026-06-19 | Типографика: 8px/9px заменены на 10px/11px в nav и logo; минимум системы — 10px. |

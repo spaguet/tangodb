@@ -101,7 +101,7 @@ export default function CsvExportModal({
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
-            className="relative w-full max-w-sm bg-white rounded-2xl border border-slate-200 shadow-xl p-5 space-y-4"
+            className="relative w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl p-5 space-y-4"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">

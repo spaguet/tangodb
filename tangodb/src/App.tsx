@@ -308,7 +308,7 @@ function AppLayout() {
 
         return (
         <div key={section.label} className="space-y-0.5">
-          <p className="text-[9px] text-slate-400 font-sans tracking-wider uppercase font-semibold px-3 mb-1">
+          <p className="text-[11px] text-slate-400 font-sans tracking-wider uppercase font-semibold px-3 mb-1">
             {section.label}
           </p>
           {visibleItems.map((item) => {
@@ -346,12 +346,12 @@ function AppLayout() {
             onClick={() => go({ icon: LayoutDashboard, label: "Обзор", path: "/" })}
             className="relative px-5 py-4.5 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors flex items-center gap-3.5"
           >
-            <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[9px] tracking-tight leading-none shadow-xs">
+            <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[11px] tracking-tight leading-none shadow-xs">
               TDB
             </div>
             <div>
               <h1 className="text-base font-semibold tracking-tight text-slate-800 leading-tight">TangoDB</h1>
-              <p className="text-[9px] font-sans tracking-widest text-slate-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
+              <p className="text-[11px] font-sans tracking-widest text-slate-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
             </div>
           </div>
 
@@ -379,10 +379,10 @@ function AppLayout() {
                 }`}
               >
                 <Icon className="w-5 h-5 shrink-0" />
-                <span className="text-[8px] font-semibold uppercase tracking-wide leading-none text-center">
+                <span className="text-[10px] font-semibold uppercase tracking-wide leading-none text-center">
                   {item.line1}
                 </span>
-                <span className="text-[8px] font-semibold uppercase tracking-wide leading-none text-center">
+                <span className="text-[10px] font-semibold uppercase tracking-wide leading-none text-center">
                   {item.line2}
                 </span>
               </button>
@@ -443,7 +443,7 @@ function AppLayout() {
               >
                 <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[8px] tracking-tight leading-none">
+                    <div className="w-7 h-7 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[10px] tracking-tight leading-none">
                       TDB
                     </div>
                     <h3 className="text-sm font-semibold tracking-tight text-slate-800">TangoDB</h3>

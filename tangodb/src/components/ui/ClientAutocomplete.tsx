@@ -91,7 +91,7 @@ export default function ClientAutocomplete({
         )}
       </div>
       {showList && (
-        <div className="absolute left-0 right-0 top-full bg-white border border-slate-200 rounded-lg shadow-lg z-30 mt-1 overflow-hidden">
+        <div className="absolute left-0 right-0 top-full bg-white border border-slate-200 rounded-lg shadow-lg z-50 mt-1 overflow-hidden">
           {suggestions.map((s, i) => (
             <div
               key={s.id}

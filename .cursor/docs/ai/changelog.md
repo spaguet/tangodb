@@ -11,3 +11,5 @@ YYYY-MM-DD — краткое описание (причина / контекс�
 ## Записи
 
 2026-06-19 — Унификация акцентных цветов: violet и emerald заменены на indigo по всему tangodb/; design_system.md зафиксирован как правило проекта.
+2026-06-19 — Типографика nav/logo: text-[8px]/text-[9px] заменены на text-[10px]/text-[11px] для читаемости и соответствия design system.
+2026-06-19 — Аудит design system: CsvExportModal rounded-xl, ClientAutocomplete dropdown z-50, иконки stat-карточек Dashboard w-5 h-5.
