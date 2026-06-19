@@ -330,7 +330,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         <div className="flex items-center gap-2 w-full justify-end shrink-0 mt-auto">
           {canWritePrices ? (
           <>
-          <div className="relative font-sans w-28 text-right">
+          <div className="relative font-sans w-36 text-right">
             <input
               type="number"
               value={currentInputVal}
