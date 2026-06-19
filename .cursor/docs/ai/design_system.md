@@ -176,7 +176,7 @@ Sidebar и desktop-layout — от `md:`. Сетки форм/дашборда �
 | `.panel-page-stack` | `space-y-4` | Вертикальный стек страницы панели |
 | `.panel-card-stack` | `space-y-3` | Стек внутри карточки |
 | `.panel-form-stack` | `space-y-3 text-sm` | Форма |
-| `.panel-form-stack-compact` | `space-y-1`, `md:gap-y-1`, divider `pt-1`, field `space-y-0.5` | Компактная форма (продажа абонемента) |
+| `.panel-form-stack-compact` | `space-y-1`, `md:gap-y-1`, divider `pt-1`, field `space-y-0.5` | Компактная форма (продажа абонемента, персонального урока) |
 | `.field-stack` | `space-y-1` | Label + input |
 | `.panel-form-header` | `text-center space-y-1 border-b border-slate-100 pb-3` | Шапка формы |
 | `.panel-form-divider` | `border-t border-slate-100 pt-3` | Разделитель формы |

@@ -753,7 +753,7 @@ export default function PersonalLessonsPanel({
             Продать пакет уроков
           </button>
 
-          <div className="panel-form-stack panel-form-stack-wide-md">
+          <div className="panel-form-stack panel-form-stack-wide-md panel-form-stack-compact">
             <DisciplineSelect
               disciplines={disciplines}
               value={disciplineId}
@@ -827,7 +827,7 @@ export default function PersonalLessonsPanel({
               )}
             </div>
 
-            <div className="border-t border-slate-100 pt-1.5 -mt-1 panel-form-full-row-md" />
+            <div className="border-t border-slate-100 pt-1 -mt-0.5 panel-form-full-row-md" />
 
             <div className="grid grid-cols-2 gap-3 panel-form-full-row-md">
               <div className="field-stack">
@@ -888,7 +888,7 @@ export default function PersonalLessonsPanel({
               </button>
             </div>
 
-            <div className="border-t border-slate-100 pt-1 -mt-1 panel-form-full-row-md" />
+            <div className="border-t border-slate-100 pt-1 -mt-0.5 panel-form-full-row-md" />
 
             <div className="field-stack panel-form-full-row-md">
               <label className={labelCls}>Способ оплаты</label>
@@ -919,7 +919,7 @@ export default function PersonalLessonsPanel({
             </div>
 
             {bookingPaymentMode === "single" && (
-              <div className="panel-form-full-row-md md:col-span-2 panel-form-stack md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-3">
+              <div className="panel-form-full-row-md md:col-span-2 panel-form-stack panel-form-stack-wide-md panel-form-stack-compact">
                 {lessonTariffs.length > 0 && (
                   <AppSelect
                     label="Тариф за урок"
@@ -975,7 +975,7 @@ export default function PersonalLessonsPanel({
             )}
 
             {bookingPaymentMode === "package" && (
-              <div className="panel-form-full-row-md md:col-span-2 panel-form-stack">
+              <div className="panel-form-full-row-md md:col-span-2 panel-form-stack panel-form-stack-compact">
                 {availablePrivateSubs.length > 0 ? (
                   <AppSelect
                     label="Списать с пакета"
