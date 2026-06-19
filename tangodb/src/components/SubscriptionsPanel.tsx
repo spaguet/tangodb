@@ -556,7 +556,7 @@ export default function SubscriptionsPanel({
               </div>
             )}
 
-            <div className="border-t border-slate-100 pt-1.5 -mt-1 panel-form-full-row-md" />
+            <div className="border-t border-slate-100 pt-1 -mt-0.5 panel-form-full-row-md" />
 
             <div className="field-stack">
               <label className={labelCls}>Дата активации</label>

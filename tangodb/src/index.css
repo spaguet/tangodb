@@ -86,15 +86,19 @@
   }
 
   .panel-form-stack-compact {
-    @apply space-y-2;
+    @apply space-y-1;
   }
 
   .panel-form-stack-compact.panel-form-stack-wide-md {
-    @apply md:gap-y-2;
+    @apply md:gap-y-1;
   }
 
   .panel-form-stack-compact .panel-form-divider {
-    @apply pt-2;
+    @apply pt-1;
+  }
+
+  .panel-form-stack-compact .field-stack {
+    @apply space-y-0.5;
   }
 
   .panel-form-full-row-md {
