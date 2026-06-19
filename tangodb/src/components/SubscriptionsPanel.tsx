@@ -479,7 +479,7 @@ export default function SubscriptionsPanel({
             </div>
           </div>
 
-          <div className="panel-form-stack panel-form-stack-wide-md">
+          <div className="panel-form-stack panel-form-stack-wide-md panel-form-stack-compact">
             <div className="field-stack">
               <label className={labelCls}>ТАРИФ АБОНЕМЕНТА</label>
               {groupTariffs.length === 0 ? (
