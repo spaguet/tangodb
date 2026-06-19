@@ -287,7 +287,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     return (
       <div
         key={priceId}
-        className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between gap-4 h-full"
       >
         <div className="min-w-0 flex-1 space-y-1">
             <div className="flex items-start justify-between gap-2">
@@ -327,7 +327,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+        <div className="flex items-center gap-2 w-full justify-end shrink-0 mt-auto">
           {canWritePrices ? (
           <>
           <div className="relative font-sans w-28 text-right">
@@ -363,6 +363,21 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       </div>
     );
   };
+
+  const renderTariffSection = (title: string, items: { priceObj: Price }[]) => (
+    <section className="panel-card-stack">
+      <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
+        {title}
+      </h3>
+      {items.length === 0 ? (
+        <p className="text-xs text-slate-400 font-sans py-2">Нет тарифов</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {items.map(renderPriceRow)}
+        </div>
+      )}
+    </section>
+  );
 
   return (
     <div id="panel-prices" className="panel-page-stack">
@@ -401,45 +416,10 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="panel-card-stack">
-              <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
-                Групповые занятия
-              </h3>
-              <div className="space-y-3">
-                {groupItems.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-sans py-2">Нет тарифов</p>
-                ) : (
-                  groupItems.map(renderPriceRow)
-                )}
-              </div>
-            </div>
-
-            <div className="panel-card-stack">
-              <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
-                Индивидуальные уроки
-              </h3>
-              <div className="space-y-3">
-                {privateLessonItems.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-sans py-2">Нет тарифов</p>
-                ) : (
-                  privateLessonItems.map(renderPriceRow)
-                )}
-              </div>
-            </div>
-
-            <div className="panel-card-stack">
-              <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
-                Персональные абонементы
-              </h3>
-              <div className="space-y-3">
-                {privatePackageItems.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-sans py-2">Нет тарифов</p>
-                ) : (
-                  privatePackageItems.map(renderPriceRow)
-                )}
-              </div>
-            </div>
+          <div className="space-y-6">
+            {renderTariffSection("Групповые занятия", groupItems)}
+            {renderTariffSection("Персональные уроки", privateLessonItems)}
+            {renderTariffSection("Пакеты персональных уроков", privatePackageItems)}
           </div>
         )}
       </div>
