@@ -1,23 +1,67 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { formatClientName } from "../lib/utils";
-import type { PersonalLesson } from "../types";
+import type { Client, PersonalLesson } from "../types";
+import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const personalLessonsQueryKey = ["personalLessons"] as const;
 
 type ClientJoinRow = { first_name?: string; last_name?: string } | null;
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const asId = (value: unknown): string => (value == null ? "" : String(value).trim());
+
+const isUuid = (value: string): boolean => UUID_RE.test(value.trim());
 
 const clientNameFromJoin = (row: ClientJoinRow, fallbackId: string): string => {
   if (row && (row.last_name || row.first_name)) {
     return formatClientName(row.last_name ?? "", row.first_name ?? "");
   }
-  if (!fallbackId) return "";
+  if (!fallbackId || isUuid(fallbackId)) return "";
   // Legacy rows may store a display name instead of an ID.
   if (/[^\d]/.test(fallbackId)) return fallbackId;
   return fallbackId;
+};
+
+const clientNameFromMap = (clientId: string, clientMap: Record<string, Client>): string => {
+  const id = clientId.trim();
+  if (!id) return "";
+  const client = clientMap[id];
+  if (client) return formatClientName(client.lastName, client.firstName);
+  if (isUuid(id)) return "";
+  return id;
+};
+
+const buildClientDisplay = (
+  clientId1: string,
+  clientId2: string,
+  clientId3: string,
+  clientMap: Record<string, Client>
+): string =>
+  joinClientNames([
+    clientNameFromMap(clientId1, clientMap),
+    clientId2 ? clientNameFromMap(clientId2, clientMap) : "",
+    clientId3 ? clientNameFromMap(clientId3, clientMap) : "",
+  ]);
+
+const enrichLessonClientDisplay = (
+  lesson: PersonalLesson,
+  clientMap: Record<string, Client>
+): PersonalLesson => {
+  const fromDirectory = buildClientDisplay(lesson.clientId1, lesson.clientId2, lesson.clientId3, clientMap);
+  if (fromDirectory !== "Клиент не указан") {
+    return { ...lesson, clientDisplay: fromDirectory };
+  }
+
+  const joinDisplay = lesson.clientDisplay.trim();
+  if (joinDisplay && joinDisplay !== "Клиент не указан" && !isUuid(joinDisplay.split(" & ")[0] ?? "")) {
+    return lesson;
+  }
+
+  return { ...lesson, clientDisplay: fromDirectory };
 };
 
 const joinClientNames = (parts: string[]): string =>
@@ -56,8 +100,9 @@ const personalLessonsSelect =
 export function usePersonalLessons(yearMonth?: string) {
   const { enabled, withOrgId } = useOrgQueryScope();
   const baseKey = yearMonth ? [...personalLessonsQueryKey, yearMonth] : personalLessonsQueryKey;
+  const clientsQuery = useClientDirectory();
 
-  return useQuery({
+  const lessonsQuery = useQuery({
     queryKey: withOrgId(baseKey),
     enabled,
     queryFn: async () => {
@@ -97,6 +142,20 @@ export function usePersonalLessons(yearMonth?: string) {
     },
     staleTime: 30 * 1000,
   });
+
+  const data = useMemo(() => {
+    const lessons = lessonsQuery.data ?? [];
+    const clientMap = Object.fromEntries((clientsQuery.data ?? []).map((c) => [c.id, c]));
+    return lessons.map((lesson) => enrichLessonClientDisplay(lesson, clientMap));
+  }, [lessonsQuery.data, clientsQuery.data]);
+
+  return {
+    ...lessonsQuery,
+    data,
+    isLoading: lessonsQuery.isLoading || clientsQuery.isLoading,
+    isError: lessonsQuery.isError || clientsQuery.isError,
+    error: lessonsQuery.error ?? clientsQuery.error,
+  };
 }
 
 export function useAddPersonalLessons() {
