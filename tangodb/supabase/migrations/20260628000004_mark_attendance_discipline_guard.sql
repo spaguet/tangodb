@@ -197,4 +197,4 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION mark_attendance(text, text, text, uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION mark_attendance(text, text, text, uuid) FROM authenticated;
+GRANT EXECUTE ON FUNCTION mark_attendance(text, text, text, uuid) TO authenticated;
