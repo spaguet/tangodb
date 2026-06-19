@@ -33,7 +33,6 @@ export default function OrganizationSettingsPage() {
   const [orgPreset, setOrgPreset] = useState<OrgPreset>("dance_school");
   const [modules, setModules] = useState<OrgModules>(PRESET_MODULES.dance_school);
   const [teachersCanManageDisciplines, setTeachersCanManageDisciplines] = useState(false);
-  const [pairCycleEnabled, setPairCycleEnabled] = useState(true);
   const [lowBalanceThreshold, setLowBalanceThreshold] = useState(2);
   const [dirty, setDirty] = useState(false);
 
@@ -42,7 +41,6 @@ export default function OrganizationSettingsPage() {
     setOrgPreset(settings.org_preset);
     setModules(settings.modules);
     setTeachersCanManageDisciplines(settings.teachers_can_manage_disciplines);
-    setPairCycleEnabled(settings.pair_cycle_enabled);
     setLowBalanceThreshold(settings.low_balance_threshold);
     setDirty(false);
   }, [settings]);
@@ -56,7 +54,10 @@ export default function OrganizationSettingsPage() {
   };
 
   const toggleModule = (key: keyof OrgModules) => {
-    setModules((prev) => ({ ...prev, [key]: !prev[key] }));
+    setModules((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      return next;
+    });
     setOrgPreset("custom");
     setDirty(true);
   };
@@ -66,7 +67,7 @@ export default function OrganizationSettingsPage() {
       org_preset: orgPreset,
       modules,
       teachers_can_manage_disciplines: teachersCanManageDisciplines,
-      pair_cycle_enabled: pairCycleEnabled,
+      pair_cycle_enabled: false,
       low_balance_threshold: lowBalanceThreshold,
     });
     if (!res.success) {
@@ -116,16 +117,6 @@ export default function OrganizationSettingsPage() {
             className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
           />
           Преподаватели могут редактировать направления
-        </label>
-
-        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={pairCycleEnabled}
-            onChange={(e) => { setPairCycleEnabled(e.target.checked); setDirty(true); }}
-            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-          />
-          Цикл парных абонементов (m1/m2/m3)
         </label>
 
         <div className="field-stack">

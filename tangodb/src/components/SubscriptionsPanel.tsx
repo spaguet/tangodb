@@ -22,6 +22,8 @@ import {
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
 import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, getGroupTariffs, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient } from "../lib/utils";
+import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules } from "../lib/orgModules";
+import { useSettings } from "../settings/SettingsProvider";
 import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import AppSelect from "./ui/AppSelect";
@@ -62,6 +64,7 @@ export default function SubscriptionsPanel({
   const addSubscription = useAddSubscription();
   const finishSubscription = useFinishSubscription();
   const { canAccessPanel } = usePermissions();
+  const { settings } = useSettings();
 
   const isLoading = activeClientsLoading || directoryClientsLoading || disciplinesLoading || subsLoading || pricesLoading;
   const isError = activeClientsError || directoryClientsError || disciplinesError || subsError || pricesError;
@@ -82,14 +85,17 @@ export default function SubscriptionsPanel({
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
 
   // Sale form states
-  const groupTariffs = getGroupTariffs(prices);
-  const [selectedTariffId, setSelectedTariffId] = useState<number | "">("");
+  const groupTariffs = filterGroupTariffsByModules(
+    getGroupTariffs(prices),
+    settings?.modules ?? DEFAULT_ORG_MODULES
+  );
+  const [selectedTariffId, setSelectedTariffId] = useState<string | "">("");
 
   const [client1Query, setClient1Query] = useState("");
   const [client1Id, setClient1Id] = useState("");
   const [client2Query, setClient2Query] = useState("");
   const [client2Id, setClient2Id] = useState("");
-  const [disciplineId, setDisciplineId] = useState<number | "">("");
+  const [disciplineId, setDisciplineId] = useState<string | "">("");
 
   useEffect(() => {
     if (disciplines.length > 0 && disciplineId === "") {
@@ -108,6 +114,14 @@ export default function SubscriptionsPanel({
       const defaultTariff =
         groupTariffs.find((p) => p.id && p.type.trim() === "solo" && p.lessons === 8) ?? groupTariffs[0];
       if (defaultTariff?.id) setSelectedTariffId(defaultTariff.id);
+    }
+  }, [groupTariffs, selectedTariffId]);
+
+  useEffect(() => {
+    if (selectedTariffId && !groupTariffs.some((p) => p.id === selectedTariffId)) {
+      setSelectedTariffId("");
+      setClient2Id("");
+      setClient2Query("");
     }
   }, [groupTariffs, selectedTariffId]);
 
@@ -167,7 +181,7 @@ export default function SubscriptionsPanel({
       lessonsTotal: selectedTariff.lessons,
       activationDate,
       pairMonth,
-      disciplineId: disciplineId as number,
+      disciplineId,
       priceId: selectedTariff.id,
       category: "group" as const,
     };
@@ -488,8 +502,8 @@ export default function SubscriptionsPanel({
                 <AppSelect
                   value={selectedTariffId}
                   onChange={(e) => {
-                    const id = parseInt(e.target.value, 10);
-                    if (Number.isNaN(id)) return;
+                    const id = e.target.value;
+                    if (!id) return;
                     setSelectedTariffId(id);
                     const tariff = groupTariffs.find((p) => p.id === id);
                     if (tariff && !tariffNeedsSecondClient(tariff)) {

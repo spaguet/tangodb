@@ -8,14 +8,23 @@ import { AnimatePresence, motion } from "motion/react";
 import { Coins, Edit, Ticket, Trash2, X } from "lucide-react";
 import { useCreatePrice, useDeletePrice, usePrices, useUpdatePrice, useUpdatePriceMeta } from "../hooks/usePrices";
 import {
+  filterGroupTariffsByModules,
+  isLegacyPairCycleTariff,
+  resolveGroupPriceType,
+  resolvePrivatePackagePriceType,
+  type GroupParticipantFormat,
+  type PrivatePackageFormat,
+} from "../lib/orgModules";
+import {
   formatCurrency,
-  generateTariffTypeKey,
   getPriceCategory,
   getPriceDescription,
   getPriceLabel,
   getPrivateLessonTariffs,
   getPrivatePackageTariffs,
 } from "../lib/utils";
+import { useSettings } from "../settings/SettingsProvider";
+import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
@@ -82,6 +91,10 @@ function TariffCreateSection({
 
 export default function PricesPanel({ toast }: PricesPanelProps) {
   const { data: prices = [], isLoading, isError, error } = usePrices();
+  const { settings } = useSettings();
+  const modules = settings?.modules;
+  const pairSubscriptionsEnabled = modules?.pair_subscriptions ?? true;
+  const trioLessonsEnabled = modules?.trio_lessons ?? true;
   const { can } = usePermissions();
   const canWritePrices = can("prices.write");
   const updatePrice = useUpdatePrice();
@@ -89,20 +102,27 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const deletePrice = useDeletePrice();
   const createPrice = useCreatePrice();
 
-  const [editedPrices, setEditedPrices] = useState<Record<number, string>>({});
-  const [syncingRows, setSyncingRows] = useState<Record<number, boolean>>({});
+  const [editedPrices, setEditedPrices] = useState<Record<string, string>>({});
+  const [syncingRows, setSyncingRows] = useState<Record<string, boolean>>({});
   const [editingPrice, setEditingPrice] = useState<Price | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Price | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [groupForm, setGroupForm] = useState({ label: "", description: "", lessons: "8", price: "" });
+  const [groupForm, setGroupForm] = useState({
+    label: "",
+    description: "",
+    lessons: "8",
+    price: "",
+    format: "solo" as GroupParticipantFormat,
+  });
   const [privateLessonForm, setPrivateLessonForm] = useState({ label: "", description: "", price: "" });
   const [privatePackageForm, setPrivatePackageForm] = useState({
     label: "",
     description: "",
     lessons: "4",
     price: "",
+    format: "solo" as PrivatePackageFormat,
   });
   const [creatingSection, setCreatingSection] = useState<"group" | "privateLesson" | "privatePackage" | null>(
     null
@@ -120,9 +140,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
   useEffect(() => {
     if (!showCreateModal) {
-      setGroupForm({ label: "", description: "", lessons: "8", price: "" });
+      setGroupForm({ label: "", description: "", lessons: "8", price: "", format: "solo" });
       setPrivateLessonForm({ label: "", description: "", price: "" });
-      setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "" });
+      setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "", format: "solo" });
       setCreatingSection(null);
       setActiveCreateTab("group");
     }
@@ -137,11 +157,11 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [editingPrice]);
 
-  const handleInputChange = (id: number, val: string) => {
+  const handleInputChange = (id: string, val: string) => {
     setEditedPrices({ ...editedPrices, [id]: val });
   };
 
-  const handleSavePrice = async (id: number, originalValue: number) => {
+  const handleSavePrice = async (id: string, originalValue: number) => {
     const rawValue = editedPrices[id];
     if (rawValue === undefined) return;
 
@@ -241,8 +261,24 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     }
 
     setCreatingSection(section);
+    let priceType: string;
+
+    if (section === "group") {
+      const resolved = resolveGroupPriceType(groupForm.format, lessons);
+      if (resolved.ok === false) {
+        toast(resolved.error, "error");
+        setCreatingSection(null);
+        return;
+      }
+      priceType = resolved.type;
+    } else if (section === "privateLesson") {
+      priceType = "personal_solo";
+    } else {
+      priceType = resolvePrivatePackagePriceType(privatePackageForm.format);
+    }
+
     const res = await createPrice.mutateAsync({
-      type: generateTariffTypeKey(),
+      type: priceType,
       lessons,
       price: parsedPrice,
       label: form.label,
@@ -256,16 +292,19 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     } else {
       toast("Тариф добавлен в прайс-лист", "success");
       if (section === "group") {
-        setGroupForm({ label: "", description: "", lessons: "8", price: "" });
+        setGroupForm({ label: "", description: "", lessons: "8", price: "", format: "solo" });
       } else if (section === "privateLesson") {
         setPrivateLessonForm({ label: "", description: "", price: "" });
       } else {
-        setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "" });
+        setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "", format: "solo" });
       }
     }
   };
 
-  const groupItems = prices.filter((p) => getPriceCategory(p) === "group").map((priceObj) => ({ priceObj }));
+  const groupItems = filterGroupTariffsByModules(
+    prices.filter((p) => getPriceCategory(p) === "group" && !isLegacyPairCycleTariff(p.type)),
+    modules
+  ).map((priceObj) => ({ priceObj }));
   const privateLessonItems = getPrivateLessonTariffs(prices).map((priceObj) => ({ priceObj }));
   const privatePackageItems = getPrivatePackageTariffs(prices).map((priceObj) => ({ priceObj }));
 
@@ -549,6 +588,21 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                         pending={creatingSection === "group"}
                       >
                         <div className="field-stack">
+                          <label className={labelCls}>Формат</label>
+                          <AppSelect
+                            value={groupForm.format}
+                            onChange={(e) =>
+                              setGroupForm({
+                                ...groupForm,
+                                format: e.target.value as GroupParticipantFormat,
+                              })
+                            }
+                          >
+                            <option value="solo">Соло</option>
+                            {pairSubscriptionsEnabled && <option value="pair">Пара</option>}
+                          </AppSelect>
+                        </div>
+                        <div className="field-stack">
                           <label className={labelCls}>Название</label>
                           <input
                             type="text"
@@ -640,6 +694,22 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                         onSubmit={() => handleCreateTariff("privatePackage")}
                         pending={creatingSection === "privatePackage"}
                       >
+                        <div className="field-stack">
+                          <label className={labelCls}>Формат</label>
+                          <AppSelect
+                            value={privatePackageForm.format}
+                            onChange={(e) =>
+                              setPrivatePackageForm({
+                                ...privatePackageForm,
+                                format: e.target.value as PrivatePackageFormat,
+                              })
+                            }
+                          >
+                            <option value="solo">Соло</option>
+                            {pairSubscriptionsEnabled && <option value="pair">Пара</option>}
+                            {trioLessonsEnabled && <option value="trio">Трио</option>}
+                          </AppSelect>
+                        </div>
                         <div className="field-stack">
                           <label className={labelCls}>Название</label>
                           <input

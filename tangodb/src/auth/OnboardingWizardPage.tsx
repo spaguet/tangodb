@@ -86,8 +86,6 @@ export default function OnboardingWizardPage() {
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) throw refreshError;
 
-      const pairCycleEnabled = modules.pair_subscriptions;
-
       const { data, error: rpcError } = await supabase.rpc("complete_organization_onboarding", {
         p_organization_id: organizationId,
         p_name: orgName.trim(),
@@ -95,7 +93,7 @@ export default function OnboardingWizardPage() {
         p_locale: locale,
         p_currency_code: currencyCode,
         p_modules: modules,
-        p_pair_cycle_enabled: pairCycleEnabled,
+        p_pair_cycle_enabled: false,
       });
 
       if (rpcError) throw rpcError;

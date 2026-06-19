@@ -11,6 +11,11 @@ import {
   tariffNeedsSecondClient,
   tariffNeedsThirdClient,
 } from "../../lib/utils";
+import {
+  DEFAULT_ORG_MODULES,
+  filterPrivatePackageTariffsByModules,
+} from "../../lib/orgModules";
+import { useSettings } from "../../settings/SettingsProvider";
 import type { ToastType } from "../../App";
 import type { Client, Discipline, Price } from "../../types";
 import AppSelect from "./AppSelect";
@@ -37,16 +42,20 @@ export default function SellPackageModal({
   prices,
 }: SellPackageModalProps) {
   const addSubscription = useAddSubscription();
-  const packageTariffs = getPrivatePackageTariffs(prices);
+  const { settings } = useSettings();
+  const packageTariffs = filterPrivatePackageTariffsByModules(
+    getPrivatePackageTariffs(prices),
+    settings?.modules ?? DEFAULT_ORG_MODULES
+  );
 
-  const [selectedPackageTariffId, setSelectedPackageTariffId] = useState<number | "">("");
+  const [selectedPackageTariffId, setSelectedPackageTariffId] = useState<string | "">("");
   const [subClient1Query, setSubClient1Query] = useState("");
   const [subClient1Id, setSubClient1Id] = useState("");
   const [subClient2Query, setSubClient2Query] = useState("");
   const [subClient2Id, setSubClient2Id] = useState("");
   const [subClient3Query, setSubClient3Query] = useState("");
   const [subClient3Id, setSubClient3Id] = useState("");
-  const [subDisciplineId, setSubDisciplineId] = useState<number | "">("");
+  const [subDisciplineId, setSubDisciplineId] = useState<string | "">("");
   const [subActivationDate, setSubActivationDate] = useState("");
 
   const selectedPackageTariff = packageTariffs.find((p) => p.id === selectedPackageTariffId);
@@ -85,6 +94,12 @@ export default function SellPackageModal({
     setSubActivationDate(`${today.getFullYear()}-${mm}-${dd}`);
   }, [open, packageTariffs, disciplines, selectedPackageTariffId, subDisciplineId]);
 
+  useEffect(() => {
+    if (selectedPackageTariffId && !packageTariffs.some((p) => p.id === selectedPackageTariffId)) {
+      setSelectedPackageTariffId("");
+    }
+  }, [packageTariffs, selectedPackageTariffId]);
+
   const handleSell = async () => {
     if (!selectedPackageTariff?.id) {
       toast("Выберите тариф абонемента.", "error");
@@ -120,7 +135,7 @@ export default function SellPackageModal({
       lessonsTotal: selectedPackageTariff.lessons,
       activationDate: subActivationDate,
       pairMonth,
-      disciplineId: subDisciplineId as number,
+      disciplineId: subDisciplineId,
       priceId: selectedPackageTariff.id,
       category: "private",
     });
@@ -183,8 +198,8 @@ export default function SellPackageModal({
                   <AppSelect
                     value={selectedPackageTariffId}
                     onChange={(e) => {
-                      const id = parseInt(e.target.value, 10);
-                      if (!Number.isNaN(id)) setSelectedPackageTariffId(id);
+                      const id = e.target.value;
+                      if (id) setSelectedPackageTariffId(id);
                     }}
                   >
                     {packageTariffs.map((tariff) => (

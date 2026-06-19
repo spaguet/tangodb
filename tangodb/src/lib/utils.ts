@@ -99,7 +99,7 @@ export function formatMonthTitleRu(yearMonth: string): string {
 export function getPersonalLessonTariffLabel(
   lesson: { type: string; price: number; subscriptionId?: string | null },
   prices: PriceTariffRef[],
-  subscriptions: Array<{ id: string; priceId?: number | null; type: string; lessonsTotal: number; pairMonth: string }> = []
+  subscriptions: Array<{ id: string; priceId?: string | null; type: string; lessonsTotal: number; pairMonth: string }> = []
 ): string {
   if (lesson.subscriptionId) {
     const sub = subscriptions.find((s) => s.id === lesson.subscriptionId);
@@ -192,11 +192,11 @@ export interface SubscriptionTariffRef {
   type: string;
   lessonsTotal: number;
   pairMonth: string;
-  priceId?: number | null;
+  priceId?: string | null;
 }
 
 export interface PriceTariffRef {
-  id?: number;
+  id?: string;
   type: string;
   lessons: number;
   price: number;
@@ -217,13 +217,15 @@ export const PRICE_LABELS_CATALOG: Record<string, { label: string; sub: string; 
   personal_trio: { label: "Индивидуальный Трио Урок", sub: "Приватная сессия (3 клиента)", col: "private" },
 };
 
-export function getPriceCatalogKey(price: Pick<PriceTariffRef, "type" | "lessons">): string {
+export function getPriceCatalogKey(price: Pick<PriceTariffRef, "type"> & Partial<Pick<PriceTariffRef, "lessons">>): string {
   let lookupKey = price.type.trim();
   if (lookupKey === "solo" && price.lessons === 8) lookupKey = "solo_8";
   return lookupKey;
 }
 
-export function getPriceCategory(price: PriceTariffRef): PriceCategory {
+export function getPriceCategory(
+  price: Pick<PriceTariffRef, "type"> & Partial<Pick<PriceTariffRef, "category" | "lessons">>
+): PriceCategory {
   if (price.category === "group" || price.category === "private") return price.category;
   const catalogCol = PRICE_LABELS_CATALOG[getPriceCatalogKey(price)]?.col;
   if (catalogCol === "private") return "private";
@@ -247,15 +249,15 @@ export function getPriceDescription(price: PriceTariffRef): string {
   );
 }
 
-export function getGroupTariffs(prices: PriceTariffRef[]): PriceTariffRef[] {
+export function getGroupTariffs<T extends PriceTariffRef>(prices: T[]): T[] {
   return prices.filter((p) => getPriceCategory(p) === "group");
 }
 
-export function getPrivatePackageTariffs(prices: PriceTariffRef[]): PriceTariffRef[] {
+export function getPrivatePackageTariffs<T extends PriceTariffRef>(prices: T[]): T[] {
   return prices.filter((p) => getPriceCategory(p) === "private" && p.lessons > 1);
 }
 
-export function getPrivateLessonTariffs(prices: PriceTariffRef[]): PriceTariffRef[] {
+export function getPrivateLessonTariffs<T extends PriceTariffRef>(prices: T[]): T[] {
   return prices.filter((p) => getPriceCategory(p) === "private" && p.lessons === 1);
 }
 
@@ -275,16 +277,42 @@ export function tariffParticipantType(tariff: Pick<PriceTariffRef, "type">): "so
   return "solo";
 }
 
+const CUSTOM_TARIFF_TYPE_RE = /^tariff_[a-f0-9]{12}$/;
+
+/** DB stores pair_month as m1|m2|m3; normalize legacy "1" → "m1". */
+export function normalizeSubscriptionPairMonth(type: string, pairMonth: string): string {
+  if (type.trim() !== "pair") return "";
+  const pm = pairMonth.trim();
+  if (/^m[123]$/.test(pm)) return pm;
+  if (/^[123]$/.test(pm)) return `m${pm}`;
+  return "m1";
+}
+
+export function pairMonthDisplayNumber(pairMonth: string): string {
+  const pm = pairMonth.trim();
+  const withPrefix = pm.match(/^m([123])$/);
+  if (withPrefix) return withPrefix[1];
+  if (/^[123]$/.test(pm)) return pm;
+  return "1";
+}
+
 export function deriveSubscriptionTypeFromTariff(
-  tariff: Pick<PriceTariffRef, "type">
+  tariff: Pick<PriceTariffRef, "type" | "category">
 ): { type: string; pairMonth: string } {
   const t = tariff.type.trim();
   if (t === "solo") return { type: "solo", pairMonth: "" };
   if (t === "pair_hm") return { type: "pair_hm", pairMonth: "" };
-  const pairMonthMatch = t.match(/^pair_m(\d)$/);
-  if (pairMonthMatch) return { type: "pair", pairMonth: pairMonthMatch[1] };
+  const pairMonthMatch = t.match(/^pair_m([123])$/);
+  if (pairMonthMatch) return { type: "pair", pairMonth: `m${pairMonthMatch[1]}` };
   if (t.startsWith("personal_")) return { type: t.replace("personal_", ""), pairMonth: "" };
-  return { type: t, pairMonth: "" };
+  if (CUSTOM_TARIFF_TYPE_RE.test(t)) {
+    const category = getPriceCategory(tariff);
+    if (category === "private") return { type: "solo", pairMonth: "" };
+    return { type: "solo", pairMonth: "" };
+  }
+  if (getPriceCategory(tariff) === "group") return { type: "solo", pairMonth: "" };
+  if (getPriceCategory(tariff) === "private") return { type: "solo", pairMonth: "" };
+  return { type: "solo", pairMonth: "" };
 }
 
 export interface SubscriptionClientRef {
@@ -324,7 +352,7 @@ export function findSubscriptionPrice(
   if (sub.lessonsTotal === 4) {
     return prices.find((p) => p.type.trim() === "pair_hm");
   }
-  const month = sub.pairMonth || "1";
+  const month = pairMonthDisplayNumber(sub.pairMonth);
   return prices.find((p) => p.type.trim() === `pair_m${month}`);
 }
 
@@ -336,8 +364,8 @@ export function getSubscriptionTariffLabel(
   if (matched) return getPriceLabel(matched);
 
   if (sub.type === "solo") return "Соло";
-  if (sub.type === "pair_hm") return "Пара · полмесяца";
-  if (sub.type === "pair") return `Пара · ${sub.pairMonth || "1"}-й месяц`;
+  if (sub.type === "pair_hm") return `Пара (${sub.lessonsTotal} занятий)`;
+  if (sub.type === "pair") return `Пара (${sub.lessonsTotal} занятий)`;
   if (sub.type === "trio") return "Трио";
   return sub.type;
 }
