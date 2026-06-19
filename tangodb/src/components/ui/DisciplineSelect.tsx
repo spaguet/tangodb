@@ -8,8 +8,8 @@ import AppSelect from "./AppSelect";
 interface DisciplineSelectProps {
   label?: string;
   disciplines: Discipline[];
-  value: number | "";
-  onChange: (id: number) => void;
+  value: string | "";
+  onChange: (id: string) => void;
   toast: (msg: string, type?: ToastType) => void;
   required?: boolean;
 }
@@ -31,8 +31,8 @@ export default function DisciplineSelect({
         value={value}
         required={required}
         onChange={(e) => {
-          const next = parseInt(e.target.value, 10);
-          if (!Number.isNaN(next)) onChange(next);
+          const next = e.target.value;
+          if (next) onChange(next);
         }}
       >
         <option value="" disabled>

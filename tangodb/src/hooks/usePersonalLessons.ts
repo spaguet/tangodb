@@ -44,7 +44,7 @@ const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => {
     timeEnd: (row.time_end as string) || "15:00",
     price: Number(row.price) || 0,
     paid: (row.paid as "yes" | "no") || "no",
-    disciplineId: row.discipline_id != null ? (row.discipline_id as number) : null,
+    disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
     subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
     attendanceStatus: (row.attendance_status as "present" | "absent" | null) ?? null,
   };
@@ -114,7 +114,7 @@ export function useAddPersonalLessons() {
       timeEnd: string;
       price: number;
       paid: boolean;
-      disciplineId: number;
+      disciplineId: string;
       subscriptionId?: string;
     }) => {
       if (!organizationId) {

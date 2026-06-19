@@ -6,11 +6,11 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 export const scheduleQueryKey = ["schedule"] as const;
 
 const mapScheduleSlot = (row: Record<string, unknown>): ScheduleSlot => ({
-  id: row.id as number,
+  id: row.id != null ? String(row.id) : undefined,
   dayOfWeek: row.day_of_week as number,
   time: row.time as string,
   timeEnd: (row.time_end as string) || "21:00",
-  disciplineId: row.discipline_id != null ? (row.discipline_id as number) : null,
+  disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
   groupName: ((row.group_name as string) || "").trim() || undefined,
 });
 
@@ -23,7 +23,7 @@ export interface ScheduleDayInput {
 }
 
 export interface GroupScheduleSlotInput {
-  id?: number;
+  id?: string;
   dayOfWeek: number;
   time: string;
   timeEnd: string;
@@ -62,7 +62,7 @@ export function useAddGroupSchedule() {
       days,
     }: {
       groupName: string;
-      disciplineId: number;
+      disciplineId: string;
       days: ScheduleDayInput[];
     }) => {
       if (!organizationId) {
@@ -105,7 +105,7 @@ export function useDeleteScheduleSlot() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       const { error } = await supabase.from(scheduleTable).delete().eq("id", id);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
@@ -128,9 +128,9 @@ export function useReplaceGroupSchedule() {
       removedIds,
     }: {
       groupName: string;
-      disciplineId: number;
+      disciplineId: string;
       slots: GroupScheduleSlotInput[];
-      removedIds: number[];
+      removedIds: string[];
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "Организация не выбрана" };
@@ -191,7 +191,7 @@ export function useDeleteGroupSchedule() {
       disciplineId,
     }: {
       groupName: string;
-      disciplineId: number;
+      disciplineId: string;
     }) => {
       const trimmed = groupName.trim();
       let query = supabase.from(scheduleTable).delete().eq("discipline_id", disciplineId);

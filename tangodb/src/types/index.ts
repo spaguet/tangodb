@@ -8,25 +8,25 @@ export interface Client {
 }
 
 export interface Discipline {
-  id: number;
+  id: string;
   name: string;
   description: string;
   createdAt?: string;
 }
 
 export interface ScheduleSlot {
-  id?: number;
+  id?: string;
   dayOfWeek: number;
   time: string;
   timeEnd: string;
-  disciplineId?: number | null;
+  disciplineId?: string | null;
   groupName?: string;
 }
 
 export type PriceCategory = "group" | "private";
 
 export interface Price {
-  id?: number;
+  id?: string;
   row?: number;
   type: string;
   lessons: number;
@@ -48,13 +48,13 @@ export interface Subscription {
   activationDate: string;
   status: "active" | "finished";
   pairMonth: string;
-  disciplineId?: number | null;
-  priceId?: number | null;
+  disciplineId?: string | null;
+  priceId?: string | null;
   category: "group" | "private";
 }
 
 export interface AttendanceRecord {
-  id?: number;
+  id?: string;
   date: string;
   subscriptionId: string;
   clientDisplay: string;
@@ -73,7 +73,7 @@ export interface PersonalLesson {
   timeEnd: string;
   price: number;
   paid: "yes" | "no";
-  disciplineId?: number | null;
+  disciplineId?: string | null;
   subscriptionId?: string | null;
   attendanceStatus?: "present" | "absent" | null;
 }
@@ -107,6 +107,6 @@ export interface SubForDate {
   activationDate: string;
   currentStatus: "present" | "absent" | "freeze" | null;
   canFreeze: boolean;
-  priceId?: number | null;
+  priceId?: string | null;
   category: "group" | "private";
 }

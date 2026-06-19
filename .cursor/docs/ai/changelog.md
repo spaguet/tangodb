@@ -10,6 +10,7 @@ YYYY-MM-DD — краткое описание (причина / контекс�
 
 ## Записи
 
+2026-06-19 — UUID v2: типы id/disciplineId/priceId как string в types, hooks, SchedulePanel, PersonalLessonsPanel, DisciplineSelect — единообразие с Supabase без parseInt.
 2026-06-19 — Парные абонементы: создание тарифов solo/pair (pair_hm, pair_m1), продажа двум клиентам, фильтр по modules.pair_subscriptions; убран UI цикла m1/m2/m3.
 2026-06-19 — Продажа абонемента: pair_month как m1/m2/m3 (не "1"), кастомные tariff_* → type solo — исправлен CHECK subscriptions.
 2026-06-19 — UUID для discipline_id и price_id: убран parseInt в селектах, типы string вместо number — исправлена ошибка «invalid input syntax for type uuid: "8"» при продаже абонемента (v2-схема Supabase).

@@ -6,7 +6,7 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 export const pricesQueryKey = ["prices"] as const;
 
 const mapPrice = (row: Record<string, unknown>): Price => ({
-  id: row.id as number,
+  id: String(row.id),
   type: row.type as string,
   lessons: row.lessons as number,
   price: Number(row.price),
@@ -34,7 +34,7 @@ export function useUpdatePrice() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, newPrice }: { id: number; newPrice: number }) => {
+    mutationFn: async ({ id, newPrice }: { id: string; newPrice: number }) => {
       const { error } = await supabase.from("prices").update({ price: newPrice }).eq("id", id);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
@@ -54,7 +54,7 @@ export function useUpdatePriceMeta() {
       label,
       description,
     }: {
-      id: number;
+      id: string;
       label: string;
       description: string;
     }) => {
@@ -122,7 +122,7 @@ export function useDeletePrice() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       const { error } = await supabase.from("prices").delete().eq("id", id);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };

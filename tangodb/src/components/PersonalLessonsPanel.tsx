@@ -127,9 +127,9 @@ export default function PersonalLessonsPanel({
   const [timeStart, setTimeStart] = useState("14:00");
   const [timeEnd, setTimeEnd] = useState("15:00");
   const [customPrice, setCustomPrice] = useState("");
-  const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<number | "">("");
+  const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<string | "">("");
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
-  const [disciplineId, setDisciplineId] = useState<number | "">("");
+  const [disciplineId, setDisciplineId] = useState<string | "">("");
   const [bookingPaymentMode, setBookingPaymentMode] = useState<"single" | "package" | null>(null);
 
 
@@ -195,7 +195,7 @@ export default function PersonalLessonsPanel({
   }, [disciplines, disciplineId]);
 
   // Pricing helper
-  const applyLessonTariff = (tariffId: number) => {
+  const applyLessonTariff = (tariffId: string) => {
     const matched = lessonTariffs.find((p) => p.id === tariffId);
     if (matched) {
       setSelectedLessonTariffId(tariffId);
@@ -319,7 +319,7 @@ export default function PersonalLessonsPanel({
       timeEnd,
       price: priceNum,
       paid: immediatePaid,
-      disciplineId: disciplineId as number,
+      disciplineId,
       subscriptionId: bookingPaymentMode === "package" ? linkedSubscriptionId || undefined : undefined,
     };
 
@@ -925,8 +925,8 @@ export default function PersonalLessonsPanel({
                     label="Тариф за урок"
                     value={selectedLessonTariffId}
                     onChange={(e) => {
-                      const id = parseInt(e.target.value, 10);
-                      if (!Number.isNaN(id)) applyLessonTariff(id);
+                      const id = e.target.value;
+                      if (id) applyLessonTariff(id);
                     }}
                   >
                     {lessonTariffs.map((tariff) => (

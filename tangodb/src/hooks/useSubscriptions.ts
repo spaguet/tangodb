@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import { formatClientName } from "../lib/utils";
+import { formatClientName, normalizeSubscriptionPairMonth } from "../lib/utils";
 import type { ActiveSubscription, Subscription } from "../types";
 import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
@@ -20,8 +20,8 @@ const mapSubscription = (row: Record<string, unknown>): Subscription => ({
   activationDate: String(row.activation_date ?? "").slice(0, 10),
   status: row.status as "active" | "finished",
   pairMonth: row.pair_month != null && row.pair_month !== "" ? String(row.pair_month) : "",
-  disciplineId: row.discipline_id != null ? (row.discipline_id as number) : null,
-  priceId: row.price_id != null ? (row.price_id as number) : null,
+  disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
+  priceId: row.price_id != null ? String(row.price_id) : null,
   category: (row.category as "group" | "private") || "group",
 });
 
@@ -98,8 +98,8 @@ export function useAddSubscription() {
       lessonsTotal: number;
       activationDate: string;
       pairMonth: string;
-      disciplineId: number;
-      priceId?: number | null;
+      disciplineId: string;
+      priceId?: string | null;
       category?: "group" | "private";
     }) => {
       if (!organizationId) {
@@ -107,12 +107,13 @@ export function useAddSubscription() {
       }
 
       const id = crypto.randomUUID();
-      const pairMonth = sub.pairMonth !== "" ? String(sub.pairMonth) : "";
+      const subscriptionType = sub.type.trim();
+      const pairMonth = normalizeSubscriptionPairMonth(subscriptionType, sub.pairMonth);
 
       const { error } = await supabase.from("subscriptions").insert({
         id,
         organization_id: organizationId,
-        type: sub.type,
+        type: subscriptionType,
         client_id1: sub.clientId1,
         client_id2: sub.clientId2 || null,
         client_id3: sub.clientId3 || null,

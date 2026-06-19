@@ -19,7 +19,7 @@ import { useSettings } from "../settings/SettingsProvider";
 export const attendanceQueryKey = ["attendance"] as const;
 
 const mapAttendanceRecord = (row: Record<string, unknown>): AttendanceRecord => ({
-  id: row.id as number | undefined,
+  id: row.id != null ? String(row.id) : undefined,
   date: String(row.date ?? "").slice(0, 10),
   subscriptionId: row.subscription_id as string,
   clientDisplay: row.client_display as string,

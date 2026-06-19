@@ -6,7 +6,7 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 export const disciplinesQueryKey = ["disciplines"] as const;
 
 const mapDiscipline = (row: Record<string, unknown>): Discipline => ({
-  id: row.id as number,
+  id: String(row.id),
   name: row.name as string,
   description: (row.description as string) || "",
   createdAt: row.created_at as string | undefined,
@@ -73,7 +73,7 @@ export function useUpdateDiscipline() {
       name,
       description,
     }: {
-      id: number;
+      id: string;
       name: string;
       description: string;
     }) => {
@@ -103,7 +103,7 @@ export function useDeleteDiscipline() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       const { error } = await supabase.from("disciplines").delete().eq("id", id);
       if (error) {
         if (error.code === "23503") {

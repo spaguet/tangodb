@@ -45,7 +45,7 @@ interface DayFormRow {
 interface ScheduleGroup {
   groupKey: string;
   groupName: string;
-  disciplineId: number | null;
+  disciplineId: string | null;
   displayName: string;
   disciplineLabel: string;
   slots: ScheduleSlot[];
@@ -77,10 +77,10 @@ function scheduleGroupKey(slot: ScheduleSlot): string {
 
 function getSlotConflict(
   slot: EditSlotRow,
-  disciplineId: number,
+  disciplineId: string,
   allSchedule: ScheduleSlot[],
   personalLessons: PersonalLesson[],
-  editSlotIds: Set<number | undefined>
+  editSlotIds: Set<string | undefined>
 ): string | null {
   for (const s of allSchedule) {
     if (slot.id != null && s.id === slot.id) continue;
@@ -115,13 +115,13 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const canWriteSchedule = can("schedule.write");
 
   const [groupName, setGroupName] = useState("");
-  const [disciplineId, setDisciplineId] = useState<number | "">("");
+  const [disciplineId, setDisciplineId] = useState<string | "">("");
   const [dayRows, setDayRows] = useState<DayFormRow[]>(() => [makeDayRow()]);
   const [deleteTarget, setDeleteTarget] = useState<ScheduleSlot | null>(null);
   const [deleteGroupTarget, setDeleteGroupTarget] = useState<ScheduleGroup | null>(null);
   const [editingGroup, setEditingGroup] = useState<ScheduleGroup | null>(null);
   const [editSlots, setEditSlots] = useState<EditSlotRow[]>([]);
-  const [originalSlotIds, setOriginalSlotIds] = useState<number[]>([]);
+  const [originalSlotIds, setOriginalSlotIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (disciplines.length > 0 && disciplineId === "") {
@@ -213,7 +213,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
     const res = await addGroupSchedule.mutateAsync({
       groupName: trimmedGroup,
-      disciplineId: disciplineId as number,
+      disciplineId,
       days: dayRows.map(({ day, time, timeEnd }) => ({
         dayOfWeek: day,
         time,
