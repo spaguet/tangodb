@@ -43,7 +43,7 @@ export const useClientDirectory = () => useClients({ includeArchived: true });
 
 export function useAddClient() {
   const queryClient = useQueryClient();
-  const { withOrgId } = useOrgQueryScope();
+  const { organizationId, withOrgId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
@@ -55,6 +55,10 @@ export function useAddClient() {
       lastName: string;
       telegram: string;
     }) => {
+      if (!organizationId) {
+        return { success: false as const, error: "Организация не выбрана" };
+      }
+
       const fTrim = firstName.trim();
       const lTrim = lastName.trim();
       const cached =
@@ -72,6 +76,7 @@ export function useAddClient() {
       const id = crypto.randomUUID();
       const { error } = await supabase.from("clients").insert({
         id,
+        organization_id: organizationId,
         first_name: fTrim,
         last_name: lTrim,
         telegram: normalizeTelegramForStorage(telegram),

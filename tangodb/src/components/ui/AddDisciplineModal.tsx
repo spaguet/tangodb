@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, X } from "lucide-react";
 import { useAddDiscipline } from "../../hooks/useDisciplines";
@@ -50,7 +51,7 @@ export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: 
     onClose();
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
@@ -128,6 +129,7 @@ export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: 
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

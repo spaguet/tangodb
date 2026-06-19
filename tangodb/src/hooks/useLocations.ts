@@ -35,10 +35,14 @@ export function useLocations() {
 
 export function useAddLocation() {
   const queryClient = useQueryClient();
-  const { withOrgId } = useOrgQueryScope();
+  const { organizationId, withOrgId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({ name, address }: { name: string; address: string }) => {
+      if (!organizationId) {
+        return { success: false as const, error: "Организация не выбрана" };
+      }
+
       const trimmed = name.trim();
       if (!trimmed) return { success: false as const, error: "Укажите название локации" };
 
@@ -49,7 +53,11 @@ export function useAddLocation() {
 
       const { data, error } = await supabase
         .from("locations")
-        .insert({ name: trimmed, address: address.trim() })
+        .insert({
+          organization_id: organizationId,
+          name: trimmed,
+          address: address.trim(),
+        })
         .select("*")
         .single();
 

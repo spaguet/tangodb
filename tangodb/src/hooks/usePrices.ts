@@ -73,6 +73,7 @@ export function useUpdatePriceMeta() {
 
 export function useCreatePrice() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
@@ -90,9 +91,14 @@ export function useCreatePrice() {
       description: string;
       category: PriceCategory;
     }) => {
+      if (!organizationId) {
+        return { success: false as const, error: "Организация не выбрана" };
+      }
+
       const { data, error } = await supabase
         .from("prices")
         .insert({
+          organization_id: organizationId,
           type: type.trim(),
           lessons,
           price,

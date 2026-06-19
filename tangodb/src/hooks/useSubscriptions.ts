@@ -87,6 +87,7 @@ export function useActiveSubscriptions() {
 
 export function useAddSubscription() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async (sub: {
@@ -101,11 +102,16 @@ export function useAddSubscription() {
       priceId?: number | null;
       category?: "group" | "private";
     }) => {
+      if (!organizationId) {
+        return { success: false as const, error: "Организация не выбрана" };
+      }
+
       const id = crypto.randomUUID();
       const pairMonth = sub.pairMonth !== "" ? String(sub.pairMonth) : "";
 
       const { error } = await supabase.from("subscriptions").insert({
         id,
+        organization_id: organizationId,
         type: sub.type,
         client_id1: sub.clientId1,
         client_id2: sub.clientId2 || null,

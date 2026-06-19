@@ -29,10 +29,14 @@ export function useDisciplines() {
 
 export function useAddDiscipline() {
   const queryClient = useQueryClient();
-  const { withOrgId } = useOrgQueryScope();
+  const { organizationId, withOrgId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({ name, description }: { name: string; description: string }) => {
+      if (!organizationId) {
+        return { success: false as const, error: "Организация не выбрана" };
+      }
+
       const trimmed = name.trim();
       if (!trimmed) return { success: false as const, error: "Укажите название дисциплины" };
 
@@ -43,7 +47,11 @@ export function useAddDiscipline() {
 
       const { data, error } = await supabase
         .from("disciplines")
-        .insert({ name: trimmed, description: description.trim() })
+        .insert({
+          organization_id: organizationId,
+          name: trimmed,
+          description: description.trim(),
+        })
         .select("*")
         .single();
 

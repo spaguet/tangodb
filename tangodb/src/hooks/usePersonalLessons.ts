@@ -101,6 +101,7 @@ export function usePersonalLessons(yearMonth?: string) {
 
 export function useAddPersonalLessons() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async (lessons: {
@@ -116,6 +117,10 @@ export function useAddPersonalLessons() {
       disciplineId: number;
       subscriptionId?: string;
     }) => {
+      if (!organizationId) {
+        return { success: false as const, error: "Организация не выбрана" };
+      }
+
       if (!lessons.dates.length) {
         return { success: false as const, error: "Нет дат для бронирования" };
       }
@@ -123,6 +128,7 @@ export function useAddPersonalLessons() {
       const paid = lessons.subscriptionId || lessons.paid ? "yes" : "no";
       const rows = lessons.dates.map((date) => ({
         id: crypto.randomUUID(),
+        organization_id: organizationId,
         type: lessons.type,
         client_id1: lessons.clientId1 || null,
         client_id2: lessons.clientId2 || null,

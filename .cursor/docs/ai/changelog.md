@@ -10,6 +10,7 @@ YYYY-MM-DD — краткое описание (причина / контекс�
 
 ## Записи
 
+2026-06-19 — AddDisciplineModal: portal в document.body — исправлена перезагрузка при добавлении дисциплины из формы расписания (вложенные form).
 2026-06-19 — Обзор: текст «Нет заканчивающихся абонементов», серый счётчик при 0; расписание: group_name в БД, форма с названием группы и несколькими днями.
 2026-06-19 — INSERT в tenant-таблицы: organization_id в хуках (disciplines, locations, clients, subscriptions, personal_lessons) + миграция DEFAULT auth_organization_id().
 2026-06-19 — Продажа персонального урока: компактные отступы между полями (panel-form-stack-compact).
