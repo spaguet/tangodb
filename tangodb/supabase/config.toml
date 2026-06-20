@@ -374,6 +374,12 @@ allow_dynamic_registration = false
 [functions.request-demo-key]
 verify_jwt = false
 
+[functions.preview-invite]
+verify_jwt = false
+
+[functions.complete-invite]
+verify_jwt = false
+
 [functions.activate-access-key]
 verify_jwt = true
 

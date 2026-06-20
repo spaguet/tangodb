@@ -52,6 +52,7 @@ export function AuthField({
   placeholder,
   autoComplete,
   required,
+  readOnly,
 }: {
   label: string;
   type?: string;
@@ -60,10 +61,14 @@ export function AuthField({
   placeholder?: string;
   autoComplete?: string;
   required?: boolean;
+  readOnly?: boolean;
 }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && passwordVisible ? "text" : type;
+  const fieldCls = readOnly
+    ? `${inputCls} bg-slate-100 text-slate-500 cursor-not-allowed`
+    : inputCls;
 
   return (
     <div>
@@ -76,7 +81,8 @@ export function AuthField({
           placeholder={placeholder}
           autoComplete={autoComplete}
           required={required}
-          className={`${inputCls} ${isPassword ? "pr-10" : ""}`}
+          readOnly={readOnly}
+          className={`${fieldCls} ${isPassword ? "pr-10" : ""}`}
         />
         {isPassword && (
           <button

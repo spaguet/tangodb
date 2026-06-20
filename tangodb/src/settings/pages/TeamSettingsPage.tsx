@@ -134,6 +134,7 @@ export default function TeamSettingsPage() {
           </AppSelect>
         </div>
         <div className="space-y-1.5">
+          <p className="text-[11px] text-slate-500">{t("team.inviteLinkHint")}</p>
           <button
             type="submit"
             disabled={invite.isPending}
@@ -141,7 +142,6 @@ export default function TeamSettingsPage() {
           >
             {invite.isPending ? "…" : t("team.sendInvite")}
           </button>
-          <p className="text-[11px] text-slate-500">{t("team.inviteLinkHint")}</p>
         </div>
         {lastInviteUrl && (
           <div className="flex items-center gap-2 p-2 bg-indigo-50 rounded-lg border border-indigo-100">
