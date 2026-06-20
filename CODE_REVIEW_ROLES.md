@@ -22,7 +22,7 @@
 | **Этап 0: NAV-1, NAV-2, RBAC-6 — решения приняты и реализованы** | ✅ 2026-06-20 |
 | **Этап 1: P1 bundle (RBAC-2 → RBAC-1 → RBAC-7)** | ✅ 2026-06-20 |
 | Исправление кода (P2 bundle) | ⬜ следующий этап |
-| Деплой / коммит / пуш | ⬜ после коммита P1 |
+| Деплой / коммит / пуш | ✅ коммит 0051700; push main → auto deploy |
 
 **Допущения аудита:**
 - teacher — с непустым scope (`all_disciplines`, `can_view_all_clients`);
@@ -496,9 +496,9 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 
 | ID | Приоритет | Описание | Статус | PR / commit |
 |----|-----------|----------|--------|-------------|
-| RBAC-1 | P1 | Dashboard owner/director operational+financial | ✅ PASS | P1 bundle 2026-06-20 |
-| RBAC-2 | P1 | permissionOptionsFromSettings в settings guards | ✅ PASS | P1 bundle 2026-06-20 |
-| RBAC-7 | P2 | Redirect вместо spinner на `/` без dashboard | ✅ PASS | P1 bundle 2026-06-20 |
+| RBAC-1 | P1 | Dashboard owner/director operational+financial | ✅ PASS | 0051700 |
+| RBAC-2 | P1 | permissionOptionsFromSettings в settings guards | ✅ PASS | 0051700 |
+| RBAC-7 | P2 | Redirect вместо spinner на `/` без dashboard | ✅ PASS | 0051700 |
 | RBAC-8 | P2 | Export helpers §9 + accountant financial export | ⬜ TODO | — |
 | RBAC-3 | P2 | RLS teacher subscriptions + `teachers_can_sell_subscriptions` | ⬜ TODO | — |
 | RBAC-4 | P2 | Teacher scoped home (не OperationalDashboard) | ✅ Этап 0 (NAV-2) | f09bf3f |
