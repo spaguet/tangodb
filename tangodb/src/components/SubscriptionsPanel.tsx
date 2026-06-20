@@ -20,6 +20,8 @@ import {
   useFinishSubscription,
   useSubscriptions,
 } from "../hooks/useSubscriptions";
+import { useRecordSubscriptionPayment, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
+import type { PaymentMethod } from "../types";
 import {
   getConnectionBlockReason,
   getMutationBlockedMessage,
@@ -82,6 +84,7 @@ export default function SubscriptionsPanel({
   } = personalLessonsQuery;
   const addSubscription = useAddSubscription();
   const finishSubscription = useFinishSubscription();
+  const recordSubscriptionPayment = useRecordSubscriptionPayment();
   const { canAccessPanel } = usePermissions();
   const { settings } = useSettings();
 
@@ -148,6 +151,7 @@ export default function SubscriptionsPanel({
 
   // Date activation - defaults to today
   const [activationDate, setActivationDate] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
 
   useEffect(() => {
     if (groupTariffs.length > 0 && selectedTariffId === "") {
@@ -229,13 +233,31 @@ export default function SubscriptionsPanel({
     const res = await addSubscription.mutateAsync(payload);
     if (!res.success) {
       toast(res.error || "Абонемент не оформлен", "error");
-    } else {
-      toast("Абонемент продан и активирован", "success");
-      setClient1Query("");
-      setClient1Id("");
-      setClient2Query("");
-      setClient2Id("");
+      return;
     }
+
+    const amount = getSubPrice();
+    if (amount > 0 && res.id) {
+      const c1 = activeClients.find((c) => c.id === client1Id);
+      const paymentRes = await recordSubscriptionPayment.mutateAsync({
+        subscriptionId: res.id,
+        clientId: client1Id,
+        clientFirstName: c1?.firstName ?? "",
+        clientLastName: c1?.lastName ?? "",
+        amount,
+        method: paymentMethod,
+      });
+      if (!paymentRes.success) {
+        toast(paymentRes.error || "Абонемент оформлен, но оплата не зафиксирована", "error");
+        return;
+      }
+    }
+
+    toast("Абонемент продан и оплата зафиксирована", "success");
+    setClient1Query("");
+    setClient1Id("");
+    setClient2Query("");
+    setClient2Id("");
   };
 
   const handleConfirmFinish = async () => {
@@ -651,15 +673,35 @@ export default function SubscriptionsPanel({
               </button>
             </p>
 
+            <div className="field-stack panel-form-full-row-md">
+              <AppSelect
+                label="Способ оплаты"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+              >
+                {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </AppSelect>
+            </div>
+
             <div className="panel-form-divider panel-form-full-row-md" />
 
             <button
               onClick={handleCheckout}
-              disabled={connectionState !== "online" || addSubscription.isPending}
+              disabled={
+                connectionState !== "online" ||
+                addSubscription.isPending ||
+                recordSubscriptionPayment.isPending
+              }
               title={getConnectionBlockReason(connectionState)}
               className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60 panel-form-full-row-md"
             >
-              {addSubscription.isPending ? "Оформление..." : "Продать абонемент"}
+              {addSubscription.isPending || recordSubscriptionPayment.isPending
+                ? "Оформление..."
+                : "Зафиксировать оплату и продать"}
             </button>
           </div>
         </div>

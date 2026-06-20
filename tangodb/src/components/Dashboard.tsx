@@ -14,7 +14,8 @@ import {
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { computeScheduleDatesForMonth } from "../hooks/useAttendance";
 import type { ToastType } from "../App";
-import { Client, Subscription, ScheduleSlot, PersonalLesson, Price } from "../types";
+import { Client, Subscription, ScheduleSlot, PersonalLesson, Price, Payment } from "../types";
+import { PAYMENT_METHOD_LABELS, paymentSourceLabel } from "../hooks/usePayments";
 import { useOrganization } from "../organization/OrganizationProvider";
 
 interface DashboardProps {
@@ -23,6 +24,8 @@ interface DashboardProps {
   schedule: ScheduleSlot[];
   personalLessons: PersonalLesson[];
   prices: Price[];
+  todayPayments?: Payment[];
+  showOperationalPayments?: boolean;
   toast: (msg: string, type?: ToastType) => void;
   onNavigate: (panel: string) => void;
 }
@@ -57,6 +60,8 @@ export default function Dashboard({
   schedule,
   personalLessons,
   prices,
+  todayPayments = [],
+  showOperationalPayments = false,
   toast,
   onNavigate,
 }: DashboardProps) {
@@ -184,6 +189,42 @@ export default function Dashboard({
           </p>
         </motion.div>
       </div>
+
+      {showOperationalPayments && (
+        <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2 text-slate-800">
+              <BarChart3 className="w-4 h-4 text-indigo-500" />
+              <h2 className="font-sans text-sm font-semibold tracking-tight">Платежи за сегодня</h2>
+            </div>
+            <span className="text-[10px] font-sans uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">
+              {todayPayments.length}
+            </span>
+          </div>
+          {todayPayments.length === 0 ? (
+            <p className="text-slate-400 text-xs font-sans py-3 text-center">Сегодня платежей нет</p>
+          ) : (
+            <div className="space-y-1.5">
+              {todayPayments.slice(0, 8).map((payment) => (
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 font-sans"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-slate-800 truncate">{payment.clientDisplay}</p>
+                    <p className="text-[10px] text-slate-400">
+                      {paymentSourceLabel(payment)} · {PAYMENT_METHOD_LABELS[payment.method]}
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold text-indigo-700 shrink-0">
+                    {formatCurrency(payment.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Today Schedule section */}

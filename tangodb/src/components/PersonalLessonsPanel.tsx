@@ -24,8 +24,11 @@ import {
   useDeletePersonalLesson,
   usePersonalLessons,
   useUpdatePersonalLesson,
-  useUpdatePersonalPaid,
 } from "../hooks/usePersonalLessons";
+import {
+  useRecordPersonalLessonPayment,
+  useVoidPersonalLessonPayment,
+} from "../hooks/usePayments";
 import {
   getConnectionBlockReason,
   getMutationBlockedMessage,
@@ -92,7 +95,8 @@ export default function PersonalLessonsPanel({
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
   const { data: subscriptions = [] } = useSubscriptions();
   const addPersonalLessons = useAddPersonalLessons();
-  const updatePersonalPaid = useUpdatePersonalPaid();
+  const recordPersonalLessonPayment = useRecordPersonalLessonPayment();
+  const voidPersonalLessonPayment = useVoidPersonalLessonPayment();
   const updatePersonalLesson = useUpdatePersonalLesson();
   const deletePersonalLesson = useDeletePersonalLesson();
   const { canAccessPanel, can } = usePermissions();
@@ -326,23 +330,46 @@ export default function PersonalLessonsPanel({
     const res = await addPersonalLessons.mutateAsync(payload);
     if (!res.success) {
       toast(res.error || "Не удалось забронировать", "error");
-    } else {
-      toast(
-        linkedSubscriptionId && bookingPaymentMode === "package"
-          ? "Урок оформлен, списание с пакета"
-          : immediatePaid
-            ? "Забронировано и оплачено"
-            : "Внесено в календарь как неоплаченная бронь",
-        "success"
-      );
-      setBookingClients([{ query: "", id: "" }]);
-      setDates([""]);
-      setCustomPrice("");
-      setLinkedSubscriptionId("");
-      setBookingPaymentMode(null);
-      setTimeStart("14:00");
-      setTimeEnd("15:00");
+      return;
     }
+
+    if (immediatePaid && bookingPaymentMode !== "package" && priceNum > 0 && res.ids?.length) {
+      const c1 = directoryClients.find((c) => c.id === bookingClients[0].id);
+      const clientDisplay = c1
+        ? formatClientName(c1.lastName, c1.firstName)
+        : bookingClients[0].query || "Клиент";
+
+      for (const lessonId of res.ids) {
+        const paymentRes = await recordPersonalLessonPayment.mutateAsync({
+          lessonId,
+          clientId: bookingClients[0].id,
+          clientDisplay,
+          amount: priceNum,
+          method: "cash",
+          markPaid: false,
+        });
+        if (!paymentRes.success) {
+          toast(paymentRes.error || "Урок забронирован, но оплата не зафиксирована", "error");
+          return;
+        }
+      }
+    }
+
+    toast(
+      linkedSubscriptionId && bookingPaymentMode === "package"
+        ? "Урок оформлен, списание с пакета"
+        : immediatePaid
+          ? "Забронировано и оплачено"
+          : "Внесено в календарь как неоплаченная бронь",
+      "success"
+    );
+    setBookingClients([{ query: "", id: "" }]);
+    setDates([""]);
+    setCustomPrice("");
+    setLinkedSubscriptionId("");
+    setBookingPaymentMode(null);
+    setTimeStart("14:00");
+    setTimeEnd("15:00");
   };
 
   const handleTogglePaid = async (lesson: PersonalLesson) => {
@@ -350,12 +377,29 @@ export default function PersonalLessonsPanel({
       toast(getMutationBlockedMessage(connectionState), "error");
       return;
     }
-    const nextStatus = lesson.paid !== "yes";
-    const res = await updatePersonalPaid.mutateAsync({ id: lesson.id, paid: nextStatus });
+
+    const isPaid = lesson.paid === "yes";
+    if (isPaid) {
+      const res = await voidPersonalLessonPayment.mutateAsync(lesson.id);
+      if (!res.success) {
+        toast(res.error || "Ошибка отмены оплаты", "error");
+      } else {
+        toast("Оплата отменена", "success");
+      }
+      return;
+    }
+
+    const res = await recordPersonalLessonPayment.mutateAsync({
+      lessonId: lesson.id,
+      clientId: lesson.clientId1,
+      clientDisplay: lesson.clientDisplay,
+      amount: lesson.price,
+      method: "cash",
+    });
     if (!res.success) {
-      toast(res.error || "Ошибка изменения статуса", "error");
+      toast(res.error || "Не удалось зафиксировать оплату", "error");
     } else {
-      toast(nextStatus ? "Платёж подтверждён, зачислен в кассу" : "Оплата отменена", "success");
+      toast("Оплата зафиксирована", "success");
     }
   };
 
@@ -549,12 +593,16 @@ export default function PersonalLessonsPanel({
           <button
             type="button"
             onClick={() => handleTogglePaid(l)}
-            disabled={connectionState !== "online" || updatePersonalPaid.isPending}
+            disabled={
+              connectionState !== "online" ||
+              recordPersonalLessonPayment.isPending ||
+              voidPersonalLessonPayment.isPending
+            }
             title={
               getConnectionBlockReason(connectionState) ??
               (isPaid
                 ? "Нажмите, чтобы отменить оплату"
-                : "Нажмите, чтобы подтвердить оплату")
+                : "Зафиксировать оплату")
             }
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-sans font-semibold shrink-0 transition-colors cursor-pointer disabled:opacity-60 ${
               isPaid
@@ -570,7 +618,7 @@ export default function PersonalLessonsPanel({
             ) : (
               <>
                 <Coins className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                Не оплачено
+                Зафиксировать оплату
               </>
             )}
           </button>

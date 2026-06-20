@@ -8,6 +8,8 @@ import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { usePrices } from "../hooks/usePrices";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptions } from "../hooks/useSubscriptions";
+import { usePayments } from "../hooks/usePayments";
+import { usePermissions } from "../hooks/usePermissions";
 import { useUIStore } from "../store/ui";
 import { useOrganization } from "../organization/OrganizationProvider";
 
@@ -23,6 +25,11 @@ export default function DashboardPage() {
   const scheduleQuery = useSchedule();
   const personalLessonsQuery = usePersonalLessons();
   const pricesQuery = usePrices();
+  const { can } = usePermissions();
+  const showOperationalPayments = can("payments.read.operational");
+  const todayPaymentsQuery = usePayments(
+    showOperationalPayments ? { todayOnly: true } : { enabled: false }
+  );
 
   const { data: clients = [], isLoading: clientsLoading, isError: clientsError, error: clientsErr } = clientsQuery;
   const { data: subscriptions = [], isLoading: subsLoading, isError: subsError, error: subsErr } = subscriptionsQuery;
@@ -31,10 +38,13 @@ export default function DashboardPage() {
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
 
   const isLoading =
-    clientsLoading || subsLoading || scheduleLoading || personalLoading || pricesLoading;
+    clientsLoading || subsLoading || scheduleLoading || personalLoading || pricesLoading ||
+    (showOperationalPayments && todayPaymentsQuery.isLoading);
   const isError =
-    clientsError || subsError || scheduleError || personalError || pricesError;
-  const error = clientsErr ?? subsErr ?? scheduleErr ?? personalErr ?? pricesErr;
+    clientsError || subsError || scheduleError || personalError || pricesError ||
+    (showOperationalPayments && todayPaymentsQuery.isError);
+  const error = clientsErr ?? subsErr ?? scheduleErr ?? personalErr ?? pricesErr ??
+    (showOperationalPayments ? todayPaymentsQuery.error : null);
 
   const handleNavigate = (panel: string) => {
     const routes: Record<string, { path: string; subTab?: "active" | "sell"; persTab?: "view" | "sell" }> = {
@@ -66,6 +76,8 @@ export default function DashboardPage() {
       schedule={schedule}
       personalLessons={personalLessons}
       prices={prices}
+      todayPayments={todayPaymentsQuery.data ?? []}
+      showOperationalPayments={showOperationalPayments}
       toast={toast}
       onNavigate={handleNavigate}
     />

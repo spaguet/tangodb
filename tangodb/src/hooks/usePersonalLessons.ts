@@ -212,7 +212,7 @@ export function useAddPersonalLessons() {
 
       const { error } = await supabase.from("personal_lessons").insert(rows);
       if (error) return { success: false as const, error: error.message };
-      return { success: true as const };
+      return { success: true as const, ids: rows.map((row) => row.id as string) };
     },
     onSuccess: (result) => {
       if (result.success) void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });

@@ -78,6 +78,19 @@ export interface PersonalLesson {
   attendanceStatus?: "present" | "absent" | null;
 }
 
+export type PaymentMethod = "cash" | "transfer" | "card" | "other";
+
+export interface Payment {
+  id: string;
+  clientId: string;
+  clientDisplay: string;
+  amount: number;
+  method: PaymentMethod;
+  subscriptionId: string | null;
+  personalLessonId: string | null;
+  createdAt: string;
+}
+
 export interface ActiveSubscription {
   subId: string;
   type: string;
