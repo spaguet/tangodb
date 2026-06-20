@@ -14,8 +14,8 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6 py-10">
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm p-8 space-y-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold">
-            T
+          <div className="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[11px] tracking-tight leading-none shadow-xs">
+            TDB
           </div>
           <div>
             <h1 className="text-lg font-semibold text-slate-800">{title}</h1>
