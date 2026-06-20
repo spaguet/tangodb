@@ -24,9 +24,10 @@ export function usePermissions() {
     () => ({
       scope,
       teachersCanManageDisciplines: settings?.teachers_can_manage_disciplines ?? false,
+      restrictedAdmin: membership?.meta?.restricted_admin ?? false,
       isReadOnly,
     }),
-    [scope, settings?.teachers_can_manage_disciplines, isReadOnly]
+    [scope, settings?.teachers_can_manage_disciplines, membership?.meta?.restricted_admin, isReadOnly]
   );
 
   const canAction = (action: PermissionAction, context?: PermissionContext) =>

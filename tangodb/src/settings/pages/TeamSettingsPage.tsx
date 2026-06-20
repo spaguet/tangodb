@@ -4,18 +4,46 @@ import AppSelect from "../../components/ui/AppSelect";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import { useToast } from "../../App";
-import { memberRoleLabel, useTeamMembers } from "../../hooks/useTeamMembers";
+import {
+  memberRoleLabel,
+  useTeamMembers,
+  type TeamMemberRow,
+} from "../../hooks/useTeamMembers";
 import { useTeamInvites, useTeamMutations } from "../../hooks/useTeamInvites";
 import { auditTableLabel, useOrgAuditLog } from "../../hooks/useOrgAuditLog";
 import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
-import type { MemberRole } from "../../types/organization";
+import type { MemberMeta, MemberRole } from "../../types/organization";
 
-const INVITE_ROLES: MemberRole[] = ["admin", "teacher", "accountant"];
-const EDITABLE_ROLES: MemberRole[] = ["admin", "teacher", "accountant"];
+type MemberPreset = "admin" | "reception" | "teacher" | "accountant";
 
-function isEditableMemberRole(role: MemberRole): boolean {
-  return EDITABLE_ROLES.includes(role);
+const INVITE_PRESETS: { value: MemberPreset; label: string }[] = [
+  { value: "admin", label: "Администратор" },
+  { value: "reception", label: "Кассир" },
+  { value: "teacher", label: "Преподаватель" },
+  { value: "accountant", label: "Бухгалтер" },
+];
+
+const EDITABLE_PRESETS: MemberPreset[] = ["admin", "reception", "teacher", "accountant"];
+
+function presetToRoleMeta(preset: MemberPreset): { role: MemberRole; meta: MemberMeta } {
+  if (preset === "reception") {
+    return { role: "admin", meta: { restricted_admin: true } };
+  }
+  if (preset === "admin") {
+    return { role: "admin", meta: { restricted_admin: false } };
+  }
+  return { role: preset, meta: {} };
+}
+
+function memberPreset(member: TeamMemberRow): MemberPreset {
+  if (member.role === "admin" && member.meta?.restricted_admin) return "reception";
+  if (member.role === "admin") return "admin";
+  return member.role as MemberPreset;
+}
+
+function isEditableMemberPreset(preset: MemberPreset): boolean {
+  return EDITABLE_PRESETS.includes(preset);
 }
 
 function formatJoined(iso: string | null): string {
@@ -44,7 +72,7 @@ export default function TeamSettingsPage() {
   const { invite, revokeInvite, updateMember } = useTeamMutations();
 
   const [email, setEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<MemberRole>("teacher");
+  const [invitePreset, setInvitePreset] = useState<MemberPreset>("teacher");
   const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -57,10 +85,12 @@ export default function TeamSettingsPage() {
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
+    const { role, meta } = presetToRoleMeta(invitePreset);
     try {
       const result = await invite.mutateAsync({
         email: email.trim(),
-        role: inviteRole,
+        role,
+        meta,
       });
       setEmail("");
       setLastInviteUrl(result.invite_url ?? null);
@@ -80,10 +110,11 @@ export default function TeamSettingsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const canAssignRole = (targetRole: MemberRole): boolean => {
+  const canAssignPreset = (preset: MemberPreset): boolean => {
+    const { role } = presetToRoleMeta(preset);
     if (!can("team.manage")) return false;
     if (currentRole === "owner" || currentRole === "director") {
-      return targetRole !== "owner" && targetRole !== "director";
+      return role !== "owner" && role !== "director";
     }
     return false;
   };
@@ -93,7 +124,7 @@ export default function TeamSettingsPage() {
   const canManageMember = (memberRole: MemberRole): boolean => {
     if (memberRole === "owner") return currentRole === "owner";
     if (memberRole === "director") return currentRole === "owner" || currentRole === "director";
-    return canAssignRole(memberRole) || currentRole === "owner" || currentRole === "director";
+    return canAssignPreset("admin") || currentRole === "owner" || currentRole === "director";
   };
 
   return (
@@ -128,12 +159,12 @@ export default function TeamSettingsPage() {
           </label>
           <AppSelect
             label={t("team.inviteRole")}
-            value={inviteRole}
-            onChange={(e) => setInviteRole(e.target.value as MemberRole)}
+            value={invitePreset}
+            onChange={(e) => setInvitePreset(e.target.value as MemberPreset)}
           >
-            {INVITE_ROLES.filter((r) => canAssignRole(r)).map((r) => (
-              <option key={r} value={r}>
-                {memberRoleLabel(r)}
+            {INVITE_PRESETS.filter((p) => canAssignPreset(p.value)).map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
               </option>
             ))}
           </AppSelect>
@@ -176,7 +207,7 @@ export default function TeamSettingsPage() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">{inv.email}</p>
                   <p className="text-[11px] text-slate-400">
-                    {memberRoleLabel(inv.role)} · до {formatExpires(inv.expires_at)}
+                    {memberRoleLabel(inv.role, inv.meta)} · до {formatExpires(inv.expires_at)}
                   </p>
                 </div>
                 <button
@@ -208,7 +239,9 @@ export default function TeamSettingsPage() {
           {activeMembers.length === 0 && (
             <p className="text-sm text-slate-400 py-2">{t("team.noMembers")}</p>
           )}
-          {activeMembers.map((member) => (
+          {activeMembers.map((member) => {
+            const preset = memberPreset(member);
+            return (
             <div
               key={member.id}
               className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-100"
@@ -218,24 +251,27 @@ export default function TeamSettingsPage() {
                   {member.display_name ?? `Участник ${member.user_id.slice(0, 8)}…`}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  {memberRoleLabel(member.role)} · с {formatJoined(member.joined_at)}
+                  {memberRoleLabel(member.role, member.meta)} · с {formatJoined(member.joined_at)}
                 </p>
               </div>
-              {canManageMember(member.role) && isEditableMemberRole(member.role) && (
+              {canManageMember(member.role) && isEditableMemberPreset(preset) && (
                 <div className="flex items-center gap-2 shrink-0">
                   <AppSelect
-                    value={member.role}
-                    onChange={(e) =>
+                    value={preset}
+                    onChange={(e) => {
+                      const next = presetToRoleMeta(e.target.value as MemberPreset);
                       updateMember.mutate({
                         memberId: member.id,
-                        role: e.target.value as MemberRole,
-                      })
-                    }
+                        role: next.role,
+                        meta: next.meta,
+                      });
+                    }}
                   >
-                    {EDITABLE_ROLES.filter((r) => canAssignRole(r) || r === member.role).map(
-                      (r) => (
-                        <option key={r} value={r}>
-                          {memberRoleLabel(r)}
+                    {EDITABLE_PRESETS.filter((p) => canAssignPreset(p) || p === preset).map(
+                      (p) => (
+                        <option key={p} value={p}>
+                          {INVITE_PRESETS.find((item) => item.value === p)?.label ??
+                            memberRoleLabel(presetToRoleMeta(p).role, presetToRoleMeta(p).meta)}
                         </option>
                       )
                     )}
@@ -251,13 +287,14 @@ export default function TeamSettingsPage() {
                   </button>
                 </div>
               )}
-              {canManageMember(member.role) && !isEditableMemberRole(member.role) && (
+              {canManageMember(member.role) && !isEditableMemberPreset(preset) && (
                 <span className="text-xs font-semibold text-slate-600 px-2.5 py-1.5 bg-slate-100 rounded-lg shrink-0">
-                  {memberRoleLabel(member.role)}
+                  {memberRoleLabel(member.role, member.meta)}
                 </span>
               )}
             </div>
-          ))}
+          );
+          })}
         </div>
 
         {inactiveMembers.length > 0 && (
@@ -267,7 +304,8 @@ export default function TeamSettingsPage() {
             </p>
             {inactiveMembers.map((member) => (
               <div key={member.id} className="text-xs text-slate-400 px-2 py-1">
-                {member.display_name ?? member.user_id.slice(0, 8)} · {memberRoleLabel(member.role)}
+                {member.display_name ?? member.user_id.slice(0, 8)} ·{" "}
+                {memberRoleLabel(member.role, member.meta)}
               </div>
             ))}
           </div>

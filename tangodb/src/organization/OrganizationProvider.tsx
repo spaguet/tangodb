@@ -18,6 +18,7 @@ import { supabase } from "../lib/supabase";
 import { resetUIStore } from "../store/ui";
 import type {
   MemberRole,
+  MemberMeta,
   OrganizationLicense,
   OrganizationMember,
   OrganizationSettings,
@@ -51,6 +52,15 @@ interface OrganizationContextValue {
 
 const OrganizationContext = createContext<OrganizationContextValue | null>(null);
 
+function mapMemberMeta(raw: unknown): MemberMeta {
+  if (!raw || typeof raw !== "object") return {};
+  const meta = raw as Record<string, unknown>;
+  return {
+    restricted_admin:
+      typeof meta.restricted_admin === "boolean" ? meta.restricted_admin : undefined,
+  };
+}
+
 function mapMembership(row: Record<string, unknown>): OrganizationMember {
   const orgRaw = row.organizations as Record<string, unknown> | null | undefined;
   const organization = orgRaw
@@ -70,6 +80,7 @@ function mapMembership(row: Record<string, unknown>): OrganizationMember {
     user_id: row.user_id as string,
     role: row.role as MemberRole,
     scope: row.scope as TeacherScope,
+    meta: mapMemberMeta(row.meta),
     display_name: (row.display_name as string | null) ?? null,
     is_active: row.is_active as boolean,
     joined_at: (row.joined_at as string | null) ?? null,
@@ -124,6 +135,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           user_id,
           role,
           scope,
+          meta,
           display_name,
           is_active,
           joined_at,

@@ -27,5 +27,16 @@
   - **Accountant** изолируется в финансовый контур: `/finance/*`, финансовый dashboard, экспорт фин. отчётов; CRM-панели (клиенты, расписание, посещаемость, абонементы) закрыты. PII — только в финансовом контексте (журнал платежей, дебиторка): имя + телефон; полный CRM-профиль закрыт.
   - **Teacher** теряет продажу **групповых** абонементов по умолчанию (`teachers_can_sell_subscriptions=false` в §9); сохраняет `personal_lessons.sell` и оплату своих инд. уроков через RPC.
   - **Director** сохраняется между owner и admin: стратегия, команда, настройки, фин. аналитика; без `license.activate`, смены owner и удаления org.
+  - **Миграция данных (R2):** все существующие `organization_members` с `role = 'admin'` повышаются до `owner` до ужесточения RLS — иначе текущие операторы школы потеряют settings/team/тарифы; нового узкого `admin` owner назначает вручную при необходимости.
   - Принцип без изменений: **UI — удобство, RLS — источник истины**; R2 обязательна перед prod с accountant.
 - **Следующие шаги:** R1 (permissions + UI guards) → R2 (RLS migration) → синхронизация `tangodb_saas_platform_TZ.md` §5.
+
+### R6 — Роль «Кассир» (reception) через restricted_admin
+
+- **Дата:** 2026-06-20
+- **Решение:** Вариант B из `tangodb_roles_rbac_TZ.md` §R6 — без нового CHECK constraint. Шаблон «Кассир» = `role: admin` + `organization_members.meta.restricted_admin: true`.
+- **Контекст:** Школам нужен узкий оператор на стойке: оплата, посещаемость, проверка статуса абонемента — без CRM, расписания и отчётов.
+- **Альтернативы:**
+  1. Отдельный код роли `reception` в CHECK — отложено: усложняет audit/SQL без явной потребности.
+  2. Только UI guards без RLS — отклонено: `is_restricted_admin()` в SQL, reception SELECT только subscriptions/attendance, payments write через `can_write_reception()`.
+- **Почему так:** Один код роли `admin` в JWT и invite RPC; различие только в JSONB meta. Permissions.ts и RLS синхронизированы: кассир не открывает `/clients`, `/schedule`; сохраняет `payments.write`, `attendance.write`, masked `subscriptions.read`.

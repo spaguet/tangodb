@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
-  let body: { email?: string; role?: string; scope?: Record<string, unknown> };
+  let body: { email?: string; role?: string; scope?: Record<string, unknown>; meta?: Record<string, unknown> };
   try {
     body = await req.json();
   } catch {
@@ -83,6 +83,7 @@ Deno.serve(async (req) => {
     p_role: role,
     p_scope: body.scope ?? null,
     p_token_hash: tokenHash,
+    p_meta: body.meta ?? null,
   });
 
   if (error) {

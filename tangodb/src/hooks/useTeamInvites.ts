@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { inviteMember } from "../lib/edgeFunctions";
-import type { MemberRole, TeacherScope } from "../types/organization";
+import type { MemberRole, MemberMeta, TeacherScope } from "../types/organization";
 import { EMPTY_TEACHER_SCOPE } from "../lib/permissions";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { teamMembersQueryKey } from "./useTeamMembers";
@@ -11,6 +11,7 @@ export interface PendingInvite {
   email: string;
   role: MemberRole;
   scope: TeacherScope;
+  meta: MemberMeta;
   expires_at: string;
   created_at: string;
 }
@@ -26,7 +27,7 @@ export function useTeamInvites() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organization_invites")
-        .select("id, email, role, scope, expires_at, created_at")
+        .select("id, email, role, scope, meta, expires_at, created_at")
         .is("accepted_at", null)
         .is("revoked_at", null)
         .gt("expires_at", new Date().toISOString())
@@ -39,6 +40,7 @@ export function useTeamInvites() {
         email: row.email as string,
         role: row.role as MemberRole,
         scope: (row.scope as TeacherScope) ?? EMPTY_TEACHER_SCOPE,
+        meta: (row.meta as MemberMeta) ?? {},
         expires_at: row.expires_at as string,
         created_at: row.created_at as string,
       })) satisfies PendingInvite[];
@@ -79,6 +81,7 @@ export function useTeamMutations() {
       memberId: string;
       role?: MemberRole;
       scope?: TeacherScope;
+      meta?: MemberMeta;
       isActive?: boolean;
       displayName?: string;
     }) => {
@@ -86,6 +89,7 @@ export function useTeamMutations() {
         p_member_id: params.memberId,
         p_role: params.role ?? null,
         p_scope: params.scope ?? null,
+        p_meta: params.meta ?? null,
         p_is_active: params.isActive ?? null,
         p_display_name: params.displayName ?? null,
       });

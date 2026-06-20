@@ -23,7 +23,7 @@ export default function DashboardPage() {
 
   const clientsQuery = useClientDirectory({ enabled: showOperational });
   const subscriptionsQuery = useSubscriptions({ enabled: showOperational });
-  const personalLessonsQuery = usePersonalLessons({ enabled: showOperational });
+  const personalLessonsQuery = usePersonalLessons(undefined, { enabled: showOperational });
   const showOperationalPayments = showOperational && can("payments.read.operational");
   const todayPaymentsQuery = usePayments(
     showOperationalPayments ? { todayOnly: true } : { enabled: false }
@@ -89,6 +89,7 @@ export default function DashboardPage() {
   );
 }
 
-function queryError(query: { error: unknown | null; isError: boolean }) {
-  return query.isError ? query.error : null;
+function queryError(query: { error: unknown | null; isError: boolean }): Error | null {
+  if (!query.isError || query.error == null) return null;
+  return query.error instanceof Error ? query.error : new Error(String(query.error));
 }

@@ -72,6 +72,7 @@ export interface PermissionOptions {
   scope?: TeacherScope;
   teachersCanManageDisciplines?: boolean;
   teachersCanSellSubscriptions?: boolean;
+  restrictedAdmin?: boolean;
   isReadOnly?: boolean;
   context?: PermissionContext;
 }
@@ -102,6 +103,21 @@ const WRITE_ACTIONS = new Set<PermissionAction>([
 
 function isOperationalAdmin(role: MemberRole): boolean {
   return OPERATIONAL_READ_ROLES.includes(role);
+}
+
+export function isRestrictedReceptionAdmin(
+  role: MemberRole | null,
+  options?: PermissionOptions
+): boolean {
+  return role === "admin" && (options?.restrictedAdmin ?? false);
+}
+
+function isFullOperationalAdmin(role: MemberRole, options?: PermissionOptions): boolean {
+  return isOperationalAdmin(role) && !isRestrictedReceptionAdmin(role, options);
+}
+
+function isReceptionAdmin(role: MemberRole, options?: PermissionOptions): boolean {
+  return isRestrictedReceptionAdmin(role, options);
 }
 
 function hasDisciplineAccess(scope: TeacherScope, disciplineId?: string | null): boolean {
@@ -138,9 +154,10 @@ function teacherMatchesContext(scope: TeacherScope, context?: PermissionContext)
 function canReadScopedCrm(
   role: MemberRole,
   scope: TeacherScope,
-  context?: PermissionContext
+  context?: PermissionContext,
+  options?: PermissionOptions
 ): boolean {
-  if (isOperationalAdmin(role)) return true;
+  if (isFullOperationalAdmin(role, options)) return true;
   if (role === "accountant") return false;
   if (role !== "teacher") return false;
   if (scope.can_view_all_clients) return true;
@@ -150,11 +167,20 @@ function canReadScopedCrm(
 function canWriteScopedCrm(
   role: MemberRole,
   scope: TeacherScope,
-  context?: PermissionContext
+  context?: PermissionContext,
+  options?: PermissionOptions
 ): boolean {
-  if (isOperationalAdmin(role)) return true;
+  if (isFullOperationalAdmin(role, options)) return true;
   if (role !== "teacher") return false;
   return teacherMatchesContext(scope, context);
+}
+
+function canReceptionReadSubscriptions(role: MemberRole, options?: PermissionOptions): boolean {
+  return isReceptionAdmin(role, options);
+}
+
+function canReceptionWrite(role: MemberRole, options?: PermissionOptions): boolean {
+  return isReceptionAdmin(role, options);
 }
 
 function teachersCanSellSubscriptions(options?: PermissionOptions): boolean {
@@ -170,9 +196,21 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
 
   if (isReadOnly && WRITE_ACTIONS.has(action)) return false;
 
+  if (isReceptionAdmin(role, options)) {
+    switch (action) {
+      case "subscriptions.read":
+      case "attendance.read":
+      case "attendance.write":
+      case "payments.write":
+        return true;
+      default:
+        return false;
+    }
+  }
+
   switch (action) {
     case "reports.operational":
-      if (isOperationalAdmin(role)) return true;
+      if (isFullOperationalAdmin(role, options)) return true;
       if (role === "teacher") return teacherHasAnyScopeAccess(scope);
       return false;
 
@@ -194,52 +232,58 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return FINANCIAL_READ_ROLES.includes(role);
 
     case "payments.write":
-      return isOperationalAdmin(role);
+      return isFullOperationalAdmin(role, options) || canReceptionWrite(role, options);
 
     case "payments.read.operational":
-      return isOperationalAdmin(role);
+      return isFullOperationalAdmin(role, options);
 
     case "clients.read":
-      return canReadScopedCrm(role, scope, context);
+      return canReadScopedCrm(role, scope, context, options);
 
     case "clients.write":
-      return canWriteScopedCrm(role, scope, context);
+      return canWriteScopedCrm(role, scope, context, options);
 
     case "client_notes.read":
-      return canReadScopedCrm(role, scope, context);
+      return canReadScopedCrm(role, scope, context, options);
 
     case "client_notes.write":
-      if (isOperationalAdmin(role)) return true;
+      if (isFullOperationalAdmin(role, options)) return true;
       if (role !== "teacher") return false;
       return teacherMatchesContext(scope, context);
 
     case "subscriptions.read":
+      if (canReceptionReadSubscriptions(role, options)) return true;
+      return canReadScopedCrm(role, scope, context, options);
+
     case "attendance.read":
+    case "attendance.write":
+      if (canReceptionWrite(role, options)) return true;
+      return canReadScopedCrm(role, scope, context, options);
+
     case "schedule.read":
     case "personal_lessons.read":
-      return canReadScopedCrm(role, scope, context);
+      return canReadScopedCrm(role, scope, context, options);
 
     case "subscriptions.write":
     case "subscriptions.sell":
       if (role === "teacher") {
         return teachersCanSellSubscriptions(options) && teacherMatchesContext(scope, context);
       }
-      return canWriteScopedCrm(role, scope, context);
+      return canWriteScopedCrm(role, scope, context, options);
 
-    case "attendance.write":
     case "schedule.write":
     case "personal_lessons.write":
     case "personal_lessons.sell":
-      return canWriteScopedCrm(role, scope, context);
+      return canWriteScopedCrm(role, scope, context, options);
 
     case "prices.read":
-      return isOperationalAdmin(role) || role === "accountant";
+      return isFullOperationalAdmin(role, options) || role === "accountant";
 
     case "prices.write":
       return STRATEGIC_ROLES.includes(role);
 
     case "disciplines.read":
-      if (isOperationalAdmin(role)) return true;
+      if (isFullOperationalAdmin(role, options)) return true;
       if (role === "teacher") {
         return (
           (options?.teachersCanManageDisciplines ?? false) && teacherHasAnyScopeAccess(scope)
@@ -278,6 +322,16 @@ export function canAccessPanel(
   panel: PanelId,
   options?: PermissionOptions
 ): boolean {
+  if (isRestrictedReceptionAdmin(role, options)) {
+    switch (panel) {
+      case "attendance":
+      case "subscriptions":
+        return true;
+      default:
+        return false;
+    }
+  }
+
   switch (panel) {
     case "dashboard":
       return can(role, "dashboard.read", options);
@@ -368,4 +422,26 @@ export function panelIdFromPath(pathname: string): PanelId {
   if (pathname === "/prices") return "prices";
   if (pathname.startsWith("/settings")) return "settings";
   return "dashboard";
+}
+
+/** R6 regression checks — restricted reception admin route guards */
+export function assertReceptionPermissions(): void {
+  const receptionOpts: PermissionOptions = { restrictedAdmin: true };
+  const adminOpts: PermissionOptions = { restrictedAdmin: false };
+
+  if (canAccessPanel("admin", "clients", receptionOpts)) {
+    throw new Error("reception must not access clients panel");
+  }
+  if (canAccessPanel("admin", "schedule", receptionOpts)) {
+    throw new Error("reception must not access schedule panel");
+  }
+  if (!canAccessPanel("admin", "attendance", receptionOpts)) {
+    throw new Error("reception must access attendance panel");
+  }
+  if (!can("admin", "payments.write", receptionOpts)) {
+    throw new Error("reception must write payments");
+  }
+  if (!canAccessPanel("admin", "clients", adminOpts)) {
+    throw new Error("full admin must access clients panel");
+  }
 }

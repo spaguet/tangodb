@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { formatClientName, normalizeSubscriptionPairMonth } from "../lib/utils";
 import type { ActiveSubscription, Subscription } from "../types";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { isRestrictedReceptionAdmin } from "../lib/permissions";
 import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
@@ -32,8 +33,10 @@ const mapSubscription = (row: Record<string, unknown>, maskFinancial: boolean): 
 
 export function useSubscriptions(options?: { enabled?: boolean }) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
-  const { role } = useOrganization();
-  const maskFinancial = role === "teacher";
+  const { role, membership } = useOrganization();
+  const maskFinancial =
+    role === "teacher" ||
+    isRestrictedReceptionAdmin(role, { restrictedAdmin: membership?.meta?.restricted_admin });
   const queryEnabled = orgEnabled && (options?.enabled ?? true);
 
   return useQuery({

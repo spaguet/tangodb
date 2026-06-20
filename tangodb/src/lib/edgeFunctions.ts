@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { MemberMeta } from "../types/organization";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
@@ -47,6 +48,7 @@ export async function inviteMember(params: {
   email: string;
   role: string;
   scope?: Record<string, unknown>;
+  meta?: MemberMeta;
 }): Promise<InviteMemberResponse> {
   return invokeEdgeFunction<InviteMemberResponse>("invite-member", params);
 }

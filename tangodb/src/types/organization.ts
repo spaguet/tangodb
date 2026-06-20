@@ -33,6 +33,11 @@ export interface TeacherScope {
   can_view_all_clients: boolean;
 }
 
+/** R6: reception preset — admin role with restricted_admin flag in meta */
+export interface MemberMeta {
+  restricted_admin?: boolean;
+}
+
 export interface OrganizationSummary {
   id: string;
   name: string;
@@ -48,6 +53,7 @@ export interface OrganizationMember {
   user_id: string;
   role: MemberRole;
   scope: TeacherScope;
+  meta: MemberMeta;
   display_name: string | null;
   is_active: boolean;
   joined_at: string | null;
