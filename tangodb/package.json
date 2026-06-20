@@ -17,7 +17,9 @@
     "test:db:business": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_business_schema_test.sql",
     "test:db:rls": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_business_rls_test.sql",
     "test:db:migration": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_version_migration_test.sql",
-    "test:db:subscription": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_subscription_test.sql"
+    "test:db:subscription": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_subscription_test.sql",
+    "db:push": "supabase db push",
+    "db:link": "supabase link"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
@@ -37,6 +39,7 @@
     "@types/node": "^22.14.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "supabase": "^2.107.0",
     "tailwindcss": "^4.1.14",
     "typescript": "~5.8.2"
   }
