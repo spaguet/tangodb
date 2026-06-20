@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import {
   aggregatePaymentStats,
-  buildDebtorsList,
   monthDateRange,
   shiftMonth,
   sumDebtorAmounts,
@@ -21,38 +20,24 @@ import {
   formatCurrency,
   formatMonthTitleRu,
 } from "../lib/utils";
+import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
 import { usePayments, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
-import type { Client, PersonalLesson, Subscription } from "../types";
-import { useOrganization } from "../organization/OrganizationProvider";
 
-interface FinancialDashboardProps {
-  clients: Client[];
-  subscriptions: Subscription[];
-  personalLessons: PersonalLesson[];
-}
-
-export default function FinancialDashboard({
-  clients,
-  subscriptions,
-  personalLessons,
-}: FinancialDashboardProps) {
+export default function FinancialDashboard() {
   const navigate = useNavigate();
-  const { settings } = useOrganization();
-  const lowBalanceThreshold = settings?.low_balance_threshold ?? 2;
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
   const range = monthDateRange(statsMonth);
 
   const paymentsQuery = usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
+  const debtorsQuery = useFinancialDebtors();
+
   const stats = useMemo(
     () => aggregatePaymentStats(paymentsQuery.data ?? []),
     [paymentsQuery.data]
   );
 
-  const debtors = useMemo(
-    () => buildDebtorsList(subscriptions, personalLessons, clients, lowBalanceThreshold),
-    [subscriptions, personalLessons, clients, lowBalanceThreshold]
-  );
+  const debtors = debtorsQuery.data ?? [];
   const totalDebt = sumDebtorAmounts(debtors);
   const lowBalanceCount = debtors.filter((d) => d.kind === "subscription").length;
   const unpaidPersonalCount = debtors.filter((d) => d.kind === "personal").length;

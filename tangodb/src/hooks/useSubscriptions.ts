@@ -30,14 +30,15 @@ const mapSubscription = (row: Record<string, unknown>, maskFinancial: boolean): 
   category: (row.category as "group" | "private") || "group",
 });
 
-export function useSubscriptions() {
-  const { enabled, withOrgId } = useOrgQueryScope();
+export function useSubscriptions(options?: { enabled?: boolean }) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const { role } = useOrganization();
   const maskFinancial = role === "teacher";
+  const queryEnabled = orgEnabled && (options?.enabled ?? true);
 
   return useQuery({
     queryKey: withOrgId([...subscriptionsQueryKey, { maskFinancial }]),
-    enabled,
+    enabled: queryEnabled,
     queryFn: async () => {
       const table = maskFinancial ? "subscriptions_teacher_v" : "subscriptions";
       const { data, error } = await supabase

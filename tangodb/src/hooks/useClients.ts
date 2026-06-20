@@ -20,13 +20,14 @@ const mapClient = (row: Record<string, unknown>): Client => ({
   archivedAt: (row.archived_at as string | null) ?? null,
 });
 
-export function useClients(options?: { includeArchived?: boolean }) {
+export function useClients(options?: { includeArchived?: boolean; enabled?: boolean }) {
   const includeArchived = options?.includeArchived ?? false;
-  const { enabled, withOrgId } = useOrgQueryScope();
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const queryEnabled = orgEnabled && (options?.enabled ?? true);
 
   return useQuery({
     queryKey: withOrgId(clientsListQueryKey(includeArchived)),
-    enabled,
+    enabled: queryEnabled,
     queryFn: async () => {
       let query = supabase.from("clients").select("*").order("last_name");
       if (!includeArchived) query = query.is("archived_at", null);
@@ -39,7 +40,8 @@ export function useClients(options?: { includeArchived?: boolean }) {
 }
 
 export const useActiveClients = () => useClients();
-export const useClientDirectory = () => useClients({ includeArchived: true });
+export const useClientDirectory = (options?: { enabled?: boolean }) =>
+  useClients({ includeArchived: true, enabled: options?.enabled });
 
 export function useAddClient() {
   const queryClient = useQueryClient();

@@ -21,25 +21,26 @@ export default function DashboardPage() {
   const showFinancial = can("reports.financial");
   const showOperational = can("reports.operational") && !showFinancial;
 
-  const clientsQuery = useClientDirectory();
-  const subscriptionsQuery = useSubscriptions();
-  const personalLessonsQuery = usePersonalLessons();
+  const clientsQuery = useClientDirectory({ enabled: showOperational });
+  const subscriptionsQuery = useSubscriptions({ enabled: showOperational });
+  const personalLessonsQuery = usePersonalLessons({ enabled: showOperational });
   const showOperationalPayments = showOperational && can("payments.read.operational");
   const todayPaymentsQuery = usePayments(
     showOperationalPayments ? { todayOnly: true } : { enabled: false }
   );
 
   const isLoading =
-    (showFinancial || showOperational) &&
+    showOperational &&
     (clientsQuery.isLoading ||
       subscriptionsQuery.isLoading ||
       personalLessonsQuery.isLoading ||
       (showOperationalPayments && todayPaymentsQuery.isLoading));
   const isError =
-    clientsQuery.isError ||
-    subscriptionsQuery.isError ||
-    personalLessonsQuery.isError ||
-    (showOperationalPayments && todayPaymentsQuery.isError);
+    showOperational &&
+    (clientsQuery.isError ||
+      subscriptionsQuery.isError ||
+      personalLessonsQuery.isError ||
+      (showOperationalPayments && todayPaymentsQuery.isError));
   const error =
     queryError(clientsQuery) ??
     queryError(subscriptionsQuery) ??
@@ -73,13 +74,7 @@ export default function DashboardPage() {
   if (isError) return <QueryErrorState error={error} />;
 
   if (showFinancial) {
-    return (
-      <FinancialDashboard
-        clients={clientsQuery.data ?? []}
-        subscriptions={subscriptionsQuery.data ?? []}
-        personalLessons={personalLessonsQuery.data ?? []}
-      />
-    );
+    return <FinancialDashboard />;
   }
 
   return (

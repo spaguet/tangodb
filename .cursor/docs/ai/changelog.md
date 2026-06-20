@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-20 — RBAC R2.1: view `financial_debtors_v` (security definer) + `useFinancialDebtors` — бухгалтер видит дебиторов с именем и Telegram без CRM SELECT; FinancialDashboard/FinanceDebtorsPage без CRM-хуков.
 2026-06-20 — RBAC R5: split Dashboard (OperationalDashboard / FinancialDashboard), /finance/revenue, /finance/debtors, заглушка /finance/payroll, FinanceLayout с боковой навигацией.
 2026-06-20 — RBAC R3: таблица payments, RLS, RPC record_personal_lesson_payment, backfill; usePayments, /finance/payments, журнал за день на dashboard, кнопки «Зафиксировать оплату».
 2026-06-20 — OrganizationProvider: auto refreshSession при расхождении JWT role и role в БД.

@@ -2,10 +2,8 @@ import { useMemo } from "react";
 import { AlertCircle } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
-import { useClientDirectory } from "../hooks/useClients";
-import { usePersonalLessons } from "../hooks/usePersonalLessons";
-import { useSubscriptions } from "../hooks/useSubscriptions";
-import { buildDebtorsList, sumDebtorAmounts } from "../lib/financeReports";
+import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
+import { sumDebtorAmounts } from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
 import { useOrganization } from "../organization/OrganizationProvider";
 
@@ -13,30 +11,12 @@ export default function FinanceDebtorsPage() {
   const { settings } = useOrganization();
   const lowBalanceThreshold = settings?.low_balance_threshold ?? 2;
 
-  const clientsQuery = useClientDirectory();
-  const subscriptionsQuery = useSubscriptions();
-  const personalLessonsQuery = usePersonalLessons();
-
-  const isLoading =
-    clientsQuery.isLoading || subscriptionsQuery.isLoading || personalLessonsQuery.isLoading;
-  const isError = clientsQuery.isError || subscriptionsQuery.isError || personalLessonsQuery.isError;
-  const error = clientsQuery.error ?? subscriptionsQuery.error ?? personalLessonsQuery.error;
-
-  const debtors = useMemo(
-    () =>
-      buildDebtorsList(
-        subscriptionsQuery.data ?? [],
-        personalLessonsQuery.data ?? [],
-        clientsQuery.data ?? [],
-        lowBalanceThreshold
-      ),
-    [subscriptionsQuery.data, personalLessonsQuery.data, clientsQuery.data, lowBalanceThreshold]
-  );
-
+  const debtorsQuery = useFinancialDebtors();
+  const debtors = debtorsQuery.data ?? [];
   const totalDebt = useMemo(() => sumDebtorAmounts(debtors), [debtors]);
 
-  if (isLoading) return <LoadingState label="Загрузка дебиторов..." />;
-  if (isError) return <QueryErrorState error={error} />;
+  if (debtorsQuery.isLoading) return <LoadingState label="Загрузка дебиторов..." />;
+  if (debtorsQuery.isError) return <QueryErrorState error={debtorsQuery.error} />;
 
   return (
     <div className="panel-page-stack">

@@ -101,16 +101,17 @@ const personalLessonsSelect =
 const personalLessonsSelectTeacher =
   "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, subscription_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
-export function usePersonalLessons(yearMonth?: string) {
-  const { enabled, withOrgId } = useOrgQueryScope();
+export function usePersonalLessons(yearMonth?: string, options?: { enabled?: boolean }) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const { role } = useOrganization();
   const maskFinancial = role === "teacher";
+  const queryEnabled = orgEnabled && (options?.enabled ?? true);
   const baseKey = yearMonth ? [...personalLessonsQueryKey, yearMonth] : personalLessonsQueryKey;
-  const clientsQuery = useClientDirectory();
+  const clientsQuery = useClientDirectory({ enabled: queryEnabled });
 
   const lessonsQuery = useQuery({
     queryKey: withOrgId([...baseKey, { maskFinancial }]),
-    enabled,
+    enabled: queryEnabled,
     queryFn: async () => {
       const table = maskFinancial ? "personal_lessons_teacher_v" : "personal_lessons";
       const selectColumns = maskFinancial ? personalLessonsSelectTeacher : personalLessonsSelect;
