@@ -279,7 +279,7 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       );
 
     case "dashboard.export":
-      if (STRATEGIC_ROLES.includes(role) || role === "accountant") return true;
+      if (STRATEGIC_ROLES.includes(role)) return true;
       if (role === "admin" && (options?.adminCanExport ?? false)) return true;
       if (role === "teacher" && (options?.teachersCanExport ?? false)) {
         return teacherMatchesContext(scope, context);
@@ -567,5 +567,20 @@ export function assertReceptionPermissions(): void {
   }
   if (canAccessSettingsSection("admin", "data", adminOpts)) {
     throw new Error("admin without admin_can_export must not access settings/data (RBAC-2)");
+  }
+
+  if (can("accountant", "dashboard.export", adminOpts)) {
+    throw new Error("accountant must not have dashboard.export (RBAC-8)");
+  }
+  if (!can("accountant", "finance.export", adminOpts)) {
+    throw new Error("accountant must have finance.export (RBAC-8)");
+  }
+  const teacherNoExportOpts: PermissionOptions = { ...teacherOpts, teachersCanExport: false };
+  if (can("teacher", "dashboard.export", teacherNoExportOpts)) {
+    throw new Error("teacher without teachers_can_export must not export (RBAC-8)");
+  }
+  const teacherExportOpts: PermissionOptions = { ...teacherOpts, teachersCanExport: true };
+  if (!can("teacher", "dashboard.export", teacherExportOpts)) {
+    throw new Error("teacher with teachers_can_export and scope must export (RBAC-8)");
   }
 }

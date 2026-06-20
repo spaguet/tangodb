@@ -21,7 +21,8 @@
 | Выявлен RBAC-8 (SQL export overrides расходятся с UI §9) | ✅ |
 | **Этап 0: NAV-1, NAV-2, RBAC-6 — решения приняты и реализованы** | ✅ 2026-06-20 |
 | **Этап 1: P1 bundle (RBAC-2 → RBAC-1 → RBAC-7)** | ✅ 2026-06-20 |
-| Исправление кода (P2 bundle) | ⬜ следующий этап |
+| **Этап 2: RBAC-8 — export helpers §9 + accountant financial export** | ✅ 2026-06-20 |
+| Исправление кода (P2 bundle: RBAC-3) | ⬜ следующий этап |
 | Деплой / коммит / пуш | ✅ коммит 0051700; push main → auto deploy |
 
 **Допущения аудита:**
@@ -41,11 +42,11 @@
 |---------|------|----------------|
 | Nav (5 ролей) | 4 | 1 (accountant + prices; teacher + dashboard) |
 | `permissions.ts` vs §8 | ~28/31 actions | 3 (teacher reports; admin disciplines.write; accountant `/prices` panel) |
-| SQL helpers (§8/§9) | 3/4 | 1 (`can_export_data` не учитывает org overrides) |
-| §10.2 Security (код+RLS) | 7/10 | 3 (settings guards; dashboard fallback; export helper overrides; RLS reception — ✅) |
-| §10.3 UI | 2/5 | 3 (nav partial; dashboard spinner; settings guards; export page для accountant) |
+| SQL helpers (§8/§9) | 4/4 | 0 |
+| §10.2 Security (код+RLS) | 10/10 | 0 |
+| §10.3 UI | 4/5 | 1 (nav partial — historical note) |
 
-**Итог:** RBAC R1–R6 в целом внедрены. **P1 bundle закрыт** (RBAC-1, RBAC-2, RBAC-7). Оставшиеся пробелы: export overrides UI↔SQL (RBAC-8), teacher subscriptions RLS (RBAC-3).
+**Итог:** RBAC R1–R6 в целом внедрены. **P1 bundle закрыт** (RBAC-1, RBAC-2, RBAC-7). **RBAC-8 закрыт** (export split UI↔SQL). Оставшийся пробел: teacher subscriptions RLS (RBAC-3).
 
 ---
 
@@ -97,7 +98,7 @@
 | `finance.read/export` | ✅ | ✅ | ❌ | ❌ | ✅ | financial | ✅ |
 | `reports.operational` | ✅ | ✅ | ✅ | ❌§§ | ❌ | operational / scope | ✅ vs §4 |
 | `reports.financial` | ✅ | ✅ | ❌ | ❌ | ✅ | financial | ✅ |
-| `dashboard.export` | ✅ | ✅ | ❌/flag | ❌† | ✅ | `can_export_data()` / `can_export_financial()` | ⚠️ SQL ignores §9 flags |
+| `dashboard.export` | ✅ | ✅ | ❌/flag | ❌† | ❌ | `can_export_data()` | ✅ |
 | `settings.manage` | ✅ | ✅ | ❌ | ❌ | ❌ | `can_manage_settings()` | ✅ |
 | `team.manage` | ✅ | ✅ | ❌ | ❌ | ❌ | `can_manage_team()` | ✅ |
 | `license.view` | ✅ | ✅ | ❌ | ❌ | ❌ | role check | ✅ |
@@ -148,10 +149,10 @@ Accountant: SELECT на CRM-таблицы → 0 rows. **✅ PASS**
 
 Admin не видит `/finance`. **✅ PASS**
 
-### `can_export_data()` → owner, director, accountant (+ overrides)
+### `can_export_data()` → owner, director (+ §9 overrides admin/teacher)
 
-UI: `permissions.ts` включает export для owner/director/accountant, admin только при `admin_can_export=true`, teacher только при `teachers_can_export=true` и scope.  
-SQL: `20260629000001_v2_rbac_roles_refinement.sql` оставляет teacher export при любом непустом scope и не учитывает `admin_can_export`. **⚠️ PARTIAL / mismatch с §9.**
+UI: `permissions.ts` — `dashboard.export` для owner/director; admin при `admin_can_export=true`; teacher при `teachers_can_export=true` и scope. Accountant — только `finance.export` / `can_export_financial()`.  
+SQL: `20260705000001_v2_rbac_export_helpers_sync.sql` — читает `organization_settings`, убран alias `can_export_financial()`. **✅ PASS**
 
 ### Прочие проверки §10.2
 
@@ -165,7 +166,7 @@ SQL: `20260629000001_v2_rbac_roles_refinement.sql` оставляет teacher ex
 | Restricted admin: panel URL `/clients`, `/schedule` | ✅ PASS | `PanelAccessRoute` → `usePermissions().canAccessPanel` (полные options + `restrictedAdmin`) |
 | Restricted admin: settings guards + org overrides | ✅ PASS | `routeGuards.tsx`, `SettingsIndexRedirect.tsx` — RBAC-2: `permissionOptionsFromSettings` |
 | Роли без dashboard → URL `/` | ✅ PASS | `routeGuards.tsx` — RBAC-7: `findFirstAccessiblePanelPath` или empty state через `<Outlet />` |
-| Export override §9: `teachers_can_export=false` / `admin_can_export=true` | ⚠️ PARTIAL | UI учитывает flags; SQL `can_export_data()` — нет; см. RBAC-8 |
+| Export override §9: `teachers_can_export=false` / `admin_can_export=true` | ✅ PASS | UI + SQL `can_export_data()` — RBAC-8 |
 
 \* при применённой миграции R4 на целевой БД
 
@@ -197,7 +198,7 @@ SQL: `20260629000001_v2_rbac_roles_refinement.sql` оставляет teacher ex
 | 8 | restricted admin не обходит panel guards по URL | ✅ PASS (hook) |
 | 9 | settings guards учитывают org overrides и те же options, что nav | ✅ PASS |
 | 10 | роли без dashboard не зависают на `/` | ✅ PASS |
-| 11 | `can_export_data()` синхронизирован с §9 overrides | ⚠️ PARTIAL |
+| 11 | `can_export_data()` синхронизирован с §9 overrides | ✅ PASS |
 
 ### §10.3 UI
 
@@ -208,7 +209,7 @@ SQL: `20260629000001_v2_rbac_roles_refinement.sql` оставляет teacher ex
 | 3 | accountant: `/settings/data` ✅, `/settings/general` ❌ | ✅ PASS |
 | 4 | ReadOnlyBanner + RBAC | ✅ PASS |
 | 5 | Прямой URL `/` для teacher (пустой scope) / reception admin — не спиннер | ✅ PASS |
-| 6 | Accountant `/settings/data` показывает финансовый экспорт, а не operational CSV | ⚠️ PARTIAL |
+| 6 | Accountant `/settings/data` показывает финансовый экспорт, а не operational CSV | ✅ PASS |
 
 ---
 
@@ -326,51 +327,27 @@ SQL: `20260629000001_v2_rbac_roles_refinement.sql` оставляет teacher ex
 
 ---
 
-### 🟠 RBAC-8 [P2] — Export overrides §9 не синхронизированы между UI и SQL
+### 🟠 RBAC-8 [P2] — Export overrides §9 не синхронизированы между UI и SQL — **✅ ИСПРАВЛЕНО 2026-06-20**
 
 **Файлы:**
+- `tangodb/supabase/migrations/20260705000001_v2_rbac_export_helpers_sync.sql`
 - `tangodb/src/lib/permissions.ts`
+- `tangodb/src/lib/exportFinancialCsv.ts` *(новый)*
 - `tangodb/src/settings/pages/DataExportPage.tsx`
-- `tangodb/supabase/migrations/20260629000001_v2_rbac_roles_refinement.sql`
-- `tangodb/supabase/migrations/20260704000001_v2_rbac_org_setting_overrides.sql`
 
-**Факт в UI:** `dashboard.export` зависит от `admin_can_export` и `teachers_can_export`; `finance.export` доступен owner/director/accountant.
+**Было:**
+- SQL `can_export_data()` включал `can_export_financial()` → accountant получал operational export helper;
+- teacher export при любом scope без `teachers_can_export`;
+- admin export не учитывал `admin_can_export=true`;
+- `DataExportPage` грузил CRM-хуки для accountant (пустые наборы по RLS).
 
-**Факт в SQL:** `can_export_data()` в R2:
-- разрешает teacher export при любом непустом scope, даже если `teachers_can_export=false` (default);
-- не даёт admin export при `admin_can_export=true`;
-- не читает `organization_settings` после добавления колонок §9.
+**Исправление (вариант B):**
+- `can_export_data()`: owner/director; admin при `admin_can_export`; teacher при `teachers_can_export` + `teacher_has_any_scope()`; accountant **исключён**.
+- `can_export_financial()` без изменений — owner/director/accountant.
+- `permissions.ts`: accountant убран из `dashboard.export`; regression checks в `assertReceptionPermissions()`.
+- `DataExportPage`: `FinancialExportSection` (payments + debtors CSV) и `OperationalExportSection` (CRM CSV) — хуки изолированы по секциям.
 
-**Доп. UX-проблема:** `DataExportPage` доступна accountant через `finance.export`, но грузит operational hooks (`useClientDirectory`, `useSubscriptions`, `useAttendanceRecords`) и готовит старую dashboard CSV-выгрузку. По RLS accountant получит пустые CRM-наборы, а не полноценный финансовый экспорт.
-
-**Место для решения:**
-
-| Вариант | Описание |
-|---------|----------|
-| **A** | Переписать `can_export_data()` так, чтобы он читал `organization_settings` и повторял `permissions.ts` для `dashboard.export` |
-| **B** | Разделить SQL helpers: `can_export_dashboard_data()` и `can_export_financial()`; accountant export вести через financial views/hooks |
-
-**Рекомендация:** вариант **B** — не смешивать operational dashboard export и financial export.
-
-**Prompt:**
-
-```
-Задача: RBAC-8 из CODE_REVIEW_ROLES.md — синхронизировать export permissions.
-
-1. Новая migration:
-   - обнови can_export_data(): owner/director всегда; admin только при organization_settings.admin_can_export=true; teacher только при teachers_can_export=true и scope.
-   - can_export_financial() оставить owner/director/accountant.
-2. DataExportPage:
-   - если role=accountant, не грузить operational hooks и не показывать CRM-наборы;
-   - добавить financial export или redirect на /finance/* export-кнопки.
-3. Regression:
-   - teacher + teachers_can_export=false → no export;
-   - teacher + true + scope → scoped export;
-   - admin + admin_can_export=true → /settings/data доступен и SQL helper true;
-   - accountant → financial export без CRM CSV.
-
-Обнови changelog.md и architecture.md (export split).
-```
+**Статус:** ✅ PASS
 
 ---
 
@@ -499,7 +476,7 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | RBAC-1 | P1 | Dashboard owner/director operational+financial | ✅ PASS | 0051700 |
 | RBAC-2 | P1 | permissionOptionsFromSettings в settings guards | ✅ PASS | 0051700 |
 | RBAC-7 | P2 | Redirect вместо spinner на `/` без dashboard | ✅ PASS | 0051700 |
-| RBAC-8 | P2 | Export helpers §9 + accountant financial export | ⬜ TODO | — |
+| RBAC-8 | P2 | Export helpers §9 + accountant financial export | ✅ PASS | — |
 | RBAC-3 | P2 | RLS teacher subscriptions + `teachers_can_sell_subscriptions` | ⬜ TODO | — |
 | RBAC-4 | P2 | Teacher scoped home (не OperationalDashboard) | ✅ Этап 0 (NAV-2) | f09bf3f |
 | RBAC-5 | P2 | Accountant: скрыть /prices nav | ✅ Этап 0 (NAV-1) | f09bf3f |
@@ -527,8 +504,10 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | R4 masking | `tangodb/supabase/migrations/20260701000001_v2_client_notes_and_teacher_field_masking.sql` |
 | R6 reception | `tangodb/supabase/migrations/20260703000001_v2_reception_restricted_admin.sql` |
 | Org overrides | `tangodb/supabase/migrations/20260704000001_v2_rbac_org_setting_overrides.sql` |
+| Export helpers sync | `tangodb/supabase/migrations/20260705000001_v2_rbac_export_helpers_sync.sql` |
+| Financial export lib | `tangodb/src/lib/exportFinancialCsv.ts` |
 | Invite EF | `tangodb/supabase/functions/invite-member/index.ts` |
 
 ---
 
-*Документ: Regression QA §10 + ревизия сверки с кодом (2026-06-20). **Этап 0** (NAV-1, NAV-2, RBAC-6) и **Этап 1 P1** (RBAC-1, RBAC-2, RBAC-7) выполнены. Следующий шаг — RBAC-8 (export sync), RBAC-3 (RLS teacher subscriptions).*
+*Документ: Regression QA §10 + ревизия сверки с кодом (2026-06-20). **Этап 0** (NAV-1, NAV-2, RBAC-6), **Этап 1 P1** (RBAC-1, RBAC-2, RBAC-7) и **RBAC-8** выполнены. Следующий шаг — RBAC-3 (RLS teacher subscriptions).*
