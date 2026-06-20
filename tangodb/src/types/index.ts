@@ -31,6 +31,8 @@ export interface ScheduleSlot {
   timeEnd: string;
   disciplineId?: string | null;
   groupName?: string;
+  locationId?: string | null;
+  teacherMemberId?: string | null;
 }
 
 export type PriceCategory = "group" | "private";
@@ -85,6 +87,8 @@ export interface PersonalLesson {
   paid: "yes" | "no";
   disciplineId?: string | null;
   subscriptionId?: string | null;
+  locationId?: string | null;
+  teacherMemberId?: string | null;
   attendanceStatus?: "present" | "absent" | null;
 }
 

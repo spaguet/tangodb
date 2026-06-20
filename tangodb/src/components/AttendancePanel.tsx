@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Ticket,
+  MapPin,
+  ArrowLeft,
 } from "lucide-react";
 import {
   attendanceQueryKey,
@@ -32,6 +34,7 @@ import {
   freezeUnavailableMessage,
 } from "../lib/freezePolicy";
 import { usePrices } from "../hooks/usePrices";
+import { useAccessibleLocations } from "../hooks/useLocations";
 import {
   dowShort,
   formatCurrency,
@@ -97,23 +100,43 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const { connectionState } = useOnlineStatus();
   const selectedMonth = useUIStore((s) => s.selectedMonth);
   const setSelectedMonth = useUIStore((s) => s.setSelectedMonth);
+  const {
+    locations,
+    isLoading: locationsLoading,
+    isError: locationsError,
+    error: locationsErr,
+  } = useAccessibleLocations();
+
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
+  const selectedLocation = locations.find((loc) => loc.id === selectedLocationId) ?? null;
 
   const {
     dates: monthScheduleDates = [],
     isLoading: scheduleLoading,
     isError: scheduleError,
     error: scheduleErr,
-  } = useScheduleDates(selectedMonth);
+  } = useScheduleDates(selectedLocationId ? selectedMonth : undefined, selectedLocationId);
   const {
     data: personalLessons = [],
     isLoading: personalLoading,
     isError: personalError,
     error: personalErr,
-  } = usePersonalLessons(selectedMonth);
+  } = usePersonalLessons(selectedLocationId ? selectedMonth : undefined, {
+    enabled: selectedLocationId != null,
+  });
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = usePrices();
 
   const [selectedDate, setSelectedDate] = useState(todayDateStr);
   const [selectedLesson, setSelectedLesson] = useState<DayLessonEntry | null>(null);
+
+  useEffect(() => {
+    if (selectedLocationId != null || locations.length !== 1) return;
+    setSelectedLocationId(locations[0].id);
+  }, [locations, selectedLocationId]);
+
+  useEffect(() => {
+    setSelectedLesson(null);
+  }, [selectedLocationId]);
 
   useEffect(() => {
     const today = todayDateStr();
@@ -144,12 +167,18 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     [monthScheduleDates, selectedDate]
   );
 
+  const locationPersonalLessons = useMemo(
+    () =>
+      personalLessons.filter((lesson) => (lesson.locationId ?? null) === selectedLocationId),
+    [personalLessons, selectedLocationId]
+  );
+
   const personalForDay = useMemo(
     () =>
-      personalLessons
+      locationPersonalLessons
         .filter((l) => l.date === selectedDate)
         .sort((a, b) => a.timeStart.localeCompare(b.timeStart)),
-    [personalLessons, selectedDate]
+    [locationPersonalLessons, selectedDate]
   );
 
   const dayScheduleEntries = useMemo((): DayLessonEntry[] => {
@@ -200,9 +229,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
   const { can } = usePermissions();
   const { freezePolicy } = useSettings();
-  const isLoading = scheduleLoading || personalLoading || pricesLoading;
-  const isError = scheduleError || personalError || pricesError;
-  const error = scheduleErr ?? personalErr ?? pricesErr;
+  const isLoading =
+    locationsLoading ||
+    (selectedLocationId != null && (scheduleLoading || personalLoading || pricesLoading));
+  const isError =
+    locationsError ||
+    (selectedLocationId != null && (scheduleError || personalError || pricesError));
+  const error = locationsErr ?? scheduleErr ?? personalErr ?? pricesErr;
   const canMarkAttendance = isDateMarkable(selectedDate) && can("attendance.write");
 
   const calendarCells = useMemo(() => {
@@ -215,7 +248,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
     const groupDates = new Set(monthScheduleDates.map((d) => d.date));
     const personalDates = new Set(
-      personalLessons.filter((l) => l.date.startsWith(selectedMonth)).map((l) => l.date)
+      locationPersonalLessons.filter((l) => l.date.startsWith(selectedMonth)).map((l) => l.date)
     );
 
     const cells: Array<{
@@ -245,7 +278,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     }
 
     return cells;
-  }, [selectedMonth, monthScheduleDates, personalLessons]);
+  }, [selectedMonth, monthScheduleDates, locationPersonalLessons]);
 
   const handleMonthNav = (delta: number) => {
     const nextMonth = shiftMonth(selectedMonth, delta);
@@ -410,7 +443,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const activePersonalLesson =
     selectedLesson?.kind === "personal"
-      ? personalLessons.find((l) => l.id === selectedLesson.lesson.id) ?? selectedLesson.lesson
+      ? locationPersonalLessons.find((l) => l.id === selectedLesson.lesson.id) ?? selectedLesson.lesson
       : null;
 
   const isPersonalOneOffView =
@@ -423,18 +456,71 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const useVirtualSubsList = isSubsListView && modalSubs.length >= 20;
 
-  if (isLoading) {
-    return (
-      <div id="panel-attendance" className="panel-page-stack">
-        <LoadingState label="Загрузка журнала посещений..." />
-      </div>
-    );
-  }
-
   if (isError) {
     return (
       <div id="panel-attendance" className="panel-page-stack">
         <QueryErrorState error={error} />
+      </div>
+    );
+  }
+
+  if (!selectedLocationId) {
+    return (
+      <div id="panel-attendance" className="panel-page-stack">
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+          <div className="panel-card-stack">
+            <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений и календарь</h2>
+            <p className="text-xs text-slate-400">Выберите локацию, чтобы открыть расписание и журнал посещений.</p>
+          </div>
+
+          {isLoading ? (
+            <LoadingState label="Загрузка локаций..." />
+          ) : locations.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 space-y-3">
+              <MapPin className="w-8 h-8 mx-auto text-slate-300" />
+              <p className="text-sm">Локаций пока нет.</p>
+              <p className="text-xs font-sans">
+                Добавьте залы в{" "}
+                <Link
+                  to="/settings/locations"
+                  className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline"
+                >
+                  Настройки · Локации
+                </Link>
+                .
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {locations.map((loc) => (
+                <button
+                  key={loc.id}
+                  type="button"
+                  onClick={() => setSelectedLocationId(loc.id)}
+                  className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/40 transition-all cursor-pointer text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800">{loc.name}</p>
+                    {loc.address ? (
+                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">{loc.address}</p>
+                    ) : (
+                      <p className="text-[11px] text-slate-300 italic mt-0.5">адрес не указан</p>
+                    )}
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div id="panel-attendance" className="panel-page-stack">
+        <LoadingState label="Загрузка журнала посещений..." />
       </div>
     );
   }
@@ -444,7 +530,28 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="panel-card-stack">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений и календарь</h2>
+            <div className="min-w-0 space-y-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedLocationId(null);
+                  setSelectedLesson(null);
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Все локации
+              </button>
+              <h2 className="text-base font-semibold tracking-tight text-slate-800">
+                Журнал посещений и календарь
+              </h2>
+              {selectedLocation && (
+                <p className="text-xs text-slate-500 font-sans flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  {selectedLocation.name}
+                </p>
+              )}
+            </div>
             <button
               onClick={handleRefresh}
               className="shrink-0 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center gap-2"

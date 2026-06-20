@@ -39,13 +39,24 @@ export type ScheduleDateEntry = {
   timeEnd: string;
   groupName?: string;
   disciplineId?: string | null;
+  locationId?: string | null;
 };
+
+export function filterScheduleByLocation(
+  schedule: ScheduleSlot[],
+  locationId?: string | null
+): ScheduleSlot[] {
+  if (locationId == null) return schedule;
+  return schedule.filter((slot) => (slot.locationId ?? null) === locationId);
+}
 
 export function computeScheduleDatesForMonth(
   schedule: ScheduleSlot[],
-  yearMonth: string
+  yearMonth: string,
+  locationId?: string | null
 ): ScheduleDateEntry[] {
-  if (!schedule.length || !yearMonth) return [];
+  const scoped = filterScheduleByLocation(schedule, locationId);
+  if (!scoped.length || !yearMonth) return [];
 
   const [yearStr, monthStr] = yearMonth.split("-");
   const year = parseInt(yearStr);
@@ -59,7 +70,7 @@ export function computeScheduleDatesForMonth(
     const date = new Date(year, month - 1, day);
     const dow = jsDayToIsoDow(date.getDay());
 
-    schedule.forEach((slot) => {
+    scoped.forEach((slot) => {
       if (slot.dayOfWeek === dow) {
         const dd = String(day).padStart(2, "0");
         const mm = String(month).padStart(2, "0");
@@ -69,6 +80,7 @@ export function computeScheduleDatesForMonth(
           timeEnd: slot.timeEnd || "21:00",
           groupName: slot.groupName,
           disciplineId: slot.disciplineId ?? null,
+          locationId: slot.locationId ?? null,
         });
       }
     });
@@ -185,17 +197,21 @@ export function useAttendanceRecords(yearMonth?: string) {
   });
 }
 
-export function useScheduleDates(yearMonth?: string) {
+export function useScheduleDates(yearMonth?: string, locationId?: string | null) {
   const scheduleQuery = useSchedule();
 
   const getScheduleDatesForMonth = useCallback(
-    (month: string) => computeScheduleDatesForMonth(scheduleQuery.data ?? [], month),
-    [scheduleQuery.data]
+    (month: string, locId?: string | null) =>
+      computeScheduleDatesForMonth(scheduleQuery.data ?? [], month, locId ?? locationId),
+    [scheduleQuery.data, locationId]
   );
 
   const dates = useMemo(
-    () => (yearMonth ? computeScheduleDatesForMonth(scheduleQuery.data ?? [], yearMonth) : undefined),
-    [scheduleQuery.data, yearMonth]
+    () =>
+      yearMonth
+        ? computeScheduleDatesForMonth(scheduleQuery.data ?? [], yearMonth, locationId)
+        : undefined,
+    [scheduleQuery.data, yearMonth, locationId]
   );
 
   return {

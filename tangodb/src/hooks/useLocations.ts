@@ -1,6 +1,9 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { usePermissions } from "./usePermissions";
+import type { MemberRole, TeacherScope } from "../types/organization";
 
 export interface Location {
   id: string;
@@ -18,6 +21,17 @@ const mapLocation = (row: Record<string, unknown>): Location => ({
   createdAt: row.created_at as string | undefined,
 });
 
+export function filterAccessibleLocations(
+  locations: Location[],
+  role: MemberRole,
+  scope: TeacherScope
+): Location[] {
+  if (role !== "teacher") return locations;
+  if (scope.all_locations) return locations;
+  if (scope.location_ids.length === 0) return [];
+  return locations.filter((l) => scope.location_ids.includes(l.id));
+}
+
 export function useLocations() {
   const { enabled, withOrgId } = useOrgQueryScope();
 
@@ -31,6 +45,18 @@ export function useLocations() {
     },
     staleTime: 5 * 60 * 1000,
   });
+}
+
+export function useAccessibleLocations() {
+  const query = useLocations();
+  const { role, scope } = usePermissions();
+
+  const locations = useMemo(
+    () => filterAccessibleLocations(query.data ?? [], role, scope),
+    [query.data, role, scope]
+  );
+
+  return { ...query, locations };
 }
 
 export function useAddLocation() {

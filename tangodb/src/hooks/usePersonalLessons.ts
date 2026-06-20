@@ -91,15 +91,17 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
     paid: maskFinancial ? "no" : (row.paid as "yes" | "no") || "no",
     disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
     subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
+    locationId: row.location_id != null ? String(row.location_id) : null,
+    teacherMemberId: row.teacher_member_id != null ? String(row.teacher_member_id) : null,
     attendanceStatus: (row.attendance_status as "present" | "absent" | null) ?? null,
   };
 };
 
 const personalLessonsSelect =
-  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, price, paid, subscription_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
+  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, price, paid, subscription_id, location_id, teacher_member_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
 const personalLessonsSelectTeacher =
-  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, subscription_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
+  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, subscription_id, location_id, teacher_member_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
 export function usePersonalLessons(yearMonth?: string, options?: { enabled?: boolean }) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();

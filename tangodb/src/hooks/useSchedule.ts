@@ -12,6 +12,8 @@ const mapScheduleSlot = (row: Record<string, unknown>): ScheduleSlot => ({
   timeEnd: (row.time_end as string) || "21:00",
   disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
   groupName: ((row.group_name as string) || "").trim() || undefined,
+  locationId: row.location_id != null ? String(row.location_id) : null,
+  teacherMemberId: row.teacher_member_id != null ? String(row.teacher_member_id) : null,
 });
 
 const scheduleTable = "schedule_slots" as const;
@@ -60,10 +62,14 @@ export function useAddGroupSchedule() {
     mutationFn: async ({
       groupName,
       disciplineId,
+      locationId,
+      teacherMemberId,
       days,
     }: {
       groupName: string;
       disciplineId: string;
+      locationId: string;
+      teacherMemberId: string;
       days: ScheduleDayInput[];
     }) => {
       if (!organizationId) {
@@ -73,6 +79,12 @@ export function useAddGroupSchedule() {
       const trimmedGroup = groupName.trim();
       if (!trimmedGroup) {
         return { success: false as const, error: "Укажите название группы" };
+      }
+      if (!locationId) {
+        return { success: false as const, error: "Выберите локацию" };
+      }
+      if (!teacherMemberId) {
+        return { success: false as const, error: "Выберите преподавателя" };
       }
       if (days.length === 0) {
         return { success: false as const, error: "Добавьте хотя бы один день" };
@@ -85,6 +97,8 @@ export function useAddGroupSchedule() {
         time_end: day.timeEnd,
         discipline_id: disciplineId,
         group_name: trimmedGroup,
+        location_id: locationId,
+        teacher_member_id: teacherMemberId,
       }));
 
       const { error } = await supabase.from(scheduleTable).insert(rows);
@@ -125,11 +139,15 @@ export function useReplaceGroupSchedule() {
     mutationFn: async ({
       groupName,
       disciplineId,
+      locationId,
+      teacherMemberId,
       slots,
       removedIds,
     }: {
       groupName: string;
       disciplineId: string;
+      locationId: string | null;
+      teacherMemberId: string | null;
       slots: GroupScheduleSlotInput[];
       removedIds: string[];
     }) => {
@@ -151,6 +169,8 @@ export function useReplaceGroupSchedule() {
           time_end: slot.timeEnd,
           group_name: trimmedGroup,
           discipline_id: disciplineId,
+          location_id: locationId,
+          teacher_member_id: teacherMemberId,
         };
 
         if (slot.id != null) {
@@ -190,12 +210,20 @@ export function useDeleteGroupSchedule() {
     mutationFn: async ({
       groupName,
       disciplineId,
+      locationId,
     }: {
       groupName: string;
       disciplineId: string;
+      locationId: string | null;
     }) => {
       const trimmed = groupName.trim();
       let query = supabase.from(scheduleTable).delete().eq("discipline_id", disciplineId);
+
+      if (locationId) {
+        query = query.eq("location_id", locationId);
+      } else {
+        query = query.is("location_id", null);
+      }
 
       if (trimmed) {
         query = query.eq("group_name", trimmed);

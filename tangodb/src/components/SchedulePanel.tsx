@@ -15,6 +15,8 @@ import {
   type GroupScheduleSlotInput,
 } from "../hooks/useSchedule";
 import { useDisciplines } from "../hooks/useDisciplines";
+import { useLocations } from "../hooks/useLocations";
+import { useTeamMembers, memberRoleLabel } from "../hooks/useTeamMembers";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { dowFull, dowFullEntries, jsDayToIsoDow, timesOverlap } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
@@ -46,8 +48,12 @@ interface ScheduleGroup {
   groupKey: string;
   groupName: string;
   disciplineId: string | null;
+  locationId: string | null;
+  teacherMemberId: string | null;
   displayName: string;
   disciplineLabel: string;
+  locationLabel: string;
+  teacherLabel: string;
   slots: ScheduleSlot[];
 }
 
@@ -70,14 +76,16 @@ function makeDayRow(): DayFormRow {
 }
 
 function scheduleGroupKey(slot: ScheduleSlot): string {
+  const locationId = slot.locationId ?? "none";
   const groupName = slot.groupName ?? "";
   const disciplineId = slot.disciplineId ?? "none";
-  return `${groupName}::${disciplineId}`;
+  return `${locationId}::${groupName}::${disciplineId}`;
 }
 
 function getSlotConflict(
   slot: EditSlotRow,
   disciplineId: string,
+  locationId: string | null,
   allSchedule: ScheduleSlot[],
   personalLessons: PersonalLesson[],
   editSlotIds: Set<string | undefined>
@@ -85,12 +93,14 @@ function getSlotConflict(
   for (const s of allSchedule) {
     if (slot.id != null && s.id === slot.id) continue;
     if (editSlotIds.has(s.id) && s.disciplineId === disciplineId) continue;
+    if ((s.locationId ?? null) !== locationId) continue;
     if (s.dayOfWeek !== slot.dayOfWeek) continue;
     if (!timesOverlap(slot.time, slot.timeEnd, s.time, s.timeEnd || "21:00")) continue;
     return "в это время уже записан другой групповой урок";
   }
 
   for (const lesson of personalLessons) {
+    if ((lesson.locationId ?? null) !== locationId) continue;
     const lessonDow = jsDayToIsoDow(new Date(lesson.date).getDay());
     if (lessonDow !== slot.dayOfWeek) continue;
     if (!timesOverlap(slot.time, slot.timeEnd, lesson.timeStart, lesson.timeEnd || lesson.timeStart)) continue;
@@ -103,9 +113,13 @@ function getSlotConflict(
 export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const scheduleQuery = useSchedule();
   const disciplinesQuery = useDisciplines();
+  const locationsQuery = useLocations();
+  const teamQuery = useTeamMembers();
   const personalLessonsQuery = usePersonalLessons();
   const { data: schedule = [], isLoading: scheduleLoading, isError: scheduleError, error: scheduleErr } = scheduleQuery;
   const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
+  const { data: locations = [], isLoading: locationsLoading, isError: locationsError, error: locationsErr } = locationsQuery;
+  const { data: teamMembers = [], isLoading: teamLoading, isError: teamError, error: teamErr } = teamQuery;
   const { data: personalLessons = [], isLoading: personalLoading, isError: personalError, error: personalErr } = personalLessonsQuery;
   const addGroupSchedule = useAddGroupSchedule();
   const deleteSlot = useDeleteScheduleSlot();
@@ -116,6 +130,8 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
   const [groupName, setGroupName] = useState("");
   const [disciplineId, setDisciplineId] = useState<string | "">("");
+  const [locationId, setLocationId] = useState<string | "">("");
+  const [teacherMemberId, setTeacherMemberId] = useState<string | "">("");
   const [dayRows, setDayRows] = useState<DayFormRow[]>(() => [makeDayRow()]);
   const [deleteTarget, setDeleteTarget] = useState<ScheduleSlot | null>(null);
   const [deleteGroupTarget, setDeleteGroupTarget] = useState<ScheduleGroup | null>(null);
@@ -128,6 +144,41 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       setDisciplineId(disciplines[0].id);
     }
   }, [disciplines, disciplineId]);
+
+  useEffect(() => {
+    if (locations.length > 0 && locationId === "") {
+      setLocationId(locations[0].id);
+    }
+  }, [locations, locationId]);
+
+  const teacherOptions = useMemo(
+    () =>
+      teamMembers.filter(
+        (member) =>
+          member.is_active &&
+          (member.role === "teacher" ||
+            member.role === "owner" ||
+            member.role === "director" ||
+            member.role === "admin")
+      ),
+    [teamMembers]
+  );
+
+  useEffect(() => {
+    if (teacherOptions.length > 0 && teacherMemberId === "") {
+      setTeacherMemberId(teacherOptions[0].id);
+    }
+  }, [teacherOptions, teacherMemberId]);
+
+  const locationMap = useMemo(
+    () => Object.fromEntries(locations.map((loc) => [loc.id, loc])),
+    [locations]
+  );
+
+  const teacherMap = useMemo(
+    () => Object.fromEntries(teacherOptions.map((member) => [member.id, member])),
+    [teacherOptions]
+  );
 
   useEffect(() => {
     if (!editingGroup) return;
@@ -157,23 +208,36 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
         const first = slots[0];
         const disciplineId = first.disciplineId ?? null;
         const groupName = first.groupName ?? "";
+        const slotLocationId = first.locationId ?? null;
+        const slotTeacherId = first.teacherMemberId ?? null;
         const disciplineLabel =
           disciplineId != null
             ? disciplineMap[disciplineId]?.name || `Дисциплина #${disciplineId}`
             : "Без дисциплины";
         const displayName = groupName || disciplineLabel;
+        const locationLabel = slotLocationId
+          ? locationMap[slotLocationId]?.name ?? "Локация"
+          : "Без локации";
+        const teacherLabel = slotTeacherId
+          ? teacherMap[slotTeacherId]?.display_name ??
+            memberRoleLabel(teacherMap[slotTeacherId]?.role ?? "teacher")
+          : "Преподаватель не указан";
 
         return {
           groupKey,
           groupName,
           disciplineId,
+          locationId: slotLocationId,
+          teacherMemberId: slotTeacherId,
           displayName,
           disciplineLabel,
+          locationLabel,
+          teacherLabel,
           slots: slots.sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.time.localeCompare(b.time)),
         };
       })
-      .sort((a, b) => a.displayName.localeCompare(b.displayName, "ru"));
-  }, [schedule, disciplineMap]);
+      .sort((a, b) => a.locationLabel.localeCompare(b.locationLabel, "ru") || a.displayName.localeCompare(b.displayName, "ru"));
+  }, [schedule, disciplineMap, locationMap, teacherMap]);
 
   const updateDayRow = (key: string, patch: Partial<DayFormRow>) => {
     setDayRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
@@ -199,6 +263,14 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       toast("Выберите дисциплину.", "error");
       return;
     }
+    if (!locationId) {
+      toast("Выберите локацию.", "error");
+      return;
+    }
+    if (!teacherMemberId) {
+      toast("Выберите преподавателя.", "error");
+      return;
+    }
 
     for (const row of dayRows) {
       if (!row.time || !row.timeEnd) {
@@ -214,6 +286,8 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     const res = await addGroupSchedule.mutateAsync({
       groupName: trimmedGroup,
       disciplineId,
+      locationId,
+      teacherMemberId,
       days: dayRows.map(({ day, time, timeEnd }) => ({
         dayOfWeek: day,
         time,
@@ -263,6 +337,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     const res = await deleteGroupSchedule.mutateAsync({
       groupName: deleteGroupTarget.groupName,
       disciplineId: deleteGroupTarget.disciplineId,
+      locationId: deleteGroupTarget.locationId,
     });
     if (!res.success) {
       toast(res.error || "Не удалось удалить расписание группы", "error");
@@ -291,6 +366,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       const conflict = getSlotConflict(
         slot,
         editingGroup.disciplineId,
+        editingGroup.locationId,
         schedule,
         personalLessons,
         editIds
@@ -306,6 +382,8 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     const res = await replaceGroupSchedule.mutateAsync({
       groupName: editingGroup.groupName,
       disciplineId: editingGroup.disciplineId,
+      locationId: editingGroup.locationId,
+      teacherMemberId: editingGroup.teacherMemberId,
       slots: editSlots.map(({ dayOfWeek, time: t, timeEnd: te, id }) => ({
         id,
         dayOfWeek,
@@ -327,12 +405,12 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     setEditSlots((prev) => prev.map((s) => (s.key === key ? { ...s, ...patch } : s)));
   };
 
-  if (scheduleLoading || disciplinesLoading || personalLoading) {
+  if (scheduleLoading || disciplinesLoading || personalLoading || locationsLoading || teamLoading) {
     return <LoadingState label="Загрузка расписания..." />;
   }
 
-  const isError = scheduleError || disciplinesError || personalError;
-  const error = scheduleErr ?? disciplinesErr ?? personalErr;
+  const isError = scheduleError || disciplinesError || personalError || locationsError || teamError;
+  const error = scheduleErr ?? disciplinesErr ?? personalErr ?? locationsErr ?? teamErr;
   if (isError) return <QueryErrorState error={error} />;
 
   const editSlotIdSet = new Set(editSlots.map((s) => s.id));
@@ -372,6 +450,38 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               onChange={setDisciplineId}
               toast={toast}
             />
+
+            <AppSelect
+              label="Локация"
+              value={locationId}
+              onChange={(e) => setLocationId(e.target.value)}
+            >
+              {locations.length === 0 ? (
+                <option value="">Нет локаций</option>
+              ) : (
+                locations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </option>
+                ))
+              )}
+            </AppSelect>
+
+            <AppSelect
+              label="Преподаватель"
+              value={teacherMemberId}
+              onChange={(e) => setTeacherMemberId(e.target.value)}
+            >
+              {teacherOptions.length === 0 ? (
+                <option value="">Нет преподавателей</option>
+              ) : (
+                teacherOptions.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.display_name || memberRoleLabel(member.role, member.meta)}
+                  </option>
+                ))
+              )}
+            </AppSelect>
 
             {dayRows.map((row) => (
               <div key={row.key} className="space-y-3 pt-1 border-t border-slate-100 first:border-t-0 first:pt-0">
@@ -478,6 +588,9 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                     {group.groupName && (
                       <p className="text-[10px] text-slate-400 font-sans mt-0.5">{group.disciplineLabel}</p>
                     )}
+                    <p className="text-[10px] text-slate-400 font-sans mt-0.5">
+                      {group.locationLabel} · {group.teacherLabel}
+                    </p>
                   </div>
                   {group.disciplineId != null && canWriteSchedule && (
                     <div className="flex items-center gap-1 shrink-0">
@@ -572,6 +685,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                       getSlotConflict(
                         slot,
                         editingGroup.disciplineId,
+                        editingGroup.locationId,
                         schedule,
                         personalLessons,
                         editSlotIdSet
