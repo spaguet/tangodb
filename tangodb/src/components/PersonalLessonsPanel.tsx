@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, CalendarDays, ChevronLeft, ChevronRight, Ticket, Edit, X } from "lucide-react";
+import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, CalendarDays, ChevronLeft, ChevronRight, Ticket, Edit, X, Coins, CircleOff } from "lucide-react";
 import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
@@ -556,15 +556,43 @@ export default function PersonalLessonsPanel({
                 ? "Нажмите, чтобы отменить оплату"
                 : "Нажмите, чтобы подтвердить оплату")
             }
-            className={`text-xs font-sans font-semibold shrink-0 cursor-pointer disabled:opacity-60 ${
-              isPaid ? "text-indigo-600 hover:text-indigo-700" : "text-rose-600 hover:text-rose-700"
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-sans font-semibold shrink-0 transition-colors cursor-pointer disabled:opacity-60 ${
+              isPaid
+                ? "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                : "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100"
             }`}
           >
-            {isPaid ? "Оплачено" : "Не оплачено"}
+            {isPaid ? (
+              <>
+                <CircleOff className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                Оплачено
+              </>
+            ) : (
+              <>
+                <Coins className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                Не оплачено
+              </>
+            )}
           </button>
           ) : (
-            <span className={`text-xs font-sans font-semibold shrink-0 ${isPaid ? "text-indigo-600" : "text-rose-600"}`}>
-              {isPaid ? "Оплачено" : "Не оплачено"}
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-sans font-semibold shrink-0 ${
+                isPaid
+                  ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                  : "bg-rose-50 text-rose-600 border-rose-200"
+              }`}
+            >
+              {isPaid ? (
+                <>
+                  <CircleOff className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                  Оплачено
+                </>
+              ) : (
+                <>
+                  <Coins className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                  Не оплачено
+                </>
+              )}
             </span>
           )}
         </div>
