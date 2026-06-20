@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { formatClientName } from "../lib/utils";
 import type { Client, PersonalLesson } from "../types";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
@@ -67,7 +68,7 @@ const enrichLessonClientDisplay = (
 const joinClientNames = (parts: string[]): string =>
   parts.filter(Boolean).join(" & ") || "Клиент не указан";
 
-const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => {
+const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean): PersonalLesson => {
   const clientId1 = asId(row.client_id1);
   const clientId2 = asId(row.client_id2);
   const clientId3 = asId(row.client_id3);
@@ -86,8 +87,8 @@ const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => {
     date: String(row.date ?? "").slice(0, 10),
     timeStart: (row.time_start as string) || "14:00",
     timeEnd: (row.time_end as string) || "15:00",
-    price: Number(row.price) || 0,
-    paid: (row.paid as "yes" | "no") || "no",
+    price: maskFinancial ? 0 : Number(row.price) || 0,
+    paid: maskFinancial ? "no" : (row.paid as "yes" | "no") || "no",
     disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
     subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
     attendanceStatus: (row.attendance_status as "present" | "absent" | null) ?? null,
@@ -97,18 +98,24 @@ const mapPersonalLesson = (row: Record<string, unknown>): PersonalLesson => {
 const personalLessonsSelect =
   "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, price, paid, subscription_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
+const personalLessonsSelectTeacher =
+  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, subscription_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
+
 export function usePersonalLessons(yearMonth?: string) {
   const { enabled, withOrgId } = useOrgQueryScope();
+  const { role } = useOrganization();
+  const maskFinancial = role === "teacher";
   const baseKey = yearMonth ? [...personalLessonsQueryKey, yearMonth] : personalLessonsQueryKey;
   const clientsQuery = useClientDirectory();
 
   const lessonsQuery = useQuery({
-    queryKey: withOrgId(baseKey),
+    queryKey: withOrgId([...baseKey, { maskFinancial }]),
     enabled,
     queryFn: async () => {
+      const selectColumns = maskFinancial ? personalLessonsSelectTeacher : personalLessonsSelect;
       let query = supabase
         .from("personal_lessons")
-        .select(personalLessonsSelect)
+        .select(selectColumns)
         .order("date", { ascending: false });
 
       if (yearMonth) {
@@ -138,7 +145,9 @@ export function usePersonalLessons(yearMonth?: string) {
         data = fallback.data;
       }
 
-      return (data ?? []).map((row) => mapPersonalLesson(row as Record<string, unknown>));
+      return (data ?? []).map((row) =>
+        mapPersonalLesson(row as unknown as Record<string, unknown>, maskFinancial)
+      );
     },
     staleTime: 30 * 1000,
   });

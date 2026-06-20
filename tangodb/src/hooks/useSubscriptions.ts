@@ -3,12 +3,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { formatClientName, normalizeSubscriptionPairMonth } from "../lib/utils";
 import type { ActiveSubscription, Subscription } from "../types";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const subscriptionsQueryKey = ["subscriptions"] as const;
 
-const mapSubscription = (row: Record<string, unknown>): Subscription => ({
+const TEACHER_SUBSCRIPTION_SELECT =
+  "id, type, client_id1, client_id2, client_id3, lessons_total, lessons_left, freeze_used, activation_date, status, pair_month, discipline_id, category";
+
+const mapSubscription = (row: Record<string, unknown>, maskFinancial: boolean): Subscription => ({
   id: row.id as string,
   type: row.type as string,
   clientId1: row.client_id1 as string,
@@ -21,23 +25,31 @@ const mapSubscription = (row: Record<string, unknown>): Subscription => ({
   status: row.status as "active" | "finished",
   pairMonth: row.pair_month != null && row.pair_month !== "" ? String(row.pair_month) : "",
   disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
-  priceId: row.price_id != null ? String(row.price_id) : null,
+  priceId: maskFinancial
+    ? null
+    : row.price_id != null
+      ? String(row.price_id)
+      : null,
   category: (row.category as "group" | "private") || "group",
 });
 
 export function useSubscriptions() {
   const { enabled, withOrgId } = useOrgQueryScope();
+  const { role } = useOrganization();
+  const maskFinancial = role === "teacher";
 
   return useQuery({
-    queryKey: withOrgId(subscriptionsQueryKey),
+    queryKey: withOrgId([...subscriptionsQueryKey, { maskFinancial }]),
     enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscriptions")
-        .select("*")
+        .select(maskFinancial ? TEACHER_SUBSCRIPTION_SELECT : "*")
         .order("activation_date", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map(mapSubscription);
+      return (data ?? []).map((row) =>
+        mapSubscription(row as unknown as Record<string, unknown>, maskFinancial)
+      );
     },
     staleTime: 30 * 1000,
   });

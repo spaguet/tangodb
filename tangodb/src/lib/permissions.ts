@@ -10,6 +10,7 @@ export const EMPTY_TEACHER_SCOPE: TeacherScope = {
 
 export type PanelId =
   | "dashboard"
+  | "finance"
   | "clients"
   | "subscriptions"
   | "subscriptions_sell"
@@ -49,6 +50,12 @@ export type PermissionAction =
   | "disciplines.write"
   | "dashboard.read"
   | "dashboard.export"
+  | "reports.operational"
+  | "reports.financial"
+  | "finance.read"
+  | "finance.export"
+  | "payments.write"
+  | "payments.read.operational"
   | "settings.manage"
   | "team.manage"
   | "license.view"
@@ -62,12 +69,17 @@ export interface PermissionContext {
 export interface PermissionOptions {
   scope?: TeacherScope;
   teachersCanManageDisciplines?: boolean;
+  teachersCanSellSubscriptions?: boolean;
   isReadOnly?: boolean;
   context?: PermissionContext;
 }
 
-const ADMIN_ROLES: MemberRole[] = ["owner", "director", "admin"];
-const READ_ALL_ROLES: MemberRole[] = [...ADMIN_ROLES, "accountant"];
+const STRATEGIC_ROLES: MemberRole[] = ["owner", "director"];
+const OPERATIONAL_READ_ROLES: MemberRole[] = ["owner", "director", "admin"];
+const FINANCIAL_READ_ROLES: MemberRole[] = ["owner", "director", "accountant"];
+
+/** §9: hardcoded until R2 migration adds organization_settings columns */
+const DEFAULT_TEACHERS_CAN_SELL_SUBSCRIPTIONS = false;
 
 const WRITE_ACTIONS = new Set<PermissionAction>([
   "clients.write",
@@ -79,13 +91,14 @@ const WRITE_ACTIONS = new Set<PermissionAction>([
   "personal_lessons.sell",
   "prices.write",
   "disciplines.write",
+  "payments.write",
   "settings.manage",
   "team.manage",
   "license.activate",
 ]);
 
-function isAdminRole(role: MemberRole): boolean {
-  return ADMIN_ROLES.includes(role);
+function isOperationalAdmin(role: MemberRole): boolean {
+  return OPERATIONAL_READ_ROLES.includes(role);
 }
 
 function hasDisciplineAccess(scope: TeacherScope, disciplineId?: string | null): boolean {
@@ -124,7 +137,8 @@ function canReadScopedCrm(
   scope: TeacherScope,
   context?: PermissionContext
 ): boolean {
-  if (READ_ALL_ROLES.includes(role)) return true;
+  if (isOperationalAdmin(role)) return true;
+  if (role === "accountant") return false;
   if (role !== "teacher") return false;
   if (scope.can_view_all_clients) return true;
   return teacherMatchesContext(scope, context);
@@ -135,9 +149,13 @@ function canWriteScopedCrm(
   scope: TeacherScope,
   context?: PermissionContext
 ): boolean {
-  if (isAdminRole(role)) return true;
+  if (isOperationalAdmin(role)) return true;
   if (role !== "teacher") return false;
   return teacherMatchesContext(scope, context);
+}
+
+function teachersCanSellSubscriptions(options?: PermissionOptions): boolean {
+  return options?.teachersCanSellSubscriptions ?? DEFAULT_TEACHERS_CAN_SELL_SUBSCRIPTIONS;
 }
 
 export function can(role: MemberRole | null, action: PermissionAction, options?: PermissionOptions): boolean {
@@ -150,13 +168,33 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
   if (isReadOnly && WRITE_ACTIONS.has(action)) return false;
 
   switch (action) {
+    case "reports.operational":
+      if (isOperationalAdmin(role)) return true;
+      if (role === "teacher") return teacherHasAnyScopeAccess(scope);
+      return false;
+
+    case "reports.financial":
+      return FINANCIAL_READ_ROLES.includes(role);
+
     case "dashboard.read":
-      return true;
+      return (
+        can(role, "reports.operational", options) || can(role, "reports.financial", options)
+      );
 
     case "dashboard.export":
-      if (READ_ALL_ROLES.includes(role)) return true;
+      if (STRATEGIC_ROLES.includes(role) || role === "accountant") return true;
       if (role === "teacher") return teacherMatchesContext(scope, context);
       return false;
+
+    case "finance.read":
+    case "finance.export":
+      return FINANCIAL_READ_ROLES.includes(role);
+
+    case "payments.write":
+      return isOperationalAdmin(role);
+
+    case "payments.read.operational":
+      return isOperationalAdmin(role);
 
     case "clients.read":
       return canReadScopedCrm(role, scope, context);
@@ -172,6 +210,11 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
 
     case "subscriptions.write":
     case "subscriptions.sell":
+      if (role === "teacher") {
+        return teachersCanSellSubscriptions(options) && teacherMatchesContext(scope, context);
+      }
+      return canWriteScopedCrm(role, scope, context);
+
     case "attendance.write":
     case "schedule.write":
     case "personal_lessons.write":
@@ -179,13 +222,13 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return canWriteScopedCrm(role, scope, context);
 
     case "prices.read":
-      return isAdminRole(role) || role === "accountant";
+      return isOperationalAdmin(role) || role === "accountant";
 
     case "prices.write":
-      return isAdminRole(role);
+      return STRATEGIC_ROLES.includes(role);
 
     case "disciplines.read":
-      if (isAdminRole(role) || role === "accountant") return true;
+      if (isOperationalAdmin(role)) return true;
       if (role === "teacher") {
         return (
           (options?.teachersCanManageDisciplines ?? false) && teacherHasAnyScopeAccess(scope)
@@ -194,7 +237,8 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return false;
 
     case "disciplines.write":
-      if (isAdminRole(role)) return true;
+      if (STRATEGIC_ROLES.includes(role)) return true;
+      if (role === "admin") return true;
       if (role === "teacher") {
         if (!(options?.teachersCanManageDisciplines ?? false)) return false;
         return teacherMatchesContext(scope, context);
@@ -202,13 +246,13 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return false;
 
     case "settings.manage":
-      return isAdminRole(role);
+      return STRATEGIC_ROLES.includes(role);
 
     case "team.manage":
-      return isAdminRole(role);
+      return STRATEGIC_ROLES.includes(role);
 
     case "license.view":
-      return role === "owner" || role === "director" || role === "admin";
+      return STRATEGIC_ROLES.includes(role);
 
     case "license.activate":
       return role === "owner";
@@ -226,6 +270,8 @@ export function canAccessPanel(
   switch (panel) {
     case "dashboard":
       return can(role, "dashboard.read", options);
+    case "finance":
+      return can(role, "finance.read", options);
     case "clients":
       return can(role, "clients.read", options);
     case "subscriptions":
@@ -243,7 +289,13 @@ export function canAccessPanel(
     case "prices":
       return can(role, "prices.read", options);
     case "settings":
-      return can(role, "settings.manage", options) || can(role, "dashboard.export", options) || can(role, "license.view", options) || can(role, "disciplines.read", options);
+      if (can(role, "settings.manage", options)) return true;
+      if (can(role, "finance.export", options) || can(role, "dashboard.export", options)) {
+        return true;
+      }
+      if (can(role, "license.view", options)) return true;
+      if (role === "teacher" && can(role, "disciplines.read", options)) return true;
+      return false;
     default:
       return false;
   }
@@ -278,9 +330,11 @@ export function canAccessSettingsSection(
     case "locations":
       return can(role, "settings.manage", options);
     case "disciplines":
-      return can(role, "disciplines.read", options);
+      if (can(role, "settings.manage", options)) return true;
+      if (role === "teacher" && can(role, "disciplines.read", options)) return true;
+      return false;
     case "data":
-      return can(role, "dashboard.export", options);
+      return can(role, "dashboard.export", options) || can(role, "finance.export", options);
     case "team":
       return can(role, "team.manage", options);
     case "license":
@@ -292,6 +346,7 @@ export function canAccessSettingsSection(
 
 export function panelIdFromPath(pathname: string): PanelId {
   if (pathname === "/") return "dashboard";
+  if (pathname.startsWith("/finance")) return "finance";
   if (pathname === "/clients") return "clients";
   if (pathname === "/subscriptions/sell") return "subscriptions_sell";
   if (pathname.startsWith("/subscriptions")) return "subscriptions";

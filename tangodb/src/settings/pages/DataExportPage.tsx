@@ -3,8 +3,8 @@ import { Download, ChevronLeft, ChevronRight } from "lucide-react";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import CsvExportModal from "../../components/ui/CsvExportModal";
-import RequirePermission from "../../components/RequirePermission";
 import { useToast } from "../../App";
+import { usePermissions } from "../../hooks/usePermissions";
 import { useClientDirectory } from "../../hooks/useClients";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
 import { usePersonalLessons } from "../../hooks/usePersonalLessons";
@@ -22,6 +22,8 @@ function shiftMonth(yearMonth: string, delta: number): string {
 
 export default function DataExportPage() {
   const toast = useToast();
+  const { can } = usePermissions();
+  const canExport = can("dashboard.export") || can("finance.export");
   const { orgLoading, organizationId } = useOrganization();
   const { settings } = useSettings();
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
@@ -160,7 +162,7 @@ export default function DataExportPage() {
           </button>
         )}
 
-        <RequirePermission action="dashboard.export">
+        {canExport && (
           <button
             type="button"
             onClick={handleExportAll}
@@ -170,7 +172,7 @@ export default function DataExportPage() {
             <Download className="w-4 h-4" />
             {exporting ? "Экспорт..." : "Экспорт всего"}
           </button>
-        </RequirePermission>
+        )}
       </div>
 
       <CsvExportModal

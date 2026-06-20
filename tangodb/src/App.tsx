@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   Coins,
   LayoutDashboard,
+  Landmark,
   Menu,
   X,
   LogOut,
@@ -59,6 +60,7 @@ import SchedulePage from "./pages/SchedulePage";
 import AttendancePage from "./pages/AttendancePage";
 import PersonalPage from "./pages/PersonalPage";
 import PricesPage from "./pages/PricesPage";
+import FinancePage from "./pages/FinancePage";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import OfflineBanner from "./components/ui/OfflineBanner";
 import ReadOnlyBanner from "./components/ui/ReadOnlyBanner";
@@ -107,6 +109,10 @@ const NAV_SECTIONS: NavSection[] = [
     items: [{ icon: LayoutDashboard, label: "Обзор и статистика", path: "/" }],
   },
   {
+    label: "Финансы",
+    items: [{ icon: Landmark, label: "Финансы", path: "/finance" }],
+  },
+  {
     label: "Клиенты",
     items: [{ icon: Users, label: "База клиентов", path: "/clients" }],
   },
@@ -150,6 +156,7 @@ const MOBILE_TABS: MobileTabItem[] = [
 
 function getPanelTitle(pathname: string, subscriptionsTab: string, personalTab: string): string {
   if (pathname === "/") return "Обзор и статистика";
+  if (pathname.startsWith("/finance")) return "Финансы";
   if (pathname === "/clients") return "Клиенты";
   if (pathname.startsWith("/subscriptions")) {
     return subscriptionsTab === "sell" ? "Продажа абонемента" : "Действующие абонементы";
@@ -571,6 +578,7 @@ export default function App() {
                   <Route path="personal/sell" element={<ErrorBoundary><PersonalPage initialTab="sell" /></ErrorBoundary>} />
                   <Route path="personal/book" element={<Navigate to="/personal/sell" replace />} />
                   <Route path="prices" element={<ErrorBoundary><PricesPage /></ErrorBoundary>} />
+                  <Route path="finance/*" element={<ErrorBoundary><FinancePage /></ErrorBoundary>} />
                   <Route path="settings" element={<ErrorBoundary><SettingsLayout /></ErrorBoundary>}>
                     <Route index element={<ErrorBoundary><SettingsIndexRedirect /></ErrorBoundary>} />
                     <Route path="general" element={<ErrorBoundary><GeneralSettingsPage /></ErrorBoundary>} />

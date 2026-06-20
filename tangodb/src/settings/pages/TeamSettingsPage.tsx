@@ -33,7 +33,7 @@ function formatExpires(iso: string): string {
 export default function TeamSettingsPage() {
   const { t } = useI18n();
   const showToast = useToast();
-  const { role: currentRole } = usePermissions();
+  const { role: currentRole, can } = usePermissions();
   const { data: members = [], isLoading, isError, error } = useTeamMembers();
   const { data: invites = [], isLoading: invitesLoading } = useTeamInvites();
   const { data: auditRows = [] } = useOrgAuditLog(20);
@@ -77,14 +77,14 @@ export default function TeamSettingsPage() {
   };
 
   const canAssignRole = (targetRole: MemberRole): boolean => {
+    if (!can("team.manage")) return false;
     if (currentRole === "owner" || currentRole === "director") {
       return targetRole !== "owner" && targetRole !== "director";
     }
-    if (currentRole === "admin") {
-      return targetRole === "teacher" || targetRole === "accountant";
-    }
     return false;
   };
+
+  const canInvite = can("team.manage");
 
   const canManageMember = (memberRole: MemberRole): boolean => {
     if (memberRole === "owner") return currentRole === "owner";
@@ -99,6 +99,7 @@ export default function TeamSettingsPage() {
         <p className="text-xs text-slate-500 mt-1">{t("team.subtitle")}</p>
       </div>
 
+      {canInvite && (
       <form
         onSubmit={handleInvite}
         className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-3"
@@ -157,8 +158,9 @@ export default function TeamSettingsPage() {
           </div>
         )}
       </form>
+      )}
 
-      {!invitesLoading && invites.length > 0 && (
+      {canInvite && !invitesLoading && invites.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
           <h3 className="font-sans text-sm font-semibold text-slate-800">{t("team.pendingInvites")}</h3>
           <div className="space-y-1.5">
@@ -263,7 +265,7 @@ export default function TeamSettingsPage() {
         )}
       </div>
 
-      {auditRows.length > 0 && (
+      {canInvite && auditRows.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
           <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
             <ClipboardList className="w-4 h-4 text-indigo-500" />
