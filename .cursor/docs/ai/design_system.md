@@ -411,6 +411,28 @@ bg-slate-100 rounded-lg animate-pulse
 
 ---
 
+### Finance sub-layout (R5)
+
+Боковая навигация внутри `/finance/*` — по образцу `SettingsLayout`:
+
+```
+flex flex-col lg:flex-row gap-5 lg:gap-8
+nav: lg:w-52, NavLink с active = bg-indigo-50 text-indigo-700 border-indigo-100
+```
+
+Эталон: `tangodb/src/pages/FinanceLayout.tsx`.
+
+### Dashboard split (R5)
+
+| Роль | Компонент | Содержимое |
+|------|-----------|------------|
+| admin, teacher | `OperationalDashboard` | абонементы, должники, посещаемость, платежи за день |
+| owner, director, accountant | `FinancialDashboard` | выручка, дебиторка, ссылки на `/finance/*` |
+
+Выбор по `can('reports.financial')` — приоритет финансового обзора для owner/director/accountant.
+
+---
+
 ## Правила для агента
 
 1. **Акцентный цвет — только indigo.** Не добавлять violet/emerald/green/purple.
@@ -438,7 +460,8 @@ bg-slate-100 rounded-lg animate-pulse
 | Глобальные стили | `tangodb/src/index.css` |
 | Select / labels | `tangodb/src/components/ui/AppSelect.tsx` |
 | Tabs | `tangodb/src/components/ui/PageTabs.tsx` |
-| Dashboard widgets | `tangodb/src/components/Dashboard.tsx` |
+| Dashboard widgets | `tangodb/src/components/OperationalDashboard.tsx`, `FinancialDashboard.tsx` |
+| Finance sub-nav | `tangodb/src/pages/FinanceLayout.tsx` |
 | Auth forms | `tangodb/src/auth/AuthLayout.tsx` |
 | Primary forms | `tangodb/src/components/SchedulePanel.tsx` |
 | Empty state | `tangodb/src/components/SchedulePanel.tsx`, `PersonalLessonsPanel.tsx` |
@@ -449,6 +472,7 @@ bg-slate-100 rounded-lg animate-pulse
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-06-20 | RBAC R5: FinanceLayout (sub-nav как Settings), split Operational/Financial dashboard. |
 | 2026-06-19 | Унификация палитры: violet/emerald заменены на indigo; rose сохранён для ошибок. Документ заполнен. |
 | 2026-06-19 | Ревью: добавлены брейкпоинты, z-index, иконки, empty state, skeleton; пояснение семантики indigo; правила агента расширены. Z-index и брейкпоинты сверены с кодом. |
 | 2026-06-19 | Типографика: 8px/9px заменены на 10px/11px в nav и logo; минимум системы — 10px. |

@@ -1,12 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import Dashboard from "../components/Dashboard";
+import OperationalDashboard from "../components/OperationalDashboard";
+import FinancialDashboard from "../components/FinancialDashboard";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
-import { useToast } from "../App";
 import { useClientDirectory } from "../hooks/useClients";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
-import { usePrices } from "../hooks/usePrices";
-import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptions } from "../hooks/useSubscriptions";
 import { usePayments } from "../hooks/usePayments";
 import { usePermissions } from "../hooks/usePermissions";
@@ -15,48 +13,44 @@ import { useOrganization } from "../organization/OrganizationProvider";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const toast = useToast();
   const { orgLoading, organizationId } = useOrganization();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
+  const { can } = usePermissions();
+
+  const showFinancial = can("reports.financial");
+  const showOperational = can("reports.operational") && !showFinancial;
 
   const clientsQuery = useClientDirectory();
   const subscriptionsQuery = useSubscriptions();
-  const scheduleQuery = useSchedule();
   const personalLessonsQuery = usePersonalLessons();
-  const pricesQuery = usePrices();
-  const { can } = usePermissions();
-  const showOperationalPayments = can("payments.read.operational");
+  const showOperationalPayments = showOperational && can("payments.read.operational");
   const todayPaymentsQuery = usePayments(
     showOperationalPayments ? { todayOnly: true } : { enabled: false }
   );
 
-  const { data: clients = [], isLoading: clientsLoading, isError: clientsError, error: clientsErr } = clientsQuery;
-  const { data: subscriptions = [], isLoading: subsLoading, isError: subsError, error: subsErr } = subscriptionsQuery;
-  const { data: schedule = [], isLoading: scheduleLoading, isError: scheduleError, error: scheduleErr } = scheduleQuery;
-  const { data: personalLessons = [], isLoading: personalLoading, isError: personalError, error: personalErr } = personalLessonsQuery;
-  const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
-
   const isLoading =
-    clientsLoading || subsLoading || scheduleLoading || personalLoading || pricesLoading ||
-    (showOperationalPayments && todayPaymentsQuery.isLoading);
+    (showFinancial || showOperational) &&
+    (clientsQuery.isLoading ||
+      subscriptionsQuery.isLoading ||
+      personalLessonsQuery.isLoading ||
+      (showOperationalPayments && todayPaymentsQuery.isLoading));
   const isError =
-    clientsError || subsError || scheduleError || personalError || pricesError ||
+    clientsQuery.isError ||
+    subscriptionsQuery.isError ||
+    personalLessonsQuery.isError ||
     (showOperationalPayments && todayPaymentsQuery.isError);
-  const error = clientsErr ?? subsErr ?? scheduleErr ?? personalErr ?? pricesErr ??
-    (showOperationalPayments ? todayPaymentsQuery.error : null);
+  const error =
+    queryError(clientsQuery) ??
+    queryError(subscriptionsQuery) ??
+    queryError(personalLessonsQuery) ??
+    (showOperationalPayments ? queryError(todayPaymentsQuery) : null);
 
   const handleNavigate = (panel: string) => {
     const routes: Record<string, { path: string; subTab?: "active" | "sell"; persTab?: "view" | "sell" }> = {
-      dashboard: { path: "/" },
-      newClient: { path: "/clients" },
-      sellSub: { path: "/subscriptions/sell", subTab: "sell" },
       activeSubs: { path: "/subscriptions", subTab: "active" },
-      schedule: { path: "/schedule" },
-      attendance: { path: "/attendance" },
       personalView: { path: "/personal", persTab: "view" },
-      personalSell: { path: "/personal/sell", persTab: "sell" },
-      prices: { path: "/prices" },
+      attendance: { path: "/attendance" },
     };
 
     const route = routes[panel] ?? { path: "/" };
@@ -66,20 +60,40 @@ export default function DashboardPage() {
   };
 
   if (orgLoading || !organizationId) return <LoadingState label="Загрузка организации..." />;
+  if (!showFinancial && !showOperational) {
+    return (
+      <div className="panel-page-stack">
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs py-20 text-center">
+          <p className="text-sm text-slate-500">Нет доступа к обзору для вашей роли.</p>
+        </div>
+      </div>
+    );
+  }
   if (isLoading) return <LoadingState label="Загрузка обзора..." />;
   if (isError) return <QueryErrorState error={error} />;
 
+  if (showFinancial) {
+    return (
+      <FinancialDashboard
+        clients={clientsQuery.data ?? []}
+        subscriptions={subscriptionsQuery.data ?? []}
+        personalLessons={personalLessonsQuery.data ?? []}
+      />
+    );
+  }
+
   return (
-    <Dashboard
-      clients={clients}
-      subscriptions={subscriptions}
-      schedule={schedule}
-      personalLessons={personalLessons}
-      prices={prices}
+    <OperationalDashboard
+      clients={clientsQuery.data ?? []}
+      subscriptions={subscriptionsQuery.data ?? []}
+      personalLessons={personalLessonsQuery.data ?? []}
       todayPayments={todayPaymentsQuery.data ?? []}
       showOperationalPayments={showOperationalPayments}
-      toast={toast}
       onNavigate={handleNavigate}
     />
   );
+}
+
+function queryError(query: { error: unknown | null; isError: boolean }) {
+  return query.isError ? query.error : null;
 }
