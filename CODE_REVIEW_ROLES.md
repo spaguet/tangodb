@@ -21,7 +21,7 @@
 | Выявлен RBAC-8 (SQL export overrides расходятся с UI §9) | ✅ |
 | **Этап 0: NAV-1, NAV-2, RBAC-6 — решения приняты и реализованы** | ✅ 2026-06-20 |
 | Исправление кода (P1/P2 bundle) | ⬜ следующий этап |
-| Деплой / коммит / пуш | ⬜ по завершении этапа |
+| Деплой / коммит / пуш | ✅ коммит f09bf3f; push — вручную (main protected) |
 
 **Допущения аудита:**
 - teacher — с непустым scope (`all_disciplines`, `can_view_all_clients`);
@@ -585,11 +585,11 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | RBAC-7 | P2 | Redirect вместо spinner на `/` без dashboard | ⬜ TODO | — |
 | RBAC-8 | P2 | Export helpers §9 + accountant financial export | ⬜ TODO | — |
 | RBAC-3 | P2 | RLS teacher subscriptions + `teachers_can_sell_subscriptions` | ⬜ TODO | — |
-| RBAC-4 | P2 | Teacher scoped home (не OperationalDashboard) | ✅ Этап 0 (NAV-2) | — |
-| RBAC-5 | P2 | Accountant: скрыть /prices nav | ✅ Этап 0 (NAV-1) | — |
-| RBAC-6 | P3 | admin disciplines.write — решение стейкхолдера | ✅ убрано у admin | — |
-| NAV-1 | — | Accountant prices nav policy | ✅ вариант B | — |
-| NAV-2 | — | Teacher home screen policy | ✅ вариант C | — |
+| RBAC-4 | P2 | Teacher scoped home (не OperationalDashboard) | ✅ Этап 0 (NAV-2) | f09bf3f |
+| RBAC-5 | P2 | Accountant: скрыть /prices nav | ✅ Этап 0 (NAV-1) | f09bf3f |
+| RBAC-6 | P3 | admin disciplines.write — решение стейкхолдера | ✅ убрано у admin | f09bf3f |
+| NAV-1 | — | Accountant prices nav policy | ✅ вариант B | f09bf3f |
+| NAV-2 | — | Teacher home screen policy | ✅ вариант C | f09bf3f |
 
 ---
 
