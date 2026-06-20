@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-20 — RBAC-6 verification pass: can_manage_disciplines() + RLS guard (admin REST deny); DisciplineSelect скрывает «Добавить дисциплину» без disciplines.write; test:rbac asserts.
 2026-06-20 — Промпт 5 Regression QA re-run: scripts/rbac-regression-check.mjs + npm run test:rbac; §10 PASS (lint, build, migration sync); новых дефектов не выявлено.
 2026-06-20 — RBAC-4 + RBAC-5 (verification pass): design_system — TeacherScopedDashboard и актуальная таблица dashboard split; regression asserts для teacher empty scope в assertReceptionPermissions.
 2026-06-20 — RBAC-3: teacher_can_write_subscriptions() + guard на subscriptions_insert/update/delete_teacher — write только при teachers_can_sell_subscriptions=true и scope; default deny (REST не обходит UI).

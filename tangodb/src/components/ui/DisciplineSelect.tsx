@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import type { ToastType } from "../../App";
 import type { Discipline } from "../../types";
+import { usePermissions } from "../../hooks/usePermissions";
 import AddDisciplineModal from "./AddDisciplineModal";
 import AppSelect from "./AppSelect";
 
@@ -23,6 +24,8 @@ export default function DisciplineSelect({
   required = true,
 }: DisciplineSelectProps) {
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const { can } = usePermissions();
+  const canAddDiscipline = can("disciplines.write");
 
   return (
     <div className="field-stack">
@@ -44,20 +47,24 @@ export default function DisciplineSelect({
           </option>
         ))}
       </AppSelect>
-      <button
-        type="button"
-        onClick={() => setAddModalOpen(true)}
-        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer mt-0.5"
-      >
-        <Plus className="w-3 h-3" />
-        Добавить дисциплину
-      </button>
-      <AddDisciplineModal
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        toast={toast}
-        onSuccess={(discipline) => onChange(discipline.id)}
-      />
+      {canAddDiscipline && (
+        <>
+          <button
+            type="button"
+            onClick={() => setAddModalOpen(true)}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer mt-0.5"
+          >
+            <Plus className="w-3 h-3" />
+            Добавить дисциплину
+          </button>
+          <AddDisciplineModal
+            open={addModalOpen}
+            onClose={() => setAddModalOpen(false)}
+            toast={toast}
+            onSuccess={(discipline) => onChange(discipline.id)}
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -70,6 +70,8 @@ assert(!can("admin", "settings.manage", optsFor("admin")), "admin no settings");
 assert(!can("admin", "prices.write", optsFor("admin")), "admin no prices.write");
 assert(!can("admin", "dashboard.export", optsFor("admin")), "admin no export by default");
 assert(can("admin", "prices.read", optsFor("admin")), "admin prices.read");
+assert(!can("admin", "disciplines.write", optsFor("admin")), "admin no disciplines.write (RBAC-6)");
+assert(can("admin", "disciplines.read", optsFor("admin")), "admin disciplines.read (RBAC-6)");
 assert(can("teacher", "attendance.write", optsFor("teacher")), "teacher attendance");
 assert(can("teacher", "personal_lessons.sell", optsFor("teacher")), "teacher personal sell");
 assert(!can("teacher", "subscriptions.sell", optsFor("teacher")), "teacher no sub sell default");

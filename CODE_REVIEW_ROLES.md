@@ -20,6 +20,7 @@
 | Выявлен RBAC-7 (spinner на `/`) | ✅ |
 | Выявлен RBAC-8 (SQL export overrides расходятся с UI §9) | ✅ |
 | **Этап 0: NAV-1, NAV-2, RBAC-6 — решения приняты и реализованы** | ✅ 2026-06-20 |
+| **RBAC-6 verification pass + RLS/UI gaps** | ✅ 2026-06-20 |
 | **Этап 1: P1 bundle (RBAC-2 → RBAC-1 → RBAC-7)** | ✅ 2026-06-20 |
 | **Этап 2: RBAC-8 — export helpers §9 + accountant financial export** | ✅ 2026-06-20 |
 | **Этап 2: RBAC-3 — teacher subscriptions RLS + teachers_can_sell_subscriptions** | ✅ 2026-06-20 |
@@ -432,9 +433,12 @@ case "prices":
 
 ---
 
-### 🟡 RBAC-6 [P3] — `disciplines.write` для admin — **Этап 0: решено**
+### 🟡 RBAC-6 [P3] — `disciplines.write` для admin — **✅ ИСПРАВЛЕНО 2026-06-20**
 
-**Файл:** `tangodb/src/lib/permissions.ts:352–354`
+**Файлы:**
+- `tangodb/src/lib/permissions.ts` — `case "disciplines.write"`
+- `tangodb/src/components/ui/DisciplineSelect.tsx` *(verification pass)*
+- `tangodb/supabase/migrations/20260707000001_v2_admin_disciplines_write_guard.sql` *(verification pass)*
 
 Admin может `disciplines.write` вне settings. §5.3 не запрещает явно, но может расходиться с «только операционка без стратегии».
 
@@ -442,9 +446,22 @@ Admin может `disciplines.write` вне settings. §5.3 не запреща�
 
 **Обоснование:** §4 строка 156 — «Локации / направления» только через `/settings/*` (owner/director). `DisciplinesPanel` доступен только в `DisciplinesSettingsPage` (закрыт `settings.manage`). Admin сохраняет `disciplines.read` для контекста продаж.
 
-**Исправление:** удалена ветка `if (role === "admin") return true` в `case "disciplines.write"`. Regression: `assertReceptionPermissions()` в dev.
+**Исправление (Этап 0, f09bf3f):** удалена ветка `if (role === "admin") return true` в `case "disciplines.write"`. Regression: `assertReceptionPermissions()` в dev.
 
-**Prompt (если решено убрать):** — выполнено.
+**Verification pass (2026-06-20):**
+
+| Проверка | Результат |
+|----------|-----------|
+| `disciplines.write` для admin | ❌ false — PASS |
+| `disciplines.read` для admin | ✅ true — PASS |
+| `assertReceptionPermissions` RBAC-6 checks | ✅ PASS |
+| `test:rbac` explicit RBAC-6 asserts | ✅ PASS |
+| **GAP-6-1:** SQL `disciplines_*_admin` через `can_write_all_business()` — admin REST INSERT/UPDATE/DELETE | ⚠️ **исправлено** → `can_manage_disciplines()` (owner/director) |
+| **GAP-6-2:** `DisciplineSelect` — кнопка «Добавить дисциплину» без `disciplines.write` | ⚠️ **исправлено** → скрыта для admin |
+
+**Regression §10.2:** admin REST POST/UPDATE/DELETE disciplines → denied (RLS policy violation); owner/director — allowed.
+
+**Статус:** ✅ PASS
 
 ---
 
@@ -549,7 +566,7 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | RBAC-3 | P2 | RLS teacher subscriptions + `teachers_can_sell_subscriptions` | ✅ PASS | 4db2bac |
 | RBAC-4 | P2 | Teacher scoped home (не OperationalDashboard) | ✅ PASS | f09bf3f + verification |
 | RBAC-5 | P2 | Accountant: скрыть /prices nav | ✅ PASS | f09bf3f + verification |
-| RBAC-6 | P3 | admin disciplines.write — решение стейкхолдера | ✅ убрано у admin | f09bf3f |
+| RBAC-6 | P3 | admin disciplines.write — UI + RLS + DisciplineSelect | ✅ PASS | f09bf3f + verification |
 | NAV-1 | — | Accountant prices nav policy | ✅ вариант B | f09bf3f |
 | NAV-2 | — | Teacher home screen policy | ✅ вариант C | f09bf3f |
 | **Regression re-run** | — | Промпт 5 §10 full pass | ✅ PASS | test:rbac + lint + build |
@@ -576,10 +593,11 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | Org overrides | `tangodb/supabase/migrations/20260704000001_v2_rbac_org_setting_overrides.sql` |
 | Export helpers sync | `tangodb/supabase/migrations/20260705000001_v2_rbac_export_helpers_sync.sql` |
 | Teacher subscriptions write guard | `tangodb/supabase/migrations/20260706000001_v2_teacher_subscriptions_write_guard.sql` |
+| Admin disciplines write guard | `tangodb/supabase/migrations/20260707000001_v2_admin_disciplines_write_guard.sql` |
 | Financial export lib | `tangodb/src/lib/exportFinancialCsv.ts` |
 | Regression script | `tangodb/scripts/rbac-regression-check.mjs` |
 | Invite EF | `tangodb/supabase/functions/invite-member/index.ts` |
 
 ---
 
-*Документ: Regression QA §10 (2026-06-20). **Этап 0–2**, **Промпт 4** и **Промпт 5 (re-run)** выполнены — все P1/P2 PASS. Опционально: E2E smoke на staging с test-аккаунтами.*
+*Документ: Regression QA §10 (2026-06-20). **Этап 0–2**, **Промпт 4**, **Промпт 5 (re-run)** и **RBAC-6 verification pass** выполнены — все P1/P2/P3 PASS. Опционально: E2E smoke на staging с test-аккаунтами.*
