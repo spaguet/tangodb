@@ -303,12 +303,12 @@ Policies на `clients`, `subscriptions`, `attendance`, `schedule_slots`, `perso
 
 ### Фаза R0 — Согласование (1 сессия)
 
-- [ ] Подтвердить: admin **теряет** settings/team/prices.write/export, но сохраняет `prices.read` для продаж.
-- [ ] Подтвердить: accountant **теряет** доступ к CRM-панелям.
-- [ ] Подтвердить: teacher **теряет** продажу **групповых** абонементов по умолчанию.
-- [ ] Подтвердить: teacher **сохраняет** `personal_lessons.sell` для своих уроков.
-- [ ] Решить: оставлять ли `director` или схлопнуть в owner (рекомендация: **оставить**).
-- [ ] Зафиксировать: обновить `tangodb_saas_platform_TZ.md` §5 после R0.
+- [x] Подтвердить: admin **теряет** settings/team/prices.write/export, но сохраняет `prices.read` для продаж.
+- [x] Подтвердить: accountant **теряет** доступ к CRM-панелям.
+- [x] Подтвердить: teacher **теряет** продажу **групповых** абонементов по умолчанию.
+- [x] Подтвердить: teacher **сохраняет** `personal_lessons.sell` для своих уроков.
+- [x] Решить: оставлять ли `director` или схлопнуть в owner (рекомендация: **оставить**).
+- [x] Зафиксировать: обновить `tangodb_saas_platform_TZ.md` §5 после R0.
 
 **Критерий:** стейкхолдер подписал матрицу §4; создана запись в `decision_log.md`.
 
