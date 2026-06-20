@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { usePermissions } from "../hooks/usePermissions";
 import { useOrganization } from "../organization/OrganizationProvider";
-import { canAccessSettingsSection, type SettingsSectionId } from "../lib/permissions";
+import { canAccessSettingsSection, permissionOptionsFromSettings, type SettingsSectionId } from "../lib/permissions";
 
 interface SettingsNavItem {
   id: SettingsSectionId;
@@ -32,13 +32,12 @@ const SETTINGS_NAV: SettingsNavItem[] = [
 ];
 
 export default function SettingsLayout() {
-  const { role, scope, isReadOnly } = usePermissions();
+  const { role, scope, isReadOnly, membership } = usePermissions();
   const { settings } = useOrganization();
-  const options = {
-    scope,
-    teachersCanManageDisciplines: settings?.teachers_can_manage_disciplines ?? false,
+  const options = permissionOptionsFromSettings(settings, scope, {
+    restrictedAdmin: membership?.meta?.restricted_admin ?? false,
     isReadOnly,
-  };
+  });
 
   const visibleNav = SETTINGS_NAV.filter((item) =>
     canAccessSettingsSection(role, item.id, options)

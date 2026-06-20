@@ -4,6 +4,7 @@ import {
   can,
   canAccessPanel,
   EMPTY_TEACHER_SCOPE,
+  permissionOptionsFromSettings,
   type PanelId,
   type PermissionAction,
   type PermissionContext,
@@ -21,13 +22,12 @@ export function usePermissions() {
   const scope = membership?.scope ?? EMPTY_TEACHER_SCOPE;
 
   const options: PermissionOptions = useMemo(
-    () => ({
-      scope,
-      teachersCanManageDisciplines: settings?.teachers_can_manage_disciplines ?? false,
-      restrictedAdmin: membership?.meta?.restricted_admin ?? false,
-      isReadOnly,
-    }),
-    [scope, settings?.teachers_can_manage_disciplines, membership?.meta?.restricted_admin, isReadOnly]
+    () =>
+      permissionOptionsFromSettings(settings, scope, {
+        restrictedAdmin: membership?.meta?.restricted_admin ?? false,
+        isReadOnly,
+      }),
+    [settings, scope, membership?.meta?.restricted_admin, isReadOnly]
   );
 
   const canAction = (action: PermissionAction, context?: PermissionContext) =>

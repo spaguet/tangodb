@@ -84,6 +84,12 @@ export interface OrganizationSettings {
   freeze_deducts_lesson: boolean;
   low_balance_threshold: number;
   teachers_can_manage_disciplines: boolean;
+  teachers_can_sell_subscriptions: boolean;
+  teachers_can_edit_clients: boolean;
+  teachers_can_export: boolean;
+  teachers_can_view_full_schedule: boolean;
+  admin_can_export: boolean;
+  admin_can_manage_team: boolean;
   pair_cycle_enabled: boolean;
   branding_name: string | null;
   branding_logo_url: string | null;

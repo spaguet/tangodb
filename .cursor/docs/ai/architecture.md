@@ -27,5 +27,6 @@
 - **Settings/team:** `can_manage_settings()` / `can_manage_team()` — только owner, director.
 - **Prices:** read `can_read_prices()` (owner, director, admin, accountant); write `can_manage_prices()` (owner, director).
 - **Data migration R2:** существующие `admin` → `owner`, чтобы не потерять доступ к settings/team.
+- **Org overrides (§9):** boolean-флаги в `organization_settings` (`teachers_can_*`, `admin_can_*`); читаются в `permissions.ts` через `permissionOptionsFromSettings()`.
 
 ## Записи

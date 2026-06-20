@@ -25,6 +25,45 @@ const MODULE_LABELS: { key: keyof OrgModules; label: string }[] = [
   { key: "locations", label: "Локации / залы" },
 ];
 
+const ROLE_OVERRIDE_LABELS: {
+  key:
+    | "teachers_can_sell_subscriptions"
+    | "teachers_can_edit_clients"
+    | "teachers_can_export"
+    | "teachers_can_view_full_schedule"
+    | "admin_can_export"
+    | "admin_can_manage_team";
+  label: string;
+  hint?: string;
+}[] = [
+  {
+    key: "teachers_can_sell_subscriptions",
+    label: "Преподаватели могут продавать групповые абонементы",
+  },
+  {
+    key: "teachers_can_edit_clients",
+    label: "Преподаватели могут редактировать карточки учеников",
+  },
+  {
+    key: "teachers_can_export",
+    label: "Преподаватели могут экспортировать данные (в своём scope)",
+  },
+  {
+    key: "teachers_can_view_full_schedule",
+    label: "Преподаватели видят всё расписание (read-only, без контактов учеников)",
+    hint: "По умолчанию включено",
+  },
+  {
+    key: "admin_can_export",
+    label: "Администратор может экспортировать CSV",
+  },
+  {
+    key: "admin_can_manage_team",
+    label: "Администратор может управлять командой",
+    hint: "Не рекомендуется",
+  },
+];
+
 export default function OrganizationSettingsPage() {
   const toast = useToast();
   const { organization } = useOrganization();
@@ -33,6 +72,12 @@ export default function OrganizationSettingsPage() {
   const [orgPreset, setOrgPreset] = useState<OrgPreset>("dance_school");
   const [modules, setModules] = useState<OrgModules>(PRESET_MODULES.dance_school);
   const [teachersCanManageDisciplines, setTeachersCanManageDisciplines] = useState(false);
+  const [teachersCanSellSubscriptions, setTeachersCanSellSubscriptions] = useState(false);
+  const [teachersCanEditClients, setTeachersCanEditClients] = useState(false);
+  const [teachersCanExport, setTeachersCanExport] = useState(false);
+  const [teachersCanViewFullSchedule, setTeachersCanViewFullSchedule] = useState(true);
+  const [adminCanExport, setAdminCanExport] = useState(false);
+  const [adminCanManageTeam, setAdminCanManageTeam] = useState(false);
   const [lowBalanceThreshold, setLowBalanceThreshold] = useState(2);
   const [dirty, setDirty] = useState(false);
 
@@ -41,6 +86,12 @@ export default function OrganizationSettingsPage() {
     setOrgPreset(settings.org_preset);
     setModules(settings.modules);
     setTeachersCanManageDisciplines(settings.teachers_can_manage_disciplines);
+    setTeachersCanSellSubscriptions(settings.teachers_can_sell_subscriptions);
+    setTeachersCanEditClients(settings.teachers_can_edit_clients);
+    setTeachersCanExport(settings.teachers_can_export);
+    setTeachersCanViewFullSchedule(settings.teachers_can_view_full_schedule);
+    setAdminCanExport(settings.admin_can_export);
+    setAdminCanManageTeam(settings.admin_can_manage_team);
     setLowBalanceThreshold(settings.low_balance_threshold);
     setDirty(false);
   }, [settings]);
@@ -67,6 +118,12 @@ export default function OrganizationSettingsPage() {
       org_preset: orgPreset,
       modules,
       teachers_can_manage_disciplines: teachersCanManageDisciplines,
+      teachers_can_sell_subscriptions: teachersCanSellSubscriptions,
+      teachers_can_edit_clients: teachersCanEditClients,
+      teachers_can_export: teachersCanExport,
+      teachers_can_view_full_schedule: teachersCanViewFullSchedule,
+      admin_can_export: adminCanExport,
+      admin_can_manage_team: adminCanManageTeam,
       pair_cycle_enabled: false,
       low_balance_threshold: lowBalanceThreshold,
     });
@@ -118,6 +175,49 @@ export default function OrganizationSettingsPage() {
           />
           Преподаватели могут редактировать направления
         </label>
+
+        <RequirePermission action="settings.manage" mode="hide">
+          <div className="border-t border-slate-100 pt-4 space-y-2">
+            <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+              Расширенные права ролей
+            </p>
+            {ROLE_OVERRIDE_LABELS.map(({ key, label, hint }) => {
+              const checkedMap = {
+                teachers_can_sell_subscriptions: teachersCanSellSubscriptions,
+                teachers_can_edit_clients: teachersCanEditClients,
+                teachers_can_export: teachersCanExport,
+                teachers_can_view_full_schedule: teachersCanViewFullSchedule,
+                admin_can_export: adminCanExport,
+                admin_can_manage_team: adminCanManageTeam,
+              } as const;
+              const setters = {
+                teachers_can_sell_subscriptions: setTeachersCanSellSubscriptions,
+                teachers_can_edit_clients: setTeachersCanEditClients,
+                teachers_can_export: setTeachersCanExport,
+                teachers_can_view_full_schedule: setTeachersCanViewFullSchedule,
+                admin_can_export: setAdminCanExport,
+                admin_can_manage_team: setAdminCanManageTeam,
+              } as const;
+
+              return (
+                <label key={key} className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkedMap[key]}
+                    onChange={(e) => { setters[key](e.target.checked); setDirty(true); }}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
+                  />
+                  <span>
+                    {label}
+                    {hint ? (
+                      <span className="block text-xs text-slate-400 mt-0.5">{hint}</span>
+                    ) : null}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </RequirePermission>
 
         <div className="field-stack">
           <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">

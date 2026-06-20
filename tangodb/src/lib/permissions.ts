@@ -72,6 +72,11 @@ export interface PermissionOptions {
   scope?: TeacherScope;
   teachersCanManageDisciplines?: boolean;
   teachersCanSellSubscriptions?: boolean;
+  teachersCanEditClients?: boolean;
+  teachersCanExport?: boolean;
+  teachersCanViewFullSchedule?: boolean;
+  adminCanExport?: boolean;
+  adminCanManageTeam?: boolean;
   restrictedAdmin?: boolean;
   isReadOnly?: boolean;
   context?: PermissionContext;
@@ -80,9 +85,6 @@ export interface PermissionOptions {
 const STRATEGIC_ROLES: MemberRole[] = ["owner", "director"];
 const OPERATIONAL_READ_ROLES: MemberRole[] = ["owner", "director", "admin"];
 const FINANCIAL_READ_ROLES: MemberRole[] = ["owner", "director", "accountant"];
-
-/** §9: hardcoded until R2 migration adds organization_settings columns */
-const DEFAULT_TEACHERS_CAN_SELL_SUBSCRIPTIONS = false;
 
 const WRITE_ACTIONS = new Set<PermissionAction>([
   "clients.write",
@@ -175,6 +177,28 @@ function canWriteScopedCrm(
   return teacherMatchesContext(scope, context);
 }
 
+function canTeacherWriteClients(
+  role: MemberRole,
+  scope: TeacherScope,
+  context?: PermissionContext,
+  options?: PermissionOptions
+): boolean {
+  if (isFullOperationalAdmin(role, options)) return true;
+  if (role !== "teacher") return false;
+  if (!(options?.teachersCanEditClients ?? false)) return false;
+  return teacherMatchesContext(scope, context);
+}
+
+function canTeacherReadSchedule(
+  scope: TeacherScope,
+  context?: PermissionContext,
+  options?: PermissionOptions
+): boolean {
+  if (!teacherHasAnyScopeAccess(scope)) return false;
+  if (options?.teachersCanViewFullSchedule ?? true) return true;
+  return teacherMatchesContext(scope, context);
+}
+
 function canReceptionReadSubscriptions(role: MemberRole, options?: PermissionOptions): boolean {
   return isReceptionAdmin(role, options);
 }
@@ -184,7 +208,34 @@ function canReceptionWrite(role: MemberRole, options?: PermissionOptions): boole
 }
 
 function teachersCanSellSubscriptions(options?: PermissionOptions): boolean {
-  return options?.teachersCanSellSubscriptions ?? DEFAULT_TEACHERS_CAN_SELL_SUBSCRIPTIONS;
+  return options?.teachersCanSellSubscriptions ?? false;
+}
+
+export function permissionOptionsFromSettings(
+  settings: {
+    teachers_can_manage_disciplines?: boolean;
+    teachers_can_sell_subscriptions?: boolean;
+    teachers_can_edit_clients?: boolean;
+    teachers_can_export?: boolean;
+    teachers_can_view_full_schedule?: boolean;
+    admin_can_export?: boolean;
+    admin_can_manage_team?: boolean;
+  } | null,
+  scope: TeacherScope,
+  extras?: Pick<PermissionOptions, "restrictedAdmin" | "isReadOnly">
+): PermissionOptions {
+  return {
+    scope,
+    teachersCanManageDisciplines: settings?.teachers_can_manage_disciplines ?? false,
+    teachersCanSellSubscriptions: settings?.teachers_can_sell_subscriptions ?? false,
+    teachersCanEditClients: settings?.teachers_can_edit_clients ?? false,
+    teachersCanExport: settings?.teachers_can_export ?? false,
+    teachersCanViewFullSchedule: settings?.teachers_can_view_full_schedule ?? true,
+    adminCanExport: settings?.admin_can_export ?? false,
+    adminCanManageTeam: settings?.admin_can_manage_team ?? false,
+    restrictedAdmin: extras?.restrictedAdmin ?? false,
+    isReadOnly: extras?.isReadOnly ?? false,
+  };
 }
 
 export function can(role: MemberRole | null, action: PermissionAction, options?: PermissionOptions): boolean {
@@ -224,7 +275,10 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
 
     case "dashboard.export":
       if (STRATEGIC_ROLES.includes(role) || role === "accountant") return true;
-      if (role === "teacher") return teacherMatchesContext(scope, context);
+      if (role === "admin" && (options?.adminCanExport ?? false)) return true;
+      if (role === "teacher" && (options?.teachersCanExport ?? false)) {
+        return teacherMatchesContext(scope, context);
+      }
       return false;
 
     case "finance.read":
@@ -241,7 +295,7 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return canReadScopedCrm(role, scope, context, options);
 
     case "clients.write":
-      return canWriteScopedCrm(role, scope, context, options);
+      return canTeacherWriteClients(role, scope, context, options);
 
     case "client_notes.read":
       return canReadScopedCrm(role, scope, context, options);
@@ -261,6 +315,10 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return canReadScopedCrm(role, scope, context, options);
 
     case "schedule.read":
+      if (isFullOperationalAdmin(role, options)) return true;
+      if (role === "teacher") return canTeacherReadSchedule(scope, context, options);
+      return canReadScopedCrm(role, scope, context, options);
+
     case "personal_lessons.read":
       return canReadScopedCrm(role, scope, context, options);
 
@@ -304,7 +362,9 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return STRATEGIC_ROLES.includes(role);
 
     case "team.manage":
-      return STRATEGIC_ROLES.includes(role);
+      if (STRATEGIC_ROLES.includes(role)) return true;
+      if (role === "admin" && (options?.adminCanManageTeam ?? false)) return true;
+      return false;
 
     case "license.view":
       return STRATEGIC_ROLES.includes(role);
