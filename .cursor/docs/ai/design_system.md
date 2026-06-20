@@ -422,14 +422,30 @@ nav: lg:w-52, NavLink с active = bg-indigo-50 text-indigo-700 border-indigo-100
 
 Эталон: `tangodb/src/pages/FinanceLayout.tsx`.
 
-### Dashboard split (R5)
+### Dashboard split (R5 + NAV-2 / RBAC-4)
 
 | Роль | Компонент | Содержимое |
 |------|-----------|------------|
-| admin, teacher | `OperationalDashboard` | абонементы, должники, посещаемость, платежи за день |
-| owner, director, accountant | `FinancialDashboard` | выручка, дебиторка, ссылки на `/finance/*` |
+| owner, director | `OperationalDashboard` + `FinancialDashboard` | вкладки «Операционный» / «Финансовый» (`PageTabs`) |
+| admin | `OperationalDashboard` | абонементы, должники, посещаемость, платежи за день |
+| accountant | `FinancialDashboard` | выручка, дебиторка, ссылки на `/finance/*` |
+| teacher (scope) | `TeacherScopedDashboard` | быстрые ссылки, расписание на сегодня, ближайшие персональные — **без** CRM-агрегатов |
+| teacher (пустой scope) | empty state | «Нет доступа к обзору для вашей роли» |
 
-Выбор по `can('reports.financial')` — приоритет финансового обзора для owner/director/accountant.
+Выбор в `DashboardPage.tsx` по `can('reports.operational')`, `can('reports.financial')`, `can('dashboard.scoped_summary')`.
+
+#### Teacher scoped home (`TeacherScopedDashboard`)
+
+Паттерн минимального home для teacher — не дублировать stat-карточки `OperationalDashboard`.
+
+```
+panel-page-stack
+├── grid sm:grid-cols-3 gap-3 — quick-link кнопки (rounded-xl, border-slate-200/90, icon indigo-600)
+├── section «Сегодня в расписании» — список slot rows (bg-slate-50, text-xs)
+└── section «Ближайшие персональные уроки» — список lesson rows (truncate clientDisplay)
+```
+
+Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`. Заголовки секций: `text-sm font-semibold text-slate-800` + иконка `w-4 h-4 text-indigo-500`.
 
 ---
 
@@ -460,7 +476,7 @@ nav: lg:w-52, NavLink с active = bg-indigo-50 text-indigo-700 border-indigo-100
 | Глобальные стили | `tangodb/src/index.css` |
 | Select / labels | `tangodb/src/components/ui/AppSelect.tsx` |
 | Tabs | `tangodb/src/components/ui/PageTabs.tsx` |
-| Dashboard widgets | `tangodb/src/components/OperationalDashboard.tsx`, `FinancialDashboard.tsx` |
+| Dashboard widgets | `tangodb/src/components/OperationalDashboard.tsx`, `FinancialDashboard.tsx`, `TeacherScopedDashboard.tsx` |
 | Finance sub-nav | `tangodb/src/pages/FinanceLayout.tsx` |
 | Auth forms | `tangodb/src/auth/AuthLayout.tsx` |
 | Primary forms | `tangodb/src/components/SchedulePanel.tsx` |
@@ -472,6 +488,7 @@ nav: lg:w-52, NavLink с active = bg-indigo-50 text-indigo-700 border-indigo-100
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-06-20 | RBAC-4/NAV-2: TeacherScopedDashboard — scoped home без CRM-агрегатов; таблица dashboard split обновлена (owner/director tabs, teacher scoped). |
 | 2026-06-20 | RBAC R5: FinanceLayout (sub-nav как Settings), split Operational/Financial dashboard. |
 | 2026-06-19 | Унификация палитры: violet/emerald заменены на indigo; rose сохранён для ошибок. Документ заполнен. |
 | 2026-06-19 | Ревью: добавлены брейкпоинты, z-index, иконки, empty state, skeleton; пояснение семантики indigo; правила агента расширены. Z-index и брейкпоинты сверены с кодом. |

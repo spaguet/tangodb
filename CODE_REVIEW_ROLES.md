@@ -23,6 +23,7 @@
 | **Этап 1: P1 bundle (RBAC-2 → RBAC-1 → RBAC-7)** | ✅ 2026-06-20 |
 | **Этап 2: RBAC-8 — export helpers §9 + accountant financial export** | ✅ 2026-06-20 |
 | **Этап 2: RBAC-3 — teacher subscriptions RLS + teachers_can_sell_subscriptions** | ✅ 2026-06-20 |
+| **Промпт 4: RBAC-4 + RBAC-5 — verification pass + design_system** | ✅ 2026-06-20 |
 | Исправление кода (P2 bundle: RBAC-3) | ✅ 2026-06-20 |
 | Деплой / коммит / пуш | ✅ db push + коммит 4db2bac; push main → auto deploy |
 
@@ -41,13 +42,13 @@
 
 | Область | Pass | Fail / Partial |
 |---------|------|----------------|
-| Nav (5 ролей) | 4 | 1 (accountant + prices; teacher + dashboard) |
-| `permissions.ts` vs §8 | ~28/31 actions | 3 (teacher reports; admin disciplines.write; accountant `/prices` panel) |
+| Nav (5 ролей) | 5 | 0 |
+| `permissions.ts` vs §8 | 31/31 actions | 0 |
 | SQL helpers (§8/§9) | 4/4 | 0 |
 | §10.2 Security (код+RLS) | 10/10 | 0 |
-| §10.3 UI | 4/5 | 1 (nav partial — historical note) |
+| §10.3 UI | 5/5 | 0 |
 
-**Итог:** RBAC R1–R6 в целом внедрены. **P1 bundle закрыт** (RBAC-1, RBAC-2, RBAC-7). **RBAC-8** и **RBAC-3** закрыты (export split UI↔SQL; teacher subscriptions RLS guard).
+**Итог:** RBAC R1–R6 в целом внедрены. **P1 bundle закрыт** (RBAC-1, RBAC-2, RBAC-7). **P2 bundle закрыт** (RBAC-3, RBAC-4, RBAC-5, RBAC-8).
 
 ---
 
@@ -204,7 +205,7 @@ SQL: `20260705000001_v2_rbac_export_helpers_sync.sql` — читает `organiza
 
 | # | Критерий | Статус |
 |---|----------|--------|
-| 1 | Nav скрывает запрещённое | ⚠️ PARTIAL (accountant `/prices`; teacher `/` с CRM-виджетами) |
+| 1 | Nav скрывает запрещённое | ✅ PASS *(NAV-1, NAV-2)* |
 | 2 | admin `/settings/team` → redirect | ✅ PASS |
 | 3 | accountant: `/settings/data` ✅, `/settings/general` ❌ | ✅ PASS |
 | 4 | ReadOnlyBanner + RBAC | ✅ PASS |
@@ -268,35 +269,38 @@ SQL: `20260705000001_v2_rbac_export_helpers_sync.sql` — читает `organiza
 
 ---
 
-### 🟠 RBAC-4 [P2] — Teacher видит Operational Dashboard — **частично закрыто NAV-2 ✅**
+### 🟠 RBAC-4 [P2] — Teacher видит Operational Dashboard — **✅ ИСПРАВЛЕНО 2026-06-20**
 
-**Файл:** `tangodb/src/lib/permissions.ts` + `DashboardPage.tsx`
+**Файлы:**
+- `tangodb/src/lib/permissions.ts` — `reports.operational` без teacher; `dashboard.scoped_summary` для teacher с scope
+- `tangodb/src/components/TeacherScopedDashboard.tsx`
+- `tangodb/src/pages/DashboardPage.tsx`
 
-`reports.operational` = true для teacher с scope → полный OperationalDashboard на `/`. **Продуктовое ТЗ §4/§5.4:** operational reports ❌ для teacher. **§8/§6.1 gap-table** допускает teacher* — трактовать как scoped queries, не CRM-дашборд.
+**Было:** `reports.operational` = true для teacher с scope → полный `OperationalDashboard` на `/` с CRM-агрегатами (clients count, debtors, revenue). Противоречит §4/§5.4.
 
-**Этап 0 (NAV-2):** teacher убран из `reports.operational`; добавлен `dashboard.scoped_summary` + `TeacherScopedDashboard`. Полный RBAC-4 prompt ниже — для финальной полировки layout (design_system).
+**Решение (NAV-2 / вариант B):** `dashboard.scoped_summary` + `TeacherScopedDashboard` — минимальный home без CRM-агрегатов.
 
-**Место для решения:**
+**Исправление (Этап 0, f09bf3f):**
+1. Teacher убран из `reports.operational` (`isFullOperationalAdmin` only).
+2. `dashboard.scoped_summary` → teacher + непустой scope.
+3. `TeacherScopedDashboard`: быстрые ссылки (журнал, расписание, персональные), «Сегодня в расписании», «Ближайшие персональные уроки».
+4. `DashboardPage`: `scopedOnly` → только scoped-хуки (`usePersonalLessons`, `useSchedule`, `useDisciplines`); operational CRM-хуки не грузятся.
 
-| Вариант | Описание |
-|---------|----------|
-| **A** | Убрать `reports.operational` для teacher → `dashboard.read` = false |
-| **B** | Новый action `dashboard.scoped_summary` — минимальный home без CRM-агрегатов |
-| **C** | Следовать §8 буквально (teacher в operational) | — | Противоречит §4/§5.4 и NAV-2 |
+**Verification pass (Промпт 4, 2026-06-20):**
 
-**Решение:** **B** — реализовано в Этапе 0.
+| Проверка | Результат |
+|----------|-----------|
+| `reports.operational` для teacher | ❌ false — PASS |
+| `dashboard.scoped_summary` для teacher с scope | ✅ true — PASS |
+| Teacher empty scope → dashboard panel | ❌ false — PASS |
+| `DashboardPage` не монтирует `OperationalDashboard` для teacher | ✅ PASS |
+| CRM-хуки при scopedOnly | `enabled: false` — PASS |
+| `design_system.md` таблица dashboard split | ⚠️ **DOC-1:** устарела → **исправлено** |
+| Regression asserts empty-scope teacher | ⚠️ **GAP-1:** отсутствовали → **добавлены** в `assertReceptionPermissions()` |
 
-**Prompt для исправления:**
+**Regression §10.3:** teacher `/` — scoped home без stat-карточек; teacher пустой scope — empty state (RBAC-7).
 
-```
-Задача: RBAC-4 из CODE_REVIEW_ROLES.md — teacher dashboard.
-
-1. Решение NAV-2 / RBAC-4: убери teacher из reports.operational (или ограничь canAccessPanel dashboard для teacher).
-2. Создай TeacherHomePage / ScopedDashboard: ближайшие занятия, быстрые ссылки на attendance/personal — без агрегатов CRM (clients count, debtors, revenue).
-3. DashboardPage: teacher → ScopedDashboard; admin → Operational; accountant → Financial; owner/director → оба (после RBAC-1).
-
-Согласуй с tangodb_roles_rbac_TZ.md §5.4. Обнови design_system.md если новый layout-паттерн.
-```
+**Статус:** ✅ PASS
 
 ---
 
@@ -338,15 +342,31 @@ SQL: `20260705000001_v2_rbac_export_helpers_sync.sql` — читает `organiza
 
 ---
 
-### 🟡 RBAC-5 [P2] — Accountant: пункт «Тарифы» в главном nav — **объединено с NAV-1 ✅**
+### 🟡 RBAC-5 [P2] — Accountant: пункт «Тарифы» в главном nav — **✅ ИСПРАВЛЕНО 2026-06-20**
 
-**Файл:** `tangodb/src/App.tsx` + `permissions.ts` (`canAccessPanel` для `prices`)
+**Файлы:** `tangodb/src/App.tsx` (nav filter) + `permissions.ts` (`canAccessPanel` для `prices`)
 
-`prices.read` = true для accountant → nav показывает `/prices`. §5.5 допускает read для расшифровки сумм, но отдельная CRM-панель может быть избыточной.
+**Было:** `prices.read` = true для accountant → nav показывал `/prices`. §5.5 допускает read для расшифровки сумм в finance, но отдельная CRM-панель избыточна.
 
-**Место для решения:** см. **NAV-1** — скрыть panel `prices` для accountant в `canAccessPanel`, оставить `prices.read` для finance-хуков.
+**Решение (NAV-1, вариант B):** скрыть panel `prices` для accountant в `canAccessPanel`, оставить `prices.read` для finance-хуков.
 
-**Статус:** ✅ реализовано в Этапе 0 (NAV-1).
+**Исправление (Этап 0, f09bf3f):**
+```typescript
+case "prices":
+  if (role === "accountant") return false;
+  return can(role, "prices.read", options);
+```
+
+**Verification pass (Промпт 4, 2026-06-20):**
+
+| Проверка | Результат |
+|----------|-----------|
+| Nav «Тарифы» для accountant | скрыт (`canAccessPanel` → false) — PASS |
+| `prices.read` для accountant | ✅ true — PASS (finance hooks) |
+| Прямой URL `/prices` | `PanelAccessRoute` → redirect `/` — PASS |
+| `assertReceptionPermissions` NAV-1 checks | ✅ PASS |
+
+**Статус:** ✅ PASS
 
 ---
 
@@ -465,8 +485,8 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | RBAC-7 | P2 | Redirect вместо spinner на `/` без dashboard | ✅ PASS | 0051700 |
 | RBAC-8 | P2 | Export helpers §9 + accountant financial export | ✅ PASS | 06e5a48 |
 | RBAC-3 | P2 | RLS teacher subscriptions + `teachers_can_sell_subscriptions` | ✅ PASS | 4db2bac |
-| RBAC-4 | P2 | Teacher scoped home (не OperationalDashboard) | ✅ Этап 0 (NAV-2) | f09bf3f |
-| RBAC-5 | P2 | Accountant: скрыть /prices nav | ✅ Этап 0 (NAV-1) | f09bf3f |
+| RBAC-4 | P2 | Teacher scoped home (не OperationalDashboard) | ✅ PASS | f09bf3f + verification |
+| RBAC-5 | P2 | Accountant: скрыть /prices nav | ✅ PASS | f09bf3f + verification |
 | RBAC-6 | P3 | admin disciplines.write — решение стейкхолдера | ✅ убрано у admin | f09bf3f |
 | NAV-1 | — | Accountant prices nav policy | ✅ вариант B | f09bf3f |
 | NAV-2 | — | Teacher home screen policy | ✅ вариант C | f09bf3f |
@@ -498,4 +518,4 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 
 ---
 
-*Документ: Regression QA §10 + ревизия сверки с кодом (2026-06-20). **Этап 0** (NAV-1, NAV-2, RBAC-6), **Этап 1 P1** (RBAC-1, RBAC-2, RBAC-7), **RBAC-8** и **RBAC-3** выполнены. Следующий шаг — Regression QA re-run (§10) + E2E smoke.*
+*Документ: Regression QA §10 + ревизия сверки с кодом (2026-06-20). **Этап 0–2** и **Промпт 4 (RBAC-4 + RBAC-5)** выполнены. Следующий шаг — Regression QA re-run (§10) + E2E smoke.*

@@ -554,6 +554,23 @@ export function assertReceptionPermissions(): void {
   if (!can("teacher", "dashboard.scoped_summary", teacherOpts)) {
     throw new Error("teacher with scope must have dashboard.scoped_summary (NAV-2)");
   }
+  const emptyTeacherScope: TeacherScope = {
+    discipline_ids: [],
+    location_ids: [],
+    all_disciplines: false,
+    all_locations: false,
+    can_view_all_clients: false,
+  };
+  const emptyTeacherOpts: PermissionOptions = { scope: emptyTeacherScope };
+  if (can("teacher", "dashboard.scoped_summary", emptyTeacherOpts)) {
+    throw new Error("teacher without scope must not have dashboard.scoped_summary (RBAC-4)");
+  }
+  if (canAccessPanel("teacher", "dashboard", emptyTeacherOpts)) {
+    throw new Error("teacher without scope must not access dashboard panel (RBAC-4)");
+  }
+  if (!canAccessPanel("teacher", "dashboard", teacherOpts)) {
+    throw new Error("teacher with scope must access dashboard panel (RBAC-4)");
+  }
   if (can("admin", "disciplines.write", adminOpts)) {
     throw new Error("admin must not have disciplines.write (RBAC-6)");
   }
