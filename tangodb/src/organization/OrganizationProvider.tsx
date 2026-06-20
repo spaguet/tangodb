@@ -264,6 +264,19 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     }
   }, [session?.user.id]);
 
+  const jwtRole = getMemberRoleFromSession(session);
+  const dbRole = membership?.role ?? null;
+
+  useEffect(() => {
+    if (!session || !organizationId || membershipsLoading || !dbRole || !jwtRole) return;
+    if (jwtRole === dbRole) return;
+
+    void supabase.auth.refreshSession().then(({ error }) => {
+      if (error) return;
+      void queryClient.invalidateQueries();
+    });
+  }, [session, organizationId, membershipsLoading, jwtRole, dbRole, queryClient]);
+
   const organization = orgBundle?.organization ?? null;
   const settings = orgBundle?.settings ?? null;
   const license = orgBundle?.license ?? null;

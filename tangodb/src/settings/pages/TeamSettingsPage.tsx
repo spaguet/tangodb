@@ -14,6 +14,10 @@ import type { MemberRole } from "../../types/organization";
 const INVITE_ROLES: MemberRole[] = ["admin", "teacher", "accountant"];
 const EDITABLE_ROLES: MemberRole[] = ["admin", "teacher", "accountant"];
 
+function isEditableMemberRole(role: MemberRole): boolean {
+  return EDITABLE_ROLES.includes(role);
+}
+
 function formatJoined(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("ru-RU", {
@@ -217,7 +221,7 @@ export default function TeamSettingsPage() {
                   {memberRoleLabel(member.role)} · с {formatJoined(member.joined_at)}
                 </p>
               </div>
-              {canManageMember(member.role) && (
+              {canManageMember(member.role) && isEditableMemberRole(member.role) && (
                 <div className="flex items-center gap-2 shrink-0">
                   <AppSelect
                     value={member.role}
@@ -246,6 +250,11 @@ export default function TeamSettingsPage() {
                     <UserMinus className="w-3.5 h-3.5" />
                   </button>
                 </div>
+              )}
+              {canManageMember(member.role) && !isEditableMemberRole(member.role) && (
+                <span className="text-xs font-semibold text-slate-600 px-2.5 py-1.5 bg-slate-100 rounded-lg shrink-0">
+                  {memberRoleLabel(member.role)}
+                </span>
               )}
             </div>
           ))}
