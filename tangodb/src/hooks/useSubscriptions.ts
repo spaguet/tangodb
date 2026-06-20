@@ -9,9 +9,6 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const subscriptionsQueryKey = ["subscriptions"] as const;
 
-const TEACHER_SUBSCRIPTION_SELECT =
-  "id, type, client_id1, client_id2, client_id3, lessons_total, lessons_left, freeze_used, activation_date, status, pair_month, discipline_id, category";
-
 const mapSubscription = (row: Record<string, unknown>, maskFinancial: boolean): Subscription => ({
   id: row.id as string,
   type: row.type as string,
@@ -42,9 +39,10 @@ export function useSubscriptions() {
     queryKey: withOrgId([...subscriptionsQueryKey, { maskFinancial }]),
     enabled,
     queryFn: async () => {
+      const table = maskFinancial ? "subscriptions_teacher_v" : "subscriptions";
       const { data, error } = await supabase
-        .from("subscriptions")
-        .select(maskFinancial ? TEACHER_SUBSCRIPTION_SELECT : "*")
+        .from(table)
+        .select("*")
         .order("activation_date", { ascending: false });
       if (error) throw error;
       return (data ?? []).map((row) =>

@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-20 — RBAC R4: client_notes (таблица + RLS), views subscriptions_teacher_v / personal_lessons_teacher_v без фин. полей, useClientNotes, карточка клиента с заметками.
 2026-06-20 — RBAC R3: таблица payments, RLS, RPC record_personal_lesson_payment, backfill; usePayments, /finance/payments, журнал за день на dashboard, кнопки «Зафиксировать оплату».
 2026-06-20 — OrganizationProvider: auto refreshSession при расхождении JWT role и role в БД.
 2026-06-20 — RBAC R2: SQL-миграция v2_rbac_roles_refinement — admin→owner data migration, split can_read_operational/financial, accountant без CRM SELECT, prices read/write split, admin без team/settings/export.

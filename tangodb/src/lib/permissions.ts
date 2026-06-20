@@ -34,6 +34,8 @@ export type SettingsSectionId =
 export type PermissionAction =
   | "clients.read"
   | "clients.write"
+  | "client_notes.read"
+  | "client_notes.write"
   | "subscriptions.read"
   | "subscriptions.write"
   | "subscriptions.sell"
@@ -83,6 +85,7 @@ const DEFAULT_TEACHERS_CAN_SELL_SUBSCRIPTIONS = false;
 
 const WRITE_ACTIONS = new Set<PermissionAction>([
   "clients.write",
+  "client_notes.write",
   "subscriptions.write",
   "subscriptions.sell",
   "attendance.write",
@@ -201,6 +204,14 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
 
     case "clients.write":
       return canWriteScopedCrm(role, scope, context);
+
+    case "client_notes.read":
+      return canReadScopedCrm(role, scope, context);
+
+    case "client_notes.write":
+      if (isOperationalAdmin(role)) return true;
+      if (role !== "teacher") return false;
+      return teacherMatchesContext(scope, context);
 
     case "subscriptions.read":
     case "attendance.read":

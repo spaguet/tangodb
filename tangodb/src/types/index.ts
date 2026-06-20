@@ -7,6 +7,16 @@ export interface Client {
   archivedAt?: string | null;
 }
 
+export interface ClientNote {
+  id: string;
+  clientId: string;
+  authorMemberId: string;
+  authorDisplayName: string;
+  authorRole: string;
+  body: string;
+  createdAt: string;
+}
+
 export interface Discipline {
   id: string;
   name: string;

@@ -20,6 +20,8 @@ import {
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
+import { useCan } from "../hooks/usePermissions";
+import ClientCardModal from "./ClientCardModal";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
@@ -58,6 +60,7 @@ function formatArchivedAt(iso: string): string {
 
 export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const { connectionState } = useOnlineStatus();
+  const canOpenClientCard = useCan("client_notes.read");
   const [activeTab, setActiveTab] = useState<ClientTab>("active");
   const {
     data: clients = [],
@@ -89,6 +92,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   // Delete confirm state
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<Client | null>(null);
+  const [cardClient, setCardClient] = useState<Client | null>(null);
 
   useEffect(() => {
     if (!editingClient) return;
@@ -98,6 +102,19 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [editingClient]);
+
+  useEffect(() => {
+    if (!cardClient) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setCardClient(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [cardClient]);
+
+  const openClientCard = (client: Client) => {
+    if (canOpenClientCard) setCardClient(client);
+  };
 
   const handleSubmitAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -348,7 +365,19 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                       >
                         <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
                         <td className="py-3 font-normal text-slate-800">
-                          {c.lastName} {c.firstName}
+                          {canOpenClientCard ? (
+                            <button
+                              type="button"
+                              onClick={() => openClientCard(c)}
+                              className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
+                            >
+                              {c.lastName} {c.firstName}
+                            </button>
+                          ) : (
+                            <>
+                              {c.lastName} {c.firstName}
+                            </>
+                          )}
                         </td>
                         <td className="py-3 text-center">
                           {c.telegram && normalizeTelegramContact(c.telegram) ? (
@@ -423,8 +452,32 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                       className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
                     >
                       <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
-                      <td className="py-3 font-normal text-slate-800">{c.lastName}</td>
-                      <td className="py-3 font-normal text-slate-800">{c.firstName}</td>
+                      <td className="py-3 font-normal text-slate-800">
+                        {canOpenClientCard ? (
+                          <button
+                            type="button"
+                            onClick={() => openClientCard(c)}
+                            className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
+                          >
+                            {c.lastName}
+                          </button>
+                        ) : (
+                          c.lastName
+                        )}
+                      </td>
+                      <td className="py-3 font-normal text-slate-800">
+                        {canOpenClientCard ? (
+                          <button
+                            type="button"
+                            onClick={() => openClientCard(c)}
+                            className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
+                          >
+                            {c.firstName}
+                          </button>
+                        ) : (
+                          c.firstName
+                        )}
+                      </td>
                       <td className="py-3 text-center">
                         {c.telegram && normalizeTelegramContact(c.telegram) ? (
                           <a
@@ -543,6 +596,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
           </div>
         )}
       </AnimatePresence>
+
+      <ClientCardModal client={cardClient} onClose={() => setCardClient(null)} toast={toast} />
 
       <ConfirmDialog
         open={deleteTarget !== null}

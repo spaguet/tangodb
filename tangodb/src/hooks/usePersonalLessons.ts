@@ -112,9 +112,10 @@ export function usePersonalLessons(yearMonth?: string) {
     queryKey: withOrgId([...baseKey, { maskFinancial }]),
     enabled,
     queryFn: async () => {
+      const table = maskFinancial ? "personal_lessons_teacher_v" : "personal_lessons";
       const selectColumns = maskFinancial ? personalLessonsSelectTeacher : personalLessonsSelect;
       let query = supabase
-        .from("personal_lessons")
+        .from(table)
         .select(selectColumns)
         .order("date", { ascending: false });
 
