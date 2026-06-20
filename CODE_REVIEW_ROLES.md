@@ -22,8 +22,9 @@
 | **Этап 0: NAV-1, NAV-2, RBAC-6 — решения приняты и реализованы** | ✅ 2026-06-20 |
 | **Этап 1: P1 bundle (RBAC-2 → RBAC-1 → RBAC-7)** | ✅ 2026-06-20 |
 | **Этап 2: RBAC-8 — export helpers §9 + accountant financial export** | ✅ 2026-06-20 |
-| Исправление кода (P2 bundle: RBAC-3) | ⬜ следующий этап |
-| Деплой / коммит / пуш | ✅ миграция db push + коммит 06e5a48; push main → auto deploy |
+| **Этап 2: RBAC-3 — teacher subscriptions RLS + teachers_can_sell_subscriptions** | ✅ 2026-06-20 |
+| Исправление кода (P2 bundle: RBAC-3) | ✅ 2026-06-20 |
+| Деплой / коммит / пуш | ✅ миграция db push + коммит (RBAC-3 pending) |
 
 **Допущения аудита:**
 - teacher — с непустым scope (`all_disciplines`, `can_view_all_clients`);
@@ -46,7 +47,7 @@
 | §10.2 Security (код+RLS) | 10/10 | 0 |
 | §10.3 UI | 4/5 | 1 (nav partial — historical note) |
 
-**Итог:** RBAC R1–R6 в целом внедрены. **P1 bundle закрыт** (RBAC-1, RBAC-2, RBAC-7). **RBAC-8 закрыт** (export split UI↔SQL). Оставшийся пробел: teacher subscriptions RLS (RBAC-3).
+**Итог:** RBAC R1–R6 в целом внедрены. **P1 bundle закрыт** (RBAC-1, RBAC-2, RBAC-7). **RBAC-8** и **RBAC-3** закрыты (export split UI↔SQL; teacher subscriptions RLS guard).
 
 ---
 
@@ -87,7 +88,7 @@
 | `clients.read` | ✅ | ✅ | ✅ | ✅ | ❌ | operational / scope | ✅ |
 | `clients.write` | ✅ | ✅ | ✅ | ❌† | ❌ | write + policy | ✅ |
 | `subscriptions.read` | ✅ | ✅ | ✅ | ✅ | ❌ | operational / scope | ✅ |
-| `subscriptions.sell/write` | ✅ | ✅ | ✅ | ❌† | ❌ | `can_write_all_business()` | ⚠️ RLS‡ |
+| `subscriptions.sell/write` | ✅ | ✅ | ✅ | ❌† | ❌ | `can_write_all_business()` + `teacher_can_write_subscriptions()` | ✅ |
 | `attendance.write` | ✅ | ✅ | ✅ | ✅ | ❌ | scope + admin | ✅ |
 | `schedule.read/write` | ✅ | ✅ | ✅ | 👁/❌§ | ❌ | operational / scope | ✅ |
 | `personal_lessons.sell` | ✅ | ✅ | ✅ | ✅ | ❌ | scope | ✅ |
@@ -105,11 +106,10 @@
 | `license.activate` | ✅ | ❌ | ❌ | ❌ | ❌ | owner only | ✅ |
 
 \* teacher с валидным scope  
-† override §9: `teachers_can_edit_clients`, `teachers_can_sell_subscriptions`, `teachers_can_export`  
+† override §9: `teachers_can_edit_clients`, `teachers_can_sell_subscriptions`, `teachers_can_export` — UI + RLS для subscriptions (RBAC-3)  
 § `schedule.read` = true при `teachers_can_view_full_schedule` (default `true`)  
-§§ teacher: `reports.operational` = false; home через `dashboard.scoped_summary` (NAV-2)
-¶ teacher: `can("payments.write")` = false; кнопка оплаты в `PersonalLessonsPanel` открыта через `can("personal_lessons.write")`, запись — RPC `record_personal_lesson_payment`  
-‡ RLS: политики `subscriptions_insert/update/delete_teacher` не проверяют `teachers_can_sell_subscriptions` — REST может обойти UI при override §9
+§§ teacher: `reports.operational` = false; home через `dashboard.scoped_summary` (NAV-2)  
+¶ teacher: `can("payments.write")` = false; кнопка оплаты в `PersonalLessonsPanel` открыта через `can("personal_lessons.write")`, запись — RPC `record_personal_lesson_payment`
 
 ### Settings-секции (`canAccessSettingsSection`)
 
@@ -181,7 +181,7 @@ SQL: `20260705000001_v2_rbac_export_helpers_sync.sql` — читает `organiza
 | 1 | owner: полный доступ, activate license | ✅ PASS |
 | 2 | director: без activate, с team + settings | ✅ PASS |
 | 3 | admin: CRM write, prices.read, без settings/team/prices.write/export | ✅ PASS |
-| 4 | teacher: scope; masking; attendance OK; personal_lessons.sell OK | ⚠️ PARTIAL |
+| 4 | teacher: scope; masking; attendance OK; personal_lessons.sell OK; subscriptions write только при §9 override | ✅ PASS *(RBAC-3)* |
 | 5 | accountant: finance routes; REST clients → 0 rows | ✅ PASS |
 
 ### §10.2 Безопасность
@@ -246,38 +246,25 @@ SQL: `20260705000001_v2_rbac_export_helpers_sync.sql` — читает `organiza
 
 ---
 
-### 🟠 RBAC-3 [P2] — Teacher: RLS write на subscriptions при запрете UI
+### 🟠 RBAC-3 [P2] — Teacher: RLS write на subscriptions при запрете UI — **✅ ИСПРАВЛЕНО 2026-06-20**
 
-**Файл:** `tangodb/supabase/migrations/20260623000001_v2_business_rls.sql`
+**Файлы:**
+- `tangodb/supabase/migrations/20260623000001_v2_business_rls.sql` (исходные policies)
+- `tangodb/supabase/migrations/20260706000001_v2_teacher_subscriptions_write_guard.sql` *(новая)*
 
-Политики `subscriptions_insert_teacher`, `subscriptions_update_teacher`, `subscriptions_delete_teacher` **не сняты** в R2/R4. UI блокирует `subscriptions.sell`, REST может обойти (особенно при `teachers_can_sell_subscriptions=true`).
+**Было:** политики `subscriptions_insert/update/delete_teacher` разрешали write teacher в scope без проверки `teachers_can_sell_subscriptions` — REST обходил UI при default `false`.
 
-**Место для решения:**
+**Решение:** вариант **B** — defense in depth + org override §9.
 
-| Вариант | Описание |
-|---------|----------|
-| **A** | Новая миграция: DROP teacher write policies; write только через `can_write_all_business()` |
-| **B** | SQL helper `teacher_can_write_subscriptions()` читает `organization_settings.teachers_can_sell_subscriptions` |
-| **C** | Оставить policies, но UI-only (не рекомендуется — нарушает §10.2) |
+**Исправление:**
+1. `teacher_can_write_subscriptions()` — `true` только при `organization_settings.teachers_can_sell_subscriptions = true` **и** `teacher_has_any_scope()`.
+2. Policies `subscriptions_insert/update/delete_teacher` дополнены `AND teacher_can_write_subscriptions()`; per-row scope (`teacher_has_discipline_access` / `teacher_can_access_subscription`) сохранён.
+3. По умолчанию (`teachers_can_sell_subscriptions=false`) teacher INSERT/UPDATE/DELETE subscriptions → denied.
+4. Owner/director/admin policies не изменены; `permissions.ts` не трогался.
 
-**Рекомендация:** вариант **B** — defense in depth + org override §9.
+**Regression §10.2:** teacher REST POST/UPDATE/DELETE subscriptions без override → denied (RLS 0 rows / policy violation).
 
-**Prompt для исправления:**
-
-```
-Задача: исправить RBAC-3 из CODE_REVIEW_ROLES.md — teacher REST write subscriptions.
-
-Новая migration (дата YYYYMMDD_v2_teacher_subscriptions_write_guard.sql):
-
-1. CREATE FUNCTION teacher_can_write_subscriptions() — true только если teachers_can_sell_subscriptions из organization_settings AND teacher scope.
-2. Перепиши subscriptions_insert/update/delete_teacher policies: добавь teacher_can_write_subscriptions().
-3. По умолчанию (flag false) teacher INSERT/UPDATE/DELETE subscriptions → denied.
-4. При teachers_can_sell_subscriptions=true — разрешить в scope (как сейчас).
-
-Не трогай owner/director/admin policies. RLS-only, без изменения permissions.ts (UI уже согласован).
-
-Обнови changelog.md. Regression §10.2: teacher REST POST subscriptions → 403 без override.
-```
+**Статус:** ✅ PASS
 
 ---
 
@@ -477,7 +464,7 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | RBAC-2 | P1 | permissionOptionsFromSettings в settings guards | ✅ PASS | 0051700 |
 | RBAC-7 | P2 | Redirect вместо spinner на `/` без dashboard | ✅ PASS | 0051700 |
 | RBAC-8 | P2 | Export helpers §9 + accountant financial export | ✅ PASS | 06e5a48 |
-| RBAC-3 | P2 | RLS teacher subscriptions + `teachers_can_sell_subscriptions` | ⬜ TODO | — |
+| RBAC-3 | P2 | RLS teacher subscriptions + `teachers_can_sell_subscriptions` | ✅ PASS | pending |
 | RBAC-4 | P2 | Teacher scoped home (не OperationalDashboard) | ✅ Этап 0 (NAV-2) | f09bf3f |
 | RBAC-5 | P2 | Accountant: скрыть /prices nav | ✅ Этап 0 (NAV-1) | f09bf3f |
 | RBAC-6 | P3 | admin disciplines.write — решение стейкхолдера | ✅ убрано у admin | f09bf3f |
@@ -505,9 +492,10 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | R6 reception | `tangodb/supabase/migrations/20260703000001_v2_reception_restricted_admin.sql` |
 | Org overrides | `tangodb/supabase/migrations/20260704000001_v2_rbac_org_setting_overrides.sql` |
 | Export helpers sync | `tangodb/supabase/migrations/20260705000001_v2_rbac_export_helpers_sync.sql` |
+| Teacher subscriptions write guard | `tangodb/supabase/migrations/20260706000001_v2_teacher_subscriptions_write_guard.sql` |
 | Financial export lib | `tangodb/src/lib/exportFinancialCsv.ts` |
 | Invite EF | `tangodb/supabase/functions/invite-member/index.ts` |
 
 ---
 
-*Документ: Regression QA §10 + ревизия сверки с кодом (2026-06-20). **Этап 0** (NAV-1, NAV-2, RBAC-6), **Этап 1 P1** (RBAC-1, RBAC-2, RBAC-7) и **RBAC-8** выполнены. Следующий шаг — RBAC-3 (RLS teacher subscriptions).*
+*Документ: Regression QA §10 + ревизия сверки с кодом (2026-06-20). **Этап 0** (NAV-1, NAV-2, RBAC-6), **Этап 1 P1** (RBAC-1, RBAC-2, RBAC-7), **RBAC-8** и **RBAC-3** выполнены. Следующий шаг — Regression QA re-run (§10) + E2E smoke.*

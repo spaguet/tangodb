@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-20 — RBAC-3: teacher_can_write_subscriptions() + guard на subscriptions_insert/update/delete_teacher — write только при teachers_can_sell_subscriptions=true и scope; default deny (REST не обходит UI).
 2026-06-20 — RBAC-8: can_export_data() синхронизирован с §9 (admin_can_export, teachers_can_export); accountant убран из dashboard.export → только finance.export; DataExportPage split (OperationalExportSection / FinancialExportSection + exportFinancialCsv.ts).
 2026-06-20 — RBAC P1 bundle: RBAC-2 (permissionOptionsFromSettings в routeGuards/SettingsIndexRedirect), RBAC-1 (owner/director — вкладки operational+financial на DashboardPage), RBAC-7 (findFirstAccessiblePanelPath вместо спиннера на /); assertReceptionPermissions + admin_can_export regression.
 2026-06-20 — RBAC Этап 0: NAV-1 (accountant без /prices nav, prices.read сохранён), NAV-2 (teacher scoped home — dashboard.scoped_summary + TeacherScopedDashboard), RBAC-6 (admin без disciplines.write); assertReceptionPermissions в dev.
