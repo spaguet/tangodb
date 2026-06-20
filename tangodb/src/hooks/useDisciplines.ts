@@ -12,12 +12,13 @@ const mapDiscipline = (row: Record<string, unknown>): Discipline => ({
   createdAt: row.created_at as string | undefined,
 });
 
-export function useDisciplines() {
-  const { enabled, withOrgId } = useOrgQueryScope();
+export function useDisciplines(options?: { enabled?: boolean }) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const queryEnabled = orgEnabled && (options?.enabled ?? true);
 
   return useQuery({
     queryKey: withOrgId(disciplinesQueryKey),
-    enabled,
+    enabled: queryEnabled,
     queryFn: async () => {
       const { data, error } = await supabase.from("disciplines").select("*").order("name");
       if (error) throw error;

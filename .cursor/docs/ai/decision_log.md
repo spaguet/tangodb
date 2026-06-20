@@ -40,3 +40,14 @@
   1. Отдельный код роли `reception` в CHECK — отложено: усложняет audit/SQL без явной потребности.
   2. Только UI guards без RLS — отклонено: `is_restricted_admin()` в SQL, reception SELECT только subscriptions/attendance, payments write через `can_write_reception()`.
 - **Почему так:** Один код роли `admin` в JWT и invite RPC; различие только в JSONB meta. Permissions.ts и RLS синхронизированы: кассир не открывает `/clients`, `/schedule`; сохраняет `payments.write`, `attendance.write`, masked `subscriptions.read`.
+
+### Этап 0 — NAV-1, NAV-2, RBAC-6 (2026-06-20)
+
+- **Дата:** 2026-06-20
+- **Решение:**
+  - **NAV-1 (B):** Скрыть пункт «Тарифы» в nav для accountant; `prices.read` сохранён для finance JOIN.
+  - **NAV-2 (C):** Teacher home через `dashboard.scoped_summary` + `TeacherScopedDashboard` (расписание на сегодня, ближайшие персональные, быстрые ссылки) — без CRM-агрегатов.
+  - **RBAC-6:** Убрать `disciplines.write` у admin; направления — только owner/director через `/settings/disciplines` (§4).
+- **Контекст:** Regression QA CODE_REVIEW_ROLES.md — согласование nav и permissions до P1 bundle.
+- **Альтернативы:** NAV-1 A (оставить /prices) — отклонено: лишний CRM-adjacent UI; NAV-2 A (скрыть Обзор) — отклонено: teacher нужен home; RBAC-6 оставить write — отклонено: противоречит «admin без стратегии».
+- **Почему так:** Согласовано с tangodb_roles_rbac_TZ.md §4, §5.4, §5.5; минимальный diff в permissions.ts + новый компонент home.

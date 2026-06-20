@@ -32,12 +32,13 @@ export interface GroupScheduleSlotInput {
 /** @deprecated alias */
 export type DisciplineScheduleSlotInput = GroupScheduleSlotInput;
 
-export function useSchedule() {
-  const { enabled, withOrgId } = useOrgQueryScope();
+export function useSchedule(options?: { enabled?: boolean }) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const queryEnabled = orgEnabled && (options?.enabled ?? true);
 
   return useQuery({
     queryKey: withOrgId(scheduleQueryKey),
-    enabled,
+    enabled: queryEnabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from(scheduleTable)

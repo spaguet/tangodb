@@ -51,6 +51,7 @@ export type PermissionAction =
   | "disciplines.read"
   | "disciplines.write"
   | "dashboard.read"
+  | "dashboard.scoped_summary"
   | "dashboard.export"
   | "reports.operational"
   | "reports.financial"
@@ -261,16 +262,20 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
 
   switch (action) {
     case "reports.operational":
-      if (isFullOperationalAdmin(role, options)) return true;
-      if (role === "teacher") return teacherHasAnyScopeAccess(scope);
-      return false;
+      return isFullOperationalAdmin(role, options);
 
     case "reports.financial":
       return FINANCIAL_READ_ROLES.includes(role);
 
+    case "dashboard.scoped_summary":
+      if (role === "teacher") return teacherHasAnyScopeAccess(scope);
+      return false;
+
     case "dashboard.read":
       return (
-        can(role, "reports.operational", options) || can(role, "reports.financial", options)
+        can(role, "reports.operational", options) ||
+        can(role, "reports.financial", options) ||
+        can(role, "dashboard.scoped_summary", options)
       );
 
     case "dashboard.export":
@@ -351,7 +356,6 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
 
     case "disciplines.write":
       if (STRATEGIC_ROLES.includes(role)) return true;
-      if (role === "admin") return true;
       if (role === "teacher") {
         if (!(options?.teachersCanManageDisciplines ?? false)) return false;
         return teacherMatchesContext(scope, context);
@@ -412,6 +416,7 @@ export function canAccessPanel(
     case "personal_sell":
       return can(role, "personal_lessons.sell", options);
     case "prices":
+      if (role === "accountant") return false;
       return can(role, "prices.read", options);
     case "settings":
       if (can(role, "settings.manage", options)) return true;
@@ -484,10 +489,18 @@ export function panelIdFromPath(pathname: string): PanelId {
   return "dashboard";
 }
 
-/** R6 regression checks — restricted reception admin route guards */
+/** R6 + Этап 0 regression checks — dev-only via main.tsx */
 export function assertReceptionPermissions(): void {
   const receptionOpts: PermissionOptions = { restrictedAdmin: true };
   const adminOpts: PermissionOptions = { restrictedAdmin: false };
+  const teacherScope: TeacherScope = {
+    discipline_ids: ["d1"],
+    location_ids: [],
+    all_disciplines: false,
+    all_locations: false,
+    can_view_all_clients: false,
+  };
+  const teacherOpts: PermissionOptions = { scope: teacherScope };
 
   if (canAccessPanel("admin", "clients", receptionOpts)) {
     throw new Error("reception must not access clients panel");
@@ -503,5 +516,24 @@ export function assertReceptionPermissions(): void {
   }
   if (!canAccessPanel("admin", "clients", adminOpts)) {
     throw new Error("full admin must access clients panel");
+  }
+
+  if (canAccessPanel("accountant", "prices", adminOpts)) {
+    throw new Error("accountant must not access prices panel (NAV-1)");
+  }
+  if (!can("accountant", "prices.read", adminOpts)) {
+    throw new Error("accountant must retain prices.read for finance (NAV-1)");
+  }
+  if (can("teacher", "reports.operational", teacherOpts)) {
+    throw new Error("teacher must not have reports.operational (NAV-2)");
+  }
+  if (!can("teacher", "dashboard.scoped_summary", teacherOpts)) {
+    throw new Error("teacher with scope must have dashboard.scoped_summary (NAV-2)");
+  }
+  if (can("admin", "disciplines.write", adminOpts)) {
+    throw new Error("admin must not have disciplines.write (RBAC-6)");
+  }
+  if (!can("admin", "disciplines.read", adminOpts)) {
+    throw new Error("admin must retain disciplines.read (RBAC-6)");
   }
 }
