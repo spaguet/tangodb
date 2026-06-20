@@ -133,13 +133,16 @@ export default function TeamSettingsPage() {
             ))}
           </AppSelect>
         </div>
-        <button
-          type="submit"
-          disabled={invite.isPending}
-          className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 cursor-pointer transition-colors"
-        >
-          {invite.isPending ? "…" : t("team.sendInvite")}
-        </button>
+        <div className="space-y-1.5">
+          <button
+            type="submit"
+            disabled={invite.isPending}
+            className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 cursor-pointer transition-colors"
+          >
+            {invite.isPending ? "…" : t("team.sendInvite")}
+          </button>
+          <p className="text-[11px] text-slate-500">{t("team.inviteLinkHint")}</p>
+        </div>
         {lastInviteUrl && (
           <div className="flex items-center gap-2 p-2 bg-indigo-50 rounded-lg border border-indigo-100">
             <p className="text-[11px] text-indigo-800 truncate flex-1 font-mono">{lastInviteUrl}</p>

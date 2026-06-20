@@ -8,6 +8,7 @@ export type I18nKey =
   | "team.inviteEmail"
   | "team.inviteRole"
   | "team.sendInvite"
+  | "team.inviteLinkHint"
   | "team.pendingInvites"
   | "team.revoke"
   | "team.deactivate"
@@ -36,7 +37,8 @@ const RU: Record<I18nKey, string> = {
   "team.invite": "Пригласить",
   "team.inviteEmail": "Email",
   "team.inviteRole": "Роль",
-  "team.sendInvite": "Отправить приглашение",
+  "team.sendInvite": "Сгенерировать приглашение",
+  "team.inviteLinkHint": "После генерации скопируйте ссылку и отправьте её новому участнику команды",
   "team.pendingInvites": "Ожидающие приглашения",
   "team.revoke": "Отозвать",
   "team.deactivate": "Деактивировать",
@@ -66,7 +68,8 @@ const EN: Record<I18nKey, string> = {
   "team.invite": "Invite",
   "team.inviteEmail": "Email",
   "team.inviteRole": "Role",
-  "team.sendInvite": "Send invite",
+  "team.sendInvite": "Generate invite",
+  "team.inviteLinkHint": "After generating, copy the link and send it to the new team member",
   "team.pendingInvites": "Pending invites",
   "team.revoke": "Revoke",
   "team.deactivate": "Deactivate",
@@ -96,7 +99,8 @@ const VI: Record<I18nKey, string> = {
   "team.invite": "Mời",
   "team.inviteEmail": "Email",
   "team.inviteRole": "Vai trò",
-  "team.sendInvite": "Gửi lời mời",
+  "team.sendInvite": "Tạo lời mời",
+  "team.inviteLinkHint": "Sau khi tạo, sao chép liên kết và gửi cho thành viên mới",
   "team.pendingInvites": "Lời mời đang chờ",
   "team.revoke": "Thu hồi",
   "team.deactivate": "Vô hiệu hóa",

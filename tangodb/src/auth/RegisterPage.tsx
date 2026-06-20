@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
+import { parseAuthError } from "./authErrors";
 import {
   AuthButton,
   AuthError,
@@ -43,7 +44,7 @@ export default function RegisterPage() {
         navigate("/activate-key", { replace: true });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось зарегистрироваться");
+      setError(parseAuthError(err));
     } finally {
       setLoading(false);
     }

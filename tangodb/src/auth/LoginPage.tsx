@@ -9,6 +9,7 @@ import {
   AuthLayout,
   AuthLink,
 } from "./AuthLayout";
+import { parseAuthError } from "./authErrors";
 import {
   getTelegramInitData,
   initTelegramWebApp,
@@ -91,7 +92,7 @@ export default function LoginPage() {
       await signInWithEmail(email.trim(), password);
       goAfterLogin();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось войти");
+      setError(parseAuthError(err));
     } finally {
       setLoading(false);
     }
