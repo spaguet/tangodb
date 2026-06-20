@@ -6,7 +6,7 @@ import FinancialDashboard from "../components/FinancialDashboard";
 import TeacherScopedDashboard from "../components/TeacherScopedDashboard";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
-import PageTabs, { pageTabPanelCls } from "../components/ui/PageTabs";
+import PageTabs from "../components/ui/PageTabs";
 import { useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
@@ -132,7 +132,7 @@ function DashboardWithTabs({
   return (
     <div className="panel-page-stack">
       <PageTabs tabs={[...DASHBOARD_TABS]} activeTab={activeTab} onChange={(tab) => onTabChange(tab as DashboardTab)} />
-      <div className={`bg-white border border-slate-200 shadow-xs ${pageTabPanelCls(activeTab, "operational")}`}>
+      <div role="tabpanel" className="panel-page-stack">
         {children}
       </div>
     </div>
@@ -223,7 +223,7 @@ function OperationalDashboardView({
   return (
     <div className="panel-page-stack">
       <PageTabs tabs={[...DASHBOARD_TABS]} activeTab={activeTab} onChange={(tab) => onTabChange(tab as DashboardTab)} />
-      <div className={`bg-white border border-slate-200 shadow-xs ${pageTabPanelCls(activeTab, "operational")}`}>
+      <div role="tabpanel" className="panel-page-stack">
         {content}
       </div>
     </div>
