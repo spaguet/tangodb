@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import { useAuth } from "./AuthProvider";
@@ -40,6 +40,8 @@ export default function AcceptInvitePage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeToken, setActiveToken] = useState("");
+  const previewStartedRef = useRef(false);
+  const acceptStartedRef = useRef(false);
 
   useEffect(() => {
     if (tokenFromUrl) {
@@ -52,8 +54,9 @@ export default function AcceptInvitePage() {
   }, [tokenFromUrl]);
 
   useEffect(() => {
-    if (authLoading || session || !activeToken) return;
+    if (authLoading || session || !activeToken || previewStartedRef.current) return;
 
+    previewStartedRef.current = true;
     let cancelled = false;
     setPreviewLoading(true);
     setFormError(null);
@@ -79,11 +82,12 @@ export default function AcceptInvitePage() {
   }, [authLoading, session, activeToken, t]);
 
   useEffect(() => {
-    if (authLoading || !session) return;
+    if (authLoading || !session || acceptStartedRef.current) return;
 
     const token = tokenFromUrl || sessionStorage.getItem(PENDING_INVITE_KEY);
     if (!token) return;
 
+    acceptStartedRef.current = true;
     let cancelled = false;
     setStatus("loading");
 
