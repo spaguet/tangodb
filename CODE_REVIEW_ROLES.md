@@ -27,7 +27,7 @@
 | **Промпт 4: RBAC-4 + RBAC-5 — verification pass + design_system** | ✅ 2026-06-20 |
 | **Промпт 5: Regression QA re-run (§10)** | ✅ 2026-06-20 |
 | Исправление кода (P2 bundle: RBAC-3) | ✅ 2026-06-20 |
-| Деплой / коммит / пуш | ✅ миграции R1–R6 на remote; push main → auto deploy |
+| Деплой / коммит / пуш | ✅ миграции R1–R6 + RBAC-6 R7 на remote; push main → auto deploy |
 
 **Допущения аудита:**
 - teacher — с непустым scope (`all_disciplines`, `can_view_all_clients`);
@@ -566,7 +566,7 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | RBAC-3 | P2 | RLS teacher subscriptions + `teachers_can_sell_subscriptions` | ✅ PASS | 4db2bac |
 | RBAC-4 | P2 | Teacher scoped home (не OperationalDashboard) | ✅ PASS | f09bf3f + verification |
 | RBAC-5 | P2 | Accountant: скрыть /prices nav | ✅ PASS | f09bf3f + verification |
-| RBAC-6 | P3 | admin disciplines.write — UI + RLS + DisciplineSelect | ✅ PASS | f09bf3f + verification |
+| RBAC-6 | P3 | admin disciplines.write — UI + RLS + DisciplineSelect | ✅ PASS | f09bf3f + 02b6cec |
 | NAV-1 | — | Accountant prices nav policy | ✅ вариант B | f09bf3f |
 | NAV-2 | — | Teacher home screen policy | ✅ вариант C | f09bf3f |
 | **Regression re-run** | — | Промпт 5 §10 full pass | ✅ PASS | test:rbac + lint + build |
