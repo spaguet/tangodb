@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-20 — RBAC R2: SQL-миграция v2_rbac_roles_refinement — admin→owner data migration, split can_read_operational/financial, accountant без CRM SELECT, prices read/write split, admin без team/settings/export.
 2026-06-20 — RBAC R1: матрица permissions (admin/accountant/teacher), панель finance, UI guards и маскировка фин. полей для teacher (без SQL-миграций).
 2026-06-20 — AuthLayout: логотип TDB вместо T — как в меню CRM.
 2026-06-20 — Исправлен бесконечный спиннер на /accept-invite: стабилизирован useI18n.t и однократный preview.
