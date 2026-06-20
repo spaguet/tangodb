@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-06-20 — Settings guards с неполными PermissionOptions (RBAC-2)
+
+- **Ошибка:** Прямой URL `/settings/data` при `admin_can_export=true` редиректил, хотя пункт был в nav `SettingsLayout`.
+- **Причина:** `routeGuards.tsx` и `SettingsIndexRedirect.tsx` собирали options вручную — только `scope`, `teachersCanManageDisciplines`, `isReadOnly`; без `adminCanExport`, `restrictedAdmin` и др.
+- **Как избежать:** Для любой проверки прав использовать `permissionOptionsFromSettings()` — один источник с `usePermissions` и `SettingsLayout`. Добавлять regression в `assertReceptionPermissions()`.
+
 ### 2026-06-19 — Приглашение преподавателю не приходит на email
 
 - **Ошибка:** После отправки приглашения в «Настройки · Команда» письмо не приходит на почту преподавателя.

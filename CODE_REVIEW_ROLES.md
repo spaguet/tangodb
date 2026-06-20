@@ -20,8 +20,9 @@
 | Выявлен RBAC-7 (spinner на `/`) | ✅ |
 | Выявлен RBAC-8 (SQL export overrides расходятся с UI §9) | ✅ |
 | **Этап 0: NAV-1, NAV-2, RBAC-6 — решения приняты и реализованы** | ✅ 2026-06-20 |
-| Исправление кода (P1/P2 bundle) | ⬜ следующий этап |
-| Деплой / коммит / пуш | ✅ коммит f09bf3f; push — вручную (main protected) |
+| **Этап 1: P1 bundle (RBAC-2 → RBAC-1 → RBAC-7)** | ✅ 2026-06-20 |
+| Исправление кода (P2 bundle) | ⬜ следующий этап |
+| Деплой / коммит / пуш | ⬜ после коммита P1 |
 
 **Допущения аудита:**
 - teacher — с непустым scope (`all_disciplines`, `can_view_all_clients`);
@@ -44,7 +45,7 @@
 | §10.2 Security (код+RLS) | 7/10 | 3 (settings guards; dashboard fallback; export helper overrides; RLS reception — ✅) |
 | §10.3 UI | 2/5 | 3 (nav partial; dashboard spinner; settings guards; export page для accountant) |
 
-**Итог:** RBAC R1–R6 в целом внедрены, но не полностью согласованы с ТЗ на уровне связки UI guards ↔ SQL helpers. Основные security/UX-пробелы: split dashboard owner/director (RBAC-1), неполные `PermissionOptions` в **settings** guards (RBAC-2), бесконечный спиннер на `/` без dashboard (RBAC-7), рассинхрон export overrides между `permissions.ts` и SQL `can_export_data()` (RBAC-8).
+**Итог:** RBAC R1–R6 в целом внедрены. **P1 bundle закрыт** (RBAC-1, RBAC-2, RBAC-7). Оставшиеся пробелы: export overrides UI↔SQL (RBAC-8), teacher subscriptions RLS (RBAC-3).
 
 ---
 
@@ -162,8 +163,8 @@ SQL: `20260629000001_v2_rbac_roles_refinement.sql` оставляет teacher ex
 | Teacher чужой subscription по UUID | ✅ PASS | `teacher_can_access_subscription()` |
 | Teacher без `price_id`/`paid` | ✅ PASS* | R4 views + hooks |
 | Restricted admin: panel URL `/clients`, `/schedule` | ✅ PASS | `PanelAccessRoute` → `usePermissions().canAccessPanel` (полные options + `restrictedAdmin`) |
-| Restricted admin: settings guards + org overrides | ⚠️ PARTIAL | `routeGuards.tsx`, `SettingsIndexRedirect.tsx` — см. RBAC-2 |
-| Роли без dashboard → URL `/` | ❌ FAIL | `routeGuards.tsx:117–119` — бесконечный спиннер; см. RBAC-7 |
+| Restricted admin: settings guards + org overrides | ✅ PASS | `routeGuards.tsx`, `SettingsIndexRedirect.tsx` — RBAC-2: `permissionOptionsFromSettings` |
+| Роли без dashboard → URL `/` | ✅ PASS | `routeGuards.tsx` — RBAC-7: `findFirstAccessiblePanelPath` или empty state через `<Outlet />` |
 | Export override §9: `teachers_can_export=false` / `admin_can_export=true` | ⚠️ PARTIAL | UI учитывает flags; SQL `can_export_data()` — нет; см. RBAC-8 |
 
 \* при применённой миграции R4 на целевой БД
@@ -194,8 +195,8 @@ SQL: `20260629000001_v2_rbac_roles_refinement.sql` оставляет teacher ex
 | 6 | teacher не получает price_id/paid | ✅ PASS* |
 | 7 | accountant не mark_attendance | ✅ PASS |
 | 8 | restricted admin не обходит panel guards по URL | ✅ PASS (hook) |
-| 9 | settings guards учитывают org overrides и те же options, что nav | ⚠️ PARTIAL |
-| 10 | роли без dashboard не зависают на `/` | ❌ FAIL |
+| 9 | settings guards учитывают org overrides и те же options, что nav | ✅ PASS |
+| 10 | роли без dashboard не зависают на `/` | ✅ PASS |
 | 11 | `can_export_data()` синхронизирован с §9 overrides | ⚠️ PARTIAL |
 
 ### §10.3 UI
@@ -206,7 +207,7 @@ SQL: `20260629000001_v2_rbac_roles_refinement.sql` оставляет teacher ex
 | 2 | admin `/settings/team` → redirect | ✅ PASS |
 | 3 | accountant: `/settings/data` ✅, `/settings/general` ❌ | ✅ PASS |
 | 4 | ReadOnlyBanner + RBAC | ✅ PASS |
-| 5 | Прямой URL `/` для teacher (пустой scope) / reception admin — не спиннер | ❌ FAIL |
+| 5 | Прямой URL `/` для teacher (пустой scope) / reception admin — не спиннер | ✅ PASS |
 | 6 | Accountant `/settings/data` показывает финансовый экспорт, а не operational CSV | ⚠️ PARTIAL |
 
 ---
@@ -215,101 +216,32 @@ SQL: `20260629000001_v2_rbac_roles_refinement.sql` оставляет teacher ex
 
 ---
 
-### 🔴 RBAC-1 [P1] — Owner/director видят только Financial Dashboard
+### 🔴 RBAC-1 [P1] — Owner/director видят только Financial Dashboard — **✅ ИСПРАВЛЕНО 2026-06-20**
 
 **Файл:** `tangodb/src/pages/DashboardPage.tsx`
 
-```typescript
-const showFinancial = can("reports.financial");
-const showOperational = can("reports.operational") && !showFinancial;
-// ...
-if (showFinancial) {
-  return <FinancialDashboard />;
-}
-return <OperationalDashboard ... />;
-```
+**Было:** `showOperational = reports.operational && !showFinancial`; exclusive `if (showFinancial) return FinancialDashboard` — owner/director не видели operational-виджеты.
 
-**Проблема (два уровня):**
-1. У owner/director оба флага `true` → `showOperational = false` → operational-виджеты (§5.3) не загружаются.
-2. Даже при исправлении п.1 рендер **if/else**: при `showFinancial === true` operational-компонент **никогда** не показывается — нужен tabs/stack или role-based split (R5 в changelog заявлен, но логика split не завершена).
+**Исправление:**
+- Убран `&& !showFinancial` — operational и financial независимы.
+- Owner/director: вкладки «Операционный» / «Финансовый» (`PageTabs`); запросы operational включаются только на активной вкладке.
+- Admin: только `OperationalDashboard`; accountant: только `FinancialDashboard`; teacher: `TeacherScopedDashboard` (NAV-2).
 
-**Место для решения:**
-
-| Вариант | Описание | Плюсы | Минусы |
-|---------|----------|-------|--------|
-| **A** | Tabs «Операционный» / «Финансовый» для owner/director | Явное разделение | Доп. UI |
-| **B** | Stack: OperationalDashboard сверху, FinancialDashboard снизу | Всё на одном экране | Длинная страница |
-| **C** | Role-based split; убрать `&& !showFinancial`; заменить exclusive if/else | Минимальный diff | Нужен комбинированный layout |
-
-**Рекомендация:** вариант **C** + tabs или stack для owner/director (не оставлять exclusive if/else).
-
-**Prompt для исправления:**
-
-```
-Задача: исправить RBAC-1 из CODE_REVIEW_ROLES.md.
-
-Файл: tangodb/src/pages/DashboardPage.tsx
-
-Сейчас owner/director не видят OperationalDashboard: (1) showOperational = reports.operational && !showFinancial; (2) exclusive if (showFinancial) return FinancialDashboard.
-
-Целевое поведение (tangodb_roles_rbac_TZ.md §5.1, §5.3, R5):
-- owner, director: OperationalDashboard + FinancialDashboard (tabs или stack — на выбор, см. вариант C в CODE_REVIEW_ROLES.md)
-- admin: только OperationalDashboard
-- accountant: только FinancialDashboard
-- teacher: scoped summary или пустой home (согласовать с NAV-2)
-
-Не ломай lazy-loading запросов (enabled только для нужного dashboard).
-Обнови changelog.md.
-```
+**Статус:** ✅ PASS
 
 ---
 
-### 🔴 RBAC-2 [P1] — Неполные `PermissionOptions` в settings guards
+### 🔴 RBAC-2 [P1] — Неполные `PermissionOptions` в settings guards — **✅ ИСПРАВЛЕНО 2026-06-20**
 
 **Файлы:**
-- `tangodb/src/auth/routeGuards.tsx` (`PanelAccessRoute` — только блок settings)
+- `tangodb/src/auth/routeGuards.tsx` (`PanelAccessRoute` — блок settings)
 - `tangodb/src/settings/SettingsIndexRedirect.tsx`
 
-**Уже корректно (не дублировать баг):**
-- `PanelAccessRoute` для **панелей** вызывает `canAccessPanel(panel)` из `usePermissions()` — полный набор options, включая `restrictedAdmin` из `membership.meta`. Restricted reception admin **не** открывает `/clients` и `/schedule` по URL.
-- `SettingsLayout.tsx` уже использует `permissionOptionsFromSettings()` — эталон.
-- RLS R6: `can_read_operational()` / `can_write_all_business()` исключают `is_restricted_admin()` — REST-слой согласован.
+**Было:** ручная сборка options без `restrictedAdmin`, `adminCanExport`, `adminCanManageTeam`, teacher §9 flags — guards расходились с `SettingsLayout`.
 
-```typescript
-// routeGuards.tsx — локальный options только для canAccessSettingsSection
-const options = {
-  scope,
-  teachersCanManageDisciplines: settings?.teachers_can_manage_disciplines ?? false,
-  isReadOnly,
-};
-// PanelAccessRoute: canAccessPanel(panel) — из hook, полные options ✅
-```
+**Исправление:** `permissionOptionsFromSettings(settings, scope, { restrictedAdmin: membership?.meta?.restricted_admin ?? false, isReadOnly })` — как в `usePermissions` / `SettingsLayout`. Panel guard через hook не менялся. Regression: `assertReceptionPermissions()` + проверки `admin_can_export` в dev.
 
-**Проблема:** `canAccessSettingsSection` в guards и redirect получает **неполный** `PermissionOptions` — нет `restrictedAdmin`, `adminCanExport`, `adminCanManageTeam`, `teachersCanSellSubscriptions`, `teachersCanEditClients`, `teachersCanViewFullSchedule`. Эффекты:
-- admin с `admin_can_export=true` / `admin_can_manage_team=true`: пункт есть в `SettingsLayout`, но прямой URL `/settings/data` или `/settings/team` может редиректить (guard видит default `false`);
-- teacher/reception flags в settings-guards расходятся с nav.
-
-**Место для решения:**
-
-| Вариант | Описание |
-|---------|----------|
-| **A** | Переиспользовать `permissionOptionsFromSettings(settings, scope, { restrictedAdmin, isReadOnly })` — helper **уже есть** в `permissions.ts` |
-| **B** | Дублировать логику `usePermissions` в guards (не рекомендуется) |
-
-**Рекомендация:** вариант **A** — один источник правды; подключить `membership?.meta?.restricted_admin` как в `usePermissions.ts`.
-
-**Prompt для исправления:**
-
-```
-Задача: исправить RBAC-2 из CODE_REVIEW_ROLES.md.
-
-1. В routeGuards.tsx и SettingsIndexRedirect.tsx замени ручную сборку options на permissionOptionsFromSettings(settings, scope, { restrictedAdmin: membership?.meta?.restricted_admin ?? false, isReadOnly }) — как в usePermissions.ts / SettingsLayout.tsx.
-2. Не меняй panel guard: canAccessPanel из hook уже корректен.
-3. Regression: admin + admin_can_export=true → /settings/data открывается; restricted admin → /clients redirect; full admin → /clients OK.
-4. Подключи assertReceptionPermissions() при старте dev (сейчас функция есть, но нигде не вызывается).
-
-Обнови changelog.md и lessons.md (причина: settings guards не синхронизированы с SettingsLayout).
-```
+**Статус:** ✅ PASS
 
 ---
 
@@ -380,33 +312,17 @@ const options = {
 
 ---
 
-### 🟠 RBAC-7 [P2] — Бесконечный спиннер на `/` без dashboard
+### 🟠 RBAC-7 [P2] — Бесконечный спиннер на `/` без dashboard — **✅ ИСПРАВЛЕНО 2026-06-20**
 
 **Файл:** `tangodb/src/auth/routeGuards.tsx`
 
-```typescript
-if (!canAccessPanel(panel)) {
-  if (panel === "dashboard") {
-    return <LoadingScreen label="Загрузка доступа..." />;
-  }
-  return <Navigate to="/" replace />;
-}
-```
+**Было:** `!canAccessPanel("dashboard")` → бесконечный `LoadingScreen`.
 
-**Проблема:** teacher с пустым scope и reception admin (`restricted_admin`) не имеют `dashboard.read`, но редирект с других панелей ведёт на `/`, где guard показывает **бесконечный** `LoadingScreen` вместо redirect на первую доступную панель или empty state.
+**Исправление:**
+- `findFirstAccessiblePanelPath()` в `permissions.ts` — первая доступная панель (attendance для reception admin, finance для accountant и т.д.).
+- Если панелей нет (teacher пустой scope) — `<Outlet />`, `DashboardPage` показывает empty state «Нет доступа к обзору».
 
-**Рекомендация:** если `panel === "dashboard"` и нет доступа — `Navigate` на первую доступную панель (attendance/subscriptions для reception) или страницу «Нет доступа»; не использовать loading как заглушку.
-
-**Prompt:**
-
-```
-Задача: RBAC-7 из CODE_REVIEW_ROLES.md.
-
-В PanelAccessRoute: при !canAccessPanel("dashboard") редирект на первую доступную панель по canAccessPanel (или /attendance для reception admin), не LoadingScreen.
-
-Regression: teacher empty scope, reception admin — нет зависания на /.
-Обнови changelog.md.
-```
+**Статус:** ✅ PASS
 
 ---
 
@@ -580,9 +496,9 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 
 | ID | Приоритет | Описание | Статус | PR / commit |
 |----|-----------|----------|--------|-------------|
-| RBAC-1 | P1 | Dashboard owner/director operational+financial | ⬜ TODO | — |
-| RBAC-2 | P1 | permissionOptionsFromSettings в settings guards | ⬜ TODO | — |
-| RBAC-7 | P2 | Redirect вместо spinner на `/` без dashboard | ⬜ TODO | — |
+| RBAC-1 | P1 | Dashboard owner/director operational+financial | ✅ PASS | P1 bundle 2026-06-20 |
+| RBAC-2 | P1 | permissionOptionsFromSettings в settings guards | ✅ PASS | P1 bundle 2026-06-20 |
+| RBAC-7 | P2 | Redirect вместо spinner на `/` без dashboard | ✅ PASS | P1 bundle 2026-06-20 |
 | RBAC-8 | P2 | Export helpers §9 + accountant financial export | ⬜ TODO | — |
 | RBAC-3 | P2 | RLS teacher subscriptions + `teachers_can_sell_subscriptions` | ⬜ TODO | — |
 | RBAC-4 | P2 | Teacher scoped home (не OperationalDashboard) | ✅ Этап 0 (NAV-2) | f09bf3f |
@@ -615,4 +531,4 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 
 ---
 
-*Документ: Regression QA §10 + ревизия сверки с кодом (2026-06-20). **Этап 0 выполнен** (NAV-1, NAV-2, RBAC-6). Следующий шаг — bundle P1 (RBAC-1 + RBAC-2 + RBAC-7), затем RBAC-8.*
+*Документ: Regression QA §10 + ревизия сверки с кодом (2026-06-20). **Этап 0** (NAV-1, NAV-2, RBAC-6) и **Этап 1 P1** (RBAC-1, RBAC-2, RBAC-7) выполнены. Следующий шаг — RBAC-8 (export sync), RBAC-3 (RLS teacher subscriptions).*

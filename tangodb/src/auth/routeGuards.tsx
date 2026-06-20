@@ -3,7 +3,14 @@ import { useAuth } from "./AuthProvider";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePermissions } from "../hooks/usePermissions";
 import { getOrganizationIdFromSession } from "../lib/authClaims";
-import { panelIdFromPath, settingsSectionFromPath, canAccessSettingsSection, type SettingsSectionId } from "../lib/permissions";
+import {
+  panelIdFromPath,
+  settingsSectionFromPath,
+  canAccessSettingsSection,
+  findFirstAccessiblePanelPath,
+  permissionOptionsFromSettings,
+  type SettingsSectionId,
+} from "../lib/permissions";
 
 function LoadingScreen({ label }: { label: string }) {
   return (
@@ -96,16 +103,15 @@ export function OrgWorkspaceRoute() {
 
 export function PanelAccessRoute() {
   const location = useLocation();
-  const { canAccessPanel, role, scope, isReadOnly } = usePermissions();
+  const { canAccessPanel, role, scope, isReadOnly, membership } = usePermissions();
   const { settings } = useOrganization();
   const panel = panelIdFromPath(location.pathname);
   const settingsSection = settingsSectionFromPath(location.pathname);
 
-  const options = {
-    scope,
-    teachersCanManageDisciplines: settings?.teachers_can_manage_disciplines ?? false,
+  const options = permissionOptionsFromSettings(settings, scope, {
+    restrictedAdmin: membership?.meta?.restricted_admin ?? false,
     isReadOnly,
-  };
+  });
 
   if (settingsSection && !canAccessSettingsSection(role, settingsSection, options)) {
     const fallbackSections: SettingsSectionId[] = ["data", "license", "disciplines", "general", "organization", "subscriptions", "locations", "team"];
@@ -115,7 +121,9 @@ export function PanelAccessRoute() {
 
   if (!canAccessPanel(panel)) {
     if (panel === "dashboard") {
-      return <LoadingScreen label="Загрузка доступа..." />;
+      const fallbackPath = findFirstAccessiblePanelPath(role, options);
+      if (fallbackPath) return <Navigate to={fallbackPath} replace />;
+      return <Outlet />;
     }
     return <Navigate to="/" replace />;
   }

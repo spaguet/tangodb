@@ -474,6 +474,30 @@ export function canAccessSettingsSection(
   }
 }
 
+const PANEL_FALLBACK_PATHS: { panel: PanelId; path: string }[] = [
+  { panel: "finance", path: "/finance" },
+  { panel: "clients", path: "/clients" },
+  { panel: "subscriptions", path: "/subscriptions" },
+  { panel: "subscriptions_sell", path: "/subscriptions/sell" },
+  { panel: "schedule", path: "/schedule" },
+  { panel: "attendance", path: "/attendance" },
+  { panel: "personal", path: "/personal" },
+  { panel: "personal_sell", path: "/personal/sell" },
+  { panel: "prices", path: "/prices" },
+  { panel: "settings", path: "/settings" },
+];
+
+/** Первая доступная панель кроме dashboard — для RBAC-7 redirect с `/`. */
+export function findFirstAccessiblePanelPath(
+  role: MemberRole | null,
+  options?: PermissionOptions
+): string | null {
+  for (const { panel, path } of PANEL_FALLBACK_PATHS) {
+    if (canAccessPanel(role, panel, options)) return path;
+  }
+  return null;
+}
+
 export function panelIdFromPath(pathname: string): PanelId {
   if (pathname === "/") return "dashboard";
   if (pathname.startsWith("/finance")) return "finance";
@@ -535,5 +559,13 @@ export function assertReceptionPermissions(): void {
   }
   if (!can("admin", "disciplines.read", adminOpts)) {
     throw new Error("admin must retain disciplines.read (RBAC-6)");
+  }
+
+  const adminExportOpts: PermissionOptions = { ...adminOpts, adminCanExport: true };
+  if (!canAccessSettingsSection("admin", "data", adminExportOpts)) {
+    throw new Error("admin with admin_can_export must access settings/data (RBAC-2)");
+  }
+  if (canAccessSettingsSection("admin", "data", adminOpts)) {
+    throw new Error("admin without admin_can_export must not access settings/data (RBAC-2)");
   }
 }
