@@ -1,8 +1,8 @@
 # TangoDB — Regression QA: RBAC Roles (§10)
 
-> **Дата аудита:** 2026-06-20 (ревизия сверки с кодом — 2026-06-20, pass 2)  
+> **Дата аудита:** 2026-06-20 (ревизия сверки с кодом — 2026-06-20, pass 2; **Промпт 5 re-run — 2026-06-20**)  
 > **Источник ТЗ:** `tangodb_roles_rbac_TZ.md` v1.2 — §4, §5, §8, §10  
-> **Метод:** статический аудит кода и SQL-миграций (без правок кода, без E2E на prod)  
+> **Метод:** статический аудит + `npm run test:rbac` + `supabase migration list` (E2E smoke на staging — не выполнялся, нет credentials в workspace)  
 > **Область:** `tangodb/src/lib/permissions.ts`, `usePermissions.ts`, `App.tsx`, `routeGuards.tsx`, `SettingsLayout.tsx`, `SettingsIndexRedirect.tsx`, `DashboardPage.tsx`, `DataExportPage.tsx`, миграции R1–R6  
 > **Контекст:** по `changelog.md` фазы R1–R6 в основном реализованы (2026-06-20); отчёт фиксирует оставшиеся расхождения с ТЗ, а не отсутствие фаз целиком.
 
@@ -24,8 +24,9 @@
 | **Этап 2: RBAC-8 — export helpers §9 + accountant financial export** | ✅ 2026-06-20 |
 | **Этап 2: RBAC-3 — teacher subscriptions RLS + teachers_can_sell_subscriptions** | ✅ 2026-06-20 |
 | **Промпт 4: RBAC-4 + RBAC-5 — verification pass + design_system** | ✅ 2026-06-20 |
+| **Промпт 5: Regression QA re-run (§10)** | ✅ 2026-06-20 |
 | Исправление кода (P2 bundle: RBAC-3) | ✅ 2026-06-20 |
-| Деплой / коммит / пуш | ✅ db push + коммит 4db2bac; push main → auto deploy |
+| Деплой / коммит / пуш | ✅ миграции R1–R6 на remote; push main → auto deploy |
 
 **Допущения аудита:**
 - teacher — с непустым scope (`all_disciplines`, `can_view_all_clients`);
@@ -48,7 +49,68 @@
 | §10.2 Security (код+RLS) | 10/10 | 0 |
 | §10.3 UI | 5/5 | 0 |
 
-**Итог:** RBAC R1–R6 в целом внедрены. **P1 bundle закрыт** (RBAC-1, RBAC-2, RBAC-7). **P2 bundle закрыт** (RBAC-3, RBAC-4, RBAC-5, RBAC-8).
+**Итог:** RBAC R1–R6 внедрены. **P1 bundle закрыт** (RBAC-1, RBAC-2, RBAC-7). **P2 bundle закрыт** (RBAC-3, RBAC-4, RBAC-5, RBAC-8). **Промпт 5 re-run:** новых дефектов не выявлено — все пункты §10 PASS (статика + автоматизация).
+
+---
+
+## Промпт 5 — Regression QA re-run (2026-06-20)
+
+### Метод
+
+| Шаг | Команда / действие | Результат |
+|-----|-------------------|-----------|
+| TypeScript | `npm run lint` | ✅ PASS |
+| Production build | `npm run build` | ✅ PASS |
+| Матрица RBAC | `npm run test:rbac` (`scripts/rbac-regression-check.mjs`) | ✅ 25 assertions PASS |
+| Dev asserts | `assertReceptionPermissions()` (main.tsx DEV) | ✅ PASS |
+| SQL migrations | `supabase migration list` — local = remote до `20260706000001` | ✅ PASS |
+| E2E smoke staging | RBAC-1/2/7/8, reception redirect, accountant REST | ⏭ SKIP — нет `.env` / staging credentials |
+
+### §10.1 Роли — re-run
+
+| # | Критерий | Статус | Проверка |
+|---|----------|--------|----------|
+| 1 | owner: полный доступ, activate license | ✅ PASS | `can("owner","license.activate")` |
+| 2 | director: без activate, team + settings | ✅ PASS | matrix script |
+| 3 | admin: CRM write, prices.read, без settings/export | ✅ PASS | matrix + guards |
+| 4 | teacher: scope, attendance, personal sell; subscriptions write только §9 | ✅ PASS | UI + RLS migration R6 |
+| 5 | accountant: finance routes; REST clients → 0 rows | ✅ PASS (код+RLS) | `can_read_operational()` deny |
+
+### §10.2 Безопасность — re-run
+
+| # | Критерий | Статус |
+|---|----------|--------|
+| 1–11 | JWT refresh, invite guard, teacher scope/masking, accountant mark_attendance, restricted admin, export §9 sync | ✅ PASS (код+SQL, без runtime E2E) |
+
+### §10.3 UI — re-run
+
+| # | Критерий | Статус | Проверка |
+|---|----------|--------|----------|
+| 1 | Nav 5 ролей | ✅ PASS | nav counts: owner 11, admin 9, teacher 7, accountant 3 |
+| 2 | admin `/settings/team` → redirect | ✅ PASS | `canAccessSettingsSection` |
+| 3 | accountant data ✅ / general ❌ | ✅ PASS | matrix script |
+| 4 | ReadOnlyBanner + RBAC | ✅ PASS | `isReadOnly` → WRITE_ACTIONS deny |
+| 5 | `/` без dashboard — не спиннер | ✅ PASS | RBAC-7 `findFirstAccessiblePanelPath` / empty state |
+| 6 | accountant `/settings/data` — financial export | ✅ PASS | `FinancialExportSection` only |
+
+### Nav matrix (факт, `test:rbac`)
+
+| Роль | Панели |
+|------|--------|
+| owner / director | dashboard, finance, clients, subscriptions, subscriptions_sell, schedule, attendance, personal, personal_sell, prices, settings |
+| admin | dashboard, clients, subscriptions, subscriptions_sell, schedule, attendance, personal, personal_sell, prices |
+| teacher (scope) | dashboard, clients, subscriptions, schedule, attendance, personal, personal_sell |
+| teacher (empty scope) | *(пусто)* |
+| accountant | dashboard, finance, settings |
+
+### Новые дефекты в re-run
+
+**Не выявлено.** Исправлений кода в этой сессии не потребовалось.
+
+### Заметки (не блокеры)
+
+- Reception admin на `/` редиректится на `/subscriptions` (первая доступная панель в `PANEL_FALLBACK_PATHS`), не на `/attendance` — поведение корректно для RBAC-7 (нет спиннера).
+- E2E smoke на staging рекомендуется при наличии test-аккаунтов (owner, admin+export, teacher, accountant, reception).
 
 ---
 
@@ -490,6 +552,7 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | RBAC-6 | P3 | admin disciplines.write — решение стейкхолдера | ✅ убрано у admin | f09bf3f |
 | NAV-1 | — | Accountant prices nav policy | ✅ вариант B | f09bf3f |
 | NAV-2 | — | Teacher home screen policy | ✅ вариант C | f09bf3f |
+| **Regression re-run** | — | Промпт 5 §10 full pass | ✅ PASS | test:rbac + lint + build |
 
 ---
 
@@ -514,8 +577,9 @@ RBAC-5: скрыть /prices nav для accountant, prices.read сохранит
 | Export helpers sync | `tangodb/supabase/migrations/20260705000001_v2_rbac_export_helpers_sync.sql` |
 | Teacher subscriptions write guard | `tangodb/supabase/migrations/20260706000001_v2_teacher_subscriptions_write_guard.sql` |
 | Financial export lib | `tangodb/src/lib/exportFinancialCsv.ts` |
+| Regression script | `tangodb/scripts/rbac-regression-check.mjs` |
 | Invite EF | `tangodb/supabase/functions/invite-member/index.ts` |
 
 ---
 
-*Документ: Regression QA §10 + ревизия сверки с кодом (2026-06-20). **Этап 0–2** и **Промпт 4 (RBAC-4 + RBAC-5)** выполнены. Следующий шаг — Regression QA re-run (§10) + E2E smoke.*
+*Документ: Regression QA §10 (2026-06-20). **Этап 0–2**, **Промпт 4** и **Промпт 5 (re-run)** выполнены — все P1/P2 PASS. Опционально: E2E smoke на staging с test-аккаунтами.*

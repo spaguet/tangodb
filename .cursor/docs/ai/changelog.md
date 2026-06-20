@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-20 — Промпт 5 Regression QA re-run: scripts/rbac-regression-check.mjs + npm run test:rbac; §10 PASS (lint, build, migration sync); новых дефектов не выявлено.
 2026-06-20 — RBAC-4 + RBAC-5 (verification pass): design_system — TeacherScopedDashboard и актуальная таблица dashboard split; regression asserts для teacher empty scope в assertReceptionPermissions.
 2026-06-20 — RBAC-3: teacher_can_write_subscriptions() + guard на subscriptions_insert/update/delete_teacher — write только при teachers_can_sell_subscriptions=true и scope; default deny (REST не обходит UI).
 2026-06-20 — RBAC-8: can_export_data() синхронизирован с §9 (admin_can_export, teachers_can_export); accountant убран из dashboard.export → только finance.export; DataExportPage split (OperationalExportSection / FinancialExportSection + exportFinancialCsv.ts).
