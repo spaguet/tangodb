@@ -46,6 +46,8 @@ export interface AcceptInviteResponse {
 
 export async function inviteMember(params: {
   email: string;
+  firstName: string;
+  lastName: string;
   role: string;
   scope?: Record<string, unknown>;
   meta?: MemberMeta;

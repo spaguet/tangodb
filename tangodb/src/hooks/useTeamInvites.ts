@@ -9,6 +9,8 @@ import { teamMembersQueryKey } from "./useTeamMembers";
 export interface PendingInvite {
   id: string;
   email: string;
+  first_name: string | null;
+  last_name: string | null;
   role: MemberRole;
   scope: TeacherScope;
   meta: MemberMeta;
@@ -27,7 +29,7 @@ export function useTeamInvites() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organization_invites")
-        .select("id, email, role, scope, meta, expires_at, created_at")
+        .select("id, email, first_name, last_name, role, scope, meta, expires_at, created_at")
         .is("accepted_at", null)
         .is("revoked_at", null)
         .gt("expires_at", new Date().toISOString())
@@ -38,6 +40,8 @@ export function useTeamInvites() {
       return (data ?? []).map((row) => ({
         id: row.id as string,
         email: row.email as string,
+        first_name: (row.first_name as string | null) ?? null,
+        last_name: (row.last_name as string | null) ?? null,
         role: row.role as MemberRole,
         scope: (row.scope as TeacherScope) ?? EMPTY_TEACHER_SCOPE,
         meta: (row.meta as MemberMeta) ?? {},

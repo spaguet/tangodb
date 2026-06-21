@@ -6,7 +6,19 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const clientNotesQueryKey = ["clientNotes"] as const;
 
-type AuthorJoinRow = { display_name?: string | null; role?: string } | null;
+type AuthorJoinRow = {
+  first_name?: string | null;
+  last_name?: string | null;
+  patronymic?: string | null;
+  role?: string;
+} | null;
+
+function authorLabel(author: AuthorJoinRow): string {
+  if (!author) return "Сотрудник";
+  const parts = [author.last_name, author.first_name, author.patronymic].filter(Boolean);
+  if (parts.length > 0) return parts.join(" ");
+  return "Сотрудник";
+}
 
 const mapClientNote = (row: Record<string, unknown>): ClientNote => {
   const author = row.author as AuthorJoinRow;
@@ -14,7 +26,7 @@ const mapClientNote = (row: Record<string, unknown>): ClientNote => {
     id: row.id as string,
     clientId: row.client_id as string,
     authorMemberId: row.author_member_id as string,
-    authorDisplayName: author?.display_name?.trim() || "Сотрудник",
+    authorDisplayName: authorLabel(author),
     authorRole: author?.role ?? "",
     body: row.body as string,
     createdAt: String(row.created_at ?? ""),
@@ -22,7 +34,7 @@ const mapClientNote = (row: Record<string, unknown>): ClientNote => {
 };
 
 const NOTES_SELECT =
-  "id, client_id, author_member_id, body, created_at, author:organization_members!author_member_id(display_name, role)";
+  "id, client_id, author_member_id, body, created_at, author:organization_members!author_member_id(first_name, last_name, patronymic, role)";
 
 export function clientNotesListQueryKey(clientId: string) {
   return [...clientNotesQueryKey, clientId] as const;

@@ -223,9 +223,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           : "Без локации";
         const teacherMember = slotTeacherId ? teacherMap[slotTeacherId] : undefined;
         const teacherLabel = teacherMember
-          ? memberDisplayName(teacherMember) ??
-            teacherMember.display_name ??
-            memberRoleLabel(teacherMember.role, teacherMember.meta)
+          ? memberDisplayName(teacherMember) ?? memberRoleLabel(teacherMember.role, teacherMember.meta)
           : "Преподаватель не указан";
 
         return {
@@ -496,7 +494,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               ) : (
                 teacherOptions.map((member) => (
                   <option key={member.id} value={member.id}>
-                    {member.display_name || memberRoleLabel(member.role, member.meta)}
+                    {memberDisplayName(member) ?? memberRoleLabel(member.role, member.meta)}
                   </option>
                 ))
               )}
@@ -722,9 +720,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                     ) : (
                       teacherOptions.map((member) => (
                         <option key={member.id} value={member.id}>
-                          {memberDisplayName(member) ??
-                            member.display_name ??
-                            memberRoleLabel(member.role, member.meta)}
+                          {memberDisplayName(member) ?? memberRoleLabel(member.role, member.meta)}
                         </option>
                       ))
                     )}

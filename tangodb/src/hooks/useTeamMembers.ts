@@ -75,8 +75,16 @@ export function memberRoleLabel(role: MemberRole, meta?: MemberMeta): string {
   return ROLE_LABELS[role] ?? role;
 }
 
-export function memberDisplayName(member: Pick<TeamMemberRow, "display_name" | "first_name" | "last_name" | "patronymic">): string | null {
+export function memberDisplayName(
+  member: Pick<TeamMemberRow, "first_name" | "last_name" | "patronymic">
+): string | null {
   const parts = [member.last_name, member.first_name, member.patronymic].filter(Boolean);
   if (parts.length > 0) return parts.join(" ");
-  return member.display_name;
+  return null;
+}
+
+export function memberListLabel(
+  member: Pick<TeamMemberRow, "first_name" | "last_name" | "patronymic" | "role" | "meta">
+): string {
+  return memberDisplayName(member) ?? memberRoleLabel(member.role, member.meta);
 }
