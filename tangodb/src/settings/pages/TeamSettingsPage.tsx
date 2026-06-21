@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Mail, UserMinus, Users, ClipboardList, Copy, Check } from "lucide-react";
+import { Mail, UserMinus, Users, ClipboardList, Copy, Check, GraduationCap } from "lucide-react";
 import AppSelect from "../../components/ui/AppSelect";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
+import TeacherProfileCard from "../components/TeacherProfileCard";
 import { useToast } from "../../App";
 import {
   memberRoleLabel,
@@ -120,6 +121,8 @@ export default function TeamSettingsPage() {
   };
 
   const canInvite = can("team.manage");
+  const canEditTeacherProfile = currentRole === "owner" || currentRole === "director";
+  const teacherMembers = activeMembers.filter((m) => m.role === "teacher");
 
   const canManageMember = (memberRole: MemberRole): boolean => {
     if (memberRole === "owner") return currentRole === "owner";
@@ -311,6 +314,32 @@ export default function TeamSettingsPage() {
           </div>
         )}
       </div>
+
+      {teacherMembers.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-indigo-500" />
+              Преподаватели
+            </h3>
+            <span className="text-[10px] bg-slate-100 text-slate-500 font-sans px-2 py-0.5 rounded-full font-semibold">
+              {teacherMembers.length}
+            </span>
+          </div>
+          {!canEditTeacherProfile && (
+            <p className="text-[11px] text-slate-500">Профили доступны только для просмотра.</p>
+          )}
+          <div className="space-y-3">
+            {teacherMembers.map((member) => (
+              <TeacherProfileCard
+                key={member.id}
+                member={member}
+                canEdit={canEditTeacherProfile}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {canInvite && auditRows.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">

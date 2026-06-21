@@ -16,7 +16,7 @@ import {
 } from "../hooks/useSchedule";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { useLocations } from "../hooks/useLocations";
-import { useTeamMembers, memberRoleLabel } from "../hooks/useTeamMembers";
+import { useTeamMembers, memberRoleLabel, memberDisplayName } from "../hooks/useTeamMembers";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { dowFull, dowFullEntries, jsDayToIsoDow, timesOverlap } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
@@ -125,8 +125,9 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const deleteSlot = useDeleteScheduleSlot();
   const replaceGroupSchedule = useReplaceGroupSchedule();
   const deleteGroupSchedule = useDeleteGroupSchedule();
-  const { can } = usePermissions();
+  const { can, role: currentRole } = usePermissions();
   const canWriteSchedule = can("schedule.write");
+  const canEditScheduleTeacher = currentRole === "owner" || currentRole === "director";
 
   const [groupName, setGroupName] = useState("");
   const [disciplineId, setDisciplineId] = useState<string | "">("");
@@ -138,6 +139,8 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const [editingGroup, setEditingGroup] = useState<ScheduleGroup | null>(null);
   const [editSlots, setEditSlots] = useState<EditSlotRow[]>([]);
   const [originalSlotIds, setOriginalSlotIds] = useState<string[]>([]);
+  const [editLocationId, setEditLocationId] = useState<string>("");
+  const [editTeacherMemberId, setEditTeacherMemberId] = useState<string>("");
 
   useEffect(() => {
     if (disciplines.length > 0 && disciplineId === "") {
@@ -218,9 +221,11 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
         const locationLabel = slotLocationId
           ? locationMap[slotLocationId]?.name ?? "Локация"
           : "Без локации";
-        const teacherLabel = slotTeacherId
-          ? teacherMap[slotTeacherId]?.display_name ??
-            memberRoleLabel(teacherMap[slotTeacherId]?.role ?? "teacher")
+        const teacherMember = slotTeacherId ? teacherMap[slotTeacherId] : undefined;
+        const teacherLabel = teacherMember
+          ? memberDisplayName(teacherMember) ??
+            teacherMember.display_name ??
+            memberRoleLabel(teacherMember.role, teacherMember.meta)
           : "Преподаватель не указан";
 
         return {
@@ -319,6 +324,8 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const startEditGroup = (group: ScheduleGroup) => {
     if (group.disciplineId == null) return;
     setEditingGroup(group);
+    setEditLocationId(group.locationId ?? locations[0]?.id ?? "");
+    setEditTeacherMemberId(group.teacherMemberId ?? teacherOptions[0]?.id ?? "");
     setOriginalSlotIds(group.slots.map((s) => s.id!).filter(Boolean));
     setEditSlots(
       group.slots.map((s) => ({
@@ -350,6 +357,15 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const handleSaveGroupEdit = async () => {
     if (!editingGroup || editingGroup.disciplineId == null) return;
 
+    if (!editLocationId) {
+      toast("Выберите локацию.", "error");
+      return;
+    }
+    if (canEditScheduleTeacher && !editTeacherMemberId) {
+      toast("Выберите преподавателя.", "error");
+      return;
+    }
+
     for (const slot of editSlots) {
       if (!slot.time || !slot.timeEnd) {
         toast("Заполните время для всех занятий.", "error");
@@ -362,11 +378,12 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     }
 
     const editIds = new Set(editSlots.map((s) => s.id));
+    const resolvedLocationId = editLocationId || null;
     for (const slot of editSlots) {
       const conflict = getSlotConflict(
         slot,
         editingGroup.disciplineId,
-        editingGroup.locationId,
+        resolvedLocationId,
         schedule,
         personalLessons,
         editIds
@@ -382,8 +399,10 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     const res = await replaceGroupSchedule.mutateAsync({
       groupName: editingGroup.groupName,
       disciplineId: editingGroup.disciplineId,
-      locationId: editingGroup.locationId,
-      teacherMemberId: editingGroup.teacherMemberId,
+      locationId: resolvedLocationId,
+      teacherMemberId: canEditScheduleTeacher
+        ? editTeacherMemberId || null
+        : editingGroup.teacherMemberId,
       slots: editSlots.map(({ dayOfWeek, time: t, timeEnd: te, id }) => ({
         id,
         dayOfWeek,
@@ -676,6 +695,49 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               </div>
 
               <div className="panel-form-stack font-sans">
+                <AppSelect
+                  label="Локация"
+                  value={editLocationId}
+                  onChange={(e) => setEditLocationId(e.target.value)}
+                >
+                  {locations.length === 0 ? (
+                    <option value="">Нет локаций</option>
+                  ) : (
+                    locations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </option>
+                    ))
+                  )}
+                </AppSelect>
+
+                {canEditScheduleTeacher ? (
+                  <AppSelect
+                    label="Преподаватель"
+                    value={editTeacherMemberId}
+                    onChange={(e) => setEditTeacherMemberId(e.target.value)}
+                  >
+                    {teacherOptions.length === 0 ? (
+                      <option value="">Нет преподавателей</option>
+                    ) : (
+                      teacherOptions.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {memberDisplayName(member) ??
+                            member.display_name ??
+                            memberRoleLabel(member.role, member.meta)}
+                        </option>
+                      ))
+                    )}
+                  </AppSelect>
+                ) : (
+                  <div className="field-stack">
+                    <span className={labelCls}>Преподаватель</span>
+                    <p className="text-sm text-slate-700 px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg">
+                      {editingGroup.teacherLabel}
+                    </p>
+                  </div>
+                )}
+
                 {editSlots.length === 0 ? (
                   <p className="text-xs text-slate-400 text-center py-4">Нет занятий для редактирования.</p>
                 ) : (
@@ -685,7 +747,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                       getSlotConflict(
                         slot,
                         editingGroup.disciplineId,
-                        editingGroup.locationId,
+                        editLocationId || null,
                         schedule,
                         personalLessons,
                         editSlotIdSet

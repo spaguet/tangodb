@@ -38,6 +38,16 @@ export interface MemberMeta {
   restricted_admin?: boolean;
 }
 
+export interface MemberProfile {
+  first_name: string | null;
+  last_name: string | null;
+  patronymic: string | null;
+  contact_email: string | null;
+  phone: string | null;
+  telegram: string | null;
+  profile_notes: string | null;
+}
+
 export interface OrganizationSummary {
   id: string;
   name: string;

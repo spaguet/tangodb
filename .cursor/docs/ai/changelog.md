@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-21 — Расписание: редактирование локации и преподавателя в модалке группы (преподаватель — только owner/director). Команда: карточки профиля преподавателей (ФИО, контакты); редактирование owner/director, просмотр admin. Миграция member profile fields.
 2026-06-20 — Локации в расписании и журнале: schedule_slots.location_id/teacher_member_id в UI; выбор локации перед календарём посещений с кнопкой «Все локации»; фильтрация групповых и персональных уроков по залу.
 2026-06-20 — Dashboard tabs: убрана лишняя внешняя карточка вокруг «Обзор и статистика», чтобы split-dashboard следовал panel-page-stack и карточкам из design system.
 2026-06-20 — Промпт 5 Regression QA re-run: scripts/rbac-regression-check.mjs + npm run test:rbac; §10 PASS (lint, build, migration sync); новых дефектов не выявлено.

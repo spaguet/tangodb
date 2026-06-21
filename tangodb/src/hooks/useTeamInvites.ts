@@ -84,6 +84,13 @@ export function useTeamMutations() {
       meta?: MemberMeta;
       isActive?: boolean;
       displayName?: string;
+      firstName?: string;
+      lastName?: string;
+      patronymic?: string;
+      contactEmail?: string;
+      phone?: string;
+      telegram?: string;
+      profileNotes?: string;
     }) => {
       const { error } = await supabase.rpc("update_team_member", {
         p_member_id: params.memberId,
@@ -92,6 +99,13 @@ export function useTeamMutations() {
         p_meta: params.meta ?? null,
         p_is_active: params.isActive ?? null,
         p_display_name: params.displayName ?? null,
+        p_first_name: params.firstName ?? null,
+        p_last_name: params.lastName ?? null,
+        p_patronymic: params.patronymic ?? null,
+        p_contact_email: params.contactEmail ?? null,
+        p_phone: params.phone ?? null,
+        p_telegram: params.telegram ?? null,
+        p_profile_notes: params.profileNotes ?? null,
       });
       if (error) throw error;
     },
