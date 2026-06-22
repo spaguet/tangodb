@@ -29,7 +29,6 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { orgLoading, organizationId } = useOrganization();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
-  const setPersonalTab = useUIStore((s) => s.setPersonalTab);
   const { can } = usePermissions();
   const [activeTab, setActiveTab] = useState<DashboardTab>("operational");
 
@@ -54,16 +53,15 @@ export default function DashboardPage() {
   const disciplinesQuery = useDisciplines({ enabled: scopedOnly });
 
   const handleNavigate = (panel: string) => {
-    const routes: Record<string, { path: string; subTab?: "active" | "sell"; persTab?: "view" | "sell" }> = {
+    const routes: Record<string, { path: string; subTab?: "active" | "sell" }> = {
       activeSubs: { path: "/subscriptions", subTab: "active" },
-      personalView: { path: "/personal", persTab: "view" },
+      personalView: { path: "/schedule" },
       attendance: { path: "/attendance" },
       schedule: { path: "/schedule" },
     };
 
     const route = routes[panel] ?? { path: "/" };
     if (route.subTab) setSubscriptionsTab(route.subTab);
-    if (route.persTab) setPersonalTab(route.persTab);
     navigate(route.path);
   };
 

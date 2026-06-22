@@ -481,8 +481,9 @@ const PANEL_FALLBACK_PATHS: { panel: PanelId; path: string }[] = [
   { panel: "subscriptions_sell", path: "/subscriptions/sell" },
   { panel: "schedule", path: "/schedule" },
   { panel: "attendance", path: "/attendance" },
-  { panel: "personal", path: "/personal" },
-  { panel: "personal_sell", path: "/personal/sell" },
+  // Legacy /personal URLs redirect to /schedule — panel ids kept for backward-compat RBAC checks on redirect routes.
+  { panel: "personal", path: "/schedule" },
+  { panel: "personal_sell", path: "/schedule?action=sell" },
   { panel: "prices", path: "/prices" },
   { panel: "settings", path: "/settings" },
 ];

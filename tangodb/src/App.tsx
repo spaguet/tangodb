@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
-  Sparkles,
   Users,
   Ticket,
   TicketPlus,
@@ -58,7 +57,6 @@ import ClientsPage from "./pages/ClientsPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
 import SchedulePage from "./pages/SchedulePage";
 import AttendancePage from "./pages/AttendancePage";
-import PersonalPage from "./pages/PersonalPage";
 import PricesPage from "./pages/PricesPage";
 import FinancePage from "./pages/FinancePage";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
@@ -79,14 +77,12 @@ export function useToast() {
 }
 
 type SubTab = "active" | "sell";
-type PersTab = "view" | "sell";
 
 interface NavItem {
   icon: typeof Users;
   label: string;
   path: string;
   subTab?: SubTab;
-  persTab?: PersTab;
 }
 
 interface NavSection {
@@ -100,7 +96,6 @@ interface MobileTabItem {
   line2: string;
   path: string;
   subTab?: SubTab;
-  persTab?: PersTab;
 }
 
 const NAV_SECTIONS: NavSection[] = [
@@ -126,15 +121,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "Расписание и журнал",
     items: [
-      { icon: Calendar, label: "Расписание групп", path: "/schedule" },
+      { icon: Calendar, label: "Расписание", path: "/schedule" },
       { icon: CalendarCheck, label: "Календарь и журнал", path: "/attendance" },
-    ],
-  },
-  {
-    label: "Персональные уроки",
-    items: [
-      { icon: Sparkles, label: "Персональные", path: "/personal", persTab: "view" },
-      { icon: TicketPlus, label: "Продажа персонального урока", path: "/personal/sell", persTab: "sell" },
     ],
   },
   {
@@ -151,21 +139,18 @@ const MOBILE_TABS: MobileTabItem[] = [
   { icon: LayoutDashboard, line1: "ОБЗОР И", line2: "СТАТИСТИКА", path: "/" },
   { icon: Ticket, line1: "АБОНЕМЕНТЫ", line2: "И ПРОДАЖА", path: "/subscriptions", subTab: "active" },
   { icon: CalendarCheck, line1: "ЖУРНАЛ", line2: "ПОСЕЩЕНИЙ", path: "/attendance" },
-  { icon: Sparkles, line1: "ПЕРСОНАЛЬНЫЕ", line2: "И ПРОДАЖА", path: "/personal", persTab: "view" },
+  { icon: Calendar, line1: "РАСПИСАНИЕ", line2: "ГРУПП И УРОКОВ", path: "/schedule" },
 ];
 
-function getPanelTitle(pathname: string, subscriptionsTab: string, personalTab: string): string {
+function getPanelTitle(pathname: string, subscriptionsTab: string): string {
   if (pathname === "/") return "Обзор и статистика";
   if (pathname.startsWith("/finance")) return "Финансы";
   if (pathname === "/clients") return "Клиенты";
   if (pathname.startsWith("/subscriptions")) {
     return subscriptionsTab === "sell" ? "Продажа абонемента" : "Действующие абонементы";
   }
-  if (pathname === "/schedule") return "Расписание групп";
+  if (pathname === "/schedule") return "Расписание";
   if (pathname === "/attendance") return "Журнал посещений и календарь";
-  if (pathname.startsWith("/personal")) {
-    return personalTab === "sell" ? "Продажа персонального урока" : "Персональные уроки";
-  }
   if (pathname === "/prices") return "Тарифы и прайс-лист";
   if (pathname.startsWith("/settings/general")) return "Настройки · Общие";
   if (pathname.startsWith("/settings/organization")) return "Настройки · Организация";
@@ -252,9 +237,7 @@ function AppLayout() {
   const { signOut } = useAuth();
   const { canAccessPanel } = usePermissions();
   const subscriptionsTab = useUIStore((s) => s.subscriptionsTab);
-  const personalTab = useUIStore((s) => s.personalTab);
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
-  const setPersonalTab = useUIStore((s) => s.setPersonalTab);
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: ToastType } | null>(null);
@@ -267,7 +250,7 @@ function AppLayout() {
     toastTimer.current = setTimeout(() => setToast(null), 3500);
   }, []);
 
-  const panelTitle = getPanelTitle(location.pathname, subscriptionsTab, personalTab);
+  const panelTitle = getPanelTitle(location.pathname, subscriptionsTab);
 
   useEffect(() => {
     document.title = `${panelTitle} · TangoDB`;
@@ -291,7 +274,6 @@ function AppLayout() {
   const go = (item: NavItem | MobileTabItem) => {
     setMobileDrawerOpen(false);
     if (item.subTab) setSubscriptionsTab(item.subTab);
-    if (item.persTab) setPersonalTab(item.persTab);
     navigate(item.path);
   };
 
@@ -300,9 +282,6 @@ function AppLayout() {
     if (item.path.startsWith("/settings")) return location.pathname.startsWith("/settings");
     if (item.path.startsWith("/subscriptions")) {
       return location.pathname.startsWith("/subscriptions") && subscriptionsTab === item.subTab;
-    }
-    if (item.path.startsWith("/personal")) {
-      return location.pathname.startsWith("/personal") && personalTab === item.persTab;
     }
     return location.pathname === item.path;
   };
@@ -509,14 +488,11 @@ function AppLayout() {
 function RouteSync() {
   const location = useLocation();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
-  const setPersonalTab = useUIStore((s) => s.setPersonalTab);
 
   useEffect(() => {
     if (location.pathname === "/subscriptions/sell") setSubscriptionsTab("sell");
     else if (location.pathname === "/subscriptions") setSubscriptionsTab("active");
-    if (location.pathname === "/personal/sell" || location.pathname === "/personal/book") setPersonalTab("sell");
-    else if (location.pathname === "/personal") setPersonalTab("view");
-  }, [location.pathname, setSubscriptionsTab, setPersonalTab]);
+  }, [location.pathname, setSubscriptionsTab]);
 
   return null;
 }
@@ -574,9 +550,9 @@ export default function App() {
                   <Route path="subscriptions/sell" element={<ErrorBoundary><SubscriptionsPage initialTab="sell" /></ErrorBoundary>} />
                   <Route path="schedule" element={<ErrorBoundary><SchedulePage /></ErrorBoundary>} />
                   <Route path="attendance" element={<ErrorBoundary><AttendancePage /></ErrorBoundary>} />
-                  <Route path="personal" element={<ErrorBoundary><PersonalPage initialTab="view" /></ErrorBoundary>} />
-                  <Route path="personal/sell" element={<ErrorBoundary><PersonalPage initialTab="sell" /></ErrorBoundary>} />
-                  <Route path="personal/book" element={<Navigate to="/personal/sell" replace />} />
+                  <Route path="personal" element={<Navigate to="/schedule" replace />} />
+                  <Route path="personal/sell" element={<Navigate to="/schedule?action=sell" replace />} />
+                  <Route path="personal/book" element={<Navigate to="/schedule?action=sell" replace />} />
                   <Route path="prices" element={<ErrorBoundary><PricesPage /></ErrorBoundary>} />
                   <Route path="finance/*" element={<ErrorBoundary><FinancePage /></ErrorBoundary>} />
                   <Route path="settings" element={<ErrorBoundary><SettingsLayout /></ErrorBoundary>}>

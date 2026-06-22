@@ -1,3 +1,6 @@
+/**
+ * @deprecated Слияние с /schedule (Промпт 7). Маршрут /personal редиректит на /schedule.
+ */
 import PersonalLessonsPanel from "../components/PersonalLessonsPanel";
 import { useToast } from "../App";
 

@@ -651,11 +651,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         <p className="text-xs text-slate-500 font-sans leading-relaxed">
           Изменить расписание можно в{" "}
           <Link to="/schedule" className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline">
-            Расписание групп
-          </Link>{" "}
-          и в{" "}
-          <Link to="/personal" className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline">
-            Персональные уроки
+            Расписание
           </Link>
           .
         </p>

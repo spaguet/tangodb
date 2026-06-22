@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Clock, Edit, Layers, MapPin, Trash2, User, X } from "lucide-react";
+import { CalendarDays, Clock, Edit, Layers, MapPin, Ticket, Trash2, User, X } from "lucide-react";
+import { useClients } from "../../hooks/useClients";
+import { useDisciplines } from "../../hooks/useDisciplines";
+import { usePrices } from "../../hooks/usePrices";
 import { useDeleteScheduleSlot } from "../../hooks/useSchedule";
 import { useDeletePersonalLesson } from "../../hooks/usePersonalLessons";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -17,6 +20,7 @@ import { formatDateRu } from "../../lib/utils";
 import type { DisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import RequirePermission from "../RequirePermission";
+import SellPackageModal from "../ui/SellPackageModal";
 
 interface LessonInfoPopupProps {
   lesson: DisplayLesson | null;
@@ -57,6 +61,10 @@ export default function LessonInfoPopup({
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const deletePersonalLesson = useDeletePersonalLesson();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [packageModalOpen, setPackageModalOpen] = useState(false);
+  const { data: activeClients = [] } = useClients();
+  const { data: disciplines = [] } = useDisciplines();
+  const { data: prices = [] } = usePrices();
 
   useEffect(() => {
     if (!lesson) return;
@@ -229,6 +237,17 @@ export default function LessonInfoPopup({
                 )}
               </dl>
 
+              {lesson.kind === "personal" && can("personal_lessons.sell") && !isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => setPackageModalOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  <Ticket className="w-3.5 h-3.5" />
+                  Продать пакет уроков
+                </button>
+              )}
+
               <div className="flex items-center gap-2 pt-1">
                 {canEdit && (
                   <RequirePermission action={lesson.kind === "group" ? "schedule.write" : "personal_lessons.write"} context={permissionContext}>
@@ -298,6 +317,15 @@ export default function LessonInfoPopup({
         pending={deletePending}
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirmOpen(false)}
+      />
+
+      <SellPackageModal
+        open={packageModalOpen}
+        onClose={() => setPackageModalOpen(false)}
+        toast={toast}
+        clients={activeClients}
+        disciplines={disciplines}
+        prices={prices}
       />
     </>
   );

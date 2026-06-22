@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, MapPin, Trash2, X } from "lucide-react";
+import { CalendarDays, MapPin, Ticket, Trash2, X } from "lucide-react";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useAddPersonalLessons } from "../../hooks/usePersonalLessons";
@@ -31,6 +31,7 @@ import AppSelect from "../ui/AppSelect";
 import ClientAutocomplete from "../ui/ClientAutocomplete";
 import DisciplineSelect from "../ui/DisciplineSelect";
 import TimeSelect from "../ui/TimeSelect";
+import SellPackageModal from "../ui/SellPackageModal";
 import type { ScheduleCellPrefill } from "./AddLessonTypePopup";
 
 interface AddPersonalLessonFormProps {
@@ -74,7 +75,7 @@ export default function AddPersonalLessonForm({
   onSuccess,
 }: AddPersonalLessonFormProps) {
   const { memberId } = useOrganization();
-  const { role } = usePermissions();
+  const { role, can } = usePermissions();
   const { connectionState } = useOnlineStatus();
   const { data: activeClients = [] } = useClients();
   const { data: directoryClients = [] } = useClientDirectory();
@@ -95,6 +96,7 @@ export default function AddPersonalLessonForm({
   const [disciplineId, setDisciplineId] = useState<string>("");
   const [teacherMemberId, setTeacherMemberId] = useState("");
   const [bookingPaymentMode, setBookingPaymentMode] = useState<"single" | "package" | null>(null);
+  const [packageModalOpen, setPackageModalOpen] = useState(false);
 
   const lessonTariffs = getPrivateLessonTariffs(prices);
   const pType: "solo" | "pair" | "trio" =
@@ -349,6 +351,17 @@ export default function AddPersonalLessonForm({
             </div>
 
             <div className="panel-form-stack">
+              {can("personal_lessons.sell") && (
+                <button
+                  type="button"
+                  onClick={() => setPackageModalOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  <Ticket className="w-3.5 h-3.5" />
+                  Продать пакет уроков
+                </button>
+              )}
+
               <div className="field-stack">
                 <label className={labelCls}>Локация</label>
                 <div className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-700">
@@ -582,6 +595,15 @@ export default function AddPersonalLessonForm({
           </motion.div>
         </div>
       )}
+
+      <SellPackageModal
+        open={packageModalOpen}
+        onClose={() => setPackageModalOpen(false)}
+        toast={toast}
+        clients={activeClients}
+        disciplines={disciplines}
+        prices={prices}
+      />
     </AnimatePresence>
   );
 }

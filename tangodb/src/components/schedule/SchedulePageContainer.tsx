@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useScheduleForWeek } from "../../hooks/useSchedule";
+import { useClients } from "../../hooks/useClients";
 import { useDisciplines } from "../../hooks/useDisciplines";
+import { usePrices } from "../../hooks/usePrices";
 import { useAccessibleLocations } from "../../hooks/useLocations";
 import { useTeamMembers, memberDisplayName, memberListLabel } from "../../hooks/useTeamMembers";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -25,6 +27,7 @@ import AddGroupLessonForm from "./AddGroupLessonForm";
 import AddPersonalLessonForm from "./AddPersonalLessonForm";
 import EditLessonPopup from "./EditLessonPopup";
 import ScheduleDebtorsBlock from "./ScheduleDebtorsBlock";
+import SellPackageModal from "../ui/SellPackageModal";
 
 const NO_LOCATION_KEY = "__no_location__";
 
@@ -43,6 +46,7 @@ export default function SchedulePageContainer() {
   const [selectedLesson, setSelectedLesson] = useState<DisplayLesson | null>(null);
   const [editLesson, setEditLesson] = useState<DisplayLesson | null>(null);
   const [addFlow, setAddFlow] = useState<AddFlow>(null);
+  const [sellPackageOpen, setSellPackageOpen] = useState(false);
 
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
 
@@ -50,6 +54,8 @@ export default function SchedulePageContainer() {
   const locationsQuery = useAccessibleLocations();
   const disciplinesQuery = useDisciplines();
   const teamQuery = useTeamMembers();
+  const { data: activeClients = [] } = useClients();
+  const { data: prices = [] } = usePrices();
 
   const canAddGroup = canOfferGroupLessonAdd(role, isReadOnly) && can("schedule.write");
   const canAddPersonal = canAddPersonalFromGrid(role, can, isReadOnly);
@@ -107,6 +113,21 @@ export default function SchedulePageContainer() {
       );
     }
   }, [searchParams, teacherFilter, setSearchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("action") !== "sell") return;
+    if (!can("personal_lessons.sell")) return;
+
+    setSellPackageOpen(true);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("action");
+        return next;
+      },
+      { replace: true }
+    );
+  }, [searchParams, setSearchParams, can]);
 
   const handleTeacherFilterChange = useCallback(
     (teacherId: string) => {
@@ -435,6 +456,15 @@ export default function SchedulePageContainer() {
         toast={toast}
         onClose={closeAddFlow}
         onSuccess={handleAddSuccess}
+      />
+
+      <SellPackageModal
+        open={sellPackageOpen}
+        onClose={() => setSellPackageOpen(false)}
+        toast={toast}
+        clients={activeClients}
+        disciplines={disciplinesQuery.data ?? []}
+        prices={prices}
       />
     </div>
   );

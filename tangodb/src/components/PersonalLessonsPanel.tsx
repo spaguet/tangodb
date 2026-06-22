@@ -1,3 +1,4 @@
+/** @deprecated Слияние с components/schedule/* (Промпт 7). Используйте SchedulePageContainer. */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
