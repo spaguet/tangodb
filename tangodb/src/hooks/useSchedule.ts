@@ -262,6 +262,18 @@ export function useEditGroupSchedule() {
       });
 
       if (insertError) {
+        const { error: rollbackError } = await supabase
+          .from(scheduleTable)
+          .update({ valid_to: null })
+          .eq("id", slotId);
+
+        if (rollbackError) {
+          return {
+            success: false as const,
+            error: `Не удалось сохранить изменения; слот мог остаться закрытым: ${rollbackError.message}`,
+          };
+        }
+
         if (insertError.code === "23505") {
           return { success: false as const, error: "Такой день и время уже есть в расписании" };
         }

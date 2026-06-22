@@ -15,7 +15,15 @@
 - `src/lib/` — клиент Supabase, утилиты, edge functions
 - `src/store/` — локальное UI-состояние (Zustand)
 - `src/components/` — UI без прямых вызовов Supabase
-- `src/components/schedule/` — недельная сетка расписания (Промпт 2+): `SchedulePageContainer`, `WeeklyScheduleGrid`, `LessonBlock`, toolbar/week picker; данные через `useScheduleForWeek`
+- `src/components/schedule/` — недельная сетка расписания (Промпты 2–8):
+  - **Контейнер:** `SchedulePageContainer` — state недели, фильтр `?teacher=`, deep link `?action=sell`, CRUD-потоки
+  - **Сетка:** `WeeklyScheduleGrid`, `LocationScheduleSection`, `DayColumn`, `LessonBlock`, `TimeGutter`
+  - **Toolbar:** `ScheduleToolbar`, `WeekPickerPopover`
+  - **CRUD UI:** `LessonInfoPopup`, `AddLessonTypePopup`, `AddGroupLessonForm`, `AddPersonalLessonForm`, `EditLessonPopup`
+  - **Долги:** `ScheduleDebtorsBlock` — операционный контур (`paid=no`), без `financial_debtors_v`
+  - **Данные:** только через хуки (`useScheduleForWeek`, `usePersonalLessons`, `useScheduleDebtors`, mutations в `useSchedule.ts` / `usePersonalLessons.ts`); прямых Supabase-вызовов в компонентах нет
+  - **Утилиты:** `lib/scheduleWeek.ts`, `lib/scheduleConflicts.ts`, `lib/scheduleTime.ts`, `lib/scheduleLessonAccess.ts`
+  - **Legacy (deprecated):** `SchedulePanel.tsx`, `PersonalPage.tsx`, `PersonalLessonsPanel.tsx`; маршруты `/personal*` → redirect на `/schedule`
 - `supabase/` — миграции, RLS, edge functions
 
 ## RBAC / RLS (v2)

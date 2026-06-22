@@ -18,6 +18,7 @@
     "test:db:rls": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_business_rls_test.sql",
     "test:db:migration": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_version_migration_test.sql",
     "test:db:subscription": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_subscription_test.sql",
+    "test:db:schedule-overlap": "psql \"%DATABASE_URL%\" -f supabase/tests/schedule_overlap_test.sql",
     "test:rbac": "node scripts/rbac-regression-check.mjs",
     "db:push": "supabase db push",
     "db:link": "supabase link"
