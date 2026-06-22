@@ -33,6 +33,8 @@ interface SellPackageModalProps {
   clients: Client[];
   disciplines: Discipline[];
   prices: Price[];
+  /** When opened from another modal (e.g. payment), render above z-[60] overlays. */
+  stackLayer?: "default" | "above";
 }
 
 export default function SellPackageModal({
@@ -42,6 +44,7 @@ export default function SellPackageModal({
   clients,
   disciplines,
   prices,
+  stackLayer = "default",
 }: SellPackageModalProps) {
   const navigate = useNavigate();
   const addSubscription = useAddSubscription();
@@ -154,7 +157,11 @@ export default function SellPackageModal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div
+          className={`fixed inset-0 ${stackLayer === "above" ? "z-[70]" : "z-50"} flex items-center justify-center p-4`}
+          role="dialog"
+          aria-modal="true"
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

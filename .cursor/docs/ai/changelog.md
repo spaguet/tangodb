@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-22 — fix: SellPackageModal поверх PayPersonalLessonModal (stackLayer above, z-[70]).
 2026-06-22 — fix: PayPersonalLessonModal — выбор «Один урок» / «Списать с пакета» сбрасывался из-за useEffect на lessonTariffs.
 2026-06-22 — Расписание: sky/indigo для personal/group; PayPersonalLessonModal (оплата урока / списание с пакета); все неоплаченные внизу с кнопкой «Оплатить».
 2026-06-22 — fix: блок неоплаченных уроков в расписании — «1» + «800 000 ₫» больше не сливаются в «1 800 000 ₫»; подписи «N уроков · сумма», группировка по неделе.

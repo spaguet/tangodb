@@ -396,6 +396,7 @@ export default function PayPersonalLessonModal({
         clients={activeClients}
         disciplines={disciplines}
         prices={prices}
+        stackLayer="above"
       />
     </>
   );

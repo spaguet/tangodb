@@ -627,6 +627,7 @@ export default function AddPersonalLessonForm({
         clients={activeClients}
         disciplines={disciplines}
         prices={prices}
+        stackLayer="above"
       />
     </AnimatePresence>
   );
