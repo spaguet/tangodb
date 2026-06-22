@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-22 — Расписание: секции локаций свёрнуты по умолчанию, разворачиваются по клику на заголовок (LocationScheduleSection).
 2026-06-22 — fix: usePersonalLessons без PostgREST join clients (composite FK v2); имена через useClientDirectory — исправлена ошибка «Could not find a relationship» на /schedule.
 2026-06-22 — Расписание Промпт 9: regression QA — lint/build/test:rbac PASS; SQL smoke `schedule_overlap_test.sql` + `npm run test:db:schedule-overlap`; rollback `valid_to` в useEditGroupSchedule при failed INSERT; architecture.md обновлён.
 2026-06-22 — Расписание Промпт 7: слияние /personal → /schedule (redirect + backward-compat); навигация без «Персональные»; SellPackageModal в schedule UI; deep link /schedule?action=sell; @deprecated PersonalPage/PersonalLessonsPanel.

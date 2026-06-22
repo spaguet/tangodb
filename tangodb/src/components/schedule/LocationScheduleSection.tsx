@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import WeeklyScheduleGrid from "./WeeklyScheduleGrid";
 import type { DisplayLesson } from "../../types";
 
@@ -24,27 +26,46 @@ export default function LocationScheduleSection({
   onEmptyCellClick,
   canClickEmpty = false,
 }: LocationScheduleSectionProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const showGrid = lessons.length > 0 || (canClickEmpty && locationId);
 
   return (
     <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60">
-        <h3 className="text-sm font-semibold text-slate-800 tracking-tight">{locationName}</h3>
-      </div>
+      <button
+        type="button"
+        onClick={() => setIsExpanded((prev) => !prev)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 bg-slate-50/60 text-left cursor-pointer hover:bg-slate-50 transition-colors"
+        aria-expanded={isExpanded}
+      >
+        <h3 className="text-sm font-semibold text-slate-800 tracking-tight min-w-0 truncate">
+          {locationName}
+        </h3>
+        <div className="flex items-center gap-2 shrink-0">
+          {lessons.length > 0 ? (
+            <span className="text-xs text-slate-500 tabular-nums">{lessons.length}</span>
+          ) : null}
+          <ChevronDown
+            className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+      </button>
 
-      {!showGrid ? (
-        <div className="text-center py-12 text-slate-400 text-sm">Нет занятий на этой неделе</div>
-      ) : (
-        <WeeklyScheduleGrid
-          weekStart={weekStart}
-          lessons={lessons}
-          getLessonTitle={getLessonTitle}
-          getLessonSubtitle={getLessonSubtitle}
-          onLessonClick={onLessonClick}
-          onEmptyCellClick={onEmptyCellClick}
-          canClickEmpty={canClickEmpty && !!locationId}
-        />
-      )}
+      {isExpanded &&
+        (!showGrid ? (
+          <div className="text-center py-12 text-slate-400 text-sm">Нет занятий на этой неделе</div>
+        ) : (
+          <WeeklyScheduleGrid
+            weekStart={weekStart}
+            lessons={lessons}
+            getLessonTitle={getLessonTitle}
+            getLessonSubtitle={getLessonSubtitle}
+            onLessonClick={onLessonClick}
+            onEmptyCellClick={onEmptyCellClick}
+            canClickEmpty={canClickEmpty && !!locationId}
+          />
+        ))}
     </section>
   );
 }
