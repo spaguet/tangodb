@@ -15,6 +15,7 @@
 - `src/lib/` — клиент Supabase, утилиты, edge functions
 - `src/store/` — локальное UI-состояние (Zustand)
 - `src/components/` — UI без прямых вызовов Supabase
+- `src/components/schedule/` — недельная сетка расписания (Промпт 2+): `SchedulePageContainer`, `WeeklyScheduleGrid`, `LessonBlock`, toolbar/week picker; данные через `useScheduleForWeek`
 - `supabase/` — миграции, RLS, edge functions
 
 ## RBAC / RLS (v2)

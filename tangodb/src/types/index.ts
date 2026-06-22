@@ -62,6 +62,7 @@ export interface PersonalDisplayLesson {
   disciplineId: string | null;
   locationId: string | null;
   teacherMemberId: string | null;
+  clientDisplay?: string;
 }
 
 export type DisplayLesson = GroupDisplayLesson | PersonalDisplayLesson;

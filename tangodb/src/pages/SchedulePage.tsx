@@ -1,7 +1,5 @@
-import SchedulePanel from "../components/SchedulePanel";
-import { useToast } from "../App";
+import SchedulePageContainer from "../components/schedule/SchedulePageContainer";
 
 export default function SchedulePage() {
-  const toast = useToast();
-  return <SchedulePanel toast={toast} />;
+  return <SchedulePageContainer />;
 }

@@ -95,6 +95,23 @@ export function expandSlotsToWeek(
   );
 }
 
+export function formatWeekRangeLabel(weekStart: Date, weekEnd: Date): string {
+  const startDay = weekStart.getDate();
+  const endDay = weekEnd.getDate();
+  const year = weekEnd.getFullYear();
+  const startMonth = weekStart.toLocaleDateString("ru-RU", { month: "long" });
+  const endMonth = weekEnd.toLocaleDateString("ru-RU", { month: "long" });
+
+  if (weekStart.getMonth() === weekEnd.getMonth()) {
+    return `${startDay}–${endDay} ${startMonth} ${year}`;
+  }
+  return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${year}`;
+}
+
+export function isPastDate(dateISO: string): boolean {
+  return dateISO < toISODateLocal(new Date());
+}
+
 export function computeDisplayRange(
   lessons: Array<{ timeStart: string; timeEnd: string }>
 ): { start: number; end: number } {

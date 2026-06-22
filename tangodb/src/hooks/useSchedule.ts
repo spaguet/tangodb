@@ -118,6 +118,7 @@ export function useScheduleForWeek(
       disciplineId: lesson.disciplineId ?? null,
       locationId: lesson.locationId ?? null,
       teacherMemberId: lesson.teacherMemberId ?? null,
+      clientDisplay: lesson.clientDisplay,
     }));
 
     return {
