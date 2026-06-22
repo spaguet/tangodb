@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Info, MapPin, User, X } from "lucide-react";
-import { useEditGroupSchedule } from "../../hooks/useSchedule";
+import { CalendarDays, Info, MapPin, Trash2, User, X } from "lucide-react";
+import { useAddGroupSchedule, useDeleteScheduleSlot, useEditGroupSchedule } from "../../hooks/useSchedule";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -13,9 +13,9 @@ import {
 } from "../../hooks/useOnlineStatus";
 import { findScheduleConflict } from "../../lib/scheduleConflicts";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
-import { addDays, isPastDate, toISODateLocal } from "../../lib/scheduleWeek";
+import { addDays, getWeekRange, isPastDate, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
-import { formatDateRu, jsDayToIsoDow } from "../../lib/utils";
+import { dowFullEntries, formatDateRu, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
 import type { Discipline, DisplayLesson } from "../../types";
 import AppSelect from "../ui/AppSelect";
 import DisciplineSelect from "../ui/DisciplineSelect";
@@ -54,6 +54,46 @@ const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider 
 const readOnlyCls =
   "flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-700";
 
+const addDayBtnCls =
+  "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
+
+interface GroupSlotRow {
+  key: string;
+  id?: string;
+  dayOfWeek: number;
+  timeStart: string;
+  timeEnd: string;
+}
+
+function dateForDayOfWeekInWeek(baseDate: string, dayOfWeek: number): string {
+  const { weekStart } = getWeekRange(new Date(`${baseDate}T12:00:00`));
+  for (let offset = 0; offset < 7; offset += 1) {
+    const date = addDays(toISODateLocal(weekStart), offset);
+    const dow = jsDayToIsoDow(new Date(`${date}T12:00:00`).getDay());
+    if (dow === dayOfWeek) return date;
+  }
+  return baseDate;
+}
+
+function makeGroupSlotRow(dayOfWeek = 1, timeStart = "19:00", timeEnd = "20:00"): GroupSlotRow {
+  return { key: crypto.randomUUID(), dayOfWeek, timeStart, timeEnd };
+}
+
+function findInternalSlotConflict(rows: GroupSlotRow[], rowKey: string): string | null {
+  const row = rows.find((item) => item.key === rowKey);
+  if (!row) return null;
+
+  for (const other of rows) {
+    if (other.key === rowKey) continue;
+    if (other.dayOfWeek !== row.dayOfWeek) continue;
+    if (timesOverlap(row.timeStart, row.timeEnd, other.timeStart, other.timeEnd)) {
+      return "этот день и время уже добавлены в форму";
+    }
+  }
+
+  return null;
+}
+
 export default function EditLessonPopup({
   lesson,
   locationName,
@@ -69,6 +109,8 @@ export default function EditLessonPopup({
   const { role, can } = usePermissions();
   const { connectionState } = useOnlineStatus();
   const editGroupSchedule = useEditGroupSchedule();
+  const addGroupSchedule = useAddGroupSchedule();
+  const deleteScheduleSlot = useDeleteScheduleSlot();
   const updatePersonalLesson = useUpdatePersonalLesson();
 
   const isTeacher = role === "teacher";
@@ -80,6 +122,8 @@ export default function EditLessonPopup({
   const [timeStart, setTimeStart] = useState("19:00");
   const [timeEnd, setTimeEnd] = useState("20:00");
   const [personalDate, setPersonalDate] = useState("");
+  const [groupSlotRows, setGroupSlotRows] = useState<GroupSlotRow[]>([]);
+  const [originalGroupSlots, setOriginalGroupSlots] = useState<GroupSlotRow[]>([]);
 
   useEffect(() => {
     if (!lesson) return;
@@ -89,6 +133,38 @@ export default function EditLessonPopup({
       setTeacherMemberId(lesson.teacherMemberId ?? "");
       setTimeStart(lesson.timeStart);
       setTimeEnd(lesson.timeEnd);
+
+      const siblingSlots = scheduleSlots.filter((slot) => {
+        if ((slot.locationId ?? null) !== lesson.locationId) return false;
+        if ((slot.disciplineId ?? null) !== lesson.disciplineId) return false;
+        if ((slot.groupName ?? "").trim() !== (lesson.groupName ?? "").trim()) return false;
+        const validFrom = slot.validFrom ?? "2000-01-01";
+        if (validFrom > lesson.date) return false;
+        if (slot.validTo != null && slot.validTo < lesson.date) return false;
+        return true;
+      });
+
+      const rows =
+        siblingSlots.length > 0
+          ? siblingSlots.map((slot) => ({
+              key: slot.id ?? `${slot.dayOfWeek}-${slot.time}`,
+              id: slot.id,
+              dayOfWeek: slot.dayOfWeek,
+              timeStart: slot.time,
+              timeEnd: slot.timeEnd,
+            }))
+          : [
+              {
+                key: lesson.slotId,
+                id: lesson.slotId,
+                dayOfWeek: lesson.dayOfWeek,
+                timeStart: lesson.timeStart,
+                timeEnd: lesson.timeEnd,
+              },
+            ];
+
+      setGroupSlotRows(rows);
+      setOriginalGroupSlots(rows.map((row) => ({ ...row })));
     } else {
       setPersonalDate(lesson.date);
       setDisciplineId(lesson.disciplineId ?? "");
@@ -96,7 +172,67 @@ export default function EditLessonPopup({
       setTimeStart(lesson.timeStart);
       setTimeEnd(lesson.timeEnd);
     }
-  }, [lesson]);
+  }, [lesson, scheduleSlots]);
+
+  const updateGroupSlotRow = (key: string, patch: Partial<GroupSlotRow>) => {
+    setGroupSlotRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
+  };
+
+  const handleGroupSlotTimeStartChange = (key: string, next: string) => {
+    setGroupSlotRows((prev) =>
+      prev.map((row) => {
+        if (row.key !== key) return row;
+        return { ...row, timeStart: next, timeEnd: computeAutoTimeEnd(next, []) };
+      })
+    );
+  };
+
+  const handleAddGroupDay = () => {
+    setGroupSlotRows((prev) => [...prev, makeGroupSlotRow()]);
+  };
+
+  const handleRemoveGroupDay = (key: string) => {
+    setGroupSlotRows((prev) => (prev.length <= 1 ? prev : prev.filter((row) => row.key !== key)));
+  };
+
+  const groupSlotConflicts = useMemo(() => {
+    if (!lesson || lesson.kind !== "group") return new Map<string, string>();
+
+    const conflicts = new Map<string, string>();
+    for (const row of groupSlotRows) {
+      const internal = findInternalSlotConflict(groupSlotRows, row.key);
+      if (internal) {
+        conflicts.set(row.key, internal);
+        continue;
+      }
+
+      const rangeError = validateTimeRange(row.timeStart, row.timeEnd);
+      if (rangeError) {
+        conflicts.set(row.key, rangeError);
+        continue;
+      }
+
+      const conflictDate = dateForDayOfWeekInWeek(lesson.date, row.dayOfWeek);
+      const external = findScheduleConflict(
+        {
+          date: conflictDate,
+          timeStart: row.timeStart,
+          timeEnd: row.timeEnd,
+          locationId: lesson.locationId,
+          excludeSlotId: row.id,
+        },
+        personalLessons,
+        scheduleSlots
+      );
+      if (external) {
+        conflicts.set(row.key, external);
+      }
+    }
+
+    return conflicts;
+  }, [lesson, groupSlotRows, personalLessons, scheduleSlots]);
+
+  const hasGroupSlotConflicts = groupSlotConflicts.size > 0;
 
   useEffect(() => {
     if (!lesson) return;
@@ -163,6 +299,10 @@ export default function EditLessonPopup({
       toast("Нельзя редактировать занятие в прошлом", "error");
       return;
     }
+    if (hasGroupSlotConflicts) {
+      toast("Исправьте конфликты в расписании перед сохранением", "error");
+      return;
+    }
 
     const trimmedGroup = groupName.trim();
     if (!trimmedGroup) {
@@ -178,43 +318,70 @@ export default function EditLessonPopup({
       return;
     }
 
-    const rangeError = validateTimeRange(timeStart, timeEnd);
-    if (rangeError) {
-      toast(rangeError, "error");
-      return;
-    }
+    const metadataChanged =
+      trimmedGroup !== (lesson.groupName?.trim() ?? "") ||
+      disciplineId !== (lesson.disciplineId ?? "") ||
+      teacherMemberId !== (lesson.teacherMemberId ?? "");
 
-    const conflict = findScheduleConflict(
-      {
-        date: lesson.date,
-        timeStart,
-        timeEnd,
+    const currentIds = new Set(groupSlotRows.map((row) => row.id).filter(Boolean));
+    const removedSlots = originalGroupSlots.filter((row) => row.id && !currentIds.has(row.id));
+
+    for (const row of groupSlotRows) {
+      if (!row.id) continue;
+      const original = originalGroupSlots.find((item) => item.id === row.id);
+      const slotChanged =
+        !original ||
+        original.dayOfWeek !== row.dayOfWeek ||
+        original.timeStart !== row.timeStart ||
+        original.timeEnd !== row.timeEnd;
+
+      if (!slotChanged && !metadataChanged) continue;
+
+      const res = await editGroupSchedule.mutateAsync({
+        slotId: row.id,
+        editDate: lesson.date,
+        dayOfWeek: row.dayOfWeek,
+        time: row.timeStart,
+        timeEnd: row.timeEnd,
+        groupName: trimmedGroup,
+        disciplineId,
         locationId: lesson.locationId,
-        excludeSlotId: lesson.slotId,
-      },
-      personalLessons,
-      scheduleSlots
-    );
-    if (conflict) {
-      toast(`Конфликт: ${formatDateRu(lesson.date)} ${timeStart} — ${conflict}`, "error");
-      return;
+        teacherMemberId,
+      });
+
+      if (!res.success) {
+        toast(res.error ?? "Не удалось сохранить изменения", "error");
+        return;
+      }
     }
 
-    const res = await editGroupSchedule.mutateAsync({
-      slotId: lesson.slotId,
-      editDate: lesson.date,
-      dayOfWeek: lesson.dayOfWeek,
-      time: timeStart,
-      timeEnd,
-      groupName: trimmedGroup,
-      disciplineId,
-      locationId: lesson.locationId,
-      teacherMemberId,
-    });
+    for (const row of removedSlots) {
+      if (!row.id) continue;
+      const res = await deleteScheduleSlot.mutateAsync({ id: row.id, editDate: lesson.date });
+      if (!res.success) {
+        toast(res.error ?? "Не удалось удалить занятие из расписания", "error");
+        return;
+      }
+    }
 
-    if (!res.success) {
-      toast(res.error ?? "Не удалось сохранить изменения", "error");
-      return;
+    const newRows = groupSlotRows.filter((row) => !row.id);
+    if (newRows.length > 0) {
+      const res = await addGroupSchedule.mutateAsync({
+        groupName: trimmedGroup,
+        disciplineId,
+        locationId: lesson.locationId,
+        teacherMemberId,
+        days: newRows.map((row) => ({
+          dayOfWeek: row.dayOfWeek,
+          time: row.timeStart,
+          timeEnd: row.timeEnd,
+        })),
+      });
+
+      if (!res.success) {
+        toast(res.error ?? "Не удалось добавить занятие в расписание", "error");
+        return;
+      }
     }
 
     toast("Групповое занятие обновлено", "success");
@@ -299,7 +466,11 @@ export default function EditLessonPopup({
   const personalEditNote =
     "Клиенты и оплата в этом окне не редактируются — только дата, время, направление и преподаватель.";
 
-  const savePending = editGroupSchedule.isPending || updatePersonalLesson.isPending;
+  const savePending =
+    editGroupSchedule.isPending ||
+    addGroupSchedule.isPending ||
+    deleteScheduleSlot.isPending ||
+    updatePersonalLesson.isPending;
   const readOnly = lesson ? isPastDate(lesson.date) : false;
 
   return (
@@ -356,7 +527,7 @@ export default function EditLessonPopup({
                 {lesson.kind === "group" ? (
                   <>
                     <div className="field-stack">
-                      <label className={labelCls}>День</label>
+                      <label className={labelCls}>Текущая дата занятия</label>
                       <div className={readOnlyCls}>
                         <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
                         {formatDateRu(lesson.date)}
@@ -398,9 +569,70 @@ export default function EditLessonPopup({
                       )}
                     </AppSelect>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
-                      <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
+                    <div className="field-stack">
+                      <label className={labelCls}>Дни и время</label>
+                      <div className="space-y-2">
+                        {groupSlotRows.map((row) => {
+                          const conflict = groupSlotConflicts.get(row.key);
+                          return (
+                            <div
+                              key={row.key}
+                              className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-2"
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                  <AppSelect
+                                    value={row.dayOfWeek}
+                                    onChange={(e) =>
+                                      updateGroupSlotRow(row.key, {
+                                        dayOfWeek: parseInt(e.target.value, 10),
+                                      })
+                                    }
+                                    className="text-xs py-2"
+                                  >
+                                    {dowFullEntries().map(([val, name]) => (
+                                      <option key={val} value={val}>
+                                        {name}
+                                      </option>
+                                    ))}
+                                  </AppSelect>
+                                  <TimeSelect
+                                    label=""
+                                    value={row.timeStart}
+                                    onChange={(next) => handleGroupSlotTimeStartChange(row.key, next)}
+                                    required
+                                  />
+                                  <TimeSelect
+                                    label=""
+                                    value={row.timeEnd}
+                                    onChange={(next) => updateGroupSlotRow(row.key, { timeEnd: next })}
+                                    required
+                                  />
+                                </div>
+                                {groupSlotRows.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveGroupDay(row.key)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0 mt-1"
+                                    title="Убрать день"
+                                    aria-label="Убрать день"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                              {conflict && (
+                                <p className="text-[10px] text-rose-600 font-sans">
+                                  Конфликт: {conflict}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <button type="button" onClick={handleAddGroupDay} className={addDayBtnCls}>
+                        ＋ Добавить день
+                      </button>
                     </div>
 
                     {groupVersionNote && (
@@ -481,7 +713,11 @@ export default function EditLessonPopup({
                   <button
                     type="button"
                     onClick={lesson.kind === "group" ? handleSaveGroup : handleSavePersonal}
-                    disabled={connectionState !== "online" || savePending}
+                    disabled={
+                      connectionState !== "online" ||
+                      savePending ||
+                      (lesson.kind === "group" && hasGroupSlotConflicts)
+                    }
                     title={getConnectionBlockReason(connectionState)}
                     className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                   >

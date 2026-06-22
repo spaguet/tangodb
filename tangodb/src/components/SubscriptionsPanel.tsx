@@ -35,6 +35,7 @@ import { useUIStore } from "../store/ui";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import DatePickerField from "./ui/DatePickerField";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
@@ -643,16 +644,13 @@ export default function SubscriptionsPanel({
 
             <div className="border-t border-slate-100 pt-1 -mt-0.5 panel-form-full-row-md" />
 
-            <div className="field-stack">
-              <label className={labelCls}>Дата активации</label>
-              <input
-                type="date"
-                required
-                value={activationDate}
-                onChange={(e) => setActivationDate(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all"
-              />
-            </div>
+            <DatePickerField
+              label="Дата активации"
+              value={activationDate}
+              onChange={setActivationDate}
+              required
+              className="panel-form-full-row-md"
+            />
 
             <div className="panel-form-divider panel-form-full-row-md" />
 

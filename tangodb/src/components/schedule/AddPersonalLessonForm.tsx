@@ -119,6 +119,7 @@ export default function AddPersonalLessonForm({
     setTimeStart(prefill.timeStart);
     setTimeEnd(computeAutoTimeEnd(prefill.timeStart, []));
     setCustomPrice("");
+    setSelectedLessonTariffId("");
     setLinkedSubscriptionId("");
     setBookingPaymentMode(null);
     if (disciplines.length > 0) setDisciplineId(disciplines[0].id);
@@ -485,6 +486,10 @@ export default function AddPersonalLessonForm({
                     onClick={() => {
                       setBookingPaymentMode("single");
                       setLinkedSubscriptionId("");
+                      if (lessonTariffs.length > 0) {
+                        const tariffId = selectedLessonTariffId || lessonTariffs[0].id!;
+                        applyLessonTariff(tariffId);
+                      }
                     }}
                     className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
                       bookingPaymentMode === "single"
@@ -564,26 +569,45 @@ export default function AddPersonalLessonForm({
 
               {bookingPaymentMode === "package" && (
                 <>
-                  <AppSelect
-                    label="Пакет"
-                    value={linkedSubscriptionId}
-                    onChange={(e) => {
-                      const subId = e.target.value;
-                      setLinkedSubscriptionId(subId);
-                      if (subId) applySubscriptionToBooking(subId);
-                    }}
-                  >
-                    <option value="">Выберите пакет...</option>
-                    {availablePrivateSubs.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {subscriptionOwnerLabel(sub)} — осталось {sub.lessonsLeft}
-                      </option>
-                    ))}
-                  </AppSelect>
+                  {availablePrivateSubs.length === 0 ? (
+                    <p className="text-xs text-slate-500 font-sans leading-relaxed">
+                      Нет оформленных пакетов. Оформить пакет можно в{" "}
+                      <button
+                        type="button"
+                        onClick={() => setPackageModalOpen(true)}
+                        className="text-indigo-600 hover:text-indigo-700 font-semibold underline-offset-2 hover:underline cursor-pointer"
+                      >
+                        Продажа пакета
+                      </button>
+                      .
+                    </p>
+                  ) : (
+                    <AppSelect
+                      label="Пакет"
+                      value={linkedSubscriptionId}
+                      onChange={(e) => {
+                        const subId = e.target.value;
+                        setLinkedSubscriptionId(subId);
+                        if (subId) applySubscriptionToBooking(subId);
+                      }}
+                    >
+                      <option value="">Выберите пакет...</option>
+                      {availablePrivateSubs.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          {subscriptionOwnerLabel(sub)} — осталось {sub.lessonsLeft}
+                        </option>
+                      ))}
+                    </AppSelect>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleBook(false)}
-                    disabled={connectionState !== "online" || addPersonalLessons.isPending}
+                    disabled={
+                      connectionState !== "online" ||
+                      addPersonalLessons.isPending ||
+                      availablePrivateSubs.length === 0 ||
+                      !linkedSubscriptionId
+                    }
                     title={getConnectionBlockReason(connectionState)}
                     className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
                   >
