@@ -10,12 +10,14 @@ import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
 import ScheduleToolbar from "./ScheduleToolbar";
 import LocationScheduleSection from "./LocationScheduleSection";
+import LessonInfoPopup from "./LessonInfoPopup";
 
 const NO_LOCATION_KEY = "__no_location__";
 
 export default function SchedulePageContainer() {
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => getWeekRange(new Date()).weekStart);
   const [teacherFilter] = useState<string>("");
+  const [selectedLesson, setSelectedLesson] = useState<DisplayLesson | null>(null);
 
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
 
@@ -97,6 +99,30 @@ export default function SchedulePageContainer() {
     [disciplineMap, teamMap]
   );
 
+  const handleLessonClick = useCallback((lesson: DisplayLesson) => {
+    setSelectedLesson(lesson);
+  }, []);
+
+  const selectedLessonMeta = useMemo(() => {
+    if (!selectedLesson) return null;
+
+    const locationKey = selectedLesson.locationId ?? NO_LOCATION_KEY;
+    const locationName =
+      locationKey === NO_LOCATION_KEY
+        ? "Без локации"
+        : locationsQuery.locations.find((l) => l.id === locationKey)?.name;
+
+    return {
+      locationName,
+      disciplineName: selectedLesson.disciplineId
+        ? disciplineMap.get(selectedLesson.disciplineId)
+        : undefined,
+      teacherName: selectedLesson.teacherMemberId
+        ? teamMap.get(selectedLesson.teacherMemberId)
+        : undefined,
+    };
+  }, [selectedLesson, locationsQuery.locations, disciplineMap, teamMap]);
+
   const isLoading =
     scheduleQuery.isLoading ||
     locationsQuery.isLoading ||
@@ -149,6 +175,7 @@ export default function SchedulePageContainer() {
               lessons={lessonsByLocation.get(location.id) ?? []}
               getLessonTitle={getLessonTitle}
               getLessonSubtitle={getLessonSubtitle}
+              onLessonClick={handleLessonClick}
             />
           ))}
 
@@ -159,10 +186,19 @@ export default function SchedulePageContainer() {
               lessons={noLocationLessons}
               getLessonTitle={getLessonTitle}
               getLessonSubtitle={getLessonSubtitle}
+              onLessonClick={handleLessonClick}
             />
           )}
         </div>
       )}
+
+      <LessonInfoPopup
+        lesson={selectedLesson}
+        locationName={selectedLessonMeta?.locationName}
+        disciplineName={selectedLessonMeta?.disciplineName}
+        teacherName={selectedLessonMeta?.teacherName}
+        onClose={() => setSelectedLesson(null)}
+      />
     </div>
   );
 }

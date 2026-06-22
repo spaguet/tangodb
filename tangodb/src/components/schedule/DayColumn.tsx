@@ -18,6 +18,7 @@ interface DayColumnProps {
   rangeEndMin: number;
   getLessonTitle: (lesson: DisplayLesson) => string;
   getLessonSubtitle: (lesson: DisplayLesson) => string | undefined;
+  onLessonClick?: (lesson: DisplayLesson) => void;
 }
 
 export default function DayColumn({
@@ -28,6 +29,7 @@ export default function DayColumn({
   rangeEndMin,
   getLessonTitle,
   getLessonSubtitle,
+  onLessonClick,
 }: DayColumnProps) {
   const positioned = useMemo(() => layoutDayLessons(lessons), [lessons]);
   const gridHeight = gridHeightPx(rangeStartMin, rangeEndMin);
@@ -82,6 +84,7 @@ export default function DayColumn({
             rangeStartMin={rangeStartMin}
             title={getLessonTitle(item.lesson)}
             subtitle={getLessonSubtitle(item.lesson)}
+            onClick={onLessonClick}
           />
         ))}
       </div>

@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-06-22 — paid всегда «no» у teacher в usePersonalLessons
+
+- **Ошибка:** Все персональные уроки преподавателя отображались с красной рамкой (долг), статус оплаты в попапе всегда «Не оплачен».
+- **Причина:** `mapPersonalLesson` при `maskFinancial` принудительно ставил `paid: "no"`; view `personal_lessons_teacher_v` не включал колонку `paid`.
+- **Как избежать:** Маскировать только `price`, не `paid` (операционный статус); добавить `paid` в teacher view без `price`.
+
 ### 2026-06-20 — Settings guards с неполными PermissionOptions (RBAC-2)
 
 - **Ошибка:** Прямой URL `/settings/data` при `admin_can_export=true` редиректил, хотя пункт был в nav `SettingsLayout`.

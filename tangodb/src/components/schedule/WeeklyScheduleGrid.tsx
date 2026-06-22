@@ -13,6 +13,7 @@ interface WeeklyScheduleGridProps {
   lessons: DisplayLesson[];
   getLessonTitle: (lesson: DisplayLesson) => string;
   getLessonSubtitle: (lesson: DisplayLesson) => string | undefined;
+  onLessonClick?: (lesson: DisplayLesson) => void;
 }
 
 export default function WeeklyScheduleGrid({
@@ -20,6 +21,7 @@ export default function WeeklyScheduleGrid({
   lessons,
   getLessonTitle,
   getLessonSubtitle,
+  onLessonClick,
 }: WeeklyScheduleGridProps) {
   const { start: rangeStartMin, end: rangeEndMin } = useMemo(
     () => computeDisplayRange(lessons),
@@ -77,6 +79,7 @@ export default function WeeklyScheduleGrid({
               rangeEndMin={rangeEndMin}
               getLessonTitle={getLessonTitle}
               getLessonSubtitle={getLessonSubtitle}
+              onLessonClick={onLessonClick}
             />
           ))}
         </div>

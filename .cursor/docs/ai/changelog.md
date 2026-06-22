@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-22 — Расписание Промпт 3: LessonInfoPopup (просмотр, маскировка клиентов, RBAC edit/delete); удаление групповых (soft valid_to) и персональных (hard); onClick на LessonBlock; lib/scheduleLessonAccess; миграция paid в personal_lessons_teacher_v; fix paid-маскировки в usePersonalLessons.
 2026-06-22 — Расписание Промпт 2: read-only недельная сетка — components/schedule/* (WeeklyScheduleGrid, ScheduleToolbar, WeekPickerPopover, LocationScheduleSection, LessonBlock); SchedulePage → SchedulePageContainer; lib/scheduleColors, scheduleLayout; секция «Без локации» для legacy personal.
 2026-06-22 — Расписание Промпт 1: миграция schedule_versioning (valid_from/valid_to, partial UNIQUE, HH:MM CHECK, overlap triggers); типы DisplayLesson/ScheduleSlot; lib/scheduleWeek.ts; хуки useScheduleForWeek, useEditGroupSchedule, soft delete; usePersonalLessons dateRange API без teacher fallback.
 2026-06-21 — Расписание: редактирование локации и преподавателя в модалке группы (преподаватель — только owner/director). Команда: карточки профиля преподавателей (ФИО, контакты); редактирование owner/director, просмотр admin. Миграция member profile fields.

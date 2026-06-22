@@ -7,6 +7,7 @@ interface LocationScheduleSectionProps {
   lessons: DisplayLesson[];
   getLessonTitle: (lesson: DisplayLesson) => string;
   getLessonSubtitle: (lesson: DisplayLesson) => string | undefined;
+  onLessonClick?: (lesson: DisplayLesson) => void;
 }
 
 export default function LocationScheduleSection({
@@ -15,6 +16,7 @@ export default function LocationScheduleSection({
   lessons,
   getLessonTitle,
   getLessonSubtitle,
+  onLessonClick,
 }: LocationScheduleSectionProps) {
   return (
     <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
@@ -30,6 +32,7 @@ export default function LocationScheduleSection({
           lessons={lessons}
           getLessonTitle={getLessonTitle}
           getLessonSubtitle={getLessonSubtitle}
+          onLessonClick={onLessonClick}
         />
       )}
     </section>

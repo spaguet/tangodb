@@ -94,7 +94,7 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
     timeStart: normalizeTime((row.time_start as string) || "14:00"),
     timeEnd: normalizeTime((row.time_end as string) || "15:00"),
     price: maskFinancial ? 0 : Number(row.price) || 0,
-    paid: maskFinancial ? "no" : (row.paid as "yes" | "no") || "no",
+    paid: (row.paid as "yes" | "no" | undefined) ?? "yes",
     disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
     subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
     locationId: row.location_id != null ? String(row.location_id) : null,
@@ -107,7 +107,7 @@ const personalLessonsSelect =
   "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, price, paid, subscription_id, location_id, teacher_member_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
 const personalLessonsSelectTeacher =
-  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, subscription_id, location_id, teacher_member_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
+  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
 function buildQueryKeySuffix(options: UsePersonalLessonsOptions): unknown {
   if (options.dateRange) return { range: options.dateRange };
