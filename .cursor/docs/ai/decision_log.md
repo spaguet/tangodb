@@ -41,6 +41,34 @@
   2. Только UI guards без RLS — отклонено: `is_restricted_admin()` в SQL, reception SELECT только subscriptions/attendance, payments write через `can_write_reception()`.
 - **Почему так:** Один код роли `admin` в JWT и invite RPC; различие только в JSONB meta. Permissions.ts и RLS синхронизированы: кассир не открывает `/clients`, `/schedule`; сохраняет `payments.write`, `attendance.write`, masked `subscriptions.read`.
 
+### SCH-0 — Архитектурные решения раздела «Расписание» (2026-06-22)
+
+- **Дата:** 2026-06-22
+- **Решение:** Принята целевая архитектура недельной сетки расписания из `SCHEDULE_TZ.md` §11. Ключевые пункты:
+  1. **Версионирование `schedule_slots`:** поля `valid_from DATE` и `valid_to DATE` на той же таблице (без отдельной `schedule_slot_versions`). Backfill существующих строк: `valid_from = '2000-01-01'`. Partial UNIQUE-индексы только для активных версий (`WHERE valid_to IS NULL`).
+  2. **Канон дат (B3, §5.1):** пусть **E** — день действия (edit/delete). **Создание:** `valid_from = today`, `valid_to = NULL`. **Редактирование в день E:** старая запись `valid_to = E` (слот виден включительно E), новая `valid_from = E + 1 day`, `valid_to = NULL`. **Удаление в день E:** `valid_to = E` (без INSERT). Фильтр недели `[W_start, W_end]`: `valid_from <= W_end AND (valid_to IS NULL OR valid_to >= W_start)`. Если `lessonDate < today` — edit/delete групповых скрыты (read-only).
+  3. **Структура сетки по локациям:** вертикальные секции (`LocationScheduleSection` × N) — все залы на одном экране, без табов.
+  4. **Операционный vs финансовый блок долгов:** под расписанием — только **операционный** `ScheduleDebtorsBlock`: персональные с `paid = 'no'`, без `financial_debtors_v`, без сумм для teacher/admin. Полный дебиторский отчёт с PII и суммами — только на `/finance` через `useFinancialDebtors()`. Красная ячейка в сетке = только `personal_lessons.paid = 'no'` (групповые не красим).
+  5. **Accountant и reception вне MVP расписания:** `accountant` не видит panel `schedule` (как в `tangodb_roles_rbac_TZ.md` §4; `canReadScopedCrm → false`). `reception` (restricted_admin) не имеет доступа к `/schedule` (RLS R2). Расширение доступа reception — отдельная задача R7, не блокирует MVP.
+  6. **RLS teacher write на `schedule_slots` — отложено (R4):** в MVP UI teacher не видит групповой CRUD; RLS по-прежнему разрешает teacher INSERT/UPDATE групповые слоты. Ужесточение RLS — отдельная миграция после MVP, не в scope Промпта 1.
+  7. **Admin и групповой CRUD (R3):** RLS позволяет admin писать `schedule_slots`; в MVP UI групповые действия скрыты — только owner/director.
+  8. **Время:** хранение TEXT `HH:MM`, сравнение через `timeToMinutes()` / `normalizeTime()`; legacy `9:00` нормализуется в `09:00`. Snap к 15 мин при edit; отображение как есть.
+  9. **Timezone:** единый локальный TZ школы, без конвертации между локациями.
+  10. **Deep link:** канон `/schedule?action=sell`; `/personal/sell` и `/personal/book` → redirect для обратной совместимости.
+  11. **Зависимости UI:** без `react-day-picker` и `date-fns` — `WeekPickerPopover` и неделя через нативные `Date`/`Intl` + `lib/scheduleWeek.ts`.
+  12. **DB overlap triggers (§7.1.1):** нужны для production-ready (race при параллельной записи); реализуются в Промпте 1 или фиксируются как accepted risk.
+  13. **Продажа пакета:** `SellPackageModal` — кнопка в попапе персонального урока; CRUD персональных переносится из `/personal` в `/schedule`.
+- **Контекст:** Аудит и ТЗ на переход от карточного списка к недельной CRM-сетке. Промпт 0 — фиксация решений §11 перед миграцией и UI (Промпты 1–9).
+- **Альтернативы:**
+  1. Отдельная таблица `schedule_slot_versions` — отклонено: усложняет запросы и RLS без выигрыша.
+  2. Горизонтальные табы по локациям — отклонено: референс CRM и overview всех залов.
+  3. `financial_debtors_v` под расписанием для всех ролей — отклонено: утечка PII и сумм (S1, S2); teacher/admin не должны видеть финансовые агрегаты вне `/finance`.
+  4. Дать accountant/reception доступ к расписанию в MVP — отклонено: противоречит текущей RBAC-матрице и RLS; reception — отдельный эпик R7.
+  5. Ужесточить RLS teacher на `schedule_slots` в той же миграции — отклонено: риск регрессии attendance/legacy flows; MVP = UI gates, RLS — отдельный эпик.
+  6. Hard DELETE групповых слотов — отклонено: только soft через `valid_to` для истории.
+- **Почему так:** Минимальный diff к схеме v2; темпоральные поля на месте — стандарт PostgreSQL. Канон B3 (`valid_to = E`, не «вчера») сохраняет сегодняшний день при edit «сегодня». Разделение долгов защищает финконтур. RBAC MVP согласован с кодом (`permissions.ts`, RLS R1–R6). UI-first ограничения для teacher/admin быстрее и безопаснее для rollout, чем одновременная смена RLS.
+- **Следующие шаги:** Промпт 1 (миграция §7.1 + хуки) → Промпт 2 (read-only сетка) → CRUD/долги/навигация (Промпты 3–8) → регрессия (Промпт 9).
+
 ### Этап 0 — NAV-1, NAV-2, RBAC-6 (2026-06-20)
 
 - **Дата:** 2026-06-20
