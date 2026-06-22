@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Coins, Edit, Ticket, Trash2, X } from "lucide-react";
 import { useCreatePrice, useDeletePrice, usePrices, useUpdatePrice, useUpdatePriceMeta } from "../hooks/usePrices";
@@ -89,7 +90,10 @@ function TariffCreateSection({
   );
 }
 
+const CREATE_TAB_IDS: CreateTabId[] = ["group", "privateLesson", "privatePackage"];
+
 export default function PricesPanel({ toast }: PricesPanelProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: prices = [], isLoading, isError, error } = usePrices();
   const { settings } = useSettings();
   const modules = settings?.modules;
@@ -128,6 +132,20 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     null
   );
   const [activeCreateTab, setActiveCreateTab] = useState<CreateTabId>("group");
+
+  useEffect(() => {
+    const create = searchParams.get("create");
+    if (!create || !CREATE_TAB_IDS.includes(create as CreateTabId)) return;
+
+    if (canWritePrices) {
+      setActiveCreateTab(create as CreateTabId);
+      setShowCreateModal(true);
+    }
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("create");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, canWritePrices]);
 
   useEffect(() => {
     if (!showCreateModal) return;
@@ -446,13 +464,15 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           <div className="text-center py-20 text-slate-400 space-y-3">
             <Ticket className="w-8 h-8 mx-auto text-slate-300" />
             <p className="text-sm">Прайс-лист пуст.</p>
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
-            >
-              Добавить первый тариф
-            </button>
+            {canWritePrices && (
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+              >
+                Добавить первый тариф
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
@@ -464,7 +484,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       </div>
 
       <AnimatePresence>
-        {editingPrice && (
+        {editingPrice && canWritePrices && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
             <motion.div
               initial={{ opacity: 0 }}
@@ -531,7 +551,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showCreateModal && (
+        {showCreateModal && canWritePrices && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
             <motion.div
               initial={{ opacity: 0 }}

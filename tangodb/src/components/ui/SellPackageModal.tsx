@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Ticket, X } from "lucide-react";
 import { useAddSubscription } from "../../hooks/useSubscriptions";
@@ -20,6 +21,7 @@ import type { ToastType } from "../../App";
 import type { Client, Discipline, Price } from "../../types";
 import AppSelect from "./AppSelect";
 import ClientAutocomplete from "./ClientAutocomplete";
+import DatePickerField from "./DatePickerField";
 import DisciplineSelect from "./DisciplineSelect";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
@@ -41,6 +43,7 @@ export default function SellPackageModal({
   disciplines,
   prices,
 }: SellPackageModalProps) {
+  const navigate = useNavigate();
   const addSubscription = useAddSubscription();
   const { settings } = useSettings();
   const packageTariffs = filterPrivatePackageTariffsByModules(
@@ -191,8 +194,19 @@ export default function SellPackageModal({
               <div className="field-stack">
                 <label className={labelCls}>Тариф абонемента</label>
                 {packageTariffs.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-sans">
-                    Нет пакетных тарифов. Создайте персональный тариф с количеством уроков больше 1 в прайс-листе.
+                  <p className="text-xs text-slate-400 font-sans leading-relaxed">
+                    Нет пакетных тарифов. Создайте персональный тариф с количеством уроков больше 1 в разделе{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        navigate("/prices?create=privatePackage");
+                      }}
+                      className="text-indigo-600 hover:text-indigo-700 font-semibold underline-offset-2 hover:underline cursor-pointer"
+                    >
+                      Новый тариф → ПАКЕТ ПЕРСОНАЛЬНЫХ УРОКОВ
+                    </button>
+                    .
                   </p>
                 ) : (
                   <AppSelect
@@ -282,16 +296,13 @@ export default function SellPackageModal({
                 </div>
               )}
 
-              <div className="field-stack panel-form-full-row-md">
-                <label className={labelCls}>Дата активации</label>
-                <input
-                  type="date"
-                  required
-                  value={subActivationDate}
-                  onChange={(e) => setSubActivationDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all"
-                />
-              </div>
+              <DatePickerField
+                label="Дата активации"
+                value={subActivationDate}
+                onChange={setSubActivationDate}
+                required
+                className="panel-form-full-row-md"
+              />
 
               <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 panel-form-full-row-md">
                 <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
