@@ -20,8 +20,8 @@ SELECT
   pl.location_id,
   pl.teacher_member_id,
   pl.attendance_status,
-  pl.paid,
-  pl.created_at
+  pl.created_at,
+  pl.paid
 FROM personal_lessons pl
 WHERE pl.organization_id = auth_organization_id()
   AND business_row_readable()
