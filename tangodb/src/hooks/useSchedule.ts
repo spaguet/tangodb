@@ -1,19 +1,29 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { ScheduleSlot } from "../types";
+import {
+  addDays,
+  expandSlotsToWeek,
+  normalizeTime,
+  toISODateLocal,
+} from "../lib/scheduleWeek";
+import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { usePersonalLessons } from "./usePersonalLessons";
 
 export const scheduleQueryKey = ["schedule"] as const;
 
 const mapScheduleSlot = (row: Record<string, unknown>): ScheduleSlot => ({
   id: row.id != null ? String(row.id) : undefined,
   dayOfWeek: row.day_of_week as number,
-  time: row.time as string,
-  timeEnd: (row.time_end as string) || "21:00",
+  time: normalizeTime(row.time as string),
+  timeEnd: normalizeTime((row.time_end as string) || "21:00"),
   disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
   groupName: ((row.group_name as string) || "").trim() || undefined,
   locationId: row.location_id != null ? String(row.location_id) : null,
   teacherMemberId: row.teacher_member_id != null ? String(row.teacher_member_id) : null,
+  validFrom: String(row.valid_from ?? "2000-01-01").slice(0, 10),
+  validTo: row.valid_to != null ? String(row.valid_to).slice(0, 10) : null,
 });
 
 const scheduleTable = "schedule_slots" as const;
@@ -34,6 +44,13 @@ export interface GroupScheduleSlotInput {
 /** @deprecated alias */
 export type DisciplineScheduleSlotInput = GroupScheduleSlotInput;
 
+export interface ScheduleForWeekData {
+  slots: ScheduleSlot[];
+  groupLessons: GroupDisplayLesson[];
+  personalLessons: PersonalDisplayLesson[];
+  lessons: DisplayLesson[];
+}
+
 export function useSchedule(options?: { enabled?: boolean }) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const queryEnabled = orgEnabled && (options?.enabled ?? true);
@@ -52,6 +69,76 @@ export function useSchedule(options?: { enabled?: boolean }) {
     },
     staleTime: 5 * 60 * 1000,
   });
+}
+
+export function useScheduleForWeek(
+  weekStart: Date,
+  weekEnd: Date,
+  options?: { enabled?: boolean }
+) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const weekStartISO = toISODateLocal(weekStart);
+  const weekEndISO = toISODateLocal(weekEnd);
+  const queryEnabled = orgEnabled && (options?.enabled ?? true);
+
+  const personalQuery = usePersonalLessons({
+    dateRange: { start: weekStartISO, end: weekEndISO },
+    enabled: queryEnabled,
+  });
+
+  const scheduleQuery = useQuery({
+    queryKey: withOrgId(["schedule", "week", weekStartISO]),
+    enabled: queryEnabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from(scheduleTable)
+        .select("*")
+        .lte("valid_from", weekEndISO)
+        .or(`valid_to.is.null,valid_to.gte.${weekStartISO}`)
+        .order("day_of_week")
+        .order("time");
+      if (error) throw error;
+      return (data ?? []).map(mapScheduleSlot);
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const data = useMemo((): ScheduleForWeekData | undefined => {
+    if (!scheduleQuery.data) return undefined;
+
+    const slots = scheduleQuery.data;
+    const groupLessons = expandSlotsToWeek(slots, weekStart, weekEnd);
+    const personalLessons: PersonalDisplayLesson[] = (personalQuery.data ?? []).map((lesson) => ({
+      kind: "personal" as const,
+      lessonId: lesson.id,
+      date: lesson.date,
+      timeStart: normalizeTime(lesson.timeStart),
+      timeEnd: normalizeTime(lesson.timeEnd),
+      paid: lesson.paid,
+      disciplineId: lesson.disciplineId ?? null,
+      locationId: lesson.locationId ?? null,
+      teacherMemberId: lesson.teacherMemberId ?? null,
+    }));
+
+    return {
+      slots,
+      groupLessons,
+      personalLessons,
+      lessons: [...groupLessons, ...personalLessons],
+    };
+  }, [scheduleQuery.data, personalQuery.data, weekStart, weekEnd]);
+
+  return {
+    ...scheduleQuery,
+    data,
+    isLoading: scheduleQuery.isLoading || personalQuery.isLoading,
+    isError: scheduleQuery.isError || personalQuery.isError,
+    error: scheduleQuery.error ?? personalQuery.error,
+  };
+}
+
+function invalidateScheduleQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: scheduleQueryKey });
 }
 
 export function useAddGroupSchedule() {
@@ -90,15 +177,17 @@ export function useAddGroupSchedule() {
         return { success: false as const, error: "Добавьте хотя бы один день" };
       }
 
+      const validFrom = toISODateLocal(new Date());
       const rows = days.map((day) => ({
         organization_id: organizationId,
         day_of_week: day.dayOfWeek,
-        time: day.time,
-        time_end: day.timeEnd,
+        time: normalizeTime(day.time),
+        time_end: normalizeTime(day.timeEnd),
         discipline_id: disciplineId,
         group_name: trimmedGroup,
         location_id: locationId,
         teacher_member_id: teacherMemberId,
+        valid_from: validFrom,
       }));
 
       const { error } = await supabase.from(scheduleTable).insert(rows);
@@ -106,12 +195,85 @@ export function useAddGroupSchedule() {
         if (error.code === "23505") {
           return { success: false as const, error: "Такой день и время уже есть в расписании" };
         }
+        if (error.message.includes("schedule_slot_overlap")) {
+          return { success: false as const, error: "Пересечение с другим групповым занятием" };
+        }
         return { success: false as const, error: error.message };
       }
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) void queryClient.invalidateQueries({ queryKey: scheduleQueryKey });
+      if (result.success) invalidateScheduleQueries(queryClient);
+    },
+  });
+}
+
+export function useEditGroupSchedule() {
+  const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
+
+  return useMutation({
+    mutationFn: async ({
+      slotId,
+      editDate,
+      dayOfWeek,
+      time,
+      timeEnd,
+      groupName,
+      disciplineId,
+      locationId,
+      teacherMemberId,
+    }: {
+      slotId: string;
+      editDate: string;
+      dayOfWeek: number;
+      time: string;
+      timeEnd: string;
+      groupName: string;
+      disciplineId: string;
+      locationId: string | null;
+      teacherMemberId: string | null;
+    }) => {
+      if (!organizationId) {
+        return { success: false as const, error: "Организация не выбрана" };
+      }
+
+      const { error: closeError } = await supabase
+        .from(scheduleTable)
+        .update({ valid_to: editDate })
+        .eq("id", slotId);
+
+      if (closeError) {
+        return { success: false as const, error: closeError.message };
+      }
+
+      const newValidFrom = addDays(editDate, 1);
+      const { error: insertError } = await supabase.from(scheduleTable).insert({
+        organization_id: organizationId,
+        day_of_week: dayOfWeek,
+        time: normalizeTime(time),
+        time_end: normalizeTime(timeEnd),
+        group_name: groupName.trim(),
+        discipline_id: disciplineId,
+        location_id: locationId,
+        teacher_member_id: teacherMemberId,
+        valid_from: newValidFrom,
+      });
+
+      if (insertError) {
+        if (insertError.code === "23505") {
+          return { success: false as const, error: "Такой день и время уже есть в расписании" };
+        }
+        if (insertError.message.includes("schedule_slot_overlap")) {
+          return { success: false as const, error: "Пересечение с другим групповым занятием" };
+        }
+        return { success: false as const, error: insertError.message };
+      }
+
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidateScheduleQueries(queryClient);
     },
   });
 }
@@ -120,17 +282,25 @@ export function useDeleteScheduleSlot() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from(scheduleTable).delete().eq("id", id);
+    mutationFn: async (input: string | { id: string; editDate?: string }) => {
+      const id = typeof input === "string" ? input : input.id;
+      const editDate =
+        typeof input === "string" ? toISODateLocal(new Date()) : (input.editDate ?? toISODateLocal(new Date()));
+
+      const { error } = await supabase
+        .from(scheduleTable)
+        .update({ valid_to: editDate })
+        .eq("id", id);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) void queryClient.invalidateQueries({ queryKey: scheduleQueryKey });
+      if (result.success) invalidateScheduleQueries(queryClient);
     },
   });
 }
 
+/** @deprecated Use useEditGroupSchedule with valid_from/valid_to versioning instead. */
 export function useReplaceGroupSchedule() {
   const queryClient = useQueryClient();
   const { organizationId } = useOrgQueryScope();
@@ -156,17 +326,21 @@ export function useReplaceGroupSchedule() {
       }
 
       const trimmedGroup = groupName.trim();
+      const editDate = toISODateLocal(new Date());
 
       for (const id of removedIds) {
-        const { error } = await supabase.from(scheduleTable).delete().eq("id", id);
+        const { error } = await supabase
+          .from(scheduleTable)
+          .update({ valid_to: editDate })
+          .eq("id", id);
         if (error) return { success: false as const, error: error.message };
       }
 
       for (const slot of slots) {
         const payload = {
           day_of_week: slot.dayOfWeek,
-          time: slot.time,
-          time_end: slot.timeEnd,
+          time: normalizeTime(slot.time),
+          time_end: normalizeTime(slot.timeEnd),
           group_name: trimmedGroup,
           discipline_id: disciplineId,
           location_id: locationId,
@@ -174,7 +348,19 @@ export function useReplaceGroupSchedule() {
         };
 
         if (slot.id != null) {
-          const { error } = await supabase.from(scheduleTable).update(payload).eq("id", slot.id);
+          const { error: closeError } = await supabase
+            .from(scheduleTable)
+            .update({ valid_to: editDate })
+            .eq("id", slot.id);
+          if (closeError) {
+            return { success: false as const, error: closeError.message };
+          }
+
+          const { error } = await supabase.from(scheduleTable).insert({
+            organization_id: organizationId,
+            ...payload,
+            valid_from: addDays(editDate, 1),
+          });
           if (error) {
             if (error.code === "23505") {
               return { success: false as const, error: "Такой день и время уже есть в расписании" };
@@ -185,6 +371,7 @@ export function useReplaceGroupSchedule() {
           const { error } = await supabase.from(scheduleTable).insert({
             organization_id: organizationId,
             ...payload,
+            valid_from: editDate,
           });
           if (error) {
             if (error.code === "23505") {
@@ -198,7 +385,7 @@ export function useReplaceGroupSchedule() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) void queryClient.invalidateQueries({ queryKey: scheduleQueryKey });
+      if (result.success) invalidateScheduleQueries(queryClient);
     },
   });
 }
@@ -211,13 +398,19 @@ export function useDeleteGroupSchedule() {
       groupName,
       disciplineId,
       locationId,
+      editDate = toISODateLocal(new Date()),
     }: {
       groupName: string;
       disciplineId: string;
       locationId: string | null;
+      editDate?: string;
     }) => {
       const trimmed = groupName.trim();
-      let query = supabase.from(scheduleTable).delete().eq("discipline_id", disciplineId);
+      let query = supabase
+        .from(scheduleTable)
+        .update({ valid_to: editDate })
+        .eq("discipline_id", disciplineId)
+        .is("valid_to", null);
 
       if (locationId) {
         query = query.eq("location_id", locationId);
@@ -236,7 +429,7 @@ export function useDeleteGroupSchedule() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) void queryClient.invalidateQueries({ queryKey: scheduleQueryKey });
+      if (result.success) invalidateScheduleQueries(queryClient);
     },
   });
 }

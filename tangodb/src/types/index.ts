@@ -33,7 +33,38 @@ export interface ScheduleSlot {
   groupName?: string;
   locationId?: string | null;
   teacherMemberId?: string | null;
+  validFrom: string;
+  validTo: string | null;
 }
+
+export interface GroupDisplayLesson {
+  kind: "group";
+  slotId: string;
+  date: string;
+  timeStart: string;
+  timeEnd: string;
+  validFrom: string;
+  validTo: string | null;
+  dayOfWeek: number;
+  disciplineId: string | null;
+  groupName?: string;
+  locationId: string | null;
+  teacherMemberId: string | null;
+}
+
+export interface PersonalDisplayLesson {
+  kind: "personal";
+  lessonId: string;
+  date: string;
+  timeStart: string;
+  timeEnd: string;
+  paid: "yes" | "no";
+  disciplineId: string | null;
+  locationId: string | null;
+  teacherMemberId: string | null;
+}
+
+export type DisplayLesson = GroupDisplayLesson | PersonalDisplayLesson;
 
 export type PriceCategory = "group" | "private";
 

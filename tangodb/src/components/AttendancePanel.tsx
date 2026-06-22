@@ -121,7 +121,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     isLoading: personalLoading,
     isError: personalError,
     error: personalErr,
-  } = usePersonalLessons(selectedLocationId ? selectedMonth : undefined, {
+  } = usePersonalLessons({
+    yearMonth: selectedLocationId ? selectedMonth : undefined,
     enabled: selectedLocationId != null,
   });
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = usePrices();

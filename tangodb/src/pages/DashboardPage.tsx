@@ -43,13 +43,13 @@ export default function DashboardPage() {
 
   const clientsQuery = useClientDirectory({ enabled: operationalEnabled });
   const subscriptionsQuery = useSubscriptions({ enabled: operationalEnabled });
-  const personalLessonsQuery = usePersonalLessons(undefined, { enabled: operationalEnabled });
+  const personalLessonsQuery = usePersonalLessons({ enabled: operationalEnabled });
   const showOperationalPayments = operationalEnabled && can("payments.read.operational");
   const todayPaymentsQuery = usePayments(
     showOperationalPayments ? { todayOnly: true } : { enabled: false }
   );
 
-  const scopedLessonsQuery = usePersonalLessons(undefined, { enabled: scopedOnly });
+  const scopedLessonsQuery = usePersonalLessons({ enabled: scopedOnly });
   const scopedScheduleQuery = useSchedule({ enabled: scopedOnly });
   const disciplinesQuery = useDisciplines({ enabled: scopedOnly });
 

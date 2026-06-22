@@ -8,7 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
-2026-06-21 — Команда: ФИО в списке участников, popup «Редактировать данные», приглашение с именем и фамилией; удалены email-никнеймы из display_name. Миграция invite_member_names.
+2026-06-22 — Расписание Промпт 1: миграция schedule_versioning (valid_from/valid_to, partial UNIQUE, HH:MM CHECK, overlap triggers); типы DisplayLesson/ScheduleSlot; lib/scheduleWeek.ts; хуки useScheduleForWeek, useEditGroupSchedule, soft delete; usePersonalLessons dateRange API без teacher fallback.
 2026-06-21 — Расписание: редактирование локации и преподавателя в модалке группы (преподаватель — только owner/director). Команда: карточки профиля преподавателей (ФИО, контакты); редактирование owner/director, просмотр admin. Миграция member profile fields.
 2026-06-20 — Локации в расписании и журнале: schedule_slots.location_id/teacher_member_id в UI; выбор локации перед календарём посещений с кнопкой «Все локации»; фильтрация групповых и персональных уроков по залу.
 2026-06-20 — Dashboard tabs: убрана лишняя внешняя карточка вокруг «Обзор и статистика», чтобы split-dashboard следовал panel-page-stack и карточкам из design system.

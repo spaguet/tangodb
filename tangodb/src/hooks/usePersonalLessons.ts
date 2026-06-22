@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
+import { normalizeTime } from "../lib/scheduleWeek";
 import { formatClientName } from "../lib/utils";
 import type { Client, PersonalLesson } from "../types";
 import { useOrganization } from "../organization/OrganizationProvider";
@@ -8,6 +9,12 @@ import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const personalLessonsQueryKey = ["personalLessons"] as const;
+
+export interface UsePersonalLessonsOptions {
+  yearMonth?: string;
+  dateRange?: { start: string; end: string };
+  enabled?: boolean;
+}
 
 type ClientJoinRow = { first_name?: string; last_name?: string } | null;
 
@@ -22,7 +29,6 @@ const clientNameFromJoin = (row: ClientJoinRow, fallbackId: string): string => {
     return formatClientName(row.last_name ?? "", row.first_name ?? "");
   }
   if (!fallbackId || isUuid(fallbackId)) return "";
-  // Legacy rows may store a display name instead of an ID.
   if (/[^\d]/.test(fallbackId)) return fallbackId;
   return fallbackId;
 };
@@ -85,8 +91,8 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
       clientId3 ? clientNameFromJoin(row.client3 as ClientJoinRow, clientId3) : "",
     ]),
     date: String(row.date ?? "").slice(0, 10),
-    timeStart: (row.time_start as string) || "14:00",
-    timeEnd: (row.time_end as string) || "15:00",
+    timeStart: normalizeTime((row.time_start as string) || "14:00"),
+    timeEnd: normalizeTime((row.time_end as string) || "15:00"),
     price: maskFinancial ? 0 : Number(row.price) || 0,
     paid: maskFinancial ? "no" : (row.paid as "yes" | "no") || "no",
     disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
@@ -103,51 +109,43 @@ const personalLessonsSelect =
 const personalLessonsSelectTeacher =
   "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, subscription_id, location_id, teacher_member_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
 
-export function usePersonalLessons(yearMonth?: string, options?: { enabled?: boolean }) {
+function buildQueryKeySuffix(options: UsePersonalLessonsOptions): unknown {
+  if (options.dateRange) return { range: options.dateRange };
+  if (options.yearMonth) return { yearMonth: options.yearMonth };
+  return null;
+}
+
+export function usePersonalLessons(options?: UsePersonalLessonsOptions) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const { role } = useOrganization();
   const maskFinancial = role === "teacher";
-  const queryEnabled = orgEnabled && (options?.enabled ?? true);
-  const baseKey = yearMonth ? [...personalLessonsQueryKey, yearMonth] : personalLessonsQueryKey;
+  const resolved = options ?? {};
+  const queryEnabled = orgEnabled && (resolved.enabled ?? true);
+  const keySuffix = buildQueryKeySuffix(resolved);
   const clientsQuery = useClientDirectory({ enabled: queryEnabled });
 
   const lessonsQuery = useQuery({
-    queryKey: withOrgId([...baseKey, { maskFinancial }]),
+    queryKey: withOrgId([...personalLessonsQueryKey, keySuffix, { maskFinancial }]),
     enabled: queryEnabled,
     queryFn: async () => {
       const table = maskFinancial ? "personal_lessons_teacher_v" : "personal_lessons";
       const selectColumns = maskFinancial ? personalLessonsSelectTeacher : personalLessonsSelect;
-      let query = supabase
-        .from(table)
-        .select(selectColumns)
-        .order("date", { ascending: false });
+      let query = supabase.from(table).select(selectColumns).order("date", { ascending: false });
 
-      if (yearMonth) {
-        const [y, m] = yearMonth.split("-").map(Number);
+      if (resolved.dateRange) {
+        query = query
+          .gte("date", resolved.dateRange.start)
+          .lte("date", resolved.dateRange.end);
+      } else if (resolved.yearMonth) {
+        const [y, m] = resolved.yearMonth.split("-").map(Number);
         const start = `${y}-${String(m).padStart(2, "0")}-01`;
         const lastDay = new Date(y, m, 0).getDate();
         const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
         query = query.gte("date", start).lte("date", end);
       }
 
-      let { data, error } = await query;
-
-      if (error) {
-        let fallbackQuery = supabase
-          .from("personal_lessons")
-          .select("*")
-          .order("date", { ascending: false });
-        if (yearMonth) {
-          const [y, m] = yearMonth.split("-").map(Number);
-          const start = `${y}-${String(m).padStart(2, "0")}-01`;
-          const lastDay = new Date(y, m, 0).getDate();
-          const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-          fallbackQuery = fallbackQuery.gte("date", start).lte("date", end);
-        }
-        const fallback = await fallbackQuery;
-        if (fallback.error) throw fallback.error;
-        data = fallback.data;
-      }
+      const { data, error } = await query;
+      if (error) throw error;
 
       return (data ?? []).map((row) =>
         mapPersonalLesson(row as unknown as Record<string, unknown>, maskFinancial)
@@ -187,6 +185,8 @@ export function useAddPersonalLessons() {
       price: number;
       paid: boolean;
       disciplineId: string;
+      locationId?: string;
+      teacherMemberId?: string;
       subscriptionId?: string;
     }) => {
       if (!organizationId) {
@@ -206,16 +206,23 @@ export function useAddPersonalLessons() {
         client_id2: lessons.clientId2 || null,
         client_id3: lessons.clientId3 || null,
         date,
-        time_start: lessons.timeStart,
-        time_end: lessons.timeEnd,
+        time_start: normalizeTime(lessons.timeStart),
+        time_end: normalizeTime(lessons.timeEnd),
         price: lessons.subscriptionId ? 0 : lessons.price,
         paid,
         discipline_id: lessons.disciplineId,
+        location_id: lessons.locationId ?? null,
+        teacher_member_id: lessons.teacherMemberId ?? null,
         subscription_id: lessons.subscriptionId || null,
       }));
 
       const { error } = await supabase.from("personal_lessons").insert(rows);
-      if (error) return { success: false as const, error: error.message };
+      if (error) {
+        if (error.message.includes("personal_lesson_overlap") || error.message.includes("personal_group_overlap")) {
+          return { success: false as const, error: "Пересечение с другим занятием в это время" };
+        }
+        return { success: false as const, error: error.message };
+      }
       return { success: true as const, ids: rows.map((row) => row.id as string) };
     },
     onSuccess: (result) => {
@@ -277,20 +284,64 @@ export function useUpdatePersonalLesson() {
       date,
       timeStart,
       timeEnd,
+      locationId,
+      teacherMemberId,
+      disciplineId,
+      type,
+      clientId1,
+      clientId2,
+      clientId3,
+      price,
+      paid,
+      subscriptionId,
     }: {
       id: string;
-      date: string;
-      timeStart: string;
-      timeEnd: string;
+      date?: string;
+      timeStart?: string;
+      timeEnd?: string;
+      locationId?: string | null;
+      teacherMemberId?: string | null;
+      disciplineId?: string | null;
+      type?: string;
+      clientId1?: string;
+      clientId2?: string;
+      clientId3?: string;
+      price?: number;
+      paid?: boolean;
+      subscriptionId?: string | null;
     }) => {
+      const payload: Record<string, unknown> = {};
+      if (date != null) payload.date = date;
+      if (timeStart != null) payload.time_start = normalizeTime(timeStart);
+      if (timeEnd != null) payload.time_end = normalizeTime(timeEnd);
+      if (locationId !== undefined) payload.location_id = locationId;
+      if (teacherMemberId !== undefined) payload.teacher_member_id = teacherMemberId;
+      if (disciplineId !== undefined) payload.discipline_id = disciplineId;
+      if (type != null) payload.type = type;
+      if (clientId1 !== undefined) payload.client_id1 = clientId1 || null;
+      if (clientId2 !== undefined) payload.client_id2 = clientId2 || null;
+      if (clientId3 !== undefined) payload.client_id3 = clientId3 || null;
+      if (price !== undefined) payload.price = price;
+      if (paid !== undefined) payload.paid = paid ? "yes" : "no";
+      if (subscriptionId !== undefined) payload.subscription_id = subscriptionId;
+
+      if (Object.keys(payload).length === 0) {
+        return { success: false as const, error: "Нет данных для обновления" };
+      }
+
       const { data, error } = await supabase
         .from("personal_lessons")
-        .update({ date, time_start: timeStart, time_end: timeEnd })
+        .update(payload)
         .eq("id", id)
         .select("id")
         .maybeSingle();
 
-      if (error) return { success: false as const, error: error.message };
+      if (error) {
+        if (error.message.includes("personal_lesson_overlap") || error.message.includes("personal_group_overlap")) {
+          return { success: false as const, error: "Пересечение с другим занятием в это время" };
+        }
+        return { success: false as const, error: error.message };
+      }
       if (!data) return { success: false as const, error: "Урок не найден" };
       return { success: true as const };
     },
