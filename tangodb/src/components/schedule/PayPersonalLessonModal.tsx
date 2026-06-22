@@ -67,7 +67,7 @@ export default function PayPersonalLessonModal({
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
   const [packageModalOpen, setPackageModalOpen] = useState(false);
 
-  const lessonTariffs = getPrivateLessonTariffs(prices);
+  const lessonTariffs = useMemo(() => getPrivateLessonTariffs(prices), [prices]);
 
   const clientMap = useMemo(
     () => Object.fromEntries(directoryClients.map((c) => [c.id, c])),
@@ -88,20 +88,32 @@ export default function PayPersonalLessonModal({
     });
   }, [subscriptions, lesson]);
 
+  const lessonId = lesson?.lessonId;
+
   useEffect(() => {
-    if (!lesson) return;
+    if (!lessonId || !lesson) {
+      setBookingPaymentMode(null);
+      return;
+    }
     setBookingPaymentMode(null);
     setLinkedSubscriptionId("");
     const initialPrice = lesson.price > 0 ? lesson.price.toString() : "";
     setCustomPrice(initialPrice);
-    if (lessonTariffs.length > 0) {
-      const matched =
-        lessonTariffs.find((t) => t.price === lesson.price) ?? lessonTariffs[0];
-      setSelectedLessonTariffId(matched.id!);
-      if (!initialPrice) setCustomPrice(matched.price.toString());
-    } else {
-      setSelectedLessonTariffId("");
-    }
+    setSelectedLessonTariffId("");
+  }, [lessonId, lesson?.price]);
+
+  useEffect(() => {
+    if (!lesson || lessonTariffs.length === 0) return;
+    setSelectedLessonTariffId((current) => {
+      if (current) return current;
+      const matched = lessonTariffs.find((t) => t.price === lesson.price) ?? lessonTariffs[0];
+      return matched.id!;
+    });
+    setCustomPrice((prev) => {
+      if (prev) return prev;
+      const matched = lessonTariffs.find((t) => t.price === lesson.price) ?? lessonTariffs[0];
+      return matched.price.toString();
+    });
   }, [lesson, lessonTariffs]);
 
   useEffect(() => {
