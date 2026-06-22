@@ -16,21 +16,16 @@ export interface UsePersonalLessonsOptions {
   enabled?: boolean;
 }
 
-type ClientJoinRow = { first_name?: string; last_name?: string } | null;
-
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const asId = (value: unknown): string => (value == null ? "" : String(value).trim());
 
 const isUuid = (value: string): boolean => UUID_RE.test(value.trim());
 
-const clientNameFromJoin = (row: ClientJoinRow, fallbackId: string): string => {
-  if (row && (row.last_name || row.first_name)) {
-    return formatClientName(row.last_name ?? "", row.first_name ?? "");
-  }
-  if (!fallbackId || isUuid(fallbackId)) return "";
-  if (/[^\d]/.test(fallbackId)) return fallbackId;
-  return fallbackId;
+const legacyClientLabel = (clientId: string): string => {
+  const id = clientId.trim();
+  if (!id || isUuid(id)) return "";
+  return id;
 };
 
 const clientNameFromMap = (clientId: string, clientMap: Record<string, Client>): string => {
@@ -86,9 +81,9 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
     clientId2,
     clientId3,
     clientDisplay: joinClientNames([
-      clientNameFromJoin(row.client1 as ClientJoinRow, clientId1),
-      clientId2 ? clientNameFromJoin(row.client2 as ClientJoinRow, clientId2) : "",
-      clientId3 ? clientNameFromJoin(row.client3 as ClientJoinRow, clientId3) : "",
+      legacyClientLabel(clientId1),
+      legacyClientLabel(clientId2),
+      legacyClientLabel(clientId3),
     ]),
     date: String(row.date ?? "").slice(0, 10),
     timeStart: normalizeTime((row.time_start as string) || "14:00"),
@@ -104,10 +99,10 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
 };
 
 const personalLessonsSelect =
-  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, price, paid, subscription_id, location_id, teacher_member_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
+  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, price, paid, subscription_id, location_id, teacher_member_id, attendance_status";
 
 const personalLessonsSelectTeacher =
-  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status, client1:clients!client_id1(first_name, last_name), client2:clients!client_id2(first_name, last_name), client3:clients!client_id3(first_name, last_name)";
+  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status";
 
 function buildQueryKeySuffix(options: UsePersonalLessonsOptions): unknown {
   if (options.dateRange) return { range: options.dateRange };

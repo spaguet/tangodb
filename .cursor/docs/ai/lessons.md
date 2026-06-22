@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-06-22 — PostgREST join personal_lessons → clients на /schedule
+
+- **Ошибка:** «Could not find a relationship between personal_lessons and clients in the schema cache» при загрузке расписания.
+- **Причина:** v2 composite FK `(organization_id, client_id1)`; синтаксис `clients!client_id1` работает только с простым FK на `clients.id`.
+- **Как избежать:** Не embed-join clients в SELECT personal_lessons; имена через `useClientDirectory` + `enrichLessonClientDisplay` (уже было в коде, join — лишний).
+
 ### 2026-06-22 — useEditGroupSchedule без rollback при failed INSERT
 
 - **Ошибка:** При ошибке INSERT новой версии слота старая запись оставалась с `valid_to = editDate`, занятие исчезало из расписания без замены.
