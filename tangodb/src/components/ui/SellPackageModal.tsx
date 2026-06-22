@@ -195,7 +195,7 @@ export default function SellPackageModal({
                 <label className={labelCls}>Тариф абонемента</label>
                 {packageTariffs.length === 0 ? (
                   <p className="text-xs text-slate-400 font-sans leading-relaxed">
-                    Нет пакетных тарифов. Создайте персональный тариф с количеством уроков больше 1 в разделе{" "}
+                    Нет пакетных тарифов.{" "}
                     <button
                       type="button"
                       onClick={() => {
@@ -204,9 +204,8 @@ export default function SellPackageModal({
                       }}
                       className="text-indigo-600 hover:text-indigo-700 font-semibold underline-offset-2 hover:underline cursor-pointer"
                     >
-                      Новый тариф → ПАКЕТ ПЕРСОНАЛЬНЫХ УРОКОВ
+                      Создать в прайс-листе
                     </button>
-                    .
                   </p>
                 ) : (
                   <AppSelect
