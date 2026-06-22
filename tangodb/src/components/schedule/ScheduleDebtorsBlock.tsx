@@ -4,7 +4,8 @@ import { AlertCircle, Clock } from "lucide-react";
 import { useScheduleDebtors } from "../../hooks/useScheduleDebtors";
 import { usePermissions } from "../../hooks/usePermissions";
 import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
-import { formatCurrency, formatDateRu } from "../../lib/utils";
+import { toISODateLocal } from "../../lib/scheduleWeek";
+import { formatCurrency, formatDateRu, pluralizeRu } from "../../lib/utils";
 import type { ScheduleDebtorEntry } from "../../hooks/useScheduleDebtors";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
@@ -61,6 +62,36 @@ function DebtorRow({
   );
 }
 
+function DebtorsList({
+  rows,
+  showAmount,
+}: {
+  rows: Array<{
+    entry: ScheduleDebtorEntry;
+    clientLabel: string;
+    disciplineName?: string;
+    teacherName?: string;
+    locationName?: string;
+  }>;
+  showAmount: boolean;
+}) {
+  return (
+    <ul className="divide-y divide-slate-100">
+      {rows.map(({ entry, clientLabel, disciplineName, teacherName, locationName }) => (
+        <DebtorRow
+          key={entry.id}
+          entry={entry}
+          clientLabel={clientLabel}
+          disciplineName={disciplineName}
+          teacherName={teacherName}
+          locationName={locationName}
+          showAmount={showAmount}
+        />
+      ))}
+    </ul>
+  );
+}
+
 export default function ScheduleDebtorsBlock({
   weekStart,
   weekEnd,
@@ -98,6 +129,24 @@ export default function ScheduleDebtorsBlock({
     });
   }, [debtors, role, can, disciplineMap, teamMap, locationMap]);
 
+  const weekStartISO = toISODateLocal(weekStart);
+  const weekEndISO = toISODateLocal(weekEnd);
+
+  const { thisWeekDebtors, laterDebtors } = useMemo(() => {
+    const thisWeek: typeof visibleDebtors = [];
+    const later: typeof visibleDebtors = [];
+
+    for (const row of visibleDebtors) {
+      if (row.entry.date >= weekStartISO && row.entry.date <= weekEndISO) {
+        thisWeek.push(row);
+      } else {
+        later.push(row);
+      }
+    }
+
+    return { thisWeekDebtors: thisWeek, laterDebtors: later };
+  }, [visibleDebtors, weekStartISO, weekEndISO]);
+
   if (isLoading) {
     return <LoadingState label="Загрузка неоплаченных уроков..." />;
   }
@@ -115,6 +164,11 @@ export default function ScheduleDebtorsBlock({
   const totalAmount = showAmount
     ? visibleDebtors.reduce((sum, row) => sum + (row.entry.amount ?? 0), 0)
     : 0;
+  const countLabel = `${visibleDebtors.length} ${pluralizeRu(visibleDebtors.length, [
+    "урок",
+    "урока",
+    "уроков",
+  ])}`;
 
   return (
     <motion.section
@@ -132,27 +186,40 @@ export default function ScheduleDebtorsBlock({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-sm shrink-0">
-          <span className="font-semibold text-rose-600">{visibleDebtors.length}</span>
+        <div className="flex flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5 text-sm shrink-0 text-right">
+          <span className="font-semibold text-rose-600 tabular-nums">{countLabel}</span>
           {showAmount ? (
-            <span className="text-rose-600 font-semibold">{formatCurrency(totalAmount)}</span>
+            <>
+              <span className="text-rose-400" aria-hidden="true">
+                ·
+              </span>
+              <span className="font-semibold text-rose-600 tabular-nums">
+                {formatCurrency(totalAmount)}
+              </span>
+            </>
           ) : null}
         </div>
       </div>
 
-      <ul className="divide-y divide-slate-100">
-        {visibleDebtors.map(({ entry, clientLabel, disciplineName, teacherName, locationName }) => (
-          <DebtorRow
-            key={entry.id}
-            entry={entry}
-            clientLabel={clientLabel}
-            disciplineName={disciplineName}
-            teacherName={teacherName}
-            locationName={locationName}
-            showAmount={showAmount}
-          />
-        ))}
-      </ul>
+      {thisWeekDebtors.length > 0 ? (
+        <div>
+          {laterDebtors.length > 0 ? (
+            <p className="px-4 py-2 text-[11px] font-medium uppercase tracking-wider text-slate-400 bg-slate-50/80 border-b border-slate-100">
+              На выбранной неделе
+            </p>
+          ) : null}
+          <DebtorsList rows={thisWeekDebtors} showAmount={showAmount} />
+        </div>
+      ) : null}
+
+      {laterDebtors.length > 0 ? (
+        <div>
+          <p className="px-4 py-2 text-[11px] font-medium uppercase tracking-wider text-slate-400 bg-slate-50/80 border-b border-slate-100">
+            Последующие недели
+          </p>
+          <DebtorsList rows={laterDebtors} showAmount={showAmount} />
+        </div>
+      ) : null}
     </motion.section>
   );
 }
