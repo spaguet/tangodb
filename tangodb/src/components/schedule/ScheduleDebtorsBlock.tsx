@@ -1,21 +1,26 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { AlertCircle, Clock } from "lucide-react";
+import { AlertCircle, Clock, Coins } from "lucide-react";
 import { useScheduleDebtors } from "../../hooks/useScheduleDebtors";
 import { usePermissions } from "../../hooks/usePermissions";
-import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
-import { toISODateLocal } from "../../lib/scheduleWeek";
+import { useOrganization } from "../../organization/OrganizationProvider";
+import { useToast } from "../../App";
+import {
+  canPayPersonalLesson,
+  canReadLessonClients,
+  maskClientDisplay,
+} from "../../lib/scheduleLessonAccess";
 import { formatCurrency, formatDateRu, pluralizeRu } from "../../lib/utils";
 import type { ScheduleDebtorEntry } from "../../hooks/useScheduleDebtors";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
+import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
 
 interface ScheduleDebtorsBlockProps {
-  weekStart: Date;
-  weekEnd: Date;
   disciplineMap: Map<string, string>;
   teamMap: Map<string, string>;
   locationMap: Map<string, string>;
+  onPaymentSuccess?: () => void;
 }
 
 function DebtorRow({
@@ -25,6 +30,8 @@ function DebtorRow({
   teacherName,
   locationName,
   showAmount,
+  canPay,
+  onPay,
 }: {
   entry: ScheduleDebtorEntry;
   clientLabel: string;
@@ -32,12 +39,14 @@ function DebtorRow({
   teacherName?: string;
   locationName?: string;
   showAmount: boolean;
+  canPay: boolean;
+  onPay: () => void;
 }) {
   const metaParts = [disciplineName, teacherName, locationName].filter(Boolean);
 
   return (
     <li className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-b border-slate-100 last:border-b-0">
-      <div className="min-w-0 space-y-0.5">
+      <div className="min-w-0 space-y-0.5 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className="text-sm font-semibold text-slate-800 truncate">{clientLabel}</span>
           <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-600">
@@ -55,67 +64,54 @@ function DebtorRow({
           <p className="text-[11px] text-slate-400 truncate">{metaParts.join(" · ")}</p>
         ) : null}
       </div>
-      {showAmount && entry.amount != null ? (
-        <span className="text-sm font-semibold text-rose-600 shrink-0">{formatCurrency(entry.amount)}</span>
-      ) : null}
+      <div className="flex items-center gap-2 shrink-0">
+        {showAmount && entry.amount != null ? (
+          <span className="text-sm font-semibold text-rose-600 tabular-nums">{formatCurrency(entry.amount)}</span>
+        ) : null}
+        {canPay ? (
+          <button
+            type="button"
+            onClick={onPay}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-sans font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+          >
+            <Coins className="w-3.5 h-3.5" />
+            Оплатить
+          </button>
+        ) : null}
+      </div>
     </li>
   );
 }
 
-function DebtorsList({
-  rows,
-  showAmount,
-}: {
-  rows: Array<{
-    entry: ScheduleDebtorEntry;
-    clientLabel: string;
-    disciplineName?: string;
-    teacherName?: string;
-    locationName?: string;
-  }>;
-  showAmount: boolean;
-}) {
-  return (
-    <ul className="divide-y divide-slate-100">
-      {rows.map(({ entry, clientLabel, disciplineName, teacherName, locationName }) => (
-        <DebtorRow
-          key={entry.id}
-          entry={entry}
-          clientLabel={clientLabel}
-          disciplineName={disciplineName}
-          teacherName={teacherName}
-          locationName={locationName}
-          showAmount={showAmount}
-        />
-      ))}
-    </ul>
-  );
-}
-
 export default function ScheduleDebtorsBlock({
-  weekStart,
-  weekEnd,
   disciplineMap,
   teamMap,
   locationMap,
+  onPaymentSuccess,
 }: ScheduleDebtorsBlockProps) {
-  const { role, can } = usePermissions();
-  const debtorsQuery = useScheduleDebtors(weekStart, weekEnd);
+  const toast = useToast();
+  const { memberId } = useOrganization();
+  const { role, can, isReadOnly } = usePermissions();
+  const debtorsQuery = useScheduleDebtors();
   const { data: debtors = [], showAmount, isLoading, isError, error } = debtorsQuery;
+  const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
 
   const visibleDebtors = useMemo(() => {
     return debtors.map((entry) => {
-      const canReadClients = canReadLessonClients(role, {
-        kind: "personal",
+      const lessonContext = {
+        kind: "personal" as const,
         lessonId: entry.id,
         date: entry.date,
         timeStart: entry.timeStart,
         timeEnd: entry.timeEnd,
-        paid: "no",
+        paid: "no" as const,
         disciplineId: entry.disciplineId,
         locationId: entry.locationId,
         teacherMemberId: entry.teacherMemberId,
-      }, can);
+      };
+
+      const canReadClients = canReadLessonClients(role, lessonContext, can);
+      const canPay = canPayPersonalLesson(role, memberId, lessonContext, can, isReadOnly);
 
       return {
         entry,
@@ -125,27 +121,10 @@ export default function ScheduleDebtorsBlock({
         locationName: entry.locationId
           ? locationMap.get(entry.locationId)
           : "Без локации",
+        canPay,
       };
     });
-  }, [debtors, role, can, disciplineMap, teamMap, locationMap]);
-
-  const weekStartISO = toISODateLocal(weekStart);
-  const weekEndISO = toISODateLocal(weekEnd);
-
-  const { thisWeekDebtors, laterDebtors } = useMemo(() => {
-    const thisWeek: typeof visibleDebtors = [];
-    const later: typeof visibleDebtors = [];
-
-    for (const row of visibleDebtors) {
-      if (row.entry.date >= weekStartISO && row.entry.date <= weekEndISO) {
-        thisWeek.push(row);
-      } else {
-        later.push(row);
-      }
-    }
-
-    return { thisWeekDebtors: thisWeek, laterDebtors: later };
-  }, [visibleDebtors, weekStartISO, weekEndISO]);
+  }, [debtors, role, can, memberId, isReadOnly, disciplineMap, teamMap, locationMap]);
 
   if (isLoading) {
     return <LoadingState label="Загрузка неоплаченных уроков..." />;
@@ -170,56 +149,76 @@ export default function ScheduleDebtorsBlock({
     "уроков",
   ])}`;
 
+  const openPayModal = (entry: ScheduleDebtorEntry) => {
+    setPayTarget({
+      lessonId: entry.id,
+      date: entry.date,
+      timeStart: entry.timeStart,
+      timeEnd: entry.timeEnd,
+      clientId1: entry.clientId1,
+      clientId2: entry.clientId2,
+      clientId3: entry.clientId3,
+      clientDisplay: entry.clientDisplay,
+      price: entry.amount ?? 0,
+    });
+  };
+
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl border border-rose-200/80 shadow-xs overflow-hidden"
-    >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-b border-rose-100 bg-rose-50/60">
-        <div className="flex items-center gap-2 min-w-0">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-800">Неоплаченные персональные уроки</h3>
-            <p className="text-[11px] text-slate-500">
-              На выбранной неделе и ближайшие {Math.round(56 / 7)} нед.
-            </p>
+    <>
+      <motion.section
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-xl border border-rose-200/80 shadow-xs overflow-hidden"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-b border-rose-100 bg-rose-50/60">
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-slate-800">Неоплаченные персональные уроки</h3>
+              <p className="text-[11px] text-slate-500">Все неоплаченные уроки организации</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5 text-sm shrink-0 text-right">
+            <span className="font-semibold text-rose-600 tabular-nums">{countLabel}</span>
+            {showAmount ? (
+              <>
+                <span className="text-rose-400" aria-hidden="true">
+                  ·
+                </span>
+                <span className="font-semibold text-rose-600 tabular-nums">
+                  {formatCurrency(totalAmount)}
+                </span>
+              </>
+            ) : null}
           </div>
         </div>
-        <div className="flex flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5 text-sm shrink-0 text-right">
-          <span className="font-semibold text-rose-600 tabular-nums">{countLabel}</span>
-          {showAmount ? (
-            <>
-              <span className="text-rose-400" aria-hidden="true">
-                ·
-              </span>
-              <span className="font-semibold text-rose-600 tabular-nums">
-                {formatCurrency(totalAmount)}
-              </span>
-            </>
-          ) : null}
-        </div>
-      </div>
 
-      {thisWeekDebtors.length > 0 ? (
-        <div>
-          {laterDebtors.length > 0 ? (
-            <p className="px-4 py-2 text-[11px] font-medium uppercase tracking-wider text-slate-400 bg-slate-50/80 border-b border-slate-100">
-              На выбранной неделе
-            </p>
-          ) : null}
-          <DebtorsList rows={thisWeekDebtors} showAmount={showAmount} />
-        </div>
-      ) : null}
+        <ul className="divide-y divide-slate-100">
+          {visibleDebtors.map(({ entry, clientLabel, disciplineName, teacherName, locationName, canPay }) => (
+            <DebtorRow
+              key={entry.id}
+              entry={entry}
+              clientLabel={clientLabel}
+              disciplineName={disciplineName}
+              teacherName={teacherName}
+              locationName={locationName}
+              showAmount={showAmount}
+              canPay={canPay}
+              onPay={() => openPayModal(entry)}
+            />
+          ))}
+        </ul>
+      </motion.section>
 
-      {laterDebtors.length > 0 ? (
-        <div>
-          <p className="px-4 py-2 text-[11px] font-medium uppercase tracking-wider text-slate-400 bg-slate-50/80 border-b border-slate-100">
-            Последующие недели
-          </p>
-          <DebtorsList rows={laterDebtors} showAmount={showAmount} />
-        </div>
-      ) : null}
-    </motion.section>
+      <PayPersonalLessonModal
+        lesson={payTarget}
+        toast={toast}
+        onClose={() => setPayTarget(null)}
+        onSuccess={() => {
+          setPayTarget(null);
+          onPaymentSuccess?.();
+        }}
+      />
+    </>
   );
 }

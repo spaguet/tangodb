@@ -1,11 +1,7 @@
 import { useMemo } from "react";
-import { addDays, toISODateLocal } from "../lib/scheduleWeek";
 import type { MemberRole } from "../types/organization";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePersonalLessons } from "./usePersonalLessons";
-
-/** How far beyond the selected week to load unpaid personal lessons. */
-const DEBTORS_HORIZON_DAYS = 56;
 
 export const scheduleDebtorsQueryKey = ["scheduleDebtors"] as const;
 
@@ -15,6 +11,9 @@ export interface ScheduleDebtorEntry {
   timeStart: string;
   timeEnd: string;
   clientDisplay: string;
+  clientId1: string;
+  clientId2: string;
+  clientId3: string;
   disciplineId: string | null;
   locationId: string | null;
   teacherMemberId: string | null;
@@ -26,24 +25,17 @@ export function canShowScheduleDebtAmount(role: MemberRole | null): boolean {
   return role === "owner" || role === "director";
 }
 
-export function useScheduleDebtors(
-  weekStart: Date,
-  weekEnd: Date,
-  options?: { enabled?: boolean }
-) {
+export function useScheduleDebtors(options?: { enabled?: boolean }) {
   const { role } = useOrganization();
-  const weekStartISO = toISODateLocal(weekStart);
-  const rangeEndISO = addDays(toISODateLocal(weekEnd), DEBTORS_HORIZON_DAYS);
   const includeAmount = canShowScheduleDebtAmount(role);
 
   const lessonsQuery = usePersonalLessons({
-    dateRange: { start: weekStartISO, end: rangeEndISO },
+    paidFilter: "no",
     enabled: options?.enabled ?? true,
   });
 
   const data = useMemo((): ScheduleDebtorEntry[] => {
     return (lessonsQuery.data ?? [])
-      .filter((lesson) => lesson.paid === "no")
       .sort(
         (a, b) =>
           a.date.localeCompare(b.date) || a.timeStart.localeCompare(b.timeStart)
@@ -54,6 +46,9 @@ export function useScheduleDebtors(
         timeStart: lesson.timeStart,
         timeEnd: lesson.timeEnd,
         clientDisplay: lesson.clientDisplay,
+        clientId1: lesson.clientId1,
+        clientId2: lesson.clientId2,
+        clientId3: lesson.clientId3,
         disciplineId: lesson.disciplineId ?? null,
         locationId: lesson.locationId ?? null,
         teacherMemberId: lesson.teacherMemberId ?? null,

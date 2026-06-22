@@ -18,6 +18,22 @@ export function canManageGroupLesson(role: MemberRole | null, lessonDate: string
   return role === "owner" || role === "director";
 }
 
+export function canPayPersonalLesson(
+  role: MemberRole | null,
+  memberId: string | null,
+  lesson: PersonalDisplayLesson,
+  can: CanFn,
+  isReadOnly: boolean
+): boolean {
+  if (isReadOnly) return false;
+  if (lesson.paid === "yes") return false;
+  if (!can("personal_lessons.write", lessonContext(lesson))) return false;
+  if (role === "teacher") {
+    return Boolean(memberId && lesson.teacherMemberId === memberId);
+  }
+  return role === "owner" || role === "director" || role === "admin";
+}
+
 export function canWritePersonalLesson(
   role: MemberRole | null,
   memberId: string | null,

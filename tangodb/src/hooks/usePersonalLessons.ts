@@ -13,6 +13,7 @@ export const personalLessonsQueryKey = ["personalLessons"] as const;
 export interface UsePersonalLessonsOptions {
   yearMonth?: string;
   dateRange?: { start: string; end: string };
+  paidFilter?: "yes" | "no";
   enabled?: boolean;
 }
 
@@ -105,8 +106,9 @@ const personalLessonsSelectTeacher =
   "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status";
 
 function buildQueryKeySuffix(options: UsePersonalLessonsOptions): unknown {
-  if (options.dateRange) return { range: options.dateRange };
-  if (options.yearMonth) return { yearMonth: options.yearMonth };
+  if (options.dateRange) return { range: options.dateRange, paid: options.paidFilter ?? null };
+  if (options.yearMonth) return { yearMonth: options.yearMonth, paid: options.paidFilter ?? null };
+  if (options.paidFilter) return { paid: options.paidFilter };
   return null;
 }
 
@@ -137,6 +139,10 @@ export function usePersonalLessons(options?: UsePersonalLessonsOptions) {
         const lastDay = new Date(y, m, 0).getDate();
         const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
         query = query.gte("date", start).lte("date", end);
+      }
+
+      if (resolved.paidFilter) {
+        query = query.eq("paid", resolved.paidFilter);
       }
 
       const { data, error } = await query;

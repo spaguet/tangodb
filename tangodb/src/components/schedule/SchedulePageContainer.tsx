@@ -390,11 +390,10 @@ export default function SchedulePageContainer() {
       )}
 
       <ScheduleDebtorsBlock
-        weekStart={selectedWeekStart}
-        weekEnd={weekEnd}
         disciplineMap={disciplineMap}
         teamMap={teamMap}
         locationMap={locationMap}
+        onPaymentSuccess={handleAddSuccess}
       />
 
       <LessonInfoPopup
@@ -403,6 +402,7 @@ export default function SchedulePageContainer() {
         disciplineName={selectedLessonMeta?.disciplineName}
         teacherName={selectedLessonMeta?.teacherName}
         onClose={() => setSelectedLesson(null)}
+        onPaymentSuccess={handleAddSuccess}
         onEdit={(lesson) => {
           setSelectedLesson(null);
           setEditLesson(lesson);

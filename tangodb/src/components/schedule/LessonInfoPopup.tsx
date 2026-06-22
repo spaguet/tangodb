@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Clock, Edit, Layers, MapPin, Ticket, Trash2, User, X } from "lucide-react";
-import { useClients } from "../../hooks/useClients";
-import { useDisciplines } from "../../hooks/useDisciplines";
-import { usePrices } from "../../hooks/usePrices";
+import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, X } from "lucide-react";
 import { useDeleteScheduleSlot } from "../../hooks/useSchedule";
-import { useDeletePersonalLesson } from "../../hooks/usePersonalLessons";
+import { useDeletePersonalLesson, usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
 import {
   canManageGroupLesson,
+  canPayPersonalLesson,
   canReadLessonClients,
   canShowPaidStatus,
   canWritePersonalLesson,
@@ -20,7 +18,7 @@ import { formatDateRu } from "../../lib/utils";
 import type { DisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import RequirePermission from "../RequirePermission";
-import SellPackageModal from "../ui/SellPackageModal";
+import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
 
 interface LessonInfoPopupProps {
   lesson: DisplayLesson | null;
@@ -29,6 +27,7 @@ interface LessonInfoPopupProps {
   teacherName?: string;
   onClose: () => void;
   onEdit?: (lesson: DisplayLesson) => void;
+  onPaymentSuccess?: () => void;
 }
 
 const detailLabelCls = "text-[10px] font-semibold uppercase tracking-wider text-slate-400";
@@ -54,6 +53,7 @@ export default function LessonInfoPopup({
   teacherName,
   onClose,
   onEdit,
+  onPaymentSuccess,
 }: LessonInfoPopupProps) {
   const toast = useToast();
   const { memberId } = useOrganization();
@@ -61,10 +61,10 @@ export default function LessonInfoPopup({
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const deletePersonalLesson = useDeletePersonalLesson();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [packageModalOpen, setPackageModalOpen] = useState(false);
-  const { data: activeClients = [] } = useClients();
-  const { data: disciplines = [] } = useDisciplines();
-  const { data: prices = [] } = usePrices();
+  const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
+  const personalLessonsQuery = usePersonalLessons({
+    enabled: lesson?.kind === "personal",
+  });
 
   useEffect(() => {
     if (!lesson) return;
@@ -97,6 +97,30 @@ export default function LessonInfoPopup({
       : canWritePersonalLesson(role, memberId, lesson, can, isReadOnly));
 
   const canDelete = canEdit;
+
+  const canPay =
+    lesson?.kind === "personal" &&
+    canPayPersonalLesson(role, memberId, lesson, can, isReadOnly);
+
+  const handleOpenPay = () => {
+    if (lesson?.kind !== "personal") return;
+    const fullLesson = personalLessonsQuery.data?.find((row) => row.id === lesson.lessonId);
+    if (!fullLesson) {
+      toast("Не удалось загрузить данные урока", "error");
+      return;
+    }
+    setPayTarget({
+      lessonId: fullLesson.id,
+      date: fullLesson.date,
+      timeStart: fullLesson.timeStart,
+      timeEnd: fullLesson.timeEnd,
+      clientId1: fullLesson.clientId1,
+      clientId2: fullLesson.clientId2,
+      clientId3: fullLesson.clientId3,
+      clientDisplay: fullLesson.clientDisplay,
+      price: fullLesson.price,
+    });
+  };
 
   const handleDelete = async () => {
     if (!lesson) return;
@@ -237,16 +261,16 @@ export default function LessonInfoPopup({
                 )}
               </dl>
 
-              {lesson.kind === "personal" && can("personal_lessons.sell") && !isReadOnly && (
+              {canPay ? (
                 <button
                   type="button"
-                  onClick={() => setPackageModalOpen(true)}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+                  onClick={handleOpenPay}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
                 >
-                  <Ticket className="w-3.5 h-3.5" />
-                  Продать пакет уроков
+                  <Coins className="w-3.5 h-3.5" />
+                  Оплатить
                 </button>
-              )}
+              ) : null}
 
               <div className="flex items-center gap-2 pt-1">
                 {canEdit && (
@@ -319,13 +343,15 @@ export default function LessonInfoPopup({
         onCancel={() => setDeleteConfirmOpen(false)}
       />
 
-      <SellPackageModal
-        open={packageModalOpen}
-        onClose={() => setPackageModalOpen(false)}
+      <PayPersonalLessonModal
+        lesson={payTarget}
         toast={toast}
-        clients={activeClients}
-        disciplines={disciplines}
-        prices={prices}
+        onClose={() => setPayTarget(null)}
+        onSuccess={() => {
+          setPayTarget(null);
+          onPaymentSuccess?.();
+          onClose();
+        }}
       />
     </>
   );
