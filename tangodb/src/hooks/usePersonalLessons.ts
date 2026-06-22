@@ -174,7 +174,23 @@ export function useAddPersonalLessons() {
   const { organizationId } = useOrgQueryScope();
 
   return useMutation({
-    mutationFn: async (lessons: {
+    mutationFn: async ({
+      requireScope = false,
+      type,
+      clientId1,
+      clientId2,
+      clientId3,
+      dates,
+      timeStart,
+      timeEnd,
+      price,
+      paid,
+      disciplineId,
+      locationId,
+      teacherMemberId,
+      subscriptionId,
+    }: {
+      requireScope?: boolean;
       type: string;
       clientId1: string;
       clientId2: string;
@@ -193,27 +209,31 @@ export function useAddPersonalLessons() {
         return { success: false as const, error: "Организация не выбрана" };
       }
 
-      if (!lessons.dates.length) {
+      if (requireScope && (!locationId || !teacherMemberId)) {
+        return { success: false as const, error: "Укажите локацию и преподавателя" };
+      }
+
+      if (!dates.length) {
         return { success: false as const, error: "Нет дат для бронирования" };
       }
 
-      const paid = lessons.subscriptionId || lessons.paid ? "yes" : "no";
-      const rows = lessons.dates.map((date) => ({
+      const paidValue = subscriptionId || paid ? "yes" : "no";
+      const rows = dates.map((date) => ({
         id: crypto.randomUUID(),
         organization_id: organizationId,
-        type: lessons.type,
-        client_id1: lessons.clientId1 || null,
-        client_id2: lessons.clientId2 || null,
-        client_id3: lessons.clientId3 || null,
+        type,
+        client_id1: clientId1 || null,
+        client_id2: clientId2 || null,
+        client_id3: clientId3 || null,
         date,
-        time_start: normalizeTime(lessons.timeStart),
-        time_end: normalizeTime(lessons.timeEnd),
-        price: lessons.subscriptionId ? 0 : lessons.price,
-        paid,
-        discipline_id: lessons.disciplineId,
-        location_id: lessons.locationId ?? null,
-        teacher_member_id: lessons.teacherMemberId ?? null,
-        subscription_id: lessons.subscriptionId || null,
+        time_start: normalizeTime(timeStart),
+        time_end: normalizeTime(timeEnd),
+        price: subscriptionId ? 0 : price,
+        paid: paidValue,
+        discipline_id: disciplineId,
+        location_id: locationId ?? null,
+        teacher_member_id: teacherMemberId ?? null,
+        subscription_id: subscriptionId || null,
       }));
 
       const { error } = await supabase.from("personal_lessons").insert(rows);

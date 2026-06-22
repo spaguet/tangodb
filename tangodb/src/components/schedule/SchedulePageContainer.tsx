@@ -4,20 +4,39 @@ import { useScheduleForWeek } from "../../hooks/useSchedule";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useAccessibleLocations } from "../../hooks/useLocations";
 import { useTeamMembers, memberDisplayName } from "../../hooks/useTeamMembers";
-import { getWeekRange } from "../../lib/scheduleWeek";
+import { usePermissions } from "../../hooks/usePermissions";
+import { useToast } from "../../App";
+import {
+  canAddPersonalFromGrid,
+  canClickEmptyCell,
+  canOfferGroupLessonAdd,
+} from "../../lib/scheduleLessonAccess";
+import { getWeekRange, isPastDate } from "../../lib/scheduleWeek";
 import type { DisplayLesson } from "../../types";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
 import ScheduleToolbar from "./ScheduleToolbar";
 import LocationScheduleSection from "./LocationScheduleSection";
 import LessonInfoPopup from "./LessonInfoPopup";
+import AddLessonTypePopup, { type ScheduleCellPrefill } from "./AddLessonTypePopup";
+import AddGroupLessonForm from "./AddGroupLessonForm";
+import AddPersonalLessonForm from "./AddPersonalLessonForm";
 
 const NO_LOCATION_KEY = "__no_location__";
 
+type AddFlow =
+  | { mode: "type-select"; prefill: ScheduleCellPrefill }
+  | { mode: "group"; prefill: ScheduleCellPrefill }
+  | { mode: "personal"; prefill: ScheduleCellPrefill }
+  | null;
+
 export default function SchedulePageContainer() {
+  const toast = useToast();
+  const { role, can, isReadOnly } = usePermissions();
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => getWeekRange(new Date()).weekStart);
   const [teacherFilter] = useState<string>("");
   const [selectedLesson, setSelectedLesson] = useState<DisplayLesson | null>(null);
+  const [addFlow, setAddFlow] = useState<AddFlow>(null);
 
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
 
@@ -25,6 +44,23 @@ export default function SchedulePageContainer() {
   const locationsQuery = useAccessibleLocations();
   const disciplinesQuery = useDisciplines();
   const teamQuery = useTeamMembers();
+
+  const canAddGroup = canOfferGroupLessonAdd(role, isReadOnly) && can("schedule.write");
+  const canAddPersonal = canAddPersonalFromGrid(role, can, isReadOnly);
+  const canClickEmpty = canAddGroup || canAddPersonal;
+
+  const teacherOptions = useMemo(
+    () =>
+      (teamQuery.data ?? []).filter(
+        (member) =>
+          member.is_active &&
+          (member.role === "teacher" ||
+            member.role === "owner" ||
+            member.role === "director" ||
+            member.role === "admin")
+      ),
+    [teamQuery.data]
+  );
 
   const disciplineMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -67,6 +103,19 @@ export default function SchedulePageContainer() {
     return grouped;
   }, [filteredLessons, locationsQuery.locations]);
 
+  const scheduleSlots = scheduleQuery.data?.slots ?? [];
+  const personalLessonRefs = useMemo(
+    () =>
+      (scheduleQuery.data?.personalLessons ?? []).map((l) => ({
+        id: l.lessonId,
+        date: l.date,
+        timeStart: l.timeStart,
+        timeEnd: l.timeEnd,
+        locationId: l.locationId,
+      })),
+    [scheduleQuery.data?.personalLessons]
+  );
+
   const getLessonTitle = useCallback(
     (lesson: DisplayLesson): string => {
       if (lesson.kind === "group") {
@@ -103,6 +152,40 @@ export default function SchedulePageContainer() {
     setSelectedLesson(lesson);
   }, []);
 
+  const closeAddFlow = useCallback(() => setAddFlow(null), []);
+
+  const handleAddSuccess = useCallback(() => {
+    void scheduleQuery.refetch();
+  }, [scheduleQuery]);
+
+  const handleEmptyCellClick = useCallback(
+    (locationId: string, locationName: string, dateISO: string, dayOfWeek: number, timeStart: string) => {
+      if (!canClickEmptyCell(role, can, isReadOnly, { locationId })) return;
+
+      if (isPastDate(dateISO)) {
+        toast("Нельзя добавить занятие в прошлом", "error");
+        return;
+      }
+
+      const prefill: ScheduleCellPrefill = {
+        locationId,
+        locationName,
+        date: dateISO,
+        dayOfWeek,
+        timeStart,
+      };
+
+      if (canAddGroup && canAddPersonal) {
+        setAddFlow({ mode: "type-select", prefill });
+      } else if (canAddGroup) {
+        setAddFlow({ mode: "group", prefill });
+      } else if (canAddPersonal) {
+        setAddFlow({ mode: "personal", prefill });
+      }
+    },
+    [role, can, isReadOnly, canAddGroup, canAddPersonal, toast]
+  );
+
   const selectedLessonMeta = useMemo(() => {
     if (!selectedLesson) return null;
 
@@ -122,6 +205,10 @@ export default function SchedulePageContainer() {
         : undefined,
     };
   }, [selectedLesson, locationsQuery.locations, disciplineMap, teamMap]);
+
+  const typeSelectPrefill = addFlow?.mode === "type-select" ? addFlow.prefill : null;
+  const groupPrefill = addFlow?.mode === "group" ? addFlow.prefill : null;
+  const personalPrefill = addFlow?.mode === "personal" ? addFlow.prefill : null;
 
   const isLoading =
     scheduleQuery.isLoading ||
@@ -170,12 +257,17 @@ export default function SchedulePageContainer() {
           {locationsQuery.locations.map((location) => (
             <LocationScheduleSection
               key={location.id}
+              locationId={location.id}
               locationName={location.name}
               weekStart={selectedWeekStart}
               lessons={lessonsByLocation.get(location.id) ?? []}
               getLessonTitle={getLessonTitle}
               getLessonSubtitle={getLessonSubtitle}
               onLessonClick={handleLessonClick}
+              canClickEmpty={canClickEmpty}
+              onEmptyCellClick={(dateISO, dayOfWeek, timeStart) =>
+                handleEmptyCellClick(location.id, location.name, dateISO, dayOfWeek, timeStart)
+              }
             />
           ))}
 
@@ -198,6 +290,43 @@ export default function SchedulePageContainer() {
         disciplineName={selectedLessonMeta?.disciplineName}
         teacherName={selectedLessonMeta?.teacherName}
         onClose={() => setSelectedLesson(null)}
+      />
+
+      <AddLessonTypePopup
+        prefill={typeSelectPrefill}
+        role={role}
+        onClose={closeAddFlow}
+        onSelectGroup={() => {
+          if (addFlow?.mode === "type-select") {
+            setAddFlow({ mode: "group", prefill: addFlow.prefill });
+          }
+        }}
+        onSelectPersonal={() => {
+          if (addFlow?.mode === "type-select") {
+            setAddFlow({ mode: "personal", prefill: addFlow.prefill });
+          }
+        }}
+      />
+
+      <AddGroupLessonForm
+        prefill={groupPrefill}
+        disciplines={disciplinesQuery.data ?? []}
+        teacherOptions={teacherOptions}
+        scheduleSlots={scheduleSlots}
+        personalLessons={personalLessonRefs}
+        toast={toast}
+        onClose={closeAddFlow}
+        onSuccess={handleAddSuccess}
+      />
+
+      <AddPersonalLessonForm
+        prefill={personalPrefill}
+        teacherOptions={teacherOptions}
+        scheduleSlots={scheduleSlots}
+        personalLessons={personalLessonRefs}
+        toast={toast}
+        onClose={closeAddFlow}
+        onSuccess={handleAddSuccess}
       />
     </div>
   );

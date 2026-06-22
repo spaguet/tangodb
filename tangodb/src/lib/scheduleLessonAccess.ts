@@ -56,3 +56,30 @@ export function maskClientDisplay(
 export function canShowPaidStatus(role: MemberRole | null): boolean {
   return role === "owner" || role === "director" || role === "admin" || role === "teacher";
 }
+
+export function canOfferGroupLessonAdd(role: MemberRole | null, isReadOnly: boolean): boolean {
+  if (isReadOnly) return false;
+  return role === "owner" || role === "director";
+}
+
+export function canAddPersonalFromGrid(
+  role: MemberRole | null,
+  can: CanFn,
+  isReadOnly: boolean,
+  context?: { disciplineId?: string | null; locationId?: string | null }
+): boolean {
+  if (isReadOnly) return false;
+  return can("personal_lessons.write", context);
+}
+
+export function canClickEmptyCell(
+  role: MemberRole | null,
+  can: CanFn,
+  isReadOnly: boolean,
+  context?: { disciplineId?: string | null; locationId?: string | null }
+): boolean {
+  return (
+    canOfferGroupLessonAdd(role, isReadOnly) ||
+    canAddPersonalFromGrid(role, can, isReadOnly, context)
+  );
+}

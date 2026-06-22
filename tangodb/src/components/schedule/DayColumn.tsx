@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { dowShort, jsDayToIsoDow } from "../../lib/utils";
-import { toISODateLocal } from "../../lib/scheduleWeek";
+import { timeToMinutes, toISODateLocal } from "../../lib/scheduleWeek";
 import type { DisplayLesson } from "../../types";
 import {
   gridHeightPx,
@@ -11,6 +11,7 @@ import {
 import LessonBlock from "./LessonBlock";
 
 interface DayColumnProps {
+  dateISO: string;
   dayOfWeek: number;
   dayNumber: number;
   lessons: DisplayLesson[];
@@ -19,9 +20,18 @@ interface DayColumnProps {
   getLessonTitle: (lesson: DisplayLesson) => string;
   getLessonSubtitle: (lesson: DisplayLesson) => string | undefined;
   onLessonClick?: (lesson: DisplayLesson) => void;
+  onEmptyCellClick?: (dateISO: string, dayOfWeek: number, timeStart: string) => void;
+  canClickEmpty?: boolean;
+}
+
+function isMinuteOccupied(minute: number, lessons: DisplayLesson[]): boolean {
+  return lessons.some(
+    (l) => timeToMinutes(l.timeStart) <= minute && minute < timeToMinutes(l.timeEnd)
+  );
 }
 
 export default function DayColumn({
+  dateISO,
   dayOfWeek,
   dayNumber,
   lessons,
@@ -30,10 +40,25 @@ export default function DayColumn({
   getLessonTitle,
   getLessonSubtitle,
   onLessonClick,
+  onEmptyCellClick,
+  canClickEmpty = false,
 }: DayColumnProps) {
   const positioned = useMemo(() => layoutDayLessons(lessons), [lessons]);
   const gridHeight = gridHeightPx(rangeStartMin, rangeEndMin);
   const rowCount = (rangeEndMin - rangeStartMin) / SLOT_MINUTES;
+
+  const emptySlots = useMemo(() => {
+    if (!canClickEmpty || !onEmptyCellClick) return [];
+    const slots: { top: number; timeStart: string }[] = [];
+    for (let min = rangeStartMin; min < rangeEndMin; min += SLOT_MINUTES) {
+      if (isMinuteOccupied(min, lessons)) continue;
+      slots.push({
+        top: ((min - rangeStartMin) / SLOT_MINUTES) * ROW_HEIGHT_PX,
+        timeStart: formatTimeLabel(min),
+      });
+    }
+    return slots;
+  }, [canClickEmpty, onEmptyCellClick, rangeStartMin, rangeEndMin, lessons]);
 
   const hourLines = useMemo(() => {
     const lines: number[] = [];
@@ -70,6 +95,17 @@ export default function DayColumn({
             key={top}
             className="absolute left-0 right-0 border-t border-slate-200 pointer-events-none"
             style={{ top }}
+          />
+        ))}
+
+        {emptySlots.map(({ top, timeStart }) => (
+          <button
+            key={timeStart}
+            type="button"
+            aria-label={`Добавить занятие ${timeStart}`}
+            onClick={() => onEmptyCellClick?.(dateISO, dayOfWeek, timeStart)}
+            className="absolute left-0 right-0 z-0 hover:bg-indigo-50/60 transition-colors cursor-pointer border-0 bg-transparent p-0"
+            style={{ top, height: ROW_HEIGHT_PX }}
           />
         ))}
 

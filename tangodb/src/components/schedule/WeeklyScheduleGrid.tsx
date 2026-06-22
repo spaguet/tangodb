@@ -14,6 +14,8 @@ interface WeeklyScheduleGridProps {
   getLessonTitle: (lesson: DisplayLesson) => string;
   getLessonSubtitle: (lesson: DisplayLesson) => string | undefined;
   onLessonClick?: (lesson: DisplayLesson) => void;
+  onEmptyCellClick?: (dateISO: string, dayOfWeek: number, timeStart: string) => void;
+  canClickEmpty?: boolean;
 }
 
 export default function WeeklyScheduleGrid({
@@ -22,6 +24,8 @@ export default function WeeklyScheduleGrid({
   getLessonTitle,
   getLessonSubtitle,
   onLessonClick,
+  onEmptyCellClick,
+  canClickEmpty = false,
 }: WeeklyScheduleGridProps) {
   const { start: rangeStartMin, end: rangeEndMin } = useMemo(
     () => computeDisplayRange(lessons),
@@ -72,6 +76,7 @@ export default function WeeklyScheduleGrid({
           {dayColumns.map((col) => (
             <DayColumn
               key={col.dateISO}
+              dateISO={col.dateISO}
               dayOfWeek={col.dayOfWeek}
               dayNumber={col.dayNumber}
               lessons={col.lessons}
@@ -80,6 +85,8 @@ export default function WeeklyScheduleGrid({
               getLessonTitle={getLessonTitle}
               getLessonSubtitle={getLessonSubtitle}
               onLessonClick={onLessonClick}
+              onEmptyCellClick={onEmptyCellClick}
+              canClickEmpty={canClickEmpty}
             />
           ))}
         </div>
