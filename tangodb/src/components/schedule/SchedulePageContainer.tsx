@@ -1,10 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useScheduleForWeek } from "../../hooks/useSchedule";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useAccessibleLocations } from "../../hooks/useLocations";
-import { useTeamMembers, memberDisplayName } from "../../hooks/useTeamMembers";
+import { useTeamMembers, memberDisplayName, memberListLabel } from "../../hooks/useTeamMembers";
 import { usePermissions } from "../../hooks/usePermissions";
+import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
 import {
   canAddPersonalFromGrid,
@@ -34,9 +36,10 @@ type AddFlow =
 
 export default function SchedulePageContainer() {
   const toast = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { role, can, isReadOnly } = usePermissions();
+  const { settings, memberId } = useOrganization();
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => getWeekRange(new Date()).weekStart);
-  const [teacherFilter] = useState<string>("");
   const [selectedLesson, setSelectedLesson] = useState<DisplayLesson | null>(null);
   const [editLesson, setEditLesson] = useState<DisplayLesson | null>(null);
   const [addFlow, setAddFlow] = useState<AddFlow>(null);
@@ -52,6 +55,9 @@ export default function SchedulePageContainer() {
   const canAddPersonal = canAddPersonalFromGrid(role, can, isReadOnly);
   const canClickEmpty = canAddGroup || canAddPersonal;
 
+  const teachersCanViewFullSchedule = settings?.teachers_can_view_full_schedule ?? true;
+  const selfMemberId = memberId;
+
   const teacherOptions = useMemo(
     () =>
       (teamQuery.data ?? []).filter(
@@ -63,6 +69,61 @@ export default function SchedulePageContainer() {
             member.role === "admin")
       ),
     [teamQuery.data]
+  );
+
+  const teacherFilterOptions = useMemo(() => {
+    const scoped =
+      role === "teacher" && !teachersCanViewFullSchedule && selfMemberId
+        ? teacherOptions.filter((member) => member.id === selfMemberId)
+        : teacherOptions;
+
+    return scoped.map((member) => ({
+      id: member.id,
+      label: memberListLabel(member),
+    }));
+  }, [teacherOptions, role, teachersCanViewFullSchedule, selfMemberId]);
+
+  const allowedTeacherFilterIds = useMemo(
+    () => new Set(teacherFilterOptions.map((option) => option.id)),
+    [teacherFilterOptions]
+  );
+
+  const teacherFilter = useMemo(() => {
+    const fromUrl = searchParams.get("teacher") ?? "";
+    if (!fromUrl) return "";
+    return allowedTeacherFilterIds.has(fromUrl) ? fromUrl : "";
+  }, [searchParams, allowedTeacherFilterIds]);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("teacher");
+    if (fromUrl && fromUrl !== teacherFilter) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("teacher");
+          return next;
+        },
+        { replace: true }
+      );
+    }
+  }, [searchParams, teacherFilter, setSearchParams]);
+
+  const handleTeacherFilterChange = useCallback(
+    (teacherId: string) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (teacherId) {
+            next.set("teacher", teacherId);
+          } else {
+            next.delete("teacher");
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
   );
 
   const disciplineMap = useMemo(() => {
@@ -261,7 +322,13 @@ export default function SchedulePageContainer() {
           <CalendarDays className="w-5 h-5 text-indigo-500 shrink-0" />
           <h2 className="text-base font-semibold text-slate-800 tracking-tight">Расписание</h2>
         </div>
-        <ScheduleToolbar weekStart={selectedWeekStart} onWeekChange={setSelectedWeekStart} />
+        <ScheduleToolbar
+          weekStart={selectedWeekStart}
+          onWeekChange={setSelectedWeekStart}
+          teacherFilter={teacherFilter}
+          onTeacherFilterChange={handleTeacherFilterChange}
+          teacherFilterOptions={teacherFilterOptions}
+        />
       </div>
 
       {!hasLocations && noLocationLessons.length === 0 && !hasAnyLessons ? (

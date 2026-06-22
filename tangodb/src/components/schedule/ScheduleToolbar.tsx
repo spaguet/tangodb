@@ -1,14 +1,29 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
-import { getWeekRange, toISODateLocal, formatWeekRangeLabel } from "../../lib/scheduleWeek";
+import { getWeekRange, formatWeekRangeLabel } from "../../lib/scheduleWeek";
+import AppSelect from "../ui/AppSelect";
 import WeekPickerPopover from "./WeekPickerPopover";
+
+export interface TeacherFilterOption {
+  id: string;
+  label: string;
+}
 
 interface ScheduleToolbarProps {
   weekStart: Date;
   onWeekChange: (weekStart: Date) => void;
+  teacherFilter: string;
+  onTeacherFilterChange: (teacherId: string) => void;
+  teacherFilterOptions: TeacherFilterOption[];
 }
 
-export default function ScheduleToolbar({ weekStart, onWeekChange }: ScheduleToolbarProps) {
+export default function ScheduleToolbar({
+  weekStart,
+  onWeekChange,
+  teacherFilter,
+  onTeacherFilterChange,
+  teacherFilterOptions,
+}: ScheduleToolbarProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const { weekEnd } = useMemo(() => getWeekRange(weekStart), [weekStart]);
   const label = formatWeekRangeLabel(weekStart, weekEnd);
@@ -85,6 +100,22 @@ export default function ScheduleToolbar({ weekStart, onWeekChange }: ScheduleToo
           </>
         )}
       </div>
+
+      {teacherFilterOptions.length > 0 && (
+        <AppSelect
+          label="Преподаватель"
+          value={teacherFilter}
+          onChange={(e) => onTeacherFilterChange(e.target.value)}
+          className="min-w-[160px] sm:min-w-[200px]"
+        >
+          <option value="">Все преподаватели</option>
+          {teacherFilterOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </AppSelect>
+      )}
     </div>
   );
 }
