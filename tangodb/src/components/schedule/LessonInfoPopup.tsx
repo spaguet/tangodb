@@ -235,9 +235,7 @@ export default function LessonInfoPopup({
                     <button
                       type="button"
                       onClick={() => onEdit?.(lesson)}
-                      disabled={!onEdit}
-                      title={onEdit ? undefined : "Редактирование будет доступно позже"}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
                     >
                       <Edit className="w-3.5 h-3.5" />
                       Изменить

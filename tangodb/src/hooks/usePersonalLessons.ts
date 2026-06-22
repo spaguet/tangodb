@@ -366,7 +366,10 @@ export function useUpdatePersonalLesson() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
+      if (result.success) {
+        void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
+        void queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      }
     },
   });
 }

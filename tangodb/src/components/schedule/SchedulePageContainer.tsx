@@ -21,6 +21,7 @@ import LessonInfoPopup from "./LessonInfoPopup";
 import AddLessonTypePopup, { type ScheduleCellPrefill } from "./AddLessonTypePopup";
 import AddGroupLessonForm from "./AddGroupLessonForm";
 import AddPersonalLessonForm from "./AddPersonalLessonForm";
+import EditLessonPopup from "./EditLessonPopup";
 
 const NO_LOCATION_KEY = "__no_location__";
 
@@ -36,6 +37,7 @@ export default function SchedulePageContainer() {
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => getWeekRange(new Date()).weekStart);
   const [teacherFilter] = useState<string>("");
   const [selectedLesson, setSelectedLesson] = useState<DisplayLesson | null>(null);
+  const [editLesson, setEditLesson] = useState<DisplayLesson | null>(null);
   const [addFlow, setAddFlow] = useState<AddFlow>(null);
 
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
@@ -186,17 +188,21 @@ export default function SchedulePageContainer() {
     [role, can, isReadOnly, canAddGroup, canAddPersonal, toast]
   );
 
+  const resolveLocationName = useCallback(
+    (lesson: DisplayLesson | null) => {
+      if (!lesson) return undefined;
+      const locationKey = lesson.locationId ?? NO_LOCATION_KEY;
+      if (locationKey === NO_LOCATION_KEY) return "Без локации";
+      return locationsQuery.locations.find((l) => l.id === locationKey)?.name;
+    },
+    [locationsQuery.locations]
+  );
+
   const selectedLessonMeta = useMemo(() => {
     if (!selectedLesson) return null;
 
-    const locationKey = selectedLesson.locationId ?? NO_LOCATION_KEY;
-    const locationName =
-      locationKey === NO_LOCATION_KEY
-        ? "Без локации"
-        : locationsQuery.locations.find((l) => l.id === locationKey)?.name;
-
     return {
-      locationName,
+      locationName: resolveLocationName(selectedLesson),
       disciplineName: selectedLesson.disciplineId
         ? disciplineMap.get(selectedLesson.disciplineId)
         : undefined,
@@ -204,7 +210,9 @@ export default function SchedulePageContainer() {
         ? teamMap.get(selectedLesson.teacherMemberId)
         : undefined,
     };
-  }, [selectedLesson, locationsQuery.locations, disciplineMap, teamMap]);
+  }, [selectedLesson, resolveLocationName, disciplineMap, teamMap]);
+
+  const editLessonMeta = useMemo(() => resolveLocationName(editLesson), [editLesson, resolveLocationName]);
 
   const typeSelectPrefill = addFlow?.mode === "type-select" ? addFlow.prefill : null;
   const groupPrefill = addFlow?.mode === "group" ? addFlow.prefill : null;
@@ -290,6 +298,22 @@ export default function SchedulePageContainer() {
         disciplineName={selectedLessonMeta?.disciplineName}
         teacherName={selectedLessonMeta?.teacherName}
         onClose={() => setSelectedLesson(null)}
+        onEdit={(lesson) => {
+          setSelectedLesson(null);
+          setEditLesson(lesson);
+        }}
+      />
+
+      <EditLessonPopup
+        lesson={editLesson}
+        locationName={editLessonMeta}
+        disciplines={disciplinesQuery.data ?? []}
+        teacherOptions={teacherOptions}
+        scheduleSlots={scheduleSlots}
+        personalLessons={personalLessonRefs}
+        toast={toast}
+        onClose={() => setEditLesson(null)}
+        onSuccess={handleAddSuccess}
       />
 
       <AddLessonTypePopup
