@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-22 — Расписание Промпт 6: ScheduleDebtorsBlock (операционные долги paid=no, без financial_debtors_v); useScheduleDebtors; суммы только owner/director; красная рамка в LessonBlock (hasDebt).
 2026-06-22 — Расписание Промпт 5: EditLessonPopup (group → useEditGroupSchedule с versioning, personal → date/time/discipline/teacher); подключение из LessonInfoPopup; invalidate schedule при update personal.
 2026-06-22 — Расписание Промпт 4: попапы добавления (AddLessonTypePopup, AddGroupLessonForm, AddPersonalLessonForm); клик по пустой ячейке; lib/scheduleConflicts, scheduleTime, TimeSelect; useAddPersonalLessons requireScope для schedule UI.
 2026-06-22 — Расписание Промпт 2: read-only недельная сетка — components/schedule/* (WeeklyScheduleGrid, ScheduleToolbar, WeekPickerPopover, LocationScheduleSection, LessonBlock); SchedulePage → SchedulePageContainer; lib/scheduleColors, scheduleLayout; секция «Без локации» для legacy personal.

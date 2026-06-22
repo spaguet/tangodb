@@ -22,6 +22,7 @@ import AddLessonTypePopup, { type ScheduleCellPrefill } from "./AddLessonTypePop
 import AddGroupLessonForm from "./AddGroupLessonForm";
 import AddPersonalLessonForm from "./AddPersonalLessonForm";
 import EditLessonPopup from "./EditLessonPopup";
+import ScheduleDebtorsBlock from "./ScheduleDebtorsBlock";
 
 const NO_LOCATION_KEY = "__no_location__";
 
@@ -80,6 +81,14 @@ export default function SchedulePageContainer() {
     }
     return map;
   }, [teamQuery.data]);
+
+  const locationMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const loc of locationsQuery.locations) {
+      map.set(loc.id, loc.name);
+    }
+    return map;
+  }, [locationsQuery.locations]);
 
   const filteredLessons = useMemo(() => {
     const lessons = scheduleQuery.data?.lessons ?? [];
@@ -291,6 +300,14 @@ export default function SchedulePageContainer() {
           )}
         </div>
       )}
+
+      <ScheduleDebtorsBlock
+        weekStart={selectedWeekStart}
+        weekEnd={weekEnd}
+        disciplineMap={disciplineMap}
+        teamMap={teamMap}
+        locationMap={locationMap}
+      />
 
       <LessonInfoPopup
         lesson={selectedLesson}
