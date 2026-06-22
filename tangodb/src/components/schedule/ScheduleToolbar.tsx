@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
-import { getWeekRange, formatWeekRangeLabel } from "../../lib/scheduleWeek";
+import { getWeekRange, formatWeekRangeLabel, toISODateLocal } from "../../lib/scheduleWeek";
 import AppSelect from "../ui/AppSelect";
 import WeekPickerPopover from "./WeekPickerPopover";
 
@@ -27,6 +27,10 @@ export default function ScheduleToolbar({
   const [pickerOpen, setPickerOpen] = useState(false);
   const { weekEnd } = useMemo(() => getWeekRange(weekStart), [weekStart]);
   const label = formatWeekRangeLabel(weekStart, weekEnd);
+  const isCurrentWeek = useMemo(() => {
+    const { weekStart: current } = getWeekRange(new Date());
+    return toISODateLocal(weekStart) === toISODateLocal(current);
+  }, [weekStart]);
 
   const shiftWeek = (delta: number) => {
     const next = new Date(weekStart);
@@ -51,13 +55,18 @@ export default function ScheduleToolbar({
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        <button
-          type="button"
-          onClick={goToCurrentWeek}
-          className="min-w-[140px] sm:min-w-[200px] px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer text-center"
-        >
-          {label}
-        </button>
+        <div className="flex flex-col items-center gap-0.5 min-w-[140px] sm:min-w-[200px] px-3 py-1">
+          <span className="text-sm font-semibold text-slate-800 text-center">{label}</span>
+          {!isCurrentWeek && (
+            <button
+              type="button"
+              onClick={goToCurrentWeek}
+              className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+            >
+              Текущая неделя
+            </button>
+          )}
+        </div>
 
         <button
           type="button"

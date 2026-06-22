@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-22 — Расписание: ссылка «Текущая неделя» в тулбаре при просмотре другой недели (один клик — возврат к текущей).
 2026-06-22 — fix: SellPackageModal поверх PayPersonalLessonModal (stackLayer above, z-[70]).
 2026-06-22 — fix: PayPersonalLessonModal — выбор «Один урок» / «Списать с пакета» сбрасывался из-за useEffect на lessonTariffs.
 2026-06-22 — Расписание: sky/indigo для personal/group; PayPersonalLessonModal (оплата урока / списание с пакета); все неоплаченные внизу с кнопкой «Оплатить».
