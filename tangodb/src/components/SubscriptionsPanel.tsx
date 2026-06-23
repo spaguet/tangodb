@@ -29,7 +29,7 @@ import {
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
 import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitleRu } from "../lib/utils";
-import { filterActiveSubscriptions, filterHistorySubscriptions } from "../lib/subscriptionFilters";
+import { filterActiveSubscriptions, filterHistorySubscriptions, ALL_LOCATIONS_KEY } from "../lib/subscriptionFilters";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules } from "../lib/orgModules";
 import { useSettings } from "../settings/SettingsProvider";
@@ -453,7 +453,7 @@ export default function SubscriptionsPanel({
               value={activeLocationFilter}
               onChange={(e) => setActiveLocationFilter(e.target.value)}
             >
-              <option value="">Все локации</option>
+              <option value="">Все</option>
               {locations.map((loc) => (
                 <option key={loc.id} value={loc.id}>
                   {loc.name}
@@ -764,6 +764,7 @@ export default function SubscriptionsPanel({
               onChange={(e) => setHistoryLocationId(e.target.value)}
             >
               <option value="">Не выбрана</option>
+              <option value={ALL_LOCATIONS_KEY}>Все</option>
               {locations.map((loc) => (
                 <option key={loc.id} value={loc.id}>
                   {loc.name}

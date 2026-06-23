@@ -1,6 +1,12 @@
 import type { Client, Price, Subscription } from "../types";
 import { isDateInYear, isDateInYearMonth } from "./utils";
 
+export const ALL_LOCATIONS_KEY = "__all__";
+
+export function isAllLocationsFilter(locationId: string): boolean {
+  return locationId === ALL_LOCATIONS_KEY;
+}
+
 export function getSubscriptionLocationId(
   sub: Pick<Subscription, "priceId">,
   priceMap: Record<string, Price>
@@ -73,7 +79,7 @@ export function filterHistorySubscriptions(
     if (opts.disciplineId) {
       pool = pool.filter((s) => s.disciplineId === opts.disciplineId);
     }
-    if (opts.locationId) {
+    if (opts.locationId && !isAllLocationsFilter(opts.locationId)) {
       pool = pool.filter((s) => getSubscriptionLocationId(s, opts.priceMap) === opts.locationId);
     }
     pool = pool.filter((s) => isDateInYearMonth(s.activationDate, opts.month));
