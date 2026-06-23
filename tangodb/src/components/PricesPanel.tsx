@@ -311,8 +311,14 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     }
 
     let lessons = 1;
+    let billingModel: Price["billingModel"] = "lesson_count";
     if (section === "group") {
-      lessons = parseInt(groupForm.lessons, 10);
+      if (groupForm.format === "monthly_unlimited") {
+        lessons = 1;
+        billingModel = "monthly_unlimited";
+      } else {
+        lessons = parseInt(groupForm.lessons, 10);
+      }
     } else if (section === "privatePackage") {
       lessons = parseInt(privatePackageForm.lessons, 10);
     }
@@ -341,6 +347,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         return;
       }
       priceType = resolved.type;
+      billingModel = resolved.billingModel;
     } else if (section === "privateLesson") {
       priceType = "personal_solo";
     } else {
@@ -356,6 +363,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       category: section === "group" ? "group" : "private",
       locationId: bindToLocation ? formLocationId : null,
       disciplineId: bindToDiscipline ? formDisciplineId : null,
+      billingModel,
     });
     setCreatingSection(null);
 
@@ -773,6 +781,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                       >
                         <option value="solo">Соло</option>
                         {pairSubscriptionsEnabled && <option value="pair">Пара</option>}
+                        <option value="monthly_unlimited">Месячный безлимит</option>
                       </AppSelect>
                     </div>
                     <div className="field-stack">
@@ -793,6 +802,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                         className={`${inputCls} resize-none`}
                       />
                     </div>
+                    {groupForm.format !== "monthly_unlimited" && (
                     <div className="field-stack">
                       <label className={labelCls}>Количество уроков</label>
                       <input
@@ -803,6 +813,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                         className={inputCls}
                       />
                     </div>
+                    )}
                     <div className="field-stack">
                       <label className={labelCls}>Стоимость</label>
                       <div className="relative">

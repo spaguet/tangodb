@@ -24,6 +24,15 @@ export interface Discipline {
   createdAt?: string;
 }
 
+export type BillingModel = "lesson_count" | "monthly_unlimited";
+
+export interface ScheduleGroup {
+  id: string;
+  name: string;
+  disciplineId: string;
+  locationId: string | null;
+}
+
 export interface ScheduleSlot {
   id?: string;
   dayOfWeek: number;
@@ -31,6 +40,7 @@ export interface ScheduleSlot {
   timeEnd: string;
   disciplineId?: string | null;
   groupName?: string;
+  scheduleGroupId?: string | null;
   locationId?: string | null;
   teacherMemberId?: string | null;
   validFrom: string;
@@ -48,6 +58,7 @@ export interface GroupDisplayLesson {
   dayOfWeek: number;
   disciplineId: string | null;
   groupName?: string;
+  scheduleGroupId: string | null;
   locationId: string | null;
   teacherMemberId: string | null;
 }
@@ -80,12 +91,11 @@ export interface Price {
   category: PriceCategory;
   locationId?: string | null;
   disciplineId?: string | null;
+  billingModel?: BillingModel;
 }
 
 export interface SubscriptionGroupLink {
-  groupName: string;
-  disciplineId: string;
-  locationId: string | null;
+  scheduleGroupId: string;
 }
 
 export interface Subscription {
@@ -103,6 +113,8 @@ export interface Subscription {
   disciplineId?: string | null;
   priceId?: string | null;
   category: "group" | "private";
+  billingModel: BillingModel;
+  expiresAt?: string | null;
   groups?: SubscriptionGroupLink[];
 }
 
@@ -110,6 +122,7 @@ export interface AttendanceRecord {
   id?: string;
   date: string;
   subscriptionId: string;
+  scheduleGroupId: string;
   clientDisplay: string;
   attendanceStatus: "present" | "absent" | "freeze" | "excused";
 }
@@ -173,6 +186,9 @@ export interface SubForDate {
   lessonsTotal: number;
   freezeUsed: number;
   activationDate: string;
+  billingModel: BillingModel;
+  expiresAt?: string | null;
+  daysLeft?: number;
   currentStatus: "present" | "absent" | "freeze" | "excused" | null;
   canFreeze: boolean;
   priceId?: string | null;

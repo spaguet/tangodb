@@ -90,6 +90,7 @@ export function expandSlotsToWeek(
         dayOfWeek: slot.dayOfWeek,
         disciplineId: slot.disciplineId ?? null,
         groupName: slot.groupName,
+        scheduleGroupId: slot.scheduleGroupId ?? null,
         locationId: slot.locationId ?? null,
         teacherMemberId: slot.teacherMemberId ?? null,
       });

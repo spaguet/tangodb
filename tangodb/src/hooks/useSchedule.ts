@@ -20,6 +20,7 @@ const mapScheduleSlot = (row: Record<string, unknown>): ScheduleSlot => ({
   timeEnd: normalizeTime((row.time_end as string) || "21:00"),
   disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
   groupName: ((row.group_name as string) || "").trim() || undefined,
+  scheduleGroupId: row.class_id != null ? String(row.class_id) : null,
   locationId: row.location_id != null ? String(row.location_id) : null,
   teacherMemberId: row.teacher_member_id != null ? String(row.teacher_member_id) : null,
   validFrom: String(row.valid_from ?? "2000-01-01").slice(0, 10),

@@ -12,6 +12,17 @@
 
 ## Записи
 
+### Schedule groups on `classes.id` + monthly unlimited billing
+
+- **Дата:** 2026-06-23
+- **Решение:** Каноническая сущность группового урока — таблица `classes` (UUID). `schedule_slots.class_id` и `subscription_groups.schedule_group_id` ссылаются на неё. Посещаемость уникальна по `(date, subscription_id, schedule_group_id)`. Месячный безлимит — `billing_model = monthly_unlimited'`, `expires_at = activation + 1 month`, без списания уроков и без freeze/excused.
+- **Контекст:** Дублирование `group_name` vs `classes`/`class_id`; одна отметка на абонемент в день не покрывала посещение нескольких групп; нужен новый тип абонемента.
+- **Альтернативы:**
+  1. Оставить составной ключ `location::groupName::discipline` — отклонено: нет стабильного id, сложно для attendance FK.
+  2. Новая таблица `schedule_groups` параллельно `classes` — отклонено: дублирование; `classes` уже в v2-схеме.
+  3. Отдельный `subscription.type = monthly_unlimited` без `billing_model` — отклонено: смешивает формат участия (solo/pair) и модель оплаты.
+- **Почему так:** Один источник правды для групп; независимые отметки в журналах; расширяемость (лимиты, teacher scope по class_id уже в RLS).
+
 ### R0 — Согласование целевой RBAC-модели (фаза R0)
 
 - **Дата:** 2026-06-20

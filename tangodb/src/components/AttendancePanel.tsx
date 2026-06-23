@@ -22,7 +22,6 @@ import {
   useSubsForDate,
 } from "../hooks/useAttendance";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
-import { scheduleGroupKey } from "../lib/scheduleGroups";
 import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
 import {
   getConnectionBlockReason,
@@ -43,7 +42,9 @@ import {
   formatCurrency,
   formatDayMonthRu,
   formatMonthTitleRu,
+  getSubscriptionDaysLeft,
   getSubscriptionTariffLabel,
+  isMonthlyUnlimitedSubscription,
   jsDayToIsoDow,
   pluralizeRu,
 } from "../lib/utils";
@@ -104,8 +105,7 @@ type DayLessonEntry =
       timeEnd: string;
       label: string;
       disciplineId?: string | null;
-      groupName?: string;
-      locationId?: string | null;
+      scheduleGroupId?: string | null;
     }
   | { kind: "personal"; key: string; start: string; lesson: PersonalLesson; label: string };
 
@@ -227,19 +227,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const dayScheduleEntries = useMemo((): DayLessonEntry[] => {
     const entries: DayLessonEntry[] = [
-      ...groupLessonsForDay.map((slot) => ({
+      ...groupLessonsForDay
+        .filter((slot) => slot.scheduleGroupId)
+        .map((slot) => ({
         kind: "group" as const,
         start: slot.time,
-        key: `g-${slot.date}|${slot.time}|${scheduleGroupKey({
-          locationId: slot.locationId ?? selectedLocationId,
-          groupName: slot.groupName,
-          disciplineId: slot.disciplineId,
-        })}`,
+        key: `g-${slot.date}|${slot.time}|${slot.scheduleGroupId}`,
         time: slot.time,
         timeEnd: slot.timeEnd,
         disciplineId: slot.disciplineId ?? null,
-        groupName: slot.groupName,
-        locationId: slot.locationId ?? selectedLocationId,
+        scheduleGroupId: slot.scheduleGroupId ?? null,
         label: slot.groupName
           ? `${slot.groupName} · ${slot.time} – ${slot.timeEnd}`
           : `Групповой урок · ${slot.time} – ${slot.timeEnd}`,
@@ -253,19 +250,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       })),
     ];
     return entries.sort((a, b) => a.start.localeCompare(b.start));
-  }, [groupLessonsForDay, personalForDay, selectedLocationId]);
+  }, [groupLessonsForDay, personalForDay]);
 
   const subsOptions = useMemo(() => {
     if (!selectedLesson) return undefined;
     if (selectedLesson.kind === "group") {
+      if (!selectedLesson.scheduleGroupId) return { subscriptionIds: [] as string[] };
       return {
         category: "group" as const,
         disciplineId: selectedLesson.disciplineId ?? null,
-        groupKey: scheduleGroupKey({
-          locationId: selectedLesson.locationId ?? selectedLocationId,
-          groupName: selectedLesson.groupName,
-          disciplineId: selectedLesson.disciplineId,
-        }),
+        scheduleGroupId: selectedLesson.scheduleGroupId,
         groupsBySubId,
       };
     }
@@ -273,7 +267,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       return { subscriptionIds: [selectedLesson.lesson.subscriptionId] };
     }
     return { subscriptionIds: [] as string[] };
-  }, [selectedLesson, selectedLocationId, groupsBySubId]);
+  }, [selectedLesson, groupsBySubId]);
 
   const { subs: modalSubs = [], isLoading: subsLoading, isError: subsError, error: subsErr } = useSubsForDate(
     selectedLesson ? selectedDate : undefined,
@@ -361,7 +355,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       return;
     }
 
-    if (status === "freeze") {
+    if (status === "freeze" && !isMonthlyUnlimitedSubscription(student)) {
       if (!canApplyFreeze(student.lessonsTotal, student.freezeUsed, freezePolicy)) {
         toast(freezeUnavailableMessage(freezePolicy), "error");
         return;
@@ -374,12 +368,20 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
     const disciplineId =
       selectedLesson?.kind === "group" ? selectedLesson.disciplineId ?? null : null;
+    const scheduleGroupId =
+      selectedLesson?.kind === "group" ? selectedLesson.scheduleGroupId ?? null : null;
+
+    if (!scheduleGroupId) {
+      toast("Не удалось определить групповой урок.", "error");
+      return;
+    }
 
     const res = await markAttendance.mutateAsync({
       dateStr: selectedDate,
       subId,
       status,
       disciplineId,
+      scheduleGroupId,
     });
     if (!res.success) {
       toast(res.error || "Не удалось сохранить отметку", "error");
@@ -415,12 +417,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     toast("Списки посещений обновлены", "info");
   };
 
-  const renderAttendanceRow = (st: SubForDate, showFreeze: boolean) => {
-    const hasLowCredits = st.lessonsLeft <= 2;
+  const renderAttendanceRow = (st: SubForDate, showExtendedMarks: boolean) => {
+    const isMonthly = isMonthlyUnlimitedSubscription(st);
+    const daysLeft = isMonthly ? getSubscriptionDaysLeft(st.expiresAt, selectedDate) : null;
+    const hasLowCredits = isMonthly ? (daysLeft ?? 0) <= 2 : st.lessonsLeft <= 2;
     const fullname = [st.client1, st.client2, st.client3].filter(Boolean).join(" & ");
     const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
     const tariffLabel = getSubscriptionTariffLabel(st, prices);
     const connectionTitle = getConnectionBlockReason(connectionState);
+    const showFreeze = showExtendedMarks && !isMonthly;
+    const showExcused = showExtendedMarks && !isMonthly;
 
     return (
       <div
@@ -432,9 +438,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <div className="space-y-0.5">
             <h4 className="text-sm font-semibold text-slate-800 leading-tight">{fullname}</h4>
             <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400 font-sans">
-              <span>Баланс:</span>
+              <span>{isMonthly ? "Осталось:" : "Баланс:"}</span>
               <strong className={`font-semibold ${hasLowCredits ? "text-rose-600" : "text-slate-700"}`}>
-                {st.lessonsLeft} из {st.lessonsTotal}
+                {isMonthly
+                  ? `${daysLeft ?? 0} ${pluralizeRu(daysLeft ?? 0, ["день", "дня", "дней"])}`
+                  : `${st.lessonsLeft} из ${st.lessonsTotal}`}
               </strong>
               <span>· с {st.activationDate}</span>
             </div>
@@ -446,7 +454,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             type="button"
             onClick={() => handleMark(st.subId, "present", st)}
             disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
-            title={connectionTitle ?? "Пришёл — Списать урок с абонемента"}
+            title={connectionTitle ?? (isMonthly ? "Пришёл" : "Пришёл — Списать урок с абонемента")}
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "present"
                 ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
@@ -461,7 +469,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             type="button"
             onClick={() => handleMark(st.subId, "absent", st)}
             disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
-            title={connectionTitle ?? "Не пришёл — Списать урок с абонемента"}
+            title={connectionTitle ?? (isMonthly ? "Не пришёл" : "Не пришёл — Списать урок с абонемента")}
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "absent"
                 ? "bg-rose-600 border-rose-600 text-white shadow-xs"
@@ -496,9 +504,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => handleMark(st.subId, "excused", st)}
+          {showExcused && (
+            <button
+              type="button"
+              onClick={() => handleMark(st.subId, "excused", st)}
             disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
             title={connectionTitle ?? "Уважит. — Не списывать урок с абонемента"}
             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
@@ -510,6 +519,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             <ShieldCheck className="w-3.5 h-3.5" />
             Уважит.
           </button>
+          )}
         </div>
       </div>
     );

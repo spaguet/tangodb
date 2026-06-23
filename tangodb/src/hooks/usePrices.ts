@@ -15,6 +15,7 @@ const mapPrice = (row: Record<string, unknown>): Price => ({
   category: row.category as PriceCategory,
   locationId: row.location_id != null ? String(row.location_id) : null,
   disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
+  billingModel: (row.billing_model as Price["billingModel"]) || "lesson_count",
 });
 
 export function usePrices() {
@@ -95,6 +96,7 @@ export function useCreatePrice() {
       category,
       locationId,
       disciplineId,
+      billingModel,
     }: {
       type: string;
       lessons: number;
@@ -104,6 +106,7 @@ export function useCreatePrice() {
       category: PriceCategory;
       locationId?: string | null;
       disciplineId?: string | null;
+      billingModel?: Price["billingModel"];
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "Организация не выбрана" };
@@ -121,6 +124,7 @@ export function useCreatePrice() {
           category,
           location_id: locationId ?? null,
           discipline_id: disciplineId ?? null,
+          billing_model: billingModel ?? "lesson_count",
         })
         .select("*")
         .single();

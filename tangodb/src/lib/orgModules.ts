@@ -4,7 +4,7 @@ import type { PriceTariffRef } from "./utils";
 
 export const DEFAULT_ORG_MODULES: OrgModules = PRESET_MODULES.dance_school;
 
-export type GroupParticipantFormat = "solo" | "pair";
+export type GroupParticipantFormat = "solo" | "pair" | "monthly_unlimited";
 export type PrivatePackageFormat = "solo" | "pair" | "trio";
 
 export function isGroupPairPriceType(type: string): boolean {
@@ -43,10 +43,13 @@ export function filterPrivatePackageTariffsByModules<T extends PriceTariffRef>(
 export function resolveGroupPriceType(
   participant: GroupParticipantFormat,
   lessons: number
-): { ok: true; type: string } | { ok: false; error: string } {
-  if (participant === "solo") return { ok: true, type: "solo" };
-  if (lessons === 4) return { ok: true, type: "pair_hm" };
-  if (lessons === 8) return { ok: true, type: "pair_m1" };
+): { ok: true; type: string; billingModel: "lesson_count" | "monthly_unlimited" } | { ok: false; error: string } {
+  if (participant === "monthly_unlimited") {
+    return { ok: true, type: "monthly_unlimited", billingModel: "monthly_unlimited" };
+  }
+  if (participant === "solo") return { ok: true, type: "solo", billingModel: "lesson_count" };
+  if (lessons === 4) return { ok: true, type: "pair_hm", billingModel: "lesson_count" };
+  if (lessons === 8) return { ok: true, type: "pair_m1", billingModel: "lesson_count" };
   return { ok: false, error: "Парный абонемент: укажите 4 или 8 уроков." };
 }
 

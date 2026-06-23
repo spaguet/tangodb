@@ -1,9 +1,12 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import { formatClientName, normalizeSubscriptionPairMonth } from "../lib/utils";
-import type { ActiveSubscription, Subscription } from "../types";
-import { parseScheduleGroupKey } from "../lib/scheduleGroups";
+import {
+  computeMonthlyExpiresAt,
+  formatClientName,
+  normalizeSubscriptionPairMonth,
+} from "../lib/utils";
+import type { ActiveSubscription, BillingModel, Subscription } from "../types";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { isRestrictedReceptionAdmin } from "../lib/permissions";
 import { useClientDirectory } from "./useClients";
@@ -31,6 +34,8 @@ const mapSubscription = (row: Record<string, unknown>, maskFinancial: boolean): 
       ? String(row.price_id)
       : null,
   category: (row.category as "group" | "private") || "group",
+  billingModel: (row.billing_model as BillingModel) || "lesson_count",
+  expiresAt: row.expires_at != null ? String(row.expires_at).slice(0, 10) : null,
 });
 
 export function useSubscriptions(options?: { enabled?: boolean }) {
@@ -117,15 +122,19 @@ export function useAddSubscription() {
       disciplineId: string;
       priceId?: string | null;
       category?: "group" | "private";
-      groupKeys?: string[];
+      billingModel?: BillingModel;
+      scheduleGroupIds?: string[];
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "Организация не выбрана" };
       }
 
+      const billingModel = sub.billingModel ?? "lesson_count";
+      const isMonthly = billingModel === "monthly_unlimited";
       const id = crypto.randomUUID();
       const subscriptionType = sub.type.trim();
       const pairMonth = normalizeSubscriptionPairMonth(subscriptionType, sub.pairMonth);
+      const expiresAt = isMonthly ? computeMonthlyExpiresAt(sub.activationDate) : null;
 
       const { error } = await supabase.from("subscriptions").insert({
         id,
@@ -134,8 +143,8 @@ export function useAddSubscription() {
         client_id1: sub.clientId1,
         client_id2: sub.clientId2 || null,
         client_id3: sub.clientId3 || null,
-        lessons_total: sub.lessonsTotal,
-        lessons_left: sub.lessonsTotal,
+        lessons_total: isMonthly ? 0 : sub.lessonsTotal,
+        lessons_left: isMonthly ? 0 : sub.lessonsTotal,
         freeze_used: 0,
         activation_date: sub.activationDate,
         status: "active",
@@ -143,21 +152,18 @@ export function useAddSubscription() {
         discipline_id: sub.disciplineId,
         price_id: sub.priceId ?? null,
         category: sub.category ?? "group",
+        billing_model: billingModel,
+        expires_at: expiresAt,
       });
 
       if (error) return { success: false as const, error: error.message };
 
-      if ((sub.groupKeys?.length ?? 0) > 0) {
-        const groupRows = sub.groupKeys!.map((key) => {
-          const parsed = parseScheduleGroupKey(key);
-          return {
-            organization_id: organizationId,
-            subscription_id: id,
-            group_name: parsed.groupName,
-            discipline_id: parsed.disciplineId ?? sub.disciplineId,
-            location_id: parsed.locationId,
-          };
-        });
+      if ((sub.scheduleGroupIds?.length ?? 0) > 0) {
+        const groupRows = sub.scheduleGroupIds!.map((scheduleGroupId) => ({
+          organization_id: organizationId,
+          subscription_id: id,
+          schedule_group_id: scheduleGroupId,
+        }));
 
         const { error: groupsError } = await supabase.from("subscription_groups").insert(groupRows);
         if (groupsError) {

@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { reportClientError } from "../lib/reportClientError";
-import { formatClientName, jsDayToIsoDow } from "../lib/utils";
+import { formatClientName, getSubscriptionDaysLeft, isMonthlyUnlimitedSubscription, jsDayToIsoDow, subscriptionIsActiveForDate } from "../lib/utils";
 import {
   canApplyFreeze,
   DEFAULT_FREEZE_POLICY,
@@ -31,6 +31,7 @@ const mapAttendanceRecord = (row: Record<string, unknown>): AttendanceRecord => 
   id: row.id != null ? String(row.id) : undefined,
   date: String(row.date ?? "").slice(0, 10),
   subscriptionId: row.subscription_id as string,
+  scheduleGroupId: row.schedule_group_id as string,
   clientDisplay: row.client_display as string,
   attendanceStatus: row.attendance_status as "present" | "absent" | "freeze" | "excused",
 });
@@ -40,6 +41,7 @@ export type ScheduleDateEntry = {
   time: string;
   timeEnd: string;
   groupName?: string;
+  scheduleGroupId?: string | null;
   disciplineId?: string | null;
   locationId?: string | null;
 };
@@ -81,6 +83,7 @@ export function computeScheduleDatesForMonth(
           time: slot.time,
           timeEnd: slot.timeEnd || "21:00",
           groupName: slot.groupName,
+          scheduleGroupId: slot.scheduleGroupId ?? null,
           disciplineId: slot.disciplineId ?? null,
           locationId: slot.locationId ?? null,
         });
@@ -100,7 +103,7 @@ export function computeSubsForDate(
     category?: "group" | "private";
     subscriptionIds?: string[];
     disciplineId?: string | null;
-    groupKey?: string | null;
+    scheduleGroupId?: string | null;
     groupsBySubId?: Record<string, SubscriptionGroupLink[]>;
   },
   freezePolicy: FreezePolicy = DEFAULT_FREEZE_POLICY
@@ -108,16 +111,17 @@ export function computeSubsForDate(
   const clientMap = Object.fromEntries(clients.map((c) => [c.id, c]));
   const idFilter = options?.subscriptionIds ? new Set(options.subscriptionIds) : null;
   const disciplineFilter = options?.disciplineId ?? null;
+  const scheduleGroupId = options?.scheduleGroupId ?? null;
 
   return subscriptions
     .filter((s) => {
-      if (s.status !== "active" || s.activationDate > dateStr || s.lessonsLeft <= 0) return false;
+      if (!subscriptionIsActiveForDate(s, dateStr)) return false;
       if (options?.category && s.category !== options.category) return false;
       if (idFilter && !idFilter.has(s.id)) return false;
       if (disciplineFilter != null && s.disciplineId !== disciplineFilter) return false;
       if (
-        options?.groupKey &&
-        !subscriptionMatchesScheduleGroup(s.id, options.groupKey, options.groupsBySubId ?? {})
+        scheduleGroupId &&
+        !subscriptionMatchesScheduleGroup(s.id, scheduleGroupId, options?.groupsBySubId ?? {})
       ) {
         return false;
       }
@@ -127,7 +131,13 @@ export function computeSubsForDate(
       const c1 = clientMap[s.clientId1];
       const c2 = s.clientId2 ? clientMap[s.clientId2] : null;
       const c3 = s.clientId3 ? clientMap[s.clientId3] : null;
-      const existing = attendance.find((a) => a.date === dateStr && a.subscriptionId === s.id);
+      const existing = attendance.find(
+        (a) =>
+          a.date === dateStr &&
+          a.subscriptionId === s.id &&
+          (!scheduleGroupId || a.scheduleGroupId === scheduleGroupId)
+      );
+      const isMonthly = isMonthlyUnlimitedSubscription(s);
 
       return {
         subId: s.id,
@@ -140,8 +150,11 @@ export function computeSubsForDate(
         lessonsTotal: s.lessonsTotal,
         freezeUsed: s.freezeUsed,
         activationDate: s.activationDate,
+        billingModel: s.billingModel,
+        expiresAt: s.expiresAt ?? null,
+        daysLeft: isMonthly ? getSubscriptionDaysLeft(s.expiresAt, dateStr) : undefined,
         currentStatus: (existing?.attendanceStatus ?? null) as SubForDate["currentStatus"],
-        canFreeze: canApplyFreeze(s.lessonsTotal, s.freezeUsed, freezePolicy),
+        canFreeze: !isMonthly && canApplyFreeze(s.lessonsTotal, s.freezeUsed, freezePolicy),
         priceId: s.priceId,
         category: s.category,
       };
@@ -237,7 +250,7 @@ export type SubsForDateOptions = {
   category?: "group" | "private";
   subscriptionIds?: string[];
   disciplineId?: string | null;
-  groupKey?: string | null;
+  scheduleGroupId?: string | null;
   groupsBySubId?: Record<string, SubscriptionGroupLink[]>;
 };
 
@@ -251,7 +264,7 @@ export function useSubsForDate(
   const attendanceQuery = useAttendanceRecords(yearMonth);
   const { freezePolicy } = useSettings();
 
-  const optionsKey = `${options?.category ?? ""}|${options?.disciplineId ?? ""}|${options?.groupKey ?? ""}|${(options?.subscriptionIds ?? []).join(",")}`;
+  const optionsKey = `${options?.category ?? ""}|${options?.disciplineId ?? ""}|${options?.scheduleGroupId ?? ""}|${(options?.subscriptionIds ?? []).join(",")}`;
   const stableOptions = useMemo(
     () =>
       options
@@ -259,7 +272,7 @@ export function useSubsForDate(
             category: options.category,
             subscriptionIds: options.subscriptionIds,
             disciplineId: options.disciplineId,
-            groupKey: options.groupKey,
+            scheduleGroupId: options.scheduleGroupId,
             groupsBySubId: options.groupsBySubId,
           }
         : undefined,
@@ -340,17 +353,20 @@ export function useMarkAttendance() {
       subId,
       status,
       disciplineId,
+      scheduleGroupId,
     }: {
       dateStr: string;
       subId: string;
       status: "present" | "absent" | "freeze" | "excused";
       disciplineId?: string | null;
+      scheduleGroupId: string;
     }) => {
       const { data, error } = await supabase.rpc("mark_attendance", {
         p_date: dateStr,
         p_sub_id: subId,
         p_new_status: status,
         p_discipline_id: disciplineId ?? null,
+        p_schedule_group_id: scheduleGroupId,
       });
 
       if (error) return { success: false as const, error: error.message };
@@ -365,7 +381,7 @@ export function useMarkAttendance() {
         newLessonsLeft: result.newLessonsLeft,
       };
     },
-    onMutate: async ({ dateStr, subId, status }) => {
+    onMutate: async ({ dateStr, subId, status, scheduleGroupId }) => {
       await queryClient.cancelQueries({ queryKey: scopedAttendanceKey });
       await queryClient.cancelQueries({ queryKey: scopedSubscriptionsKey });
 
@@ -379,7 +395,10 @@ export function useMarkAttendance() {
 
       const previousAttendance = previousAttendanceEntries[0]?.[1];
       const existing = previousAttendance?.find(
-        (a) => a.date === dateStr && a.subscriptionId === subId
+        (a) =>
+          a.date === dateStr &&
+          a.subscriptionId === subId &&
+          a.scheduleGroupId === scheduleGroupId
       );
       const oldStatus = existing?.attendanceStatus ?? null;
 
@@ -387,16 +406,21 @@ export function useMarkAttendance() {
         return { previousAttendanceEntries, previousSubscriptions };
       }
 
-      const { lessonDelta, freezeDelta } = computeAttendanceDeltas(oldStatus, status);
+      const isMonthly = isMonthlyUnlimitedSubscription(sub);
+      const { lessonDelta, freezeDelta } = isMonthly
+        ? { lessonDelta: 0, freezeDelta: 0 }
+        : computeAttendanceDeltas(oldStatus, status);
 
-      if (status === "freeze" && !canApplyFreeze(sub.lessonsTotal, sub.freezeUsed, freezePolicy)) {
-        return { previousAttendanceEntries, previousSubscriptions };
-      }
-      if (status === "freeze" && wouldExceedFreezeLimit(sub.freezeUsed, freezeDelta, freezePolicy)) {
-        return { previousAttendanceEntries, previousSubscriptions };
-      }
-      if (sub.lessonsLeft + lessonDelta < 0) {
-        return { previousAttendanceEntries, previousSubscriptions };
+      if (!isMonthly) {
+        if (status === "freeze" && !canApplyFreeze(sub.lessonsTotal, sub.freezeUsed, freezePolicy)) {
+          return { previousAttendanceEntries, previousSubscriptions };
+        }
+        if (status === "freeze" && wouldExceedFreezeLimit(sub.freezeUsed, freezeDelta, freezePolicy)) {
+          return { previousAttendanceEntries, previousSubscriptions };
+        }
+        if (sub.lessonsLeft + lessonDelta < 0) {
+          return { previousAttendanceEntries, previousSubscriptions };
+        }
       }
 
       queryClient.setQueriesData<AttendanceRecord[]>(
@@ -404,7 +428,10 @@ export function useMarkAttendance() {
         (old) => {
           const base = old ?? [];
           const attIdx = base.findIndex(
-            (a) => a.date === dateStr && a.subscriptionId === subId
+            (a) =>
+              a.date === dateStr &&
+              a.subscriptionId === subId &&
+              a.scheduleGroupId === scheduleGroupId
           );
           if (attIdx >= 0) {
             const updated = [...base];
@@ -416,6 +443,7 @@ export function useMarkAttendance() {
             {
               date: dateStr,
               subscriptionId: subId,
+              scheduleGroupId,
               clientDisplay: "",
               attendanceStatus: status,
             },
@@ -423,22 +451,24 @@ export function useMarkAttendance() {
         }
       );
 
-      const newLessonsLeft = sub.lessonsLeft + lessonDelta;
-      const newFreezeUsed = sub.freezeUsed + freezeDelta;
-      queryClient.setQueryData<Subscription[]>(
-        scopedSubscriptionsKey,
-        (old) =>
-          (old ?? []).map((s) =>
-            s.id === subId
-              ? {
-                  ...s,
-                  lessonsLeft: newLessonsLeft,
-                  freezeUsed: newFreezeUsed,
-                  status: newLessonsLeft === 0 ? "finished" : s.status,
-                }
-              : s
-          )
-      );
+      if (!isMonthly) {
+        const newLessonsLeft = sub.lessonsLeft + lessonDelta;
+        const newFreezeUsed = sub.freezeUsed + freezeDelta;
+        queryClient.setQueryData<Subscription[]>(
+          scopedSubscriptionsKey,
+          (old) =>
+            (old ?? []).map((s) =>
+              s.id === subId
+                ? {
+                    ...s,
+                    lessonsLeft: newLessonsLeft,
+                    freezeUsed: newFreezeUsed,
+                    status: newLessonsLeft === 0 ? "finished" : s.status,
+                  }
+                : s
+            )
+        );
+      }
 
       return { previousAttendanceEntries, previousSubscriptions };
     },

@@ -203,13 +203,6 @@ export function isDateInYearMonth(dateStr: string, yearMonth: string): boolean {
   return key === yearMonth;
 }
 
-export interface SubscriptionTariffRef {
-  type: string;
-  lessonsTotal: number;
-  pairMonth: string;
-  priceId?: string | null;
-}
-
 export interface PriceTariffRef {
   id?: string;
   type: string;
@@ -220,6 +213,16 @@ export interface PriceTariffRef {
   category?: PriceCategory;
   locationId?: string | null;
   disciplineId?: string | null;
+  billingModel?: import("../types").BillingModel;
+}
+
+export interface SubscriptionTariffRef {
+  type: string;
+  lessonsTotal: number;
+  pairMonth: string;
+  priceId?: string | null;
+  billingModel?: import("../types").BillingModel;
+  expiresAt?: string | null;
 }
 
 export const PRICE_LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }> = {
@@ -229,6 +232,11 @@ export const PRICE_LABELS_CATALOG: Record<string, { label: string; sub: string; 
   pair_m1: { label: "Парный — Месяц 1 (8 уроков)", sub: "Групповые занятия, первый цикл", col: "group" },
   pair_m2: { label: "Парный — Месяц 2 (8 уроков)", sub: "Групповые занятия, второй цикл", col: "group" },
   pair_m3: { label: "Парный — Месяц 3 (8 уроков)", sub: "Групповые занятия, третий цикл", col: "group" },
+  monthly_unlimited: {
+    label: "Месячный безлимит",
+    sub: "Неограниченные групповые занятия в выбранных группах",
+    col: "group",
+  },
   personal_solo: { label: "Индивидуальный Соло Урок", sub: "Приватная сессия (1 клиент)", col: "private" },
   personal_pair: { label: "Индивидуальный Парный Урок", sub: "Приватная сессия (2 клиента)", col: "private" },
   personal_trio: { label: "Индивидуальный Трио Урок", sub: "Приватная сессия (3 клиента)", col: "private" },
@@ -355,7 +363,8 @@ export function getPrivateLessonTariffs<T extends PriceTariffRef>(prices: T[]): 
   return prices.filter((p) => getPriceCategory(p) === "private" && p.lessons === 1);
 }
 
-export function tariffNeedsSecondClient(tariff: Pick<PriceTariffRef, "type">): boolean {
+export function tariffNeedsSecondClient(tariff: Pick<PriceTariffRef, "type" | "billingModel">): boolean {
+  if (isMonthlyUnlimitedTariff(tariff)) return false;
   const t = tariff.type.trim();
   return t === "pair_hm" || t.startsWith("pair_m") || t === "personal_pair" || t === "personal_trio";
 }
@@ -390,23 +399,78 @@ export function pairMonthDisplayNumber(pairMonth: string): string {
   return "1";
 }
 
+export function isMonthlyUnlimitedTariff(
+  tariff: Pick<PriceTariffRef, "billingModel" | "type">
+): boolean {
+  return tariff.billingModel === "monthly_unlimited" || tariff.type.trim() === "monthly_unlimited";
+}
+
+export function isMonthlyUnlimitedSubscription(
+  sub: Pick<SubscriptionTariffRef, "billingModel">
+): boolean {
+  return sub.billingModel === "monthly_unlimited";
+}
+
+export function computeMonthlyExpiresAt(activationDate: string): string {
+  const [year, month, day] = activationDate.slice(0, 10).split("-").map(Number);
+  const date = new Date(year, month - 1 + 1, day);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export function getSubscriptionDaysLeft(
+  expiresAt: string | null | undefined,
+  asOfDate: string = new Date().toISOString().slice(0, 10)
+): number {
+  if (!expiresAt) return 0;
+  const end = new Date(`${expiresAt.slice(0, 10)}T12:00:00`);
+  const current = new Date(`${asOfDate.slice(0, 10)}T12:00:00`);
+  return Math.max(0, Math.ceil((end.getTime() - current.getTime()) / (24 * 60 * 60 * 1000)));
+}
+
+export function subscriptionIsActiveForDate(
+  sub: {
+    activationDate: string;
+    billingModel?: import("../types").BillingModel;
+    expiresAt?: string | null;
+    lessonsLeft: number;
+    status: "active" | "finished";
+  },
+  dateStr: string
+): boolean {
+  if (sub.status !== "active" || sub.activationDate > dateStr) return false;
+  if (isMonthlyUnlimitedSubscription(sub)) {
+    return Boolean(sub.expiresAt && sub.expiresAt >= dateStr);
+  }
+  return sub.lessonsLeft > 0;
+}
+
 export function deriveSubscriptionTypeFromTariff(
-  tariff: Pick<PriceTariffRef, "type" | "category">
-): { type: string; pairMonth: string } {
+  tariff: Pick<PriceTariffRef, "type" | "category" | "billingModel">
+): { type: string; pairMonth: string; billingModel: import("../types").BillingModel } {
+  if (isMonthlyUnlimitedTariff(tariff)) {
+    return { type: "solo", pairMonth: "", billingModel: "monthly_unlimited" };
+  }
   const t = tariff.type.trim();
-  if (t === "solo") return { type: "solo", pairMonth: "" };
-  if (t === "pair_hm") return { type: "pair_hm", pairMonth: "" };
+  if (t === "solo") return { type: "solo", pairMonth: "", billingModel: "lesson_count" };
+  if (t === "pair_hm") return { type: "pair_hm", pairMonth: "", billingModel: "lesson_count" };
   const pairMonthMatch = t.match(/^pair_m([123])$/);
-  if (pairMonthMatch) return { type: "pair", pairMonth: `m${pairMonthMatch[1]}` };
-  if (t.startsWith("personal_")) return { type: t.replace("personal_", ""), pairMonth: "" };
+  if (pairMonthMatch) {
+    return { type: "pair", pairMonth: `m${pairMonthMatch[1]}`, billingModel: "lesson_count" };
+  }
+  if (t.startsWith("personal_")) {
+    return { type: t.replace("personal_", ""), pairMonth: "", billingModel: "lesson_count" };
+  }
   if (CUSTOM_TARIFF_TYPE_RE.test(t)) {
     const category = getPriceCategory(tariff);
-    if (category === "private") return { type: "solo", pairMonth: "" };
-    return { type: "solo", pairMonth: "" };
+    if (category === "private") return { type: "solo", pairMonth: "", billingModel: "lesson_count" };
+    return { type: "solo", pairMonth: "", billingModel: "lesson_count" };
   }
-  if (getPriceCategory(tariff) === "group") return { type: "solo", pairMonth: "" };
-  if (getPriceCategory(tariff) === "private") return { type: "solo", pairMonth: "" };
-  return { type: "solo", pairMonth: "" };
+  if (getPriceCategory(tariff) === "group") return { type: "solo", pairMonth: "", billingModel: "lesson_count" };
+  if (getPriceCategory(tariff) === "private") return { type: "solo", pairMonth: "", billingModel: "lesson_count" };
+  return { type: "solo", pairMonth: "", billingModel: "lesson_count" };
 }
 
 export interface SubscriptionClientRef {
@@ -456,6 +520,7 @@ export function getSubscriptionTariffLabel(
 ): string {
   const matched = findSubscriptionPrice(sub, prices);
   if (matched) return getPriceLabel(matched);
+  if (isMonthlyUnlimitedSubscription(sub)) return "Месячный безлимит";
 
   if (sub.type === "solo") return "Соло";
   if (sub.type === "pair_hm") return `Пара (${sub.lessonsTotal} занятий)`;

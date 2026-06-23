@@ -21,7 +21,7 @@ import {
   useSubscriptions,
 } from "../hooks/useSubscriptions";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
-import { useSchedule } from "../hooks/useSchedule";
+import { useScheduleGroups } from "../hooks/useScheduleGroups";
 import { useRecordSubscriptionPayment, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
 import type { PaymentMethod } from "../types";
 import {
@@ -30,9 +30,9 @@ import {
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
-import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitleRu } from "../lib/utils";
+import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionDaysLeft, getSubscriptionTariffLabel, isMonthlyUnlimitedSubscription, isMonthlyUnlimitedTariff, pluralizeRu, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitleRu } from "../lib/utils";
 import { filterActiveSubscriptions, filterHistorySubscriptions, ALL_LOCATIONS_KEY } from "../lib/subscriptionFilters";
-import { getSubscriptionGroupDisplayNames, listScheduleGroups } from "../lib/scheduleGroups";
+import { buildGroupNameById, getSubscriptionGroupDisplayNames, listScheduleGroupOptions } from "../lib/scheduleGroups";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules } from "../lib/orgModules";
 import { useSettings } from "../settings/SettingsProvider";
@@ -73,7 +73,7 @@ export default function SubscriptionsPanel({
   const disciplinesQuery = useDisciplines();
   const subscriptionsQuery = useSubscriptions();
   const subscriptionGroupsQuery = useSubscriptionGroups();
-  const scheduleQuery = useSchedule();
+  const scheduleGroupsQuery = useScheduleGroups();
   const pricesQuery = usePrices();
   const attendanceQuery = useAttendanceRecords();
   const personalLessonsQuery = usePersonalLessons();
@@ -87,7 +87,12 @@ export default function SubscriptionsPanel({
     isError: subscriptionGroupsError,
     error: subscriptionGroupsErr,
   } = subscriptionGroupsQuery;
-  const { data: schedule = [], isLoading: scheduleLoading, isError: scheduleError, error: scheduleErr } = scheduleQuery;
+  const {
+    data: scheduleGroups = [],
+    isLoading: scheduleGroupsLoading,
+    isError: scheduleGroupsError,
+    error: scheduleGroupsErr,
+  } = scheduleGroupsQuery;
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
   const {
     data: attendanceRecords = [],
@@ -113,7 +118,7 @@ export default function SubscriptionsPanel({
     disciplinesLoading ||
     subsLoading ||
     subscriptionGroupsLoading ||
-    scheduleLoading ||
+    scheduleGroupsLoading ||
     pricesLoading ||
     attendanceLoading ||
     personalLessonsLoading;
@@ -123,7 +128,7 @@ export default function SubscriptionsPanel({
     disciplinesError ||
     subsError ||
     subscriptionGroupsError ||
-    scheduleError ||
+    scheduleGroupsError ||
     pricesError ||
     attendanceError ||
     personalLessonsError;
@@ -133,7 +138,7 @@ export default function SubscriptionsPanel({
     disciplinesErr ??
     subsErr ??
     subscriptionGroupsErr ??
-    scheduleErr ??
+    scheduleGroupsErr ??
     pricesErr ??
     attendanceErr ??
     personalLessonsErr;
@@ -176,7 +181,7 @@ export default function SubscriptionsPanel({
   const [client2Query, setClient2Query] = useState("");
   const [client2Id, setClient2Id] = useState("");
   const [disciplineId, setDisciplineId] = useState<string | "">("");
-  const [selectedGroupKeys, setSelectedGroupKeys] = useState<string[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
   const groupTariffs = filterGroupTariffsByModules(
     filterGroupTariffsForSale(prices, {
@@ -231,34 +236,28 @@ export default function SubscriptionsPanel({
 
   const saleGroupOptions = useMemo(
     () =>
-      listScheduleGroups(schedule, {
+      listScheduleGroupOptions(scheduleGroups, {
         disciplineId: disciplineId || null,
         locationId: localPriceList ? saleLocationId || null : null,
-      }).map((group) => ({ key: group.key, label: group.displayName })),
-    [schedule, disciplineId, localPriceList, saleLocationId]
+      }).map((group) => ({ key: group.id, label: group.displayName })),
+    [scheduleGroups, disciplineId, localPriceList, saleLocationId]
   );
 
   const activeLocationGroupOptions = useMemo(
     () =>
       activeLocationFilter
-        ? listScheduleGroups(schedule, { locationId: activeLocationFilter }).map((group) => ({
-            key: group.key,
+        ? listScheduleGroupOptions(scheduleGroups, { locationId: activeLocationFilter }).map((group) => ({
+            key: group.id,
             label: group.displayName,
           }))
         : [],
-    [schedule, activeLocationFilter]
+    [scheduleGroups, activeLocationFilter]
   );
 
-  const groupLabelByKey = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const group of listScheduleGroups(schedule)) {
-      map[group.key] = group.displayName;
-    }
-    return map;
-  }, [schedule]);
+  const groupNameById = useMemo(() => buildGroupNameById(scheduleGroups), [scheduleGroups]);
 
   useEffect(() => {
-    setSelectedGroupKeys((prev) => prev.filter((key) => saleGroupOptions.some((option) => option.key === key)));
+    setSelectedGroupIds((prev) => prev.filter((id) => saleGroupOptions.some((option) => option.key === id)));
   }, [saleGroupOptions]);
 
   useEffect(() => {
@@ -312,24 +311,25 @@ export default function SubscriptionsPanel({
       return;
     }
 
-    if (selectedGroupKeys.length === 0) {
+    if (selectedGroupIds.length === 0) {
       toast("Выберите хотя бы одну группу, в которой действует абонемент.", "error");
       return;
     }
 
-    const { type, pairMonth } = deriveSubscriptionTypeFromTariff(selectedTariff);
+    const { type, pairMonth, billingModel } = deriveSubscriptionTypeFromTariff(selectedTariff);
 
     const payload = {
       type,
       clientId1: client1Id,
       clientId2: needsSecondClient ? client2Id : "",
-      lessonsTotal: selectedTariff.lessons,
+      lessonsTotal: billingModel === "monthly_unlimited" ? 0 : selectedTariff.lessons,
       activationDate,
       pairMonth,
       disciplineId,
       priceId: selectedTariff.id,
       category: "group" as const,
-      groupKeys: selectedGroupKeys,
+      billingModel,
+      scheduleGroupIds: selectedGroupIds,
     };
 
     const res = await addSubscription.mutateAsync(payload);
@@ -360,7 +360,7 @@ export default function SubscriptionsPanel({
     setClient1Id("");
     setClient2Query("");
     setClient2Id("");
-    setSelectedGroupKeys([]);
+    setSelectedGroupIds([]);
   };
 
   const handleConfirmFinish = async () => {
@@ -381,7 +381,14 @@ export default function SubscriptionsPanel({
   // Directory filter for active records (lowest balance first)
   const activeRecords = subscriptions
     .filter((s) => s.status === "active")
-    .sort((a, b) => a.lessonsLeft - b.lessonsLeft);
+    .sort((a, b) => {
+      if (isMonthlyUnlimitedSubscription(a) && isMonthlyUnlimitedSubscription(b)) {
+        return getSubscriptionDaysLeft(a.expiresAt) - getSubscriptionDaysLeft(b.expiresAt);
+      }
+      if (isMonthlyUnlimitedSubscription(a)) return -1;
+      if (isMonthlyUnlimitedSubscription(b)) return 1;
+      return a.lessonsLeft - b.lessonsLeft;
+    });
 
   const clientMap = useMemo(
     () => Object.fromEntries(directoryClients.map((c) => [c.id, c])) as Record<string, Client>,
@@ -411,7 +418,7 @@ export default function SubscriptionsPanel({
         clientMap,
         locationId: activeLocationFilter,
         disciplineId: activeDisciplineFilter,
-        groupKey: activeGroupFilter,
+        scheduleGroupId: activeGroupFilter,
         endingOnly: endingOnlyFilter,
         priceMap,
         groupsBySubId,
@@ -643,14 +650,33 @@ export default function SubscriptionsPanel({
                   .map((c) => `${c!.lastName || ""} ${c!.firstName || ""}`.trim())
                   .join(" & ");
 
-                const progressPct = sub.lessonsTotal > 0 ? (sub.lessonsLeft / sub.lessonsTotal) * 100 : 0;
-                const isAlarm = sub.lessonsLeft <= 2;
+                const isMonthly = isMonthlyUnlimitedSubscription(sub);
+                const daysLeft = isMonthly ? getSubscriptionDaysLeft(sub.expiresAt) : null;
+                const progressPct = isMonthly
+                  ? sub.expiresAt
+                    ? Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          (daysLeft ?? 0) /
+                            Math.max(
+                              1,
+                              getSubscriptionDaysLeft(sub.expiresAt, sub.activationDate) || 30
+                            ) *
+                            100
+                        )
+                      )
+                    : 0
+                  : sub.lessonsTotal > 0
+                    ? (sub.lessonsLeft / sub.lessonsTotal) * 100
+                    : 0;
+                const isAlarm = isMonthly ? (daysLeft ?? 0) <= 2 : sub.lessonsLeft <= 2;
 
                 const disciplineName =
                   sub.disciplineId != null ? disciplineMap[sub.disciplineId]?.name : undefined;
 
                 const tariffLabel = getSubscriptionTariffLabel(sub, prices);
-                const linkedGroupNames = getSubscriptionGroupDisplayNames(sub.id, groupsBySubId, groupLabelByKey);
+                const linkedGroupNames = getSubscriptionGroupDisplayNames(sub.id, groupsBySubId, groupNameById);
 
                 const isExpanded = expandedSubId === sub.id;
                 const attendanceStats = attendanceStatsBySubId[sub.id] ?? { visits: 0, absences: 0 };
@@ -683,10 +709,23 @@ export default function SubscriptionsPanel({
 
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-400">Осталось занятий</span>
+                          <span className="text-slate-400">
+                            {isMonthly ? "Осталось дней" : "Осталось занятий"}
+                          </span>
                           <span className="font-sans font-semibold text-slate-800">
-                            {sub.lessonsLeft}{" "}
-                            <span className="text-slate-400 font-normal">из {sub.lessonsTotal}</span>
+                            {isMonthly ? (
+                              <>
+                                {daysLeft ?? 0}{" "}
+                                <span className="text-slate-400 font-normal">
+                                  {pluralizeRu(daysLeft ?? 0, ["день", "дня", "дней"])}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                {sub.lessonsLeft}{" "}
+                                <span className="text-slate-400 font-normal">из {sub.lessonsTotal}</span>
+                              </>
+                            )}
                           </span>
                         </div>
                         <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -749,7 +788,7 @@ export default function SubscriptionsPanel({
                               Посещений: {attendanceStats.visits} · Пропусков: {attendanceStats.absences}
                             </p>
 
-                            {sub.lessonsTotal === 8 ? (
+                            {sub.lessonsTotal === 8 && !isMonthly ? (
                               sub.freezeUsed > 0 ? (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
                                   <Snowflake className="w-3 h-3" /> заморозка использована
@@ -815,7 +854,9 @@ export default function SubscriptionsPanel({
                         </div>
 
                         <div className="flex items-center justify-between pt-1 text-xs">
-                          {isAlarm ? (
+                          {isMonthly ? (
+                            <span className="text-slate-400">До {sub.expiresAt || "—"}</span>
+                          ) : isAlarm ? (
                             <span className="text-rose-600 font-semibold">Пора предложить продление</span>
                           ) : (
                             <span className="text-slate-400">Баланс в норме</span>
@@ -1114,7 +1155,10 @@ export default function SubscriptionsPanel({
                 >
                   {groupTariffs.map((tariff) => (
                     <option key={tariff.id} value={tariff.id!}>
-                      {getPriceLabel(tariff)} — {tariff.lessons} занятий · {formatCurrency(tariff.price)}
+                      {getPriceLabel(tariff)}
+                      {isMonthlyUnlimitedTariff(tariff)
+                        ? ` · безлимит на месяц · ${formatCurrency(tariff.price)}`
+                        : ` · ${tariff.lessons} занятий · ${formatCurrency(tariff.price)}`}
                     </option>
                   ))}
                 </AppSelect>
@@ -1127,7 +1171,7 @@ export default function SubscriptionsPanel({
               value={disciplineId}
               onChange={(value) => {
                 setDisciplineId(value);
-                setSelectedGroupKeys([]);
+                setSelectedGroupIds([]);
               }}
               toast={toast}
             />
@@ -1135,8 +1179,8 @@ export default function SubscriptionsPanel({
             <GroupCheckboxDropdown
               label="Групповые уроки"
               options={saleGroupOptions}
-              selectedKeys={selectedGroupKeys}
-              onChange={setSelectedGroupKeys}
+              selectedKeys={selectedGroupIds}
+              onChange={setSelectedGroupIds}
               placeholder="Выберите группы..."
               emptyMessage={
                 disciplineId

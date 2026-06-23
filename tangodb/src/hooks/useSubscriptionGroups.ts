@@ -6,11 +6,11 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const subscriptionGroupsQueryKey = ["subscription_groups"] as const;
 
-const mapSubscriptionGroupLink = (row: Record<string, unknown>): SubscriptionGroupLink & { subscriptionId: string } => ({
+const mapSubscriptionGroupLink = (
+  row: Record<string, unknown>
+): SubscriptionGroupLink & { subscriptionId: string } => ({
   subscriptionId: row.subscription_id as string,
-  groupName: (row.group_name as string) ?? "",
-  disciplineId: row.discipline_id as string,
-  locationId: row.location_id != null ? String(row.location_id) : null,
+  scheduleGroupId: row.schedule_group_id as string,
 });
 
 export function useSubscriptionGroups(options?: { enabled?: boolean }) {

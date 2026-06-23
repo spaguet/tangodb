@@ -1,6 +1,11 @@
 import type { Client, Price, Subscription, SubscriptionGroupLink } from "../types";
-import { subscriptionGroupLinkKey } from "./scheduleGroups";
-import { isDateInYear, isDateInYearMonth } from "./utils";
+import { subscriptionMatchesScheduleGroup } from "./scheduleGroups";
+import {
+  getSubscriptionDaysLeft,
+  isDateInYear,
+  isDateInYearMonth,
+  isMonthlyUnlimitedSubscription,
+} from "./utils";
 
 export const ALL_LOCATIONS_KEY = "__all__";
 
@@ -20,7 +25,14 @@ export function subscriptionMatchesClient(sub: Subscription, clientId: string): 
   return sub.clientId1 === clientId || sub.clientId2 === clientId || sub.clientId3 === clientId;
 }
 
-export function isEndedSubscription(sub: Pick<Subscription, "lessonsLeft">): boolean {
+export function isEndedSubscription(
+  sub: Pick<Subscription, "lessonsLeft" | "billingModel" | "expiresAt" | "status">,
+  asOfDate: string = new Date().toISOString().slice(0, 10)
+): boolean {
+  if (sub.status === "finished") return true;
+  if (isMonthlyUnlimitedSubscription(sub)) {
+    return Boolean(sub.expiresAt && sub.expiresAt < asOfDate);
+  }
   return sub.lessonsLeft === 0;
 }
 
@@ -43,22 +55,32 @@ export function filterActiveSubscriptions(
     clientMap: Record<string, Client>;
     locationId: string;
     disciplineId: string;
-    groupKey: string;
+    scheduleGroupId: string;
     endingOnly: boolean;
     priceMap: Record<string, Price>;
     groupsBySubId: Record<string, SubscriptionGroupLink[]>;
+    asOfDate?: string;
   }
 ): Subscription[] {
+  const asOfDate = opts.asOfDate ?? new Date().toISOString().slice(0, 10);
+
   return subs.filter((sub) => {
     if (opts.search.trim() && !matchesClientSearch(sub, opts.search, opts.clientMap)) return false;
     if (opts.locationId && getSubscriptionLocationId(sub, opts.priceMap) !== opts.locationId) return false;
     if (opts.disciplineId && sub.disciplineId !== opts.disciplineId) return false;
-    if (opts.groupKey) {
-      const links = opts.groupsBySubId[sub.id];
-      if (!links || links.length === 0) return false;
-      if (!links.some((link) => subscriptionGroupLinkKey(link) === opts.groupKey)) return false;
+    if (
+      opts.scheduleGroupId &&
+      !subscriptionMatchesScheduleGroup(sub.id, opts.scheduleGroupId, opts.groupsBySubId)
+    ) {
+      return false;
     }
-    if (opts.endingOnly && sub.lessonsLeft > 2) return false;
+    if (opts.endingOnly) {
+      if (isMonthlyUnlimitedSubscription(sub)) {
+        if (getSubscriptionDaysLeft(sub.expiresAt, asOfDate) > 2) return false;
+      } else if (sub.lessonsLeft > 2) {
+        return false;
+      }
+    }
     return true;
   });
 }
@@ -83,7 +105,7 @@ export function filterHistorySubscriptions(
     pool = pool.filter((s) => subscriptionMatchesClient(s, opts.clientId));
     pool = pool.filter((s) => isDateInYear(s.activationDate, opts.year));
   } else {
-    pool = pool.filter(isEndedSubscription);
+    pool = pool.filter((s) => isEndedSubscription(s));
     if (opts.disciplineId) {
       pool = pool.filter((s) => s.disciplineId === opts.disciplineId);
     }
