@@ -26,7 +26,7 @@ export function canShowScheduleDebtAmount(role: MemberRole | null): boolean {
 }
 
 export function useScheduleDebtors(options?: { enabled?: boolean }) {
-  const { role } = useOrganization();
+  const { role, memberId } = useOrganization();
   const includeAmount = canShowScheduleDebtAmount(role);
 
   const lessonsQuery = usePersonalLessons({
@@ -36,10 +36,10 @@ export function useScheduleDebtors(options?: { enabled?: boolean }) {
 
   const data = useMemo((): ScheduleDebtorEntry[] => {
     return (lessonsQuery.data ?? [])
-      .sort(
-        (a, b) =>
-          a.date.localeCompare(b.date) || a.timeStart.localeCompare(b.timeStart)
-      )
+      .filter((lesson) => {
+        if (role !== "teacher") return true;
+        return Boolean(memberId && lesson.teacherMemberId === memberId);
+      })
       .map((lesson) => ({
         id: lesson.id,
         date: lesson.date,
@@ -54,7 +54,7 @@ export function useScheduleDebtors(options?: { enabled?: boolean }) {
         teacherMemberId: lesson.teacherMemberId ?? null,
         amount: includeAmount ? lesson.price : undefined,
       }));
-  }, [lessonsQuery.data, includeAmount]);
+  }, [lessonsQuery.data, includeAmount, role, memberId]);
 
   return {
     ...lessonsQuery,

@@ -16,11 +16,66 @@ import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
 
+const NO_LOCATION_KEY = "__no_location__";
+
 interface ScheduleDebtorsBlockProps {
   disciplineMap: Map<string, string>;
   teamMap: Map<string, string>;
   locationMap: Map<string, string>;
+  locationOrder: string[];
   onPaymentSuccess?: () => void;
+}
+
+interface DebtorRowView {
+  entry: ScheduleDebtorEntry;
+  clientLabel: string;
+  disciplineName?: string;
+  teacherName?: string;
+  canPay: boolean;
+}
+
+interface DebtorLocationGroup {
+  key: string;
+  label: string;
+  items: DebtorRowView[];
+}
+
+function compareDebtorRows(a: DebtorRowView, b: DebtorRowView): number {
+  return (
+    a.entry.date.localeCompare(b.entry.date) ||
+    a.entry.timeStart.localeCompare(b.entry.timeStart)
+  );
+}
+
+function groupDebtorsByLocation(
+  rows: DebtorRowView[],
+  locationOrder: string[],
+  locationMap: Map<string, string>
+): DebtorLocationGroup[] {
+  const order = [...locationOrder, NO_LOCATION_KEY];
+  const groups = new Map<string, DebtorRowView[]>();
+  for (const key of order) {
+    groups.set(key, []);
+  }
+
+  for (const row of rows) {
+    const key = row.entry.locationId ?? NO_LOCATION_KEY;
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key)!.push(row);
+  }
+
+  return order
+    .map((key) => ({
+      key,
+      label:
+        key === NO_LOCATION_KEY
+          ? "Без локации"
+          : locationMap.get(key) ?? "Локация",
+      items: [...(groups.get(key) ?? [])].sort(compareDebtorRows),
+    }))
+    .filter((group) => group.items.length > 0);
 }
 
 function DebtorRow({
@@ -28,7 +83,6 @@ function DebtorRow({
   clientLabel,
   disciplineName,
   teacherName,
-  locationName,
   showAmount,
   canPay,
   onPay,
@@ -37,12 +91,11 @@ function DebtorRow({
   clientLabel: string;
   disciplineName?: string;
   teacherName?: string;
-  locationName?: string;
   showAmount: boolean;
   canPay: boolean;
   onPay: () => void;
 }) {
-  const metaParts = [disciplineName, teacherName, locationName].filter(Boolean);
+  const metaParts = [disciplineName, teacherName].filter(Boolean);
 
   return (
     <li className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-b border-slate-100 last:border-b-0">
@@ -87,6 +140,7 @@ export default function ScheduleDebtorsBlock({
   disciplineMap,
   teamMap,
   locationMap,
+  locationOrder,
   onPaymentSuccess,
 }: ScheduleDebtorsBlockProps) {
   const toast = useToast();
@@ -118,13 +172,20 @@ export default function ScheduleDebtorsBlock({
         clientLabel: maskClientDisplay(entry.clientDisplay, canReadClients),
         disciplineName: entry.disciplineId ? disciplineMap.get(entry.disciplineId) : undefined,
         teacherName: entry.teacherMemberId ? teamMap.get(entry.teacherMemberId) : undefined,
-        locationName: entry.locationId
-          ? locationMap.get(entry.locationId)
-          : "Без локации",
         canPay,
       };
     });
   }, [debtors, role, can, memberId, isReadOnly, disciplineMap, teamMap, locationMap]);
+
+  const debtorGroups = useMemo(
+    () => groupDebtorsByLocation(visibleDebtors, locationOrder, locationMap),
+    [visibleDebtors, locationOrder, locationMap]
+  );
+
+  const subtitle =
+    role === "teacher"
+      ? "Неоплаченные уроки, которые вы проводите"
+      : "Все неоплаченные уроки организации";
 
   if (isLoading) {
     return <LoadingState label="Загрузка неоплаченных уроков..." />;
@@ -136,14 +197,15 @@ export default function ScheduleDebtorsBlock({
     );
   }
 
-  if (visibleDebtors.length === 0) {
+  if (debtorGroups.length === 0) {
     return null;
   }
 
+  const totalCount = visibleDebtors.length;
   const totalAmount = showAmount
     ? visibleDebtors.reduce((sum, row) => sum + (row.entry.amount ?? 0), 0)
     : 0;
-  const countLabel = `${visibleDebtors.length} ${pluralizeRu(visibleDebtors.length, [
+  const countLabel = `${totalCount} ${pluralizeRu(totalCount, [
     "урок",
     "урока",
     "уроков",
@@ -175,7 +237,7 @@ export default function ScheduleDebtorsBlock({
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <div className="min-w-0">
               <h3 className="text-sm font-semibold text-slate-800">Неоплаченные персональные уроки</h3>
-              <p className="text-[11px] text-slate-500">Все неоплаченные уроки организации</p>
+              <p className="text-[11px] text-slate-500">{subtitle}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5 text-sm shrink-0 text-right">
@@ -193,21 +255,31 @@ export default function ScheduleDebtorsBlock({
           </div>
         </div>
 
-        <ul className="divide-y divide-slate-100">
-          {visibleDebtors.map(({ entry, clientLabel, disciplineName, teacherName, locationName, canPay }) => (
-            <DebtorRow
-              key={entry.id}
-              entry={entry}
-              clientLabel={clientLabel}
-              disciplineName={disciplineName}
-              teacherName={teacherName}
-              locationName={locationName}
-              showAmount={showAmount}
-              canPay={canPay}
-              onPay={() => openPayModal(entry)}
-            />
+        <div className="divide-y divide-slate-100">
+          {debtorGroups.map((group) => (
+            <section key={group.key}>
+              <div className="px-4 py-2 bg-slate-50/80 border-b border-slate-100">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  {group.label}
+                </h4>
+              </div>
+              <ul>
+                {group.items.map(({ entry, clientLabel, disciplineName, teacherName, canPay }) => (
+                  <DebtorRow
+                    key={entry.id}
+                    entry={entry}
+                    clientLabel={clientLabel}
+                    disciplineName={disciplineName}
+                    teacherName={teacherName}
+                    showAmount={showAmount}
+                    canPay={canPay}
+                    onPay={() => openPayModal(entry)}
+                  />
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       </motion.section>
 
       <PayPersonalLessonModal

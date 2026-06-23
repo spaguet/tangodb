@@ -172,6 +172,11 @@ export default function SchedulePageContainer() {
     return map;
   }, [locationsQuery.locations]);
 
+  const locationOrder = useMemo(
+    () => locationsQuery.locations.map((loc) => loc.id),
+    [locationsQuery.locations]
+  );
+
   const filteredLessons = useMemo(() => {
     const lessons = scheduleQuery.data?.lessons ?? [];
     if (!teacherFilter) return lessons;
@@ -393,6 +398,7 @@ export default function SchedulePageContainer() {
         disciplineMap={disciplineMap}
         teamMap={teamMap}
         locationMap={locationMap}
+        locationOrder={locationOrder}
         onPaymentSuccess={handleAddSuccess}
       />
 
