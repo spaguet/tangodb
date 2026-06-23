@@ -28,7 +28,8 @@ import {
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
-import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, getGroupTariffs, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient } from "../lib/utils";
+import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient } from "../lib/utils";
+import { useAccessibleLocations } from "../hooks/useLocations";
 import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules } from "../lib/orgModules";
 import { useSettings } from "../settings/SettingsProvider";
 import { useUIStore } from "../store/ui";
@@ -42,7 +43,10 @@ import QueryErrorState from "./ui/QueryErrorState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import RequirePermission from "./RequirePermission";
 import type { ToastType } from "../App";
-import type { Client, Discipline } from "../types";
+import type { Client, Discipline, Subscription } from "../types";
+
+const NO_DISCIPLINE_KEY = "__none__";
+const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
 
 interface SubscriptionsPanelProps {
   initialTab?: "active" | "sell";
@@ -125,12 +129,21 @@ export default function SubscriptionsPanel({
     navigate(tab === "sell" ? "/subscriptions/sell" : "/subscriptions");
   };
 
+  const { locations } = useAccessibleLocations();
+
   const [search, setSearch] = useState("");
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
+  const [expandedDisciplines, setExpandedDisciplines] = useState<Set<string>>(new Set());
 
   // Sale form states
+  const [localPriceList, setLocalPriceList] = useState(false);
+  const [saleLocationId, setSaleLocationId] = useState<string | "">("");
+
   const groupTariffs = filterGroupTariffsByModules(
-    getGroupTariffs(prices),
+    filterGroupTariffsForSale(prices, {
+      localPriceList,
+      locationId: localPriceList ? saleLocationId || null : null,
+    }),
     settings?.modules ?? DEFAULT_ORG_MODULES
   );
   const [selectedTariffId, setSelectedTariffId] = useState<string | "">("");
@@ -146,6 +159,19 @@ export default function SubscriptionsPanel({
       setDisciplineId(disciplines[0].id);
     }
   }, [disciplines, disciplineId]);
+
+  useEffect(() => {
+    if (locations.length > 0 && saleLocationId === "") {
+      setSaleLocationId(locations[0].id);
+    }
+  }, [locations, saleLocationId]);
+
+  useEffect(() => {
+    if (!localPriceList) return;
+    if (saleLocationId && !locations.some((l) => l.id === saleLocationId)) {
+      setSaleLocationId(locations[0]?.id ?? "");
+    }
+  }, [localPriceList, locations, saleLocationId]);
 
   // Early-finish confirmation target
   const [finishTarget, setFinishTarget] = useState<{ id: string; name: string } | null>(null);
@@ -286,7 +312,7 @@ export default function SubscriptionsPanel({
     [directoryClients]
   );
   const disciplineMap = useMemo(
-    () => Object.fromEntries(disciplines.map((d) => [d.id, d])) as Record<number, Discipline>,
+    () => Object.fromEntries(disciplines.map((d) => [d.id, d])) as Record<string, Discipline>,
     [disciplines]
   );
 
@@ -303,6 +329,33 @@ export default function SubscriptionsPanel({
     const queryStr = `${c1?.firstName || ""} ${c1?.lastName || ""} ${c2?.firstName || ""} ${c2?.lastName || ""} ${c3?.firstName || ""} ${c3?.lastName || ""}`.toLowerCase();
     return queryStr.includes(search.toLowerCase());
   });
+
+  const disciplineGroups = useMemo(() => {
+    const groups = new Map<string, Subscription[]>();
+    for (const sub of filteredActiveRecords) {
+      const key = sub.disciplineId ?? NO_DISCIPLINE_KEY;
+      const bucket = groups.get(key) ?? [];
+      bucket.push(sub);
+      groups.set(key, bucket);
+    }
+
+    return Array.from(groups.entries()).sort(([keyA], [keyB]) => {
+      const nameA =
+        keyA === NO_DISCIPLINE_KEY ? "Без направления" : disciplineMap[keyA]?.name ?? "";
+      const nameB =
+        keyB === NO_DISCIPLINE_KEY ? "Без направления" : disciplineMap[keyB]?.name ?? "";
+      return nameA.localeCompare(nameB, "ru");
+    });
+  }, [filteredActiveRecords, disciplineMap]);
+
+  const toggleDiscipline = (key: string) => {
+    setExpandedDisciplines((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   if (isLoading) return <LoadingState label="Загрузка абонементов..." />;
   if (isError) return <QueryErrorState error={error} />;
@@ -327,7 +380,7 @@ export default function SubscriptionsPanel({
             <div>
               <h2 className="text-lg font-semibold tracking-tight text-slate-800">Действующие абонементы</h2>
               <p className="text-xs text-slate-400 mt-1">
-                Отсортированы по остатку занятий — требующие продления вверху
+                Сгруппированы по дисциплинам — внутри группы по остатку занятий
               </p>
             </div>
 
@@ -345,9 +398,9 @@ export default function SubscriptionsPanel({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-3">
             {filteredActiveRecords.length === 0 ? (
-              <div className="col-span-2 text-center py-20 text-slate-400 space-y-3">
+              <div className="text-center py-20 text-slate-400 space-y-3">
                 <Ticket className="w-8 h-8 mx-auto text-slate-300" />
                 <p className="text-sm">
                   {search.trim()
@@ -364,7 +417,45 @@ export default function SubscriptionsPanel({
                 )}
               </div>
             ) : (
-              filteredActiveRecords.map((sub) => {
+              disciplineGroups.map(([disciplineKey, subsInGroup]) => {
+                const disciplineName =
+                  disciplineKey === NO_DISCIPLINE_KEY
+                    ? "Без направления"
+                    : disciplineMap[disciplineKey]?.name ?? "Без направления";
+                const isDisciplineExpanded = expandedDisciplines.has(disciplineKey);
+
+                return (
+                  <div
+                    key={disciplineKey}
+                    className="border border-slate-200 rounded-xl overflow-hidden bg-white"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleDiscipline(disciplineKey)}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer text-left"
+                      aria-expanded={isDisciplineExpanded}
+                    >
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-slate-800 truncate">{disciplineName}</h3>
+                        <p className="text-[11px] text-slate-400 font-sans mt-0.5">
+                          {subsInGroup.length}{" "}
+                          {subsInGroup.length === 1
+                            ? "действующий абонемент"
+                            : subsInGroup.length < 5
+                              ? "действующих абонемента"
+                              : "действующих абонементов"}
+                        </p>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                          isDisciplineExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isDisciplineExpanded && (
+                      <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-100">
+                        {subsInGroup.map((sub) => {
                 const c1 = clientMap[sub.clientId1];
                 const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
                 const c3 = sub.clientId3 ? clientMap[sub.clientId3] : null;
@@ -546,6 +637,11 @@ export default function SubscriptionsPanel({
                     )}
                   </div>
                 );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
               })
             )}
           </div>
@@ -566,10 +662,53 @@ export default function SubscriptionsPanel({
           </div>
 
           <div className="panel-form-stack panel-form-stack-wide-md panel-form-stack-compact">
+            <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer panel-form-full-row-md">
+              <input
+                type="checkbox"
+                checked={localPriceList}
+                onChange={(e) => {
+                  setLocalPriceList(e.target.checked);
+                  setSelectedTariffId("");
+                }}
+                className={`${checkboxCls} mt-0.5`}
+              />
+              <span className="text-xs leading-snug">Локальный прайс-лист</span>
+            </label>
+
+            {localPriceList && (
+              <div className="field-stack panel-form-full-row-md animate-fade-in">
+                <label className={labelCls}>Локация</label>
+                {locations.length === 0 ? (
+                  <p className="text-xs text-slate-400 font-sans leading-relaxed">
+                    Локации не добавлены. Создайте их в разделе «Настройки CRM» → «Локации».
+                  </p>
+                ) : (
+                  <AppSelect
+                    value={saleLocationId}
+                    onChange={(e) => {
+                      setSaleLocationId(e.target.value);
+                      setSelectedTariffId("");
+                    }}
+                  >
+                    {locations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </option>
+                    ))}
+                  </AppSelect>
+                )}
+              </div>
+            )}
+
+            {(!localPriceList || (localPriceList && saleLocationId && locations.length > 0)) && (
             <div className="field-stack">
               <label className={labelCls}>ТАРИФ АБОНЕМЕНТА</label>
               {groupTariffs.length === 0 ? (
-                <p className="text-xs text-slate-400 font-sans">Нет групповых тарифов в прайс-листе.</p>
+                <p className="text-xs text-slate-400 font-sans leading-relaxed">
+                  {localPriceList
+                    ? "К выбранной локации не привязаны тарифы на абонементы. Добавьте локальный тариф в прайс-лист или используйте глобальные тарифы без галочки «Локальный прайс-лист»."
+                    : "Нет глобальных групповых тарифов в прайс-листе."}
+                </p>
               ) : (
                 <AppSelect
                   value={selectedTariffId}
@@ -592,6 +731,7 @@ export default function SubscriptionsPanel({
                 </AppSelect>
               )}
             </div>
+            )}
 
             <DisciplineSelect
               disciplines={disciplines}

@@ -13,6 +13,7 @@ const mapPrice = (row: Record<string, unknown>): Price => ({
   label: (row.label as string) || undefined,
   description: (row.description as string) || undefined,
   category: row.category as PriceCategory,
+  locationId: row.location_id != null ? String(row.location_id) : null,
 });
 
 export function usePrices() {
@@ -83,6 +84,7 @@ export function useCreatePrice() {
       label,
       description,
       category,
+      locationId,
     }: {
       type: string;
       lessons: number;
@@ -90,6 +92,7 @@ export function useCreatePrice() {
       label: string;
       description: string;
       category: PriceCategory;
+      locationId?: string | null;
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "Организация не выбрана" };
@@ -105,6 +108,7 @@ export function useCreatePrice() {
           label: label.trim(),
           description: description.trim(),
           category,
+          location_id: locationId ?? null,
         })
         .select("*")
         .single();

@@ -78,6 +78,7 @@ export interface Price {
   label?: string;
   description?: string;
   category: PriceCategory;
+  locationId?: string | null;
 }
 
 export interface Subscription {
@@ -102,7 +103,7 @@ export interface AttendanceRecord {
   date: string;
   subscriptionId: string;
   clientDisplay: string;
-  attendanceStatus: "present" | "absent" | "freeze";
+  attendanceStatus: "present" | "absent" | "freeze" | "excused";
 }
 
 export interface PersonalLesson {
@@ -164,7 +165,7 @@ export interface SubForDate {
   lessonsTotal: number;
   freezeUsed: number;
   activationDate: string;
-  currentStatus: "present" | "absent" | "freeze" | null;
+  currentStatus: "present" | "absent" | "freeze" | "excused" | null;
   canFreeze: boolean;
   priceId?: string | null;
   category: "group" | "private";

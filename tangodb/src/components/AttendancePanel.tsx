@@ -13,6 +13,7 @@ import {
   Ticket,
   MapPin,
   ArrowLeft,
+  ShieldCheck,
 } from "lucide-react";
 import {
   attendanceQueryKey,
@@ -53,6 +54,43 @@ import type { PersonalLesson, SubForDate } from "../types";
 
 interface AttendancePanelProps {
   toast: (msg: string, type?: ToastType) => void;
+}
+
+const ATTENDANCE_MARK_HINTS = [
+  { label: "Пришёл", hint: "Списать урок с абонемента" },
+  { label: "Не пришёл", hint: "Списать урок с абонемента" },
+  { label: "Фриз", hint: "Не списывать урок с абонемента" },
+  { label: "Уважит.", hint: "Не списывать урок с абонемента" },
+] as const;
+
+function attendanceStatusLabel(status: "present" | "absent" | "freeze" | "excused"): string {
+  if (status === "present") return "присутствие";
+  if (status === "absent") return "отсутствие";
+  if (status === "freeze") return "заморозка";
+  return "уважительная причина";
+}
+
+function AttendanceMarkLegend({ showFreeze }: { showFreeze: boolean }) {
+  const items = showFreeze
+    ? ATTENDANCE_MARK_HINTS
+    : ATTENDANCE_MARK_HINTS.filter((item) => item.label !== "Фриз");
+
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 space-y-1.5 mb-4">
+      <p className="text-[10px] font-sans font-semibold uppercase tracking-wider text-slate-500">
+        Отметки посещаемости
+      </p>
+      <div className="space-y-1">
+        {items.map((item) => (
+          <p key={item.label} className="text-[11px] text-slate-500 font-sans leading-snug">
+            <span className="font-semibold text-slate-700">{item.label}</span>
+            {" — "}
+            {item.hint}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 type DayLessonEntry =
@@ -292,7 +330,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     setSelectedLesson(null);
   };
 
-  const handleMark = async (subId: string, status: "present" | "absent" | "freeze", student: SubForDate) => {
+  const handleMark = async (
+    subId: string,
+    status: "present" | "absent" | "freeze" | "excused",
+    student: SubForDate
+  ) => {
     if (connectionState !== "online") {
       toast(getMutationBlockedMessage(connectionState), "error");
       return;
@@ -326,7 +368,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       toast(res.error || "Не удалось сохранить отметку", "error");
     } else {
       toast(
-        `Отмечено: ${status === "present" ? "присутствие" : status === "absent" ? "отсутствие" : "заморозка"}`,
+        `Отмечено: ${attendanceStatusLabel(status)}`,
         "success"
       );
     }
@@ -361,13 +403,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     const fullname = [st.client1, st.client2, st.client3].filter(Boolean).join(" & ");
     const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
     const tariffLabel = getSubscriptionTariffLabel(st, prices);
+    const connectionTitle = getConnectionBlockReason(connectionState);
 
     return (
       <div
         key={st.subId}
-        className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 last:border-0"
+        className="py-4 flex flex-col gap-3 border-b border-slate-100 last:border-0"
       >
-        <div className="space-y-1.5 flex-1 pr-4">
+        <div className="space-y-1.5">
           <p className="text-[11px] font-sans font-semibold text-indigo-700 leading-snug">{tariffLabel}</p>
           <div className="space-y-0.5">
             <h4 className="text-sm font-semibold text-slate-800 leading-tight">{fullname}</h4>
@@ -381,11 +424,12 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-50">
           <button
+            type="button"
             onClick={() => handleMark(st.subId, "present", st)}
             disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
-            title={getConnectionBlockReason(connectionState)}
+            title={connectionTitle ?? "Пришёл — Списать урок с абонемента"}
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "present"
                 ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
@@ -397,9 +441,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           </button>
 
           <button
+            type="button"
             onClick={() => handleMark(st.subId, "absent", st)}
             disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
-            title={getConnectionBlockReason(connectionState)}
+            title={connectionTitle ?? "Не пришёл — Списать урок с абонемента"}
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "absent"
                 ? "bg-rose-600 border-rose-600 text-white shadow-xs"
@@ -412,13 +457,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
           {showFreeze && (
             <button
+              type="button"
               onClick={() => handleMark(st.subId, "freeze", st)}
               disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending || freezeLocked}
               title={
-                getConnectionBlockReason(connectionState) ??
+                connectionTitle ??
                 (freezeLocked
                   ? "Заморозка доступна один раз для абонементов на 8 уроков"
-                  : "Заморозить занятие")
+                  : "Фриз — Не списывать урок с абонемента")
               }
               className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border disabled:opacity-60 ${
                 st.currentStatus === "freeze"
@@ -432,6 +478,21 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               Фриз
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => handleMark(st.subId, "excused", st)}
+            disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
+            title={connectionTitle ?? "Уважит. — Не списывать урок с абонемента"}
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+              st.currentStatus === "excused"
+                ? "bg-amber-600 border-amber-600 text-white shadow-xs"
+                : "bg-white border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50"
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Уважит.
+          </button>
         </div>
       </div>
     );
@@ -816,6 +877,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                         Отметки посещаемости доступны только за прошедшие и текущий день.
                       </p>
                     )}
+                    <AttendanceMarkLegend showFreeze={selectedLesson?.kind === "group"} />
                     <p className="text-[10px] font-sans bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums">
                       {modalSubs.length}{" "}
                       {pluralizeRu(modalSubs.length, ["абонемент", "абонемента", "абонементов"])}

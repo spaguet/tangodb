@@ -7,6 +7,7 @@ const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
   present: "Пришёл",
   absent: "Не пришёл",
   freeze: "Заморозка",
+  excused: "Уважит.",
 };
 
 function todayDateStr(): string {

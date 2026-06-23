@@ -30,7 +30,7 @@ const mapAttendanceRecord = (row: Record<string, unknown>): AttendanceRecord => 
   date: String(row.date ?? "").slice(0, 10),
   subscriptionId: row.subscription_id as string,
   clientDisplay: row.client_display as string,
-  attendanceStatus: row.attendance_status as "present" | "absent" | "freeze",
+  attendanceStatus: row.attendance_status as "present" | "absent" | "freeze" | "excused",
 });
 
 export type ScheduleDateEntry = {
@@ -291,8 +291,8 @@ export function useSubsForDate(
 
 /** Mirrors mark_attendance RPC lesson/freeze deltas for optimistic cache updates */
 function computeAttendanceDeltas(
-  oldStatus: "present" | "absent" | "freeze" | null,
-  newStatus: "present" | "absent" | "freeze"
+  oldStatus: "present" | "absent" | "freeze" | "excused" | null,
+  newStatus: "present" | "absent" | "freeze" | "excused"
 ): { lessonDelta: number; freezeDelta: number } {
   let lessonDelta = 0;
   let freezeDelta = 0;
@@ -329,7 +329,7 @@ export function useMarkAttendance() {
     }: {
       dateStr: string;
       subId: string;
-      status: "present" | "absent" | "freeze";
+      status: "present" | "absent" | "freeze" | "excused";
       disciplineId?: string | null;
     }) => {
       const { data, error } = await supabase.rpc("mark_attendance", {

@@ -203,6 +203,7 @@ export interface PriceTariffRef {
   label?: string;
   description?: string;
   category?: PriceCategory;
+  locationId?: string | null;
 }
 
 export const PRICE_LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }> = {
@@ -251,6 +252,22 @@ export function getPriceDescription(price: PriceTariffRef): string {
 
 export function getGroupTariffs<T extends PriceTariffRef>(prices: T[]): T[] {
   return prices.filter((p) => getPriceCategory(p) === "group");
+}
+
+export function isGlobalTariff(price: Pick<PriceTariffRef, "locationId">): boolean {
+  return !price.locationId;
+}
+
+export function filterGroupTariffsForSale<T extends PriceTariffRef & { locationId?: string | null }>(
+  prices: T[],
+  options: { localPriceList: boolean; locationId?: string | null }
+): T[] {
+  const groupTariffs = getGroupTariffs(prices);
+  if (!options.localPriceList) {
+    return groupTariffs.filter(isGlobalTariff);
+  }
+  if (!options.locationId) return [];
+  return groupTariffs.filter((p) => isGlobalTariff(p) || p.locationId === options.locationId);
 }
 
 export function getPrivatePackageTariffs<T extends PriceTariffRef>(prices: T[]): T[] {
