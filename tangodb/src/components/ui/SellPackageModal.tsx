@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Ticket, X } from "lucide-react";
@@ -9,6 +9,7 @@ import {
   formatCurrency,
   getPriceLabel,
   getPrivatePackageTariffs,
+  filterPrivatePackageTariffsForSale,
   tariffNeedsSecondClient,
   tariffNeedsThirdClient,
 } from "../../lib/utils";
@@ -49,10 +50,6 @@ export default function SellPackageModal({
   const navigate = useNavigate();
   const addSubscription = useAddSubscription();
   const { settings } = useSettings();
-  const packageTariffs = filterPrivatePackageTariffsByModules(
-    getPrivatePackageTariffs(prices),
-    settings?.modules ?? DEFAULT_ORG_MODULES
-  );
 
   const [selectedPackageTariffId, setSelectedPackageTariffId] = useState<string | "">("");
   const [subClient1Query, setSubClient1Query] = useState("");
@@ -63,6 +60,18 @@ export default function SellPackageModal({
   const [subClient3Id, setSubClient3Id] = useState("");
   const [subDisciplineId, setSubDisciplineId] = useState<string | "">("");
   const [subActivationDate, setSubActivationDate] = useState("");
+
+  const allPackageTariffs = filterPrivatePackageTariffsByModules(
+    getPrivatePackageTariffs(prices),
+    settings?.modules ?? DEFAULT_ORG_MODULES
+  );
+  const packageTariffs = useMemo(
+    () =>
+      filterPrivatePackageTariffsForSale(allPackageTariffs, {
+        disciplineId: subDisciplineId || null,
+      }),
+    [allPackageTariffs, subDisciplineId]
+  );
 
   const selectedPackageTariff = packageTariffs.find((p) => p.id === selectedPackageTariffId);
   const packageNeedsSecond = selectedPackageTariff ? tariffNeedsSecondClient(selectedPackageTariff) : false;

@@ -204,6 +204,7 @@ export interface PriceTariffRef {
   description?: string;
   category?: PriceCategory;
   locationId?: string | null;
+  disciplineId?: string | null;
 }
 
 export const PRICE_LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }> = {
@@ -254,20 +255,81 @@ export function getGroupTariffs<T extends PriceTariffRef>(prices: T[]): T[] {
   return prices.filter((p) => getPriceCategory(p) === "group");
 }
 
-export function isGlobalTariff(price: Pick<PriceTariffRef, "locationId">): boolean {
+export function isGlobalLocationTariff(price: Pick<PriceTariffRef, "locationId">): boolean {
   return !price.locationId;
 }
 
-export function filterGroupTariffsForSale<T extends PriceTariffRef & { locationId?: string | null }>(
-  prices: T[],
-  options: { localPriceList: boolean; locationId?: string | null }
-): T[] {
-  const groupTariffs = getGroupTariffs(prices);
-  if (!options.localPriceList) {
-    return groupTariffs.filter(isGlobalTariff);
+/** @deprecated Use isGlobalLocationTariff */
+export function isGlobalTariff(price: Pick<PriceTariffRef, "locationId">): boolean {
+  return isGlobalLocationTariff(price);
+}
+
+export function isGlobalDisciplineTariff(price: Pick<PriceTariffRef, "disciplineId">): boolean {
+  return !price.disciplineId;
+}
+
+export function isFullyGlobalTariff(price: Pick<PriceTariffRef, "locationId" | "disciplineId">): boolean {
+  return isGlobalLocationTariff(price) && isGlobalDisciplineTariff(price);
+}
+
+function matchesLocationBinding<T extends Pick<PriceTariffRef, "locationId">>(
+  price: T,
+  options: { localPriceList?: boolean; locationId?: string | null }
+): boolean {
+  if (options.localPriceList === false) {
+    return isGlobalLocationTariff(price);
   }
-  if (!options.locationId) return [];
-  return groupTariffs.filter((p) => isGlobalTariff(p) || p.locationId === options.locationId);
+  if (options.localPriceList === true) {
+    if (!options.locationId) return false;
+    return isGlobalLocationTariff(price) || price.locationId === options.locationId;
+  }
+  if (options.locationId) {
+    return isGlobalLocationTariff(price) || price.locationId === options.locationId;
+  }
+  return isGlobalLocationTariff(price);
+}
+
+function matchesDisciplineBinding<T extends Pick<PriceTariffRef, "disciplineId">>(
+  price: T,
+  disciplineId?: string | null
+): boolean {
+  if (!disciplineId) return isGlobalDisciplineTariff(price);
+  return isGlobalDisciplineTariff(price) || price.disciplineId === disciplineId;
+}
+
+export function filterTariffsForSale<T extends PriceTariffRef>(
+  prices: T[],
+  options: {
+    localPriceList?: boolean;
+    locationId?: string | null;
+    disciplineId?: string | null;
+  }
+): T[] {
+  return prices.filter(
+    (p) =>
+      matchesLocationBinding(p, options) && matchesDisciplineBinding(p, options.disciplineId ?? null)
+  );
+}
+
+export function filterGroupTariffsForSale<T extends PriceTariffRef>(
+  prices: T[],
+  options: { localPriceList: boolean; locationId?: string | null; disciplineId?: string | null }
+): T[] {
+  return filterTariffsForSale(getGroupTariffs(prices), options);
+}
+
+export function filterPrivateLessonTariffsForSale<T extends PriceTariffRef>(
+  prices: T[],
+  options: { locationId?: string | null; disciplineId?: string | null }
+): T[] {
+  return filterTariffsForSale(getPrivateLessonTariffs(prices), options);
+}
+
+export function filterPrivatePackageTariffsForSale<T extends PriceTariffRef>(
+  prices: T[],
+  options: { locationId?: string | null; disciplineId?: string | null }
+): T[] {
+  return filterTariffsForSale(getPrivatePackageTariffs(prices), options);
 }
 
 export function getPrivatePackageTariffs<T extends PriceTariffRef>(prices: T[]): T[] {

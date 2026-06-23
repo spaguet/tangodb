@@ -222,6 +222,8 @@ export default function ScheduleDebtorsBlock({
       clientId3: entry.clientId3,
       clientDisplay: entry.clientDisplay,
       price: entry.amount ?? 0,
+      locationId: entry.locationId,
+      disciplineId: entry.disciplineId,
     });
   };
 

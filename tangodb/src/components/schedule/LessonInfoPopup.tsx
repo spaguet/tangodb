@@ -119,6 +119,8 @@ export default function LessonInfoPopup({
       clientId3: fullLesson.clientId3,
       clientDisplay: fullLesson.clientDisplay,
       price: fullLesson.price,
+      locationId: fullLesson.locationId ?? null,
+      disciplineId: fullLesson.disciplineId ?? null,
     });
   };
 

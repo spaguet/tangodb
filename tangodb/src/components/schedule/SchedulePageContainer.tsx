@@ -214,33 +214,40 @@ export default function SchedulePageContainer() {
     [scheduleQuery.data?.personalLessons]
   );
 
-  const getLessonTitle = useCallback(
-    (lesson: DisplayLesson): string => {
-      if (lesson.kind === "group") {
-        const groupLabel = lesson.groupName?.trim();
-        if (groupLabel) return groupLabel;
-        const disciplineName = lesson.disciplineId
-          ? disciplineMap.get(lesson.disciplineId)
-          : undefined;
-        return disciplineName ?? "Групповой урок";
-      }
-      const clientLabel = lesson.clientDisplay;
-      return clientLabel && clientLabel !== "Клиент не указан" ? clientLabel : "Персональный";
-    },
-    [disciplineMap]
-  );
+  const getLessonTitle = useCallback((lesson: DisplayLesson): string => {
+    return `${lesson.timeStart}–${lesson.timeEnd}`;
+  }, []);
 
   const getLessonSubtitle = useCallback(
     (lesson: DisplayLesson): string | undefined => {
       const parts: string[] = [];
-      if (lesson.disciplineId) {
-        const name = disciplineMap.get(lesson.disciplineId);
-        if (name) parts.push(name);
+
+      if (lesson.kind === "group") {
+        const groupLabel = lesson.groupName?.trim();
+        if (groupLabel) {
+          parts.push(groupLabel);
+        } else {
+          const disciplineName = lesson.disciplineId
+            ? disciplineMap.get(lesson.disciplineId)
+            : undefined;
+          parts.push(disciplineName ?? "Групповой урок");
+        }
+      } else {
+        const clientLabel = lesson.clientDisplay;
+        parts.push(
+          clientLabel && clientLabel !== "Клиент не указан" ? clientLabel : "Персональный"
+        );
+        if (lesson.disciplineId) {
+          const disciplineName = disciplineMap.get(lesson.disciplineId);
+          if (disciplineName) parts.push(disciplineName);
+        }
       }
+
       if (lesson.teacherMemberId) {
         const teacher = teamMap.get(lesson.teacherMemberId);
         if (teacher) parts.push(teacher);
       }
+
       return parts.length > 0 ? parts.join(" · ") : undefined;
     },
     [disciplineMap, teamMap]

@@ -23,7 +23,7 @@ import {
   formatCurrency,
   formatDateRu,
   getPriceLabel,
-  getPrivateLessonTariffs,
+  filterPrivateLessonTariffsForSale,
   getSubscriptionClientIds,
 } from "../../lib/utils";
 import type { Client, Subscription } from "../../types";
@@ -98,7 +98,14 @@ export default function AddPersonalLessonForm({
   const [bookingPaymentMode, setBookingPaymentMode] = useState<"single" | "package" | null>(null);
   const [packageModalOpen, setPackageModalOpen] = useState(false);
 
-  const lessonTariffs = getPrivateLessonTariffs(prices);
+  const lessonTariffs = useMemo(
+    () =>
+      filterPrivateLessonTariffsForSale(prices, {
+        locationId: prefill?.locationId ?? null,
+        disciplineId: disciplineId || null,
+      }),
+    [prices, prefill?.locationId, disciplineId]
+  );
   const pType: "solo" | "pair" | "trio" =
     bookingClients.length >= 3 ? "trio" : bookingClients.length === 2 ? "pair" : "solo";
 
@@ -135,6 +142,13 @@ export default function AddPersonalLessonForm({
       const first = lessonTariffs[0];
       setSelectedLessonTariffId(first.id!);
       setCustomPrice(first.price.toString());
+    }
+  }, [lessonTariffs, selectedLessonTariffId]);
+
+  useEffect(() => {
+    if (selectedLessonTariffId && !lessonTariffs.some((t) => t.id === selectedLessonTariffId)) {
+      setSelectedLessonTariffId("");
+      setCustomPrice("");
     }
   }, [lessonTariffs, selectedLessonTariffId]);
 

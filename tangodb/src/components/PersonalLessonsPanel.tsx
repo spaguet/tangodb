@@ -1,5 +1,5 @@
 /** @deprecated Слияние с components/schedule/* (Промпт 7). Используйте SchedulePageContainer. */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, Search, FolderClosed, Trash2, BadgePlus, CalendarDays, ChevronLeft, ChevronRight, Ticket, Edit, X, Coins, CircleOff } from "lucide-react";
@@ -14,7 +14,7 @@ import {
   formatMonthTitleRu,
   getPersonalLessonTariffLabel,
   getPriceLabel,
-  getPrivateLessonTariffs,
+  filterPrivateLessonTariffsForSale,
   getSubscriptionClientIds,
   bookingClientsMatchSubscription,
   tariffParticipantType,
@@ -141,13 +141,26 @@ export default function PersonalLessonsPanel({
   const pType: "solo" | "pair" | "trio" =
     bookingClients.length >= 3 ? "trio" : bookingClients.length === 2 ? "pair" : "solo";
 
-  const lessonTariffs = getPrivateLessonTariffs(prices);
+  const lessonTariffs = useMemo(
+    () =>
+      filterPrivateLessonTariffsForSale(prices, {
+        disciplineId: disciplineId || null,
+      }),
+    [prices, disciplineId]
+  );
 
   useEffect(() => {
     if (lessonTariffs.length > 0 && selectedLessonTariffId === "") {
       const first = lessonTariffs[0];
       setSelectedLessonTariffId(first.id!);
       setCustomPrice(first.price.toString());
+    }
+  }, [lessonTariffs, selectedLessonTariffId]);
+
+  useEffect(() => {
+    if (selectedLessonTariffId && !lessonTariffs.some((p) => p.id === selectedLessonTariffId)) {
+      setSelectedLessonTariffId("");
+      setCustomPrice("");
     }
   }, [lessonTariffs, selectedLessonTariffId]);
 

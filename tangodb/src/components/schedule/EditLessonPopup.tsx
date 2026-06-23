@@ -32,6 +32,8 @@ interface EditLessonPopupProps {
     dayOfWeek: number;
     time: string;
     timeEnd: string;
+    disciplineId?: string | null;
+    groupName?: string;
     locationId?: string | null;
     validFrom?: string;
     validTo?: string | null;

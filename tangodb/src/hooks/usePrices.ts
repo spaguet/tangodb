@@ -14,6 +14,7 @@ const mapPrice = (row: Record<string, unknown>): Price => ({
   description: (row.description as string) || undefined,
   category: row.category as PriceCategory,
   locationId: row.location_id != null ? String(row.location_id) : null,
+  disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
 });
 
 export function usePrices() {
@@ -54,15 +55,23 @@ export function useUpdatePriceMeta() {
       id,
       label,
       description,
+      locationId,
+      disciplineId,
     }: {
       id: string;
       label: string;
       description: string;
+      locationId?: string | null;
+      disciplineId?: string | null;
     }) => {
-      const { error } = await supabase
-        .from("prices")
-        .update({ label: label.trim(), description: description.trim() })
-        .eq("id", id);
+      const payload: Record<string, unknown> = {
+        label: label.trim(),
+        description: description.trim(),
+      };
+      if (locationId !== undefined) payload.location_id = locationId;
+      if (disciplineId !== undefined) payload.discipline_id = disciplineId;
+
+      const { error } = await supabase.from("prices").update(payload).eq("id", id);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
     },

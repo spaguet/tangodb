@@ -17,7 +17,7 @@ import {
   formatCurrency,
   formatDateRu,
   getPriceLabel,
-  getPrivateLessonTariffs,
+  filterPrivateLessonTariffsForSale,
   getSubscriptionClientIds,
 } from "../../lib/utils";
 import type { Subscription } from "../../types";
@@ -35,6 +35,8 @@ export interface PayPersonalLessonTarget {
   clientId3: string;
   clientDisplay: string;
   price: number;
+  locationId?: string | null;
+  disciplineId?: string | null;
 }
 
 interface PayPersonalLessonModalProps {
@@ -67,7 +69,14 @@ export default function PayPersonalLessonModal({
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
   const [packageModalOpen, setPackageModalOpen] = useState(false);
 
-  const lessonTariffs = useMemo(() => getPrivateLessonTariffs(prices), [prices]);
+  const lessonTariffs = useMemo(
+    () =>
+      filterPrivateLessonTariffsForSale(prices, {
+        locationId: lesson?.locationId ?? null,
+        disciplineId: lesson?.disciplineId ?? null,
+      }),
+    [prices, lesson?.locationId, lesson?.disciplineId]
+  );
 
   const clientMap = useMemo(
     () => Object.fromEntries(directoryClients.map((c) => [c.id, c])),
@@ -105,7 +114,7 @@ export default function PayPersonalLessonModal({
   useEffect(() => {
     if (!lesson || lessonTariffs.length === 0) return;
     setSelectedLessonTariffId((current) => {
-      if (current) return current;
+      if (current && lessonTariffs.some((t) => t.id === current)) return current;
       const matched = lessonTariffs.find((t) => t.price === lesson.price) ?? lessonTariffs[0];
       return matched.id!;
     });

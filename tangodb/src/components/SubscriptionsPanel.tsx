@@ -138,14 +138,6 @@ export default function SubscriptionsPanel({
   // Sale form states
   const [localPriceList, setLocalPriceList] = useState(false);
   const [saleLocationId, setSaleLocationId] = useState<string | "">("");
-
-  const groupTariffs = filterGroupTariffsByModules(
-    filterGroupTariffsForSale(prices, {
-      localPriceList,
-      locationId: localPriceList ? saleLocationId || null : null,
-    }),
-    settings?.modules ?? DEFAULT_ORG_MODULES
-  );
   const [selectedTariffId, setSelectedTariffId] = useState<string | "">("");
 
   const [client1Query, setClient1Query] = useState("");
@@ -153,6 +145,15 @@ export default function SubscriptionsPanel({
   const [client2Query, setClient2Query] = useState("");
   const [client2Id, setClient2Id] = useState("");
   const [disciplineId, setDisciplineId] = useState<string | "">("");
+
+  const groupTariffs = filterGroupTariffsByModules(
+    filterGroupTariffsForSale(prices, {
+      localPriceList,
+      locationId: localPriceList ? saleLocationId || null : null,
+      disciplineId: disciplineId || null,
+    }),
+    settings?.modules ?? DEFAULT_ORG_MODULES
+  );
 
   useEffect(() => {
     if (disciplines.length > 0 && disciplineId === "") {
@@ -194,7 +195,7 @@ export default function SubscriptionsPanel({
       setClient2Id("");
       setClient2Query("");
     }
-  }, [groupTariffs, selectedTariffId]);
+  }, [groupTariffs, selectedTariffId, disciplineId]);
 
   const selectedTariff = groupTariffs.find((p) => p.id === selectedTariffId);
   const needsSecondClient = selectedTariff ? tariffNeedsSecondClient(selectedTariff) : false;

@@ -79,6 +79,7 @@ export interface Price {
   description?: string;
   category: PriceCategory;
   locationId?: string | null;
+  disciplineId?: string | null;
 }
 
 export interface Subscription {

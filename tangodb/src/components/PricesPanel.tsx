@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Coins, Edit, Ticket, Trash2, X } from "lucide-react";
 import { useCreatePrice, useDeletePrice, usePrices, useUpdatePrice, useUpdatePriceMeta } from "../hooks/usePrices";
 import { useAccessibleLocations } from "../hooks/useLocations";
+import { useDisciplines } from "../hooks/useDisciplines";
 import {
   filterGroupTariffsByModules,
   isLegacyPairCycleTariff,
@@ -29,6 +30,7 @@ import { useSettings } from "../settings/SettingsProvider";
 import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LocationTariffField from "./ui/LocationTariffField";
+import DisciplineTariffField from "./ui/DisciplineTariffField";
 import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
@@ -99,6 +101,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: prices = [], isLoading, isError, error } = usePrices();
   const { locations } = useAccessibleLocations();
+  const { data: disciplines = [] } = useDisciplines();
   const { settings } = useSettings();
   const modules = settings?.modules;
   const pairSubscriptionsEnabled = modules?.pair_subscriptions ?? true;
@@ -134,12 +137,17 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   });
   const [bindToLocation, setBindToLocation] = useState(false);
   const [formLocationId, setFormLocationId] = useState("");
+  const [editBindToLocation, setEditBindToLocation] = useState(false);
+  const [editLocationId, setEditLocationId] = useState("");
+  const [editBindToDiscipline, setEditBindToDiscipline] = useState(false);
+  const [editDisciplineId, setEditDisciplineId] = useState("");
   const [creatingSection, setCreatingSection] = useState<"group" | "privateLesson" | "privatePackage" | null>(
     null
   );
   const [activeCreateTab, setActiveCreateTab] = useState<CreateTabId>("group");
 
   const locationMap = Object.fromEntries(locations.map((l) => [l.id, l.name]));
+  const disciplineMap = Object.fromEntries(disciplines.map((d) => [d.id, d.name]));
 
   const closeCreateModal = () => setCreateModalStep(null);
 
@@ -231,6 +239,10 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     setEditingPrice(p);
     setEditLabel(getPriceLabel(p));
     setEditDescription(getPriceDescription(p));
+    setEditBindToLocation(!!p.locationId);
+    setEditLocationId(p.locationId ?? locations[0]?.id ?? "");
+    setEditBindToDiscipline(!!p.disciplineId);
+    setEditDisciplineId(p.disciplineId ?? disciplines[0]?.id ?? "");
   };
 
   const handleSaveMeta = async () => {
@@ -239,11 +251,21 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       toast("Укажите название тарифа.", "error");
       return;
     }
+    if (editBindToLocation && !editLocationId) {
+      toast("Выберите локацию для локального тарифа.", "error");
+      return;
+    }
+    if (editBindToDiscipline && !editDisciplineId) {
+      toast("Выберите дисциплину для тарифа.", "error");
+      return;
+    }
 
     const res = await updatePriceMeta.mutateAsync({
       id: editingPrice.id,
       label: editLabel,
       description: editDescription,
+      locationId: editBindToLocation ? editLocationId : null,
+      disciplineId: editBindToDiscipline ? editDisciplineId : null,
     });
 
     if (!res.success) {
@@ -415,13 +437,22 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
             {" · "}
             {formatCurrency(p.price)}
           </p>
-          <p className="text-[10px] font-sans mt-1">
-            {p.locationId ? (
-              <span className="text-indigo-600 font-semibold">
-                Локальный · {locationMap[p.locationId] ?? "локация"}
-              </span>
-            ) : (
+          <p className="text-[10px] font-sans mt-1 space-x-2">
+            {!p.locationId && !p.disciplineId ? (
               <span className="text-slate-400">Глобальный тариф</span>
+            ) : (
+              <>
+                {p.locationId ? (
+                  <span className="text-indigo-600 font-semibold">
+                    Локальный · {locationMap[p.locationId] ?? "локация"}
+                  </span>
+                ) : null}
+                {p.disciplineId ? (
+                  <span className="text-violet-600 font-semibold">
+                    Дисциплина · {disciplineMap[p.disciplineId] ?? "дисциплина"}
+                  </span>
+                ) : null}
+              </>
             )}
           </p>
         </div>
@@ -568,6 +599,20 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     className={`${inputCls} resize-none`}
                   />
                 </div>
+                <LocationTariffField
+                  bindToLocation={editBindToLocation}
+                  onBindChange={setEditBindToLocation}
+                  locationId={editLocationId}
+                  onLocationChange={setEditLocationId}
+                  locations={locations}
+                />
+                <DisciplineTariffField
+                  bindToDiscipline={editBindToDiscipline}
+                  onBindChange={setEditBindToDiscipline}
+                  disciplineId={editDisciplineId}
+                  onDisciplineChange={setEditDisciplineId}
+                  disciplines={disciplines}
+                />
               </div>
 
               <div className="flex items-center gap-3 pt-1 text-xs">
