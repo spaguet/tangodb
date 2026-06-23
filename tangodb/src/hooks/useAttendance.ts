@@ -9,6 +9,7 @@ import {
   type FreezePolicy,
   wouldExceedFreezeLimit,
 } from "../lib/freezePolicy";
+import { subscriptionMatchesScheduleGroup } from "../lib/scheduleGroups";
 import type {
   AttendanceRecord,
   Client,
@@ -16,6 +17,7 @@ import type {
   ScheduleSlot,
   SubForDate,
   Subscription,
+  SubscriptionGroupLink,
 } from "../types";
 import { useClientDirectory } from "./useClients";
 import { useSchedule } from "./useSchedule";
@@ -98,6 +100,8 @@ export function computeSubsForDate(
     category?: "group" | "private";
     subscriptionIds?: string[];
     disciplineId?: string | null;
+    groupKey?: string | null;
+    groupsBySubId?: Record<string, SubscriptionGroupLink[]>;
   },
   freezePolicy: FreezePolicy = DEFAULT_FREEZE_POLICY
 ): SubForDate[] {
@@ -111,6 +115,12 @@ export function computeSubsForDate(
       if (options?.category && s.category !== options.category) return false;
       if (idFilter && !idFilter.has(s.id)) return false;
       if (disciplineFilter != null && s.disciplineId !== disciplineFilter) return false;
+      if (
+        options?.groupKey &&
+        !subscriptionMatchesScheduleGroup(s.id, options.groupKey, options.groupsBySubId ?? {})
+      ) {
+        return false;
+      }
       return true;
     })
     .map((s) => {
@@ -227,6 +237,8 @@ export type SubsForDateOptions = {
   category?: "group" | "private";
   subscriptionIds?: string[];
   disciplineId?: string | null;
+  groupKey?: string | null;
+  groupsBySubId?: Record<string, SubscriptionGroupLink[]>;
 };
 
 export function useSubsForDate(
@@ -239,7 +251,7 @@ export function useSubsForDate(
   const attendanceQuery = useAttendanceRecords(yearMonth);
   const { freezePolicy } = useSettings();
 
-  const optionsKey = `${options?.category ?? ""}|${options?.disciplineId ?? ""}|${(options?.subscriptionIds ?? []).join(",")}`;
+  const optionsKey = `${options?.category ?? ""}|${options?.disciplineId ?? ""}|${options?.groupKey ?? ""}|${(options?.subscriptionIds ?? []).join(",")}`;
   const stableOptions = useMemo(
     () =>
       options
@@ -247,9 +259,11 @@ export function useSubsForDate(
             category: options.category,
             subscriptionIds: options.subscriptionIds,
             disciplineId: options.disciplineId,
+            groupKey: options.groupKey,
+            groupsBySubId: options.groupsBySubId,
           }
         : undefined,
-    [optionsKey]
+    [optionsKey, options?.groupsBySubId]
   );
 
   const getSubsForDate = useCallback(

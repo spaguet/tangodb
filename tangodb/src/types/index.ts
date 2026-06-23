@@ -82,6 +82,12 @@ export interface Price {
   disciplineId?: string | null;
 }
 
+export interface SubscriptionGroupLink {
+  groupName: string;
+  disciplineId: string;
+  locationId: string | null;
+}
+
 export interface Subscription {
   id: string;
   type: "solo" | "pair" | "pair_hm" | string;
@@ -97,6 +103,7 @@ export interface Subscription {
   disciplineId?: string | null;
   priceId?: string | null;
   category: "group" | "private";
+  groups?: SubscriptionGroupLink[];
 }
 
 export interface AttendanceRecord {

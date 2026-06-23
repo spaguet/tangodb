@@ -20,6 +20,8 @@ import {
   useFinishSubscription,
   useSubscriptions,
 } from "../hooks/useSubscriptions";
+import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
+import { useSchedule } from "../hooks/useSchedule";
 import { useRecordSubscriptionPayment, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
 import type { PaymentMethod } from "../types";
 import {
@@ -30,6 +32,7 @@ import {
 import { usePermissions } from "../hooks/usePermissions";
 import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitleRu } from "../lib/utils";
 import { filterActiveSubscriptions, filterHistorySubscriptions, ALL_LOCATIONS_KEY } from "../lib/subscriptionFilters";
+import { getSubscriptionGroupDisplayNames, listScheduleGroups } from "../lib/scheduleGroups";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules } from "../lib/orgModules";
 import { useSettings } from "../settings/SettingsProvider";
@@ -39,6 +42,7 @@ import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import DatePickerField from "./ui/DatePickerField";
 import DisciplineSelect from "./ui/DisciplineSelect";
+import GroupCheckboxDropdown from "./ui/GroupCheckboxDropdown";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
@@ -68,6 +72,8 @@ export default function SubscriptionsPanel({
   const directoryClientsQuery = useClientDirectory();
   const disciplinesQuery = useDisciplines();
   const subscriptionsQuery = useSubscriptions();
+  const subscriptionGroupsQuery = useSubscriptionGroups();
+  const scheduleQuery = useSchedule();
   const pricesQuery = usePrices();
   const attendanceQuery = useAttendanceRecords();
   const personalLessonsQuery = usePersonalLessons();
@@ -75,6 +81,13 @@ export default function SubscriptionsPanel({
   const { data: directoryClients = [], isLoading: directoryClientsLoading, isError: directoryClientsError, error: directoryClientsErr } = directoryClientsQuery;
   const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
   const { data: subscriptions = [], isLoading: subsLoading, isError: subsError, error: subsErr } = subscriptionsQuery;
+  const {
+    groupsBySubId,
+    isLoading: subscriptionGroupsLoading,
+    isError: subscriptionGroupsError,
+    error: subscriptionGroupsErr,
+  } = subscriptionGroupsQuery;
+  const { data: schedule = [], isLoading: scheduleLoading, isError: scheduleError, error: scheduleErr } = scheduleQuery;
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
   const {
     data: attendanceRecords = [],
@@ -99,6 +112,8 @@ export default function SubscriptionsPanel({
     directoryClientsLoading ||
     disciplinesLoading ||
     subsLoading ||
+    subscriptionGroupsLoading ||
+    scheduleLoading ||
     pricesLoading ||
     attendanceLoading ||
     personalLessonsLoading;
@@ -107,6 +122,8 @@ export default function SubscriptionsPanel({
     directoryClientsError ||
     disciplinesError ||
     subsError ||
+    subscriptionGroupsError ||
+    scheduleError ||
     pricesError ||
     attendanceError ||
     personalLessonsError;
@@ -115,6 +132,8 @@ export default function SubscriptionsPanel({
     directoryClientsErr ??
     disciplinesErr ??
     subsErr ??
+    subscriptionGroupsErr ??
+    scheduleErr ??
     pricesErr ??
     attendanceErr ??
     personalLessonsErr;
@@ -137,6 +156,7 @@ export default function SubscriptionsPanel({
   const [search, setSearch] = useState("");
   const [activeLocationFilter, setActiveLocationFilter] = useState("");
   const [activeDisciplineFilter, setActiveDisciplineFilter] = useState("");
+  const [activeGroupFilter, setActiveGroupFilter] = useState("");
   const [endingOnlyFilter, setEndingOnlyFilter] = useState(false);
   const [historyDisciplineId, setHistoryDisciplineId] = useState("");
   const [historyLocationId, setHistoryLocationId] = useState("");
@@ -156,6 +176,7 @@ export default function SubscriptionsPanel({
   const [client2Query, setClient2Query] = useState("");
   const [client2Id, setClient2Id] = useState("");
   const [disciplineId, setDisciplineId] = useState<string | "">("");
+  const [selectedGroupKeys, setSelectedGroupKeys] = useState<string[]>([]);
 
   const groupTariffs = filterGroupTariffsByModules(
     filterGroupTariffsForSale(prices, {
@@ -208,6 +229,42 @@ export default function SubscriptionsPanel({
     }
   }, [groupTariffs, selectedTariffId, disciplineId]);
 
+  const saleGroupOptions = useMemo(
+    () =>
+      listScheduleGroups(schedule, {
+        disciplineId: disciplineId || null,
+        locationId: localPriceList ? saleLocationId || null : null,
+      }).map((group) => ({ key: group.key, label: group.displayName })),
+    [schedule, disciplineId, localPriceList, saleLocationId]
+  );
+
+  const activeLocationGroupOptions = useMemo(
+    () =>
+      activeLocationFilter
+        ? listScheduleGroups(schedule, { locationId: activeLocationFilter }).map((group) => ({
+            key: group.key,
+            label: group.displayName,
+          }))
+        : [],
+    [schedule, activeLocationFilter]
+  );
+
+  const groupLabelByKey = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const group of listScheduleGroups(schedule)) {
+      map[group.key] = group.displayName;
+    }
+    return map;
+  }, [schedule]);
+
+  useEffect(() => {
+    setSelectedGroupKeys((prev) => prev.filter((key) => saleGroupOptions.some((option) => option.key === key)));
+  }, [saleGroupOptions]);
+
+  useEffect(() => {
+    setActiveGroupFilter("");
+  }, [activeLocationFilter, activeDisciplineFilter]);
+
   const selectedTariff = groupTariffs.find((p) => p.id === selectedTariffId);
   const needsSecondClient = selectedTariff ? tariffNeedsSecondClient(selectedTariff) : false;
 
@@ -255,6 +312,11 @@ export default function SubscriptionsPanel({
       return;
     }
 
+    if (selectedGroupKeys.length === 0) {
+      toast("Выберите хотя бы одну группу, в которой действует абонемент.", "error");
+      return;
+    }
+
     const { type, pairMonth } = deriveSubscriptionTypeFromTariff(selectedTariff);
 
     const payload = {
@@ -267,6 +329,7 @@ export default function SubscriptionsPanel({
       disciplineId,
       priceId: selectedTariff.id,
       category: "group" as const,
+      groupKeys: selectedGroupKeys,
     };
 
     const res = await addSubscription.mutateAsync(payload);
@@ -297,6 +360,7 @@ export default function SubscriptionsPanel({
     setClient1Id("");
     setClient2Query("");
     setClient2Id("");
+    setSelectedGroupKeys([]);
   };
 
   const handleConfirmFinish = async () => {
@@ -347,10 +411,22 @@ export default function SubscriptionsPanel({
         clientMap,
         locationId: activeLocationFilter,
         disciplineId: activeDisciplineFilter,
+        groupKey: activeGroupFilter,
         endingOnly: endingOnlyFilter,
         priceMap,
+        groupsBySubId,
       }),
-    [activeRecords, search, clientMap, activeLocationFilter, activeDisciplineFilter, endingOnlyFilter, priceMap]
+    [
+      activeRecords,
+      search,
+      clientMap,
+      activeLocationFilter,
+      activeDisciplineFilter,
+      activeGroupFilter,
+      endingOnlyFilter,
+      priceMap,
+      groupsBySubId,
+    ]
   );
 
   const historyRecords = useMemo(
@@ -474,6 +550,21 @@ export default function SubscriptionsPanel({
               ))}
             </AppSelect>
 
+            {activeLocationFilter ? (
+              <AppSelect
+                label="Группы"
+                value={activeGroupFilter}
+                onChange={(e) => setActiveGroupFilter(e.target.value)}
+              >
+                <option value="">Все группы</option>
+                {activeLocationGroupOptions.map((group) => (
+                  <option key={group.key} value={group.key}>
+                    {group.label}
+                  </option>
+                ))}
+              </AppSelect>
+            ) : null}
+
             <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer sm:col-span-2 lg:col-span-1 lg:self-end lg:pb-2">
               <input
                 type="checkbox"
@@ -490,11 +581,11 @@ export default function SubscriptionsPanel({
               <div className="text-center py-20 text-slate-400 space-y-3">
                 <Ticket className="w-8 h-8 mx-auto text-slate-300" />
                 <p className="text-sm">
-                  {search.trim() || activeLocationFilter || activeDisciplineFilter || endingOnlyFilter
+                  {search.trim() || activeLocationFilter || activeDisciplineFilter || activeGroupFilter || endingOnlyFilter
                     ? "По выбранным условиям абонементов не найдено."
                     : "Активных абонементов пока нет."}
                 </p>
-                {!search.trim() && !activeLocationFilter && !activeDisciplineFilter && !endingOnlyFilter && (
+                {!search.trim() && !activeLocationFilter && !activeDisciplineFilter && !activeGroupFilter && !endingOnlyFilter && (
                   <button
                     onClick={() => switchTab("sell")}
                     className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
@@ -559,6 +650,7 @@ export default function SubscriptionsPanel({
                   sub.disciplineId != null ? disciplineMap[sub.disciplineId]?.name : undefined;
 
                 const tariffLabel = getSubscriptionTariffLabel(sub, prices);
+                const linkedGroupNames = getSubscriptionGroupDisplayNames(sub.id, groupsBySubId, groupLabelByKey);
 
                 const isExpanded = expandedSubId === sub.id;
                 const attendanceStats = attendanceStatsBySubId[sub.id] ?? { visits: 0, absences: 0 };
@@ -606,6 +698,19 @@ export default function SubscriptionsPanel({
                           />
                         </div>
                       </div>
+
+                      {linkedGroupNames.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {linkedGroupNames.map((groupName) => (
+                            <span
+                              key={groupName}
+                              className="text-[10px] font-sans font-semibold tracking-wide text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100"
+                            >
+                              {groupName}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                     </button>
 
                     {isExpanded && (
@@ -625,6 +730,14 @@ export default function SubscriptionsPanel({
                                   {disciplineName}
                                 </span>
                               ) : null}
+                              {linkedGroupNames.map((groupName) => (
+                                <span
+                                  key={`${sub.id}-${groupName}`}
+                                  className="text-[10px] font-sans font-semibold tracking-wide text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100"
+                                >
+                                  {groupName}
+                                </span>
+                              ))}
                             </div>
                           </div>
 
@@ -1012,8 +1125,24 @@ export default function SubscriptionsPanel({
             <DisciplineSelect
               disciplines={disciplines}
               value={disciplineId}
-              onChange={setDisciplineId}
+              onChange={(value) => {
+                setDisciplineId(value);
+                setSelectedGroupKeys([]);
+              }}
               toast={toast}
+            />
+
+            <GroupCheckboxDropdown
+              label="Групповые уроки"
+              options={saleGroupOptions}
+              selectedKeys={selectedGroupKeys}
+              onChange={setSelectedGroupKeys}
+              placeholder="Выберите группы..."
+              emptyMessage={
+                disciplineId
+                  ? "Нет групповых уроков для выбранного направления"
+                  : "Сначала выберите дисциплину"
+              }
             />
 
             <div className="panel-form-full-row-md">

@@ -21,6 +21,8 @@ import {
   useScheduleDates,
   useSubsForDate,
 } from "../hooks/useAttendance";
+import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
+import { scheduleGroupKey } from "../lib/scheduleGroups";
 import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
 import {
   getConnectionBlockReason,
@@ -102,6 +104,8 @@ type DayLessonEntry =
       timeEnd: string;
       label: string;
       disciplineId?: string | null;
+      groupName?: string;
+      locationId?: string | null;
     }
   | { kind: "personal"; key: string; start: string; lesson: PersonalLesson; label: string };
 
@@ -164,6 +168,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     enabled: selectedLocationId != null,
   });
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = usePrices();
+  const { groupsBySubId } = useSubscriptionGroups();
 
   const [selectedDate, setSelectedDate] = useState(todayDateStr);
   const [selectedLesson, setSelectedLesson] = useState<DayLessonEntry | null>(null);
@@ -225,10 +230,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       ...groupLessonsForDay.map((slot) => ({
         kind: "group" as const,
         start: slot.time,
-        key: `g-${slot.date}|${slot.time}|${slot.disciplineId ?? "none"}`,
+        key: `g-${slot.date}|${slot.time}|${scheduleGroupKey({
+          locationId: slot.locationId ?? selectedLocationId,
+          groupName: slot.groupName,
+          disciplineId: slot.disciplineId,
+        })}`,
         time: slot.time,
         timeEnd: slot.timeEnd,
         disciplineId: slot.disciplineId ?? null,
+        groupName: slot.groupName,
+        locationId: slot.locationId ?? selectedLocationId,
         label: slot.groupName
           ? `${slot.groupName} · ${slot.time} – ${slot.timeEnd}`
           : `Групповой урок · ${slot.time} – ${slot.timeEnd}`,
@@ -242,7 +253,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       })),
     ];
     return entries.sort((a, b) => a.start.localeCompare(b.start));
-  }, [groupLessonsForDay, personalForDay]);
+  }, [groupLessonsForDay, personalForDay, selectedLocationId]);
 
   const subsOptions = useMemo(() => {
     if (!selectedLesson) return undefined;
@@ -250,13 +261,19 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       return {
         category: "group" as const,
         disciplineId: selectedLesson.disciplineId ?? null,
+        groupKey: scheduleGroupKey({
+          locationId: selectedLesson.locationId ?? selectedLocationId,
+          groupName: selectedLesson.groupName,
+          disciplineId: selectedLesson.disciplineId,
+        }),
+        groupsBySubId,
       };
     }
     if (selectedLesson.lesson.subscriptionId) {
       return { subscriptionIds: [selectedLesson.lesson.subscriptionId] };
     }
     return { subscriptionIds: [] as string[] };
-  }, [selectedLesson]);
+  }, [selectedLesson, selectedLocationId, groupsBySubId]);
 
   const { subs: modalSubs = [], isLoading: subsLoading, isError: subsError, error: subsErr } = useSubsForDate(
     selectedLesson ? selectedDate : undefined,

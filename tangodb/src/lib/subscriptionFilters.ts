@@ -1,4 +1,5 @@
-import type { Client, Price, Subscription } from "../types";
+import type { Client, Price, Subscription, SubscriptionGroupLink } from "../types";
+import { subscriptionGroupLinkKey } from "./scheduleGroups";
 import { isDateInYear, isDateInYearMonth } from "./utils";
 
 export const ALL_LOCATIONS_KEY = "__all__";
@@ -42,14 +43,21 @@ export function filterActiveSubscriptions(
     clientMap: Record<string, Client>;
     locationId: string;
     disciplineId: string;
+    groupKey: string;
     endingOnly: boolean;
     priceMap: Record<string, Price>;
+    groupsBySubId: Record<string, SubscriptionGroupLink[]>;
   }
 ): Subscription[] {
   return subs.filter((sub) => {
     if (opts.search.trim() && !matchesClientSearch(sub, opts.search, opts.clientMap)) return false;
     if (opts.locationId && getSubscriptionLocationId(sub, opts.priceMap) !== opts.locationId) return false;
     if (opts.disciplineId && sub.disciplineId !== opts.disciplineId) return false;
+    if (opts.groupKey) {
+      const links = opts.groupsBySubId[sub.id];
+      if (!links || links.length === 0) return false;
+      if (!links.some((link) => subscriptionGroupLinkKey(link) === opts.groupKey)) return false;
+    }
     if (opts.endingOnly && sub.lessonsLeft > 2) return false;
     return true;
   });

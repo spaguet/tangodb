@@ -3,10 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { formatClientName, normalizeSubscriptionPairMonth } from "../lib/utils";
 import type { ActiveSubscription, Subscription } from "../types";
+import { parseScheduleGroupKey } from "../lib/scheduleGroups";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { isRestrictedReceptionAdmin } from "../lib/permissions";
 import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { subscriptionGroupsQueryKey } from "./useSubscriptionGroups";
 
 export const subscriptionsQueryKey = ["subscriptions"] as const;
 
@@ -115,6 +117,7 @@ export function useAddSubscription() {
       disciplineId: string;
       priceId?: string | null;
       category?: "group" | "private";
+      groupKeys?: string[];
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "Организация не выбрана" };
@@ -143,10 +146,33 @@ export function useAddSubscription() {
       });
 
       if (error) return { success: false as const, error: error.message };
+
+      if ((sub.groupKeys?.length ?? 0) > 0) {
+        const groupRows = sub.groupKeys!.map((key) => {
+          const parsed = parseScheduleGroupKey(key);
+          return {
+            organization_id: organizationId,
+            subscription_id: id,
+            group_name: parsed.groupName,
+            discipline_id: parsed.disciplineId ?? sub.disciplineId,
+            location_id: parsed.locationId,
+          };
+        });
+
+        const { error: groupsError } = await supabase.from("subscription_groups").insert(groupRows);
+        if (groupsError) {
+          await supabase.from("subscriptions").delete().eq("id", id);
+          return { success: false as const, error: groupsError.message };
+        }
+      }
+
       return { success: true as const, id };
     },
     onSuccess: (result) => {
-      if (result.success) void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey });
+      if (result.success) {
+        void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey });
+        void queryClient.invalidateQueries({ queryKey: subscriptionGroupsQueryKey });
+      }
     },
   });
 }
