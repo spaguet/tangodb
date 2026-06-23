@@ -147,7 +147,9 @@ function getPanelTitle(pathname: string, subscriptionsTab: string): string {
   if (pathname.startsWith("/finance")) return "Финансы";
   if (pathname === "/clients") return "Клиенты";
   if (pathname.startsWith("/subscriptions")) {
-    return subscriptionsTab === "sell" ? "Продажа абонемента" : "Действующие абонементы";
+    if (subscriptionsTab === "sell") return "Продажа абонемента";
+    if (subscriptionsTab === "history") return "История абонементов";
+    return "Действующие абонементы";
   }
   if (pathname === "/schedule") return "Расписание";
   if (pathname === "/attendance") return "Журнал посещений и календарь";
@@ -491,6 +493,7 @@ function RouteSync() {
 
   useEffect(() => {
     if (location.pathname === "/subscriptions/sell") setSubscriptionsTab("sell");
+    else if (location.pathname === "/subscriptions/history") setSubscriptionsTab("history");
     else if (location.pathname === "/subscriptions") setSubscriptionsTab("active");
   }, [location.pathname, setSubscriptionsTab]);
 
@@ -548,6 +551,7 @@ export default function App() {
                   <Route path="clients" element={<ErrorBoundary><ClientsPage /></ErrorBoundary>} />
                   <Route path="subscriptions" element={<ErrorBoundary><SubscriptionsPage initialTab="active" /></ErrorBoundary>} />
                   <Route path="subscriptions/sell" element={<ErrorBoundary><SubscriptionsPage initialTab="sell" /></ErrorBoundary>} />
+                  <Route path="subscriptions/history" element={<ErrorBoundary><SubscriptionsPage initialTab="history" /></ErrorBoundary>} />
                   <Route path="schedule" element={<ErrorBoundary><SchedulePage /></ErrorBoundary>} />
                   <Route path="attendance" element={<ErrorBoundary><AttendancePage /></ErrorBoundary>} />
                   <Route path="personal" element={<Navigate to="/schedule" replace />} />

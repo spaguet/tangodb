@@ -4,14 +4,14 @@ import { currentYearMonth } from "../lib/utils";
 interface UIState {
   selectedMonth: string;
   selectedDate: string | null;
-  subscriptionsTab: "active" | "sell";
+  subscriptionsTab: "active" | "sell" | "history";
   personalTab: "view" | "sell";
   editClientModal: { open: boolean; clientId: string | null };
   personalFilter: "all" | "yes" | "no";
 
   setSelectedMonth: (m: string) => void;
   setSelectedDate: (d: string | null) => void;
-  setSubscriptionsTab: (t: "active" | "sell") => void;
+  setSubscriptionsTab: (t: "active" | "sell" | "history") => void;
   setPersonalTab: (t: "view" | "sell") => void;
   openEditClient: (id: string) => void;
   closeEditClient: () => void;

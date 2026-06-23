@@ -182,6 +182,21 @@ export function currentYearMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+export function currentYear(): number {
+  return new Date().getFullYear();
+}
+
+export function shiftMonth(yearMonth: string, delta: number): string {
+  const [y, m] = yearMonth.split("-").map(Number);
+  const date = new Date(y, m - 1 + delta, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function isDateInYear(dateStr: string, year: number): boolean {
+  const y = Number(dateStr.slice(0, 4));
+  return y === year;
+}
+
 export function isDateInYearMonth(dateStr: string, yearMonth: string): boolean {
   const d = new Date(`${dateStr.slice(0, 10)}T12:00:00`);
   const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;

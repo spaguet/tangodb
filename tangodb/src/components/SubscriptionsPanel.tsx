@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown } from "lucide-react";
+import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
@@ -28,7 +28,8 @@ import {
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
-import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient } from "../lib/utils";
+import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionTariffLabel, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitleRu } from "../lib/utils";
+import { filterActiveSubscriptions, filterHistorySubscriptions } from "../lib/subscriptionFilters";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules } from "../lib/orgModules";
 import { useSettings } from "../settings/SettingsProvider";
@@ -43,13 +44,13 @@ import QueryErrorState from "./ui/QueryErrorState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import RequirePermission from "./RequirePermission";
 import type { ToastType } from "../App";
-import type { Client, Discipline, Subscription } from "../types";
+import type { Client, Discipline, Price, Subscription } from "../types";
 
 const NO_DISCIPLINE_KEY = "__none__";
 const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
 
 interface SubscriptionsPanelProps {
-  initialTab?: "active" | "sell";
+  initialTab?: "active" | "sell" | "history";
   toast: (msg: string, type?: ToastType) => void;
 }
 
@@ -117,21 +118,31 @@ export default function SubscriptionsPanel({
     pricesErr ??
     attendanceErr ??
     personalLessonsErr;
-  const [activeTab, setActiveTab] = useState<"sell" | "active">(initialTab);
+  const [activeTab, setActiveTab] = useState<"sell" | "active" | "history">(initialTab);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  const switchTab = (tab: "active" | "sell") => {
+  const switchTab = (tab: "active" | "sell" | "history") => {
     setActiveTab(tab);
     setSubscriptionsTab(tab);
-    navigate(tab === "sell" ? "/subscriptions/sell" : "/subscriptions");
+    const path =
+      tab === "sell" ? "/subscriptions/sell" : tab === "history" ? "/subscriptions/history" : "/subscriptions";
+    navigate(path);
   };
 
   const { locations } = useAccessibleLocations();
 
   const [search, setSearch] = useState("");
+  const [activeLocationFilter, setActiveLocationFilter] = useState("");
+  const [activeDisciplineFilter, setActiveDisciplineFilter] = useState("");
+  const [endingOnlyFilter, setEndingOnlyFilter] = useState(false);
+  const [historyDisciplineId, setHistoryDisciplineId] = useState("");
+  const [historyLocationId, setHistoryLocationId] = useState("");
+  const [historyClientId, setHistoryClientId] = useState("");
+  const [historyMonth, setHistoryMonth] = useState(currentYearMonth);
+  const [historyYear, setHistoryYear] = useState(currentYear);
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
   const [expandedDisciplines, setExpandedDisciplines] = useState<Set<string>>(new Set());
 
@@ -316,20 +327,56 @@ export default function SubscriptionsPanel({
     () => Object.fromEntries(disciplines.map((d) => [d.id, d])) as Record<string, Discipline>,
     [disciplines]
   );
+  const priceMap = useMemo(
+    () =>
+      Object.fromEntries(
+        prices.filter((p): p is Price & { id: string } => Boolean(p.id)).map((p) => [p.id!, p])
+      ) as Record<string, Price>,
+    [prices]
+  );
 
   const attendanceStatsBySubId = useMemo(
     () => computeSubscriptionAttendanceStats(attendanceRecords, personalLessons),
     [attendanceRecords, personalLessons]
   );
 
-  const filteredActiveRecords = activeRecords.filter((sub) => {
-    const c1 = clientMap[sub.clientId1];
-    const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
-    const c3 = sub.clientId3 ? clientMap[sub.clientId3] : null;
+  const filteredActiveRecords = useMemo(
+    () =>
+      filterActiveSubscriptions(activeRecords, {
+        search,
+        clientMap,
+        locationId: activeLocationFilter,
+        disciplineId: activeDisciplineFilter,
+        endingOnly: endingOnlyFilter,
+        priceMap,
+      }),
+    [activeRecords, search, clientMap, activeLocationFilter, activeDisciplineFilter, endingOnlyFilter, priceMap]
+  );
 
-    const queryStr = `${c1?.firstName || ""} ${c1?.lastName || ""} ${c2?.firstName || ""} ${c2?.lastName || ""} ${c3?.firstName || ""} ${c3?.lastName || ""}`.toLowerCase();
-    return queryStr.includes(search.toLowerCase());
-  });
+  const historyRecords = useMemo(
+    () =>
+      filterHistorySubscriptions(subscriptions, {
+        disciplineId: historyDisciplineId,
+        locationId: historyLocationId,
+        clientId: historyClientId,
+        month: historyMonth,
+        year: historyYear,
+        priceMap,
+      }),
+    [
+      subscriptions,
+      historyDisciplineId,
+      historyLocationId,
+      historyClientId,
+      historyMonth,
+      historyYear,
+      priceMap,
+    ]
+  );
+
+  const hasHistoryFilter = Boolean(historyDisciplineId || historyLocationId || historyClientId);
+  const isViewingCurrentHistoryMonth = historyMonth === currentYearMonth();
+  const isViewingCurrentHistoryYear = historyYear === currentYear();
 
   const disciplineGroups = useMemo(() => {
     const groups = new Map<string, Subscription[]>();
@@ -362,10 +409,11 @@ export default function SubscriptionsPanel({
   if (isError) return <QueryErrorState error={error} />;
 
   const subscriptionTabs = [
-    { id: "active", label: "Просмотр", icon: FileCheck },
+    { id: "active", label: "Активные", icon: FileCheck },
     ...(canAccessPanel("subscriptions_sell")
       ? [{ id: "sell" as const, label: "Продажа", icon: Ticket }]
       : []),
+    { id: "history", label: "История", icon: History },
   ] as const;
 
   return (
@@ -381,7 +429,7 @@ export default function SubscriptionsPanel({
             <div>
               <h2 className="text-lg font-semibold tracking-tight text-slate-800">Действующие абонементы</h2>
               <p className="text-xs text-slate-400 mt-1">
-                Сгруппированы по дисциплинам — внутри группы по остатку занятий
+                Фильтруйте по локации, дисциплине или заканчивающимся — без выбора показаны все активные
               </p>
             </div>
 
@@ -399,16 +447,54 @@ export default function SubscriptionsPanel({
             </div>
           </div>
 
+          <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <AppSelect
+              label="Локация"
+              value={activeLocationFilter}
+              onChange={(e) => setActiveLocationFilter(e.target.value)}
+            >
+              <option value="">Все локации</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
+                </option>
+              ))}
+            </AppSelect>
+
+            <AppSelect
+              label="Дисциплина"
+              value={activeDisciplineFilter}
+              onChange={(e) => setActiveDisciplineFilter(e.target.value)}
+            >
+              <option value="">Все дисциплины</option>
+              {disciplines.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </AppSelect>
+
+            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer sm:col-span-2 lg:col-span-1 lg:self-end lg:pb-2">
+              <input
+                type="checkbox"
+                checked={endingOnlyFilter}
+                onChange={(e) => setEndingOnlyFilter(e.target.checked)}
+                className={checkboxCls}
+              />
+              <span className="font-semibold">Заканчивающиеся (≤ 2 занятия)</span>
+            </label>
+          </div>
+
           <div className="space-y-3">
             {filteredActiveRecords.length === 0 ? (
               <div className="text-center py-20 text-slate-400 space-y-3">
                 <Ticket className="w-8 h-8 mx-auto text-slate-300" />
                 <p className="text-sm">
-                  {search.trim()
-                    ? "Поиск не дал результатов."
+                  {search.trim() || activeLocationFilter || activeDisciplineFilter || endingOnlyFilter
+                    ? "По выбранным условиям абонементов не найдено."
                     : "Активных абонементов пока нет."}
                 </p>
-                {!search.trim() && (
+                {!search.trim() && !activeLocationFilter && !activeDisciplineFilter && !endingOnlyFilter && (
                   <button
                     onClick={() => switchTab("sell")}
                     className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
@@ -641,6 +727,194 @@ export default function SubscriptionsPanel({
                         })}
                       </div>
                     )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      ) : activeTab === "history" ? (
+        <div
+          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
+        >
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-800">История абонементов</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Выберите дисциплину, локацию или клиента — без фильтра список не отображается
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <AppSelect
+              label="Дисциплина"
+              value={historyDisciplineId}
+              onChange={(e) => setHistoryDisciplineId(e.target.value)}
+            >
+              <option value="">Не выбрана</option>
+              {disciplines.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </AppSelect>
+
+            <AppSelect
+              label="Локация"
+              value={historyLocationId}
+              onChange={(e) => setHistoryLocationId(e.target.value)}
+            >
+              <option value="">Не выбрана</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
+                </option>
+              ))}
+            </AppSelect>
+
+            <AppSelect
+              label="Клиент"
+              value={historyClientId}
+              onChange={(e) => setHistoryClientId(e.target.value)}
+            >
+              <option value="">Не выбран</option>
+              {[...directoryClients]
+                .sort((a, b) =>
+                  `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, "ru")
+                )
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {formatClientName(c.lastName, c.firstName)}
+                  </option>
+                ))}
+            </AppSelect>
+          </div>
+
+          {hasHistoryFilter && !historyClientId && (
+            <div className="flex items-center justify-between px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 gap-2">
+              <button
+                type="button"
+                onClick={() => setHistoryMonth((m) => shiftMonth(m, -1))}
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                aria-label="Предыдущий месяц"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex flex-col items-center gap-0.5 min-w-0">
+                <span className="text-sm font-semibold text-slate-800">{formatMonthTitleRu(historyMonth)}</span>
+                {!isViewingCurrentHistoryMonth && (
+                  <button
+                    type="button"
+                    onClick={() => setHistoryMonth(currentYearMonth())}
+                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                  >
+                    Текущий месяц
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoryMonth((m) => shiftMonth(m, 1))}
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                aria-label="Следующий месяц"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {hasHistoryFilter && historyClientId && (
+            <div className="flex items-center justify-between px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 gap-2">
+              <button
+                type="button"
+                onClick={() => setHistoryYear((y) => y - 1)}
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                aria-label="Предыдущий год"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex flex-col items-center gap-0.5 min-w-0">
+                <span className="text-sm font-semibold text-slate-800">{historyYear} г.</span>
+                {!isViewingCurrentHistoryYear && (
+                  <button
+                    type="button"
+                    onClick={() => setHistoryYear(currentYear())}
+                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                  >
+                    Текущий год
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoryYear((y) => y + 1)}
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                aria-label="Следующий год"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {!hasHistoryFilter ? (
+              <div className="text-center py-16 text-slate-400 space-y-2">
+                <History className="w-8 h-8 mx-auto text-slate-300" />
+                <p className="text-sm max-w-md mx-auto leading-relaxed">
+                  Выберите дисциплину, локацию или клиента, чтобы отобразить историю абонементов.
+                </p>
+              </div>
+            ) : historyRecords.length === 0 ? (
+              <div className="text-center py-16 text-slate-400 space-y-2">
+                <Ticket className="w-8 h-8 mx-auto text-slate-300" />
+                <p className="text-sm">По выбранным условиям абонементов не найдено.</p>
+              </div>
+            ) : (
+              historyRecords.map((sub) => {
+                const c1 = clientMap[sub.clientId1];
+                const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
+                const c3 = sub.clientId3 ? clientMap[sub.clientId3] : null;
+                const clientNameStr = [c1, c2, c3]
+                  .filter(Boolean)
+                  .map((c) => `${c!.lastName || ""} ${c!.firstName || ""}`.trim())
+                  .join(" & ");
+                const disciplineName =
+                  sub.disciplineId != null ? disciplineMap[sub.disciplineId]?.name : undefined;
+                const tariffLabel = getSubscriptionTariffLabel(sub, prices);
+                const isFinished = sub.lessonsLeft === 0 || sub.status === "finished";
+
+                return (
+                  <div
+                    key={sub.id}
+                    className="border border-slate-200 rounded-xl p-4 bg-white hover:border-indigo-200 transition-colors"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                      <div className="min-w-0 space-y-1">
+                        <h3 className="text-sm font-semibold text-slate-800">{clientNameStr}</h3>
+                        <p className="text-[11px] font-sans font-semibold text-indigo-700">{tariffLabel}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {disciplineName && (
+                            <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-slate-500">
+                              {disciplineName}
+                            </span>
+                          )}
+                          <span
+                            className={`text-[10px] font-sans font-semibold px-2 py-0.5 rounded border ${
+                              isFinished
+                                ? "text-slate-500 bg-slate-50 border-slate-200"
+                                : "text-indigo-700 bg-indigo-50 border-indigo-100"
+                            }`}
+                          >
+                            {isFinished ? "Завершён" : "Активен"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 space-y-0.5">
+                        <p className="text-[11px] text-slate-400 font-sans">Активирован: {sub.activationDate || "—"}</p>
+                        <p className="text-xs font-sans font-semibold text-slate-700">
+                          {sub.lessonsLeft} из {sub.lessonsTotal} занятий
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 );
               })

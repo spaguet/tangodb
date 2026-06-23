@@ -2,7 +2,7 @@ import SubscriptionsPanel from "../components/SubscriptionsPanel";
 import { useToast } from "../App";
 
 interface SubscriptionsPageProps {
-  initialTab: "active" | "sell";
+  initialTab: "active" | "sell" | "history";
 }
 
 export default function SubscriptionsPage({ initialTab }: SubscriptionsPageProps) {
