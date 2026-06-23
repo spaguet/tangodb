@@ -94,6 +94,7 @@ export function useCreatePrice() {
       description,
       category,
       locationId,
+      disciplineId,
     }: {
       type: string;
       lessons: number;
@@ -102,6 +103,7 @@ export function useCreatePrice() {
       description: string;
       category: PriceCategory;
       locationId?: string | null;
+      disciplineId?: string | null;
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "Организация не выбрана" };
@@ -118,6 +120,7 @@ export function useCreatePrice() {
           description: description.trim(),
           category,
           location_id: locationId ?? null,
+          discipline_id: disciplineId ?? null,
         })
         .select("*")
         .single();

@@ -137,6 +137,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   });
   const [bindToLocation, setBindToLocation] = useState(false);
   const [formLocationId, setFormLocationId] = useState("");
+  const [bindToDiscipline, setBindToDiscipline] = useState(false);
+  const [formDisciplineId, setFormDisciplineId] = useState("");
   const [editBindToLocation, setEditBindToLocation] = useState(false);
   const [editLocationId, setEditLocationId] = useState("");
   const [editBindToDiscipline, setEditBindToDiscipline] = useState(false);
@@ -189,7 +191,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     setActiveCreateTab("group");
     setBindToLocation(false);
     setFormLocationId(locations[0]?.id ?? "");
-  }, [createModalStep, locations]);
+    setBindToDiscipline(false);
+    setFormDisciplineId(disciplines[0]?.id ?? "");
+  }, [createModalStep, locations, disciplines]);
 
   useEffect(() => {
     if (!editingPrice) return;
@@ -321,6 +325,10 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       toast("Выберите локацию для локального тарифа.", "error");
       return;
     }
+    if (bindToDiscipline && !formDisciplineId) {
+      toast("Выберите дисциплину для тарифа.", "error");
+      return;
+    }
 
     setCreatingSection(section);
     let priceType: string;
@@ -347,6 +355,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       description: form.description,
       category: section === "group" ? "group" : "private",
       locationId: bindToLocation ? formLocationId : null,
+      disciplineId: bindToDiscipline ? formDisciplineId : null,
     });
     setCreatingSection(null);
 
@@ -381,6 +390,16 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       locationId={formLocationId}
       onLocationChange={setFormLocationId}
       locations={locations}
+    />
+  );
+
+  const disciplineTariffField = (
+    <DisciplineTariffField
+      bindToDiscipline={bindToDiscipline}
+      onBindChange={setBindToDiscipline}
+      disciplineId={formDisciplineId}
+      onDisciplineChange={setFormDisciplineId}
+      disciplines={disciplines}
     />
   );
 
@@ -798,6 +817,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                       </div>
                     </div>
                     {locationTariffField}
+                    {disciplineTariffField}
                   </TariffCreateSection>
                 )}
 
@@ -841,6 +861,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                       </div>
                     </div>
                     {locationTariffField}
+                    {disciplineTariffField}
                   </TariffCreateSection>
                 )}
 
@@ -910,6 +931,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                       </div>
                     </div>
                     {locationTariffField}
+                    {disciplineTariffField}
                   </TariffCreateSection>
                 )}
               </div>
