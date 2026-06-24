@@ -12,6 +12,36 @@
 
 ## Записи
 
+### PL-0 — Архитектурные решения раздела «Персональные уроки» (2026-06-24)
+
+- **Дата:** 2026-06-24
+- **Решение:** Принята целевая архитектура из `PERSONAL_LESSONS_TZ.md` §9 Этап 0. Ключевые пункты:
+  1. **Маршруты:** `/personal` (список + фильтры), `/personal/sell` (продажа урока и пакета); `/personal/book` → redirect `/personal/sell`. Осознанный откат `SCHEDULE_TZ` §11.10: CRUD персональных возвращается в отдельный раздел; `/schedule` — только недельная сетка + popup из ячейки.
+  2. **4-й клиент в MVP:** `client_id4`, type `quad`, тариф `personal_quad`; без module gating (`quad_lessons` — после `tangodb_modular_dance_crm_TZ.md`).
+  3. **Вкладка «История» — не создаётся:** один список с фильтром периода (неделя / месяц / диапазон).
+  4. **Delete/edit guard — вариант A для `isPastDate`:** глобальную `isPastDate()` (`date < today`) **не менять** — она используется в `canManageGroupLesson`. Для персональных: явная проверка `date <= today` в `canWritePersonalLesson`, RPC `delete_personal_lesson` / `update_personal_lesson` (`date > current_date` строго). Групповые уроки без изменений.
+  5. **Посещаемость и пакеты:** единый RPC `mark_personal_lesson_attendance` для разовых и пакетных; списание `lessons_left` при `present`/`absent`; `excused` не списывает; **не** дублировать в `mark_attendance`.
+  6. **Teacher финансы:** `price` скрыт (`personal_lessons_teacher_v`), `paid` виден — сохранить.
+  7. **Повторения MVP:** отдельные строки `personal_lessons`; UI — «одна дата», «несколько дат», «еженедельно» (до даты окончания **или** N недель); `personal_lesson_series` — не в MVP.
+  8. **Ручной тариф при продаже:** да, как в `AddPersonalLessonForm`.
+  9. **Delete с оплатой:** MVP — запрет (сначала отменить оплату). Delete с пакетом и `attendance_status IN ('present','absent')` — запрет (сначала сменить отметку).
+  10. **Edit урока с пакетом:** при `present`/`absent` запрет смены клиентов/пакета без сброса отметки.
+  11. **Пакет — дисциплина и локация (§7.2):** пакет привязан к `subscriptions.discipline_id` — урок только в той же дисциплине (UI-фильтр + расширение trigger на Этапе 1). Локация — через `prices.location_id` тарифа пакета: глобальный тариф → любая локация; локальный → урок только в этой локации (UI + trigger через JOIN `subscriptions.price_id → prices.location_id`).
+  12. **Module gate:** пункт nav «Персональные уроки» при `modules.personal_lessons === true`.
+  13. **Должники:** не дублировать `ScheduleDebtorsBlock`; фильтр «Долг» на списке `/personal`.
+  14. **Zustand `personalTab`:** переиспользовать в новом контейнере; `personalFilter` — удалить на Этапе 4.
+  15. **Приоритет Этапа 1:** починить RPC attendance для пакетных **до** UI раздела (критический дефект §2.3).
+- **Контекст:** Этап 0 `PERSONAL_LESSONS_TZ.md` — согласование решений перед кодом (аналог SCH-0 для расписания).
+- **Альтернативы:**
+  1. Оставить `/personal` → redirect `/schedule` (SCHEDULE_TZ) — отклонено: нужен отдельный операционный раздел с фильтрами и продажей.
+  2. Вкладки «Будущие» / «Прошедшие» — отклонено для MVP: один список + фильтр периода.
+  3. Вариант B — изменить `isPastDate` глобально на `date <= today` — отклонено: заблокирует edit сегодняшних групповых уроков без отдельного бизнес-решения.
+  4. Списание пакета через `mark_attendance` — отклонено: private-пакет не имеет `schedule_group_id`; два источника истины.
+  5. MVP без 4-го клиента — отклонено: требование зафиксировано в §12.
+  6. `personal_lesson_series` в MVP — отклонено: усложняет первый релиз; отдельные строки достаточны.
+- **Почему так:** Решения согласованы с аудитом кода (§2.3–2.4), существующими паттернами тарифов (`filterTariffsForSale`, `prices.discipline_id`/`location_id`) и RBAC (`tangodb_roles_rbac_TZ.md`). Минимальный diff к групповому расписанию; критический баг attendance блокирует корректную работу пакетов и должен быть исправлен первым.
+- **Следующие шаги:** Этап 1 (БД и типы: RPC attendance, delete/update, quad) → Этап 2 (хуки + AttendancePanel) → Этапы 3–4 (форма + раздел `/personal`).
+
 ### Schedule groups on `classes.id` + monthly unlimited billing
 
 - **Дата:** 2026-06-23
