@@ -460,7 +460,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           <p className="text-[11px] text-slate-400 font-sans tracking-tight font-normal">
             {description}
             {isMonthlyUnlimitedTariff(p)
-              ? " · безлимит"
+              ? " · Безлимит"
               : getPriceCategory(p) === "group" || p.lessons > 1
                 ? ` · ${p.lessons} ${p.lessons === 1 ? "урок" : p.lessons < 5 ? "урока" : "уроков"}`
                 : ""}
