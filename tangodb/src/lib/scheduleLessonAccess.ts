@@ -1,6 +1,6 @@
 import type { MemberRole } from "../types/organization";
 import type { DisplayLesson, PersonalDisplayLesson } from "../types";
-import { isPastDate } from "./scheduleWeek";
+import { isPastDate, isPersonalLessonLockedForWrite } from "./scheduleWeek";
 import type { PermissionAction } from "./permissions";
 
 type CanFn = (action: PermissionAction, context?: { disciplineId?: string | null; locationId?: string | null }) => boolean;
@@ -38,7 +38,7 @@ export function canWritePersonalLesson(
   isReadOnly: boolean
 ): boolean {
   if (isReadOnly) return false;
-  if (isPastDate(lesson.date)) return false;
+  if (isPersonalLessonLockedForWrite(lesson.date)) return false;
   if (!can("personal_lessons.write", lessonContext(lesson))) return false;
   if (role === "teacher") {
     return Boolean(memberId && lesson.teacherMemberId === memberId);

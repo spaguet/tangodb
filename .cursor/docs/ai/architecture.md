@@ -16,14 +16,22 @@
 - `src/store/` — локальное UI-состояние (Zustand)
 - `src/components/` — UI без прямых вызовов Supabase
 - `src/components/schedule/` — недельная сетка расписания (Промпты 2–8):
-  - **Контейнер:** `SchedulePageContainer` — state недели, фильтр `?teacher=`, deep link `?action=sell`, CRUD-потоки
+  - **Контейнер:** `SchedulePageContainer` — state недели, фильтр `?teacher=`, deep link `?action=sell` (только `SellPackageModal`), CRUD-потоки
   - **Сетка:** `WeeklyScheduleGrid`, `LocationScheduleSection`, `DayColumn`, `LessonBlock`, `TimeGutter`
   - **Toolbar:** `ScheduleToolbar`, `WeekPickerPopover`
-  - **CRUD UI:** `LessonInfoPopup`, `AddLessonTypePopup`, `AddGroupLessonForm`, `AddPersonalLessonForm`, `EditLessonPopup`
+  - **CRUD UI:** `LessonInfoPopup`, `AddLessonTypePopup`, `AddGroupLessonForm`, `AddPersonalLessonForm` (обёртка над `PersonalLessonSaleForm`), `EditLessonPopup`
   - **Долги:** `ScheduleDebtorsBlock` — операционный контур (`paid=no`), без `financial_debtors_v`
   - **Данные:** только через хуки (`useScheduleForWeek`, `usePersonalLessons`, `useScheduleDebtors`, mutations в `useSchedule.ts` / `usePersonalLessons.ts`); прямых Supabase-вызовов в компонентах нет
   - **Утилиты:** `lib/scheduleWeek.ts`, `lib/scheduleConflicts.ts`, `lib/scheduleTime.ts`, `lib/scheduleLessonAccess.ts`
-  - **Legacy (deprecated):** `SchedulePanel.tsx`, `PersonalPage.tsx`, `PersonalLessonsPanel.tsx`; маршруты `/personal*` → redirect на `/schedule`
+  - **Legacy (deprecated):** `SchedulePanel.tsx`
+- `src/components/personal-lessons/` — раздел «Персональные уроки» (`PERSONAL_LESSONS_TZ`, Этап 4):
+  - **Маршруты:** `/personal` (список + фильтры), `/personal/sell` (продажа); `/personal/book` → redirect `/personal/sell`
+  - **Контейнер:** `PersonalLessonsPageContainer` — вкладки, фильтры, edit/pay/delete через переиспользуемые popup
+  - **Форма продажи:** `PersonalLessonSaleForm` (режимы `schedule-cell` / `standalone`); `PersonalLessonSalePanel` — вкладка продажи
+  - **Список:** `PersonalLessonFilters`, `PersonalLessonsList`, `PersonalLessonRow`, `PersonalLessonAttendanceActions`
+  - **Переиспользование:** `PayPersonalLessonModal`, `EditLessonPopup`, `SellPackageModal`; attendance — `useMarkPersonalLessonAttendance`
+  - **Nav gate:** `modules.personal_lessons`; Zustand `personalTab` синхронизирован с URL
+  - **Delete/edit guard:** `date > today` — UI (`canWritePersonalLesson` + `isPersonalLessonLockedForWrite`), hooks, RPC
 - `supabase/` — миграции, RLS, edge functions
 
 ## RBAC / RLS (v2)

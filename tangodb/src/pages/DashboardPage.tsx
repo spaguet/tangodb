@@ -55,7 +55,7 @@ export default function DashboardPage() {
   const handleNavigate = (panel: string) => {
     const routes: Record<string, { path: string; subTab?: "active" | "sell" }> = {
       activeSubs: { path: "/subscriptions", subTab: "active" },
-      personalView: { path: "/schedule" },
+      personalView: { path: "/personal" },
       attendance: { path: "/attendance" },
       schedule: { path: "/schedule" },
     };

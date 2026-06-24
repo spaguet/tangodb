@@ -17,6 +17,7 @@ import {
   Info,
   ChevronDown,
   Settings,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -56,6 +57,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ClientsPage from "./pages/ClientsPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
 import SchedulePage from "./pages/SchedulePage";
+import PersonalLessonsPage from "./pages/PersonalLessonsPage";
 import AttendancePage from "./pages/AttendancePage";
 import PricesPage from "./pages/PricesPage";
 import FinancePage from "./pages/FinancePage";
@@ -65,6 +67,9 @@ import ReadOnlyBanner from "./components/ui/ReadOnlyBanner";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { usePermissions } from "./hooks/usePermissions";
 import { panelIdFromPath } from "./lib/permissions";
+import { useOrganization } from "./organization/OrganizationProvider";
+import { DEFAULT_ORG_MODULES } from "./lib/orgModules";
+import type { OrgModules } from "./types/organization";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -77,17 +82,20 @@ export function useToast() {
 }
 
 type SubTab = "active" | "sell";
+type PersonalSubTab = "view" | "sell";
 
 interface NavItem {
   icon: typeof Users;
   label: string;
   path: string;
   subTab?: SubTab;
+  personalSubTab?: PersonalSubTab;
 }
 
 interface NavSection {
   label: string;
   items: NavItem[];
+  moduleKey?: keyof OrgModules;
 }
 
 interface MobileTabItem {
@@ -126,6 +134,14 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    label: "Персональные уроки",
+    moduleKey: "personal_lessons",
+    items: [
+      { icon: Sparkles, label: "Персональные уроки", path: "/personal", personalSubTab: "view" },
+      { icon: TicketPlus, label: "Продажа", path: "/personal/sell", personalSubTab: "sell" },
+    ],
+  },
+  {
     label: "Тарифы",
     items: [{ icon: Coins, label: "Тарифы и прайс-лист", path: "/prices" }],
   },
@@ -152,6 +168,8 @@ function getPanelTitle(pathname: string, subscriptionsTab: string): string {
     return "Действующие абонементы";
   }
   if (pathname === "/schedule") return "Расписание";
+  if (pathname === "/personal/sell") return "Продажа персональных уроков";
+  if (pathname.startsWith("/personal")) return "Персональные уроки";
   if (pathname === "/attendance") return "Журнал посещений и календарь";
   if (pathname === "/prices") return "Тарифы и прайс-лист";
   if (pathname.startsWith("/settings/general")) return "Настройки · Общие";
@@ -240,6 +258,10 @@ function AppLayout() {
   const { canAccessPanel } = usePermissions();
   const subscriptionsTab = useUIStore((s) => s.subscriptionsTab);
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
+  const personalTab = useUIStore((s) => s.personalTab);
+  const setPersonalTab = useUIStore((s) => s.setPersonalTab);
+  const { settings } = useOrganization();
+  const orgModules = settings?.modules ?? DEFAULT_ORG_MODULES;
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: ToastType } | null>(null);
@@ -276,6 +298,7 @@ function AppLayout() {
   const go = (item: NavItem | MobileTabItem) => {
     setMobileDrawerOpen(false);
     if (item.subTab) setSubscriptionsTab(item.subTab);
+    if ("personalSubTab" in item && item.personalSubTab) setPersonalTab(item.personalSubTab);
     navigate(item.path);
   };
 
@@ -285,12 +308,16 @@ function AppLayout() {
     if (item.path.startsWith("/subscriptions")) {
       return location.pathname.startsWith("/subscriptions") && subscriptionsTab === item.subTab;
     }
+    if (item.path.startsWith("/personal")) {
+      return location.pathname.startsWith("/personal") && personalTab === item.personalSubTab;
+    }
     return location.pathname === item.path;
   };
 
   const renderNav = (refreshKey?: unknown) => (
     <ScrollableNav refreshKey={refreshKey}>
       {NAV_SECTIONS.map((section) => {
+        if (section.moduleKey && !orgModules[section.moduleKey]) return null;
         const visibleItems = section.items.filter((item) => canAccessPanel(panelIdFromPath(item.path)));
         if (visibleItems.length === 0) return null;
 
@@ -490,12 +517,15 @@ function AppLayout() {
 function RouteSync() {
   const location = useLocation();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
+  const setPersonalTab = useUIStore((s) => s.setPersonalTab);
 
   useEffect(() => {
     if (location.pathname === "/subscriptions/sell") setSubscriptionsTab("sell");
     else if (location.pathname === "/subscriptions/history") setSubscriptionsTab("history");
     else if (location.pathname === "/subscriptions") setSubscriptionsTab("active");
-  }, [location.pathname, setSubscriptionsTab]);
+    else if (location.pathname === "/personal/sell") setPersonalTab("sell");
+    else if (location.pathname.startsWith("/personal")) setPersonalTab("view");
+  }, [location.pathname, setSubscriptionsTab, setPersonalTab]);
 
   return null;
 }
@@ -554,9 +584,9 @@ export default function App() {
                   <Route path="subscriptions/history" element={<ErrorBoundary><SubscriptionsPage initialTab="history" /></ErrorBoundary>} />
                   <Route path="schedule" element={<ErrorBoundary><SchedulePage /></ErrorBoundary>} />
                   <Route path="attendance" element={<ErrorBoundary><AttendancePage /></ErrorBoundary>} />
-                  <Route path="personal" element={<Navigate to="/schedule" replace />} />
-                  <Route path="personal/sell" element={<Navigate to="/schedule?action=sell" replace />} />
-                  <Route path="personal/book" element={<Navigate to="/schedule?action=sell" replace />} />
+                  <Route path="personal" element={<ErrorBoundary><PersonalLessonsPage initialTab="view" /></ErrorBoundary>} />
+                  <Route path="personal/sell" element={<ErrorBoundary><PersonalLessonsPage initialTab="sell" /></ErrorBoundary>} />
+                  <Route path="personal/book" element={<Navigate to="/personal/sell" replace />} />
                   <Route path="prices" element={<ErrorBoundary><PricesPage /></ErrorBoundary>} />
                   <Route path="finance/*" element={<ErrorBoundary><FinancePage /></ErrorBoundary>} />
                   <Route path="settings" element={<ErrorBoundary><SettingsLayout /></ErrorBoundary>}>
