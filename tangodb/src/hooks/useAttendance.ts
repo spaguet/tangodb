@@ -75,19 +75,25 @@ export function computeScheduleDatesForMonth(
     const dow = jsDayToIsoDow(date.getDay());
 
     scoped.forEach((slot) => {
-      if (slot.dayOfWeek === dow) {
-        const dd = String(day).padStart(2, "0");
-        const mm = String(month).padStart(2, "0");
-        dates.push({
-          date: `${year}-${mm}-${dd}`,
-          time: slot.time,
-          timeEnd: slot.timeEnd || "21:00",
-          groupName: slot.groupName,
-          scheduleGroupId: slot.scheduleGroupId ?? null,
-          disciplineId: slot.disciplineId ?? null,
-          locationId: slot.locationId ?? null,
-        });
-      }
+      if (slot.dayOfWeek !== dow) return;
+
+      const dd = String(day).padStart(2, "0");
+      const mm = String(month).padStart(2, "0");
+      const dateStr = `${year}-${mm}-${dd}`;
+      const validFrom = slot.validFrom ?? "2000-01-01";
+
+      if (dateStr < validFrom) return;
+      if (slot.validTo != null && dateStr > slot.validTo) return;
+
+      dates.push({
+        date: dateStr,
+        time: slot.time,
+        timeEnd: slot.timeEnd || "21:00",
+        groupName: slot.groupName,
+        scheduleGroupId: slot.scheduleGroupId ?? null,
+        disciplineId: slot.disciplineId ?? null,
+        locationId: slot.locationId ?? null,
+      });
     });
   }
 

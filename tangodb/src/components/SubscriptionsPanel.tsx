@@ -1189,6 +1189,13 @@ export default function SubscriptionsPanel({
               }
             />
 
+            <DatePickerField
+              label="Дата активации"
+              value={activationDate}
+              onChange={setActivationDate}
+              required
+            />
+
             <div className="panel-form-full-row-md">
               <ClientAutocomplete
                 label={needsSecondClient ? "Первый клиент" : "Клиент"}
@@ -1233,34 +1240,7 @@ export default function SubscriptionsPanel({
 
             <div className="border-t border-slate-100 pt-1 -mt-0.5 panel-form-full-row-md" />
 
-            <DatePickerField
-              label="Дата активации"
-              value={activationDate}
-              onChange={setActivationDate}
-              required
-              className="panel-form-full-row-md"
-            />
-
-            <div className="panel-form-divider panel-form-full-row-md" />
-
-            <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 panel-form-full-row-md">
-              <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
-              <span className="text-xl font-sans font-semibold text-indigo-700">
-                {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "тариф не настроен"}
-              </span>
-            </div>
-            <p className="text-slate-400 text-xs font-sans text-center -mt-1 panel-form-full-row-md">
-              Для изменения стоимости абонемента перейдите в раздел{" "}
-              <button
-                type="button"
-                onClick={() => navigate("/prices")}
-                className="text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer font-semibold"
-              >
-                Прайс-лист
-              </button>
-            </p>
-
-            <div className="field-stack panel-form-full-row-md">
+            <div className="panel-form-full-row-md grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl md:max-w-none">
               <AppSelect
                 label="Способ оплаты"
                 value={paymentMethod}
@@ -1272,7 +1252,26 @@ export default function SubscriptionsPanel({
                   </option>
                 ))}
               </AppSelect>
+
+              <div className="field-stack">
+                <span className={labelCls}>Итого к оплате</span>
+                <div className="flex items-center justify-between h-10 px-3 bg-indigo-50/60 rounded-lg border border-indigo-100">
+                  <span className="text-lg font-sans font-semibold text-indigo-700">
+                    {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "—"}
+                  </span>
+                </div>
+              </div>
             </div>
+            <p className="text-slate-400 text-xs font-sans text-center -mt-1 panel-form-full-row-md">
+              Для изменения стоимости абонемента перейдите в раздел{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/prices")}
+                className="text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer font-semibold"
+              >
+                Прайс-лист
+              </button>
+            </p>
 
             <div className="panel-form-divider panel-form-full-row-md" />
 

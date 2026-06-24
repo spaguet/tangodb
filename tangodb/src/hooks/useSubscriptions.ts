@@ -188,15 +188,16 @@ export function useFinishSubscription() {
 
   return useMutation({
     mutationFn: async (subId: string) => {
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .update({ status: "finished" })
-        .eq("id", subId)
-        .select("id")
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("finish_subscription", {
+        p_sub_id: subId,
+      });
 
       if (error) return { success: false as const, error: error.message };
-      if (!data) return { success: false as const, error: "Абонемент не найден" };
+
+      const result = data as { success?: boolean; error?: string } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "Не удалось завершить абонемент" };
+      }
       return { success: true as const };
     },
     onSuccess: (result) => {
