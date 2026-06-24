@@ -10,7 +10,7 @@ import {
 } from "../lib/scheduleWeek";
 import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
-import { usePersonalLessons } from "./usePersonalLessons";
+import { usePersonalLessons, personalLessonsQueryKey } from "./usePersonalLessons";
 
 export const scheduleQueryKey = ["schedule"] as const;
 
@@ -141,7 +141,8 @@ export function useScheduleForWeek(
 }
 
 function invalidateScheduleQueries(queryClient: ReturnType<typeof useQueryClient>) {
-  void queryClient.invalidateQueries({ queryKey: scheduleQueryKey });
+  void queryClient.invalidateQueries({ queryKey: scheduleQueryKey, refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, refetchType: "active" });
 }
 
 export function useAddGroupSchedule() {

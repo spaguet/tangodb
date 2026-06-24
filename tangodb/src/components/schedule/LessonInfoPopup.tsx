@@ -27,6 +27,7 @@ interface LessonInfoPopupProps {
   teacherName?: string;
   onClose: () => void;
   onEdit?: (lesson: DisplayLesson) => void;
+  onSuccess?: () => void;
   onPaymentSuccess?: () => void;
 }
 
@@ -53,6 +54,7 @@ export default function LessonInfoPopup({
   teacherName,
   onClose,
   onEdit,
+  onSuccess,
   onPaymentSuccess,
 }: LessonInfoPopupProps) {
   const toast = useToast();
@@ -144,6 +146,7 @@ export default function LessonInfoPopup({
     }
 
     setDeleteConfirmOpen(false);
+    onSuccess?.();
     onClose();
   };
 

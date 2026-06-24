@@ -259,7 +259,7 @@ export default function SchedulePageContainer() {
 
   const closeAddFlow = useCallback(() => setAddFlow(null), []);
 
-  const handleAddSuccess = useCallback(() => {
+  const handleScheduleRefresh = useCallback(() => {
     void scheduleQuery.refetch();
   }, [scheduleQuery]);
 
@@ -406,7 +406,7 @@ export default function SchedulePageContainer() {
         teamMap={teamMap}
         locationMap={locationMap}
         locationOrder={locationOrder}
-        onPaymentSuccess={handleAddSuccess}
+        onPaymentSuccess={handleScheduleRefresh}
       />
 
       <LessonInfoPopup
@@ -415,7 +415,8 @@ export default function SchedulePageContainer() {
         disciplineName={selectedLessonMeta?.disciplineName}
         teacherName={selectedLessonMeta?.teacherName}
         onClose={() => setSelectedLesson(null)}
-        onPaymentSuccess={handleAddSuccess}
+        onSuccess={handleScheduleRefresh}
+        onPaymentSuccess={handleScheduleRefresh}
         onEdit={(lesson) => {
           setSelectedLesson(null);
           setEditLesson(lesson);
@@ -431,7 +432,7 @@ export default function SchedulePageContainer() {
         personalLessons={personalLessonRefs}
         toast={toast}
         onClose={() => setEditLesson(null)}
-        onSuccess={handleAddSuccess}
+        onSuccess={handleScheduleRefresh}
       />
 
       <AddLessonTypePopup
@@ -458,7 +459,7 @@ export default function SchedulePageContainer() {
         personalLessons={personalLessonRefs}
         toast={toast}
         onClose={closeAddFlow}
-        onSuccess={handleAddSuccess}
+        onSuccess={handleScheduleRefresh}
       />
 
       <AddPersonalLessonForm
@@ -468,7 +469,7 @@ export default function SchedulePageContainer() {
         personalLessons={personalLessonRefs}
         toast={toast}
         onClose={closeAddFlow}
-        onSuccess={handleAddSuccess}
+        onSuccess={handleScheduleRefresh}
       />
 
       <SellPackageModal
