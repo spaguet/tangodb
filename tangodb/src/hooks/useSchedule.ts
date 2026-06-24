@@ -145,6 +145,34 @@ function invalidateScheduleQueries(queryClient: ReturnType<typeof useQueryClient
   void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, refetchType: "active" });
 }
 
+/** Закрыть слот с даты closingDate (не показывать с closingDate); при valid_from === closingDate — hard delete. */
+async function closeScheduleSlotByDate(
+  id: string,
+  closingDate: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: slot, error: fetchError } = await supabase
+    .from(scheduleTable)
+    .select("valid_from")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError) return { success: false as const, error: fetchError.message };
+  if (!slot) return { success: false as const, error: "Слот не найден" };
+
+  const validFrom = String(slot.valid_from ?? "2000-01-01").slice(0, 10);
+  const validTo = addDays(closingDate, -1);
+
+  if (validTo < validFrom) {
+    const { error } = await supabase.from(scheduleTable).delete().eq("id", id);
+    if (error) return { success: false as const, error: error.message };
+    return { success: true as const };
+  }
+
+  const { error } = await supabase.from(scheduleTable).update({ valid_to: validTo }).eq("id", id);
+  if (error) return { success: false as const, error: error.message };
+  return { success: true as const };
+}
+
 export function useAddGroupSchedule() {
   const queryClient = useQueryClient();
   const { organizationId } = useOrgQueryScope();
@@ -300,14 +328,11 @@ export function useDeleteScheduleSlot() {
   return useMutation({
     mutationFn: async (input: string | { id: string; editDate?: string }) => {
       const id = typeof input === "string" ? input : input.id;
-      const editDate =
+      const closingDate =
         typeof input === "string" ? toISODateLocal(new Date()) : (input.editDate ?? toISODateLocal(new Date()));
 
-      const { error } = await supabase
-        .from(scheduleTable)
-        .update({ valid_to: editDate })
-        .eq("id", id);
-      if (error) return { success: false as const, error: error.message };
+      const result = await closeScheduleSlotByDate(id, closingDate);
+      if (result.success === false) return { success: false as const, error: result.error };
       return { success: true as const };
     },
     onSuccess: (result) => {
@@ -422,26 +447,44 @@ export function useDeleteGroupSchedule() {
       editDate?: string;
     }) => {
       const trimmed = groupName.trim();
-      let query = supabase
+      const closingValidTo = addDays(editDate, -1);
+
+      let selectQuery = supabase
         .from(scheduleTable)
-        .update({ valid_to: editDate })
+        .select("id, valid_from")
         .eq("discipline_id", disciplineId)
         .is("valid_to", null);
 
       if (locationId) {
-        query = query.eq("location_id", locationId);
+        selectQuery = selectQuery.eq("location_id", locationId);
       } else {
-        query = query.is("location_id", null);
+        selectQuery = selectQuery.is("location_id", null);
       }
 
       if (trimmed) {
-        query = query.eq("group_name", trimmed);
+        selectQuery = selectQuery.eq("group_name", trimmed);
       } else {
-        query = query.or('group_name.is.null,group_name.eq.""');
+        selectQuery = selectQuery.or('group_name.is.null,group_name.eq.""');
       }
 
-      const { error } = await query;
-      if (error) return { success: false as const, error: error.message };
+      const { data: slots, error: fetchError } = await selectQuery;
+      if (fetchError) return { success: false as const, error: fetchError.message };
+      if (!slots?.length) return { success: true as const };
+
+      for (const slot of slots) {
+        const validFrom = String(slot.valid_from ?? "2000-01-01").slice(0, 10);
+        if (closingValidTo < validFrom) {
+          const { error } = await supabase.from(scheduleTable).delete().eq("id", slot.id);
+          if (error) return { success: false as const, error: error.message };
+        } else {
+          const { error } = await supabase
+            .from(scheduleTable)
+            .update({ valid_to: closingValidTo })
+            .eq("id", slot.id);
+          if (error) return { success: false as const, error: error.message };
+        }
+      }
+
       return { success: true as const };
     },
     onSuccess: (result) => {
