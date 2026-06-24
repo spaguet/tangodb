@@ -532,6 +532,18 @@ export function assertReceptionPermissions(): void {
   if (canAccessPanel("admin", "schedule", receptionOpts)) {
     throw new Error("reception must not access schedule panel");
   }
+  if (canAccessPanel("admin", "personal", receptionOpts)) {
+    throw new Error("reception must not access personal panel");
+  }
+  if (canAccessPanel("admin", "personal_sell", receptionOpts)) {
+    throw new Error("reception must not access personal_sell panel");
+  }
+  if (canAccessPanel("accountant", "personal", adminOpts)) {
+    throw new Error("accountant must not access personal panel");
+  }
+  if (canAccessPanel("accountant", "personal_sell", adminOpts)) {
+    throw new Error("accountant must not access personal_sell panel");
+  }
   if (!canAccessPanel("admin", "attendance", receptionOpts)) {
     throw new Error("reception must access attendance panel");
   }

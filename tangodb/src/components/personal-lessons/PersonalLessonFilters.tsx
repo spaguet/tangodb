@@ -6,7 +6,7 @@ import {
   shiftMonth,
 } from "../../lib/utils";
 import type { Discipline } from "../../types";
-import type { TeamMemberRow } from "../../hooks/useTeamMembers";
+import { memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import AppSelect from "../ui/AppSelect";
 import DatePickerField from "../ui/DatePickerField";
 import type {
@@ -190,7 +190,7 @@ export default function PersonalLessonFilters({
           <option value="">Все преподаватели</option>
           {teachers.map((t) => (
             <option key={t.id} value={t.id}>
-              {[t.last_name, t.first_name].filter(Boolean).join(" ") || t.email}
+              {memberListLabel(t)}
             </option>
           ))}
         </AppSelect>

@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-24 — PERSONAL_LESSONS Этап 5 (Промпт 5): QA/регрессия — fix TS в PersonalLessonFilters (memberListLabel); расширены assertReceptionPermissions и rbac-regression-check (accountant/reception без /personal); удалён мёртвый PersonalPage.tsx; build + lint + RBAC OK.
 2026-06-24 — PERSONAL_LESSONS Этап 4 (Промпт 4): раздел `/personal` — PersonalLessonsPageContainer, фильтры, список, вкладка продажи; routes + nav + modules.personal_lessons gate; удалены PersonalLessonsPanel/PersonalPage, personalFilter из store; откат redirect `/personal`→`/schedule`; Dashboard personalView → `/personal`; canWritePersonalLesson через isPersonalLessonLockedForWrite.
 2026-06-24 — PERSONAL_LESSONS Этап 3 (Промпт 3): PersonalLessonSaleForm — общая форма продажи (schedule-cell + standalone), до 4 клиентов, режимы дат single/multiple/weekly; AddPersonalLessonForm — тонкая обёртка popup; lib/personalLessonDates.ts для генерации повторений.
 2026-06-24 — PERSONAL_LESSONS Этап 2 (Промпт 2): usePersonalLessons — фильтры location/discipline/teacher/client/attendance, buildQueryKeySuffix; delete/update через RPC + hook guard date>today; useAddPersonalLessons/useMarkPersonalLessonAttendance invalidation schedule/subscriptions/payments; AttendancePanel — personal+пакет через handleMarkPersonal + excused.

@@ -77,6 +77,8 @@ assert(can("teacher", "personal_lessons.sell", optsFor("teacher")), "teacher per
 assert(!can("teacher", "subscriptions.sell", optsFor("teacher")), "teacher no sub sell default");
 assert(can("accountant", "finance.read", optsFor("accountant")), "accountant finance");
 assert(!can("accountant", "clients.read", optsFor("accountant")), "accountant no clients");
+assert(!canAccessPanel("accountant", "personal", optsFor("accountant")), "accountant no personal");
+assert(!canAccessPanel("accountant", "personal_sell", optsFor("accountant")), "accountant no personal_sell");
 
 // RBAC-1 dashboard split
 for (const r of ["owner", "director"]) {
@@ -115,6 +117,8 @@ assert(emptyTeacherVisible.length === 0, `empty teacher nav must be 0, got ${emp
 
 // RBAC-7 landing paths
 const receptionOpts = { restrictedAdmin: true };
+assert(!canAccessPanel("admin", "personal", receptionOpts), "reception no personal");
+assert(!canAccessPanel("admin", "personal_sell", receptionOpts), "reception no personal_sell");
 assert(
   findFirstAccessiblePanelPath("admin", receptionOpts) === "/subscriptions",
   "reception fallback path"
