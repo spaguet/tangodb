@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, MapPin, X } from "lucide-react";
+import { MapPin, Trash2, X } from "lucide-react";
 import { useAddGroupSchedule } from "../../hooks/useSchedule";
 import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { findScheduleConflict } from "../../lib/scheduleConflicts";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
-import { formatDateRu } from "../../lib/utils";
+import { addDays, getWeekRange, toISODateLocal } from "../../lib/scheduleWeek";
+import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
 import type { Discipline } from "../../types";
 import AppSelect from "../ui/AppSelect";
 import DisciplineSelect from "../ui/DisciplineSelect";
@@ -40,6 +41,44 @@ interface AddGroupLessonFormProps {
 const fieldCls =
   "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const addDayBtnCls =
+  "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
+
+interface GroupSlotRow {
+  key: string;
+  dayOfWeek: number;
+  timeStart: string;
+  timeEnd: string;
+}
+
+function dateForDayOfWeekInWeek(baseDate: string, dayOfWeek: number): string {
+  const { weekStart } = getWeekRange(new Date(`${baseDate}T12:00:00`));
+  for (let offset = 0; offset < 7; offset += 1) {
+    const date = addDays(toISODateLocal(weekStart), offset);
+    const dow = jsDayToIsoDow(new Date(`${date}T12:00:00`).getDay());
+    if (dow === dayOfWeek) return date;
+  }
+  return baseDate;
+}
+
+function makeGroupSlotRow(dayOfWeek = 1, timeStart = "19:00", timeEnd = "20:00"): GroupSlotRow {
+  return { key: crypto.randomUUID(), dayOfWeek, timeStart, timeEnd };
+}
+
+function findInternalSlotConflict(rows: GroupSlotRow[], rowKey: string): string | null {
+  const row = rows.find((item) => item.key === rowKey);
+  if (!row) return null;
+
+  for (const other of rows) {
+    if (other.key === rowKey) continue;
+    if (other.dayOfWeek !== row.dayOfWeek) continue;
+    if (timesOverlap(row.timeStart, row.timeEnd, other.timeStart, other.timeEnd)) {
+      return "этот день и время уже добавлены в форму";
+    }
+  }
+
+  return null;
+}
 
 export default function AddGroupLessonForm({
   prefill,
@@ -56,14 +95,14 @@ export default function AddGroupLessonForm({
   const [groupName, setGroupName] = useState("");
   const [disciplineId, setDisciplineId] = useState<string>("");
   const [teacherMemberId, setTeacherMemberId] = useState("");
-  const [timeStart, setTimeStart] = useState("19:00");
-  const [timeEnd, setTimeEnd] = useState("20:00");
+  const [groupSlotRows, setGroupSlotRows] = useState<GroupSlotRow[]>([]);
 
   useEffect(() => {
     if (!prefill) return;
     setGroupName("");
-    setTimeStart(prefill.timeStart);
-    setTimeEnd(computeAutoTimeEnd(prefill.timeStart, []));
+    setGroupSlotRows([
+      makeGroupSlotRow(prefill.dayOfWeek, prefill.timeStart, computeAutoTimeEnd(prefill.timeStart, [])),
+    ]);
     if (disciplines.length > 0) setDisciplineId(disciplines[0].id);
     if (teacherOptions.length > 0) setTeacherMemberId(teacherOptions[0].id);
   }, [prefill, disciplines, teacherOptions]);
@@ -77,22 +116,80 @@ export default function AddGroupLessonForm({
     return () => window.removeEventListener("keydown", onKey);
   }, [prefill, onClose]);
 
-  const sameDayLessons = useMemo(() => {
+  const updateGroupSlotRow = (key: string, patch: Partial<GroupSlotRow>) => {
+    setGroupSlotRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
+  };
+
+  const getSameDayLessons = (dayOfWeek: number) => {
     if (!prefill) return [];
+    const date = dateForDayOfWeekInWeek(prefill.date, dayOfWeek);
     return [
       ...scheduleSlots
-        .filter((s) => s.dayOfWeek === prefill.dayOfWeek && s.locationId === prefill.locationId)
+        .filter((s) => s.dayOfWeek === dayOfWeek && s.locationId === prefill.locationId)
         .map((s) => ({ timeStart: s.time, timeEnd: s.timeEnd })),
       ...personalLessons
-        .filter((l) => l.date === prefill.date && l.locationId === prefill.locationId)
+        .filter((l) => l.date === date && l.locationId === prefill.locationId)
         .map((l) => ({ timeStart: l.timeStart, timeEnd: l.timeEnd })),
     ];
-  }, [prefill, scheduleSlots, personalLessons]);
-
-  const handleTimeStartChange = (next: string) => {
-    setTimeStart(next);
-    setTimeEnd(computeAutoTimeEnd(next, sameDayLessons));
   };
+
+  const handleGroupSlotTimeStartChange = (key: string, next: string) => {
+    setGroupSlotRows((prev) =>
+      prev.map((row) => {
+        if (row.key !== key) return row;
+        return { ...row, timeStart: next, timeEnd: computeAutoTimeEnd(next, getSameDayLessons(row.dayOfWeek)) };
+      })
+    );
+  };
+
+  const handleAddGroupDay = () => {
+    setGroupSlotRows((prev) => {
+      const lastRow = prev.at(-1);
+      const dayOfWeek = ((lastRow?.dayOfWeek ?? prefill?.dayOfWeek ?? 1) % 7) + 1;
+      const timeStart = lastRow?.timeStart ?? prefill?.timeStart ?? "19:00";
+      return [...prev, makeGroupSlotRow(dayOfWeek, timeStart, computeAutoTimeEnd(timeStart, getSameDayLessons(dayOfWeek)))];
+    });
+  };
+
+  const handleRemoveGroupDay = (key: string) => {
+    setGroupSlotRows((prev) => (prev.length <= 1 ? prev : prev.filter((row) => row.key !== key)));
+  };
+
+  const groupSlotConflicts = useMemo(() => {
+    if (!prefill) return new Map<string, string>();
+
+    const conflicts = new Map<string, string>();
+    for (const row of groupSlotRows) {
+      const internal = findInternalSlotConflict(groupSlotRows, row.key);
+      if (internal) {
+        conflicts.set(row.key, internal);
+        continue;
+      }
+
+      const rangeError = validateTimeRange(row.timeStart, row.timeEnd);
+      if (rangeError) {
+        conflicts.set(row.key, rangeError);
+        continue;
+      }
+
+      const conflictDate = dateForDayOfWeekInWeek(prefill.date, row.dayOfWeek);
+      const external = findScheduleConflict(
+        {
+          date: conflictDate,
+          timeStart: row.timeStart,
+          timeEnd: row.timeEnd,
+          locationId: prefill.locationId,
+        },
+        personalLessons,
+        scheduleSlots
+      );
+      if (external) {
+        conflicts.set(row.key, external);
+      }
+    }
+
+    return conflicts;
+  }, [prefill, groupSlotRows, personalLessons, scheduleSlots]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,25 +208,12 @@ export default function AddGroupLessonForm({
       toast("Выберите преподавателя.", "error");
       return;
     }
-
-    const rangeError = validateTimeRange(timeStart, timeEnd);
-    if (rangeError) {
-      toast(rangeError, "error");
+    if (groupSlotRows.length === 0) {
+      toast("Добавьте хотя бы один день и время.", "error");
       return;
     }
-
-    const conflict = findScheduleConflict(
-      {
-        date: prefill.date,
-        timeStart,
-        timeEnd,
-        locationId: prefill.locationId,
-      },
-      personalLessons,
-      scheduleSlots
-    );
-    if (conflict) {
-      toast(`Конфликт: ${formatDateRu(prefill.date)} ${timeStart} — ${conflict}`, "error");
+    if (groupSlotConflicts.size > 0) {
+      toast("Исправьте конфликты в расписании перед добавлением.", "error");
       return;
     }
 
@@ -138,7 +222,11 @@ export default function AddGroupLessonForm({
       disciplineId,
       locationId: prefill.locationId,
       teacherMemberId,
-      days: [{ dayOfWeek: prefill.dayOfWeek, time: timeStart, timeEnd }],
+      days: groupSlotRows.map((row) => ({
+        dayOfWeek: row.dayOfWeek,
+        time: row.timeStart,
+        timeEnd: row.timeEnd,
+      })),
     });
 
     if (!res.success) {
@@ -196,14 +284,6 @@ export default function AddGroupLessonForm({
               </div>
 
               <div className="field-stack">
-                <label className={labelCls}>День</label>
-                <div className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-700">
-                  <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
-                  {formatDateRu(prefill.date)}
-                </div>
-              </div>
-
-              <div className="field-stack">
                 <label className={labelCls}>Название группы</label>
                 <input
                   type="text"
@@ -239,15 +319,71 @@ export default function AddGroupLessonForm({
                 )}
               </AppSelect>
 
-              <div className="grid grid-cols-2 gap-3">
-                <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
-                <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
+              <div className="field-stack">
+                <label className={labelCls}>Дни и время</label>
+                <div className="space-y-2">
+                  {groupSlotRows.map((row) => {
+                    const conflict = groupSlotConflicts.get(row.key);
+                    return (
+                      <div key={row.key} className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-2">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <AppSelect
+                              value={row.dayOfWeek}
+                              onChange={(e) => {
+                                const dayOfWeek = parseInt(e.target.value, 10);
+                                updateGroupSlotRow(row.key, {
+                                  dayOfWeek,
+                                  timeEnd: computeAutoTimeEnd(row.timeStart, getSameDayLessons(dayOfWeek)),
+                                });
+                              }}
+                              className="text-xs py-2"
+                            >
+                              {dowFullEntries().map(([val, name]) => (
+                                <option key={val} value={val}>
+                                  {name}
+                                </option>
+                              ))}
+                            </AppSelect>
+                            <TimeSelect
+                              label=""
+                              value={row.timeStart}
+                              onChange={(next) => handleGroupSlotTimeStartChange(row.key, next)}
+                              required
+                            />
+                            <TimeSelect
+                              label=""
+                              value={row.timeEnd}
+                              onChange={(next) => updateGroupSlotRow(row.key, { timeEnd: next })}
+                              required
+                            />
+                          </div>
+                          {groupSlotRows.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveGroupDay(row.key)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0 mt-1"
+                              title="Убрать день"
+                              aria-label="Убрать день"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        {conflict && <p className="text-[10px] text-rose-600 font-sans">Конфликт: {conflict}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <button type="button" onClick={handleAddGroupDay} className={addDayBtnCls}>
+                  + Добавить день и время
+                </button>
               </div>
 
               <div className="flex items-center gap-2 pt-1">
                 <button
                   type="submit"
-                  disabled={addGroupSchedule.isPending}
+                  disabled={addGroupSchedule.isPending || groupSlotConflicts.size > 0}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Добавить
