@@ -5,8 +5,8 @@ import { useAddGroupSchedule } from "../../hooks/useSchedule";
 import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { findScheduleConflict } from "../../lib/scheduleConflicts";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
-import { addDays, getWeekRange, toISODateLocal } from "../../lib/scheduleWeek";
-import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
+import { nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
+import { dowFullEntries, timesOverlap } from "../../lib/utils";
 import type { Discipline } from "../../types";
 import AppSelect from "../ui/AppSelect";
 import DisciplineSelect from "../ui/DisciplineSelect";
@@ -49,16 +49,6 @@ interface GroupSlotRow {
   dayOfWeek: number;
   timeStart: string;
   timeEnd: string;
-}
-
-function dateForDayOfWeekInWeek(baseDate: string, dayOfWeek: number): string {
-  const { weekStart } = getWeekRange(new Date(`${baseDate}T12:00:00`));
-  for (let offset = 0; offset < 7; offset += 1) {
-    const date = addDays(toISODateLocal(weekStart), offset);
-    const dow = jsDayToIsoDow(new Date(`${date}T12:00:00`).getDay());
-    if (dow === dayOfWeek) return date;
-  }
-  return baseDate;
 }
 
 function makeGroupSlotRow(dayOfWeek = 1, timeStart = "19:00", timeEnd = "20:00"): GroupSlotRow {
@@ -122,7 +112,7 @@ export default function AddGroupLessonForm({
 
   const getSameDayLessons = (dayOfWeek: number) => {
     if (!prefill) return [];
-    const date = dateForDayOfWeekInWeek(prefill.date, dayOfWeek);
+    const date = nextOccurrenceOnOrAfter(toISODateLocal(new Date()), dayOfWeek);
     return [
       ...scheduleSlots
         .filter((s) => s.dayOfWeek === dayOfWeek && s.locationId === prefill.locationId)
@@ -159,6 +149,7 @@ export default function AddGroupLessonForm({
     if (!prefill) return new Map<string, string>();
 
     const conflicts = new Map<string, string>();
+    const today = toISODateLocal(new Date());
     for (const row of groupSlotRows) {
       const internal = findInternalSlotConflict(groupSlotRows, row.key);
       if (internal) {
@@ -172,7 +163,7 @@ export default function AddGroupLessonForm({
         continue;
       }
 
-      const conflictDate = dateForDayOfWeekInWeek(prefill.date, row.dayOfWeek);
+      const conflictDate = nextOccurrenceOnOrAfter(today, row.dayOfWeek);
       const external = findScheduleConflict(
         {
           date: conflictDate,

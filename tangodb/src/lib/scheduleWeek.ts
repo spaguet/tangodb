@@ -27,6 +27,13 @@ export function addDays(isoDate: string, days: number): string {
   return toISODateLocal(d);
 }
 
+/** First calendar date >= fromDate when this ISO day-of-week occurs (school local TZ). */
+export function nextOccurrenceOnOrAfter(fromDate: string, dayOfWeek: number): string {
+  const fromDow = jsDayToIsoDow(new Date(`${fromDate}T12:00:00`).getDay());
+  const delta = (dayOfWeek - fromDow + 7) % 7;
+  return addDays(fromDate, delta);
+}
+
 export function normalizeTime(hhmm: string): string {
   const [rawH, rawM = "0"] = hhmm.split(":");
   const h = Number(rawH);
@@ -79,10 +86,14 @@ export function expandSlotsToWeek(
       const isoDow = jsDayToIsoDow(date.getDay());
       if (isoDow !== slot.dayOfWeek) continue;
 
+      const dateISO = toISODateLocal(date);
+      if (dateISO < slot.validFrom) continue;
+      if (slot.validTo != null && dateISO > slot.validTo) continue;
+
       result.push({
         kind: "group",
         slotId: slot.id,
-        date: toISODateLocal(date),
+        date: dateISO,
         timeStart: normalizeTime(slot.time),
         timeEnd: normalizeTime(slot.timeEnd),
         validFrom: slot.validFrom,

@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import {
   addDays,
   expandSlotsToWeek,
+  nextOccurrenceOnOrAfter,
   normalizeTime,
   toISODateLocal,
 } from "../lib/scheduleWeek";
@@ -179,7 +180,7 @@ export function useAddGroupSchedule() {
         return { success: false as const, error: "Добавьте хотя бы один день" };
       }
 
-      const validFrom = toISODateLocal(new Date());
+      const today = toISODateLocal(new Date());
       const rows = days.map((day) => ({
         organization_id: organizationId,
         day_of_week: day.dayOfWeek,
@@ -189,7 +190,7 @@ export function useAddGroupSchedule() {
         group_name: trimmedGroup,
         location_id: locationId,
         teacher_member_id: teacherMemberId,
-        valid_from: validFrom,
+        valid_from: nextOccurrenceOnOrAfter(today, day.dayOfWeek),
       }));
 
       const { error } = await supabase.from(scheduleTable).insert(rows);
