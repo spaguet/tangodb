@@ -137,7 +137,7 @@ export default function LessonInfoPopup({
       }
       toast("Групповое занятие удалено из расписания", "success");
     } else {
-      const res = await deletePersonalLesson.mutateAsync(lesson.lessonId);
+      const res = await deletePersonalLesson.mutateAsync({ id: lesson.lessonId, lessonDate: lesson.date });
       if (!res.success) {
         toast(res.error ?? "Не удалось удалить урок", "error");
         return;

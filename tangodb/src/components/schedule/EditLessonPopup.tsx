@@ -442,6 +442,7 @@ export default function EditLessonPopup({
 
     const res = await updatePersonalLesson.mutateAsync({
       id: lesson.lessonId,
+      lessonDate: lesson.date,
       date: personalDate,
       timeStart,
       timeEnd,

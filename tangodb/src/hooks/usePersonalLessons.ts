@@ -1,12 +1,14 @@
 import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import { normalizeTime } from "../lib/scheduleWeek";
+import { isPersonalLessonLockedForWrite, normalizeTime } from "../lib/scheduleWeek";
 import { formatClientName } from "../lib/utils";
 import type { Client, PersonalLesson } from "../types";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { paymentsQueryKey } from "./usePayments";
+import { subscriptionsQueryKey } from "./useSubscriptions";
 
 export const personalLessonsQueryKey = ["personalLessons"] as const;
 
@@ -14,8 +16,15 @@ export interface UsePersonalLessonsOptions {
   yearMonth?: string;
   dateRange?: { start: string; end: string };
   paidFilter?: "yes" | "no";
+  locationId?: string;
+  disciplineId?: string;
+  teacherMemberId?: string;
+  clientId?: string;
+  attendanceStatus?: "unmarked" | "present" | "absent" | "excused";
   enabled?: boolean;
 }
+
+export type DeletePersonalLessonInput = string | { id: string; lessonDate?: string };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -116,10 +125,39 @@ const personalLessonsSelect =
 const personalLessonsSelectTeacher =
   "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status";
 
-function buildQueryKeySuffix(options: UsePersonalLessonsOptions): unknown {
-  if (options.dateRange) return { range: options.dateRange, paid: options.paidFilter ?? null };
-  if (options.yearMonth) return { yearMonth: options.yearMonth, paid: options.paidFilter ?? null };
-  if (options.paidFilter) return { paid: options.paidFilter };
+function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string, unknown> | null {
+  const suffix = {
+    range: options.dateRange ?? null,
+    yearMonth: options.yearMonth ?? null,
+    paid: options.paidFilter ?? null,
+    locationId: options.locationId ?? null,
+    disciplineId: options.disciplineId ?? null,
+    teacherMemberId: options.teacherMemberId ?? null,
+    clientId: options.clientId ?? null,
+    attendanceStatus: options.attendanceStatus ?? null,
+  };
+
+  const hasFilter = Object.values(suffix).some((value) => value != null);
+  return hasFilter ? suffix : null;
+}
+
+function invalidatePersonalLessonRelatedQueries(queryClient: QueryClient, refetchType?: "active") {
+  const opts = refetchType ? { refetchType } : undefined;
+  void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, ...opts });
+  void queryClient.invalidateQueries({ queryKey: ["schedule"], ...opts });
+  void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
+  void queryClient.invalidateQueries({ queryKey: paymentsQueryKey, ...opts });
+}
+
+function resolveDeleteInput(input: DeletePersonalLessonInput): { id: string; lessonDate?: string } {
+  if (typeof input === "string") return { id: input };
+  return input;
+}
+
+function overlapErrorMessage(error: { message: string }): string | null {
+  if (error.message.includes("personal_lesson_overlap") || error.message.includes("personal_group_overlap")) {
+    return "Пересечение с другим занятием в это время";
+  }
   return null;
 }
 
@@ -154,6 +192,31 @@ export function usePersonalLessons(options?: UsePersonalLessonsOptions) {
 
       if (resolved.paidFilter) {
         query = query.eq("paid", resolved.paidFilter);
+      }
+
+      if (resolved.locationId) {
+        query = query.eq("location_id", resolved.locationId);
+      }
+
+      if (resolved.teacherMemberId) {
+        query = query.eq("teacher_member_id", resolved.teacherMemberId);
+      }
+
+      if (resolved.disciplineId) {
+        query = query.eq("discipline_id", resolved.disciplineId);
+      }
+
+      if (resolved.attendanceStatus === "unmarked") {
+        query = query.is("attendance_status", null);
+      } else if (resolved.attendanceStatus) {
+        query = query.eq("attendance_status", resolved.attendanceStatus);
+      }
+
+      if (resolved.clientId) {
+        const clientId = resolved.clientId;
+        query = query.or(
+          `client_id1.eq.${clientId},client_id2.eq.${clientId},client_id3.eq.${clientId},client_id4.eq.${clientId}`
+        );
       }
 
       const { data, error } = await query;
@@ -253,15 +316,14 @@ export function useAddPersonalLessons() {
 
       const { error } = await supabase.from("personal_lessons").insert(rows);
       if (error) {
-        if (error.message.includes("personal_lesson_overlap") || error.message.includes("personal_group_overlap")) {
-          return { success: false as const, error: "Пересечение с другим занятием в это время" };
-        }
+        const overlap = overlapErrorMessage(error);
+        if (overlap) return { success: false as const, error: overlap };
         return { success: false as const, error: error.message };
       }
       return { success: true as const, ids: rows.map((row) => row.id as string) };
     },
     onSuccess: (result) => {
-      if (result.success) void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient);
     },
   });
 }
@@ -283,7 +345,7 @@ export function useUpdatePersonalPaid() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient);
     },
   });
 }
@@ -292,23 +354,28 @@ export function useDeletePersonalLesson() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { data, error } = await supabase
-        .from("personal_lessons")
-        .delete()
-        .eq("id", id)
-        .select("id")
-        .maybeSingle();
+    mutationFn: async (input: DeletePersonalLessonInput) => {
+      const { id, lessonDate } = resolveDeleteInput(input);
+
+      if (lessonDate && isPersonalLessonLockedForWrite(lessonDate)) {
+        return { success: false as const, error: "Удаление доступно только для будущих уроков" };
+      }
+
+      const { data, error } = await supabase.rpc("delete_personal_lesson", {
+        p_lesson_id: id,
+      });
 
       if (error) return { success: false as const, error: error.message };
-      if (!data) return { success: false as const, error: "Урок не найден" };
+
+      const result = data as { success?: boolean; error?: string } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "Не удалось удалить урок" };
+      }
+
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, refetchType: "active" });
-        void queryClient.invalidateQueries({ queryKey: ["schedule"], refetchType: "active" });
-      }
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, "active");
     },
   });
 }
@@ -319,6 +386,7 @@ export function useUpdatePersonalLesson() {
   return useMutation({
     mutationFn: async ({
       id,
+      lessonDate,
       date,
       timeStart,
       timeEnd,
@@ -329,11 +397,13 @@ export function useUpdatePersonalLesson() {
       clientId1,
       clientId2,
       clientId3,
+      clientId4,
       price,
       paid,
       subscriptionId,
     }: {
       id: string;
+      lessonDate?: string;
       date?: string;
       timeStart?: string;
       timeEnd?: string;
@@ -344,10 +414,23 @@ export function useUpdatePersonalLesson() {
       clientId1?: string;
       clientId2?: string;
       clientId3?: string;
+      clientId4?: string;
       price?: number;
       paid?: boolean;
       subscriptionId?: string | null;
     }) => {
+      const currentDate = lessonDate;
+      if (currentDate && isPersonalLessonLockedForWrite(currentDate)) {
+        return {
+          success: false as const,
+          error: "Редактирование недоступно для прошедших и сегодняшних уроков",
+        };
+      }
+
+      if (date && isPersonalLessonLockedForWrite(date)) {
+        return { success: false as const, error: "Новая дата должна быть в будущем" };
+      }
+
       const payload: Record<string, unknown> = {};
       if (date != null) payload.date = date;
       if (timeStart != null) payload.time_start = normalizeTime(timeStart);
@@ -359,6 +442,7 @@ export function useUpdatePersonalLesson() {
       if (clientId1 !== undefined) payload.client_id1 = clientId1 || null;
       if (clientId2 !== undefined) payload.client_id2 = clientId2 || null;
       if (clientId3 !== undefined) payload.client_id3 = clientId3 || null;
+      if (clientId4 !== undefined) payload.client_id4 = clientId4 || null;
       if (price !== undefined) payload.price = price;
       if (paid !== undefined) payload.paid = paid ? "yes" : "no";
       if (subscriptionId !== undefined) payload.subscription_id = subscriptionId;
@@ -367,27 +451,26 @@ export function useUpdatePersonalLesson() {
         return { success: false as const, error: "Нет данных для обновления" };
       }
 
-      const { data, error } = await supabase
-        .from("personal_lessons")
-        .update(payload)
-        .eq("id", id)
-        .select("id")
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("update_personal_lesson", {
+        p_lesson_id: id,
+        p_payload: payload,
+      });
 
       if (error) {
-        if (error.message.includes("personal_lesson_overlap") || error.message.includes("personal_group_overlap")) {
-          return { success: false as const, error: "Пересечение с другим занятием в это время" };
-        }
+        const overlap = overlapErrorMessage(error);
+        if (overlap) return { success: false as const, error: overlap };
         return { success: false as const, error: error.message };
       }
-      if (!data) return { success: false as const, error: "Урок не найден" };
+
+      const result = data as { success?: boolean; error?: string } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "Не удалось сохранить изменения" };
+      }
+
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
-        void queryClient.invalidateQueries({ queryKey: ["schedule"] });
-      }
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient);
     },
   });
 }
@@ -439,9 +522,7 @@ export function useMarkPersonalLessonAttendance() {
       }
     },
     onSettled: (result) => {
-      if (result?.success) {
-        void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
-      }
+      if (result?.success) invalidatePersonalLessonRelatedQueries(queryClient);
     },
   });
 }

@@ -393,7 +393,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     }
   };
 
-  const handleMarkPersonal = async (lessonId: string, status: "present" | "absent") => {
+  const handleMarkPersonal = async (
+    lessonId: string,
+    status: "present" | "absent" | "excused"
+  ) => {
     if (connectionState !== "online") {
       toast(getMutationBlockedMessage(connectionState), "error");
       return;
@@ -407,7 +410,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     if (!res.success) {
       toast(res.error || "Не удалось сохранить отметку", "error");
     } else {
-      toast(`Отмечено: ${status === "present" ? "присутствие" : "отсутствие"}`, "success");
+      toast(`Отмечено: ${attendanceStatusLabel(status)}`, "success");
     }
   };
 
@@ -540,8 +543,15 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     !selectedLesson.lesson.subscriptionId &&
     !!activePersonalLesson;
 
+  const isPersonalPackageView =
+    selectedLesson?.kind === "personal" &&
+    !!selectedLesson.lesson.subscriptionId &&
+    !!activePersonalLesson;
+
+  const isPersonalAttendanceView = isPersonalOneOffView || isPersonalPackageView;
+
   const isSubsListView =
-    !!selectedLesson && !isPersonalOneOffView && !subsError && !subsLoading && modalSubs.length > 0;
+    !!selectedLesson && !isPersonalAttendanceView && !subsError && !subsLoading && modalSubs.length > 0;
 
   const useVirtualSubsList = isSubsListView && modalSubs.length >= 20;
 
@@ -827,25 +837,31 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               <div
                 className={`px-4 py-3 flex-1 min-h-0 ${useVirtualSubsList ? "" : "overflow-y-auto"}`}
               >
-                {isPersonalOneOffView ? (
+                {isPersonalAttendanceView && activePersonalLesson ? (
                   <div className="rounded-xl border border-slate-200 p-4 space-y-3">
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-slate-800">{activePersonalLesson.clientDisplay}</p>
-                      <p className="text-xs text-slate-500 font-sans">
-                        Разовый урок · {formatCurrency(activePersonalLesson.price)}
-                      </p>
-                      <p className="text-xs font-sans">
-                        Оплата:{" "}
-                        <span
-                          className={
-                            activePersonalLesson.paid === "yes"
-                              ? "text-indigo-600 font-semibold"
-                              : "text-rose-600 font-semibold"
-                          }
-                        >
-                          {activePersonalLesson.paid === "yes" ? "оплачен" : "не оплачен"}
-                        </span>
-                      </p>
+                      {isPersonalPackageView ? (
+                        <p className="text-xs text-slate-500 font-sans">Оплачено пакетом</p>
+                      ) : (
+                        <>
+                          <p className="text-xs text-slate-500 font-sans">
+                            Разовый урок · {formatCurrency(activePersonalLesson.price)}
+                          </p>
+                          <p className="text-xs font-sans">
+                            Оплата:{" "}
+                            <span
+                              className={
+                                activePersonalLesson.paid === "yes"
+                                  ? "text-indigo-600 font-semibold"
+                                  : "text-rose-600 font-semibold"
+                              }
+                            >
+                              {activePersonalLesson.paid === "yes" ? "оплачен" : "не оплачен"}
+                            </span>
+                          </p>
+                        </>
+                      )}
                     </div>
 
                     {!canMarkAttendance ? (
@@ -853,36 +869,53 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                         Отметки посещаемости доступны только за прошедшие и текущий день.
                       </p>
                     ) : (
-                      <div className="flex items-center gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => handleMarkPersonal(activePersonalLesson.id, "present")}
-                          disabled={connectionState !== "online" || markPersonalAttendance.isPending}
-                          title={getConnectionBlockReason(connectionState)}
-                          className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
-                            activePersonalLesson.attendanceStatus === "present"
-                              ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
-                              : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50"
-                          }`}
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          Пришёл
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleMarkPersonal(activePersonalLesson.id, "absent")}
-                          disabled={connectionState !== "online" || markPersonalAttendance.isPending}
-                          title={getConnectionBlockReason(connectionState)}
-                          className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
-                            activePersonalLesson.attendanceStatus === "absent"
-                              ? "bg-rose-600 border-rose-600 text-white shadow-xs"
-                              : "bg-white border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50"
-                          }`}
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          Не пришёл
-                        </button>
-                      </div>
+                      <>
+                        <AttendanceMarkLegend showFreeze={false} />
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleMarkPersonal(activePersonalLesson.id, "present")}
+                            disabled={connectionState !== "online" || markPersonalAttendance.isPending}
+                            title={getConnectionBlockReason(connectionState) ?? "Пришёл — Списать урок с абонемента"}
+                            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+                              activePersonalLesson.attendanceStatus === "present"
+                                ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
+                                : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50"
+                            }`}
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            Пришёл
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMarkPersonal(activePersonalLesson.id, "absent")}
+                            disabled={connectionState !== "online" || markPersonalAttendance.isPending}
+                            title={getConnectionBlockReason(connectionState) ?? "Не пришёл — Списать урок с абонемента"}
+                            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+                              activePersonalLesson.attendanceStatus === "absent"
+                                ? "bg-rose-600 border-rose-600 text-white shadow-xs"
+                                : "bg-white border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50"
+                            }`}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            Не пришёл
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMarkPersonal(activePersonalLesson.id, "excused")}
+                            disabled={connectionState !== "online" || markPersonalAttendance.isPending}
+                            title={getConnectionBlockReason(connectionState) ?? "Уважит. — Не списывать урок с абонемента"}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+                              activePersonalLesson.attendanceStatus === "excused"
+                                ? "bg-amber-600 border-amber-600 text-white shadow-xs"
+                                : "bg-white border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50"
+                            }`}
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            Уважит.
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 ) : subsError ? (

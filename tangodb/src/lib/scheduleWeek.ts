@@ -130,6 +130,11 @@ export function isPastDate(dateISO: string): boolean {
   return dateISO < toISODateLocal(new Date());
 }
 
+/** Personal lessons: edit/delete only when date > today (today is locked). */
+export function isPersonalLessonLockedForWrite(dateISO: string): boolean {
+  return dateISO <= toISODateLocal(new Date());
+}
+
 export function computeDisplayRange(
   lessons: Array<{ timeStart: string; timeEnd: string }>
 ): { start: number; end: number } {
