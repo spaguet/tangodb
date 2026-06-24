@@ -240,6 +240,7 @@ export const PRICE_LABELS_CATALOG: Record<string, { label: string; sub: string; 
   personal_solo: { label: "Индивидуальный Соло Урок", sub: "Приватная сессия (1 клиент)", col: "private" },
   personal_pair: { label: "Индивидуальный Парный Урок", sub: "Приватная сессия (2 клиента)", col: "private" },
   personal_trio: { label: "Индивидуальный Трио Урок", sub: "Приватная сессия (3 клиента)", col: "private" },
+  personal_quad: { label: "Индивидуальный урок на 4 клиента", sub: "Приватная сессия (4 клиента)", col: "private" },
 };
 
 export function getPriceCatalogKey(price: Pick<PriceTariffRef, "type"> & Partial<Pick<PriceTariffRef, "lessons">>): string {
@@ -373,10 +374,15 @@ export function tariffNeedsThirdClient(tariff: Pick<PriceTariffRef, "type">): bo
   return tariff.type.trim() === "personal_trio";
 }
 
-export function tariffParticipantType(tariff: Pick<PriceTariffRef, "type">): "solo" | "pair" | "trio" {
+export function tariffNeedsFourthClient(tariff: Pick<PriceTariffRef, "type">): boolean {
+  return tariff.type.trim() === "personal_quad";
+}
+
+export function tariffParticipantType(tariff: Pick<PriceTariffRef, "type">): "solo" | "pair" | "trio" | "quad" {
   const t = tariff.type.trim();
   if (t === "personal_pair") return "pair";
   if (t === "personal_trio") return "trio";
+  if (t === "personal_quad") return "quad";
   return "solo";
 }
 
@@ -478,21 +484,25 @@ export interface SubscriptionClientRef {
   clientId1: string;
   clientId2?: string;
   clientId3?: string;
+  clientId4?: string;
 }
 
 export function getSubscriptionClientIds(sub: SubscriptionClientRef): string[] {
   const ids = [sub.clientId1];
   if (sub.clientId2) ids.push(sub.clientId2);
   if (sub.clientId3) ids.push(sub.clientId3);
+  if (sub.clientId4) ids.push(sub.clientId4);
   return ids;
 }
 
 export function bookingClientsMatchSubscription(
   sub: SubscriptionClientRef,
-  booking: { clientId1: string; clientId2?: string; clientId3?: string }
+  booking: { clientId1: string; clientId2?: string; clientId3?: string; clientId4?: string }
 ): boolean {
   const expected = getSubscriptionClientIds(sub);
-  const actual = [booking.clientId1, booking.clientId2, booking.clientId3].filter(Boolean) as string[];
+  const actual = [booking.clientId1, booking.clientId2, booking.clientId3, booking.clientId4].filter(
+    Boolean
+  ) as string[];
   if (expected.length !== actual.length) return false;
   return expected.every((id, i) => id === actual[i]);
 }
@@ -526,6 +536,7 @@ export function getSubscriptionTariffLabel(
   if (sub.type === "pair_hm") return `Пара (${sub.lessonsTotal} занятий)`;
   if (sub.type === "pair") return `Пара (${sub.lessonsTotal} занятий)`;
   if (sub.type === "trio") return "Трио";
+  if (sub.type === "quad") return "Квартет";
   return sub.type;
 }
 

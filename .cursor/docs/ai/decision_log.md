@@ -42,6 +42,19 @@
 - **Почему так:** Решения согласованы с аудитом кода (§2.3–2.4), существующими паттернами тарифов (`filterTariffsForSale`, `prices.discipline_id`/`location_id`) и RBAC (`tangodb_roles_rbac_TZ.md`). Минимальный diff к групповому расписанию; критический баг attendance блокирует корректную работу пакетов и должен быть исправлен первым.
 - **Следующие шаги:** Этап 1 (БД и типы: RPC attendance, delete/update, quad) → Этап 2 (хуки + AttendancePanel) → Этапы 3–4 (форма + раздел `/personal`).
 
+### PL-1 — БД и типы персональных уроков (2026-06-24)
+
+- **Дата:** 2026-06-24
+- **Решение:** Миграция `20260718000001_personal_lessons_stage1.sql`:
+  - `client_id4`, type `quad`, `personal_quad`; constraint `excused` на `attendance_status`;
+  - `mark_personal_lesson_attendance` — единый RPC для разовых и пакетных (`present`/`absent` списывают, `excused` нет, компенсация при смене);
+  - `delete_personal_lesson` / `update_personal_lesson` с guard `date > current_date` (вариант A, PL-0);
+  - `validate_personal_lesson_subscription` — quad, `discipline_id`, `location_id` через `prices`;
+  - views `personal_lessons_teacher_v`, `subscriptions_teacher_v` — `client_id4`.
+- **Контекст:** Промпт 1 `PERSONAL_LESSONS_TZ.md` — подготовка модели до UI раздела.
+- **Почему так:** Критический дефект §2.3 (пакетные уроки не отмечались) блокировал AttendancePanel и будущий `/personal`; backend guard обязателен по §3.10.
+- **Следующие шаги:** Этап 2 — хуки на RPC delete/update, AttendancePanel personal+пакет, invalidation subscriptions.
+
 ### Schedule groups on `classes.id` + monthly unlimited billing
 
 - **Дата:** 2026-06-23

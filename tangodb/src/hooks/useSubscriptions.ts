@@ -21,6 +21,7 @@ const mapSubscription = (row: Record<string, unknown>, maskFinancial: boolean): 
   clientId1: row.client_id1 as string,
   clientId2: (row.client_id2 as string) || "",
   clientId3: (row.client_id3 as string) || "",
+  clientId4: (row.client_id4 as string) || undefined,
   lessonsTotal: row.lessons_total as number,
   lessonsLeft: row.lessons_left as number,
   freezeUsed: row.freeze_used as number,
@@ -116,6 +117,7 @@ export function useAddSubscription() {
       clientId1: string;
       clientId2: string;
       clientId3?: string;
+      clientId4?: string;
       lessonsTotal: number;
       activationDate: string;
       pairMonth: string;
@@ -143,6 +145,7 @@ export function useAddSubscription() {
         client_id1: sub.clientId1,
         client_id2: sub.clientId2 || null,
         client_id3: sub.clientId3 || null,
+        client_id4: sub.clientId4 || null,
         lessons_total: isMonthly ? 0 : sub.lessonsTotal,
         lessons_left: isMonthly ? 0 : sub.lessonsTotal,
         freeze_used: 0,

@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-24 — PERSONAL_LESSONS Этап 1 (Промпт 1): миграция `20260718000001` — quad/client_id4, excused, единый `mark_personal_lesson_attendance` с списанием пакета, RPC `delete_personal_lesson` / `update_personal_lesson` (guard `date > today`), trigger пакет+дисциплина+локация; TS-типы и utils; smoke `personal_lessons_stage1_test.sql`.
 2026-06-24 — PERSONAL_LESSONS Этап 0: зафиксированы MVP-решения (PL-0 в decision_log.md) — маршруты `/personal`, quad-клиент, вариант A для isPastDate, единый RPC attendance, правила пакет/дисциплина/локация.
 2026-06-24 — fix: безлимитный абонемент в прайс-листе — «Безлимит» вместо «1 урок»; в «Обзор и статистика» счётчик дней (30) и попадание в «Заканчивается абонемент» по порогу дней.
 2026-06-24 — fix: досрочное завершение абонемента через RPC finish_subscription (обход триггера protect_subscription_counters).

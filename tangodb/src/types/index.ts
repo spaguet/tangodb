@@ -104,6 +104,7 @@ export interface Subscription {
   clientId1: string;
   clientId2: string;
   clientId3: string;
+  clientId4?: string;
   lessonsTotal: number;
   lessonsLeft: number;
   freezeUsed: number;
@@ -133,6 +134,7 @@ export interface PersonalLesson {
   clientId1: string;
   clientId2: string;
   clientId3: string;
+  clientId4?: string;
   clientDisplay: string;
   date: string;
   timeStart: string;
@@ -143,7 +145,7 @@ export interface PersonalLesson {
   subscriptionId?: string | null;
   locationId?: string | null;
   teacherMemberId?: string | null;
-  attendanceStatus?: "present" | "absent" | null;
+  attendanceStatus?: "present" | "absent" | "excused" | null;
 }
 
 export type PaymentMethod = "cash" | "transfer" | "card" | "other";

@@ -42,19 +42,27 @@ const buildClientDisplay = (
   clientId1: string,
   clientId2: string,
   clientId3: string,
+  clientId4: string,
   clientMap: Record<string, Client>
 ): string =>
   joinClientNames([
     clientNameFromMap(clientId1, clientMap),
     clientId2 ? clientNameFromMap(clientId2, clientMap) : "",
     clientId3 ? clientNameFromMap(clientId3, clientMap) : "",
+    clientId4 ? clientNameFromMap(clientId4, clientMap) : "",
   ]);
 
 const enrichLessonClientDisplay = (
   lesson: PersonalLesson,
   clientMap: Record<string, Client>
 ): PersonalLesson => {
-  const fromDirectory = buildClientDisplay(lesson.clientId1, lesson.clientId2, lesson.clientId3, clientMap);
+  const fromDirectory = buildClientDisplay(
+    lesson.clientId1,
+    lesson.clientId2,
+    lesson.clientId3,
+    lesson.clientId4 ?? "",
+    clientMap
+  );
   if (fromDirectory !== "Клиент не указан") {
     return { ...lesson, clientDisplay: fromDirectory };
   }
@@ -74,6 +82,7 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
   const clientId1 = asId(row.client_id1);
   const clientId2 = asId(row.client_id2);
   const clientId3 = asId(row.client_id3);
+  const clientId4 = asId(row.client_id4);
 
   return {
     id: row.id as string,
@@ -81,10 +90,12 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
     clientId1,
     clientId2,
     clientId3,
+    clientId4: clientId4 || undefined,
     clientDisplay: joinClientNames([
       legacyClientLabel(clientId1),
       legacyClientLabel(clientId2),
       legacyClientLabel(clientId3),
+      legacyClientLabel(clientId4),
     ]),
     date: String(row.date ?? "").slice(0, 10),
     timeStart: normalizeTime((row.time_start as string) || "14:00"),
@@ -95,15 +106,15 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
     subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
     locationId: row.location_id != null ? String(row.location_id) : null,
     teacherMemberId: row.teacher_member_id != null ? String(row.teacher_member_id) : null,
-    attendanceStatus: (row.attendance_status as "present" | "absent" | null) ?? null,
+    attendanceStatus: (row.attendance_status as "present" | "absent" | "excused" | null) ?? null,
   };
 };
 
 const personalLessonsSelect =
-  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, price, paid, subscription_id, location_id, teacher_member_id, attendance_status";
+  "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, price, paid, subscription_id, location_id, teacher_member_id, attendance_status";
 
 const personalLessonsSelectTeacher =
-  "id, type, client_id1, client_id2, client_id3, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status";
+  "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status";
 
 function buildQueryKeySuffix(options: UsePersonalLessonsOptions): unknown {
   if (options.dateRange) return { range: options.dateRange, paid: options.paidFilter ?? null };
@@ -181,6 +192,7 @@ export function useAddPersonalLessons() {
       clientId1,
       clientId2,
       clientId3,
+      clientId4,
       dates,
       timeStart,
       timeEnd,
@@ -196,6 +208,7 @@ export function useAddPersonalLessons() {
       clientId1: string;
       clientId2: string;
       clientId3: string;
+      clientId4?: string;
       dates: string[];
       timeStart: string;
       timeEnd: string;
@@ -226,6 +239,7 @@ export function useAddPersonalLessons() {
         client_id1: clientId1 || null,
         client_id2: clientId2 || null,
         client_id3: clientId3 || null,
+        client_id4: clientId4 || null,
         date,
         time_start: normalizeTime(timeStart),
         time_end: normalizeTime(timeEnd),
@@ -387,7 +401,7 @@ export function useMarkPersonalLessonAttendance() {
       status,
     }: {
       lessonId: string;
-      status: "present" | "absent";
+      status: "present" | "absent" | "excused";
     }) => {
       const { data, error } = await supabase.rpc("mark_personal_lesson_attendance", {
         p_lesson_id: lessonId,
