@@ -1,0 +1,76 @@
+import { addDays, getWeekRange, nextOccurrenceOnOrAfter, toISODateLocal } from "./scheduleWeek";
+
+export interface PersonalLessonSlot {
+  date: string;
+  timeStart: string;
+  timeEnd: string;
+}
+
+export interface WeeklyRecurrenceRow {
+  dayOfWeek: number;
+  timeStart: string;
+  timeEnd: string;
+}
+
+export function groupSlotsByTime(slots: PersonalLessonSlot[]): Array<{
+  dates: string[];
+  timeStart: string;
+  timeEnd: string;
+}> {
+  const map = new Map<string, string[]>();
+  for (const slot of slots) {
+    const key = `${slot.timeStart}\0${slot.timeEnd}`;
+    const list = map.get(key) ?? [];
+    list.push(slot.date);
+    map.set(key, list);
+  }
+  return Array.from(map.entries()).map(([key, dates]) => {
+    const [timeStart, timeEnd] = key.split("\0");
+    return { dates: [...new Set(dates)].sort(), timeStart, timeEnd };
+  });
+}
+
+/** Expand weekly rows into concrete lesson slots between startDate and endDate (inclusive). */
+export function expandWeeklyRecurrence(
+  startDate: string,
+  endDate: string,
+  rows: WeeklyRecurrenceRow[]
+): PersonalLessonSlot[] {
+  if (!rows.length || startDate > endDate) return [];
+
+  const slots: PersonalLessonSlot[] = [];
+  const seen = new Set<string>();
+
+  let { weekStart } = getWeekRange(new Date(`${startDate}T12:00:00`));
+
+  while (toISODateLocal(weekStart) <= endDate) {
+    const weekStartISO = toISODateLocal(weekStart);
+    for (const row of rows) {
+      const date = nextOccurrenceOnOrAfter(weekStartISO, row.dayOfWeek);
+      if (date < startDate || date > endDate) continue;
+      const key = `${date}|${row.timeStart}|${row.timeEnd}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      slots.push({ date, timeStart: row.timeStart, timeEnd: row.timeEnd });
+    }
+    weekStart = new Date(weekStart);
+    weekStart.setDate(weekStart.getDate() + 7);
+  }
+
+  return slots.sort(
+    (a, b) =>
+      a.date.localeCompare(b.date) ||
+      a.timeStart.localeCompare(b.timeStart) ||
+      a.timeEnd.localeCompare(b.timeEnd)
+  );
+}
+
+export function expandWeeklyRecurrenceByWeekCount(
+  startDate: string,
+  weekCount: number,
+  rows: WeeklyRecurrenceRow[]
+): PersonalLessonSlot[] {
+  if (weekCount < 1) return [];
+  const endDate = addDays(startDate, weekCount * 7 - 1);
+  return expandWeeklyRecurrence(startDate, endDate, rows);
+}
