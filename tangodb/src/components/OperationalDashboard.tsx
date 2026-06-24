@@ -14,6 +14,9 @@ import {
   formatCurrency,
   currentYearMonth,
   formatMonthTitleRu,
+  getSubscriptionDaysLeft,
+  isMonthlyUnlimitedSubscription,
+  pluralizeRu,
 } from "../lib/utils";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { shiftMonth } from "../lib/financeReports";
@@ -48,7 +51,12 @@ export default function OperationalDashboard({
   const activeSubs = subscriptions.filter((s) => s.status === "active");
   const solosCount = activeSubs.filter((s) => s.type === "solo").length;
   const pairsCount = activeSubs.filter((s) => s.type === "pair" || s.type === "pair_hm").length;
-  const warningSubs = activeSubs.filter((s) => s.lessonsLeft <= lowBalanceThreshold);
+  const warningSubs = activeSubs.filter((s) => {
+    if (isMonthlyUnlimitedSubscription(s)) {
+      return getSubscriptionDaysLeft(s.expiresAt) <= lowBalanceThreshold;
+    }
+    return s.lessonsLeft <= lowBalanceThreshold;
+  });
 
   const clientMap = useMemo(
     () => Object.fromEntries(clients.map((c) => [c.id, c])) as Record<string, Client>,
@@ -218,9 +226,24 @@ export default function OperationalDashboard({
                       </div>
                     </div>
                     <p className="text-[10px] font-sans text-slate-500">
-                      Баланс{" "}
-                      <span className="font-semibold text-rose-700">{sub.lessonsLeft}</span>
-                      <span className="text-slate-400"> из {sub.lessonsTotal}</span>
+                      {isMonthlyUnlimitedSubscription(sub) ? (
+                        <>
+                          Осталось{" "}
+                          <span className="font-semibold text-rose-700">
+                            {getSubscriptionDaysLeft(sub.expiresAt)}
+                          </span>
+                          <span className="text-slate-400">
+                            {" "}
+                            из 30 {pluralizeRu(30, ["день", "дня", "дней"])}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          Баланс{" "}
+                          <span className="font-semibold text-rose-700">{sub.lessonsLeft}</span>
+                          <span className="text-slate-400"> из {sub.lessonsTotal}</span>
+                        </>
+                      )}
                     </p>
                   </div>
                 );

@@ -25,6 +25,7 @@ import {
   getPriceLabel,
   getPrivateLessonTariffs,
   getPrivatePackageTariffs,
+  isMonthlyUnlimitedTariff,
 } from "../lib/utils";
 import { useSettings } from "../settings/SettingsProvider";
 import AppSelect from "./ui/AppSelect";
@@ -458,9 +459,11 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </div>
           <p className="text-[11px] text-slate-400 font-sans tracking-tight font-normal">
             {description}
-            {(getPriceCategory(p) === "group" || p.lessons > 1)
-              ? ` · ${p.lessons} ${p.lessons === 1 ? "урок" : p.lessons < 5 ? "урока" : "уроков"}`
-              : ""}
+            {isMonthlyUnlimitedTariff(p)
+              ? " · безлимит"
+              : getPriceCategory(p) === "group" || p.lessons > 1
+                ? ` · ${p.lessons} ${p.lessons === 1 ? "урок" : p.lessons < 5 ? "урока" : "уроков"}`
+                : ""}
             {" · "}
             {formatCurrency(p.price)}
           </p>
