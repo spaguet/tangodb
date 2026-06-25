@@ -7,7 +7,7 @@ import {
   maskClientDisplay,
 } from "../../lib/scheduleLessonAccess";
 import { isPersonalLessonLockedForWrite, toISODateLocal } from "../../lib/scheduleWeek";
-import { formatCurrency, formatDateRu } from "../../lib/utils";
+import { formatCurrency } from "../../lib/utils";
 import type { PersonalLesson } from "../../types";
 import type { MemberRole } from "../../types/organization";
 import type { PermissionAction } from "../../lib/permissions";
@@ -121,7 +121,6 @@ export default function PersonalLessonRow({
 
   return (
     <tr className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-      <td className="py-3 px-3 text-xs text-slate-600 whitespace-nowrap">{formatDateRu(lesson.date)}</td>
       <td className="py-3 px-3 text-xs text-slate-800 whitespace-nowrap">
         {lesson.timeStart}–{lesson.timeEnd}
       </td>

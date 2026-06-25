@@ -289,7 +289,7 @@ text-slate-500 text-[11px] uppercase tracking-wider font-semibold
 ```
 w-full bg-slate-50 border border-slate-200
 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100
-outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all
+outline-none rounded-lg px-3.5 py-2.5 text-xs transition-all
 ```
 
 Метка: `selectLabelCls` из `AppSelect.tsx`.

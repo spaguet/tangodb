@@ -1,5 +1,6 @@
 import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
+import { formatDateRu, pluralizeRu } from "../../lib/utils";
 import type { PersonalLesson } from "../../types";
 import type { MemberRole } from "../../types/organization";
 import type { PermissionAction } from "../../lib/permissions";
@@ -66,14 +67,17 @@ export default function PersonalLessonsList({
     <div className="panel-card-stack">
       {Array.from(grouped.entries()).map(([date, dateLessons]) => (
         <div key={date} className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60">
-            <span className="text-xs font-semibold text-indigo-700">{dateLessons.length} урок(ов)</span>
+          <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-800">{formatDateRu(date)}</span>
+            <span className="text-xs text-slate-400">·</span>
+            <span className="text-xs font-semibold text-indigo-700">
+              {dateLessons.length} {pluralizeRu(dateLessons.length, ["урок", "урока", "уроков"])}
+            </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[960px] text-left">
               <thead>
                 <tr className="border-b border-slate-100 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
-                  <th className="py-2 px-3">Дата</th>
                   <th className="py-2 px-3">Время</th>
                   <th className="py-2 px-3">Локация</th>
                   <th className="py-2 px-3">Направление</th>
