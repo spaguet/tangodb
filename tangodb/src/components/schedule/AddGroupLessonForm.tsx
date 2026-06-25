@@ -8,7 +8,7 @@ import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { dowFullEntries, timesOverlap } from "../../lib/utils";
 import type { Discipline } from "../../types";
-import AppSelect from "../ui/AppSelect";
+import AppSelect, { fieldCls } from "../ui/AppSelect";
 import DisciplineSelect from "../ui/DisciplineSelect";
 import TimeSelect from "../ui/TimeSelect";
 import type { ScheduleCellPrefill } from "./AddLessonTypePopup";
@@ -38,8 +38,6 @@ interface AddGroupLessonFormProps {
   onSuccess: () => void;
 }
 
-const fieldCls =
-  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 const addDayBtnCls =
   "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
@@ -268,7 +266,7 @@ export default function AddGroupLessonForm({
             <form onSubmit={handleSubmit} className="panel-form-stack">
               <div className="field-stack">
                 <label className={labelCls}>Локация</label>
-                <div className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-700">
+                <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
                   <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                   {prefill.locationName}
                 </div>

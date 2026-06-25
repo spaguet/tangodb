@@ -3,6 +3,7 @@ import { Check, UserPlus } from "lucide-react";
 import type { ToastType } from "../../App";
 import type { Client } from "../../types";
 import AddClientModal from "./AddClientModal";
+import { fieldCls } from "./AppSelect";
 
 interface ClientAutocompleteProps {
   label: string;
@@ -82,7 +83,7 @@ export default function ClientAutocomplete({
             setHighlight(0);
           }}
           placeholder={placeholder}
-          className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 pr-9 text-sm transition-all"
+          className={`${fieldCls} pr-9`}
           role="combobox"
           aria-expanded={showList}
         />

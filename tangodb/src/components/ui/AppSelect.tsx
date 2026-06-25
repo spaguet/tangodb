@@ -1,7 +1,15 @@
 import { ChevronDown } from "lucide-react";
 
+/** Shared height/styles for text inputs, selects, and date pickers (not multiline description fields). */
+export const fieldCls =
+  "w-full h-10 box-border bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 text-xs transition-all";
+
+/** Multiline description fields — intentionally taller than single-line controls. */
+export const descriptionFieldCls =
+  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-xs transition-all resize-none min-h-[4.5rem]";
+
 export const selectFieldCls =
-  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-xs transition-all appearance-none cursor-pointer pr-10";
+  `${fieldCls} appearance-none cursor-pointer pr-10`;
 
 export const selectLabelCls =
   "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";

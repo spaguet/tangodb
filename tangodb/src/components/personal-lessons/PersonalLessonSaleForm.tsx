@@ -39,7 +39,7 @@ import {
   tariffParticipantType,
 } from "../../lib/utils";
 import type { Client, Subscription } from "../../types";
-import AppSelect from "../ui/AppSelect";
+import AppSelect, { fieldCls } from "../ui/AppSelect";
 import ClientAutocomplete from "../ui/ClientAutocomplete";
 import DatePickerField from "../ui/DatePickerField";
 import DisciplineSelect from "../ui/DisciplineSelect";
@@ -489,7 +489,7 @@ export default function PersonalLessonSaleForm({
       return (
         <div className="field-stack">
           <label className={labelCls}>Дата</label>
-          <div className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-700">
+          <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
             <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
             {formatDateRu(prefill.date)}
           </div>
@@ -715,7 +715,7 @@ export default function PersonalLessonSaleForm({
         {isScheduleCell ? (
           <div className="field-stack">
             <label className={labelCls}>Локация</label>
-            <div className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-700">
+            <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
               <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
               {selectedLocationName}
             </div>
@@ -778,7 +778,7 @@ export default function PersonalLessonSaleForm({
                       type="text"
                       readOnly
                       value={client.query}
-                      className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-600 cursor-not-allowed"
+                      className={`${fieldCls} bg-slate-100 text-slate-600 cursor-not-allowed`}
                     />
                   </div>
                 ) : (
@@ -903,7 +903,7 @@ export default function PersonalLessonSaleForm({
                 placeholder="0"
                 value={customPrice}
                 onChange={(e) => setCustomPrice(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm font-semibold"
+                className={`${fieldCls} font-semibold`}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">

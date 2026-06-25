@@ -21,7 +21,7 @@ import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { dowFull, dowFullEntries, jsDayToIsoDow, timesOverlap } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import RequirePermission from "./RequirePermission";
-import AppSelect from "./ui/AppSelect";
+import AppSelect, { fieldCls } from "./ui/AppSelect";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
@@ -58,9 +58,6 @@ interface ScheduleGroup {
 }
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
-
-const fieldCls =
-  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
 
 const iconBtnCls =
   "p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer";
@@ -538,7 +535,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                         required
                         value={row.time}
                         onChange={(e) => updateDayRow(row.key, { time: e.target.value })}
-                        className={`${fieldCls} pl-9 py-2 text-sm`}
+                        className={`${fieldCls} pl-9`}
                       />
                     </div>
                   </div>
@@ -551,7 +548,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                         required
                         value={row.timeEnd}
                         onChange={(e) => updateDayRow(row.key, { timeEnd: e.target.value })}
-                        className={`${fieldCls} pl-9 py-2 text-sm`}
+                        className={`${fieldCls} pl-9`}
                       />
                     </div>
                   </div>
@@ -769,13 +766,13 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                             type="time"
                             value={slot.time}
                             onChange={(e) => updateEditSlot(slot.key, { time: e.target.value })}
-                            className={`${fieldCls} text-xs py-2`}
+                            className={fieldCls}
                           />
                           <input
                             type="time"
                             value={slot.timeEnd}
                             onChange={(e) => updateEditSlot(slot.key, { timeEnd: e.target.value })}
-                            className={`${fieldCls} text-xs py-2`}
+                            className={fieldCls}
                           />
                         </div>
                         {conflict && <p className="text-[10px] text-rose-600 font-sans">{conflict}</p>}

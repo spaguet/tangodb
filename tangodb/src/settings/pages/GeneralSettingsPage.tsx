@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import AppSelect from "../../components/ui/AppSelect";
+import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
 import { useToast } from "../../App";
@@ -28,9 +28,6 @@ const WEEK_START_OPTIONS = [
   { value: "1", label: "Понедельник" },
   { value: "7", label: "Воскресенье" },
 ];
-
-const inputCls =
-  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
 
 export default function GeneralSettingsPage() {
   const toast = useToast();

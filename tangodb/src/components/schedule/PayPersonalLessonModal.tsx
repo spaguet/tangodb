@@ -21,7 +21,7 @@ import {
   getSubscriptionClientIds,
 } from "../../lib/utils";
 import type { Subscription } from "../../types";
-import AppSelect from "../ui/AppSelect";
+import AppSelect, { fieldCls } from "../ui/AppSelect";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import SellPackageModal from "../ui/SellPackageModal";
 
@@ -328,7 +328,7 @@ export default function PayPersonalLessonModal({
                       placeholder="0"
                       value={customPrice}
                       onChange={(e) => setCustomPrice(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm font-semibold"
+                      className={`${fieldCls} font-semibold`}
                     />
                   </div>
                   <button

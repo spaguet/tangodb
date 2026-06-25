@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Mail, UserMinus, Users, ClipboardList, Copy, Check, Edit } from "lucide-react";
-import AppSelect from "../../components/ui/AppSelect";
+import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import MemberProfileModal from "../components/MemberProfileModal";
@@ -29,9 +29,6 @@ const INVITE_PRESETS: { value: MemberPreset; label: string }[] = [
 const EDITABLE_PRESETS: MemberPreset[] = ["admin", "reception", "teacher", "accountant"];
 
 const labelCls = "text-[10px] font-semibold uppercase tracking-wider text-slate-400 block";
-
-const inputCls =
-  "w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400";
 
 const iconBtnCls =
   "p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer";

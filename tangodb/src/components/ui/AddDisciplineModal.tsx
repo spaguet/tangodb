@@ -5,9 +5,7 @@ import { BookOpen, X } from "lucide-react";
 import { useAddDiscipline } from "../../hooks/useDisciplines";
 import type { ToastType } from "../../App";
 import type { Discipline } from "../../types";
-
-const inputCls =
-  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
+import { descriptionFieldCls, fieldCls as inputCls } from "./AppSelect";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
@@ -105,7 +103,7 @@ export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: 
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Необязательно"
                   rows={2}
-                  className={`${inputCls} resize-none`}
+                  className={descriptionFieldCls}
                 />
               </div>
 

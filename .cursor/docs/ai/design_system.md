@@ -284,17 +284,23 @@ text-slate-500 text-[11px] uppercase tracking-wider font-semibold
 
 ### Поля ввода
 
-Эталон (`selectFieldCls`, дублировать для `input`/`textarea`):
+Эталон (`fieldCls`, `selectFieldCls`, `descriptionFieldCls` в `AppSelect.tsx`):
+
+**Однострочные поля** (`fieldCls` — input, select, date picker, autocomplete):
 
 ```
-w-full bg-slate-50 border border-slate-200
+w-full h-10 box-border bg-slate-50 border border-slate-200
 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100
-outline-none rounded-lg px-3.5 py-2.5 text-xs transition-all
+outline-none rounded-lg px-3.5 text-xs transition-all
 ```
+
+**Select:** `selectFieldCls` = `fieldCls` + `appearance-none cursor-pointer pr-10`.
+
+**Описание (textarea):** `descriptionFieldCls` — без фиксированной `h-10`, `min-h-[4.5rem]`, `resize-none`.
 
 Метка: `selectLabelCls` из `AppSelect.tsx`.
 
-**Правило:** все `<select>` — через `AppSelect` или `selectFieldCls` (см. `.cursor/rules/dropdowns.mdc`).
+**Правило:** все `<select>` — через `AppSelect` или `selectFieldCls`; однострочные `<input>` и `DatePickerField` — через `fieldCls` (см. `.cursor/rules/dropdowns.mdc`).
 
 ### Карточки
 

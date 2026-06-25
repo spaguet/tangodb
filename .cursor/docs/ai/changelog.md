@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-25 — UI: единая высота однострочных полей (`fieldCls` h-10 text-xs) — select, input, DatePickerField, ClientAutocomplete; описание через `descriptionFieldCls`.
 2026-06-25 — Персональные уроки: иконки редактирования/удаления в колонке «Действия»; popup редактирования (время, локация, направление, преподаватель); подтверждение удаления; прошлые даты — без иконок; сегодня и будущее — можно удалять/редактировать; кнопки «Неделя/Месяц/Период» в стиле «Все/Оплаченные/Долг»; миграция RPC guard `date < today`.
 2026-06-25 — Персональные уроки: двухстрочные фильтры (период/дата/оплата + локация/направление/преподаватель/поиск), ссылка «Текущая неделя» только вне текущей недели; убран фильтр «Посещение»; шапка группы — дата + склонение «урок»; колонка «Дата» убрана из таблицы; высота select (`text-xs`) выровнена с полем поиска.
 2026-06-24 — PERSONAL_LESSONS Этап 4 (Промпт 4): раздел `/personal` — PersonalLessonsPageContainer, фильтры, список, вкладка продажи; routes + nav + modules.personal_lessons gate; удалены PersonalLessonsPanel/PersonalPage, personalFilter из store; откат redirect `/personal`→`/schedule`; Dashboard personalView → `/personal`; canWritePersonalLesson через isPersonalLessonLockedForWrite.

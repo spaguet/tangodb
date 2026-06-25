@@ -4,9 +4,7 @@ import { UserPlus, X } from "lucide-react";
 import { useAddClient } from "../../hooks/useClients";
 import type { ToastType } from "../../App";
 import type { Client } from "../../types";
-
-const inputCls =
-  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
+import { fieldCls as inputCls } from "./AppSelect";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 

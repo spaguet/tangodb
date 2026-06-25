@@ -28,7 +28,7 @@ import {
   isMonthlyUnlimitedTariff,
 } from "../lib/utils";
 import { useSettings } from "../settings/SettingsProvider";
-import AppSelect from "./ui/AppSelect";
+import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LocationTariffField from "./ui/LocationTariffField";
 import DisciplineTariffField from "./ui/DisciplineTariffField";
@@ -42,9 +42,6 @@ import type { Price } from "../types";
 interface PricesPanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
-
-const inputCls =
-  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
@@ -626,7 +623,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                     rows={2}
-                    className={`${inputCls} resize-none`}
+                    className={descriptionFieldCls}
                   />
                 </div>
                 <LocationTariffField
@@ -802,7 +799,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                         value={groupForm.description}
                         onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
                         rows={2}
-                        className={`${inputCls} resize-none`}
+                        className={descriptionFieldCls}
                       />
                     </div>
                     {groupForm.format !== "monthly_unlimited" && (
@@ -858,7 +855,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                           setPrivateLessonForm({ ...privateLessonForm, description: e.target.value })
                         }
                         rows={2}
-                        className={`${inputCls} resize-none`}
+                        className={descriptionFieldCls}
                       />
                     </div>
                     <div className="field-stack">
@@ -918,7 +915,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                           setPrivatePackageForm({ ...privatePackageForm, description: e.target.value })
                         }
                         rows={2}
-                        className={`${inputCls} resize-none`}
+                        className={descriptionFieldCls}
                       />
                     </div>
                     <div className="field-stack">
