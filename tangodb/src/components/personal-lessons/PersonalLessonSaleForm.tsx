@@ -28,7 +28,6 @@ import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { toISODateLocal } from "../../lib/scheduleWeek";
 import {
   bookingClientsMatchSubscription,
-  dowFullEntries,
   jsDayToIsoDow,
   formatClientName,
   formatCurrency,
@@ -48,15 +47,10 @@ import TimeSelect from "../ui/TimeSelect";
 import type { ScheduleCellPrefill } from "../schedule/AddLessonTypePopup";
 
 export type PersonalLessonSaleFormMode = "schedule-cell" | "standalone";
-export type PersonalLessonDateMode = "single" | "multiple" | "weekly";
 
 interface BookingClientField {
   query: string;
   id: string;
-}
-
-interface WeeklyFormRow extends WeeklyRecurrenceRow {
-  key: string;
 }
 
 export interface PersonalLessonSaleFormProps {
@@ -72,13 +66,10 @@ export interface PersonalLessonSaleFormProps {
 }
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
 const addRowBtnCls =
   "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
 const MAX_CLIENTS = 4;
-
-function makeWeeklyRow(dayOfWeek = 1, timeStart = "14:00", timeEnd = "15:00"): WeeklyFormRow {
-  return { key: crypto.randomUUID(), dayOfWeek, timeStart, timeEnd };
-}
 
 function participantTypeFromCount(count: number): "solo" | "pair" | "trio" | "quad" {
   if (count >= 4) return "quad";
@@ -136,14 +127,11 @@ export default function PersonalLessonSaleForm({
   const [packageModalOpen, setPackageModalOpen] = useState(false);
 
   const [locationId, setLocationId] = useState("");
-  const [dateMode, setDateMode] = useState<PersonalLessonDateMode>("single");
-  const [singleDate, setSingleDate] = useState(todayISO);
-  const [multipleDates, setMultipleDates] = useState<string[]>([todayISO]);
-  const [weeklyStartDate, setWeeklyStartDate] = useState(todayISO);
+  const [lessonDates, setLessonDates] = useState<string[]>(() => [todayISO]);
+  const [repeatWeekly, setRepeatWeekly] = useState(false);
   const [weeklyEndMode, setWeeklyEndMode] = useState<"date" | "weeks">("weeks");
   const [weeklyEndDate, setWeeklyEndDate] = useState("");
   const [weeklyWeekCount, setWeeklyWeekCount] = useState(4);
-  const [weeklyRows, setWeeklyRows] = useState<WeeklyFormRow[]>(() => [makeWeeklyRow()]);
 
   const effectiveLocationId = isScheduleCell ? (prefill?.locationId ?? "") : locationId;
 
@@ -271,27 +259,21 @@ export default function PersonalLessonSaleForm({
       return [{ date: prefill.date, timeStart, timeEnd }];
     }
 
-    if (dateMode === "single") {
-      if (!singleDate) {
-        toast("Выберите дату.", "error");
-        return null;
-      }
-      return [{ date: singleDate, timeStart, timeEnd }];
+    const filteredDates = lessonDates.filter(Boolean);
+    if (filteredDates.length === 0) {
+      toast("Выберите дату.", "error");
+      return null;
     }
 
-    if (dateMode === "multiple") {
-      const filtered = multipleDates.filter(Boolean);
-      if (filtered.length === 0) {
-        toast("Выберите хотя бы одну дату.", "error");
-        return null;
-      }
-      return filtered.map((date) => ({ date, timeStart, timeEnd }));
+    if (!repeatWeekly) {
+      return filteredDates.map((date) => ({ date, timeStart, timeEnd }));
     }
 
-    const rows: WeeklyRecurrenceRow[] = weeklyRows.map(({ dayOfWeek, timeStart: ts, timeEnd: te }) => ({
-      dayOfWeek,
-      timeStart: ts,
-      timeEnd: te,
+    const startDate = [...filteredDates].sort()[0];
+    const rows: WeeklyRecurrenceRow[] = filteredDates.map((date) => ({
+      dayOfWeek: jsDayToIsoDow(new Date(`${date}T12:00:00`).getDay()),
+      timeStart,
+      timeEnd,
     }));
 
     if (weeklyEndMode === "weeks") {
@@ -299,18 +281,18 @@ export default function PersonalLessonSaleForm({
         toast("Укажите количество недель.", "error");
         return null;
       }
-      return expandWeeklyRecurrenceByWeekCount(weeklyStartDate, weeklyWeekCount, rows);
+      return expandWeeklyRecurrenceByWeekCount(startDate, weeklyWeekCount, rows);
     }
 
     if (!weeklyEndDate) {
       toast("Укажите дату окончания.", "error");
       return null;
     }
-    if (weeklyEndDate < weeklyStartDate) {
+    if (weeklyEndDate < startDate) {
       toast("Дата окончания должна быть не раньше даты начала.", "error");
       return null;
     }
-    const slots = expandWeeklyRecurrence(weeklyStartDate, weeklyEndDate, rows);
+    const slots = expandWeeklyRecurrence(startDate, weeklyEndDate, rows);
     if (slots.length === 0) {
       toast("Не удалось сгенерировать даты по выбранному расписанию.", "error");
       return null;
@@ -497,84 +479,72 @@ export default function PersonalLessonSaleForm({
       );
     }
 
+    const startDate = lessonDates.filter(Boolean).sort()[0] ?? todayISO;
+
     return (
       <>
-        <div className="field-stack">
-          <label className={labelCls}>Режим дат</label>
-          <div className="grid grid-cols-3 gap-2">
-            {(
-              [
-                ["single", "Одна дата"],
-                ["multiple", "Несколько"],
-                ["weekly", "Еженедельно"],
-              ] as const
-            ).map(([modeKey, label]) => (
-              <button
-                key={modeKey}
-                type="button"
-                onClick={() => setDateMode(modeKey)}
-                className={`py-2 px-2 rounded-lg border font-sans text-[10px] font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
-                  dateMode === modeKey
-                    ? "bg-indigo-600 text-white border-indigo-600"
-                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <DatePickerField
+          label="Дата"
+          value={lessonDates[0] ?? ""}
+          onChange={(val) =>
+            setLessonDates((prev) => {
+              const next = [...prev];
+              next[0] = val;
+              return next;
+            })
+          }
+          min={todayISO}
+          required
+        />
 
-        {dateMode === "single" && (
-          <DatePickerField label="Дата" value={singleDate} onChange={setSingleDate} min={todayISO} required />
-        )}
-
-        {dateMode === "multiple" && (
-          <div className="field-stack">
-            <label className={labelCls}>Даты бронирования</label>
-            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
-              {multipleDates.map((dateStr, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <DatePickerField value={dateStr} onChange={(val) => {
-                      setMultipleDates((prev) => {
-                        const next = [...prev];
-                        next[idx] = val;
-                        return next;
-                      });
-                    }} min={todayISO} required />
-                  </div>
-                  <button
-                    type="button"
-                    disabled={multipleDates.length <= 1}
-                    onClick={() => setMultipleDates((prev) => prev.filter((_, i) => i !== idx))}
-                    aria-label="Убрать дату"
-                    className="mt-1 p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+        {lessonDates.slice(1).map((dateStr, idx) => (
+          <div key={idx + 1} className="flex items-end gap-2">
+            <div className="flex-1 min-w-0">
+              <DatePickerField
+                label="Дата"
+                value={dateStr}
+                onChange={(val) =>
+                  setLessonDates((prev) => {
+                    const next = [...prev];
+                    next[idx + 1] = val;
+                    return next;
+                  })
+                }
+                min={todayISO}
+                required
+              />
             </div>
             <button
               type="button"
-              onClick={() => setMultipleDates((prev) => [...prev, todayISO])}
-              className={addRowBtnCls}
+              onClick={() => setLessonDates((prev) => prev.filter((_, i) => i !== idx + 1))}
+              aria-label="Убрать дату"
+              className="mb-0.5 p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
             >
-              ＋ Добавить дату
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
-        )}
+        ))}
 
-        {dateMode === "weekly" && (
+        <button
+          type="button"
+          onClick={() => setLessonDates((prev) => [...prev, todayISO])}
+          className={addRowBtnCls}
+        >
+          ＋ Добавить дату
+        </button>
+
+        <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={repeatWeekly}
+            onChange={(e) => setRepeatWeekly(e.target.checked)}
+            className={`${checkboxCls} mt-0.5`}
+          />
+          <span className="text-xs leading-snug font-semibold">Повторять еженедельно</span>
+        </label>
+
+        {repeatWeekly && (
           <div className="field-stack space-y-3">
-            <DatePickerField
-              label="Дата начала"
-              value={weeklyStartDate}
-              onChange={setWeeklyStartDate}
-              min={todayISO}
-              required
-            />
             <div className="field-stack">
               <label className={labelCls}>Окончание</label>
               <div className="grid grid-cols-2 gap-2">
@@ -606,11 +576,11 @@ export default function PersonalLessonSaleForm({
               <AppSelect
                 label="Количество недель"
                 value={String(weeklyWeekCount)}
-                onChange={(e) => setWeeklyWeekCount(Math.max(1, Number(e.target.value) || 1))}
+                onChange={(e) => setWeeklyWeekCount(Number(e.target.value) || 2)}
               >
-                {[2, 4, 6, 8, 10, 12].map((n) => (
+                {[2, 3, 4].map((n) => (
                   <option key={n} value={n}>
-                    {n} {n === 1 ? "неделя" : n < 5 ? "недели" : "недель"}
+                    {n} недели
                   </option>
                 ))}
               </AppSelect>
@@ -619,79 +589,10 @@ export default function PersonalLessonSaleForm({
                 label="Дата окончания"
                 value={weeklyEndDate}
                 onChange={setWeeklyEndDate}
-                min={weeklyStartDate || todayISO}
+                min={startDate || todayISO}
                 required
               />
             )}
-            <div className="field-stack">
-              <label className={labelCls}>Дни и время</label>
-              <div className="space-y-2">
-                {weeklyRows.map((row) => (
-                  <div key={row.key} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-end">
-                    <AppSelect
-                      label="День"
-                      value={String(row.dayOfWeek)}
-                      onChange={(e) =>
-                        setWeeklyRows((prev) =>
-                          prev.map((item) =>
-                            item.key === row.key
-                              ? { ...item, dayOfWeek: Number(e.target.value) }
-                              : item
-                          )
-                        )
-                      }
-                    >
-                      {dowFullEntries().map(([dow, label]) => (
-                        <option key={dow} value={dow}>
-                          {label}
-                        </option>
-                      ))}
-                    </AppSelect>
-                    <TimeSelect
-                      label="Начало"
-                      value={row.timeStart}
-                      onChange={(val) =>
-                        setWeeklyRows((prev) =>
-                          prev.map((item) => (item.key === row.key ? { ...item, timeStart: val } : item))
-                        )
-                      }
-                      required
-                    />
-                    <TimeSelect
-                      label="Конец"
-                      value={row.timeEnd}
-                      onChange={(val) =>
-                        setWeeklyRows((prev) =>
-                          prev.map((item) => (item.key === row.key ? { ...item, timeEnd: val } : item))
-                        )
-                      }
-                      required
-                    />
-                    <button
-                      type="button"
-                      disabled={weeklyRows.length <= 1}
-                      onClick={() => setWeeklyRows((prev) => prev.filter((item) => item.key !== row.key))}
-                      aria-label="Убрать строку"
-                      className="mb-0.5 p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-30"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setWeeklyRows((prev) => [
-                    ...prev,
-                    makeWeeklyRow(jsDayToIsoDow(new Date(`${weeklyStartDate}T12:00:00`).getDay())),
-                  ])
-                }
-                className={addRowBtnCls}
-              >
-                ＋ Добавить день недели
-              </button>
-            </div>
           </div>
         )}
       </>
@@ -721,32 +622,40 @@ export default function PersonalLessonSaleForm({
             </div>
           </div>
         ) : (
-          <AppSelect
-            label="Локация"
-            value={locationId}
-            onChange={(e) => setLocationId(e.target.value)}
-            required
-          >
-            {accessibleLocations.length === 0 ? (
-              <option value="">Нет доступных локаций</option>
-            ) : (
-              accessibleLocations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name}
-                </option>
-              ))
-            )}
-          </AppSelect>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <AppSelect
+              label="Локация"
+              value={locationId}
+              onChange={(e) => setLocationId(e.target.value)}
+              required
+            >
+              {accessibleLocations.length === 0 ? (
+                <option value="">Нет доступных локаций</option>
+              ) : (
+                accessibleLocations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </option>
+                ))
+              )}
+            </AppSelect>
+            <DisciplineSelect
+              disciplines={disciplines}
+              value={disciplineId}
+              onChange={setDisciplineId}
+              toast={toast}
+            />
+          </div>
         )}
 
         {renderDateSection()}
 
-        <DisciplineSelect
-          disciplines={disciplines}
-          value={disciplineId}
-          onChange={setDisciplineId}
-          toast={toast}
-        />
+        {!isScheduleCell && (
+          <div className="grid grid-cols-2 gap-3">
+            <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
+            <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
+          </div>
+        )}
 
         {!isTeacher && (
           <AppSelect
@@ -765,6 +674,22 @@ export default function PersonalLessonSaleForm({
               ))
             )}
           </AppSelect>
+        )}
+
+        {isScheduleCell && (
+          <DisciplineSelect
+            disciplines={disciplines}
+            value={disciplineId}
+            onChange={setDisciplineId}
+            toast={toast}
+          />
+        )}
+
+        {isScheduleCell && (
+          <div className="grid grid-cols-2 gap-3">
+            <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
+            <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
+          </div>
         )}
 
         <div className="field-stack">
@@ -833,13 +758,6 @@ export default function PersonalLessonSaleForm({
           )}
         </div>
 
-        {(dateMode !== "weekly" || isScheduleCell) && (
-          <div className="grid grid-cols-2 gap-3">
-            <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
-            <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
-          </div>
-        )}
-
         <div className="field-stack">
           <label className={labelCls}>Способ оплаты</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -881,31 +799,45 @@ export default function PersonalLessonSaleForm({
         {bookingPaymentMode === "single" && (
           <>
             {lessonTariffs.length > 0 && (
-              <AppSelect
-                label="Тариф за урок"
-                value={selectedLessonTariffId}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  if (id) applyLessonTariff(id);
-                }}
-              >
-                {lessonTariffs.map((tariff) => (
-                  <option key={tariff.id} value={tariff.id!}>
-                    {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
-                  </option>
-                ))}
-              </AppSelect>
+              <div className="grid grid-cols-[2fr_1fr] gap-3">
+                <AppSelect
+                  label="Тариф за урок"
+                  value={selectedLessonTariffId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    if (id) applyLessonTariff(id);
+                  }}
+                >
+                  {lessonTariffs.map((tariff) => (
+                    <option key={tariff.id} value={tariff.id!}>
+                      {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
+                    </option>
+                  ))}
+                </AppSelect>
+                <div className="field-stack">
+                  <label className={labelCls}>Стоимость</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={customPrice}
+                    onChange={(e) => setCustomPrice(e.target.value)}
+                    className={`${fieldCls} font-semibold`}
+                  />
+                </div>
+              </div>
             )}
-            <div className="field-stack">
-              <label className={labelCls}>Стоимость</label>
-              <input
-                type="number"
-                placeholder="0"
-                value={customPrice}
-                onChange={(e) => setCustomPrice(e.target.value)}
-                className={`${fieldCls} font-semibold`}
-              />
-            </div>
+            {lessonTariffs.length === 0 && (
+              <div className="field-stack">
+                <label className={labelCls}>Стоимость</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={customPrice}
+                  onChange={(e) => setCustomPrice(e.target.value)}
+                  className={`${fieldCls} font-semibold`}
+                />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"

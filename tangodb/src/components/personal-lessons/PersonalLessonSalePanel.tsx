@@ -3,15 +3,13 @@ import { Ticket } from "lucide-react";
 import { useSchedule } from "../../hooks/useSchedule";
 import { usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
-import { pageTabPanelCls } from "../ui/PageTabs";
 import PersonalLessonSaleForm from "./PersonalLessonSaleForm";
 
 interface PersonalLessonSalePanelProps {
-  activeTab: string;
   toast: (msg: string, type?: "success" | "error" | "info") => void;
 }
 
-export default function PersonalLessonSalePanel({ activeTab, toast }: PersonalLessonSalePanelProps) {
+export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePanelProps) {
   const scheduleQuery = useSchedule();
   const personalLessonsQuery = usePersonalLessons();
   const teamQuery = useTeamMembers();
@@ -59,7 +57,7 @@ export default function PersonalLessonSalePanel({ activeTab, toast }: PersonalLe
 
   return (
     <div
-      className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack panel-sell-under-tabs ${pageTabPanelCls(activeTab, "view")}`}
+      className="bg-white p-4 border border-slate-200 shadow-xs panel-card-stack panel-sell-under-tabs"
     >
       <div className="panel-form-header panel-form-header-wide-md mb-4">
         <div className="panel-form-header-icon">

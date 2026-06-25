@@ -242,36 +242,40 @@ export default function PersonalLessonsPageContainer({
         <h2 className="text-base font-semibold text-slate-800 tracking-tight">Персональные уроки</h2>
       </div>
 
-      <PageTabs tabs={[...personalTabs]} activeTab={activeTab} onChange={switchTab} />
+      <div>
+        <PageTabs tabs={[...personalTabs]} activeTab={activeTab} onChange={switchTab} />
 
-      {activeTab === "view" ? (
-        <div className={`panel-page-stack ${pageTabPanelCls(activeTab, "view")}`}>
-          <PersonalLessonFilters
-            filters={filters}
-            onChange={(patch) => setFilters((prev) => ({ ...prev, ...patch }))}
-            locations={locationsQuery.locations}
-            disciplines={disciplinesQuery.data ?? []}
-            teachers={teacherOptions}
-          />
-          <PersonalLessonsList
-            lessons={filteredLessons}
-            role={role}
-            memberId={memberId}
-            isReadOnly={isReadOnly}
-            can={can}
-            showPrice={showPrice}
-            locationMap={locationMap}
-            disciplineMap={disciplineMap}
-            teacherMap={teacherMap}
-            onEdit={handleEdit}
-            onDelete={setDeleteTarget}
-            onPay={handlePay}
-            toast={toast}
-          />
-        </div>
-      ) : (
-        <PersonalLessonSalePanel activeTab={activeTab} toast={toast} />
-      )}
+        {activeTab === "view" ? (
+          <div
+            className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
+          >
+            <PersonalLessonFilters
+              filters={filters}
+              onChange={(patch) => setFilters((prev) => ({ ...prev, ...patch }))}
+              locations={locationsQuery.locations}
+              disciplines={disciplinesQuery.data ?? []}
+              teachers={teacherOptions}
+            />
+            <PersonalLessonsList
+              lessons={filteredLessons}
+              role={role}
+              memberId={memberId}
+              isReadOnly={isReadOnly}
+              can={can}
+              showPrice={showPrice}
+              locationMap={locationMap}
+              disciplineMap={disciplineMap}
+              teacherMap={teacherMap}
+              onEdit={handleEdit}
+              onDelete={setDeleteTarget}
+              onPay={handlePay}
+              toast={toast}
+            />
+          </div>
+        ) : (
+          <PersonalLessonSalePanel toast={toast} />
+        )}
+      </div>
 
       <EditLessonPopup
         lesson={editLesson}

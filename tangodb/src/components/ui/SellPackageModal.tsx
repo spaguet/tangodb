@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Ticket, X } from "lucide-react";
 import { useAddSubscription } from "../../hooks/useSubscriptions";
@@ -24,6 +23,7 @@ import AppSelect from "./AppSelect";
 import ClientAutocomplete from "./ClientAutocomplete";
 import DatePickerField from "./DatePickerField";
 import DisciplineSelect from "./DisciplineSelect";
+import CreatePrivatePackageTariffModal from "./CreatePrivatePackageTariffModal";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
@@ -47,9 +47,10 @@ export default function SellPackageModal({
   prices,
   stackLayer = "default",
 }: SellPackageModalProps) {
-  const navigate = useNavigate();
   const addSubscription = useAddSubscription();
   const { settings } = useSettings();
+
+  const [createTariffOpen, setCreateTariffOpen] = useState(false);
 
   const [selectedPackageTariffId, setSelectedPackageTariffId] = useState<string | "">("");
   const [subClient1Query, setSubClient1Query] = useState("");
@@ -214,10 +215,7 @@ export default function SellPackageModal({
                     Нет пакетных тарифов.{" "}
                     <button
                       type="button"
-                      onClick={() => {
-                        onClose();
-                        navigate("/prices?create=privatePackage");
-                      }}
+                      onClick={() => setCreateTariffOpen(true)}
                       className="text-indigo-600 hover:text-indigo-700 font-semibold underline-offset-2 hover:underline cursor-pointer"
                     >
                       Создать в прайс-листе
@@ -338,6 +336,13 @@ export default function SellPackageModal({
           </motion.div>
         </div>
       )}
+
+      <CreatePrivatePackageTariffModal
+        open={createTariffOpen}
+        onClose={() => setCreateTariffOpen(false)}
+        toast={toast}
+        stackLayer="above"
+      />
     </AnimatePresence>
   );
 }
