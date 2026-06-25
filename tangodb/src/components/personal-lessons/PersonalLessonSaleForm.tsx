@@ -850,7 +850,7 @@ export default function PersonalLessonSaleForm({
                   ))}
                 </AppSelect>
                 <div className="field-stack">
-                  <label className={labelCls}>Стоимость</label>
+                  <label className={labelCls}>Стоимость за один урок</label>
                   <input
                     type="number"
                     placeholder="0"
@@ -863,7 +863,7 @@ export default function PersonalLessonSaleForm({
             )}
             {lessonTariffs.length === 0 && (
               <div className="field-stack">
-                <label className={labelCls}>Стоимость</label>
+                <label className={labelCls}>Стоимость за один урок</label>
                 <input
                   type="number"
                   placeholder="0"
@@ -938,7 +938,7 @@ export default function PersonalLessonSaleForm({
                 !linkedSubscriptionId
               }
               title={getConnectionBlockReason(connectionState)}
-              className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
             >
               Забронировать
             </button>
