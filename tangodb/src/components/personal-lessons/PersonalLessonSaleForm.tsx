@@ -21,8 +21,8 @@ import {
   expandWeeklyRecurrence,
   expandWeeklyRecurrenceByWeekCount,
   groupSlotsByTime,
+  uniqueWeeklyRecurrenceRows,
   type PersonalLessonSlot,
-  type WeeklyRecurrenceRow,
 } from "../../lib/personalLessonDates";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { toISODateLocal } from "../../lib/scheduleWeek";
@@ -51,6 +51,16 @@ export type PersonalLessonSaleFormMode = "schedule-cell" | "standalone";
 interface BookingClientField {
   query: string;
   id: string;
+}
+
+interface LessonDateEntry {
+  date: string;
+  timeStart: string;
+  timeEnd: string;
+}
+
+function defaultLessonEntry(date: string): LessonDateEntry {
+  return { date, timeStart: "14:00", timeEnd: "15:00" };
 }
 
 export interface PersonalLessonSaleFormProps {
@@ -127,7 +137,7 @@ export default function PersonalLessonSaleForm({
   const [packageModalOpen, setPackageModalOpen] = useState(false);
 
   const [locationId, setLocationId] = useState("");
-  const [lessonDates, setLessonDates] = useState<string[]>(() => [todayISO]);
+  const [lessonEntries, setLessonEntries] = useState<LessonDateEntry[]>(() => [defaultLessonEntry(todayISO)]);
   const [repeatWeekly, setRepeatWeekly] = useState(false);
   const [weeklyEndMode, setWeeklyEndMode] = useState<"date" | "weeks">("weeks");
   const [weeklyEndDate, setWeeklyEndDate] = useState("");
@@ -259,22 +269,24 @@ export default function PersonalLessonSaleForm({
       return [{ date: prefill.date, timeStart, timeEnd }];
     }
 
-    const filteredDates = lessonDates.filter(Boolean);
-    if (filteredDates.length === 0) {
+    const filteredEntries = lessonEntries.filter((e) => e.date);
+    if (filteredEntries.length === 0) {
       toast("Выберите дату.", "error");
       return null;
     }
 
     if (!repeatWeekly) {
-      return filteredDates.map((date) => ({ date, timeStart, timeEnd }));
+      return filteredEntries.map(({ date, timeStart, timeEnd }) => ({ date, timeStart, timeEnd }));
     }
 
-    const startDate = [...filteredDates].sort()[0];
-    const rows: WeeklyRecurrenceRow[] = filteredDates.map((date) => ({
-      dayOfWeek: jsDayToIsoDow(new Date(`${date}T12:00:00`).getDay()),
-      timeStart,
-      timeEnd,
-    }));
+    const startDate = [...filteredEntries.map((e) => e.date)].sort()[0];
+    const rows = uniqueWeeklyRecurrenceRows(
+      filteredEntries.map(({ date, timeStart, timeEnd }) => ({
+        dayOfWeek: jsDayToIsoDow(new Date(`${date}T12:00:00`).getDay()),
+        timeStart,
+        timeEnd,
+      }))
+    );
 
     if (weeklyEndMode === "weeks") {
       if (weeklyWeekCount < 1) {
@@ -479,60 +491,70 @@ export default function PersonalLessonSaleForm({
       );
     }
 
-    const startDate = lessonDates.filter(Boolean).sort()[0] ?? todayISO;
+    const updateEntry = (index: number, patch: Partial<LessonDateEntry>) => {
+      setLessonEntries((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], ...patch };
+        return next;
+      });
+    };
 
     return (
       <>
-        <DatePickerField
-          label="Дата"
-          value={lessonDates[0] ?? ""}
-          onChange={(val) =>
-            setLessonDates((prev) => {
-              const next = [...prev];
-              next[0] = val;
-              return next;
-            })
-          }
-          min={todayISO}
-          required
-        />
-
-        {lessonDates.slice(1).map((dateStr, idx) => (
-          <div key={idx + 1} className="flex items-end gap-2">
-            <div className="flex-1 min-w-0">
+        {lessonEntries.map((entry, idx) => (
+          <div key={idx} className={idx === 0 ? "field-stack" : "flex items-end gap-2"}>
+            <div className={`grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-3 ${idx > 0 ? "flex-1 min-w-0" : ""}`}>
               <DatePickerField
                 label="Дата"
-                value={dateStr}
-                onChange={(val) =>
-                  setLessonDates((prev) => {
-                    const next = [...prev];
-                    next[idx + 1] = val;
-                    return next;
-                  })
-                }
+                value={entry.date}
+                onChange={(val) => updateEntry(idx, { date: val })}
                 min={todayISO}
                 required
               />
+              <TimeSelect
+                label="Начало"
+                value={entry.timeStart}
+                onChange={(val) => updateEntry(idx, { timeStart: val })}
+                required
+              />
+              <TimeSelect
+                label="Окончание"
+                value={entry.timeEnd}
+                onChange={(val) => updateEntry(idx, { timeEnd: val })}
+                required
+              />
             </div>
-            <button
-              type="button"
-              onClick={() => setLessonDates((prev) => prev.filter((_, i) => i !== idx + 1))}
-              aria-label="Убрать дату"
-              className="mb-0.5 p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {idx > 0 && (
+              <button
+                type="button"
+                onClick={() => setLessonEntries((prev) => prev.filter((_, i) => i !== idx))}
+                aria-label="Убрать дату"
+                className="mb-0.5 p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         ))}
 
         <button
           type="button"
-          onClick={() => setLessonDates((prev) => [...prev, todayISO])}
+          onClick={() => setLessonEntries((prev) => [...prev, defaultLessonEntry(todayISO)])}
           className={addRowBtnCls}
         >
           ＋ Добавить дату
         </button>
+      </>
+    );
+  };
 
+  const startDate = lessonEntries.filter((e) => e.date).map((e) => e.date).sort()[0] ?? todayISO;
+
+  const renderWeeklyRepeatSection = () => {
+    if (isScheduleCell) return null;
+
+    return (
+      <>
         <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
           <input
             type="checkbox"
@@ -650,12 +672,7 @@ export default function PersonalLessonSaleForm({
 
         {renderDateSection()}
 
-        {!isScheduleCell && (
-          <div className="grid grid-cols-2 gap-3">
-            <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
-            <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
-          </div>
-        )}
+        {renderWeeklyRepeatSection()}
 
         {!isTeacher && (
           <AppSelect

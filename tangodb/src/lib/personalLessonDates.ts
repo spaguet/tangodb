@@ -12,6 +12,19 @@ export interface WeeklyRecurrenceRow {
   timeEnd: string;
 }
 
+/** Collapse duplicate weekday+time patterns (e.g. two Thursdays at 14:00 → one row). */
+export function uniqueWeeklyRecurrenceRows(rows: WeeklyRecurrenceRow[]): WeeklyRecurrenceRow[] {
+  const seen = new Set<string>();
+  const result: WeeklyRecurrenceRow[] = [];
+  for (const row of rows) {
+    const key = `${row.dayOfWeek}|${row.timeStart}|${row.timeEnd}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(row);
+  }
+  return result;
+}
+
 export function groupSlotsByTime(slots: PersonalLessonSlot[]): Array<{
   dates: string[];
   timeStart: string;
