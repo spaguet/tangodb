@@ -130,7 +130,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Расписание и журнал",
     items: [
       { icon: Calendar, label: "Расписание", path: "/schedule" },
-      { icon: CalendarCheck, label: "Календарь и журнал", path: "/attendance" },
+      { icon: CalendarCheck, label: "Журнал посещений", path: "/attendance" },
     ],
   },
   {
@@ -170,7 +170,7 @@ function getPanelTitle(pathname: string, subscriptionsTab: string): string {
   if (pathname === "/schedule") return "Расписание";
   if (pathname === "/personal/sell") return "Продажа персональных уроков";
   if (pathname.startsWith("/personal")) return "Персональные уроки";
-  if (pathname === "/attendance") return "Журнал посещений и календарь";
+  if (pathname === "/attendance") return "Журнал посещений";
   if (pathname === "/prices") return "Тарифы и прайс-лист";
   if (pathname.startsWith("/settings/general")) return "Настройки · Общие";
   if (pathname.startsWith("/settings/organization")) return "Настройки · Организация";

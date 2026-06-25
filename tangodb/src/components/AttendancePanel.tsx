@@ -568,7 +568,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       <div id="panel-attendance" className="panel-page-stack">
         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
           <div className="panel-card-stack">
-            <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений и календарь</h2>
+            <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений</h2>
             <p className="text-xs text-slate-400">Выберите локацию, чтобы открыть расписание и журнал посещений.</p>
           </div>
 
@@ -642,7 +642,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 Все локации
               </button>
               <h2 className="text-base font-semibold tracking-tight text-slate-800">
-                Журнал посещений и календарь
+                Журнал посещений
               </h2>
               {selectedLocation && (
                 <p className="text-xs text-slate-500 font-sans flex items-center gap-1.5">
