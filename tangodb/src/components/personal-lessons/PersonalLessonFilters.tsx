@@ -71,16 +71,16 @@ export default function PersonalLessonFilters({
   return (
     <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap bg-slate-100 rounded-lg p-1 text-xs font-semibold gap-1">
           {periodModes.map((mode) => (
             <button
               key={mode.id}
               type="button"
               onClick={() => onChange({ periodMode: mode.id })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+              className={`px-3 py-1.5 rounded-md cursor-pointer transition-all ${
                 filters.periodMode === mode.id
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  ? "bg-white text-slate-900 shadow-xs font-semibold"
+                  : "text-slate-500 hover:text-slate-700"
               }`}
             >
               {mode.label}

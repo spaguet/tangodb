@@ -130,9 +130,9 @@ export function isPastDate(dateISO: string): boolean {
   return dateISO < toISODateLocal(new Date());
 }
 
-/** Personal lessons: edit/delete only when date > today (today is locked). */
+/** Personal lessons: edit/delete blocked only for past dates (today and future allowed). */
 export function isPersonalLessonLockedForWrite(dateISO: string): boolean {
-  return dateISO <= toISODateLocal(new Date());
+  return isPastDate(dateISO);
 }
 
 export function computeDisplayRange(

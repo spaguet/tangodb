@@ -25,6 +25,9 @@ import TimeSelect from "../ui/TimeSelect";
 interface EditLessonPopupProps {
   lesson: DisplayLesson | null;
   locationName?: string;
+  locations?: Array<{ id: string; name: string }>;
+  /** List view: time, location, discipline, teacher only (no date change). */
+  personalListEdit?: boolean;
   disciplines: Discipline[];
   teacherOptions: TeamMemberRow[];
   scheduleSlots: Array<{
@@ -99,6 +102,8 @@ function findInternalSlotConflict(rows: GroupSlotRow[], rowKey: string): string 
 export default function EditLessonPopup({
   lesson,
   locationName,
+  locations,
+  personalListEdit = false,
   disciplines,
   teacherOptions,
   scheduleSlots,
@@ -124,6 +129,7 @@ export default function EditLessonPopup({
   const [timeStart, setTimeStart] = useState("19:00");
   const [timeEnd, setTimeEnd] = useState("20:00");
   const [personalDate, setPersonalDate] = useState("");
+  const [locationId, setLocationId] = useState("");
   const [groupSlotRows, setGroupSlotRows] = useState<GroupSlotRow[]>([]);
   const [originalGroupSlots, setOriginalGroupSlots] = useState<GroupSlotRow[]>([]);
 
@@ -169,6 +175,7 @@ export default function EditLessonPopup({
       setOriginalGroupSlots(rows.map((row) => ({ ...row })));
     } else {
       setPersonalDate(lesson.date);
+      setLocationId(lesson.locationId ?? "");
       setDisciplineId(lesson.disciplineId ?? "");
       setTeacherMemberId(lesson.teacherMemberId ?? "");
       setTimeStart(lesson.timeStart);
@@ -401,12 +408,19 @@ export default function EditLessonPopup({
       toast("Нельзя редактировать урок в прошлом", "error");
       return;
     }
-    if (!personalDate) {
-      toast("Укажите дату урока.", "error");
-      return;
+    const targetDate = personalListEdit ? lesson.date : personalDate;
+    if (!personalListEdit) {
+      if (!personalDate) {
+        toast("Укажите дату урока.", "error");
+        return;
+      }
+      if (isPastDate(personalDate)) {
+        toast("Нельзя перенести урок в прошлое", "error");
+        return;
+      }
     }
-    if (isPastDate(personalDate)) {
-      toast("Нельзя перенести урок в прошлое", "error");
+    if (personalListEdit && !locationId) {
+      toast("Выберите локацию.", "error");
       return;
     }
     if (!disciplineId) {
@@ -426,29 +440,29 @@ export default function EditLessonPopup({
 
     const conflict = findScheduleConflict(
       {
-        date: personalDate,
+        date: targetDate,
         timeStart,
         timeEnd,
-        locationId: lesson.locationId,
+        locationId: personalListEdit ? locationId : lesson.locationId,
         excludeLessonId: lesson.lessonId,
       },
       personalLessons,
       scheduleSlots
     );
     if (conflict) {
-      toast(`Конфликт: ${formatDateRu(personalDate)} ${timeStart} — ${conflict}`, "error");
+      toast(`Конфликт: ${formatDateRu(targetDate)} ${timeStart} — ${conflict}`, "error");
       return;
     }
 
     const res = await updatePersonalLesson.mutateAsync({
       id: lesson.lessonId,
       lessonDate: lesson.date,
-      date: personalDate,
+      ...(personalListEdit ? {} : { date: personalDate }),
       timeStart,
       timeEnd,
       disciplineId,
       teacherMemberId,
-      locationId: lesson.locationId,
+      locationId: personalListEdit ? locationId : lesson.locationId,
     });
 
     if (!res.success) {
@@ -466,8 +480,9 @@ export default function EditLessonPopup({
       ? `Новая версия начнёт действовать с ${formatDateRu(addDays(lesson.date, 1))}. До этого отображается текущая версия.`
       : null;
 
-  const personalEditNote =
-    "Клиенты и оплата в этом окне не редактируются — только дата, время, направление и преподаватель.";
+  const personalEditNote = personalListEdit
+    ? "Клиенты и оплата в этом окне не редактируются — только время, локация, направление и преподаватель."
+    : "Клиенты и оплата в этом окне не редактируются — только дата, время, направление и преподаватель.";
 
   const savePending =
     editGroupSchedule.isPending ||
@@ -517,7 +532,17 @@ export default function EditLessonPopup({
               </p>
             ) : (
               <div className="panel-form-stack">
-                {locationName && (
+                {lesson.kind === "group" && locationName && (
+                  <div className="field-stack">
+                    <label className={labelCls}>Локация</label>
+                    <div className={readOnlyCls}>
+                      <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                      {locationName}
+                    </div>
+                  </div>
+                )}
+
+                {lesson.kind === "personal" && !personalListEdit && locationName && (
                   <div className="field-stack">
                     <label className={labelCls}>Локация</label>
                     <div className={readOnlyCls}>
@@ -647,28 +672,54 @@ export default function EditLessonPopup({
                   </>
                 ) : (
                   <>
-                    <div className="field-stack">
-                      <label className={labelCls}>Клиент(ы)</label>
-                      <div className={readOnlyCls}>
-                        <User className="w-4 h-4 text-slate-400 shrink-0" />
-                        {clientLabel}
-                      </div>
-                    </div>
+                    {!personalListEdit && (
+                      <>
+                        <div className="field-stack">
+                          <label className={labelCls}>Клиент(ы)</label>
+                          <div className={readOnlyCls}>
+                            <User className="w-4 h-4 text-slate-400 shrink-0" />
+                            {clientLabel}
+                          </div>
+                        </div>
 
-                    <div className="field-stack">
-                      <label className={labelCls} htmlFor="edit-lesson-date">
-                        Дата
-                      </label>
-                      <input
-                        id="edit-lesson-date"
-                        type="date"
+                        <div className="field-stack">
+                          <label className={labelCls} htmlFor="edit-lesson-date">
+                            Дата
+                          </label>
+                          <input
+                            id="edit-lesson-date"
+                            type="date"
+                            required
+                            min={todayISO}
+                            value={personalDate}
+                            onChange={(e) => setPersonalDate(e.target.value)}
+                            className={fieldCls}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {personalListEdit && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
+                        <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
+                      </div>
+                    )}
+
+                    {personalListEdit && locations && locations.length > 0 && (
+                      <AppSelect
+                        label="Локация"
+                        value={locationId}
+                        onChange={(e) => setLocationId(e.target.value)}
                         required
-                        min={todayISO}
-                        value={personalDate}
-                        onChange={(e) => setPersonalDate(e.target.value)}
-                        className={fieldCls}
-                      />
-                    </div>
+                      >
+                        {locations.map((loc) => (
+                          <option key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </option>
+                        ))}
+                      </AppSelect>
+                    )}
 
                     <DisciplineSelect
                       disciplines={disciplines}
@@ -696,10 +747,12 @@ export default function EditLessonPopup({
                       </AppSelect>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
-                      <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
-                    </div>
+                    {!personalListEdit && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
+                        <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
+                      </div>
+                    )}
 
                     <p className="text-xs text-slate-500 leading-relaxed">{personalEditNote}</p>
                   </>

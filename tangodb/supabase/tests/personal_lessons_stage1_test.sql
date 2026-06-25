@@ -150,14 +150,20 @@ BEGIN
   v_result := delete_personal_lesson(v_lesson_future::text);
   PERFORM pl_stage1_test_assert((v_result ->> 'success')::boolean, 'delete future lesson ok');
 
-  -- delete: today rejected
+  -- delete: today ok
   UPDATE personal_lessons SET date = current_date WHERE id = v_lesson_past;
   v_result := delete_personal_lesson(v_lesson_past::text);
-  PERFORM pl_stage1_test_assert(NOT (v_result ->> 'success')::boolean, 'delete today rejected');
+  PERFORM pl_stage1_test_assert((v_result ->> 'success')::boolean, 'delete today ok');
 
-  -- update: today rejected
+  -- delete: past rejected
+  UPDATE personal_lessons SET date = current_date - 1 WHERE id = v_lesson_past;
+  v_result := delete_personal_lesson(v_lesson_past::text);
+  PERFORM pl_stage1_test_assert(NOT (v_result ->> 'success')::boolean, 'delete past rejected');
+
+  -- update: today ok
+  UPDATE personal_lessons SET date = current_date WHERE id = v_lesson_past;
   v_result := update_personal_lesson(v_lesson_past::text, jsonb_build_object('time_start', '15:00'));
-  PERFORM pl_stage1_test_assert(NOT (v_result ->> 'success')::boolean, 'update today rejected');
+  PERFORM pl_stage1_test_assert((v_result ->> 'success')::boolean, 'update today ok');
 
   RAISE NOTICE 'personal_lessons_stage1_test: all assertions passed';
 END;

@@ -6,7 +6,7 @@ import {
   canWritePersonalLesson,
   maskClientDisplay,
 } from "../../lib/scheduleLessonAccess";
-import { isPersonalLessonLockedForWrite, toISODateLocal } from "../../lib/scheduleWeek";
+import { isPastDate, isPersonalLessonLockedForWrite, toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
 import type { PersonalLesson } from "../../types";
 import type { MemberRole } from "../../types/organization";
@@ -113,8 +113,11 @@ export default function PersonalLessonRow({
 
   const canReadClients = canReadLessonClients(role, displayLesson, can);
   const clientLabel = maskClientDisplay(lesson.clientDisplay, canReadClients);
-  const locked = isPersonalLessonLockedForWrite(lesson.date);
-  const canWrite = canWritePersonalLesson(role, memberId, displayLesson, can, isReadOnly) && !locked;
+  const isPast = isPastDate(lesson.date);
+  const canWrite =
+    canWritePersonalLesson(role, memberId, displayLesson, can, isReadOnly) &&
+    !isPersonalLessonLockedForWrite(lesson.date);
+  const canDelete = canWrite && !isPast;
   const canPay = canPayPersonalLesson(role, memberId, displayLesson, can, isReadOnly);
   const todayISO = toISODateLocal(new Date());
   const canMarkAttendance = lesson.date <= todayISO;
@@ -161,24 +164,24 @@ export default function PersonalLessonRow({
             </button>
           )}
           {canWrite && (
-            <>
-              <button
-                type="button"
-                onClick={() => onEdit(lesson)}
-                title="Редактировать"
-                className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
-              >
-                <Edit className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete(lesson)}
-                title="Удалить"
-                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={() => onEdit(lesson)}
+              title="Редактировать"
+              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+            >
+              <Edit className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(lesson)}
+              title="Удалить"
+              className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
       </td>

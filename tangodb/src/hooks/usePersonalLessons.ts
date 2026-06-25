@@ -358,7 +358,7 @@ export function useDeletePersonalLesson() {
       const { id, lessonDate } = resolveDeleteInput(input);
 
       if (lessonDate && isPersonalLessonLockedForWrite(lessonDate)) {
-        return { success: false as const, error: "Удаление доступно только для будущих уроков" };
+        return { success: false as const, error: "Удаление недоступно для прошедших уроков" };
       }
 
       const { data, error } = await supabase.rpc("delete_personal_lesson", {
@@ -423,12 +423,12 @@ export function useUpdatePersonalLesson() {
       if (currentDate && isPersonalLessonLockedForWrite(currentDate)) {
         return {
           success: false as const,
-          error: "Редактирование недоступно для прошедших и сегодняшних уроков",
+          error: "Редактирование недоступно для прошедших уроков",
         };
       }
 
       if (date && isPersonalLessonLockedForWrite(date)) {
-        return { success: false as const, error: "Новая дата должна быть в будущем" };
+        return { success: false as const, error: "Новая дата не может быть в прошлом" };
       }
 
       const payload: Record<string, unknown> = {};

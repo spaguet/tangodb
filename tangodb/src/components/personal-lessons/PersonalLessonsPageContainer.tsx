@@ -12,7 +12,7 @@ import { memberDisplayName, useTeamMembers } from "../../hooks/useTeamMembers";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useUIStore } from "../../store/ui";
-import { addDays, isPersonalLessonLockedForWrite } from "../../lib/scheduleWeek";
+import { addDays, isPastDate } from "../../lib/scheduleWeek";
 import {
   getConnectionBlockReason,
   getMutationBlockedMessage,
@@ -167,8 +167,8 @@ export default function PersonalLessonsPageContainer({
   const showPrice = role !== "teacher";
 
   const handleEdit = (lesson: PersonalLesson) => {
-    if (isPersonalLessonLockedForWrite(lesson.date)) {
-      toast("Редактирование недоступно для прошедших и сегодняшних уроков", "error");
+    if (isPastDate(lesson.date)) {
+      toast("Редактирование недоступно для прошедших уроков", "error");
       return;
     }
     setEditWeekRange({ start: lesson.date, end: addDays(lesson.date, 6) });
@@ -278,6 +278,8 @@ export default function PersonalLessonsPageContainer({
         locationName={
           editLesson?.locationId ? locationMap.get(editLesson.locationId) : undefined
         }
+        locations={locationsQuery.locations}
+        personalListEdit
         disciplines={disciplinesQuery.data ?? []}
         teacherOptions={teacherOptions}
         scheduleSlots={scheduleSlots}
@@ -310,7 +312,7 @@ export default function PersonalLessonsPageContainer({
         description={
           deleteTarget ? (
             <span>
-              Будущая запись на {deleteTarget.date} {deleteTarget.timeStart} будет удалена без
+              Запись на {deleteTarget.date} {deleteTarget.timeStart} будет удалена без
               возможности восстановления.
             </span>
           ) : null
