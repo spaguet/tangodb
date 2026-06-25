@@ -173,7 +173,7 @@ export default function AddGroupLessonForm({
         scheduleSlots
       );
       if (external) {
-        conflicts.set(row.key, external);
+        conflicts.set(row.key, `${external.conflictTime}: ${external.message}`);
       }
     }
 

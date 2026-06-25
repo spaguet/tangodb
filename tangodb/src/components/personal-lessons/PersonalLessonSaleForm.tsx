@@ -15,17 +15,18 @@ import {
   getMutationBlockedMessage,
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
-import { findScheduleConflict } from "../../lib/scheduleConflicts";
+import { findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
 import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
 import {
   expandWeeklyRecurrence,
   expandWeeklyRecurrenceByWeekCount,
+  findLessonEntriesBeyondEndDate,
   groupSlotsByTime,
   uniqueWeeklyRecurrenceRows,
   type PersonalLessonSlot,
 } from "../../lib/personalLessonDates";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
-import { toISODateLocal } from "../../lib/scheduleWeek";
+import { toISODateLocal, addDays } from "../../lib/scheduleWeek";
 import {
   bookingClientsMatchSubscription,
   jsDayToIsoDow,
@@ -293,6 +294,15 @@ export default function PersonalLessonSaleForm({
         toast("Укажите количество недель.", "error");
         return null;
       }
+      const endDate = addDays(startDate, weeklyWeekCount * 7 - 1);
+      const beyondEnd = findLessonEntriesBeyondEndDate(filteredEntries, endDate);
+      if (beyondEnd.length > 0) {
+        toast(
+          `Даты уроков (${beyondEnd.map(formatDateRu).join(", ")}) позже окончания повторения (${formatDateRu(endDate)}).`,
+          "error"
+        );
+        return null;
+      }
       return expandWeeklyRecurrenceByWeekCount(startDate, weeklyWeekCount, rows);
     }
 
@@ -302,6 +312,14 @@ export default function PersonalLessonSaleForm({
     }
     if (weeklyEndDate < startDate) {
       toast("Дата окончания должна быть не раньше даты начала.", "error");
+      return null;
+    }
+    const beyondEnd = findLessonEntriesBeyondEndDate(filteredEntries, weeklyEndDate);
+    if (beyondEnd.length > 0) {
+      toast(
+        `Даты уроков (${beyondEnd.map(formatDateRu).join(", ")}) позже даты окончания повторения (${formatDateRu(weeklyEndDate)}).`,
+        "error"
+      );
       return null;
     }
     const slots = expandWeeklyRecurrence(startDate, weeklyEndDate, rows);
@@ -392,7 +410,7 @@ export default function PersonalLessonSaleForm({
         scheduleSlots
       );
       if (conflict) {
-        toast(`Конфликт: ${formatDateRu(slot.date)} ${slot.timeStart} — ${conflict}`, "error");
+        toast(formatScheduleConflictToast(slot.date, conflict), "error");
         return;
       }
     }

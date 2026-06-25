@@ -43,7 +43,13 @@ export function groupSlotsByTime(slots: PersonalLessonSlot[]): Array<{
   });
 }
 
-/** Expand weekly rows into concrete lesson slots between startDate and endDate (inclusive). */
+/** Dates from manual entries that fall after the recurrence end date. */
+export function findLessonEntriesBeyondEndDate(
+  entries: Array<{ date: string }>,
+  endDate: string
+): string[] {
+  return entries.filter((e) => e.date > endDate).map((e) => e.date);
+}
 export function expandWeeklyRecurrence(
   startDate: string,
   endDate: string,

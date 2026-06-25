@@ -1,5 +1,10 @@
-import { jsDayToIsoDow } from "./utils";
-import { normalizeTime, timeToMinutes } from "./scheduleWeek";
+import { formatDateRu, jsDayToIsoDow } from "./utils";
+import { minutesToTime, normalizeTime, timeToMinutes } from "./scheduleWeek";
+
+export interface ScheduleConflict {
+  message: string;
+  conflictTime: string;
+}
 
 export interface ScheduleConflictParams {
   date: string;
@@ -36,6 +41,11 @@ function timesOverlapMinutes(start1: string, end1: string, start2: string, end2:
   return timeToMinutes(start1) < timeToMinutes(end2) && timeToMinutes(start2) < timeToMinutes(end1);
 }
 
+function overlapStartTime(start1: string, end1: string, start2: string, end2: string): string {
+  const overlapMin = Math.max(timeToMinutes(start1), timeToMinutes(start2));
+  return minutesToTime(overlapMin);
+}
+
 function slotValidOnDate(validFrom: string, validTo: string | null | undefined, date: string): boolean {
   if (validFrom > date) return false;
   if (validTo != null && validTo < date) return false;
@@ -47,7 +57,7 @@ export function findScheduleConflict(
   params: ScheduleConflictParams,
   personalLessons: PersonalLessonRef[],
   scheduleSlots: ScheduleSlotRef[]
-): string | null {
+): ScheduleConflict | null {
   const { date, timeStart, timeEnd, locationId, excludeLessonId, excludeSlotId } = params;
 
   let timeStartNorm: string;
@@ -56,7 +66,7 @@ export function findScheduleConflict(
     timeStartNorm = normalizeTime(timeStart);
     timeEndNorm = normalizeTime(timeEnd);
   } catch {
-    return "Укажите корректное время";
+    return { message: "Укажите корректное время", conflictTime: timeStart };
   }
 
   for (const lesson of personalLessons) {
@@ -65,7 +75,10 @@ export function findScheduleConflict(
     if (lesson.date !== date) continue;
     const lessonEnd = lesson.timeEnd || lesson.timeStart;
     if (timesOverlapMinutes(timeStartNorm, timeEndNorm, lesson.timeStart, lessonEnd)) {
-      return "в это время уже записан персональный урок";
+      return {
+        message: "в это время уже записан персональный урок",
+        conflictTime: overlapStartTime(timeStartNorm, timeEndNorm, lesson.timeStart, lessonEnd),
+      };
     }
   }
 
@@ -81,11 +94,18 @@ export function findScheduleConflict(
 
     const slotEnd = slot.timeEnd || "21:00";
     if (timesOverlapMinutes(timeStartNorm, timeEndNorm, slot.time, slotEnd)) {
-      return "в это время уже записан групповой урок";
+      return {
+        message: "в это время уже записан групповой урок",
+        conflictTime: overlapStartTime(timeStartNorm, timeEndNorm, slot.time, slotEnd),
+      };
     }
   }
 
   return null;
+}
+
+export function formatScheduleConflictToast(isoDate: string, conflict: ScheduleConflict): string {
+  return `Конфликт: ${formatDateRu(isoDate)} ${conflict.conflictTime} — ${conflict.message}`;
 }
 
 export { findBookingScheduleConflict } from "./utils";

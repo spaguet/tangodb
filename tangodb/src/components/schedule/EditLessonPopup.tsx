@@ -11,7 +11,7 @@ import {
   getMutationBlockedMessage,
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
-import { findScheduleConflict } from "../../lib/scheduleConflicts";
+import { findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { addDays, getWeekRange, isPastDate, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
@@ -232,7 +232,7 @@ export default function EditLessonPopup({
         scheduleSlots
       );
       if (external) {
-        conflicts.set(row.key, external);
+        conflicts.set(row.key, `${external.conflictTime}: ${external.message}`);
       }
     }
 
@@ -448,7 +448,7 @@ export default function EditLessonPopup({
       scheduleSlots
     );
     if (conflict) {
-      toast(`Конфликт: ${formatDateRu(targetDate)} ${timeStart} — ${conflict}`, "error");
+      toast(formatScheduleConflictToast(targetDate, conflict), "error");
       return;
     }
 
