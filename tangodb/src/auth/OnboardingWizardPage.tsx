@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabase";
 import { useOrganization } from "../organization/OrganizationProvider";
 import type { OrgModules, OrgPreset } from "../types/organization";
 import { PRESET_MODULES } from "../types/organization";
+import { CURRENCY_SELECT_OPTIONS, DEFAULT_CURRENCY_CODE } from "../lib/currencies";
 import {
   AuthButton,
   AuthError,
@@ -28,13 +29,6 @@ const LOCALE_OPTIONS = [
   { value: "vi-VN", label: "Tiếng Việt (vi-VN)" },
 ];
 
-const CURRENCY_OPTIONS = [
-  { value: "RUB", label: "RUB — ₽" },
-  { value: "USD", label: "USD — $" },
-  { value: "EUR", label: "EUR — €" },
-  { value: "VND", label: "VND — ₫" },
-];
-
 const MODULE_LABELS: { key: keyof OrgModules; label: string }[] = [
   { key: "group_subscriptions", label: "Групповые абонементы" },
   { key: "personal_lessons", label: "Персональные уроки" },
@@ -52,7 +46,7 @@ export default function OnboardingWizardPage() {
   const [orgName, setOrgName] = useState("");
   const [preset, setPreset] = useState<OrgPreset>("dance_school");
   const [locale, setLocale] = useState("ru-RU");
-  const [currencyCode, setCurrencyCode] = useState("RUB");
+  const [currencyCode, setCurrencyCode] = useState<string>(DEFAULT_CURRENCY_CODE);
   const [modules, setModules] = useState<OrgModules>(PRESET_MODULES.dance_school);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -199,7 +193,7 @@ export default function OnboardingWizardPage() {
             value={currencyCode}
             onChange={(e) => setCurrencyCode(e.target.value)}
           >
-            {CURRENCY_OPTIONS.map((option) => (
+            {CURRENCY_SELECT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

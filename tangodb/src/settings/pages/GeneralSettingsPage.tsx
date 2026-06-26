@@ -3,19 +3,13 @@ import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
 import { useToast } from "../../App";
+import { CURRENCY_SELECT_OPTIONS, DEFAULT_CURRENCY_CODE } from "../../lib/currencies";
 import { useSettings } from "../SettingsProvider";
 
 const LOCALE_OPTIONS = [
   { value: "ru-RU", label: "Русский (ru-RU)" },
   { value: "en-US", label: "English (en-US)" },
   { value: "vi-VN", label: "Tiếng Việt (vi-VN)" },
-];
-
-const CURRENCY_OPTIONS = [
-  { value: "RUB", label: "RUB — ₽" },
-  { value: "USD", label: "USD — $" },
-  { value: "EUR", label: "EUR — €" },
-  { value: "VND", label: "VND — ₫" },
 ];
 
 const TIMEZONE_OPTIONS = [
@@ -34,7 +28,7 @@ export default function GeneralSettingsPage() {
   const { settings, isLoading, updateSettings, isUpdating, formatCurrency } = useSettings();
 
   const [locale, setLocale] = useState("ru-RU");
-  const [currencyCode, setCurrencyCode] = useState("RUB");
+  const [currencyCode, setCurrencyCode] = useState<string>(DEFAULT_CURRENCY_CODE);
   const [currencyDisplay, setCurrencyDisplay] = useState<"symbol" | "code">("symbol");
   const [timezone, setTimezone] = useState("Europe/Moscow");
   const [weekStartsOn, setWeekStartsOn] = useState("1");
@@ -88,7 +82,7 @@ export default function GeneralSettingsPage() {
         </AppSelect>
 
         <AppSelect label="Валюта" value={currencyCode} onChange={(e) => { setCurrencyCode(e.target.value); markDirty(); }}>
-          {CURRENCY_OPTIONS.map((o) => (
+          {CURRENCY_SELECT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </AppSelect>

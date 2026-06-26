@@ -3,8 +3,10 @@ import { Link, useSearchParams } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, KeyRound, Shield } from "lucide-react";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
+import DeveloperContacts from "../../components/license/DeveloperContacts";
 import ManualPurchasePanel from "../../components/license/ManualPurchasePanel";
 import SubscriptionWaitlistCard from "../../components/license/SubscriptionWaitlistCard";
+import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
 import { useToast } from "../../App";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { supabase } from "../../lib/supabase";
@@ -43,6 +45,7 @@ export default function LicenseSettingsPage() {
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { organization, orgLoading, license, subscription, refreshOrganization } = useOrganization();
+  const { config: paymentConfig } = usePlatformPaymentConfig(true);
   const [key, setKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -217,6 +220,8 @@ export default function LicenseSettingsPage() {
             </Link>
           </p>
         )}
+
+        {!showManualPurchase && <DeveloperContacts contacts={paymentConfig.contacts} />}
       </div>
     </div>
   );

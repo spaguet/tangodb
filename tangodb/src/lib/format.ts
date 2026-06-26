@@ -1,3 +1,4 @@
+import { getCurrencySymbolOverride } from "./currencies";
 import type { OrganizationSettings } from "../types/organization";
 
 export interface FormatOptions {
@@ -24,18 +25,26 @@ export function formatOptionsFromSettings(
 }
 
 export function formatCurrency(amount: number, options: FormatOptions = DEFAULT_FORMAT_OPTIONS): string {
-  const formatted = new Intl.NumberFormat(options.locale, {
-    style: "currency",
-    currency: options.currencyCode,
-    currencyDisplay: options.currencyDisplay,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  const { locale, currencyCode, currencyDisplay } = options;
 
-  if (options.currencyCode === "VND" && options.currencyDisplay === "symbol") {
-    return formatted.replace("VND", "₫");
+  const formatter = new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: currencyCode,
+    currencyDisplay: currencyDisplay === "symbol" ? "narrowSymbol" : "code",
+    maximumFractionDigits: 0,
+  });
+
+  if (currencyDisplay === "symbol") {
+    const symbolOverride = getCurrencySymbolOverride(currencyCode);
+    if (symbolOverride) {
+      return formatter
+        .formatToParts(amount)
+        .map((part) => (part.type === "currency" ? symbolOverride : part.value))
+        .join("");
+    }
   }
 
-  return formatted;
+  return formatter.format(amount);
 }
 
 let activeFormatOptions: FormatOptions = DEFAULT_FORMAT_OPTIONS;

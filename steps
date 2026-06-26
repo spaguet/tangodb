@@ -80,7 +80,7 @@
              retention email/hash в отдельной
              таблице; licensed org не трогать
 
- 8   S6      Валюты + контакты:                  §8.6         Промт 13
+ 8   S6      Валюты + контакты:                  §8.6         Промт 13 ✅
              lib/currencies.ts — до 20 ISO-4217;
              контакты developer в license UI
 
@@ -138,8 +138,8 @@ KNOWN INCOMPATIBILITIES — что нужно исправить
 • OrgsPage        → ✅ DC1 (2026-06-26): Tenants table, owner email/name,
                     storage, last login, restore password, purge, issue key;
                     `/payment-methods` CRUD via EF
-• GeneralSettingsPage → только 4 валюты
-                    (цель: S6, 20 ISO-4217)
+• GeneralSettingsPage → ✅ S6 (2026-06-26): 20 ISO-4217 валют через lib/currencies.ts;
+                    контакты developer в LicenseSettingsPage (whitelist mailto/t.me/wa.me)
 • finance_basic   → ✅ Этап 1 (2026-06-26)
 • normalizeOrgModules → ✅ Этап 1 (2026-06-26)
 • legacy demo-key → ✅ S5 (2026-06-26): data_purge_at = demo_expires_at (30 days)
