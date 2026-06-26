@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { I18nKey } from "../lib/i18n/keys";
 import { t } from "../lib/i18n";
 import type { TranslateFn } from "../lib/utils";
+import { FINANCIAL_TREND_MONTH_COUNT, monthTrendRange } from "../lib/financeReports";
 import { supabase } from "../lib/supabase";
 import { formatClientName } from "../lib/utils";
 import type { Payment, PaymentMethod } from "../types";
@@ -63,6 +64,12 @@ export function usePayments(filter?: PaymentsFilter) {
     },
     staleTime: 30 * 1000,
   });
+}
+
+/** Single query for owner KPI trend (6 months ending at `endMonth`, client-side aggregation). */
+export function usePaymentsTrend(endMonth: string, monthCount = FINANCIAL_TREND_MONTH_COUNT) {
+  const range = monthTrendRange(endMonth, monthCount);
+  return usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
 }
 
 export function useRecordPayment() {
