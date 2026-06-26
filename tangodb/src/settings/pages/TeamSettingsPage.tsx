@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { Mail, UserMinus, Users, ClipboardList, Copy, Check, Edit } from "lucide-react";
+import { useRef, useState } from "react";
+import { Mail, UserMinus, Users, ClipboardList, Copy, Check, Edit, LifeBuoy, UserPlus } from "lucide-react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import MemberProfileModal from "../components/MemberProfileModal";
@@ -15,7 +16,7 @@ import { useTeamInvites, useTeamMutations } from "../../hooks/useTeamInvites";
 import { auditTableLabel, useOrgAuditLog } from "../../hooks/useOrgAuditLog";
 import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
-import type { MemberMeta, MemberRole } from "../../types/organization";
+import type { MemberMeta, MemberRole, TeacherScope } from "../../types/organization";
 
 type MemberPreset = "admin" | "reception" | "teacher" | "accountant";
 
@@ -91,28 +92,37 @@ export default function TeamSettingsPage() {
   const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [profileMember, setProfileMember] = useState<TeamMemberRow | null>(null);
+  const [inviteScope, setInviteScope] = useState<TeacherScope | null>(null);
+  const [inviteMetaOverride, setInviteMetaOverride] = useState<MemberMeta | null>(null);
+  const [reinviteSourceId, setReinviteSourceId] = useState<string | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<TeamMemberRow | null>(null);
+  const inviteFormRef = useRef<HTMLFormElement>(null);
 
-  if (isLoading) return <LoadingState label="Загрузка команды..." />;
-  if (isError) return <QueryErrorState error={error} />;
-
-  const activeMembers = members.filter((m) => m.is_active);
-  const inactiveMembers = members.filter((m) => !m.is_active);
+  const clearReinvitePreset = () => {
+    setInviteScope(null);
+    setInviteMetaOverride(null);
+    setReinviteSourceId(null);
+  };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !firstName.trim() || !lastName.trim()) return;
     const { role, meta } = presetToRoleMeta(invitePreset);
+    const scope = inviteScope ?? undefined;
+    const mergedMeta = inviteMetaOverride ?? meta;
     try {
       const result = await invite.mutateAsync({
         email: email.trim(),
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         role,
-        meta,
+        meta: mergedMeta,
+        scope,
       });
       setEmail("");
       setFirstName("");
       setLastName("");
+      clearReinvitePreset();
       setLastInviteUrl(result.invite_url ?? null);
       showToast(
         result.email_sent ? t("team.inviteEmailSent") : t("team.inviteManualHint"),
@@ -122,6 +132,41 @@ export default function TeamSettingsPage() {
       showToast(err instanceof Error ? err.message : t("team.inviteError"), "error");
     }
   };
+
+  const handleReinvite = (member: TeamMemberRow) => {
+    const preset = memberPreset(member);
+    const { role, meta } = presetToRoleMeta(preset);
+    if (!can("team.manage")) return;
+    if (currentRole !== "owner" && currentRole !== "director") return;
+    if (role === "owner" || role === "director") return;
+    setInvitePreset(preset);
+    setFirstName(member.first_name ?? "");
+    setLastName(member.last_name ?? "");
+    setEmail("");
+    setInviteScope(member.scope);
+    setInviteMetaOverride(meta);
+    setReinviteSourceId(member.id);
+    setLastInviteUrl(null);
+    inviteFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleDeactivateConfirm = async () => {
+    if (!deactivateTarget) return;
+    try {
+      await updateMember.mutateAsync({ memberId: deactivateTarget.id, isActive: false });
+      showToast(t("team.deactivateSuccess"), "info");
+      setDeactivateTarget(null);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t("team.inviteError"), "error");
+    }
+  };
+
+  if (isLoading) return <LoadingState label="Загрузка команды..." />;
+  if (isError) return <QueryErrorState error={error} />;
+
+  const activeMembers = members.filter((m) => m.is_active);
+  const inactiveMembers = members.filter((m) => !m.is_active);
+  const canShowRecoveryGuide = currentRole === "owner" || currentRole === "director";
 
   const copyInviteUrl = async () => {
     if (!lastInviteUrl) return;
@@ -155,8 +200,23 @@ export default function TeamSettingsPage() {
         <p className="text-xs text-slate-500 mt-1">{t("team.subtitle")}</p>
       </div>
 
+      {canShowRecoveryGuide && (
+        <div className="bg-sky-50/80 rounded-xl border border-sky-100 p-3.5 space-y-2">
+          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <LifeBuoy className="w-4 h-4 text-sky-600" />
+            {t("team.recoveryTitle")}
+          </h3>
+          <ul className="text-[11px] text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+            <li>{t("team.recoveryForgotPassword")}</li>
+            <li>{t("team.recoveryLostEmail")}</li>
+            <li className="text-slate-500">{t("team.recoveryOwnerNote")}</li>
+          </ul>
+        </div>
+      )}
+
       {canInvite && (
       <form
+        ref={inviteFormRef}
         onSubmit={handleInvite}
         className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-3"
       >
@@ -179,7 +239,10 @@ export default function TeamSettingsPage() {
           <AppSelect
             label={t("team.inviteRole")}
             value={invitePreset}
-            onChange={(e) => setInvitePreset(e.target.value as MemberPreset)}
+            onChange={(e) => {
+              setInvitePreset(e.target.value as MemberPreset);
+              clearReinvitePreset();
+            }}
           >
             {INVITE_PRESETS.filter((p) => canAssignPreset(p.value)).map((p) => (
               <option key={p.value} value={p.value}>
@@ -211,7 +274,9 @@ export default function TeamSettingsPage() {
           </label>
         </div>
         <div className="space-y-1.5">
-          <p className="text-[11px] text-slate-500">{t("team.inviteLinkHint")}</p>
+          <p className="text-[11px] text-slate-500">
+            {reinviteSourceId ? t("team.reinviteHint") : t("team.inviteLinkHint")}
+          </p>
           <button
             type="submit"
             disabled={invite.isPending}
@@ -331,7 +396,7 @@ export default function TeamSettingsPage() {
                     </AppSelect>
                     <button
                       type="button"
-                      onClick={() => updateMember.mutate({ memberId: member.id, isActive: false })}
+                      onClick={() => setDeactivateTarget(member)}
                       disabled={updateMember.isPending}
                       className="flex items-center gap-1 text-[10px] font-semibold uppercase text-rose-600 hover:bg-rose-50 px-2 py-1.5 rounded cursor-pointer"
                       title={t("team.deactivate")}
@@ -356,11 +421,31 @@ export default function TeamSettingsPage() {
             <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
               {t("team.inactive")}
             </p>
-            {inactiveMembers.map((member) => (
-              <div key={member.id} className="text-xs text-slate-400 px-2 py-1">
-                {memberListLabel(member)} · {memberRoleLabel(member.role, member.meta)}
+            {inactiveMembers.map((member) => {
+              const preset = memberPreset(member);
+              const canReinvite =
+                canInvite && isEditableMemberPreset(preset) && canAssignPreset(preset);
+              return (
+              <div
+                key={member.id}
+                className="flex items-center justify-between gap-2 text-xs text-slate-400 px-2 py-1"
+              >
+                <span>
+                  {memberListLabel(member)} · {memberRoleLabel(member.role, member.meta)}
+                </span>
+                {canReinvite && (
+                  <button
+                    type="button"
+                    onClick={() => handleReinvite(member)}
+                    className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded cursor-pointer"
+                  >
+                    <UserPlus className="w-3 h-3" />
+                    {t("team.reinvite")}
+                  </button>
+                )}
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
@@ -369,6 +454,16 @@ export default function TeamSettingsPage() {
         member={profileMember}
         canEdit={canEditMemberProfile}
         onClose={() => setProfileMember(null)}
+      />
+
+      <ConfirmDialog
+        open={!!deactivateTarget}
+        title={t("team.deactivateConfirmTitle")}
+        description={t("team.deactivateConfirmBody")}
+        confirmLabel={t("team.deactivate")}
+        pending={updateMember.isPending}
+        onConfirm={handleDeactivateConfirm}
+        onCancel={() => setDeactivateTarget(null)}
       />
 
       {canInvite && auditRows.length > 0 && (

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
+import { useI18n } from "../hooks/useI18n";
 import {
   AuthButton,
   AuthError,
@@ -11,6 +12,7 @@ import {
 
 export default function ForgotPasswordPage() {
   const { resetPasswordForEmail } = useAuth();
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -23,10 +25,10 @@ export default function ForgotPasswordPage() {
     setSuccess(null);
     try {
       await resetPasswordForEmail(email.trim());
-      setSuccess("Если аккаунт существует, мы отправили ссылку для сброса пароля.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось отправить письмо");
+    } catch {
+      // Do not reveal whether the email exists.
     } finally {
+      setSuccess(t("auth.forgotPasswordSuccess"));
       setLoading(false);
     }
   };

@@ -91,7 +91,7 @@
              no SQL concat / no innerHTML;
              Dev Console search через RPC
 
-10   S8      Команда + member recovery:          §8.8         Промт 15
+10   S8      Команда + member recovery:          §8.8         Промт 15 ✅
              owner invite → accept → login;
              reset password по email;
              деактивация + re-invite при

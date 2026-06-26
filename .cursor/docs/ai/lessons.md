@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-06-26 — Forgot password раскрывал существование email (S8)
+
+- **Ошибка:** `ForgotPasswordPage` показывал ошибку Supabase (`User not found` и т.п.), если email не зарегистрирован.
+- **Причина:** Ошибка пробрасывалась из `resetPasswordForEmail` в UI.
+- **Как избежать:** Всегда показывать нейтральное сообщение «Если аккаунт существует…»; не отображать auth-ошибки на public recovery forms (§8.8).
+
 ### 2026-06-26 — Dev Console PostgREST search injection (S7)
 
 - **Ошибка:** `dev-console-search-orgs` и `dev-console-search-billing` вставляли raw user query в `.or(\`name.ilike.%${q}%\`)` — символы `,`, `(`, `)`, `%`, `_` ломали фильтр или расширяли ilike.

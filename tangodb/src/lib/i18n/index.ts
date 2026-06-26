@@ -20,6 +20,16 @@ export type I18nKey =
   | "team.inviteError"
   | "team.noMembers"
   | "team.inactive"
+  | "team.recoveryTitle"
+  | "team.recoveryForgotPassword"
+  | "team.recoveryLostEmail"
+  | "team.recoveryOwnerNote"
+  | "team.deactivateConfirmTitle"
+  | "team.deactivateConfirmBody"
+  | "team.deactivateSuccess"
+  | "team.reinvite"
+  | "team.reinviteHint"
+  | "auth.forgotPasswordSuccess"
   | "auth.acceptInvite"
   | "auth.acceptInviteHint"
   | "auth.acceptInviteSetupHint"
@@ -56,6 +66,20 @@ const RU: Record<I18nKey, string> = {
   "team.inviteError": "Не удалось отправить приглашение",
   "team.noMembers": "Нет участников",
   "team.inactive": "Неактивен",
+  "team.recoveryTitle": "Восстановление доступа участников",
+  "team.recoveryForgotPassword":
+    "Забыли пароль — участник запрашивает сброс на странице входа («Забыли пароль?»). Письмо придёт только если email доступен.",
+  "team.recoveryLostEmail":
+    "Потерян email — деактивируйте старого участника, затем отправьте новое приглашение на новый email (роль и права сохранятся при «Пригласить снова»).",
+  "team.recoveryOwnerNote":
+    "Доступ владельца CRM через эту страницу не восстанавливается. Владелец: сброс пароля по email или обращение к разработчику при утрате email.",
+  "team.deactivateConfirmTitle": "Деактивировать участника?",
+  "team.deactivateConfirmBody":
+    "Участник потеряет доступ к CRM. Если email недоступен, отправьте новое приглашение на другой адрес.",
+  "team.deactivateSuccess": "Участник деактивирован. При необходимости отправьте новое приглашение.",
+  "team.reinvite": "Пригласить снова",
+  "team.reinviteHint": "Роль и права подставлены — укажите новый email и отправьте приглашение.",
+  "auth.forgotPasswordSuccess": "Если аккаунт существует, мы отправили ссылку для сброса пароля.",
   "auth.acceptInvite": "Принять приглашение",
   "auth.acceptInviteHint": "Войдите с email, указанным в приглашении",
   "auth.acceptInviteSetupHint": "Задайте пароль для входа в CRM",
@@ -93,6 +117,20 @@ const EN: Record<I18nKey, string> = {
   "team.inviteError": "Failed to send invite",
   "team.noMembers": "No members",
   "team.inactive": "Inactive",
+  "team.recoveryTitle": "Member access recovery",
+  "team.recoveryForgotPassword":
+    "Forgot password — the member requests a reset on the login page (“Forgot password?”). Email is sent only if the address is reachable.",
+  "team.recoveryLostEmail":
+    "Lost email — deactivate the old member, then send a new invite to a new email (role and scope are kept via “Invite again”).",
+  "team.recoveryOwnerNote":
+    "Owner CRM access is not restored from this page. Owner: password reset via email or contact the developer if email is lost.",
+  "team.deactivateConfirmTitle": "Deactivate member?",
+  "team.deactivateConfirmBody":
+    "The member will lose CRM access. If email is unavailable, send a new invite to a different address.",
+  "team.deactivateSuccess": "Member deactivated. Send a new invite if needed.",
+  "team.reinvite": "Invite again",
+  "team.reinviteHint": "Role and permissions are prefilled — enter a new email and send the invite.",
+  "auth.forgotPasswordSuccess": "If an account exists, we sent a password reset link.",
   "auth.acceptInvite": "Accept invitation",
   "auth.acceptInviteHint": "Sign in with the email from the invitation",
   "auth.acceptInviteSetupHint": "Set a password to sign in to the CRM",
@@ -130,6 +168,20 @@ const VI: Record<I18nKey, string> = {
   "team.inviteError": "Không gửi được lời mời",
   "team.noMembers": "Không có thành viên",
   "team.inactive": "Không hoạt động",
+  "team.recoveryTitle": "Khôi phục quyền truy cập thành viên",
+  "team.recoveryForgotPassword":
+    "Quên mật khẩu — thành viên yêu cầu đặt lại trên trang đăng nhập. Email chỉ được gửi nếu địa chỉ còn dùng được.",
+  "team.recoveryLostEmail":
+    "Mất email — vô hiệu hóa thành viên cũ, sau đó gửi lời mời mới tới email mới (vai trò và quyền giữ qua «Mời lại»).",
+  "team.recoveryOwnerNote":
+    "Quyền truy cập chủ sở hữu CRM không khôi phục từ trang này. Chủ: đặt lại mật khẩu qua email hoặc liên hệ nhà phát triển nếu mất email.",
+  "team.deactivateConfirmTitle": "Vô hiệu hóa thành viên?",
+  "team.deactivateConfirmBody":
+    "Thành viên sẽ mất quyền truy cập CRM. Nếu không còn email, gửi lời mời mới tới địa chỉ khác.",
+  "team.deactivateSuccess": "Đã vô hiệu hóa. Gửi lời mời mới nếu cần.",
+  "team.reinvite": "Mời lại",
+  "team.reinviteHint": "Vai trò và quyền đã điền — nhập email mới và gửi lời mời.",
+  "auth.forgotPasswordSuccess": "Nếu tài khoản tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.",
   "auth.acceptInvite": "Chấp nhận lời mời",
   "auth.acceptInviteHint": "Đăng nhập bằng email trong lời mời",
   "auth.acceptInviteSetupHint": "Đặt mật khẩu để đăng nhập CRM",

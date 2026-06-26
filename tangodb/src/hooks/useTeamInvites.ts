@@ -66,7 +66,14 @@ export function useTeamMutations() {
   };
 
   const invite = useMutation({
-    mutationFn: inviteMember,
+    mutationFn: (params: {
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: MemberRole;
+      scope?: TeacherScope;
+      meta?: MemberMeta;
+    }) => inviteMember(params),
     onSuccess: invalidate,
   });
 
