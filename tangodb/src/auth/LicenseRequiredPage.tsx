@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle, KeyRound } from "lucide-react";
+import { AlertTriangle, KeyRound, ShoppingBag } from "lucide-react";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { DEMO_PURCHASE_PATH } from "../lib/demoLicense";
 import { AuthLayout, AuthLink } from "./AuthLayout";
 
 function formatDate(iso: string | null | undefined): string {
@@ -13,7 +14,8 @@ function formatDate(iso: string | null | undefined): string {
 }
 
 export default function LicenseRequiredPage() {
-  const { organization } = useOrganization();
+  const { organization, role } = useOrganization();
+  const showPurchaseCta = role === "owner" || role === "director";
 
   return (
     <AuthLayout title="TangoDB" subtitle="Требуется лицензия">
@@ -32,9 +34,23 @@ export default function LicenseRequiredPage() {
         </div>
       </div>
 
+      {showPurchaseCta && (
+        <Link
+          to={DEMO_PURCHASE_PATH}
+          className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+        >
+          <ShoppingBag className="w-4 h-4" />
+          Купить полную версию
+        </Link>
+      )}
+
       <Link
         to="/activate-key"
-        className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+        className={`w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+          showPurchaseCta
+            ? "border border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+            : "bg-indigo-600 text-white hover:bg-indigo-700"
+        }`}
       >
         <KeyRound className="w-4 h-4" />
         Активировать лицензионный ключ

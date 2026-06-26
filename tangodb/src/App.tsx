@@ -71,6 +71,9 @@ import { panelIdFromPath } from "./lib/permissions";
 import { useOrganization } from "./organization/OrganizationProvider";
 import { normalizeOrgModules } from "./lib/orgModules";
 import type { OrgModules } from "./types/organization";
+import DemoBrandBadge from "./components/demo/DemoBrandBadge";
+import DemoPurchaseCta from "./components/demo/DemoPurchaseCta";
+import { useDemoLicenseUi } from "./hooks/useDemoLicenseUi";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -265,6 +268,7 @@ function AppLayout() {
   const personalTab = useUIStore((s) => s.personalTab);
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
   const { settings } = useOrganization();
+  const { showPurchaseCta } = useDemoLicenseUi();
   const orgModules = normalizeOrgModules(settings?.modules);
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -318,8 +322,13 @@ function AppLayout() {
     return location.pathname === item.path;
   };
 
-  const renderNav = (refreshKey?: unknown) => (
-    <ScrollableNav refreshKey={refreshKey}>
+  const renderNav = (refreshKey?: unknown, closeDrawer?: () => void) => (
+    <ScrollableNav refreshKey={refreshKey ?? showPurchaseCta}>
+      {showPurchaseCta && (
+        <div className="px-3 pb-3 border-b border-slate-100 mb-1">
+          <DemoPurchaseCta variant="nav" onNavigate={closeDrawer} />
+        </div>
+      )}
       {NAV_SECTIONS.map((section) => {
         if (section.moduleKey && !orgModules[section.moduleKey]) return null;
         const visibleItems = section.items.filter((item) => canAccessPanel(panelIdFromPath(item.path)));
@@ -368,9 +377,10 @@ function AppLayout() {
             <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[11px] tracking-tight leading-none shadow-xs">
               TDB
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-base font-semibold tracking-tight text-slate-800 leading-tight">TangoDB</h1>
               <p className="text-[11px] font-sans tracking-widest text-slate-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
+              <DemoBrandBadge />
             </div>
           </div>
 
@@ -463,12 +473,15 @@ function AppLayout() {
                 transition={{ type: "tween", duration: 0.2 }}
                 className="relative flex flex-col w-72 max-w-[85vw] bg-white text-slate-700 h-full border-r border-slate-200 shadow-xl"
               >
-                <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[10px] tracking-tight leading-none">
+                <div className="flex justify-between items-start px-5 py-4 border-b border-slate-100">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-7 h-7 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[10px] tracking-tight leading-none shrink-0">
                       TDB
                     </div>
-                    <h3 className="text-sm font-semibold tracking-tight text-slate-800">TangoDB</h3>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold tracking-tight text-slate-800 leading-tight">TangoDB</h3>
+                      <DemoBrandBadge compact />
+                    </div>
                   </div>
                   <button
                     onClick={() => setMobileDrawerOpen(false)}
@@ -479,7 +492,7 @@ function AppLayout() {
                   </button>
                 </div>
 
-                {renderNav(mobileDrawerOpen)}
+                {renderNav(mobileDrawerOpen, () => setMobileDrawerOpen(false))}
 
                 <div className="p-3 border-t border-slate-100">
                   <button

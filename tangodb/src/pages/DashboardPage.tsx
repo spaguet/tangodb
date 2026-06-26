@@ -18,6 +18,7 @@ import { useUIStore } from "../store/ui";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { normalizeOrgModules } from "../lib/orgModules";
 import type { Client, Payment, PersonalLesson, Subscription } from "../types";
+import DemoDashboardBanner from "../components/demo/DemoDashboardBanner";
 
 type DashboardTab = "operational" | "financial";
 
@@ -74,28 +75,37 @@ export default function DashboardPage() {
 
   if (scopedOnly) {
     return (
-      <ScopedDashboardView
-        lessonsQuery={scopedLessonsQuery}
-        scheduleQuery={scopedScheduleQuery}
-        disciplinesQuery={disciplinesQuery}
-        onNavigate={handleNavigate}
-      />
+      <DashboardShell>
+        <ScopedDashboardView
+          lessonsQuery={scopedLessonsQuery}
+          scheduleQuery={scopedScheduleQuery}
+          disciplinesQuery={disciplinesQuery}
+          onNavigate={handleNavigate}
+        />
+      </DashboardShell>
     );
   }
 
   if (showFinancial && !showOperational) {
-    return <FinancialDashboard />;
+    return (
+      <DashboardShell>
+        <FinancialDashboard />
+      </DashboardShell>
+    );
   }
 
   if (showBoth && activeTab === "financial") {
     return (
-      <DashboardWithTabs activeTab={activeTab} onTabChange={setActiveTab}>
-        <FinancialDashboard />
-      </DashboardWithTabs>
+      <DashboardShell>
+        <DashboardWithTabs activeTab={activeTab} onTabChange={setActiveTab}>
+          <FinancialDashboard />
+        </DashboardWithTabs>
+      </DashboardShell>
     );
   }
 
   return (
+    <DashboardShell>
     <OperationalDashboardView
       showBoth={showBoth}
       activeTab={activeTab}
@@ -107,6 +117,16 @@ export default function DashboardPage() {
       showOperationalPayments={showOperationalPayments}
       onNavigate={handleNavigate}
     />
+    </DashboardShell>
+  );
+}
+
+function DashboardShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="panel-page-stack">
+      <DemoDashboardBanner />
+      {children}
+    </div>
   );
 }
 

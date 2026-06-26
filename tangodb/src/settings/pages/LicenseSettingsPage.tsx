@@ -6,6 +6,8 @@ import RequirePermission from "../../components/RequirePermission";
 import { useToast } from "../../App";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { supabase } from "../../lib/supabase";
+import { isDemoOrgStatus } from "../../lib/demoLicense";
+import DemoPurchaseCta from "../../components/demo/DemoPurchaseCta";
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -64,7 +66,8 @@ export default function LicenseSettingsPage() {
   const isLifetime = license?.license_type === "lifetime";
   const hasSubscription = license?.license_type === "subscription" && !!subscription;
   const statusInfo = STATUS_LABELS[organization.status] ?? STATUS_LABELS.suspended;
-  const isDemo = organization.status === "demo_active" || organization.status === "demo_retention";
+  const isDemo = isDemoOrgStatus(organization.status);
+  const isPurchaseFlow = searchParams.get("purchase") === "1";
   const canSubscribe = !isLifetime && organization.status !== "suspended";
 
   const handleActivate = async (e: React.FormEvent) => {
@@ -144,11 +147,18 @@ export default function LicenseSettingsPage() {
 
   return (
     <div className="panel-card-stack max-w-xl">
-      <div>
-        <h2 className="text-base font-semibold text-slate-900">Лицензия и тариф</h2>
-        <p className="text-xs text-slate-500 mt-1">
-          Статус доступа, подписка SaaS или пожизненная лицензия по ключу.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-slate-900">
+            {isPurchaseFlow && isDemo ? "Покупка полной версии" : "Лицензия и тариф"}
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            {isPurchaseFlow && isDemo
+              ? "Выберите способ оплаты или активируйте полученный ключ ниже."
+              : "Статус доступа, подписка SaaS или пожизненная лицензия по ключу."}
+          </p>
+        </div>
+        {isDemo && !isPurchaseFlow && <DemoPurchaseCta variant="banner" />}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
