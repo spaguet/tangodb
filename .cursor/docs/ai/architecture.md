@@ -55,4 +55,12 @@
 - **Точки gate:** desktop nav + mobile tabs (`App.tsx`), `PanelAccessRoute` (`routeGuards.tsx`), settings nav/redirect, financial tab на `/`, financial export в `DataExportPage`.
 - **Не gate:** операционная оплата при продаже; RBAC и RLS не заменяются.
 
+## i18n (S10)
+
+- **Default locale:** `ru-RU`; переключатель в `GeneralSettingsPage` → `organization_settings.locale`.
+- **Guest locale:** `localStorage` key `tangodb-locale-pref` (`setGuestLocale`) — auth/onboarding до выбора org; синхронизируется при сохранении общих настроек.
+- **Структура:** `tangodb/src/lib/i18n/` — typed keys (`I18nKey`), словари `ru`/`en`/`vi`, `t(locale, key, params?)`, `pluralize`, `formatDateLocale`.
+- **Хуки:** `useI18n()` (org locale), `useGuestI18n()` (auth flows); nav helpers: `getNavSections`, `getPanelTitle`, `getSettingsNav`, …
+- **Правило:** UI-строки только через `t()`; данные пользователя (имена, названия дисциплин) не переводятся; CSV export headers — RU (отдельный этап при необходимости).
+
 ## Записи

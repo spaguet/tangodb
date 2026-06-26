@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2 } from "lucide-react";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { useGuestI18n } from "../hooks/useI18n";
 import {
-  AuthButton,
   AuthError,
   AuthLayout,
 } from "./AuthLayout";
 
 export default function SelectOrganizationPage() {
+  const { t } = useGuestI18n();
   const navigate = useNavigate();
   const { memberships, setActiveOrganization } = useOrganization();
   const [error, setError] = useState<string | null>(null);
@@ -21,15 +22,15 @@ export default function SelectOrganizationPage() {
       await setActiveOrganization(organizationId);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось выбрать организацию");
+      setError(err instanceof Error ? err.message : t("auth.selectOrg.error"));
     } finally {
       setLoadingId(null);
     }
   };
 
   return (
-    <AuthLayout title="TangoDB" subtitle="Выбор организации">
-      <p className="text-sm text-slate-500">Вы состоите в нескольких организациях. Выберите, с какой работать.</p>
+    <AuthLayout title="TangoDB" subtitle={t("auth.selectOrg.subtitle")}>
+      <p className="text-sm text-slate-500">{t("auth.selectOrg.hint")}</p>
       <AuthError message={error} />
 
       <div className="space-y-2">

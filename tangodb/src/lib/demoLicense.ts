@@ -1,5 +1,5 @@
 import type { OrgStatus } from "../types/organization";
-import { pluralizeRu } from "./utils";
+import { formatDateLocale, pluralize, t } from "./i18n";
 
 export const DEMO_PURCHASE_PATH = "/settings/license?purchase=1";
 
@@ -31,20 +31,32 @@ export function getDemoUrgencyTone(
   return "default";
 }
 
-export function formatDemoExpiryDate(iso: string | null | undefined): string {
+export function formatDemoExpiryDate(
+  iso: string | null | undefined,
+  locale?: string | null
+): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("ru-RU", {
+  return formatDateLocale(iso, locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-export function formatDemoDaysLeftLabel(daysLeft: number | null, status: OrgStatus | null | undefined): string | null {
-  if (status === "demo_retention") return "только просмотр";
+export function formatDemoDaysLeftLabel(
+  daysLeft: number | null,
+  status: OrgStatus | null | undefined,
+  locale?: string | null
+): string | null {
+  if (status === "demo_retention") return t(locale, "demo.daysLeft.viewOnly");
   if (daysLeft == null) return null;
-  if (daysLeft <= 0) return "срок истёк";
-  return `${daysLeft} ${pluralizeRu(daysLeft, ["день", "дня", "дней"])} осталось`;
+  if (daysLeft <= 0) return t(locale, "demo.daysLeft.expired");
+  const forms: [string, string, string] = [
+    t(locale, "demo.daysLeft.remainingOne", { count: daysLeft }),
+    t(locale, "demo.daysLeft.remainingFew", { count: daysLeft }),
+    t(locale, "demo.daysLeft.remainingMany", { count: daysLeft }),
+  ];
+  return pluralize(locale, daysLeft, forms);
 }
 
 export const DEMO_URGENCY_TEXT_CLASS: Record<DemoUrgencyTone, string> = {

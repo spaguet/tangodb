@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { AlertTriangle } from "lucide-react";
+import { useI18n } from "../../hooks/useI18n";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -17,12 +18,16 @@ export default function ConfirmDialog({
   open,
   title,
   description,
-  confirmLabel = "Подтвердить",
-  cancelLabel = "Отмена",
+  confirmLabel,
+  cancelLabel,
   pending = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
+  const resolvedConfirmLabel = confirmLabel ?? t("common.confirm");
+  const resolvedCancelLabel = cancelLabel ?? t("common.cancel");
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -70,14 +75,14 @@ export default function ConfirmDialog({
                 disabled={pending}
                 className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer disabled:opacity-60"
               >
-                {cancelLabel}
+                {resolvedCancelLabel}
               </button>
               <button
                 onClick={onConfirm}
                 disabled={pending}
                 className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors cursor-pointer disabled:opacity-60"
               >
-                {pending ? "..." : confirmLabel}
+                {pending ? "..." : resolvedConfirmLabel}
               </button>
             </div>
           </motion.div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useGuestI18n } from "../hooks/useI18n";
 import { AuthButton, AuthLayout } from "../auth/AuthLayout";
 
 interface RecoveryCodeModalProps {
@@ -7,6 +8,7 @@ interface RecoveryCodeModalProps {
 }
 
 export default function RecoveryCodeModal({ code, onContinue }: RecoveryCodeModalProps) {
+  const { t } = useGuestI18n();
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -19,12 +21,9 @@ export default function RecoveryCodeModal({ code, onContinue }: RecoveryCodeModa
   };
 
   return (
-    <AuthLayout title="TangoDB" subtitle="Аварийный код восстановления">
+    <AuthLayout title="TangoDB" subtitle={t("auth.recoveryCode.subtitle")}>
       <div className="space-y-4">
-        <p className="text-sm text-slate-600">
-          Сохраните этот код в безопасном месте. Он понадобится при обращении в поддержку, если вы
-          потеряете доступ к email. <strong>Повторно код не отобразится.</strong>
-        </p>
+        <p className="text-sm text-slate-600">{t("auth.recoveryCode.instructions")}</p>
 
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-center">
           <p className="text-xs uppercase tracking-widest text-amber-700 mb-1">Emergency Recovery Code</p>
@@ -32,10 +31,10 @@ export default function RecoveryCodeModal({ code, onContinue }: RecoveryCodeModa
         </div>
 
         <AuthButton type="button" variant="secondary" onClick={() => void copy()}>
-          {copied ? "Скопировано" : "Скопировать"}
+          {copied ? t("common.copied") : t("common.copy")}
         </AuthButton>
 
-        <AuthButton onClick={onContinue}>Продолжить в CRM</AuthButton>
+        <AuthButton onClick={onContinue}>{t("auth.recoveryCode.continue")}</AuthButton>
       </div>
     </AuthLayout>
   );

@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, X } from "lucide-react";
 import { useAddDiscipline } from "../../hooks/useDisciplines";
+import { useI18n } from "../../hooks/useI18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { ToastType } from "../../App";
 import type { Discipline } from "../../types";
 import { descriptionFieldCls, fieldCls as inputCls } from "./AppSelect";
@@ -18,6 +20,7 @@ interface AddDisciplineModalProps {
 
 export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: AddDisciplineModalProps) {
   const addDiscipline = useAddDiscipline();
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
@@ -41,10 +44,10 @@ export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: 
     e.preventDefault();
     const res = await addDiscipline.mutateAsync({ name, description });
     if (!res.success) {
-      toast(res.error || "Не удалось добавить дисциплину", "error");
+      toast(resolveMutationError(res.error, "disciplines.error.addFailed", t), "error");
       return;
     }
-    toast("Дисциплина добавлена", "success");
+    toast(t("disciplines.success.added"), "success");
     onSuccess?.(res.discipline);
     onClose();
   };
@@ -70,12 +73,12 @@ export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: 
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2 text-slate-800">
                 <BookOpen className="w-4 h-4 text-indigo-500" />
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Новая дисциплина</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("disciplines.newTitle")}</h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -84,24 +87,24 @@ export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: 
 
             <form onSubmit={handleSubmit} className="panel-form-stack font-sans">
               <div className="field-stack">
-                <label className={labelCls}>Название</label>
+                <label className={labelCls}>{t("common.name")}</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Танго"
+                  placeholder={t("disciplines.placeholder.name")}
                   className={inputCls}
                   autoFocus
                 />
               </div>
 
               <div className="field-stack">
-                <label className={labelCls}>Описание</label>
+                <label className={labelCls}>{t("common.description")}</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Необязательно"
+                  placeholder={t("disciplines.placeholder.optional")}
                   rows={2}
                   className={descriptionFieldCls}
                 />
@@ -113,14 +116,14 @@ export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: 
                   disabled={addDiscipline.isPending}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
-                  {addDiscipline.isPending ? "..." : "Подтвердить"}
+                  {addDiscipline.isPending ? t("common.saving") : t("common.confirm")}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer"
                 >
-                  Отмена
+                  {t("common.cancel")}
                 </button>
               </div>
             </form>

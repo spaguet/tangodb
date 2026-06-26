@@ -109,7 +109,7 @@ export function useCreatePrice() {
       billingModel?: Price["billingModel"];
     }) => {
       if (!organizationId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const { data, error } = await supabase

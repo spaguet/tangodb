@@ -11,8 +11,8 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import { usePermissions } from "../../hooks/usePermissions";
 import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import {
-  getConnectionBlockReason,
-  getMutationBlockedMessage,
+  translateConnectionBlockReason,
+  translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
 import { findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
@@ -32,12 +32,13 @@ import {
   jsDayToIsoDow,
   formatClientName,
   formatCurrency,
-  formatDateRu,
   getPriceLabel,
   filterPrivateLessonTariffsForSale,
   getSubscriptionClientIds,
   tariffParticipantType,
 } from "../../lib/utils";
+import { useI18n } from "../../hooks/useI18n";
+import type { I18nKey } from "../../lib/i18n/keys";
 import type { Client, Subscription } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import ClientAutocomplete from "../ui/ClientAutocomplete";
@@ -89,11 +90,14 @@ function participantTypeFromCount(count: number): "solo" | "pair" | "trio" | "qu
   return "solo";
 }
 
-function validateBookingClients(clients: BookingClientField[]): string | null {
-  if (!clients[0]?.id) return "Выберите клиента.";
+function validateBookingClients(
+  clients: BookingClientField[],
+  t: (key: I18nKey, params?: Record<string, string | number>) => string
+): string | null {
+  if (!clients[0]?.id) return t("common.selectClientError");
   for (let i = 1; i < clients.length; i += 1) {
     if (!clients[i]?.query || !clients[i]?.id) {
-      return `Выберите клиента ${i + 1}.`;
+      return t("common.selectClientN", { n: i + 1 });
     }
   }
   return null;
@@ -109,6 +113,7 @@ export default function PersonalLessonSaleForm({
   onSuccess,
   onClose,
 }: PersonalLessonSaleFormProps) {
+  const { t, locale, formatDate, plural } = useI18n();
   const isScheduleCell = mode === "schedule-cell";
   const todayISO = toISODateLocal(new Date());
 
@@ -272,7 +277,7 @@ export default function PersonalLessonSaleForm({
 
     const filteredEntries = lessonEntries.filter((e) => e.date);
     if (filteredEntries.length === 0) {
-      toast("Выберите дату.", "error");
+      toast(t("common.selectDateError"), "error");
       return null;
     }
 
@@ -291,14 +296,17 @@ export default function PersonalLessonSaleForm({
 
     if (weeklyEndMode === "weeks") {
       if (weeklyWeekCount < 1) {
-        toast("Укажите количество недель.", "error");
+        toast(t("personal.error.weekCount"), "error");
         return null;
       }
       const endDate = addDays(startDate, weeklyWeekCount * 7 - 1);
       const beyondEnd = findLessonEntriesBeyondEndDate(filteredEntries, endDate);
       if (beyondEnd.length > 0) {
         toast(
-          `Даты уроков (${beyondEnd.map(formatDateRu).join(", ")}) позже окончания повторения (${formatDateRu(endDate)}).`,
+          t("personal.error.datesBeyondEnd", {
+            dates: beyondEnd.map((d) => formatDate(d)).join(", "),
+            endDate: formatDate(endDate),
+          }),
           "error"
         );
         return null;
@@ -307,24 +315,27 @@ export default function PersonalLessonSaleForm({
     }
 
     if (!weeklyEndDate) {
-      toast("Укажите дату окончания.", "error");
+      toast(t("personal.error.endDate"), "error");
       return null;
     }
     if (weeklyEndDate < startDate) {
-      toast("Дата окончания должна быть не раньше даты начала.", "error");
+      toast(t("personal.error.endBeforeStart"), "error");
       return null;
     }
     const beyondEnd = findLessonEntriesBeyondEndDate(filteredEntries, weeklyEndDate);
     if (beyondEnd.length > 0) {
       toast(
-        `Даты уроков (${beyondEnd.map(formatDateRu).join(", ")}) позже даты окончания повторения (${formatDateRu(weeklyEndDate)}).`,
+        t("personal.error.datesBeyondEnd", {
+          dates: beyondEnd.map((d) => formatDate(d)).join(", "),
+          endDate: formatDate(weeklyEndDate),
+        }),
         "error"
       );
       return null;
     }
     const slots = expandWeeklyRecurrence(startDate, weeklyEndDate, rows);
     if (slots.length === 0) {
-      toast("Не удалось сгенерировать даты по выбранному расписанию.", "error");
+      toast(t("personal.error.noDatesGenerated"), "error");
       return null;
     }
     return slots;
@@ -332,33 +343,33 @@ export default function PersonalLessonSaleForm({
 
   const handleBook = async (immediatePaid: boolean) => {
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
 
     if (!isScheduleCell && !locationId) {
-      toast("Выберите локацию.", "error");
+      toast(t("common.selectLocation"), "error");
       return;
     }
 
-    const clientError = validateBookingClients(bookingClients);
+    const clientError = validateBookingClients(bookingClients, t);
     if (clientError) {
       toast(clientError, "error");
       return;
     }
 
     if (!disciplineId) {
-      toast("Выберите дисциплину.", "error");
+      toast(t("common.selectDiscipline"), "error");
       return;
     }
 
     if (!isScheduleCell && !teacherMemberId) {
-      toast("Выберите преподавателя.", "error");
+      toast(t("common.selectTeacher"), "error");
       return;
     }
 
     if (bookingPaymentMode === "package" && !linkedSubscriptionId) {
-      toast("Выберите пакет для списания.", "error");
+      toast(t("common.selectPackageError"), "error");
       return;
     }
 
@@ -368,21 +379,25 @@ export default function PersonalLessonSaleForm({
     for (const slot of slots) {
       const rangeError = validateTimeRange(slot.timeStart, slot.timeEnd);
       if (rangeError) {
-        toast(`${formatDateRu(slot.date)}: ${rangeError}`, "error");
+        const msg =
+          rangeError.includes("позже") || rangeError.includes("later")
+            ? t("schedule.error.endBeforeStart")
+            : t("utils.conflict.invalidTime");
+        toast(`${formatDate(slot.date)}: ${msg}`, "error");
         return;
       }
     }
 
     const priceNum = bookingPaymentMode === "package" ? 0 : parseFloat(customPrice);
     if (bookingPaymentMode !== "package" && (Number.isNaN(priceNum) || priceNum < 0)) {
-      toast("Укажите корректную стоимость урока.", "error");
+      toast(t("common.invalidLessonCost"), "error");
       return;
     }
 
     if (linkedSubscriptionId) {
       const linkedSub = subscriptions.find((s) => s.id === linkedSubscriptionId);
       if (!linkedSub) {
-        toast("Выбранный пакет не найден.", "error");
+        toast(t("common.packageNotFound"), "error");
         return;
       }
       if (
@@ -393,7 +408,7 @@ export default function PersonalLessonSaleForm({
           clientId4: bookingClients.length >= 4 ? bookingClients[3].id : "",
         })
       ) {
-        toast("Клиенты урока должны совпадать с владельцами пакета.", "error");
+        toast(t("personal.error.clientsMismatch"), "error");
         return;
       }
     }
@@ -407,10 +422,12 @@ export default function PersonalLessonSaleForm({
           locationId: effectiveLocationId,
         },
         personalLessons,
-        scheduleSlots
+        scheduleSlots,
+        t,
+        locale
       );
       if (conflict) {
-        toast(formatScheduleConflictToast(slot.date, conflict), "error");
+        toast(formatScheduleConflictToast(slot.date, conflict, t, locale), "error");
         return;
       }
     }
@@ -438,7 +455,7 @@ export default function PersonalLessonSaleForm({
       });
 
       if (!res.success) {
-        toast(res.error ?? "Не удалось забронировать", "error");
+        toast(res.error ?? t("common.bookFailed"), "error");
         return;
       }
       if (res.ids) createdIds.push(...res.ids);
@@ -448,7 +465,7 @@ export default function PersonalLessonSaleForm({
       const c1 = directoryClients.find((c) => c.id === bookingClients[0].id);
       const clientDisplay = c1
         ? formatClientName(c1.lastName, c1.firstName)
-        : bookingClients[0].query || "Клиент";
+        : bookingClients[0].query || t("common.client");
 
       for (const lessonId of createdIds) {
         const paymentRes = await recordPersonalLessonPayment.mutateAsync({
@@ -460,7 +477,7 @@ export default function PersonalLessonSaleForm({
           markPaid: false,
         });
         if (!paymentRes.success) {
-          toast(paymentRes.error ?? "Урок забронирован, но оплата не зафиксирована", "error");
+          toast(paymentRes.error ?? t("common.bookedPaymentFailed"), "error");
           onSuccess();
           onClose?.();
           return;
@@ -468,13 +485,14 @@ export default function PersonalLessonSaleForm({
       }
     }
 
-    const countLabel = createdIds.length > 1 ? ` (${createdIds.length} уроков)` : "";
+    const countLabel =
+      createdIds.length > 1 ? t("personal.countSuffix", { count: createdIds.length }) : "";
     toast(
       linkedSubscriptionId && bookingPaymentMode === "package"
-        ? `Урок оформлен${countLabel}, списание с пакета`
+        ? t("personal.success.bookedPackage", { count: countLabel })
         : immediatePaid
-          ? `Забронировано и оплачено${countLabel}`
-          : `Внесено в календарь как неоплаченная бронь${countLabel}`,
+          ? t("personal.success.bookedPaid", { count: countLabel })
+          : t("personal.success.bookedUnpaid", { count: countLabel }),
       "success"
     );
     onSuccess();
@@ -500,10 +518,10 @@ export default function PersonalLessonSaleForm({
     if (isScheduleCell && prefill) {
       return (
         <div className="field-stack">
-          <label className={labelCls}>Дата</label>
+          <label className={labelCls}>{t("common.date")}</label>
           <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
             <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
-            {formatDateRu(prefill.date)}
+            {formatDate(prefill.date)}
           </div>
         </div>
       );
@@ -523,20 +541,20 @@ export default function PersonalLessonSaleForm({
           <div key={idx} className={idx === 0 ? "field-stack" : "flex items-end gap-2"}>
             <div className={`grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-3 ${idx > 0 ? "flex-1 min-w-0" : ""}`}>
               <DatePickerField
-                label="Дата"
+                label={t("common.date")}
                 value={entry.date}
                 onChange={(val) => updateEntry(idx, { date: val })}
                 min={todayISO}
                 required
               />
               <TimeSelect
-                label="Начало"
+                label={t("common.timeStart")}
                 value={entry.timeStart}
                 onChange={(val) => updateEntry(idx, { timeStart: val })}
                 required
               />
               <TimeSelect
-                label="Окончание"
+                label={t("common.timeEnd")}
                 value={entry.timeEnd}
                 onChange={(val) => updateEntry(idx, { timeEnd: val })}
                 required
@@ -546,7 +564,7 @@ export default function PersonalLessonSaleForm({
               <button
                 type="button"
                 onClick={() => setLessonEntries((prev) => prev.filter((_, i) => i !== idx))}
-                aria-label="Убрать дату"
+                aria-label={t("common.removeDate")}
                 className="mb-0.5 p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
               >
                 <Trash2 className="w-4 h-4" />
@@ -560,7 +578,7 @@ export default function PersonalLessonSaleForm({
           onClick={() => setLessonEntries((prev) => [...prev, defaultLessonEntry(todayISO)])}
           className={addRowBtnCls}
         >
-          ＋ Добавить дату
+          {t("common.addDate")}
         </button>
       </>
     );
@@ -580,13 +598,13 @@ export default function PersonalLessonSaleForm({
             onChange={(e) => setRepeatWeekly(e.target.checked)}
             className={`${checkboxCls} mt-0.5`}
           />
-          <span className="text-xs leading-snug font-semibold">Повторять еженедельно</span>
+          <span className="text-xs leading-snug font-semibold">{t("common.repeatWeekly")}</span>
         </label>
 
         {repeatWeekly && (
           <div className="field-stack space-y-3">
             <div className="field-stack">
-              <label className={labelCls}>Окончание</label>
+              <label className={labelCls}>{t("common.endDate")}</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -597,7 +615,7 @@ export default function PersonalLessonSaleForm({
                       : "bg-slate-50 text-slate-600 border-slate-200"
                   }`}
                 >
-                  N недель
+                  {t("common.nWeeks")}
                 </button>
                 <button
                   type="button"
@@ -608,25 +626,26 @@ export default function PersonalLessonSaleForm({
                       : "bg-slate-50 text-slate-600 border-slate-200"
                   }`}
                 >
-                  До даты
+                  {t("common.untilDate")}
                 </button>
               </div>
             </div>
             {weeklyEndMode === "weeks" ? (
               <AppSelect
-                label="Количество недель"
+                label={t("common.weekCount")}
                 value={String(weeklyWeekCount)}
                 onChange={(e) => setWeeklyWeekCount(Number(e.target.value) || 2)}
               >
                 {[2, 3, 4].map((n) => (
                   <option key={n} value={n}>
-                    {n} недели
+                    {n}{" "}
+                    {plural(n, [t("common.week.one"), t("common.week.few"), t("common.week.many")])}
                   </option>
                 ))}
               </AppSelect>
             ) : (
               <DatePickerField
-                label="Дата окончания"
+                label={t("common.endDateLabel")}
                 value={weeklyEndDate}
                 onChange={setWeeklyEndDate}
                 min={startDate || todayISO}
@@ -649,13 +668,13 @@ export default function PersonalLessonSaleForm({
             className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
           >
             <Ticket className="w-3.5 h-3.5" />
-            Продать пакет уроков
+            {t("personal.sell.packageLink")}
           </button>
         )}
 
         {isScheduleCell ? (
           <div className="field-stack">
-            <label className={labelCls}>Локация</label>
+            <label className={labelCls}>{t("schedule.form.location")}</label>
             <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
               <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
               {selectedLocationName}
@@ -664,13 +683,13 @@ export default function PersonalLessonSaleForm({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <AppSelect
-              label="Локация"
+              label={t("schedule.form.location")}
               value={locationId}
               onChange={(e) => setLocationId(e.target.value)}
               required
             >
               {accessibleLocations.length === 0 ? (
-                <option value="">Нет доступных локаций</option>
+                <option value="">{t("common.noLocationsAvailable")}</option>
               ) : (
                 accessibleLocations.map((loc) => (
                   <option key={loc.id} value={loc.id}>
@@ -694,13 +713,13 @@ export default function PersonalLessonSaleForm({
 
         {!isTeacher && (
           <AppSelect
-            label="Преподаватель"
+            label={t("schedule.form.teacher")}
             value={teacherMemberId}
             onChange={(e) => setTeacherMemberId(e.target.value)}
             required
           >
             {teacherOptions.length === 0 ? (
-              <option value="">Нет преподавателей</option>
+              <option value="">{t("common.noTeachers")}</option>
             ) : (
               teacherOptions.map((member) => (
                 <option key={member.id} value={member.id}>
@@ -722,8 +741,8 @@ export default function PersonalLessonSaleForm({
 
         {isScheduleCell && (
           <div className="grid grid-cols-2 gap-3">
-            <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
-            <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
+            <TimeSelect label={t("common.timeStart")} value={timeStart} onChange={handleTimeStartChange} required />
+            <TimeSelect label={t("common.timeEnd")} value={timeEnd} onChange={setTimeEnd} required />
           </div>
         )}
 
@@ -733,7 +752,9 @@ export default function PersonalLessonSaleForm({
               <div className="flex-1 min-w-0">
                 {packageLocked ? (
                   <div className="field-stack">
-                    <label className={labelCls}>{idx === 0 ? "Клиент" : `Клиент ${idx + 1}`}</label>
+                    <label className={labelCls}>
+                      {idx === 0 ? t("common.client") : t("common.clientN", { n: idx + 1 })}
+                    </label>
                     <input
                       type="text"
                       readOnly
@@ -743,12 +764,12 @@ export default function PersonalLessonSaleForm({
                   </div>
                 ) : (
                   <ClientAutocomplete
-                    label={idx === 0 ? "Клиент" : `Клиент ${idx + 1}`}
+                    label={idx === 0 ? t("common.client") : t("common.clientN", { n: idx + 1 })}
                     clients={activeClients}
                     query={client.query}
                     selectedId={client.id}
                     showAddClientButton
-                    addClientLinkLabel="Новый клиент"
+                    addClientLinkLabel={t("common.newClient")}
                     toast={toast}
                     onQueryChange={(q) => {
                       if (packageLocked) return;
@@ -774,8 +795,8 @@ export default function PersonalLessonSaleForm({
                   type="button"
                   onClick={() => setBookingClients((prev) => prev.filter((_, i) => i !== idx))}
                   className="mt-6 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0"
-                  title="Убрать клиента"
-                  aria-label="Убрать клиента"
+                  title={t("common.removeClient")}
+                  aria-label={t("common.removeClient")}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -788,13 +809,13 @@ export default function PersonalLessonSaleForm({
               onClick={() => setBookingClients((prev) => [...prev, { query: "", id: "" }])}
               className={addRowBtnCls}
             >
-              ＋ Добавить клиента
+              {t("common.addClient")}
             </button>
           )}
         </div>
 
         <div className="field-stack">
-          <label className={labelCls}>Способ оплаты</label>
+          <label className={labelCls}>{t("common.paymentMethod")}</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
@@ -812,7 +833,7 @@ export default function PersonalLessonSaleForm({
                   : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
               }`}
             >
-              Один урок
+              {t("common.singleLessonOption")}
             </button>
             <button
               type="button"
@@ -826,7 +847,7 @@ export default function PersonalLessonSaleForm({
                   : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
               }`}
             >
-              Списать с пакета
+              {t("common.chargePackage")}
             </button>
           </div>
         </div>
@@ -836,7 +857,7 @@ export default function PersonalLessonSaleForm({
             {lessonTariffs.length > 0 && (
               <div className="grid grid-cols-[2fr_1fr] gap-3">
                 <AppSelect
-                  label="Тариф за урок"
+                  label={t("common.tariffPerLesson")}
                   value={selectedLessonTariffId}
                   onChange={(e) => {
                     const id = e.target.value;
@@ -850,7 +871,7 @@ export default function PersonalLessonSaleForm({
                   ))}
                 </AppSelect>
                 <div className="field-stack">
-                  <label className={labelCls}>Стоимость за один урок</label>
+                  <label className={labelCls}>{t("common.lessonCost")}</label>
                   <input
                     type="number"
                     placeholder="0"
@@ -863,7 +884,7 @@ export default function PersonalLessonSaleForm({
             )}
             {lessonTariffs.length === 0 && (
               <div className="field-stack">
-                <label className={labelCls}>Стоимость за один урок</label>
+                <label className={labelCls}>{t("common.lessonCost")}</label>
                 <input
                   type="number"
                   placeholder="0"
@@ -878,19 +899,19 @@ export default function PersonalLessonSaleForm({
                 type="button"
                 onClick={() => handleBook(true)}
                 disabled={connectionState !== "online" || addPersonalLessons.isPending}
-                title={getConnectionBlockReason(connectionState)}
+                title={translateConnectionBlockReason(connectionState, t)}
                 className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
               >
-                С оплатой
+                {t("common.withPayment")}
               </button>
               <button
                 type="button"
                 onClick={() => handleBook(false)}
                 disabled={connectionState !== "online" || addPersonalLessons.isPending}
-                title={getConnectionBlockReason(connectionState)}
+                title={translateConnectionBlockReason(connectionState, t)}
                 className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
               >
-                Без оплаты
+                {t("common.withoutPayment")}
               </button>
             </div>
           </>
@@ -900,19 +921,19 @@ export default function PersonalLessonSaleForm({
           <>
             {availablePrivateSubs.length === 0 ? (
               <p className="text-xs text-slate-500 font-sans leading-relaxed">
-                Нет оформленных пакетов. Оформить пакет можно в{" "}
+                {t("common.noPackages")}{" "}
                 <button
                   type="button"
                   onClick={() => setPackageModalOpen(true)}
                   className="text-indigo-600 hover:text-indigo-700 font-semibold underline-offset-2 hover:underline cursor-pointer"
                 >
-                  Продажа пакета
+                  {t("common.packageSale")}
                 </button>
                 .
               </p>
             ) : (
               <AppSelect
-                label="Пакет"
+                label={t("common.package")}
                 value={linkedSubscriptionId}
                 onChange={(e) => {
                   const subId = e.target.value;
@@ -920,10 +941,10 @@ export default function PersonalLessonSaleForm({
                   if (subId) applySubscriptionToBooking(subId);
                 }}
               >
-                <option value="">Выберите пакет...</option>
+                <option value="">{t("common.selectPackage")}</option>
                 {availablePrivateSubs.map((sub) => (
                   <option key={sub.id} value={sub.id}>
-                    {subscriptionOwnerLabel(sub)} — осталось {sub.lessonsLeft}
+                    {subscriptionOwnerLabel(sub)} — {t("common.remaining")} {sub.lessonsLeft}
                   </option>
                 ))}
               </AppSelect>
@@ -937,10 +958,10 @@ export default function PersonalLessonSaleForm({
                 availablePrivateSubs.length === 0 ||
                 !linkedSubscriptionId
               }
-              title={getConnectionBlockReason(connectionState)}
+              title={translateConnectionBlockReason(connectionState, t)}
               className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
             >
-              Забронировать
+              {t("common.book")}
             </button>
           </>
         )}

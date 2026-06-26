@@ -1,15 +1,17 @@
 import LoadingState from "../ui/LoadingState";
 import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
+import { useI18n } from "../../hooks/useI18n";
 import CryptoPaymentCards from "./CryptoPaymentCards";
 import DeveloperContacts from "./DeveloperContacts";
 import { BankTransferSection, MirPaymentSection } from "./ManualPaymentSections";
 import PurchaseActivationInstructions from "./PurchaseActivationInstructions";
 
 export default function ManualPurchasePanel() {
+  const { t } = useI18n();
   const { config, hasContent, isLoading, isError } = usePlatformPaymentConfig(true);
 
   if (isLoading) {
-    return <LoadingState label="Загрузка способов оплаты..." />;
+    return <LoadingState label={t("license.purchase.loadingMethods")} />;
   }
 
   return (
@@ -18,14 +20,13 @@ export default function ManualPurchasePanel() {
 
       {isError && (
         <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
-          Не удалось загрузить реквизиты. Попробуйте обновить страницу или свяжитесь с разработчиком.
+          {t("license.purchase.loadError")}
         </p>
       )}
 
       {!isError && !hasContent && (
         <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-          Реквизиты оплаты пока не настроены. Свяжитесь с разработчиком через контакты ниже или дождитесь письма с
-          инструкциями.
+          {t("license.purchase.noMethodsConfigured")}
         </p>
       )}
 

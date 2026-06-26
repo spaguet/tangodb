@@ -1,4 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { I18nKey } from "../lib/i18n/keys";
+import { t } from "../lib/i18n";
+import type { TranslateFn } from "../lib/utils";
 import { supabase } from "../lib/supabase";
 import { formatClientName } from "../lib/utils";
 import type { Payment, PaymentMethod } from "../types";
@@ -77,7 +80,7 @@ export function useRecordPayment() {
       personalLessonId?: string;
     }) => {
       if (!organizationId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const { error } = await supabase.from("payments").insert({
@@ -149,7 +152,7 @@ export function useRecordPersonalLessonPayment() {
         if (error) return { success: false as const, error: error.message };
         const result = data as { success?: boolean; error?: string } | null;
         if (!result?.success) {
-          return { success: false as const, error: result?.error ?? "Не удалось зафиксировать оплату" };
+          return { success: false as const, error: result?.error ?? "subscriptions.error.paymentFailed" };
         }
         return { success: true as const };
       }
@@ -213,15 +216,44 @@ export function useVoidPersonalLessonPayment() {
   });
 }
 
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  cash: "Наличные",
-  transfer: "Перевод",
-  card: "Карта",
-  other: "Другое",
+const PAYMENT_METHOD_KEYS: Record<PaymentMethod, I18nKey> = {
+  cash: "common.payment.cash",
+  transfer: "common.payment.transfer",
+  card: "common.payment.card",
+  other: "common.payment.other",
 };
 
-export function paymentSourceLabel(payment: Payment): string {
-  if (payment.subscriptionId) return "Абонемент";
-  if (payment.personalLessonId) return "Персональный урок";
+/** @deprecated Use getPaymentMethodLabel(method, translate, locale) */
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: t("ru-RU", "common.payment.cash"),
+  transfer: t("ru-RU", "common.payment.transfer"),
+  card: t("ru-RU", "common.payment.card"),
+  other: t("ru-RU", "common.payment.other"),
+};
+
+export function getPaymentMethodLabel(
+  method: PaymentMethod,
+  translate?: TranslateFn,
+  locale?: string | null
+): string {
+  const key = PAYMENT_METHOD_KEYS[method];
+  return translate ? translate(key) : t(locale, key);
+}
+
+export function paymentSourceLabel(
+  payment: Payment,
+  translate?: TranslateFn,
+  locale?: string | null
+): string {
+  if (payment.subscriptionId) {
+    return translate
+      ? translate("common.payment.source.subscription")
+      : t(locale, "common.payment.source.subscription");
+  }
+  if (payment.personalLessonId) {
+    return translate
+      ? translate("common.payment.source.personalLesson")
+      : t(locale, "common.payment.source.personalLesson");
+  }
   return "—";
 }

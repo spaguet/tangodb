@@ -26,7 +26,11 @@ import DisciplineSelect from "./ui/DisciplineSelect";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import { usePermissions } from "../hooks/usePermissions";
+import { useI18n } from "../hooks/useI18n";
+import { translateMutationBlockedMessage, useOnlineStatus } from "../hooks/useOnlineStatus";
+import { resolveMutationError } from "../lib/resolveMutationError";
 import type { ToastType } from "../App";
+import type { I18nKey } from "../lib/i18n/keys";
 import type { PersonalLesson, ScheduleSlot } from "../types";
 
 interface SchedulePanelProps {
@@ -86,14 +90,14 @@ function getSlotConflict(
   allSchedule: ScheduleSlot[],
   personalLessons: PersonalLesson[],
   editSlotIds: Set<string | undefined>
-): string | null {
+): I18nKey | null {
   for (const s of allSchedule) {
     if (slot.id != null && s.id === slot.id) continue;
     if (editSlotIds.has(s.id) && s.disciplineId === disciplineId) continue;
     if ((s.locationId ?? null) !== locationId) continue;
     if (s.dayOfWeek !== slot.dayOfWeek) continue;
     if (!timesOverlap(slot.time, slot.timeEnd, s.time, s.timeEnd || "21:00")) continue;
-    return "в это время уже записан другой групповой урок";
+    return "utils.conflict.groupLesson";
   }
 
   for (const lesson of personalLessons) {
@@ -101,13 +105,15 @@ function getSlotConflict(
     const lessonDow = jsDayToIsoDow(new Date(lesson.date).getDay());
     if (lessonDow !== slot.dayOfWeek) continue;
     if (!timesOverlap(slot.time, slot.timeEnd, lesson.timeStart, lesson.timeEnd || lesson.timeStart)) continue;
-    return "в это время уже записан персональный урок";
+    return "utils.conflict.personalLesson";
   }
 
   return null;
 }
 
 export default function SchedulePanel({ toast }: SchedulePanelProps) {
+  const { t, locale } = useI18n();
+  const { connectionState } = useOnlineStatus();
   const scheduleQuery = useSchedule();
   const disciplinesQuery = useDisciplines();
   const locationsQuery = useLocations();
@@ -212,16 +218,16 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
         const slotTeacherId = first.teacherMemberId ?? null;
         const disciplineLabel =
           disciplineId != null
-            ? disciplineMap[disciplineId]?.name || `Дисциплина #${disciplineId}`
-            : "Без дисциплины";
+            ? disciplineMap[disciplineId]?.name || `${t("common.discipline")} #${disciplineId}`
+            : t("utils.noDiscipline");
         const displayName = groupName || disciplineLabel;
         const locationLabel = slotLocationId
-          ? locationMap[slotLocationId]?.name ?? "Локация"
-          : "Без локации";
+          ? locationMap[slotLocationId]?.name ?? t("utils.noLocation")
+          : t("utils.noLocation");
         const teacherMember = slotTeacherId ? teacherMap[slotTeacherId] : undefined;
         const teacherLabel = teacherMember
-          ? memberDisplayName(teacherMember) ?? memberRoleLabel(teacherMember.role, teacherMember.meta)
-          : "Преподаватель не указан";
+          ? memberDisplayName(teacherMember) ?? memberRoleLabel(teacherMember.role, teacherMember.meta, locale)
+          : t("utils.noTeacher");
 
         return {
           groupKey,
@@ -236,8 +242,8 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
           slots: slots.sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.time.localeCompare(b.time)),
         };
       })
-      .sort((a, b) => a.locationLabel.localeCompare(b.locationLabel, "ru") || a.displayName.localeCompare(b.displayName, "ru"));
-  }, [schedule, disciplineMap, locationMap, teacherMap]);
+      .sort((a, b) => a.locationLabel.localeCompare(b.locationLabel, locale) || a.displayName.localeCompare(b.displayName, locale));
+  }, [schedule, disciplineMap, locationMap, teacherMap, t, locale]);
 
   const updateDayRow = (key: string, patch: Partial<DayFormRow>) => {
     setDayRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
@@ -253,32 +259,36 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
 
     const trimmedGroup = groupName.trim();
     if (!trimmedGroup) {
-      toast("Укажите название группы.", "error");
+      toast(t("schedule.error.groupName"), "error");
       return;
     }
     if (!disciplineId) {
-      toast("Выберите дисциплину.", "error");
+      toast(t("schedule.error.discipline"), "error");
       return;
     }
     if (!locationId) {
-      toast("Выберите локацию.", "error");
+      toast(t("schedule.error.location"), "error");
       return;
     }
     if (!teacherMemberId) {
-      toast("Выберите преподавателя.", "error");
+      toast(t("schedule.error.teacher"), "error");
       return;
     }
 
     for (const row of dayRows) {
       if (!row.time || !row.timeEnd) {
-        toast("Заполните время для всех дней.", "error");
+        toast(t("schedule.error.fillTimes"), "error");
         return;
       }
       if (row.timeEnd <= row.time) {
-        toast("Время окончания должно быть позже начала.", "error");
+        toast(t("schedule.error.endBeforeStart"), "error");
         return;
       }
     }
@@ -296,9 +306,9 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     });
 
     if (!res.success) {
-      toast(res.error || "Не удалось добавить занятия", "error");
+      toast(resolveMutationError(res.error, "schedule.error.addFailed", t), "error");
     } else {
-      toast(`Группа «${trimmedGroup}» добавлена в расписание`, "success");
+      toast(t("schedule.success.groupAdded", { name: trimmedGroup }), "success");
       setGroupName("");
       setDayRows([makeDayRow()]);
     }
@@ -306,12 +316,16 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget || deleteTarget.id == null) return;
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
 
     const res = await deleteSlot.mutateAsync(deleteTarget.id);
     if (!res.success) {
-      toast(res.error || "Не удалось удалить слот", "error");
+      toast(resolveMutationError(res.error, "schedule.error.deleteSlotFailed", t), "error");
     } else {
-      toast("Класс убран из расписания", "success");
+      toast(t("schedule.success.slotRemoved"), "success");
       setDeleteTarget(null);
     }
   };
@@ -335,6 +349,10 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
   const handleConfirmGroupDelete = async () => {
     if (!deleteGroupTarget || deleteGroupTarget.disciplineId == null) return;
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
 
     const res = await deleteGroupSchedule.mutateAsync({
       groupName: deleteGroupTarget.groupName,
@@ -342,32 +360,36 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       locationId: deleteGroupTarget.locationId,
     });
     if (!res.success) {
-      toast(res.error || "Не удалось удалить расписание группы", "error");
+      toast(resolveMutationError(res.error, "schedule.error.deleteGroupFailed", t), "error");
     } else {
-      toast(`Расписание «${deleteGroupTarget.displayName}» удалено`, "success");
+      toast(t("schedule.success.scheduleDeleted", { name: deleteGroupTarget.displayName }), "success");
       setDeleteGroupTarget(null);
     }
   };
 
   const handleSaveGroupEdit = async () => {
     if (!editingGroup || editingGroup.disciplineId == null) return;
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
 
     if (!editLocationId) {
-      toast("Выберите локацию.", "error");
+      toast(t("schedule.error.location"), "error");
       return;
     }
     if (canEditScheduleTeacher && !editTeacherMemberId) {
-      toast("Выберите преподавателя.", "error");
+      toast(t("schedule.error.teacher"), "error");
       return;
     }
 
     for (const slot of editSlots) {
       if (!slot.time || !slot.timeEnd) {
-        toast("Заполните время для всех занятий.", "error");
+        toast(t("schedule.error.fillTimes"), "error");
         return;
       }
       if (slot.timeEnd <= slot.time) {
-        toast("Время окончания должно быть позже начала.", "error");
+        toast(t("schedule.error.endBeforeStart"), "error");
         return;
       }
     }
@@ -384,7 +406,14 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
         editIds
       );
       if (conflict) {
-        toast(`Конфликт: ${dowFull(slot.dayOfWeek)} ${slot.time} — ${conflict}`, "error");
+        toast(
+          t("utils.conflict.groupSchedule", {
+            day: dowFull(slot.dayOfWeek),
+            time: slot.time,
+            reason: t(conflict),
+          }),
+          "error"
+        );
         return;
       }
     }
@@ -408,9 +437,9 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     });
 
     if (!res.success) {
-      toast(res.error || "Не удалось сохранить расписание", "error");
+      toast(resolveMutationError(res.error, "schedule.error.saveFailed", t), "error");
     } else {
-      toast("Расписание обновлено", "success");
+      toast(t("schedule.success.saved"), "success");
       setEditingGroup(null);
     }
   };
@@ -420,7 +449,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   };
 
   if (scheduleLoading || disciplinesLoading || personalLoading || locationsLoading || teamLoading) {
-    return <LoadingState label="Загрузка расписания..." />;
+    return <LoadingState label={t("schedule.loading")} />;
   }
 
   const isError = scheduleError || disciplinesError || personalError || locationsError || teamError;
@@ -435,25 +464,25 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
         action="schedule.write"
         fallback={
           <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
-            Изменение расписания недоступно для вашей роли или организация в режиме только чтения.
+            {t("schedule.readOnlyHint")}
           </div>
         }
       >
         <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
           <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
             <CalendarDays className="w-4.5 h-4.5 text-indigo-500" />
-            <h2 className="text-base font-semibold tracking-tight">Внести новое занятие</h2>
+            <h2 className="text-base font-semibold tracking-tight">{t("schedule.form.addTitle")}</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="panel-form-stack">
             <div className="field-stack">
-              <label className={labelCls}>Название группы</label>
+              <label className={labelCls}>{t("schedule.form.groupName")}</label>
               <input
                 type="text"
                 required
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
-                placeholder="Например, Старшая группа"
+                placeholder={t("schedule.form.groupPlaceholder")}
                 className={fieldCls}
               />
             </div>
@@ -466,12 +495,12 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
             />
 
             <AppSelect
-              label="Локация"
+              label={t("schedule.form.location")}
               value={locationId}
               onChange={(e) => setLocationId(e.target.value)}
             >
               {locations.length === 0 ? (
-                <option value="">Нет локаций</option>
+                <option value="">{t("common.noLocationsAvailable")}</option>
               ) : (
                 locations.map((loc) => (
                   <option key={loc.id} value={loc.id}>
@@ -482,16 +511,16 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
             </AppSelect>
 
             <AppSelect
-              label="Преподаватель"
+              label={t("schedule.form.teacher")}
               value={teacherMemberId}
               onChange={(e) => setTeacherMemberId(e.target.value)}
             >
               {teacherOptions.length === 0 ? (
-                <option value="">Нет преподавателей</option>
+                <option value="">{t("common.noTeachers")}</option>
               ) : (
                 teacherOptions.map((member) => (
                   <option key={member.id} value={member.id}>
-                    {memberDisplayName(member) ?? memberRoleLabel(member.role, member.meta)}
+                    {memberDisplayName(member) ?? memberRoleLabel(member.role, member.meta, locale)}
                   </option>
                 ))
               )}
@@ -502,7 +531,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                 <div className="flex items-start gap-2">
                   <div className="flex-1 min-w-0">
                     <AppSelect
-                      label="День недели"
+                      label={t("schedule.form.dayOfWeek")}
                       value={row.day}
                       onChange={(e) => updateDayRow(row.key, { day: parseInt(e.target.value, 10) })}
                     >
@@ -517,7 +546,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                     <button
                       type="button"
                       onClick={() => handleRemoveDayRow(row.key)}
-                      aria-label="Убрать день"
+                      aria-label={t("schedule.form.removeDay")}
                       className="mt-6 p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -527,7 +556,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="field-stack">
-                    <label className={labelCls}>Время начала</label>
+                    <label className={labelCls}>{t("common.timeStart")}</label>
                     <div className="relative font-sans">
                       <Clock className="w-4 h-4 text-slate-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
@@ -540,7 +569,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                     </div>
                   </div>
                   <div className="field-stack">
-                    <label className={labelCls}>Время окончания</label>
+                    <label className={labelCls}>{t("common.timeEnd")}</label>
                     <div className="relative font-sans">
                       <Clock className="w-4 h-4 text-slate-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
@@ -557,7 +586,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
             ))}
 
             <button type="button" onClick={handleAddDayRow} className={addDayBtnCls}>
-              ＋ Добавить день
+              {t("common.addDay")}
             </button>
 
             <button
@@ -565,7 +594,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               disabled={addGroupSchedule.isPending}
               className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
             >
-              {addGroupSchedule.isPending ? "Добавление..." : "Вписать в сетку"}
+              {addGroupSchedule.isPending ? t("schedule.form.addPending") : t("schedule.form.addSubmit")}
             </button>
           </form>
         </div>
@@ -575,16 +604,16 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
         <div className="border-b border-slate-100 pb-3 space-y-1">
           <div className="flex items-center gap-2.5 text-slate-800">
             <CalendarRange className="w-4.5 h-4.5 text-indigo-500" />
-            <h2 className="text-base font-semibold tracking-tight">Утверждённая сетка расписания</h2>
+            <h2 className="text-base font-semibold tracking-tight">{t("schedule.form.approvedGrid")}</h2>
           </div>
-          <p className="text-slate-400 text-xs font-sans pl-7">Групповые уроки</p>
+          <p className="text-slate-400 text-xs font-sans pl-7">{t("schedule.form.groupLessons")}</p>
         </div>
 
         {scheduleGroups.length === 0 ? (
           <div className="text-center py-20 text-slate-400 space-y-3">
             <CalendarDays className="w-8 h-8 mx-auto text-slate-300" />
             <p className="text-sm">
-              Расписание пока пустое. Заполните форму слева, чтобы клиенты появились в журнале посещений.
+              {t("schedule.empty")}
             </p>
           </div>
         ) : (
@@ -612,8 +641,8 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                         type="button"
                         onClick={() => startEditGroup(group)}
                         className={iconBtnCls}
-                        title="Редактировать"
-                        aria-label={`Редактировать расписание ${group.displayName}`}
+                        title={t("schedule.action.edit")}
+                        aria-label={`${t("schedule.action.edit")} ${group.displayName}`}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
@@ -621,8 +650,8 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                         type="button"
                         onClick={() => setDeleteGroupTarget(group)}
                         className={deleteBtnCls}
-                        title="Удалить"
-                        aria-label={`Удалить расписание ${group.displayName}`}
+                        title={t("schedule.action.delete")}
+                        aria-label={`${t("schedule.action.delete")} ${group.displayName}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -682,7 +711,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                 <button
                   type="button"
                   onClick={() => setEditingGroup(null)}
-                  aria-label="Закрыть"
+                  aria-label={t("common.close")}
                   className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
                 >
                   <X className="w-5 h-5" />
@@ -691,12 +720,12 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
               <div className="panel-form-stack font-sans">
                 <AppSelect
-                  label="Локация"
+                  label={t("schedule.form.location")}
                   value={editLocationId}
                   onChange={(e) => setEditLocationId(e.target.value)}
                 >
                   {locations.length === 0 ? (
-                    <option value="">Нет локаций</option>
+                    <option value="">{t("common.noLocationsAvailable")}</option>
                   ) : (
                     locations.map((loc) => (
                       <option key={loc.id} value={loc.id}>
@@ -708,23 +737,23 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
                 {canEditScheduleTeacher ? (
                   <AppSelect
-                    label="Преподаватель"
+                    label={t("schedule.form.teacher")}
                     value={editTeacherMemberId}
                     onChange={(e) => setEditTeacherMemberId(e.target.value)}
                   >
                     {teacherOptions.length === 0 ? (
-                      <option value="">Нет преподавателей</option>
+                      <option value="">{t("common.noTeachers")}</option>
                     ) : (
                       teacherOptions.map((member) => (
                         <option key={member.id} value={member.id}>
-                          {memberDisplayName(member) ?? memberRoleLabel(member.role, member.meta)}
+                          {memberDisplayName(member) ?? memberRoleLabel(member.role, member.meta, locale)}
                         </option>
                       ))
                     )}
                   </AppSelect>
                 ) : (
                   <div className="field-stack">
-                    <span className={labelCls}>Преподаватель</span>
+                    <span className={labelCls}>{t("schedule.form.teacher")}</span>
                     <p className="text-sm text-slate-700 px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg">
                       {editingGroup.teacherLabel}
                     </p>
@@ -732,7 +761,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                 )}
 
                 {editSlots.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-4">Нет занятий для редактирования.</p>
+                  <p className="text-xs text-slate-400 text-center py-4">{t("schedule.noSlotsToEdit")}</p>
                 ) : (
                   editSlots.map((slot) => {
                     const conflict =
@@ -775,7 +804,9 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                             className={fieldCls}
                           />
                         </div>
-                        {conflict && <p className="text-[10px] text-rose-600 font-sans">{conflict}</p>}
+                        {conflict && (
+                          <p className="text-[10px] text-rose-600 font-sans">{t(conflict)}</p>
+                        )}
                       </div>
                     );
                   })
@@ -789,14 +820,14 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                   disabled={replaceGroupSchedule.isPending || editSlots.length === 0}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
-                  {replaceGroupSchedule.isPending ? "..." : "Подтвердить"}
+                  {replaceGroupSchedule.isPending ? t("schedule.modal.confirmPending") : t("schedule.modal.confirm")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingGroup(null)}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
                 >
-                  Отмена
+                  {t("common.cancel")}
                 </button>
               </div>
             </motion.div>
@@ -806,21 +837,19 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        title="Удалить класс из расписания?"
+        title={t("schedule.confirm.deleteSlotTitle")}
         description={
           deleteTarget ? (
             <>
-              Групповой класс{" "}
-              <strong className="font-semibold text-slate-800">
-                {dowFull(deleteTarget.dayOfWeek)} {deleteTarget.time} – {deleteTarget.timeEnd || "21:00"}
-              </strong>{" "}
-              будет убран из сетки. Будущие занятия по этому слоту исчезнут из журнала.
+              {t("schedule.confirm.deleteGroupBodySingle", {
+                name: `${dowFull(deleteTarget.dayOfWeek, locale)} ${deleteTarget.time} – ${deleteTarget.timeEnd || "21:00"}`,
+              })}
             </>
           ) : (
             ""
           )
         }
-        confirmLabel="Удалить"
+        confirmLabel={t("schedule.confirm.deleteSlotConfirm")}
         pending={deleteSlot.isPending}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
@@ -828,19 +857,17 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
       <ConfirmDialog
         open={deleteGroupTarget !== null}
-        title="Удалить расписание группы?"
+        title={t("schedule.confirm.deleteGroupTitle")}
         description={
           deleteGroupTarget ? (
             <>
-              Все групповые занятия{" "}
-              <strong className="font-semibold text-slate-800">{deleteGroupTarget.displayName}</strong> будут убраны
-              из сетки.
+              {t("schedule.confirm.deleteGroupBodyMulti", { name: deleteGroupTarget.displayName })}
             </>
           ) : (
             ""
           )
         }
-        confirmLabel="Удалить"
+        confirmLabel={t("schedule.confirm.deleteGroupConfirm")}
         pending={deleteGroupSchedule.isPending}
         onConfirm={handleConfirmGroupDelete}
         onCancel={() => setDeleteGroupTarget(null)}

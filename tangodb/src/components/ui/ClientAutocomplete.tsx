@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Check, UserPlus } from "lucide-react";
 import type { ToastType } from "../../App";
 import type { Client } from "../../types";
+import { useI18n } from "../../hooks/useI18n";
 import AddClientModal from "./AddClientModal";
 import { fieldCls } from "./AppSelect";
 
@@ -21,17 +22,21 @@ interface ClientAutocompleteProps {
 
 export default function ClientAutocomplete({
   label,
-  placeholder = "Начните вводить фамилию или имя...",
+  placeholder,
   clients,
   query,
   selectedId,
   onQueryChange,
   onSelect,
   showAddClientButton = false,
-  addClientLinkLabel = "Добавить клиента",
-  modalSubmitLabel = "Внести в базу",
+  addClientLinkLabel,
+  modalSubmitLabel,
   toast,
 }: ClientAutocompleteProps) {
+  const { t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t("clients.search.placeholder");
+  const resolvedAddClientLinkLabel = addClientLinkLabel ?? t("common.addClient");
+  const resolvedModalSubmitLabel = modalSubmitLabel ?? t("clients.form.addSubmit");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -82,7 +87,7 @@ export default function ClientAutocomplete({
             setOpen(true);
             setHighlight(0);
           }}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           className={`${fieldCls} pr-9`}
           role="combobox"
           aria-expanded={showList}
@@ -120,13 +125,13 @@ export default function ClientAutocomplete({
             className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer mt-0.5"
           >
             <UserPlus className="w-3 h-3" />
-            {addClientLinkLabel}
+            {resolvedAddClientLinkLabel}
           </button>
           <AddClientModal
             open={addModalOpen}
             onClose={() => setAddModalOpen(false)}
             toast={toast}
-            submitLabel={modalSubmitLabel}
+            submitLabel={resolvedModalSubmitLabel}
             onSuccess={(client) => {
               onSelect(client);
             }}

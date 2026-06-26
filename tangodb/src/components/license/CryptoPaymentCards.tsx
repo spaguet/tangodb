@@ -2,12 +2,14 @@ import { useMemo, useState } from "react";
 import QRCode from "react-qr-code";
 import { Copy, Check } from "lucide-react";
 import { buildCryptoQrValue, type CryptoPaymentMethod } from "../../lib/paymentConfig";
+import { useI18n } from "../../hooks/useI18n";
 
 interface CryptoPaymentCardsProps {
   methods: CryptoPaymentMethod[];
 }
 
 function CryptoCard({ method }: { method: CryptoPaymentMethod }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const qrValue = useMemo(() => buildCryptoQrValue(method), [method]);
 
@@ -30,7 +32,7 @@ function CryptoCard({ method }: { method: CryptoPaymentMethod }) {
           className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600 hover:border-indigo-200 hover:text-indigo-700 cursor-pointer"
         >
           {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-          {copied ? "Скопировано" : "Адрес"}
+          {copied ? t("common.copied") : t("license.payment.crypto.address")}
         </button>
       </div>
       <div className="flex flex-col sm:flex-row gap-3 items-center">
@@ -46,11 +48,15 @@ function CryptoCard({ method }: { method: CryptoPaymentMethod }) {
 }
 
 export default function CryptoPaymentCards({ methods }: CryptoPaymentCardsProps) {
+  const { t } = useI18n();
+
   if (!methods.length) return null;
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Криптовалюта</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        {t("license.payment.crypto.title")}
+      </p>
       <div className="space-y-2">
         {methods.map((method) => (
           <CryptoCard key={`${method.coin}-${method.network}-${method.address}`} method={method} />

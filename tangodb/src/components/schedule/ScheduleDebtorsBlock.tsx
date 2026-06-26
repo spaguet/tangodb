@@ -10,7 +10,8 @@ import {
   canReadLessonClients,
   maskClientDisplay,
 } from "../../lib/scheduleLessonAccess";
-import { formatCurrency, formatDateRu, pluralizeRu } from "../../lib/utils";
+import { formatCurrency } from "../../lib/utils";
+import { useI18n } from "../../hooks/useI18n";
 import type { ScheduleDebtorEntry } from "../../hooks/useScheduleDebtors";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
@@ -50,7 +51,9 @@ function compareDebtorRows(a: DebtorRowView, b: DebtorRowView): number {
 function groupDebtorsByLocation(
   rows: DebtorRowView[],
   locationOrder: string[],
-  locationMap: Map<string, string>
+  locationMap: Map<string, string>,
+  noLocationLabel: string,
+  locationFallback: string
 ): DebtorLocationGroup[] {
   const order = [...locationOrder, NO_LOCATION_KEY];
   const groups = new Map<string, DebtorRowView[]>();
@@ -71,8 +74,8 @@ function groupDebtorsByLocation(
       key,
       label:
         key === NO_LOCATION_KEY
-          ? "Без локации"
-          : locationMap.get(key) ?? "Локация",
+          ? noLocationLabel
+          : locationMap.get(key) ?? locationFallback,
       items: [...(groups.get(key) ?? [])].sort(compareDebtorRows),
     }))
     .filter((group) => group.items.length > 0);
@@ -86,6 +89,9 @@ function DebtorRow({
   showAmount,
   canPay,
   onPay,
+  unpaidLabel,
+  formatDate,
+  payLabel,
 }: {
   entry: ScheduleDebtorEntry;
   clientLabel: string;
@@ -94,6 +100,9 @@ function DebtorRow({
   showAmount: boolean;
   canPay: boolean;
   onPay: () => void;
+  unpaidLabel: string;
+  formatDate: (iso: string | Date) => string;
+  payLabel: string;
 }) {
   const metaParts = [disciplineName, teacherName].filter(Boolean);
 
@@ -103,11 +112,11 @@ function DebtorRow({
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className="text-sm font-semibold text-slate-800 truncate">{clientLabel}</span>
           <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-600">
-            не оплачен
+            {unpaidLabel}
           </span>
         </div>
         <p className="text-xs text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span>{formatDateRu(entry.date)}</span>
+          <span>{formatDate(entry.date)}</span>
           <span className="inline-flex items-center gap-1">
             <Clock className="w-3 h-3 shrink-0" />
             {entry.timeStart}–{entry.timeEnd}
@@ -128,7 +137,7 @@ function DebtorRow({
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-sans font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
           >
             <Coins className="w-3.5 h-3.5" />
-            Оплатить
+            {payLabel}
           </button>
         ) : null}
       </div>
@@ -143,6 +152,7 @@ export default function ScheduleDebtorsBlock({
   locationOrder,
   onPaymentSuccess,
 }: ScheduleDebtorsBlockProps) {
+  const { t, plural, formatDate } = useI18n();
   const toast = useToast();
   const { memberId } = useOrganization();
   const { role, can, isReadOnly } = usePermissions();
@@ -178,22 +188,27 @@ export default function ScheduleDebtorsBlock({
   }, [debtors, role, can, memberId, isReadOnly, disciplineMap, teamMap, locationMap]);
 
   const debtorGroups = useMemo(
-    () => groupDebtorsByLocation(visibleDebtors, locationOrder, locationMap),
-    [visibleDebtors, locationOrder, locationMap]
+    () =>
+      groupDebtorsByLocation(
+        visibleDebtors,
+        locationOrder,
+        locationMap,
+        t("utils.noLocation"),
+        t("schedule.form.location")
+      ),
+    [visibleDebtors, locationOrder, locationMap, t]
   );
 
   const subtitle =
-    role === "teacher"
-      ? "Неоплаченные уроки, которые вы проводите"
-      : "Все неоплаченные уроки организации";
+    role === "teacher" ? t("schedule.debtors.subtitleTeacher") : t("schedule.debtors.subtitleAll");
 
   if (isLoading) {
-    return <LoadingState label="Загрузка неоплаченных уроков..." />;
+    return <LoadingState label={t("schedule.debtors.loading")} />;
   }
 
   if (isError) {
     return (
-      <QueryErrorState message="Не удалось загрузить неоплаченные уроки" error={error} />
+      <QueryErrorState message={t("schedule.debtors.loadFailed")} error={error} />
     );
   }
 
@@ -205,10 +220,10 @@ export default function ScheduleDebtorsBlock({
   const totalAmount = showAmount
     ? visibleDebtors.reduce((sum, row) => sum + (row.entry.amount ?? 0), 0)
     : 0;
-  const countLabel = `${totalCount} ${pluralizeRu(totalCount, [
-    "урок",
-    "урока",
-    "уроков",
+  const countLabel = `${totalCount} ${plural(totalCount, [
+    t("common.lesson.one"),
+    t("common.lesson.few"),
+    t("common.lesson.many"),
   ])}`;
 
   const openPayModal = (entry: ScheduleDebtorEntry) => {
@@ -238,7 +253,7 @@ export default function ScheduleDebtorsBlock({
           <div className="flex items-center gap-2 min-w-0">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-slate-800">Неоплаченные персональные уроки</h3>
+              <h3 className="text-sm font-semibold text-slate-800">{t("schedule.debtors.title")}</h3>
               <p className="text-[11px] text-slate-500">{subtitle}</p>
             </div>
           </div>
@@ -276,6 +291,9 @@ export default function ScheduleDebtorsBlock({
                     showAmount={showAmount}
                     canPay={canPay}
                     onPay={() => openPayModal(entry)}
+                    unpaidLabel={t("common.unpaidShort")}
+                    formatDate={formatDate}
+                    payLabel={t("common.pay")}
                   />
                 ))}
               </ul>

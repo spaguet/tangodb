@@ -10,6 +10,7 @@ import { useTeamMembers, memberDisplayName, memberListLabel } from "../../hooks/
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
+import { useI18n } from "../../hooks/useI18n";
 import {
   canAddPersonalFromGrid,
   canClickEmptyCell,
@@ -38,6 +39,7 @@ type AddFlow =
   | null;
 
 export default function SchedulePageContainer() {
+  const { t } = useI18n();
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { role, can, isReadOnly } = usePermissions();
@@ -230,12 +232,14 @@ export default function SchedulePageContainer() {
           const disciplineName = lesson.disciplineId
             ? disciplineMap.get(lesson.disciplineId)
             : undefined;
-          parts.push(disciplineName ?? "Групповой урок");
+          parts.push(disciplineName ?? t("common.groupLesson"));
         }
       } else {
         const clientLabel = lesson.clientDisplay;
         parts.push(
-          clientLabel && clientLabel !== "Клиент не указан" ? clientLabel : "Персональный"
+          clientLabel && clientLabel !== t("schedule.lessonInfo.clientNotSpecified")
+            ? clientLabel
+            : t("common.personalLabel")
         );
         if (lesson.disciplineId) {
           const disciplineName = disciplineMap.get(lesson.disciplineId);
@@ -250,7 +254,7 @@ export default function SchedulePageContainer() {
 
       return parts.length > 0 ? parts.join(" · ") : undefined;
     },
-    [disciplineMap, teamMap]
+    [disciplineMap, teamMap, t]
   );
 
   const handleLessonClick = useCallback((lesson: DisplayLesson) => {
@@ -268,7 +272,7 @@ export default function SchedulePageContainer() {
       if (!canClickEmptyCell(role, can, isReadOnly, { locationId })) return;
 
       if (isPastDate(dateISO)) {
-        toast("Нельзя добавить занятие в прошлом", "error");
+        toast(t("schedule.error.pastAdd"), "error");
         return;
       }
 
@@ -288,17 +292,17 @@ export default function SchedulePageContainer() {
         setAddFlow({ mode: "personal", prefill });
       }
     },
-    [role, can, isReadOnly, canAddGroup, canAddPersonal, toast]
+    [role, can, isReadOnly, canAddGroup, canAddPersonal, toast, t]
   );
 
   const resolveLocationName = useCallback(
     (lesson: DisplayLesson | null) => {
       if (!lesson) return undefined;
       const locationKey = lesson.locationId ?? NO_LOCATION_KEY;
-      if (locationKey === NO_LOCATION_KEY) return "Без локации";
+      if (locationKey === NO_LOCATION_KEY) return t("utils.noLocation");
       return locationsQuery.locations.find((l) => l.id === locationKey)?.name;
     },
-    [locationsQuery.locations]
+    [locationsQuery.locations, t]
   );
 
   const selectedLessonMeta = useMemo(() => {
@@ -337,11 +341,11 @@ export default function SchedulePageContainer() {
     scheduleQuery.error ?? locationsQuery.error ?? disciplinesQuery.error ?? teamQuery.error;
 
   if (isLoading) {
-    return <LoadingState label="Загрузка расписания..." />;
+    return <LoadingState label={t("schedule.loading")} />;
   }
 
   if (isError) {
-    return <QueryErrorState message="Не удалось загрузить расписание" error={error} />;
+    return <QueryErrorState message={t("schedule.error.loadFailed")} error={error} />;
   }
 
   const noLocationLessons = lessonsByLocation.get(NO_LOCATION_KEY) ?? [];
@@ -353,7 +357,7 @@ export default function SchedulePageContainer() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2">
           <CalendarDays className="w-5 h-5 text-indigo-500 shrink-0" />
-          <h2 className="text-base font-semibold text-slate-800 tracking-tight">Расписание</h2>
+          <h2 className="text-base font-semibold text-slate-800 tracking-tight">{t("schedule.title")}</h2>
         </div>
         <ScheduleToolbar
           weekStart={selectedWeekStart}
@@ -367,7 +371,7 @@ export default function SchedulePageContainer() {
       {!hasLocations && noLocationLessons.length === 0 && !hasAnyLessons ? (
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs text-center py-20 text-slate-400 space-y-3">
           <CalendarDays className="w-8 h-8 mx-auto text-slate-300" />
-          <p className="text-sm">Расписание пусто</p>
+          <p className="text-sm">{t("schedule.empty")}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -390,7 +394,7 @@ export default function SchedulePageContainer() {
 
           {noLocationLessons.length > 0 && (
             <LocationScheduleSection
-              locationName="Без локации"
+              locationName={t("utils.noLocation")}
               weekStart={selectedWeekStart}
               lessons={noLocationLessons}
               getLessonTitle={getLessonTitle}

@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, ChevronDown } from "lucide-react";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { useI18n } from "../hooks/useI18n";
 
 export default function OrgSwitcher() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { memberships, organization, setActiveOrganization } = useOrganization();
   const [open, setOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export default function OrgSwitcher() {
         className="flex items-center gap-2 max-w-[220px] rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
       >
         <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-        <span className="truncate">{organization?.name ?? "Организация"}</span>
+        <span className="truncate">{organization?.name ?? t("orgSwitcher.defaultName")}</span>
         <ChevronDown className="w-3.5 h-3.5 shrink-0" />
       </button>
 
@@ -43,7 +45,7 @@ export default function OrgSwitcher() {
         <>
           <button
             type="button"
-            aria-label="Закрыть меню организаций"
+            aria-label={t("orgSwitcher.closeMenu")}
             className="fixed inset-0 z-40 cursor-default"
             onClick={() => setOpen(false)}
           />
@@ -74,7 +76,7 @@ export default function OrgSwitcher() {
               }}
               className="w-full px-3 py-2 text-left text-xs text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 cursor-pointer"
             >
-              Все организации...
+              {t("orgSwitcher.allOrgs")}
             </button>
           </div>
         </>

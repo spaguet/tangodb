@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useI18n } from "../../hooks/useI18n";
 import { selectFieldCls, selectLabelCls } from "./AppSelect";
 
 export interface GroupCheckboxOption {
@@ -22,12 +23,15 @@ export default function GroupCheckboxDropdown({
   options,
   selectedKeys,
   onChange,
-  placeholder = "Выберите группы...",
-  emptyMessage = "Нет доступных групп",
+  placeholder,
+  emptyMessage,
   disabled = false,
 }: GroupCheckboxDropdownProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const resolvedPlaceholder = placeholder ?? t("ui.groupSelect.placeholder");
+  const resolvedEmptyMessage = emptyMessage ?? t("ui.groupSelect.empty");
 
   useEffect(() => {
     if (!open) return;
@@ -46,10 +50,10 @@ export default function GroupCheckboxDropdown({
 
   const summary =
     selectedLabels.length === 0
-      ? placeholder
+      ? resolvedPlaceholder
       : selectedLabels.length <= 2
         ? selectedLabels.join(", ")
-        : `${selectedLabels.length} групп`;
+        : t("ui.groupSelect.selectedCount", { count: selectedLabels.length });
 
   const toggleKey = (key: string) => {
     if (selectedKeys.includes(key)) {
@@ -69,7 +73,7 @@ export default function GroupCheckboxDropdown({
           onClick={() => setOpen((prev) => !prev)}
           className={`${selectFieldCls} text-left ${selectedLabels.length === 0 ? "text-slate-400" : "text-slate-800"} disabled:opacity-60 disabled:cursor-not-allowed`}
         >
-          {options.length === 0 ? emptyMessage : summary}
+          {options.length === 0 ? resolvedEmptyMessage : summary}
         </button>
         <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
 

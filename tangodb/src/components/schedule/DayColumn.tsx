@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { dowShort, jsDayToIsoDow } from "../../lib/utils";
+import { useI18n } from "../../hooks/useI18n";
 import { timeToMinutes, toISODateLocal } from "../../lib/scheduleWeek";
 import type { DisplayLesson } from "../../types";
 import {
@@ -43,6 +44,7 @@ export default function DayColumn({
   onEmptyCellClick,
   canClickEmpty = false,
 }: DayColumnProps) {
+  const { t } = useI18n();
   const positioned = useMemo(() => layoutDayLessons(lessons), [lessons]);
   const gridHeight = gridHeightPx(rangeStartMin, rangeEndMin);
   const rowCount = (rangeEndMin - rangeStartMin) / SLOT_MINUTES;
@@ -102,7 +104,7 @@ export default function DayColumn({
           <button
             key={timeStart}
             type="button"
-            aria-label={`Добавить занятие ${timeStart}`}
+            aria-label={t("common.aria.addLesson", { time: timeStart })}
             onClick={() => onEmptyCellClick?.(dateISO, dayOfWeek, timeStart)}
             className="absolute left-0 right-0 z-0 hover:bg-indigo-50/60 transition-colors cursor-pointer border-0 bg-transparent p-0"
             style={{ top, height: ROW_HEIGHT_PX }}

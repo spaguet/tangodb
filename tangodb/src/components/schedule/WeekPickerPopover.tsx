@@ -1,15 +1,14 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { jsDayToIsoDow } from "../../lib/utils";
+import { getDowLabels, jsDayToIsoDow } from "../../lib/utils";
 import { getWeekRange, toISODateLocal } from "../../lib/scheduleWeek";
+import { useI18n } from "../../hooks/useI18n";
 
 interface WeekPickerPopoverProps {
   selectedWeekStart: Date;
   onSelect: (date: Date) => void;
   onClose: () => void;
 }
-
-const WEEKDAY_HEADERS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 function buildMonthGrid(viewMonth: Date): (Date | null)[] {
   const year = viewMonth.getFullYear();
@@ -45,9 +44,15 @@ export default function WeekPickerPopover({
   selectedWeekStart,
   onSelect,
 }: WeekPickerPopoverProps) {
+  const { t, locale, formatDate } = useI18n();
   const [viewMonth, setViewMonth] = useState(
     () => new Date(selectedWeekStart.getFullYear(), selectedWeekStart.getMonth(), 1)
   );
+
+  const weekdayHeaders = useMemo(() => {
+    const labels = getDowLabels(locale);
+    return [1, 2, 3, 4, 5, 6, 7].map((dow) => labels[dow]);
+  }, [locale]);
 
   const { weekEnd } = useMemo(
     () => getWeekRange(selectedWeekStart),
@@ -59,7 +64,7 @@ export default function WeekPickerPopover({
     return d;
   }, []);
 
-  const monthLabel = viewMonth.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
+  const monthLabel = formatDate(viewMonth, { month: "long", year: "numeric" });
   const cells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
 
   const shiftMonth = (delta: number) => {
@@ -72,7 +77,7 @@ export default function WeekPickerPopover({
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
-          aria-label="Предыдущий месяц"
+          aria-label={t("subscriptions.aria.prevMonth")}
           className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -81,7 +86,7 @@ export default function WeekPickerPopover({
         <button
           type="button"
           onClick={() => shiftMonth(1)}
-          aria-label="Следующий месяц"
+          aria-label={t("subscriptions.aria.nextMonth")}
           className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
@@ -89,7 +94,7 @@ export default function WeekPickerPopover({
       </div>
 
       <div className="grid grid-cols-7 gap-0.5 mb-1">
-        {WEEKDAY_HEADERS.map((d) => (
+        {weekdayHeaders.map((d) => (
           <div
             key={d}
             className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 py-1"

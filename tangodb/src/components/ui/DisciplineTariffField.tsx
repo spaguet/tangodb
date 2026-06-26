@@ -1,4 +1,5 @@
 import AppSelect from "./AppSelect";
+import { useI18n } from "../../hooks/useI18n";
 import type { Discipline } from "../../types";
 
 const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
@@ -18,6 +19,7 @@ export default function DisciplineTariffField({
   onDisciplineChange,
   disciplines,
 }: DisciplineTariffFieldProps) {
+  const { t } = useI18n();
   return (
     <div className="space-y-2">
       <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
@@ -27,22 +29,22 @@ export default function DisciplineTariffField({
           onChange={(e) => onBindChange(e.target.checked)}
           className={`${checkboxCls} mt-0.5`}
         />
-        <span className="text-xs leading-snug">Привязать тариф к дисциплине</span>
+        <span className="text-xs leading-snug">{t("ui.tariff.bindDiscipline")}</span>
       </label>
 
       {bindToDiscipline && (
         <div className="animate-fade-in">
           {disciplines.length === 0 ? (
             <p className="text-xs text-slate-400 font-sans leading-relaxed">
-              Дисциплины не добавлены. Создайте их в разделе «Настройки CRM» → «Дисциплины».
+              {t("ui.tariff.noDisciplinesHint")}
             </p>
           ) : (
             <AppSelect
-              label="Дисциплина"
+              label={t("common.discipline")}
               value={disciplineId}
               onChange={(e) => onDisciplineChange(e.target.value)}
             >
-              <option value="">Выберите дисциплину...</option>
+              <option value="">{t("ui.tariff.selectDiscipline")}</option>
               {disciplines.map((disc) => (
                 <option key={disc.id} value={disc.id}>
                   {disc.name}

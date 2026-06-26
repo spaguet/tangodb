@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from "react";
 import { reportClientError } from "../../lib/reportClientError";
+import { useI18n } from "../../hooks/useI18n";
 
 interface Props {
   children: ReactNode;
@@ -9,6 +10,17 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
+}
+
+function DefaultErrorFallback({ error }: { error?: Error }) {
+  const { t } = useI18n();
+
+  return (
+    <div className="p-6 text-center text-rose-600">
+      <p className="font-semibold">{t("common.error.boundaryTitle")}</p>
+      <p className="text-xs text-slate-500 mt-1">{error?.message}</p>
+    </div>
+  );
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -29,12 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        this.props.fallback ?? (
-          <div className="p-6 text-center text-rose-600">
-            <p className="font-semibold">Произошла ошибка</p>
-            <p className="text-xs text-slate-500 mt-1">{this.state.error?.message}</p>
-          </div>
-        )
+        this.props.fallback ?? <DefaultErrorFallback error={this.state.error} />
       );
     }
     return this.props.children;

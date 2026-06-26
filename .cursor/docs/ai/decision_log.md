@@ -12,6 +12,14 @@
 
 ## Записи
 
+### S10 — Lightweight typed i18n без react-i18next (2026-06-26)
+
+- **Дата:** 2026-06-26
+- **Решение:** Собственный модуль `lib/i18n` с typed `I18nKey`, словарями `ru`/`en`/`vi`, функцией `t()` и хуками `useI18n` / `useGuestI18n`. Nav/settings helpers в `navHelpers.ts`. Locale из `organization_settings.locale`; guest fallback через `localStorage`.
+- **Контекст:** Промт 17 (S10) — полная `en-US` локализация CRM после заморозки русских SaaS-текстов.
+- **Альтернативы:** react-i18next / i18next — отклонено (тяжёлая зависимость для ~500 ключей); runtime JSON bundles — отклонено (хуже type-safety).
+- **Почему так:** TypeScript проверяет полноту словарей; минимальный runtime; согласовано с точечным i18n team/auth из S8.
+
 ### S9 — Owner emergency recovery flow (2026-06-26)
 
 - **Дата:** 2026-06-26

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { jsDayToIsoDow, formatDateRu } from "../../lib/utils";
+import { jsDayToIsoDow } from "../../lib/utils";
 import { toISODateLocal } from "../../lib/scheduleWeek";
+import { useI18n } from "../../hooks/useI18n";
 import { fieldCls } from "./AppSelect";
 
 interface DatePickerFieldProps {
@@ -15,8 +16,6 @@ interface DatePickerFieldProps {
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 const triggerCls = `${fieldCls} flex items-center gap-2 hover:border-indigo-300 text-left cursor-pointer`;
-
-const WEEKDAY_HEADERS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 function buildMonthGrid(viewMonth: Date): (Date | null)[] {
   const year = viewMonth.getFullYear();
@@ -51,6 +50,7 @@ export default function DatePickerField({
   required,
   className,
 }: DatePickerFieldProps) {
+  const { t, locale, formatDate } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +70,16 @@ export default function DatePickerField({
   }, []);
 
   const cells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
-  const monthLabel = viewMonth.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
+  const monthLabel = viewMonth.toLocaleDateString(locale, { month: "long", year: "numeric" });
+  const weekdayHeaders = [
+    t("utils.dow.short.mon"),
+    t("utils.dow.short.tue"),
+    t("utils.dow.short.wed"),
+    t("utils.dow.short.thu"),
+    t("utils.dow.short.fri"),
+    t("utils.dow.short.sat"),
+    t("utils.dow.short.sun"),
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -118,20 +127,20 @@ export default function DatePickerField({
         className={`${triggerCls} ${!value ? "text-slate-400" : "text-slate-700"}`}
       >
         <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
-        <span>{value ? formatDateRu(value) : "Выберите дату"}</span>
+        <span>{value ? formatDate(value, { day: "numeric", month: "long", year: "numeric" }) : t("ui.datePicker.selectDate")}</span>
       </button>
 
       {open && (
         <div
           role="dialog"
-          aria-label="Выбор даты"
+          aria-label={t("common.selectDate")}
           className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-slate-200 bg-white shadow-lg p-3"
         >
           <div className="flex items-center justify-between mb-3">
             <button
               type="button"
               onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-              aria-label="Предыдущий месяц"
+              aria-label={t("ui.datePicker.prevMonth")}
               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -140,7 +149,7 @@ export default function DatePickerField({
             <button
               type="button"
               onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-              aria-label="Следующий месяц"
+              aria-label={t("ui.datePicker.nextMonth")}
               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
@@ -148,7 +157,7 @@ export default function DatePickerField({
           </div>
 
           <div className="grid grid-cols-7 gap-0.5 mb-1">
-            {WEEKDAY_HEADERS.map((d) => (
+            {weekdayHeaders.map((d) => (
               <div
                 key={d}
                 className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 py-1"

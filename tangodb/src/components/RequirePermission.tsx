@@ -1,5 +1,6 @@
 import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 import { useCan } from "../hooks/usePermissions";
+import { useI18n } from "../hooks/useI18n";
 import type { PermissionAction, PermissionContext } from "../lib/permissions";
 
 interface RequirePermissionProps {
@@ -18,6 +19,7 @@ export default function RequirePermission({
   mode = "hide",
 }: RequirePermissionProps) {
   const allowed = useCan(action, context);
+  const { t } = useI18n();
 
   if (allowed) return <>{children}</>;
 
@@ -25,7 +27,7 @@ export default function RequirePermission({
     const element = children as ReactElement<{ disabled?: boolean; title?: string }>;
     return cloneElement(element, {
       disabled: true,
-      title: element.props.title ?? "Недостаточно прав",
+      title: element.props.title ?? t("permission.insufficient"),
     });
   }
 

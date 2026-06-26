@@ -11,6 +11,8 @@ import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import { descriptionFieldCls, fieldCls as inputCls } from "./ui/AppSelect";
+import { useI18n } from "../hooks/useI18n";
+import { resolveMutationError } from "../lib/resolveMutationError";
 import type { ToastType } from "../App";
 import type { Discipline } from "../types";
 
@@ -21,6 +23,7 @@ interface DisciplinesPanelProps {
 }
 
 export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
+  const { t } = useI18n();
   const { data: disciplines = [], isLoading, isError, error } = useDisciplines();
   const updateDiscipline = useUpdateDiscipline();
   const deleteDiscipline = useDeleteDiscipline();
@@ -53,9 +56,9 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
       description: editDescription,
     });
     if (!res.success) {
-      toast(res.error || "Не удалось сохранить", "error");
+      toast(resolveMutationError(res.error, "disciplines.error.saveFailed", t), "error");
     } else {
-      toast("Дисциплина обновлена", "success");
+      toast(t("disciplines.success.updated"), "success");
       setEditing(null);
     }
   };
@@ -64,14 +67,14 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
     if (!deleteTarget) return;
     const res = await deleteDiscipline.mutateAsync(deleteTarget.id);
     if (!res.success) {
-      toast(res.error || "Не удалось удалить", "error");
+      toast(resolveMutationError(res.error, "disciplines.error.deleteFailed", t), "error");
     } else {
-      toast(`Дисциплина «${deleteTarget.name}» удалена`, "success");
+      toast(t("disciplines.success.deleted", { name: deleteTarget.name }), "success");
       setDeleteTarget(null);
     }
   };
 
-  if (isLoading) return <LoadingState label="Загрузка дисциплин..." />;
+  if (isLoading) return <LoadingState label={t("disciplines.loading")} />;
   if (isError) return <QueryErrorState error={error} />;
 
   return (
@@ -80,7 +83,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
         <div className="flex items-center justify-between border-b border-slate-100 pb-2">
           <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-indigo-500" />
-            Дисциплины
+            {t("disciplines.title")}
           </h2>
           <span className="text-[10px] bg-slate-100 text-slate-500 font-sans px-2 py-0.5 rounded-full font-semibold">
             {disciplines.length}
@@ -91,7 +94,8 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
           <div className="text-center py-20 text-slate-400 space-y-3">
             <BookOpen className="w-8 h-8 mx-auto text-slate-300" />
             <p className="text-sm">
-              Дисциплин пока нет — добавьте при оформлении продажи или в расписании.
+              {t("disciplines.empty")}
+              {t("disciplines.emptyHint")}
             </p>
           </div>
         ) : (
@@ -106,7 +110,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                   {d.description ? (
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{d.description}</p>
                   ) : (
-                    <p className="text-[11px] text-slate-300 italic mt-0.5">без описания</p>
+                    <p className="text-[11px] text-slate-300 italic mt-0.5">{t("disciplines.noDescription")}</p>
                   )}
                 </div>
                 <RequirePermission action="disciplines.write" context={{ disciplineId: String(d.id) }}>
@@ -115,8 +119,8 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                     type="button"
                     onClick={() => startEdit(d)}
                     className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-                    title="Редактировать"
-                    aria-label={`Редактировать ${d.name}`}
+                    title={t("common.edit")}
+                    aria-label={`${t("common.edit")} ${d.name}`}
                   >
                     <Edit className="w-3.5 h-3.5" />
                   </button>
@@ -124,8 +128,8 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                     type="button"
                     onClick={() => setDeleteTarget(d)}
                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                    title="Удалить"
-                    aria-label={`Удалить ${d.name}`}
+                    title={t("common.delete")}
+                    aria-label={`${t("common.delete")} ${d.name}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -155,11 +159,11 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
               className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Редактировать дисциплину</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("disciplines.editTitle")}</h3>
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
-                  aria-label="Закрыть"
+                  aria-label={t("common.close")}
                   className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -168,11 +172,11 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
 
               <div className="panel-form-stack font-sans">
                 <div className="field-stack">
-                  <label className={labelCls}>Название</label>
+                  <label className={labelCls}>{t("common.name")}</label>
                   <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputCls} />
                 </div>
                 <div className="field-stack">
-                  <label className={labelCls}>Описание</label>
+                  <label className={labelCls}>{t("common.description")}</label>
                   <textarea
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
@@ -189,14 +193,14 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                   disabled={updateDiscipline.isPending}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
-                  {updateDiscipline.isPending ? "..." : "Сохранить"}
+                  {updateDiscipline.isPending ? t("common.saving") : t("common.save")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
                 >
-                  Отмена
+                  {t("common.cancel")}
                 </button>
               </div>
             </motion.div>
@@ -206,19 +210,17 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        title="Удалить дисциплину?"
+        title={t("disciplines.confirm.deleteTitle")}
         description={
           deleteTarget ? (
             <>
-              Дисциплина{" "}
-              <strong className="font-semibold text-slate-800">{deleteTarget.name}</strong> будет удалена. Если она
-              используется в расписании или продажах, удаление не сработает.
+              {t("disciplines.confirm.deleteBody", { name: deleteTarget.name })}
             </>
           ) : (
             ""
           )
         }
-        confirmLabel="Удалить"
+        confirmLabel={t("common.delete")}
         pending={deleteDiscipline.isPending}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}

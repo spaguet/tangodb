@@ -66,15 +66,15 @@ export function useAddLocation() {
   return useMutation({
     mutationFn: async ({ name, address }: { name: string; address: string }) => {
       if (!organizationId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const trimmed = name.trim();
-      if (!trimmed) return { success: false as const, error: "Укажите название локации" };
+      if (!trimmed) return { success: false as const, error: "hooks.error.locationNameRequired" };
 
       const cached = queryClient.getQueryData<Location[]>(withOrgId(locationsQueryKey)) ?? [];
       if (cached.some((l) => l.name.toLowerCase() === trimmed.toLowerCase())) {
-        return { success: false as const, error: "Такая локация уже есть" };
+        return { success: false as const, error: "hooks.error.locationDuplicate" };
       }
 
       const { data, error } = await supabase
@@ -110,7 +110,7 @@ export function useUpdateLocation() {
       address: string;
     }) => {
       const trimmed = name.trim();
-      if (!trimmed) return { success: false as const, error: "Укажите название локации" };
+      if (!trimmed) return { success: false as const, error: "hooks.error.locationNameRequired" };
 
       const { error } = await supabase
         .from("locations")
@@ -119,7 +119,7 @@ export function useUpdateLocation() {
 
       if (error) {
         if (error.code === "23505") {
-          return { success: false as const, error: "Локация с таким названием уже существует" };
+          return { success: false as const, error: "hooks.error.locationDuplicateName" };
         }
         return { success: false as const, error: error.message };
       }
@@ -141,7 +141,7 @@ export function useDeleteLocation() {
         if (error.code === "23503") {
           return {
             success: false as const,
-            error: "Локация используется в расписании или классах",
+            error: "hooks.error.locationInUse",
           };
         }
         return { success: false as const, error: error.message };

@@ -24,8 +24,8 @@ import {
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
 import {
-  getConnectionBlockReason,
-  getMutationBlockedMessage,
+  translateConnectionBlockReason,
+  translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
@@ -38,16 +38,16 @@ import {
 import { usePrices } from "../hooks/usePrices";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import {
-  dowShort,
   formatCurrency,
-  formatDayMonthRu,
-  formatMonthTitleRu,
+  formatMonthTitle,
+  getDowLabels,
   getSubscriptionDaysLeft,
   getSubscriptionTariffLabel,
   isMonthlyUnlimitedSubscription,
   jsDayToIsoDow,
-  pluralizeRu,
+  shiftMonth,
 } from "../lib/utils";
+import { useI18n } from "../hooks/useI18n";
 import { useUIStore } from "../store/ui";
 import QueryErrorState from "./ui/QueryErrorState";
 import LoadingState from "./ui/LoadingState";
@@ -59,36 +59,45 @@ interface AttendancePanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
 
-const ATTENDANCE_MARK_HINTS = [
-  { label: "Пришёл", hint: "Списать урок с абонемента" },
-  { label: "Не пришёл", hint: "Списать урок с абонемента" },
-  { label: "Фриз", hint: "Не списывать урок с абонемента" },
-  { label: "Уважит.", hint: "Не списывать урок с абонемента" },
-] as const;
+const ATTENDANCE_MARK_KEYS = [
+  { labelKey: "common.present" as const, hintKey: "attendance.legend.presentHint" as const, status: "present" as const },
+  { labelKey: "common.absent" as const, hintKey: "attendance.legend.absentHint" as const, status: "absent" as const },
+  { labelKey: "common.freeze" as const, hintKey: "attendance.legend.freezeHint" as const, status: "freeze" as const },
+  { labelKey: "common.excusedShort" as const, hintKey: "attendance.legend.excusedHint" as const, status: "excused" as const },
+];
 
-function attendanceStatusLabel(status: "present" | "absent" | "freeze" | "excused"): string {
-  if (status === "present") return "присутствие";
-  if (status === "absent") return "отсутствие";
-  if (status === "freeze") return "заморозка";
-  return "уважительная причина";
+function attendanceStatusLabel(
+  status: "present" | "absent" | "freeze" | "excused",
+  t: ReturnType<typeof useI18n>["t"]
+): string {
+  if (status === "present") return t("attendance.status.present");
+  if (status === "absent") return t("attendance.status.absent");
+  if (status === "freeze") return t("attendance.status.freeze");
+  return t("attendance.status.excused");
 }
 
-function AttendanceMarkLegend({ showFreeze }: { showFreeze: boolean }) {
+function AttendanceMarkLegend({
+  showFreeze,
+  t,
+}: {
+  showFreeze: boolean;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
   const items = showFreeze
-    ? ATTENDANCE_MARK_HINTS
-    : ATTENDANCE_MARK_HINTS.filter((item) => item.label !== "Фриз");
+    ? ATTENDANCE_MARK_KEYS
+    : ATTENDANCE_MARK_KEYS.filter((item) => item.status !== "freeze");
 
   return (
     <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 space-y-1.5 mb-4">
       <p className="text-[10px] font-sans font-semibold uppercase tracking-wider text-slate-500">
-        Отметки посещаемости
+        {t("attendance.legend.title")}
       </p>
       <div className="space-y-1">
         {items.map((item) => (
-          <p key={item.label} className="text-[11px] text-slate-500 font-sans leading-snug">
-            <span className="font-semibold text-slate-700">{item.label}</span>
+          <p key={item.status} className="text-[11px] text-slate-500 font-sans leading-snug">
+            <span className="font-semibold text-slate-700">{t(item.labelKey)}</span>
             {" — "}
-            {item.hint}
+            {t(item.hintKey)}
           </p>
         ))}
       </div>
@@ -109,8 +118,6 @@ type DayLessonEntry =
     }
   | { kind: "personal"; key: string; start: string; lesson: PersonalLesson; label: string };
 
-const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-
 function todayDateStr(): string {
   const now = new Date();
   const y = now.getFullYear();
@@ -123,21 +130,24 @@ function isDateMarkable(dateStr: string): boolean {
   return dateStr <= todayDateStr();
 }
 
-function formatAttendanceDate(dateStr: string): string {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  if (!y || !m || !d) return dateStr;
-  const date = new Date(y, m - 1, d);
-  const month = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(date);
-  return `${d} ${month} (${dowShort(jsDayToIsoDow(date.getDay()))})`;
-}
-
-function shiftMonth(yearMonth: string, delta: number): string {
-  const [y, m] = yearMonth.split("-").map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
 export default function AttendancePanel({ toast }: AttendancePanelProps) {
+  const { t, locale, plural, formatDate } = useI18n();
+
+  const formatAttendanceDate = (dateStr: string): string => {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    if (!y || !m || !d) return dateStr;
+    const date = new Date(y, m - 1, d);
+    const dowLabels = getDowLabels(locale);
+    const monthDay = formatDate(date, { day: "numeric", month: "long" });
+    const dow = dowLabels[jsDayToIsoDow(date.getDay())] ?? "";
+    return `${monthDay} (${dow})`;
+  };
+
+  const weekdayLabels = useMemo(() => {
+    const labels = getDowLabels(locale);
+    return [1, 2, 3, 4, 5, 6, 7].map((dow) => labels[dow]);
+  }, [locale]);
+
   const queryClient = useQueryClient();
   const { connectionState } = useOnlineStatus();
   const selectedMonth = useUIStore((s) => s.selectedMonth);
@@ -239,7 +249,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         scheduleGroupId: slot.scheduleGroupId ?? null,
         label: slot.groupName
           ? `${slot.groupName} · ${slot.time} – ${slot.timeEnd}`
-          : `Групповой урок · ${slot.time} – ${slot.timeEnd}`,
+          : t("attendance.groupLessonTime", { time: slot.time, timeEnd: slot.timeEnd }),
       })),
       ...personalForDay.map((lesson) => ({
         kind: "personal" as const,
@@ -250,7 +260,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       })),
     ];
     return entries.sort((a, b) => a.start.localeCompare(b.start));
-  }, [groupLessonsForDay, personalForDay]);
+  }, [groupLessonsForDay, personalForDay, t]);
 
   const subsOptions = useMemo(() => {
     if (!selectedLesson) return undefined;
@@ -347,11 +357,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     student: SubForDate
   ) => {
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
     if (!canMarkAttendance) {
-      toast("Отметки доступны только за прошедшие и текущий день.", "error");
+      toast(t("attendance.error.pastOnly"), "error");
       return;
     }
 
@@ -372,7 +382,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       selectedLesson?.kind === "group" ? selectedLesson.scheduleGroupId ?? null : null;
 
     if (!scheduleGroupId) {
-      toast("Не удалось определить групповой урок.", "error");
+      toast(t("attendance.error.groupUnknown"), "error");
       return;
     }
 
@@ -384,12 +394,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       scheduleGroupId,
     });
     if (!res.success) {
-      toast(res.error || "Не удалось сохранить отметку", "error");
+      toast(res.error || t("common.saveMarkFailed"), "error");
     } else {
-      toast(
-        `Отмечено: ${attendanceStatusLabel(status)}`,
-        "success"
-      );
+      toast(t("attendance.success.marked", { status: attendanceStatusLabel(status, t) }), "success");
     }
   };
 
@@ -398,26 +405,26 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     status: "present" | "absent" | "excused"
   ) => {
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
     if (!canMarkAttendance) {
-      toast("Отметки доступны только за прошедшие и текущий день.", "error");
+      toast(t("attendance.error.pastOnly"), "error");
       return;
     }
 
     const res = await markPersonalAttendance.mutateAsync({ lessonId, status });
     if (!res.success) {
-      toast(res.error || "Не удалось сохранить отметку", "error");
+      toast(res.error || t("common.saveMarkFailed"), "error");
     } else {
-      toast(`Отмечено: ${attendanceStatusLabel(status)}`, "success");
+      toast(t("attendance.success.marked", { status: attendanceStatusLabel(status, t) }), "success");
     }
   };
 
   const handleRefresh = () => {
     void queryClient.invalidateQueries({ queryKey: attendanceQueryKey });
     void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
-    toast("Списки посещений обновлены", "info");
+    toast(t("attendance.info.refreshed"), "info");
   };
 
   const renderAttendanceRow = (st: SubForDate, showExtendedMarks: boolean) => {
@@ -427,7 +434,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     const fullname = [st.client1, st.client2, st.client3].filter(Boolean).join(" & ");
     const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
     const tariffLabel = getSubscriptionTariffLabel(st, prices);
-    const connectionTitle = getConnectionBlockReason(connectionState);
+    const connectionTitle = translateConnectionBlockReason(connectionState, t);
     const showFreeze = showExtendedMarks && !isMonthly;
     const showExcused = showExtendedMarks && !isMonthly;
 
@@ -441,13 +448,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <div className="space-y-0.5">
             <h4 className="text-sm font-semibold text-slate-800 leading-tight">{fullname}</h4>
             <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400 font-sans">
-              <span>{isMonthly ? "Осталось:" : "Баланс:"}</span>
+              <span>{isMonthly ? t("attendance.balance.remaining") : t("attendance.balance.label")}</span>
               <strong className={`font-semibold ${hasLowCredits ? "text-rose-600" : "text-slate-700"}`}>
                 {isMonthly
-                  ? `${daysLeft ?? 0} ${pluralizeRu(daysLeft ?? 0, ["день", "дня", "дней"])}`
-                  : `${st.lessonsLeft} из ${st.lessonsTotal}`}
+                  ? `${daysLeft ?? 0} ${plural(daysLeft ?? 0, [t("common.day.one"), t("common.day.few"), t("common.day.many")])}`
+                  : `${st.lessonsLeft} ${t("common.of")} ${st.lessonsTotal}`}
               </strong>
-              <span>· с {st.activationDate}</span>
+              <span>· {t("common.from")} {st.activationDate}</span>
             </div>
           </div>
         </div>
@@ -457,7 +464,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             type="button"
             onClick={() => handleMark(st.subId, "present", st)}
             disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
-            title={connectionTitle ?? (isMonthly ? "Пришёл" : "Пришёл — Списать урок с абонемента")}
+            title={
+              connectionTitle ??
+              (isMonthly ? t("common.present") : t("attendance.titlePresentDeduct"))
+            }
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "present"
                 ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
@@ -465,14 +475,17 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             }`}
           >
             <Check className="w-3.5 h-3.5" />
-            Пришёл
+            {t("common.present")}
           </button>
 
           <button
             type="button"
             onClick={() => handleMark(st.subId, "absent", st)}
             disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
-            title={connectionTitle ?? (isMonthly ? "Не пришёл" : "Не пришёл — Списать урок с абонемента")}
+            title={
+              connectionTitle ??
+              (isMonthly ? t("common.absent") : t("attendance.titleAbsentDeduct"))
+            }
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "absent"
                 ? "bg-rose-600 border-rose-600 text-white shadow-xs"
@@ -480,7 +493,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             }`}
           >
             <X className="w-3.5 h-3.5" />
-            Не пришёл
+            {t("common.absent")}
           </button>
 
           {showFreeze && (
@@ -491,8 +504,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               title={
                 connectionTitle ??
                 (freezeLocked
-                  ? "Заморозка доступна один раз для абонементов на 8 уроков"
-                  : "Фриз — Не списывать урок с абонемента")
+                  ? t("attendance.titleHintFreezeOnce")
+                  : t("attendance.titleFreezeNoDeduct"))
               }
               className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border disabled:opacity-60 ${
                 st.currentStatus === "freeze"
@@ -503,7 +516,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               }`}
             >
               <Snowflake className="w-3.5 h-3.5" />
-              Фриз
+              {t("common.freeze")}
             </button>
           )}
 
@@ -512,7 +525,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               type="button"
               onClick={() => handleMark(st.subId, "excused", st)}
             disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
-            title={connectionTitle ?? "Уважит. — Не списывать урок с абонемента"}
+            title={connectionTitle ?? t("attendance.titleExcusedNoDeduct")}
             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "excused"
                 ? "bg-amber-600 border-amber-600 text-white shadow-xs"
@@ -520,7 +533,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            Уважит.
+            {t("common.excusedShort")}
           </button>
           )}
         </div>
@@ -530,8 +543,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const modalTitle =
     selectedLesson?.kind === "group"
-      ? `Групповой урок · ${selectedLesson.time} – ${selectedLesson.timeEnd}`
-      : selectedLesson?.label ?? "Урок";
+      ? t("attendance.modalGroupTitle", {
+          time: selectedLesson.time,
+          timeEnd: selectedLesson.timeEnd,
+        })
+      : selectedLesson?.label ?? t("common.lessonDefault");
 
   const activePersonalLesson =
     selectedLesson?.kind === "personal"
@@ -568,23 +584,23 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       <div id="panel-attendance" className="panel-page-stack">
         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
           <div className="panel-card-stack">
-            <h2 className="text-base font-semibold tracking-tight text-slate-800">Журнал посещений</h2>
-            <p className="text-xs text-slate-400">Выберите локацию, чтобы открыть расписание и журнал посещений.</p>
+            <h2 className="text-base font-semibold tracking-tight text-slate-800">{t("attendance.title")}</h2>
+            <p className="text-xs text-slate-400">{t("attendance.hint.selectLocation")}</p>
           </div>
 
           {isLoading ? (
-            <LoadingState label="Загрузка локаций..." />
+            <LoadingState label={t("attendance.loadingLocations")} />
           ) : locations.length === 0 ? (
             <div className="text-center py-16 text-slate-400 space-y-3">
               <MapPin className="w-8 h-8 mx-auto text-slate-300" />
-              <p className="text-sm">Локаций пока нет.</p>
+              <p className="text-sm">{t("attendance.noLocations")}</p>
               <p className="text-xs font-sans">
-                Добавьте залы в{" "}
+                {t("attendance.noLocationsHint")}{" "}
                 <Link
                   to="/settings/locations"
                   className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline"
                 >
-                  Настройки · Локации
+                  {t("attendance.settingsLocations")}
                 </Link>
                 .
               </p>
@@ -603,7 +619,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     {loc.address ? (
                       <p className="text-[11px] text-slate-400 mt-0.5 truncate">{loc.address}</p>
                     ) : (
-                      <p className="text-[11px] text-slate-300 italic mt-0.5">адрес не указан</p>
+                      <p className="text-[11px] text-slate-300 italic mt-0.5">{t("common.noAddress")}</p>
                     )}
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
@@ -619,7 +635,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   if (isLoading) {
     return (
       <div id="panel-attendance" className="panel-page-stack">
-        <LoadingState label="Загрузка журнала посещений..." />
+        <LoadingState label={t("attendance.loading")} />
       </div>
     );
   }
@@ -639,10 +655,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                Все локации
+                {t("attendance.allLocations")}
               </button>
               <h2 className="text-base font-semibold tracking-tight text-slate-800">
-                Журнал посещений
+                {t("attendance.title")}
               </h2>
               {selectedLocation && (
                 <p className="text-xs text-slate-500 font-sans flex items-center gap-1.5">
@@ -656,11 +672,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               className="shrink-0 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Обновить
+              {t("common.refresh")}
             </button>
           </div>
           <p className="w-full text-xs text-slate-400">
-            Выберите день, затем урок — откроется журнал с абонементами.
+            {t("attendance.hint.selectDay")}
           </p>
         </div>
 
@@ -670,23 +686,23 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               type="button"
               onClick={() => handleMonthNav(-1)}
               className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-              aria-label="Предыдущий месяц"
+              aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm font-semibold text-slate-800">{formatMonthTitleRu(selectedMonth)}</span>
+            <span className="text-sm font-semibold text-slate-800">{formatMonthTitle(selectedMonth, locale)}</span>
             <button
               type="button"
               onClick={() => handleMonthNav(1)}
               className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-              aria-label="Следующий месяц"
+              aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
           <div className="grid grid-cols-7 bg-slate-50/50">
-            {WEEKDAY_LABELS.map((label) => (
+            {weekdayLabels.map((label) => (
               <div key={label} className="text-center text-[10px] font-sans font-semibold text-slate-400 uppercase py-2">
                 {label}
               </div>
@@ -725,10 +741,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   </span>
                   <div className="flex items-center gap-0.5 min-h-[6px]">
                     {cell.hasGroup && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" title="Групповой урок" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" title={t("common.groupLesson")} />
                     )}
                     {cell.hasPersonal && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-700" title="Персональный урок" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-700" title={t("common.personalLesson")} />
                     )}
                   </div>
                 </button>
@@ -738,18 +754,18 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
           <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center gap-4 text-[10px] text-slate-500 font-sans">
             <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-indigo-500" /> групповой
+              <span className="w-2 h-2 rounded-full bg-indigo-500" /> {t("common.groupShort")}
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-indigo-700" /> персональный
+              <span className="w-2 h-2 rounded-full bg-indigo-700" /> {t("common.personalShort")}
             </span>
           </div>
         </div>
 
         <p className="text-xs text-slate-500 font-sans leading-relaxed">
-          Изменить расписание можно в{" "}
+          {t("attendance.editSchedule")}{" "}
           <Link to="/schedule" className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline">
-            Расписание
+            {t("attendance.scheduleLink")}
           </Link>
           .
         </p>
@@ -758,17 +774,17 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <div className="panel-card-stack">
             <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
               <p className="text-xs font-semibold text-slate-700">{formatAttendanceDate(selectedDate)}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5 font-sans">Расписание выбранного дня</p>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-sans">{t("attendance.daySchedule")}</p>
               {!canMarkAttendance && (
                 <p className="text-[10px] text-amber-600 mt-1 font-sans">
-                  Отметки посещаемости доступны только за прошедшие и текущий день.
+                  {t("attendance.error.pastOnly")}
                 </p>
               )}
             </div>
 
             {dayScheduleEntries.length > 0 ? (
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Журнал уроков</h3>
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">{t("attendance.lessonJournal")}</h3>
                 {dayScheduleEntries.map((entry) => (
                   <button
                     key={entry.key}
@@ -786,8 +802,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                           entry.kind === "group" ? "text-indigo-600" : "text-indigo-700"
                         }`}
                       >
-                        {entry.kind === "group" ? "Групповой" : "Персональный"}
-                        {entry.kind === "personal" && entry.lesson.subscriptionId ? " · абонемент" : ""}
+                        {entry.kind === "group" ? t("common.groupLabel") : t("common.personalLabel")}
+                        {entry.kind === "personal" && entry.lesson.subscriptionId ? t("common.packageSuffix") : ""}
                       </p>
                       <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">{entry.label}</p>
                     </div>
@@ -796,7 +812,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 font-sans text-center py-6">На этот день нет уроков в расписании.</p>
+              <p className="text-xs text-slate-400 font-sans text-center py-6">{t("attendance.noLessonsDay")}</p>
             )}
           </div>
         )}
@@ -822,12 +838,12 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 shrink-0">
                 <div>
                   <h3 className="text-base font-semibold tracking-tight text-slate-900">{modalTitle}</h3>
-                  <p className="text-xs text-slate-400 mt-0.5 font-sans">{formatDayMonthRu(selectedDate)}</p>
+                  <p className="text-xs text-slate-400 mt-0.5 font-sans">{formatDate(selectedDate)}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedLesson(null)}
-                  aria-label="Закрыть"
+                  aria-label={t("common.close")}
                   className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -842,14 +858,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-slate-800">{activePersonalLesson.clientDisplay}</p>
                       {isPersonalPackageView ? (
-                        <p className="text-xs text-slate-500 font-sans">Оплачено пакетом</p>
+                        <p className="text-xs text-slate-500 font-sans">{t("common.packagePaid")}</p>
                       ) : (
                         <>
                           <p className="text-xs text-slate-500 font-sans">
-                            Разовый урок · {formatCurrency(activePersonalLesson.price)}
+                            {t("common.singleLesson")} · {formatCurrency(activePersonalLesson.price)}
                           </p>
                           <p className="text-xs font-sans">
-                            Оплата:{" "}
+                            {t("common.paymentLabel")}:{" "}
                             <span
                               className={
                                 activePersonalLesson.paid === "yes"
@@ -857,7 +873,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                                   : "text-rose-600 font-semibold"
                               }
                             >
-                              {activePersonalLesson.paid === "yes" ? "оплачен" : "не оплачен"}
+                              {activePersonalLesson.paid === "yes"
+                                ? t("common.paidStatus")
+                                : t("common.unpaidStatus")}
                             </span>
                           </p>
                         </>
@@ -866,17 +884,17 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
                     {!canMarkAttendance ? (
                       <p className="text-[11px] text-amber-600 font-sans">
-                        Отметки посещаемости доступны только за прошедшие и текущий день.
+                        {t("attendance.error.pastOnly")}
                       </p>
                     ) : (
                       <>
-                        <AttendanceMarkLegend showFreeze={false} />
+                        <AttendanceMarkLegend showFreeze={false} t={t} />
                         <div className="flex flex-wrap items-center gap-2 pt-1">
                           <button
                             type="button"
                             onClick={() => handleMarkPersonal(activePersonalLesson.id, "present")}
                             disabled={connectionState !== "online" || markPersonalAttendance.isPending}
-                            title={getConnectionBlockReason(connectionState) ?? "Пришёл — Списать урок с абонемента"}
+                            title={translateConnectionBlockReason(connectionState, t) ?? t("attendance.titlePresentDeduct")}
                             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                               activePersonalLesson.attendanceStatus === "present"
                                 ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
@@ -884,13 +902,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             }`}
                           >
                             <Check className="w-3.5 h-3.5" />
-                            Пришёл
+                            {t("common.present")}
                           </button>
                           <button
                             type="button"
                             onClick={() => handleMarkPersonal(activePersonalLesson.id, "absent")}
                             disabled={connectionState !== "online" || markPersonalAttendance.isPending}
-                            title={getConnectionBlockReason(connectionState) ?? "Не пришёл — Списать урок с абонемента"}
+                            title={translateConnectionBlockReason(connectionState, t) ?? t("attendance.titleAbsentDeduct")}
                             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                               activePersonalLesson.attendanceStatus === "absent"
                                 ? "bg-rose-600 border-rose-600 text-white shadow-xs"
@@ -898,13 +916,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             }`}
                           >
                             <X className="w-3.5 h-3.5" />
-                            Не пришёл
+                            {t("common.absent")}
                           </button>
                           <button
                             type="button"
                             onClick={() => handleMarkPersonal(activePersonalLesson.id, "excused")}
                             disabled={connectionState !== "online" || markPersonalAttendance.isPending}
-                            title={getConnectionBlockReason(connectionState) ?? "Уважит. — Не списывать урок с абонемента"}
+                            title={translateConnectionBlockReason(connectionState, t) ?? t("attendance.titleExcusedNoDeduct")}
                             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                               activePersonalLesson.attendanceStatus === "excused"
                                 ? "bg-amber-600 border-amber-600 text-white shadow-xs"
@@ -912,7 +930,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             }`}
                           >
                             <ShieldCheck className="w-3.5 h-3.5" />
-                            Уважит.
+                            {t("common.excusedShort")}
                           </button>
                         </div>
                       </>
@@ -923,24 +941,28 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 ) : subsLoading ? (
                   <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
                     <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
-                    <p className="text-xs">Загрузка абонементов...</p>
+                    <p className="text-xs">{t("attendance.loadingSubscriptions")}</p>
                   </div>
                 ) : modalSubs.length === 0 ? (
                   <div className="text-center py-20 text-slate-400 space-y-3">
                     <Ticket className="w-8 h-8 mx-auto text-slate-300" />
-                    <p className="text-sm">Нет активных абонементов для этого урока.</p>
+                    <p className="text-sm">{t("attendance.noSubscriptions")}</p>
                   </div>
                 ) : (
                   <div>
                     {!canMarkAttendance && (
                       <p className="text-[11px] text-amber-600 font-sans mb-3">
-                        Отметки посещаемости доступны только за прошедшие и текущий день.
+                        {t("attendance.error.pastOnly")}
                       </p>
                     )}
-                    <AttendanceMarkLegend showFreeze={selectedLesson?.kind === "group"} />
+                    <AttendanceMarkLegend showFreeze={selectedLesson?.kind === "group"} t={t} />
                     <p className="text-[10px] font-sans bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums">
                       {modalSubs.length}{" "}
-                      {pluralizeRu(modalSubs.length, ["абонемент", "абонемента", "абонементов"])}
+                      {plural(modalSubs.length, [
+                        t("common.subscription.one"),
+                        t("common.subscription.few"),
+                        t("common.subscription.many"),
+                      ])}
                     </p>
                     {useVirtualSubsList ? (
                       <VirtualList
@@ -967,7 +989,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   onClick={() => setSelectedLesson(null)}
                   className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer"
                 >
-                  Закрыть
+                  {t("common.close")}
                 </button>
               </div>
             </motion.div>

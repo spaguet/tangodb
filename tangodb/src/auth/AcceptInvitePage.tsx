@@ -238,7 +238,7 @@ export default function AcceptInvitePage() {
               onClick={() => navigate("/")}
               className="mt-2 text-sm text-indigo-600 font-semibold hover:underline cursor-pointer"
             >
-              На главную
+              {t("auth.acceptInvite.goHome")}
             </button>
           </>
         )}

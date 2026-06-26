@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { UserPlus, X } from "lucide-react";
 import { useAddClient } from "../../hooks/useClients";
+import { useI18n } from "../../hooks/useI18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { ToastType } from "../../App";
 import type { Client } from "../../types";
 import { fieldCls as inputCls } from "./AppSelect";
@@ -16,11 +18,13 @@ interface AddClientModalProps {
   onSuccess?: (client: Client) => void;
 }
 
-export default function AddClientModal({ open, onClose, toast, submitLabel = "Внести в базу", onSuccess }: AddClientModalProps) {
+export default function AddClientModal({ open, onClose, toast, submitLabel, onSuccess }: AddClientModalProps) {
   const addClient = useAddClient();
+  const { t } = useI18n();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [telegram, setTelegram] = useState("");
+  const resolvedSubmitLabel = submitLabel || t("clients.form.addSubmit");
 
   useEffect(() => {
     if (!open) return;
@@ -42,17 +46,17 @@ export default function AddClientModal({ open, onClose, toast, submitLabel = "В
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim()) {
-      toast("Заполните имя и фамилию — это обязательные поля.", "error");
+      toast(t("clients.error.nameRequired"), "error");
       return;
     }
 
     const res = await addClient.mutateAsync({ firstName, lastName, telegram });
     if (!res.success) {
-      toast(res.error || "Ошибка добавления", "error");
+      toast(resolveMutationError(res.error, "clients.error.addFailed", t), "error");
       return;
     }
 
-    toast("Клиент добавлен в базу", "success");
+    toast(t("clients.success.added"), "success");
     onSuccess?.({
       id: res.id,
       firstName: firstName.trim(),
@@ -83,12 +87,12 @@ export default function AddClientModal({ open, onClose, toast, submitLabel = "В
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2 text-slate-800">
                 <UserPlus className="w-4 h-4 text-indigo-500" />
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Добавить клиента</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("clients.modal.addTitle")}</h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -97,26 +101,26 @@ export default function AddClientModal({ open, onClose, toast, submitLabel = "В
 
             <form onSubmit={handleSubmit} className="panel-form-stack font-sans">
               <div className="field-stack">
-                <label className={labelCls}>Имя</label>
+                <label className={labelCls}>{t("clients.form.firstName")}</label>
                 <input
                   type="text"
                   required
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Мария"
+                  placeholder={t("clients.placeholder.firstName")}
                   className={inputCls}
                   autoFocus
                 />
               </div>
 
               <div className="field-stack">
-                <label className={labelCls}>Фамилия</label>
+                <label className={labelCls}>{t("clients.form.lastName")}</label>
                 <input
                   type="text"
                   required
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Ньевес"
+                  placeholder={t("clients.placeholder.lastName")}
                   className={inputCls}
                 />
               </div>
@@ -141,7 +145,7 @@ export default function AddClientModal({ open, onClose, toast, submitLabel = "В
                   />
                 </div>
                 <p className="text-[10px] text-slate-400 leading-normal">
-                  Необязательно. Нужен для связи при окончании абонемента.
+                  {t("common.telegramOptionalHint")}
                 </p>
               </div>
 
@@ -151,14 +155,14 @@ export default function AddClientModal({ open, onClose, toast, submitLabel = "В
                   disabled={addClient.isPending}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
-                  {addClient.isPending ? "Добавление..." : submitLabel}
+                  {addClient.isPending ? t("clients.form.addPending") : resolvedSubmitLabel}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer"
                 >
-                  Отмена
+                  {t("common.cancel")}
                 </button>
               </div>
             </form>

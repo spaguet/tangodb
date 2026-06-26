@@ -36,8 +36,12 @@ import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import { usePermissions } from "../hooks/usePermissions";
+import { useI18n } from "../hooks/useI18n";
+import { translateMutationBlockedMessage, useOnlineStatus } from "../hooks/useOnlineStatus";
+import { resolveMutationError } from "../lib/resolveMutationError";
 import type { ToastType } from "../App";
 import type { Price } from "../types";
+import type { I18nKey } from "../lib/i18n/keys";
 
 interface PricesPanelProps {
   toast: (msg: string, type?: ToastType) => void;
@@ -45,13 +49,7 @@ interface PricesPanelProps {
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
-const CREATE_TABS = [
-  { id: "group" as const, label: "Групповые уроки", formTitle: "Новый тариф · групповые уроки" },
-  { id: "privateLesson" as const, label: "Персональные уроки", formTitle: "Новый тариф · персональные уроки" },
-  { id: "privatePackage" as const, label: "Пакет персональных уроков", formTitle: "Новый тариф · пакет персональных уроков" },
-];
-
-type CreateTabId = (typeof CREATE_TABS)[number]["id"];
+type CreateTabId = "group" | "privateLesson" | "privatePackage";
 type CreateModalStep = "picker" | "form";
 
 function TariffCreateSection({
@@ -67,6 +65,7 @@ function TariffCreateSection({
   pending: boolean;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
   const body = (
     <>
       <div className="panel-form-stack">{children}</div>
@@ -76,7 +75,7 @@ function TariffCreateSection({
         disabled={pending}
         className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
       >
-        {pending ? "..." : "Добавить"}
+        {pending ? t("common.saving") : t("prices.add")}
       </button>
     </>
   );
@@ -96,6 +95,8 @@ function TariffCreateSection({
 const CREATE_TAB_IDS: CreateTabId[] = ["group", "privateLesson", "privatePackage"];
 
 export default function PricesPanel({ toast }: PricesPanelProps) {
+  const { t, plural } = useI18n();
+  const { connectionState } = useOnlineStatus();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: prices = [], isLoading, isError, error } = usePrices();
   const { locations } = useAccessibleLocations();
@@ -145,6 +146,19 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     null
   );
   const [activeCreateTab, setActiveCreateTab] = useState<CreateTabId>("group");
+
+  const CREATE_TABS = [
+    { id: "group" as const, label: t("prices.tab.group"), formTitle: t("prices.form.groupTitle") },
+    { id: "privateLesson" as const, label: t("prices.tab.privateLesson"), formTitle: t("prices.form.privateLessonTitle") },
+    {
+      id: "privatePackage" as const,
+      label: t("prices.tab.privatePackage"),
+      formTitle: t("prices.form.privatePackageTitle"),
+    },
+  ];
+
+  const lessonCountKey = (count: number) =>
+    plural(count, ["prices.lesson.one", "prices.lesson.few", "prices.lesson.many"]) as I18nKey;
 
   const locationMap = Object.fromEntries(locations.map((l) => [l.id, l.name]));
   const disciplineMap = Object.fromEntries(disciplines.map((d) => [d.id, d.name]));
@@ -207,17 +221,21 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   };
 
   const handleSavePrice = async (id: string, originalValue: number) => {
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
     const rawValue = editedPrices[id];
     if (rawValue === undefined) return;
 
     const parsed = parseFloat(rawValue);
     if (isNaN(parsed) || parsed < 0) {
-      toast("Введите корректную сумму.", "error");
+      toast(t("prices.error.invalidAmount"), "error");
       return;
     }
 
     if (parsed === originalValue) {
-      toast("Цена не изменилась.", "info");
+      toast(t("prices.error.unchanged"), "info");
       return;
     }
 
@@ -226,9 +244,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     setSyncingRows((prev) => ({ ...prev, [id]: false }));
 
     if (!res.success) {
-      toast(res.error || "Ошибка сохранения, перепроверьте соединение", "error");
+      toast(resolveMutationError(res.error, "prices.error.saveFailed", t), "error");
     } else {
-      toast("Новый тариф записан в базу", "success");
+      toast(t("prices.success.saved"), "success");
       setEditedPrices((prev) => {
         const next = { ...prev };
         delete next[id];
@@ -239,8 +257,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
   const startEditMeta = (p: Price) => {
     setEditingPrice(p);
-    setEditLabel(getPriceLabel(p));
-    setEditDescription(getPriceDescription(p));
+    setEditLabel(getPriceLabel(p, t));
+    setEditDescription(getPriceDescription(p, t));
     setEditBindToLocation(!!p.locationId);
     setEditLocationId(p.locationId ?? locations[0]?.id ?? "");
     setEditBindToDiscipline(!!p.disciplineId);
@@ -249,16 +267,20 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
   const handleSaveMeta = async () => {
     if (!editingPrice?.id) return;
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
     if (!editLabel.trim()) {
-      toast("Укажите название тарифа.", "error");
+      toast(t("prices.error.nameRequired"), "error");
       return;
     }
     if (editBindToLocation && !editLocationId) {
-      toast("Выберите локацию для локального тарифа.", "error");
+      toast(t("prices.error.locationRequired"), "error");
       return;
     }
     if (editBindToDiscipline && !editDisciplineId) {
-      toast("Выберите дисциплину для тарифа.", "error");
+      toast(t("prices.error.disciplineRequired"), "error");
       return;
     }
 
@@ -271,25 +293,33 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     });
 
     if (!res.success) {
-      toast(res.error || "Не удалось сохранить", "error");
+      toast(resolveMutationError(res.error, "prices.error.updateFailed", t), "error");
     } else {
-      toast("Тариф обновлён", "success");
+      toast(t("prices.success.updated"), "success");
       setEditingPrice(null);
     }
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget?.id) return;
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
     const res = await deletePrice.mutateAsync(deleteTarget.id);
     if (!res.success) {
-      toast(res.error || "Не удалось удалить тариф", "error");
+      toast(resolveMutationError(res.error, "prices.error.deleteFailed", t), "error");
     } else {
-      toast("Тариф удалён", "success");
+      toast(t("prices.success.deleted"), "success");
       setDeleteTarget(null);
     }
   };
 
   const handleCreateTariff = async (section: "group" | "privateLesson" | "privatePackage") => {
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
     const form =
       section === "group"
         ? groupForm
@@ -298,13 +328,13 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           : privatePackageForm;
 
     if (!form.label.trim()) {
-      toast("Укажите название тарифа.", "error");
+      toast(t("prices.error.nameRequired"), "error");
       return;
     }
 
     const parsedPrice = parseFloat(form.price);
     if (isNaN(parsedPrice) || parsedPrice < 0) {
-      toast("Введите корректную стоимость.", "error");
+      toast(t("prices.error.invalidCost"), "error");
       return;
     }
 
@@ -321,16 +351,16 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       lessons = parseInt(privatePackageForm.lessons, 10);
     }
     if (isNaN(lessons) || lessons < 1) {
-      toast("Укажите количество уроков (не меньше 1).", "error");
+      toast(t("prices.error.lessonsRequired"), "error");
       return;
     }
 
     if (bindToLocation && !formLocationId) {
-      toast("Выберите локацию для локального тарифа.", "error");
+      toast(t("prices.error.locationRequired"), "error");
       return;
     }
     if (bindToDiscipline && !formDisciplineId) {
-      toast("Выберите дисциплину для тарифа.", "error");
+      toast(t("prices.error.disciplineRequired"), "error");
       return;
     }
 
@@ -366,9 +396,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     setCreatingSection(null);
 
     if (!res.success) {
-      toast(res.error || "Не удалось создать тариф", "error");
+      toast(resolveMutationError(res.error, "prices.error.createFailed", t), "error");
     } else {
-      toast("Тариф добавлен в прайс-лист", "success");
+      toast(t("prices.success.created"), "success");
       closeCreateModal();
       if (section === "group") {
         setGroupForm({ label: "", description: "", lessons: "8", price: "", format: "solo" });
@@ -409,7 +439,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     />
   );
 
-  if (isLoading) return <LoadingState label="Загрузка прайс-листа..." />;
+  if (isLoading) return <LoadingState label={t("prices.loading")} />;
   if (isError) return <QueryErrorState error={error} />;
 
   const renderPriceRow = (item: { priceObj: Price }) => {
@@ -418,8 +448,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     const currentInputVal = editedPrices[priceId] !== undefined ? editedPrices[priceId] : p.price.toString();
     const isSyncing = syncingRows[priceId] || false;
     const isTouched = editedPrices[priceId] !== undefined && editedPrices[priceId] !== p.price.toString();
-    const title = getPriceLabel(p);
-    const description = getPriceDescription(p);
+    const title = getPriceLabel(p, t);
+    const description = getPriceDescription(p, t);
 
     return (
       <div
@@ -437,8 +467,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 type="button"
                 onClick={() => startEditMeta(p)}
                 className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-                title="Редактировать"
-                aria-label={`Редактировать ${title}`}
+                title={t("prices.action.edit")}
+                aria-label={`${t("prices.action.edit")} ${title}`}
               >
                 <Edit className="w-4 h-4" />
               </button>
@@ -446,8 +476,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 type="button"
                 onClick={() => setDeleteTarget(p)}
                 className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                title="Удалить"
-                aria-label={`Удалить ${title}`}
+                title={t("prices.action.delete")}
+                aria-label={`${t("prices.action.delete")} ${title}`}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -457,26 +487,26 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           <p className="text-[11px] text-slate-400 font-sans tracking-tight font-normal">
             {description}
             {isMonthlyUnlimitedTariff(p)
-              ? " · Безлимит"
+              ? t("prices.unlimitedSuffix")
               : getPriceCategory(p) === "group" || p.lessons > 1
-                ? ` · ${p.lessons} ${p.lessons === 1 ? "урок" : p.lessons < 5 ? "урока" : "уроков"}`
+                ? ` · ${t(lessonCountKey(p.lessons), { count: p.lessons })}`
                 : ""}
             {" · "}
             {formatCurrency(p.price)}
           </p>
           <p className="text-[10px] font-sans mt-1 space-x-2">
             {!p.locationId && !p.disciplineId ? (
-              <span className="text-slate-400">Глобальный тариф</span>
+              <span className="text-slate-400">{t("prices.globalTariff")}</span>
             ) : (
               <>
                 {p.locationId ? (
                   <span className="text-indigo-600 font-semibold">
-                    Локальный · {locationMap[p.locationId] ?? "локация"}
+                    {t("prices.localTariff")} · {locationMap[p.locationId] ?? t("prices.fallbackLocation")}
                   </span>
                 ) : null}
                 {p.disciplineId ? (
                   <span className="text-violet-600 font-semibold">
-                    Дисциплина · {disciplineMap[p.disciplineId] ?? "дисциплина"}
+                    {t("prices.disciplineLabel")} · {disciplineMap[p.disciplineId] ?? t("prices.fallbackDiscipline")}
                   </span>
                 ) : null}
               </>
@@ -493,7 +523,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               value={currentInputVal}
               disabled={isSyncing}
               onChange={(e) => handleInputChange(priceId, e.target.value)}
-              aria-label={`Цена: ${title}`}
+              aria-label={t("prices.aria.price", { title })}
               className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-2.5 py-1.5 text-xs text-right font-semibold pr-6 transition-all disabled:opacity-60"
             />
             <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-sans font-normal text-slate-400">
@@ -510,7 +540,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 : "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed"
             }`}
           >
-            {isSyncing ? "..." : "Сохранить"}
+            {isSyncing ? t("common.saving") : t("common.save")}
           </button>
           </>
           ) : (
@@ -527,7 +557,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         {title}
       </h3>
       {items.length === 0 ? (
-        <p className="text-xs text-slate-400 font-sans py-2">Нет тарифов</p>
+        <p className="text-xs text-slate-400 font-sans py-2">{t("prices.noTariffs")}</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
           {items.map(renderPriceRow)}
@@ -543,9 +573,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           <div className="panel-form-header-icon">
             <Coins className="w-5 h-5 text-indigo-600" />
           </div>
-          <h2 className="text-base font-semibold tracking-tight text-slate-900">Тарифы и прайс-лист</h2>
+          <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("prices.pageTitle")}</h2>
           <p className="text-slate-400 text-[11px] leading-snug">
-            Изменённые тарифы сразу обновят стоимость на кассе оформления.
+            {t("prices.pageSubtitle")}
           </p>
         </div>
 
@@ -556,29 +586,29 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
         >
           <Ticket className="w-3.5 h-3.5" />
-          Добавить тариф
+          {t("prices.add")}
         </button>
         </RequirePermission>
 
         {prices.length === 0 ? (
           <div className="text-center py-20 text-slate-400 space-y-3">
             <Ticket className="w-8 h-8 mx-auto text-slate-300" />
-            <p className="text-sm">Прайс-лист пуст.</p>
+            <p className="text-sm">{t("prices.empty")}</p>
             {canWritePrices && (
               <button
                 type="button"
                 onClick={openCreatePicker}
                 className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
               >
-                Добавить первый тариф
+                {t("prices.addFirst")}
               </button>
             )}
           </div>
         ) : (
           <div className="space-y-6">
-            {renderTariffSection("Групповые занятия", groupItems)}
-            {renderTariffSection("Персональные уроки", privateLessonItems)}
-            {renderTariffSection("Пакеты персональных уроков", privatePackageItems)}
+            {renderTariffSection(t("prices.section.group"), groupItems)}
+            {renderTariffSection(t("prices.section.privateLesson"), privateLessonItems)}
+            {renderTariffSection(t("prices.section.privatePackage"), privatePackageItems)}
           </div>
         )}
       </div>
@@ -601,11 +631,11 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Редактировать тариф</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("prices.editTitle")}</h3>
                 <button
                   type="button"
                   onClick={() => setEditingPrice(null)}
-                  aria-label="Закрыть"
+                  aria-label={t("common.close")}
                   className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -614,11 +644,11 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
               <div className="panel-form-stack font-sans">
                 <div className="field-stack">
-                  <label className={labelCls}>Название</label>
+                  <label className={labelCls}>{t("prices.form.name")}</label>
                   <input type="text" value={editLabel} onChange={(e) => setEditLabel(e.target.value)} className={inputCls} />
                 </div>
                 <div className="field-stack">
-                  <label className={labelCls}>Описание</label>
+                  <label className={labelCls}>{t("prices.form.description")}</label>
                   <textarea
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
@@ -649,14 +679,14 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                   disabled={updatePriceMeta.isPending}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
-                  {updatePriceMeta.isPending ? "..." : "Принять"}
+                  {updatePriceMeta.isPending ? t("common.saving") : t("prices.modal.accept")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingPrice(null)}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
                 >
-                  Отмена
+                  {t("common.cancel")}
                 </button>
               </div>
             </motion.div>
@@ -687,13 +717,13 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     <Coins className="w-4 h-4 text-indigo-600" />
                   </div>
                   <h3 className="text-base font-semibold tracking-tight text-slate-900">
-                    Выбор типа нового тарифа
+                    {t("prices.selectTypeTitle")}
                   </h3>
                 </div>
                 <button
                   type="button"
                   onClick={closeCreateModal}
-                  aria-label="Закрыть"
+                  aria-label={t("common.close")}
                   className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -718,7 +748,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 onClick={closeCreateModal}
                 className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer text-xs"
               >
-                Закрыть
+                {t("common.close")}
               </button>
             </motion.div>
           </div>
@@ -754,7 +784,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 <button
                   type="button"
                   onClick={closeCreateModal}
-                  aria-label="Закрыть"
+                  aria-label={t("common.close")}
                   className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -769,7 +799,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     pending={creatingSection === "group"}
                   >
                     <div className="field-stack">
-                      <label className={labelCls}>Формат</label>
+                      <label className={labelCls}>{t("prices.form.format")}</label>
                       <AppSelect
                         value={groupForm.format}
                         onChange={(e) =>
@@ -779,13 +809,13 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                           })
                         }
                       >
-                        <option value="solo">Соло</option>
-                        {pairSubscriptionsEnabled && <option value="pair">Пара</option>}
-                        <option value="monthly_unlimited">Месячный безлимит</option>
+                        <option value="solo">{t("common.formatSolo")}</option>
+                        {pairSubscriptionsEnabled && <option value="pair">{t("common.formatPair")}</option>}
+                        <option value="monthly_unlimited">{t("prices.form.monthlyUnlimited")}</option>
                       </AppSelect>
                     </div>
                     <div className="field-stack">
-                      <label className={labelCls}>Название</label>
+                      <label className={labelCls}>{t("prices.form.name")}</label>
                       <input
                         type="text"
                         value={groupForm.label}
@@ -794,7 +824,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                       />
                     </div>
                     <div className="field-stack">
-                      <label className={labelCls}>Описание</label>
+                      <label className={labelCls}>{t("prices.form.description")}</label>
                       <textarea
                         value={groupForm.description}
                         onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
@@ -804,7 +834,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     </div>
                     {groupForm.format !== "monthly_unlimited" && (
                     <div className="field-stack">
-                      <label className={labelCls}>Количество уроков</label>
+                      <label className={labelCls}>{t("prices.form.lessons")}</label>
                       <input
                         type="number"
                         min={1}
@@ -815,7 +845,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     </div>
                     )}
                     <div className="field-stack">
-                      <label className={labelCls}>Стоимость</label>
+                      <label className={labelCls}>{t("prices.form.cost")}</label>
                       <div className="relative">
                         <input
                           type="number"
@@ -839,7 +869,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     pending={creatingSection === "privateLesson"}
                   >
                     <div className="field-stack">
-                      <label className={labelCls}>Название</label>
+                      <label className={labelCls}>{t("prices.form.name")}</label>
                       <input
                         type="text"
                         value={privateLessonForm.label}
@@ -848,7 +878,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                       />
                     </div>
                     <div className="field-stack">
-                      <label className={labelCls}>Описание</label>
+                      <label className={labelCls}>{t("prices.form.description")}</label>
                       <textarea
                         value={privateLessonForm.description}
                         onChange={(e) =>
@@ -859,7 +889,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                       />
                     </div>
                     <div className="field-stack">
-                      <label className={labelCls}>Стоимость</label>
+                      <label className={labelCls}>{t("prices.form.cost")}</label>
                       <div className="relative">
                         <input
                           type="number"
@@ -883,7 +913,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     pending={creatingSection === "privatePackage"}
                   >
                     <div className="field-stack">
-                      <label className={labelCls}>Формат</label>
+                      <label className={labelCls}>{t("prices.form.format")}</label>
                       <AppSelect
                         value={privatePackageForm.format}
                         onChange={(e) =>
@@ -893,13 +923,13 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                           })
                         }
                       >
-                        <option value="solo">Соло</option>
-                        {pairSubscriptionsEnabled && <option value="pair">Пара</option>}
-                        {trioLessonsEnabled && <option value="trio">Трио</option>}
+                        <option value="solo">{t("common.formatSolo")}</option>
+                        {pairSubscriptionsEnabled && <option value="pair">{t("common.formatPair")}</option>}
+                        {trioLessonsEnabled && <option value="trio">{t("common.formatTrio")}</option>}
                       </AppSelect>
                     </div>
                     <div className="field-stack">
-                      <label className={labelCls}>Название</label>
+                      <label className={labelCls}>{t("prices.form.name")}</label>
                       <input
                         type="text"
                         value={privatePackageForm.label}
@@ -908,7 +938,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                       />
                     </div>
                     <div className="field-stack">
-                      <label className={labelCls}>Описание</label>
+                      <label className={labelCls}>{t("prices.form.description")}</label>
                       <textarea
                         value={privatePackageForm.description}
                         onChange={(e) =>
@@ -919,7 +949,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                       />
                     </div>
                     <div className="field-stack">
-                      <label className={labelCls}>Количество уроков</label>
+                      <label className={labelCls}>{t("prices.form.lessons")}</label>
                       <input
                         type="number"
                         min={2}
@@ -929,7 +959,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                       />
                     </div>
                     <div className="field-stack">
-                      <label className={labelCls}>Стоимость</label>
+                      <label className={labelCls}>{t("prices.form.cost")}</label>
                       <div className="relative">
                         <input
                           type="number"
@@ -952,7 +982,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 onClick={closeCreateModal}
                 className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer text-xs"
               >
-                Закрыть
+                {t("common.close")}
               </button>
             </motion.div>
           </div>
@@ -961,19 +991,17 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        title="Удалить тариф?"
+        title={t("prices.confirm.deleteTitle")}
         description={
           deleteTarget ? (
             <>
-              Тариф{" "}
-              <strong className="font-semibold text-slate-800">{getPriceLabel(deleteTarget)}</strong> будет удалён из
-              прайс-листа.
+              {t("prices.confirm.deleteBody", { name: getPriceLabel(deleteTarget, t) })}
             </>
           ) : (
             ""
           )
         }
-        confirmLabel="Удалить"
+        confirmLabel={t("prices.confirm.deleteConfirm")}
         pending={deletePrice.isPending}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}

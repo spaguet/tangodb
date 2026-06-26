@@ -157,7 +157,7 @@ async function closeScheduleSlotByDate(
     .maybeSingle();
 
   if (fetchError) return { success: false as const, error: fetchError.message };
-  if (!slot) return { success: false as const, error: "Слот не найден" };
+  if (!slot) return { success: false as const, error: "schedule.error.slotNotFound" };
 
   const validFrom = String(slot.valid_from ?? "2000-01-01").slice(0, 10);
   const validTo = addDays(closingDate, -1);
@@ -192,21 +192,21 @@ export function useAddGroupSchedule() {
       days: ScheduleDayInput[];
     }) => {
       if (!organizationId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const trimmedGroup = groupName.trim();
       if (!trimmedGroup) {
-        return { success: false as const, error: "Укажите название группы" };
+        return { success: false as const, error: "schedule.error.groupName" };
       }
       if (!locationId) {
-        return { success: false as const, error: "Выберите локацию" };
+        return { success: false as const, error: "schedule.error.location" };
       }
       if (!teacherMemberId) {
-        return { success: false as const, error: "Выберите преподавателя" };
+        return { success: false as const, error: "schedule.error.teacher" };
       }
       if (days.length === 0) {
-        return { success: false as const, error: "Добавьте хотя бы один день" };
+        return { success: false as const, error: "schedule.error.addDayTime" };
       }
 
       const today = toISODateLocal(new Date());
@@ -225,10 +225,10 @@ export function useAddGroupSchedule() {
       const { error } = await supabase.from(scheduleTable).insert(rows);
       if (error) {
         if (error.code === "23505") {
-          return { success: false as const, error: "Такой день и время уже есть в расписании" };
+          return { success: false as const, error: "schedule.error.duplicateSlot" };
         }
         if (error.message.includes("schedule_slot_overlap")) {
-          return { success: false as const, error: "Пересечение с другим групповым занятием" };
+          return { success: false as const, error: "schedule.error.groupOverlap" };
         }
         return { success: false as const, error: error.message };
       }
@@ -267,7 +267,7 @@ export function useEditGroupSchedule() {
       teacherMemberId: string | null;
     }) => {
       if (!organizationId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const { error: closeError } = await supabase
@@ -306,10 +306,10 @@ export function useEditGroupSchedule() {
         }
 
         if (insertError.code === "23505") {
-          return { success: false as const, error: "Такой день и время уже есть в расписании" };
+          return { success: false as const, error: "schedule.error.duplicateSlot" };
         }
         if (insertError.message.includes("schedule_slot_overlap")) {
-          return { success: false as const, error: "Пересечение с другим групповым занятием" };
+          return { success: false as const, error: "schedule.error.groupOverlap" };
         }
         return { success: false as const, error: insertError.message };
       }
@@ -363,7 +363,7 @@ export function useReplaceGroupSchedule() {
       removedIds: string[];
     }) => {
       if (!organizationId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const trimmedGroup = groupName.trim();
@@ -404,7 +404,7 @@ export function useReplaceGroupSchedule() {
           });
           if (error) {
             if (error.code === "23505") {
-              return { success: false as const, error: "Такой день и время уже есть в расписании" };
+              return { success: false as const, error: "schedule.error.duplicateSlot" };
             }
             return { success: false as const, error: error.message };
           }
@@ -416,7 +416,7 @@ export function useReplaceGroupSchedule() {
           });
           if (error) {
             if (error.code === "23505") {
-              return { success: false as const, error: "Такой день и время уже есть в расписании" };
+              return { success: false as const, error: "schedule.error.duplicateSlot" };
             }
             return { success: false as const, error: error.message };
           }

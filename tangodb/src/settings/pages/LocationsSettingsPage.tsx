@@ -14,10 +14,12 @@ import {
   type Location,
 } from "../../hooks/useLocations";
 import { fieldCls as inputCls } from "../../components/ui/AppSelect";
+import { useI18n } from "../../hooks/useI18n";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 export default function LocationsSettingsPage() {
+  const { t } = useI18n();
   const toast = useToast();
   const { data: locations = [], isLoading, isError, error } = useLocations();
   const addLocation = useAddLocation();
@@ -44,9 +46,9 @@ export default function LocationsSettingsPage() {
   const handleAdd = async () => {
     const res = await addLocation.mutateAsync({ name: newName, address: newAddress });
     if (!res.success) {
-      toast(res.error ?? "Не удалось добавить", "error");
+      toast(res.error ?? t("settings.locations.addFailed"), "error");
     } else {
-      toast("Локация добавлена", "success");
+      toast(t("settings.locations.addSuccess"), "success");
       setNewName("");
       setNewAddress("");
       setShowAdd(false);
@@ -67,9 +69,9 @@ export default function LocationsSettingsPage() {
       address: editAddress,
     });
     if (!res.success) {
-      toast(res.error ?? "Не удалось сохранить", "error");
+      toast(res.error ?? t("settings.saveError"), "error");
     } else {
-      toast("Локация обновлена", "success");
+      toast(t("settings.locations.updateSuccess"), "success");
       setEditing(null);
     }
   };
@@ -78,22 +80,22 @@ export default function LocationsSettingsPage() {
     if (!deleteTarget) return;
     const res = await deleteLocation.mutateAsync(deleteTarget.id);
     if (!res.success) {
-      toast(res.error ?? "Не удалось удалить", "error");
+      toast(res.error ?? t("common.deleteFailed"), "error");
     } else {
-      toast(`Локация «${deleteTarget.name}» удалена`, "success");
+      toast(t("settings.locations.deleteSuccess", { name: deleteTarget.name }), "success");
       setDeleteTarget(null);
     }
   };
 
-  if (isLoading) return <LoadingState label="Загрузка локаций..." />;
+  if (isLoading) return <LoadingState label={t("attendance.loadingLocations")} />;
   if (isError) return <QueryErrorState error={error} />;
 
   return (
     <div className="panel-card-stack max-w-2xl">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">Локации</h2>
-          <p className="text-xs text-slate-500 mt-1">Залы, филиалы и адреса проведения занятий.</p>
+          <h2 className="text-base font-semibold text-slate-900">{t("settings.locations.title")}</h2>
+          <p className="text-xs text-slate-500 mt-1">{t("settings.locations.subtitle")}</p>
         </div>
         <RequirePermission action="settings.manage" mode="hide">
           <button
@@ -102,7 +104,7 @@ export default function LocationsSettingsPage() {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            Добавить
+            {t("common.add")}
           </button>
         </RequirePermission>
       </div>
@@ -111,7 +113,7 @@ export default function LocationsSettingsPage() {
         <div className="flex items-center justify-between border-b border-slate-100 pb-2">
           <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
             <MapPin className="w-4 h-4 text-indigo-500" />
-            Список локаций
+            {t("settings.locations.list")}
           </h3>
           <span className="text-[10px] bg-slate-100 text-slate-500 font-sans px-2 py-0.5 rounded-full font-semibold">
             {locations.length}
@@ -119,7 +121,7 @@ export default function LocationsSettingsPage() {
         </div>
 
         {locations.length === 0 ? (
-          <p className="text-xs text-slate-400 py-6 text-center">Локаций пока нет.</p>
+          <p className="text-xs text-slate-400 py-6 text-center">{t("settings.locations.empty")}</p>
         ) : (
           <div className="space-y-1.5">
             {locations.map((loc) => (
@@ -132,7 +134,7 @@ export default function LocationsSettingsPage() {
                   {loc.address ? (
                     <p className="text-[11px] text-slate-400 mt-0.5">{loc.address}</p>
                   ) : (
-                    <p className="text-[11px] text-slate-300 italic mt-0.5">адрес не указан</p>
+                    <p className="text-[11px] text-slate-300 italic mt-0.5">{t("common.noAddress")}</p>
                   )}
                 </div>
                 <RequirePermission action="settings.manage" mode="hide">
@@ -141,7 +143,7 @@ export default function LocationsSettingsPage() {
                       type="button"
                       onClick={() => startEdit(loc)}
                       className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-                      aria-label={`Редактировать ${loc.name}`}
+                      aria-label={`${t("common.edit")} ${loc.name}`}
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
@@ -149,7 +151,7 @@ export default function LocationsSettingsPage() {
                       type="button"
                       onClick={() => setDeleteTarget(loc)}
                       className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                      aria-label={`Удалить ${loc.name}`}
+                      aria-label={`${t("common.delete")} ${loc.name}`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -178,19 +180,29 @@ export default function LocationsSettingsPage() {
               className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-sm w-full p-4 panel-card-stack"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-semibold text-slate-900">Новая локация</h3>
-                <button type="button" onClick={() => setShowAdd(false)} aria-label="Закрыть" className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer">
+                <h3 className="text-base font-semibold text-slate-900">{t("settings.locations.newTitle")}</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAdd(false)}
+                  aria-label={t("common.close")}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="panel-form-stack font-sans">
                 <div className="field-stack">
-                  <label className={labelCls}>Название</label>
+                  <label className={labelCls}>{t("common.name")}</label>
                   <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} className={inputCls} />
                 </div>
                 <div className="field-stack">
-                  <label className={labelCls}>Адрес</label>
-                  <input type="text" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} className={inputCls} />
+                  <label className={labelCls}>{t("common.address")}</label>
+                  <input
+                    type="text"
+                    value={newAddress}
+                    onChange={(e) => setNewAddress(e.target.value)}
+                    className={inputCls}
+                  />
                 </div>
               </div>
               <button
@@ -199,7 +211,7 @@ export default function LocationsSettingsPage() {
                 disabled={addLocation.isPending}
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
               >
-                {addLocation.isPending ? "..." : "Добавить"}
+                {addLocation.isPending ? "..." : t("common.add")}
               </button>
             </motion.div>
           </div>
@@ -209,30 +221,60 @@ export default function LocationsSettingsPage() {
       <AnimatePresence>
         {editing && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditing(null)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs" />
-            <motion.div initial={{ scale: 0.97, opacity: 0, y: 8 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.97, opacity: 0, y: 8 }} className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-sm w-full p-4 panel-card-stack">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditing(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ scale: 0.97, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.97, opacity: 0, y: 8 }}
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-sm w-full p-4 panel-card-stack"
+            >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-semibold text-slate-900">Редактировать локацию</h3>
-                <button type="button" onClick={() => setEditing(null)} aria-label="Закрыть" className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer">
+                <h3 className="text-base font-semibold text-slate-900">{t("settings.locations.editTitle")}</h3>
+                <button
+                  type="button"
+                  onClick={() => setEditing(null)}
+                  aria-label={t("common.close")}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="panel-form-stack font-sans">
                 <div className="field-stack">
-                  <label className={labelCls}>Название</label>
+                  <label className={labelCls}>{t("common.name")}</label>
                   <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputCls} />
                 </div>
                 <div className="field-stack">
-                  <label className={labelCls}>Адрес</label>
-                  <input type="text" value={editAddress} onChange={(e) => setEditAddress(e.target.value)} className={inputCls} />
+                  <label className={labelCls}>{t("common.address")}</label>
+                  <input
+                    type="text"
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                    className={inputCls}
+                  />
                 </div>
               </div>
               <div className="flex gap-3">
-                <button type="button" onClick={handleSaveEdit} disabled={updateLocation.isPending} className="flex-1 py-2.5 bg-indigo-600 text-white text-xs font-semibold uppercase rounded-lg cursor-pointer disabled:opacity-60">
-                  Сохранить
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  disabled={updateLocation.isPending}
+                  className="flex-1 py-2.5 bg-indigo-600 text-white text-xs font-semibold uppercase rounded-lg cursor-pointer disabled:opacity-60"
+                >
+                  {t("common.save")}
                 </button>
-                <button type="button" onClick={() => setEditing(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 text-xs font-semibold uppercase rounded-lg cursor-pointer">
-                  Отмена
+                <button
+                  type="button"
+                  onClick={() => setEditing(null)}
+                  className="flex-1 py-2.5 bg-slate-100 text-slate-700 text-xs font-semibold uppercase rounded-lg cursor-pointer"
+                >
+                  {t("common.cancel")}
                 </button>
               </div>
             </motion.div>
@@ -242,9 +284,11 @@ export default function LocationsSettingsPage() {
 
       <ConfirmDialog
         open={deleteTarget != null}
-        title="Удалить локацию?"
-        description={deleteTarget ? `«${deleteTarget.name}» будет удалена без возможности восстановления.` : ""}
-        confirmLabel="Удалить"
+        title={t("settings.locations.deleteTitle")}
+        description={
+          deleteTarget ? t("settings.locations.deleteBody", { name: deleteTarget.name }) : ""
+        }
+        confirmLabel={t("common.delete")}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />

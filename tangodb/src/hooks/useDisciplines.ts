@@ -35,15 +35,15 @@ export function useAddDiscipline() {
   return useMutation({
     mutationFn: async ({ name, description }: { name: string; description: string }) => {
       if (!organizationId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const trimmed = name.trim();
-      if (!trimmed) return { success: false as const, error: "Укажите название дисциплины" };
+      if (!trimmed) return { success: false as const, error: "hooks.error.disciplineNameRequired" };
 
       const cached = queryClient.getQueryData<Discipline[]>(withOrgId(disciplinesQueryKey)) ?? [];
       if (cached.some((d) => d.name.toLowerCase() === trimmed.toLowerCase())) {
-        return { success: false as const, error: "Такая дисциплина уже есть" };
+        return { success: false as const, error: "hooks.error.disciplineDuplicate" };
       }
 
       const { data, error } = await supabase
@@ -79,7 +79,7 @@ export function useUpdateDiscipline() {
       description: string;
     }) => {
       const trimmed = name.trim();
-      if (!trimmed) return { success: false as const, error: "Укажите название дисциплины" };
+      if (!trimmed) return { success: false as const, error: "hooks.error.disciplineNameRequired" };
 
       const { error } = await supabase
         .from("disciplines")
@@ -88,7 +88,7 @@ export function useUpdateDiscipline() {
 
       if (error) {
         if (error.code === "23505") {
-          return { success: false as const, error: "Дисциплина с таким названием уже существует" };
+          return { success: false as const, error: "hooks.error.disciplineDuplicateName" };
         }
         return { success: false as const, error: error.message };
       }
@@ -110,7 +110,7 @@ export function useDeleteDiscipline() {
         if (error.code === "23503") {
           return {
             success: false as const,
-            error: "Дисциплина используется в расписании, абонементах или уроках",
+            error: "hooks.error.disciplineInUse",
           };
         }
         return { success: false as const, error: error.message };

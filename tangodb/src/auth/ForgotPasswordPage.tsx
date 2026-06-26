@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
-import { useI18n } from "../hooks/useI18n";
+import { useGuestI18n } from "../hooks/useI18n";
 import {
   AuthButton,
   AuthError,
@@ -11,8 +11,8 @@ import {
 } from "./AuthLayout";
 
 export default function ForgotPasswordPage() {
+  const { t } = useGuestI18n();
   const { resetPasswordForEmail } = useAuth();
-  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -34,8 +34,8 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthLayout title="TangoDB" subtitle="Восстановление пароля">
-      <p className="text-sm text-slate-500">Введите email, указанный при регистрации.</p>
+    <AuthLayout title="TangoDB" subtitle={t("auth.forgotPassword.subtitle")}>
+      <p className="text-sm text-slate-500">{t("auth.forgotPassword.hint")}</p>
       <AuthError message={error} />
       <AuthSuccess message={success} />
 
@@ -48,11 +48,11 @@ export default function ForgotPasswordPage() {
           autoComplete="email"
           required
         />
-        <AuthButton loading={loading}>Отправить ссылку</AuthButton>
+        <AuthButton loading={loading}>{t("auth.forgotPassword.submit")}</AuthButton>
       </form>
 
       <p className="text-sm text-slate-500 text-center">
-        <AuthLink to="/login">Вернуться ко входу</AuthLink>
+        <AuthLink to="/login">{t("auth.forgotPassword.backToLogin")}</AuthLink>
       </p>
     </AuthLayout>
   );

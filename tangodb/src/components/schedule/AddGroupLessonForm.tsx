@@ -7,6 +7,7 @@ import { findScheduleConflict } from "../../lib/scheduleConflicts";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { dowFullEntries, timesOverlap } from "../../lib/utils";
+import { useI18n } from "../../hooks/useI18n";
 import type { Discipline } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import DisciplineSelect from "../ui/DisciplineSelect";
@@ -53,7 +54,11 @@ function makeGroupSlotRow(dayOfWeek = 1, timeStart = "19:00", timeEnd = "20:00")
   return { key: crypto.randomUUID(), dayOfWeek, timeStart, timeEnd };
 }
 
-function findInternalSlotConflict(rows: GroupSlotRow[], rowKey: string): string | null {
+function findInternalSlotConflict(
+  rows: GroupSlotRow[],
+  rowKey: string,
+  formDuplicateLabel: string
+): string | null {
   const row = rows.find((item) => item.key === rowKey);
   if (!row) return null;
 
@@ -61,7 +66,7 @@ function findInternalSlotConflict(rows: GroupSlotRow[], rowKey: string): string 
     if (other.key === rowKey) continue;
     if (other.dayOfWeek !== row.dayOfWeek) continue;
     if (timesOverlap(row.timeStart, row.timeEnd, other.timeStart, other.timeEnd)) {
-      return "этот день и время уже добавлены в форму";
+      return formDuplicateLabel;
     }
   }
 
@@ -78,6 +83,7 @@ export default function AddGroupLessonForm({
   onClose,
   onSuccess,
 }: AddGroupLessonFormProps) {
+  const { t, locale } = useI18n();
   const addGroupSchedule = useAddGroupSchedule();
 
   const [groupName, setGroupName] = useState("");
@@ -148,8 +154,9 @@ export default function AddGroupLessonForm({
 
     const conflicts = new Map<string, string>();
     const today = toISODateLocal(new Date());
+    const formDuplicateLabel = t("utils.conflict.formDuplicate");
     for (const row of groupSlotRows) {
-      const internal = findInternalSlotConflict(groupSlotRows, row.key);
+      const internal = findInternalSlotConflict(groupSlotRows, row.key, formDuplicateLabel);
       if (internal) {
         conflicts.set(row.key, internal);
         continue;
@@ -157,7 +164,12 @@ export default function AddGroupLessonForm({
 
       const rangeError = validateTimeRange(row.timeStart, row.timeEnd);
       if (rangeError) {
-        conflicts.set(row.key, rangeError);
+        conflicts.set(
+          row.key,
+          rangeError.includes("позже") || rangeError.includes("later")
+            ? t("schedule.error.endBeforeStart")
+            : t("utils.conflict.invalidTime")
+        );
         continue;
       }
 
@@ -170,7 +182,9 @@ export default function AddGroupLessonForm({
           locationId: prefill.locationId,
         },
         personalLessons,
-        scheduleSlots
+        scheduleSlots,
+        t,
+        locale
       );
       if (external) {
         conflicts.set(row.key, `${external.conflictTime}: ${external.message}`);
@@ -178,7 +192,7 @@ export default function AddGroupLessonForm({
     }
 
     return conflicts;
-  }, [prefill, groupSlotRows, personalLessons, scheduleSlots]);
+  }, [prefill, groupSlotRows, personalLessons, scheduleSlots, t, locale]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,23 +200,23 @@ export default function AddGroupLessonForm({
 
     const trimmedGroup = groupName.trim();
     if (!trimmedGroup) {
-      toast("Укажите название группы.", "error");
+      toast(t("schedule.error.groupName"), "error");
       return;
     }
     if (!disciplineId) {
-      toast("Выберите дисциплину.", "error");
+      toast(t("schedule.error.discipline"), "error");
       return;
     }
     if (!teacherMemberId) {
-      toast("Выберите преподавателя.", "error");
+      toast(t("schedule.error.teacher"), "error");
       return;
     }
     if (groupSlotRows.length === 0) {
-      toast("Добавьте хотя бы один день и время.", "error");
+      toast(t("schedule.error.addDayTime"), "error");
       return;
     }
     if (groupSlotConflicts.size > 0) {
-      toast("Исправьте конфликты в расписании перед добавлением.", "error");
+      toast(t("schedule.error.fixConflictsAdd"), "error");
       return;
     }
 
@@ -219,11 +233,11 @@ export default function AddGroupLessonForm({
     });
 
     if (!res.success) {
-      toast(res.error ?? "Не удалось добавить занятие", "error");
+      toast(res.error ?? t("schedule.error.addFailed"), "error");
       return;
     }
 
-    toast(`Группа «${trimmedGroup}» добавлена в расписание`, "success");
+    toast(t("schedule.success.groupAdded", { name: trimmedGroup }), "success");
     onSuccess();
     onClose();
   };
@@ -249,14 +263,16 @@ export default function AddGroupLessonForm({
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
-                  Групповой урок
+                  {t("common.groupLesson")}
                 </p>
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Новое занятие</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                  {t("schedule.popup.newClass")}
+                </h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
@@ -265,7 +281,7 @@ export default function AddGroupLessonForm({
 
             <form onSubmit={handleSubmit} className="panel-form-stack">
               <div className="field-stack">
-                <label className={labelCls}>Локация</label>
+                <label className={labelCls}>{t("schedule.form.location")}</label>
                 <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
                   <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                   {prefill.locationName}
@@ -273,13 +289,13 @@ export default function AddGroupLessonForm({
               </div>
 
               <div className="field-stack">
-                <label className={labelCls}>Название группы</label>
+                <label className={labelCls}>{t("schedule.form.groupName")}</label>
                 <input
                   type="text"
                   required
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
-                  placeholder="Например, Старшая группа"
+                  placeholder={t("schedule.form.groupPlaceholder")}
                   className={fieldCls}
                 />
               </div>
@@ -292,13 +308,13 @@ export default function AddGroupLessonForm({
               />
 
               <AppSelect
-                label="Преподаватель"
+                label={t("schedule.form.teacher")}
                 value={teacherMemberId}
                 onChange={(e) => setTeacherMemberId(e.target.value)}
                 required
               >
                 {teacherOptions.length === 0 ? (
-                  <option value="">Нет преподавателей</option>
+                  <option value="">{t("common.noTeachers")}</option>
                 ) : (
                   teacherOptions.map((member) => (
                     <option key={member.id} value={member.id}>
@@ -309,7 +325,7 @@ export default function AddGroupLessonForm({
               </AppSelect>
 
               <div className="field-stack">
-                <label className={labelCls}>Дни и время</label>
+                <label className={labelCls}>{t("schedule.form.daysAndTime")}</label>
                 <div className="space-y-2">
                   {groupSlotRows.map((row) => {
                     const conflict = groupSlotConflicts.get(row.key);
@@ -328,7 +344,7 @@ export default function AddGroupLessonForm({
                               }}
                               className="text-xs py-2"
                             >
-                              {dowFullEntries().map(([val, name]) => (
+                              {dowFullEntries(locale).map(([val, name]) => (
                                 <option key={val} value={val}>
                                   {name}
                                 </option>
@@ -352,20 +368,24 @@ export default function AddGroupLessonForm({
                               type="button"
                               onClick={() => handleRemoveGroupDay(row.key)}
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0 mt-1"
-                              title="Убрать день"
-                              aria-label="Убрать день"
+                              title={t("schedule.form.removeDay")}
+                              aria-label={t("schedule.form.removeDay")}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>
-                        {conflict && <p className="text-[10px] text-rose-600 font-sans">Конфликт: {conflict}</p>}
+                        {conflict && (
+                          <p className="text-[10px] text-rose-600 font-sans">
+                            {t("common.conflict")}: {conflict}
+                          </p>
+                        )}
                       </div>
                     );
                   })}
                 </div>
                 <button type="button" onClick={handleAddGroupDay} className={addDayBtnCls}>
-                  + Добавить день и время
+                  {t("schedule.form.addDayTime")}
                 </button>
               </div>
 
@@ -375,14 +395,14 @@ export default function AddGroupLessonForm({
                   disabled={addGroupSchedule.isPending || groupSlotConflicts.size > 0}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  Добавить
+                  {t("common.add")}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
                 >
-                  Отмена
+                  {t("common.cancel")}
                 </button>
               </div>
             </form>

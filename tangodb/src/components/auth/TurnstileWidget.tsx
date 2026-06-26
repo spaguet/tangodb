@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useGuestI18n } from "../../hooks/useI18n";
 
 declare global {
   interface Window {
@@ -53,6 +54,7 @@ interface TurnstileWidgetProps {
 }
 
 export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: TurnstileWidgetProps) {
+  const { t } = useGuestI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const onTokenRef = useRef(onToken);
@@ -116,13 +118,13 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
   if (!SITE_KEY) {
     return (
       <p className="text-xs text-slate-400">
-        Captcha отключена в dev-сборке (нет VITE_TURNSTILE_SITE_KEY).
+        {t("auth.captcha.devDisabled")}
       </p>
     );
   }
 
   if (loadFailed) {
-    return <p className="text-xs text-red-500">Не удалось загрузить проверку captcha.</p>;
+    return <p className="text-xs text-red-500">{t("auth.captcha.loadFailed")}</p>;
   }
 
   return <div ref={containerRef} className="min-h-[65px]" />;

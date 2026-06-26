@@ -14,10 +14,11 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import { useUIStore } from "../../store/ui";
 import { addDays, isPastDate } from "../../lib/scheduleWeek";
 import {
-  getConnectionBlockReason,
-  getMutationBlockedMessage,
+  translateConnectionBlockReason,
+  translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
+import { useI18n } from "../../hooks/useI18n";
 import type { PersonalDisplayLesson, PersonalLesson } from "../../types";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
@@ -60,6 +61,7 @@ export default function PersonalLessonsPageContainer({
   initialTab = "view",
   toast,
 }: PersonalLessonsPageContainerProps) {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { memberId, role } = useOrganization();
   const { can, canAccessPanel, isReadOnly } = usePermissions();
@@ -168,7 +170,7 @@ export default function PersonalLessonsPageContainer({
 
   const handleEdit = (lesson: PersonalLesson) => {
     if (isPastDate(lesson.date)) {
-      toast("Редактирование недоступно для прошедших уроков", "error");
+      toast(t("personal.error.pastEdit"), "error");
       return;
     }
     setEditWeekRange({ start: lesson.date, end: addDays(lesson.date, 6) });
@@ -194,7 +196,7 @@ export default function PersonalLessonsPageContainer({
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
     const res = await deletePersonalLesson.mutateAsync({
@@ -202,17 +204,17 @@ export default function PersonalLessonsPageContainer({
       lessonDate: deleteTarget.date,
     });
     if (!res.success) {
-      toast(res.error ?? "Не удалось удалить запись", "error");
+      toast(res.error ?? t("personal.error.deleteFailed"), "error");
     } else {
-      toast("Бронь персонального урока удалена", "success");
+      toast(t("personal.success.deleted"), "success");
       setDeleteTarget(null);
     }
   };
 
   const personalTabs = [
-    { id: "view", label: "Персональные уроки", icon: FolderClosed },
+    { id: "view", label: t("personal.tab.view"), icon: FolderClosed },
     ...(canAccessPanel("personal_sell")
-      ? [{ id: "sell" as const, label: "Продажа", icon: BadgePlus }]
+      ? [{ id: "sell" as const, label: t("personal.tab.sell"), icon: BadgePlus }]
       : []),
   ] as const;
 
@@ -232,14 +234,14 @@ export default function PersonalLessonsPageContainer({
     locationsQuery.error ??
     teamQuery.error;
 
-  if (isLoading) return <LoadingState label="Загрузка персональных уроков..." />;
+  if (isLoading) return <LoadingState label={t("personal.loading")} />;
   if (isError) return <QueryErrorState error={error} />;
 
   return (
     <div className="panel-page-stack">
       <div className="flex items-center gap-2">
         <Sparkles className="w-5 h-5 text-indigo-500 shrink-0" />
-        <h2 className="text-base font-semibold text-slate-800 tracking-tight">Персональные уроки</h2>
+        <h2 className="text-base font-semibold text-slate-800 tracking-tight">{t("personal.title")}</h2>
       </div>
 
       <div>
@@ -296,7 +298,7 @@ export default function PersonalLessonsPageContainer({
         onSuccess={() => {
           setEditLesson(null);
           setEditWeekRange(null);
-          toast("Изменения сохранены", "success");
+          toast(t("common.changesSaved"), "success");
         }}
       />
 
@@ -306,22 +308,24 @@ export default function PersonalLessonsPageContainer({
         onClose={() => setPayTarget(null)}
         onSuccess={() => {
           setPayTarget(null);
-          toast("Оплата зафиксирована", "success");
+          toast(t("common.paymentRecorded"), "success");
         }}
       />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Удалить персональный урок?"
+        title={t("personal.confirm.deleteTitle")}
         description={
           deleteTarget ? (
             <span>
-              Запись на {deleteTarget.date} {deleteTarget.timeStart} будет удалена без
-              возможности восстановления.
+              {t("personal.confirm.deleteBody", {
+                date: deleteTarget.date,
+                time: deleteTarget.timeStart,
+              })}
             </span>
           ) : null
         }
-        confirmLabel="Удалить"
+        confirmLabel={t("common.delete")}
         pending={deletePersonalLesson.isPending}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}

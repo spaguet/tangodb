@@ -14,7 +14,7 @@ import {
   canWritePersonalLesson,
   maskClientDisplay,
 } from "../../lib/scheduleLessonAccess";
-import { formatDateRu } from "../../lib/utils";
+import { useI18n } from "../../hooks/useI18n";
 import type { DisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import RequirePermission from "../RequirePermission";
@@ -37,14 +37,18 @@ const detailValueCls = "text-sm text-slate-800";
 function lessonTitle(
   lesson: DisplayLesson,
   disciplineName: string | undefined,
-  clientLabel: string
+  clientLabel: string,
+  t: ReturnType<typeof useI18n>["t"],
+  clientNotSpecified: string
 ): string {
   if (lesson.kind === "group") {
     const groupLabel = lesson.groupName?.trim();
     if (groupLabel) return groupLabel;
-    return disciplineName ?? "Групповой урок";
+    return disciplineName ?? t("common.groupLesson");
   }
-  return clientLabel !== "Клиент не указан" && clientLabel !== "Клиент" ? clientLabel : "Персональный урок";
+  return clientLabel !== clientNotSpecified && clientLabel !== t("common.client")
+    ? clientLabel
+    : t("common.personalLesson");
 }
 
 export default function LessonInfoPopup({
@@ -57,6 +61,7 @@ export default function LessonInfoPopup({
   onSuccess,
   onPaymentSuccess,
 }: LessonInfoPopupProps) {
+  const { t, formatDate } = useI18n();
   const toast = useToast();
   const { memberId } = useOrganization();
   const { role, can, isReadOnly } = usePermissions();
@@ -108,7 +113,7 @@ export default function LessonInfoPopup({
     if (lesson?.kind !== "personal") return;
     const fullLesson = personalLessonsQuery.data?.find((row) => row.id === lesson.lessonId);
     if (!fullLesson) {
-      toast("Не удалось загрузить данные урока", "error");
+      toast(t("schedule.error.loadLessonFailed"), "error");
       return;
     }
     setPayTarget({
@@ -132,17 +137,17 @@ export default function LessonInfoPopup({
     if (lesson.kind === "group") {
       const res = await deleteScheduleSlot.mutateAsync({ id: lesson.slotId, editDate: lesson.date });
       if (!res.success) {
-        toast(res.error ?? "Не удалось удалить занятие", "error");
+        toast(res.error ?? t("schedule.error.deleteClassFailed"), "error");
         return;
       }
-      toast("Групповое занятие удалено из расписания", "success");
+      toast(t("schedule.success.groupDeleted"), "success");
     } else {
       const res = await deletePersonalLesson.mutateAsync({ id: lesson.lessonId, lessonDate: lesson.date });
       if (!res.success) {
-        toast(res.error ?? "Не удалось удалить урок", "error");
+        toast(res.error ?? t("schedule.error.deleteLessonFailed"), "error");
         return;
       }
-      toast("Персональный урок удалён", "success");
+      toast(t("schedule.success.personalDeleted"), "success");
     }
 
     setDeleteConfirmOpen(false);
@@ -174,16 +179,22 @@ export default function LessonInfoPopup({
               <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
                 <div className="min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
-                    {lesson.kind === "group" ? "Групповой урок" : "Персональный урок"}
+                    {lesson.kind === "group" ? t("common.groupLesson") : t("common.personalLesson")}
                   </p>
                   <h3 className="text-base font-semibold tracking-tight text-slate-900 break-words">
-                    {lessonTitle(lesson, disciplineName, clientLabel)}
+                    {lessonTitle(
+                      lesson,
+                      disciplineName,
+                      clientLabel,
+                      t,
+                      t("schedule.lessonInfo.clientNotSpecified")
+                    )}
                   </h3>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
-                  aria-label="Закрыть"
+                  aria-label={t("common.close")}
                   className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
                 >
                   <X className="w-5 h-5" />
@@ -195,7 +206,7 @@ export default function LessonInfoPopup({
                   <div className="flex items-start gap-2.5">
                     <User className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                     <div>
-                      <dt className={detailLabelCls}>Клиент(ы)</dt>
+                      <dt className={detailLabelCls}>{t("common.clientsLabel")}</dt>
                       <dd className={detailValueCls}>{clientLabel}</dd>
                     </div>
                   </div>
@@ -205,7 +216,7 @@ export default function LessonInfoPopup({
                   <div className="flex items-start gap-2.5">
                     <Layers className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                     <div>
-                      <dt className={detailLabelCls}>Направление</dt>
+                      <dt className={detailLabelCls}>{t("common.discipline")}</dt>
                       <dd className={detailValueCls}>{disciplineName}</dd>
                     </div>
                   </div>
@@ -214,15 +225,15 @@ export default function LessonInfoPopup({
                 <div className="flex items-start gap-2.5">
                   <CalendarDays className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                   <div>
-                    <dt className={detailLabelCls}>Дата</dt>
-                    <dd className={detailValueCls}>{formatDateRu(lesson.date)}</dd>
+                    <dt className={detailLabelCls}>{t("common.date")}</dt>
+                    <dd className={detailValueCls}>{formatDate(lesson.date)}</dd>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-2.5">
                   <Clock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                   <div>
-                    <dt className={detailLabelCls}>Время</dt>
+                    <dt className={detailLabelCls}>{t("common.time")}</dt>
                     <dd className={detailValueCls}>
                       {lesson.timeStart} – {lesson.timeEnd}
                     </dd>
@@ -233,7 +244,7 @@ export default function LessonInfoPopup({
                   <div className="flex items-start gap-2.5">
                     <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                     <div>
-                      <dt className={detailLabelCls}>Локация</dt>
+                      <dt className={detailLabelCls}>{t("schedule.form.location")}</dt>
                       <dd className={detailValueCls}>{locationName}</dd>
                     </div>
                   </div>
@@ -243,7 +254,7 @@ export default function LessonInfoPopup({
                   <div className="flex items-start gap-2.5">
                     <User className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                     <div>
-                      <dt className={detailLabelCls}>Преподаватель</dt>
+                      <dt className={detailLabelCls}>{t("schedule.form.teacher")}</dt>
                       <dd className={detailValueCls}>{teacherName}</dd>
                     </div>
                   </div>
@@ -253,12 +264,12 @@ export default function LessonInfoPopup({
                   <div className="flex items-start gap-2.5">
                     <Clock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                     <div>
-                      <dt className={detailLabelCls}>Оплата</dt>
+                      <dt className={detailLabelCls}>{t("common.paymentLabel")}</dt>
                       <dd className={detailValueCls}>
                         {lesson.paid === "yes" ? (
-                          <span className="text-slate-600">Оплачен</span>
+                          <span className="text-slate-600">{t("common.paidLabel")}</span>
                         ) : (
-                          <span className="text-rose-600">Не оплачен</span>
+                          <span className="text-rose-600">{t("common.unpaidLabel")}</span>
                         )}
                       </dd>
                     </div>
@@ -273,7 +284,7 @@ export default function LessonInfoPopup({
                   className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   <Coins className="w-3.5 h-3.5" />
-                  Оплатить
+                  {t("common.pay")}
                 </button>
               ) : null}
 
@@ -286,7 +297,7 @@ export default function LessonInfoPopup({
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
                     >
                       <Edit className="w-3.5 h-3.5" />
-                      Изменить
+                      {t("common.change")}
                     </button>
                   </RequirePermission>
                 )}
@@ -299,7 +310,7 @@ export default function LessonInfoPopup({
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      Удалить
+                      {t("common.delete")}
                     </button>
                   </RequirePermission>
                 )}
@@ -309,7 +320,7 @@ export default function LessonInfoPopup({
                   onClick={onClose}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
                 >
-                  Закрыть
+                  {t("common.close")}
                 </button>
               </div>
             </motion.div>
@@ -319,30 +330,41 @@ export default function LessonInfoPopup({
 
       <ConfirmDialog
         open={deleteConfirmOpen && lesson !== null}
-        title={lesson?.kind === "group" ? "Удалить групповое занятие?" : "Удалить персональный урок?"}
+        title={
+          lesson?.kind === "group"
+            ? t("schedule.lessonInfo.deleteGroupTitle")
+            : t("schedule.lessonInfo.deletePersonalTitle")
+        }
         description={
           lesson ? (
             lesson.kind === "group" ? (
               <>
-                Занятие{" "}
-                <strong className="font-semibold text-slate-800">
-                  {lessonTitle(lesson, disciplineName, clientLabel)}
-                </strong>{" "}
-                {formatDateRu(lesson.date)} ({lesson.timeStart} – {lesson.timeEnd}) будет убрано из расписания начиная
-                с этой даты.
+                {t("schedule.lessonInfo.deleteGroupBody", {
+                  label: lessonTitle(
+                    lesson,
+                    disciplineName,
+                    clientLabel,
+                    t,
+                    t("schedule.lessonInfo.clientNotSpecified")
+                  ),
+                  date: formatDate(lesson.date),
+                  timeStart: lesson.timeStart,
+                  timeEnd: lesson.timeEnd,
+                })}
               </>
             ) : (
               <>
-                Урок{" "}
-                <strong className="font-semibold text-slate-800">{clientLabel}</strong> от{" "}
-                {formatDateRu(lesson.date)} будет удалён безвозвратно.
+                {t("schedule.lessonInfo.deletePersonalBody", {
+                  client: clientLabel,
+                  date: formatDate(lesson.date),
+                })}
               </>
             )
           ) : (
             ""
           )
         }
-        confirmLabel="Удалить"
+        confirmLabel={t("common.delete")}
         pending={deletePending}
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirmOpen(false)}

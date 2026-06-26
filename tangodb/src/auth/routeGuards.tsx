@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePermissions } from "../hooks/usePermissions";
+import { useGuestI18n } from "../hooks/useI18n";
 import { getOrganizationIdFromSession } from "../lib/authClaims";
 import { isSyntheticTelegramEmail } from "../lib/telegram";
 import {
@@ -31,18 +32,20 @@ function LoadingScreen({ label }: { label: string }) {
 }
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useGuestI18n();
   const { session, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return <LoadingScreen label="Проверка сессии..." />;
+  if (loading) return <LoadingScreen label={t("auth.loading.checkingSession")} />;
   if (!session) return <Navigate to="/login" replace state={{ from: location }} />;
   return <>{children}</>;
 }
 
 export function GuestRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useGuestI18n();
   const { session, loading } = useAuth();
 
-  if (loading) return <LoadingScreen label="Загрузка..." />;
+  if (loading) return <LoadingScreen label={t("common.loading.default")} />;
   if (session) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
@@ -58,15 +61,17 @@ const AUTH_FLOW_PATHS = new Set([
 ]);
 
 export function AuthFlowRoute() {
+  const { t } = useGuestI18n();
   const { session, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return <LoadingScreen label="Проверка сессии..." />;
+  if (loading) return <LoadingScreen label={t("auth.loading.checkingSession")} />;
   if (!session) return <Navigate to="/login" replace state={{ from: location }} />;
   return <Outlet />;
 }
 
 export function OrgWorkspaceRoute() {
+  const { t } = useGuestI18n();
   const { session, loading: authLoading } = useAuth();
   const {
     memberships,
@@ -79,7 +84,7 @@ export function OrgWorkspaceRoute() {
   const jwtOrganizationId = getOrganizationIdFromSession(session);
 
   if (authLoading || membershipsLoading) {
-    return <LoadingScreen label="Загрузка профиля..." />;
+    return <LoadingScreen label={t("auth.loading.profile")} />;
   }
 
   if (!session) return <Navigate to="/login" replace state={{ from: location }} />;
@@ -103,7 +108,7 @@ export function OrgWorkspaceRoute() {
     return <Navigate to="/select-organization" replace />;
   }
 
-  if (orgLoading) return <LoadingScreen label="Загрузка организации..." />;
+  if (orgLoading) return <LoadingScreen label={t("common.loading.organization")} />;
 
   if (needsOnboarding && location.pathname !== "/onboarding") {
     return <Navigate to="/onboarding" replace />;

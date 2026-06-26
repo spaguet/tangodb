@@ -15,17 +15,11 @@ import {
 import { useTeamInvites, useTeamMutations } from "../../hooks/useTeamInvites";
 import { auditTableLabel, useOrgAuditLog } from "../../hooks/useOrgAuditLog";
 import { useI18n } from "../../hooks/useI18n";
+import { getTeamRolePresets } from "../../lib/i18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import type { MemberMeta, MemberRole, TeacherScope } from "../../types/organization";
 
 type MemberPreset = "admin" | "reception" | "teacher" | "accountant";
-
-const INVITE_PRESETS: { value: MemberPreset; label: string }[] = [
-  { value: "admin", label: "Администратор" },
-  { value: "reception", label: "Кассир" },
-  { value: "teacher", label: "Преподаватель" },
-  { value: "accountant", label: "Бухгалтер" },
-];
 
 const EDITABLE_PRESETS: MemberPreset[] = ["admin", "reception", "teacher", "accountant"];
 
@@ -54,20 +48,16 @@ function isEditableMemberPreset(preset: MemberPreset): boolean {
   return EDITABLE_PRESETS.includes(preset);
 }
 
-function formatJoined(iso: string | null): string {
+function formatJoined(
+  iso: string | null,
+  formatDate: (iso: string | Date, options?: Intl.DateTimeFormatOptions) => string
+): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("ru-RU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDate(iso, { day: "numeric", month: "short", year: "numeric" });
 }
 
-function formatExpires(iso: string): string {
-  return new Date(iso).toLocaleDateString("ru-RU", {
-    day: "numeric",
-    month: "short",
-  });
+function formatExpires(iso: string, formatDate: (iso: string | Date, options?: Intl.DateTimeFormatOptions) => string): string {
+  return formatDate(iso, { day: "numeric", month: "short" });
 }
 
 function inviteListLabel(inv: { first_name?: string | null; last_name?: string | null; email: string }): string {
@@ -77,7 +67,8 @@ function inviteListLabel(inv: { first_name?: string | null; last_name?: string |
 }
 
 export default function TeamSettingsPage() {
-  const { t } = useI18n();
+  const { t, locale, formatDate, formatDateTime } = useI18n();
+  const invitePresets = getTeamRolePresets(t);
   const showToast = useToast();
   const { role: currentRole, can } = usePermissions();
   const { data: members = [], isLoading, isError, error } = useTeamMembers();
@@ -161,7 +152,7 @@ export default function TeamSettingsPage() {
     }
   };
 
-  if (isLoading) return <LoadingState label="Загрузка команды..." />;
+  if (isLoading) return <LoadingState label={t("settings.team.loading")} />;
   if (isError) return <QueryErrorState error={error} />;
 
   const activeMembers = members.filter((m) => m.is_active);
@@ -244,32 +235,32 @@ export default function TeamSettingsPage() {
               clearReinvitePreset();
             }}
           >
-            {INVITE_PRESETS.filter((p) => canAssignPreset(p.value)).map((p) => (
+            {invitePresets.filter((p) => canAssignPreset(p.value)).map((p) => (
               <option key={p.value} value={p.value}>
                 {p.label}
               </option>
             ))}
           </AppSelect>
           <label className="block space-y-1">
-            <span className={labelCls}>Фамилия</span>
+            <span className={labelCls}>{t("common.lastName")}</span>
             <input
               type="text"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
               className={inputCls}
-              placeholder="Иванов"
+              placeholder={t("settings.team.lastNamePlaceholder")}
             />
           </label>
           <label className="block space-y-1">
-            <span className={labelCls}>Имя</span>
+            <span className={labelCls}>{t("common.firstName")}</span>
             <input
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
               className={inputCls}
-              placeholder="Иван"
+              placeholder={t("settings.team.firstNamePlaceholder")}
             />
           </label>
         </div>
@@ -292,7 +283,7 @@ export default function TeamSettingsPage() {
               type="button"
               onClick={copyInviteUrl}
               className="shrink-0 p-1.5 text-indigo-600 hover:bg-indigo-100 rounded cursor-pointer"
-              aria-label="Copy"
+              aria-label={t("common.copy")}
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
@@ -313,7 +304,8 @@ export default function TeamSettingsPage() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">{inviteListLabel(inv)}</p>
                   <p className="text-[11px] text-slate-400 truncate">
-                    {inv.email} · {memberRoleLabel(inv.role, inv.meta)} · до {formatExpires(inv.expires_at)}
+                    {inv.email} · {memberRoleLabel(inv.role, inv.meta, locale)} ·{" "}
+                    {t("settings.team.inviteExpires", { date: formatExpires(inv.expires_at, formatDate) })}
                   </p>
                 </div>
                 <button
@@ -354,10 +346,11 @@ export default function TeamSettingsPage() {
             >
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-800 truncate">
-                  {memberListLabel(member)}
+                  {memberListLabel(member, locale)}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  {memberRoleLabel(member.role, member.meta)} · с {formatJoined(member.joined_at)}
+                  {memberRoleLabel(member.role, member.meta, locale)} ·{" "}
+                  {t("settings.team.memberSince", { date: formatJoined(member.joined_at, formatDate) })}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -366,8 +359,8 @@ export default function TeamSettingsPage() {
                     type="button"
                     onClick={() => setProfileMember(member)}
                     className={iconBtnCls}
-                    title="Редактировать данные"
-                    aria-label={`Редактировать данные ${memberListLabel(member)}`}
+                    title={t("settings.team.editMember")}
+                    aria-label={t("settings.team.editMemberAria", { name: memberListLabel(member, locale) })}
                   >
                     <Edit className="w-4 h-4" />
                   </button>
@@ -388,8 +381,8 @@ export default function TeamSettingsPage() {
                       {EDITABLE_PRESETS.filter((p) => canAssignPreset(p) || p === preset).map(
                         (p) => (
                           <option key={p} value={p}>
-                            {INVITE_PRESETS.find((item) => item.value === p)?.label ??
-                              memberRoleLabel(presetToRoleMeta(p).role, presetToRoleMeta(p).meta)}
+                            {invitePresets.find((item) => item.value === p)?.label ??
+                              memberRoleLabel(presetToRoleMeta(p).role, presetToRoleMeta(p).meta, locale)}
                           </option>
                         )
                       )}
@@ -407,7 +400,7 @@ export default function TeamSettingsPage() {
                 )}
                 {canManageMember(member.role) && !isEditableMemberPreset(preset) && (
                   <span className="text-xs font-semibold text-slate-600 px-2.5 py-1.5 bg-slate-100 rounded-lg shrink-0">
-                    {memberRoleLabel(member.role, member.meta)}
+                    {memberRoleLabel(member.role, member.meta, locale)}
                   </span>
                 )}
               </div>
@@ -431,7 +424,7 @@ export default function TeamSettingsPage() {
                 className="flex items-center justify-between gap-2 text-xs text-slate-400 px-2 py-1"
               >
                 <span>
-                  {memberListLabel(member)} · {memberRoleLabel(member.role, member.meta)}
+                  {memberListLabel(member, locale)} · {memberRoleLabel(member.role, member.meta, locale)}
                 </span>
                 {canReinvite && (
                   <button
@@ -482,7 +475,7 @@ export default function TeamSettingsPage() {
                   {auditTableLabel(row.table_name)} · {row.operation}
                 </span>
                 <span className="shrink-0 text-slate-400">
-                  {new Date(row.changed_at).toLocaleString("ru-RU", {
+                  {formatDateTime(row.changed_at, {
                     day: "numeric",
                     month: "short",
                     hour: "2-digit",

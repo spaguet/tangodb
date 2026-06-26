@@ -1,9 +1,10 @@
 import { Check, ShieldCheck, X } from "lucide-react";
 import { useMarkPersonalLessonAttendance } from "../../hooks/usePersonalLessons";
 import {
-  getConnectionBlockReason,
+  translateConnectionBlockReason,
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
+import { useI18n } from "../../hooks/useI18n";
 import type { PersonalLesson } from "../../types";
 
 interface PersonalLessonAttendanceActionsProps {
@@ -21,20 +22,21 @@ export default function PersonalLessonAttendanceActions({
   onMarked,
   toast,
 }: PersonalLessonAttendanceActionsProps) {
+  const { t } = useI18n();
   const { connectionState } = useOnlineStatus();
   const markPersonal = useMarkPersonalLessonAttendance();
 
   const handleMark = async (status: "present" | "absent" | "excused") => {
     if (connectionState !== "online") {
-      toast(getConnectionBlockReason(connectionState) ?? "Нет соединения", "error");
+      toast(translateConnectionBlockReason(connectionState, t) ?? t("common.noConnection"), "error");
       return;
     }
     const res = await markPersonal.mutateAsync({ lessonId: lesson.id, status });
     if (!res.success) {
-      toast(res.error ?? "Не удалось сохранить отметку", "error");
+      toast(res.error ?? t("common.saveMarkFailed"), "error");
       return;
     }
-    toast("Отметка сохранена", "success");
+    toast(t("common.markSaved"), "success");
     onMarked?.();
   };
 
@@ -50,7 +52,7 @@ export default function PersonalLessonAttendanceActions({
         type="button"
         onClick={() => handleMark("present")}
         disabled={connectionState !== "online" || markPersonal.isPending}
-        title="Пришёл"
+        title={t("common.present")}
         className={`flex items-center gap-1 rounded-lg font-semibold border transition-all cursor-pointer disabled:opacity-60 ${btnBase} ${
           lesson.attendanceStatus === "present"
             ? "bg-indigo-600 border-indigo-600 text-white"
@@ -58,13 +60,13 @@ export default function PersonalLessonAttendanceActions({
         }`}
       >
         <Check className="w-3 h-3" />
-        {!compact && "Пришёл"}
+        {!compact && t("common.present")}
       </button>
       <button
         type="button"
         onClick={() => handleMark("absent")}
         disabled={connectionState !== "online" || markPersonal.isPending}
-        title="Не пришёл"
+        title={t("common.absent")}
         className={`flex items-center gap-1 rounded-lg font-semibold border transition-all cursor-pointer disabled:opacity-60 ${btnBase} ${
           lesson.attendanceStatus === "absent"
             ? "bg-rose-600 border-rose-600 text-white"
@@ -72,13 +74,13 @@ export default function PersonalLessonAttendanceActions({
         }`}
       >
         <X className="w-3 h-3" />
-        {!compact && "Не пришёл"}
+        {!compact && t("common.absent")}
       </button>
       <button
         type="button"
         onClick={() => handleMark("excused")}
         disabled={connectionState !== "online" || markPersonal.isPending}
-        title="Уважительный пропуск"
+        title={t("common.excusedFull")}
         className={`flex items-center gap-1 rounded-lg font-semibold border transition-all cursor-pointer disabled:opacity-60 ${btnBase} ${
           lesson.attendanceStatus === "excused"
             ? "bg-amber-600 border-amber-600 text-white"
@@ -86,7 +88,7 @@ export default function PersonalLessonAttendanceActions({
         }`}
       >
         <ShieldCheck className="w-3 h-3" />
-        {!compact && "Уважит."}
+        {!compact && t("common.excusedShort")}
       </button>
     </div>
   );

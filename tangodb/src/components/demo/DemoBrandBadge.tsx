@@ -1,11 +1,13 @@
 import { DEMO_URGENCY_TEXT_CLASS } from "../../lib/demoLicense";
 import { useDemoLicenseUi } from "../../hooks/useDemoLicenseUi";
+import { useI18n } from "../../hooks/useI18n";
 
 interface DemoBrandBadgeProps {
   compact?: boolean;
 }
 
 export default function DemoBrandBadge({ compact = false }: DemoBrandBadgeProps) {
+  const { t } = useI18n();
   const { isDemo, daysLeftLabel, expiryDate, purgeDate, urgency, status } = useDemoLicenseUi();
 
   if (!isDemo) return null;
@@ -13,27 +15,27 @@ export default function DemoBrandBadge({ compact = false }: DemoBrandBadgeProps)
   const toneClass = DEMO_URGENCY_TEXT_CLASS[urgency];
   const tooltip =
     status === "demo_retention"
-      ? `Демо завершено${organizationPurgeHint(purgeDate)}`
-      : `Демо до ${expiryDate}`;
+      ? t("demo.badge.tooltipRetention", { date: purgeDate !== "—" ? purgeDate : "" })
+      : t("demo.badge.tooltipActive", { date: expiryDate });
 
   return (
     <div className={compact ? "mt-0.5" : "mt-1"} title={tooltip}>
       <p className={`text-[10px] font-semibold uppercase tracking-wider leading-tight ${toneClass}`}>
-        ДЕМО-ВЕРСИЯ
+        {t("demo.badge.label")}
       </p>
       {daysLeftLabel && (
         <p className={`text-[10px] leading-tight mt-0.5 ${toneClass}`}>{daysLeftLabel}</p>
       )}
       {!compact && status === "demo_active" && expiryDate !== "—" && (
-        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">до {expiryDate}</p>
+        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+          {t("demo.badge.untilDate", { date: expiryDate })}
+        </p>
       )}
       {!compact && status === "demo_retention" && purgeDate !== "—" && (
-        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">удаление {purgeDate}</p>
+        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+          {t("demo.badge.purgeDate", { date: purgeDate })}
+        </p>
       )}
     </div>
   );
-}
-
-function organizationPurgeHint(purgeDate: string): string {
-  return purgeDate !== "—" ? `. Данные будут удалены ${purgeDate}` : "";
 }

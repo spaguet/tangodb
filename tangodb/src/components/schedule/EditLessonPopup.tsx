@@ -7,15 +7,16 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import { usePermissions } from "../../hooks/usePermissions";
 import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import {
-  getConnectionBlockReason,
-  getMutationBlockedMessage,
+  translateConnectionBlockReason,
+  translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
 import { findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { addDays, getWeekRange, isPastDate, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
-import { dowFullEntries, formatDateRu, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
+import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
+import { useI18n } from "../../hooks/useI18n";
 import type { Discipline, DisplayLesson } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import DisciplineSelect from "../ui/DisciplineSelect";
@@ -82,7 +83,11 @@ function makeGroupSlotRow(dayOfWeek = 1, timeStart = "19:00", timeEnd = "20:00")
   return { key: crypto.randomUUID(), dayOfWeek, timeStart, timeEnd };
 }
 
-function findInternalSlotConflict(rows: GroupSlotRow[], rowKey: string): string | null {
+function findInternalSlotConflict(
+  rows: GroupSlotRow[],
+  rowKey: string,
+  formDuplicateLabel: string
+): string | null {
   const row = rows.find((item) => item.key === rowKey);
   if (!row) return null;
 
@@ -90,7 +95,7 @@ function findInternalSlotConflict(rows: GroupSlotRow[], rowKey: string): string 
     if (other.key === rowKey) continue;
     if (other.dayOfWeek !== row.dayOfWeek) continue;
     if (timesOverlap(row.timeStart, row.timeEnd, other.timeStart, other.timeEnd)) {
-      return "этот день и время уже добавлены в форму";
+      return formDuplicateLabel;
     }
   }
 
@@ -110,6 +115,7 @@ export default function EditLessonPopup({
   onClose,
   onSuccess,
 }: EditLessonPopupProps) {
+  const { t, locale, formatDate } = useI18n();
   const { memberId } = useOrganization();
   const { role, can } = usePermissions();
   const { connectionState } = useOnlineStatus();
@@ -206,8 +212,9 @@ export default function EditLessonPopup({
     if (!lesson || lesson.kind !== "group") return new Map<string, string>();
 
     const conflicts = new Map<string, string>();
+    const formDuplicateLabel = t("utils.conflict.formDuplicate");
     for (const row of groupSlotRows) {
-      const internal = findInternalSlotConflict(groupSlotRows, row.key);
+      const internal = findInternalSlotConflict(groupSlotRows, row.key, formDuplicateLabel);
       if (internal) {
         conflicts.set(row.key, internal);
         continue;
@@ -215,7 +222,12 @@ export default function EditLessonPopup({
 
       const rangeError = validateTimeRange(row.timeStart, row.timeEnd);
       if (rangeError) {
-        conflicts.set(row.key, rangeError);
+        conflicts.set(
+          row.key,
+          rangeError.includes("позже") || rangeError.includes("later")
+            ? t("schedule.error.endBeforeStart")
+            : t("utils.conflict.invalidTime")
+        );
         continue;
       }
 
@@ -229,7 +241,9 @@ export default function EditLessonPopup({
           excludeSlotId: row.id,
         },
         personalLessons,
-        scheduleSlots
+        scheduleSlots,
+        t,
+        locale
       );
       if (external) {
         conflicts.set(row.key, `${external.conflictTime}: ${external.message}`);
@@ -237,7 +251,7 @@ export default function EditLessonPopup({
     }
 
     return conflicts;
-  }, [lesson, groupSlotRows, personalLessons, scheduleSlots]);
+  }, [lesson, groupSlotRows, personalLessons, scheduleSlots, t, locale]);
 
   const hasGroupSlotConflicts = groupSlotConflicts.size > 0;
 
@@ -299,29 +313,29 @@ export default function EditLessonPopup({
   const handleSaveGroup = async () => {
     if (!lesson || lesson.kind !== "group") return;
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
     if (isPastDate(lesson.date)) {
-      toast("Нельзя редактировать занятие в прошлом", "error");
+      toast(t("schedule.error.pastEdit"), "error");
       return;
     }
     if (hasGroupSlotConflicts) {
-      toast("Исправьте конфликты в расписании перед сохранением", "error");
+      toast(t("schedule.error.fixConflicts"), "error");
       return;
     }
 
     const trimmedGroup = groupName.trim();
     if (!trimmedGroup) {
-      toast("Укажите название группы.", "error");
+      toast(t("schedule.error.groupName"), "error");
       return;
     }
     if (!disciplineId) {
-      toast("Выберите дисциплину.", "error");
+      toast(t("schedule.error.discipline"), "error");
       return;
     }
     if (!teacherMemberId) {
-      toast("Выберите преподавателя.", "error");
+      toast(t("schedule.error.teacher"), "error");
       return;
     }
 
@@ -357,7 +371,7 @@ export default function EditLessonPopup({
       });
 
       if (!res.success) {
-        toast(res.error ?? "Не удалось сохранить изменения", "error");
+        toast(res.error ?? t("schedule.error.updateFailed"), "error");
         return;
       }
     }
@@ -366,7 +380,7 @@ export default function EditLessonPopup({
       if (!row.id) continue;
       const res = await deleteScheduleSlot.mutateAsync({ id: row.id, editDate: lesson.date });
       if (!res.success) {
-        toast(res.error ?? "Не удалось удалить занятие из расписания", "error");
+        toast(res.error ?? t("schedule.error.deleteScheduleFailed"), "error");
         return;
       }
     }
@@ -386,12 +400,12 @@ export default function EditLessonPopup({
       });
 
       if (!res.success) {
-        toast(res.error ?? "Не удалось добавить занятие в расписание", "error");
+        toast(res.error ?? t("schedule.error.addScheduleFailed"), "error");
         return;
       }
     }
 
-    toast("Групповое занятие обновлено", "success");
+    toast(t("schedule.success.groupUpdated"), "success");
     onSuccess();
     onClose();
   };
@@ -399,40 +413,45 @@ export default function EditLessonPopup({
   const handleSavePersonal = async () => {
     if (!lesson || lesson.kind !== "personal") return;
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
     if (isPastDate(lesson.date)) {
-      toast("Нельзя редактировать урок в прошлом", "error");
+      toast(t("schedule.error.pastEditLesson"), "error");
       return;
     }
     const targetDate = personalListEdit ? lesson.date : personalDate;
     if (!personalListEdit) {
       if (!personalDate) {
-        toast("Укажите дату урока.", "error");
+        toast(t("schedule.error.lessonDate"), "error");
         return;
       }
       if (isPastDate(personalDate)) {
-        toast("Нельзя перенести урок в прошлое", "error");
+        toast(t("schedule.error.moveToPast"), "error");
         return;
       }
     }
     if (personalListEdit && !locationId) {
-      toast("Выберите локацию.", "error");
+      toast(t("common.selectLocation"), "error");
       return;
     }
     if (!disciplineId) {
-      toast("Выберите дисциплину.", "error");
+      toast(t("common.selectDiscipline"), "error");
       return;
     }
     if (!teacherMemberId) {
-      toast("Выберите преподавателя.", "error");
+      toast(t("common.selectTeacher"), "error");
       return;
     }
 
     const rangeError = validateTimeRange(timeStart, timeEnd);
     if (rangeError) {
-      toast(rangeError, "error");
+      toast(
+        rangeError.includes("позже") || rangeError.includes("later")
+          ? t("schedule.error.endBeforeStart")
+          : t("utils.conflict.invalidTime"),
+        "error"
+      );
       return;
     }
 
@@ -445,10 +464,12 @@ export default function EditLessonPopup({
         excludeLessonId: lesson.lessonId,
       },
       personalLessons,
-      scheduleSlots
+      scheduleSlots,
+      t,
+      locale
     );
     if (conflict) {
-      toast(formatScheduleConflictToast(targetDate, conflict), "error");
+      toast(formatScheduleConflictToast(targetDate, conflict, t, locale), "error");
       return;
     }
 
@@ -464,23 +485,23 @@ export default function EditLessonPopup({
     });
 
     if (!res.success) {
-      toast(res.error ?? "Не удалось сохранить изменения", "error");
+      toast(res.error ?? t("common.saveFailed"), "error");
       return;
     }
 
-    toast("Персональный урок обновлён", "success");
+    toast(t("schedule.success.personalUpdated"), "success");
     onSuccess();
     onClose();
   };
 
   const groupVersionNote =
     lesson?.kind === "group"
-      ? `Новая версия начнёт действовать с ${formatDateRu(addDays(lesson.date, 1))}. До этого отображается текущая версия.`
+      ? t("schedule.hint.newVersionFrom", { date: formatDate(addDays(lesson.date, 1)) })
       : null;
 
   const personalEditNote = personalListEdit
-    ? "Клиенты и оплата в этом окне не редактируются — только время, локация, направление и преподаватель."
-    : "Клиенты и оплата в этом окне не редактируются — только дата, время, направление и преподаватель.";
+    ? t("schedule.hint.personalEditSchedule")
+    : t("schedule.hint.personalEditCalendar");
 
   const savePending =
     editGroupSchedule.isPending ||
@@ -510,14 +531,16 @@ export default function EditLessonPopup({
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
-                  {lesson.kind === "group" ? "Групповой урок" : "Персональный урок"}
+                  {lesson.kind === "group" ? t("common.groupLesson") : t("common.personalLesson")}
                 </p>
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Редактирование</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                  {t("schedule.popup.edit")}
+                </h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
@@ -526,13 +549,13 @@ export default function EditLessonPopup({
 
             {readOnly ? (
               <p className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5">
-                Занятия в прошлом доступны только для просмотра.
+                {t("schedule.popup.pastReadOnly")}
               </p>
             ) : (
               <div className="panel-form-stack">
                 {lesson.kind === "group" && locationName && (
                   <div className="field-stack">
-                    <label className={labelCls}>Локация</label>
+                    <label className={labelCls}>{t("schedule.form.location")}</label>
                     <div className={readOnlyCls}>
                       <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                       {locationName}
@@ -542,7 +565,7 @@ export default function EditLessonPopup({
 
                 {lesson.kind === "personal" && !personalListEdit && locationName && (
                   <div className="field-stack">
-                    <label className={labelCls}>Локация</label>
+                    <label className={labelCls}>{t("schedule.form.location")}</label>
                     <div className={readOnlyCls}>
                       <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                       {locationName}
@@ -553,15 +576,15 @@ export default function EditLessonPopup({
                 {lesson.kind === "group" ? (
                   <>
                     <div className="field-stack">
-                      <label className={labelCls}>Текущая дата занятия</label>
+                      <label className={labelCls}>{t("schedule.form.currentDate")}</label>
                       <div className={readOnlyCls}>
                         <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
-                        {formatDateRu(lesson.date)}
+                        {formatDate(lesson.date)}
                       </div>
                     </div>
 
                     <div className="field-stack">
-                      <label className={labelCls}>Название группы</label>
+                      <label className={labelCls}>{t("schedule.form.groupName")}</label>
                       <input
                         type="text"
                         required
@@ -579,13 +602,13 @@ export default function EditLessonPopup({
                     />
 
                     <AppSelect
-                      label="Преподаватель"
+                      label={t("schedule.form.teacher")}
                       value={teacherMemberId}
                       onChange={(e) => setTeacherMemberId(e.target.value)}
                       required
                     >
                       {teacherOptions.length === 0 ? (
-                        <option value="">Нет преподавателей</option>
+                        <option value="">{t("common.noTeachers")}</option>
                       ) : (
                         teacherOptions.map((member) => (
                           <option key={member.id} value={member.id}>
@@ -596,7 +619,7 @@ export default function EditLessonPopup({
                     </AppSelect>
 
                     <div className="field-stack">
-                      <label className={labelCls}>Дни и время</label>
+                      <label className={labelCls}>{t("schedule.form.daysAndTime")}</label>
                       <div className="space-y-2">
                         {groupSlotRows.map((row) => {
                           const conflict = groupSlotConflicts.get(row.key);
@@ -616,7 +639,7 @@ export default function EditLessonPopup({
                                     }
                                     className="text-xs py-2"
                                   >
-                                    {dowFullEntries().map(([val, name]) => (
+                                    {dowFullEntries(locale).map(([val, name]) => (
                                       <option key={val} value={val}>
                                         {name}
                                       </option>
@@ -640,8 +663,8 @@ export default function EditLessonPopup({
                                     type="button"
                                     onClick={() => handleRemoveGroupDay(row.key)}
                                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0 mt-1"
-                                    title="Убрать день"
-                                    aria-label="Убрать день"
+                                    title={t("schedule.form.removeDay")}
+                                    aria-label={t("schedule.form.removeDay")}
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -649,7 +672,7 @@ export default function EditLessonPopup({
                               </div>
                               {conflict && (
                                 <p className="text-[10px] text-rose-600 font-sans">
-                                  Конфликт: {conflict}
+                                  {t("common.conflict")}: {conflict}
                                 </p>
                               )}
                             </div>
@@ -657,7 +680,7 @@ export default function EditLessonPopup({
                         })}
                       </div>
                       <button type="button" onClick={handleAddGroupDay} className={addDayBtnCls}>
-                        ＋ Добавить день
+                        {t("common.addDay")}
                       </button>
                     </div>
 
@@ -673,7 +696,7 @@ export default function EditLessonPopup({
                     {!personalListEdit && (
                       <>
                         <div className="field-stack">
-                          <label className={labelCls}>Клиент(ы)</label>
+                          <label className={labelCls}>{t("common.clientsLabel")}</label>
                           <div className={readOnlyCls}>
                             <User className="w-4 h-4 text-slate-400 shrink-0" />
                             {clientLabel}
@@ -682,7 +705,7 @@ export default function EditLessonPopup({
 
                         <div className="field-stack">
                           <label className={labelCls} htmlFor="edit-lesson-date">
-                            Дата
+                            {t("common.date")}
                           </label>
                           <input
                             id="edit-lesson-date"
@@ -699,14 +722,14 @@ export default function EditLessonPopup({
 
                     {personalListEdit && (
                       <div className="grid grid-cols-2 gap-3">
-                        <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
-                        <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
+                        <TimeSelect label={t("common.timeStart")} value={timeStart} onChange={handleTimeStartChange} required />
+                        <TimeSelect label={t("common.timeEnd")} value={timeEnd} onChange={setTimeEnd} required />
                       </div>
                     )}
 
                     {personalListEdit && locations && locations.length > 0 && (
                       <AppSelect
-                        label="Локация"
+                        label={t("schedule.form.location")}
                         value={locationId}
                         onChange={(e) => setLocationId(e.target.value)}
                         required
@@ -728,13 +751,13 @@ export default function EditLessonPopup({
 
                     {!isTeacher && (
                       <AppSelect
-                        label="Преподаватель"
+                        label={t("schedule.form.teacher")}
                         value={teacherMemberId}
                         onChange={(e) => setTeacherMemberId(e.target.value)}
                         required
                       >
                         {teacherOptions.length === 0 ? (
-                          <option value="">Нет преподавателей</option>
+                          <option value="">{t("common.noTeachers")}</option>
                         ) : (
                           teacherOptions.map((member) => (
                             <option key={member.id} value={member.id}>
@@ -747,8 +770,8 @@ export default function EditLessonPopup({
 
                     {!personalListEdit && (
                       <div className="grid grid-cols-2 gap-3">
-                        <TimeSelect label="Начало" value={timeStart} onChange={handleTimeStartChange} required />
-                        <TimeSelect label="Окончание" value={timeEnd} onChange={setTimeEnd} required />
+                        <TimeSelect label={t("common.timeStart")} value={timeStart} onChange={handleTimeStartChange} required />
+                        <TimeSelect label={t("common.timeEnd")} value={timeEnd} onChange={setTimeEnd} required />
                       </div>
                     )}
 
@@ -772,10 +795,10 @@ export default function EditLessonPopup({
                       savePending ||
                       (lesson.kind === "group" && hasGroupSlotConflicts)
                     }
-                    title={getConnectionBlockReason(connectionState)}
+                    title={translateConnectionBlockReason(connectionState, t)}
                     className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    {savePending ? "Сохранение…" : "Сохранить"}
+                    {savePending ? t("common.savingChanges") : t("common.save")}
                   </button>
                 </RequirePermission>
               )}
@@ -784,7 +807,7 @@ export default function EditLessonPopup({
                 onClick={onClose}
                 className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
               >
-                {readOnly ? "Закрыть" : "Отмена"}
+                {readOnly ? t("common.close") : t("common.cancel")}
               </button>
             </div>
           </motion.div>

@@ -3,12 +3,14 @@ import { Bell, Clock } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../auth/AuthProvider";
 import { useOrganization } from "../../organization/OrganizationProvider";
+import { useI18n } from "../../hooks/useI18n";
 
 interface SubscriptionWaitlistCardProps {
   disabled?: boolean;
 }
 
 export default function SubscriptionWaitlistCard({ disabled }: SubscriptionWaitlistCardProps) {
+  const { t } = useI18n();
   const { session } = useAuth();
   const { organizationId } = useOrganization();
   const defaultEmail = session?.user.email ?? "";
@@ -44,17 +46,15 @@ export default function SubscriptionWaitlistCard({ disabled }: SubscriptionWaitl
       }
 
       if (!data?.ok) {
-        throw new Error(typeof data?.error === "string" ? data.error : "Не удалось сохранить заявку");
+        throw new Error(typeof data?.error === "string" ? data.error : t("license.waitlist.saveError"));
       }
 
       setMessage(
-        data.already_registered
-          ? "Вы уже в списке ожидания — мы сообщим, когда подписка станет доступна."
-          : "Заявка сохранена — мы сообщим, когда подписка станет доступна."
+        data.already_registered ? t("license.waitlist.alreadyRegistered") : t("license.waitlist.saved")
       );
     } catch (err) {
-      const text = err instanceof Error ? err.message : "Не удалось сохранить заявку";
-      setError(text === "Too many requests" ? "Слишком много попыток — попробуйте позже" : text);
+      const text = err instanceof Error ? err.message : t("license.waitlist.saveError");
+      setError(text === "Too many requests" ? t("license.waitlist.tooManyRequests") : text);
     } finally {
       setLoading(false);
     }
@@ -65,17 +65,14 @@ export default function SubscriptionWaitlistCard({ disabled }: SubscriptionWaitl
       <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3 space-y-2">
         <p className="text-xs text-slate-600 flex items-start gap-2">
           <Clock className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
-          <span>
-            <span className="font-semibold text-slate-700">Месячная подписка — скоро.</span> Оформление через Stripe
-            пока недоступно. Оставьте email — сообщим о запуске.
-          </span>
+          <span>{t("license.waitlist.stripeSoon")}</span>
         </p>
         <div className="grid grid-cols-2 gap-2 opacity-60 pointer-events-none select-none">
           <div className="py-2.5 bg-indigo-600/70 text-white text-xs font-semibold uppercase tracking-wider rounded-lg text-center">
-            Месяц
+            {t("license.waitlist.month")}
           </div>
           <div className="py-2.5 bg-slate-800/70 text-white text-xs font-semibold uppercase tracking-wider rounded-lg text-center">
-            Год
+            {t("license.waitlist.year")}
           </div>
         </div>
       </div>
@@ -83,7 +80,7 @@ export default function SubscriptionWaitlistCard({ disabled }: SubscriptionWaitl
       <div className="space-y-2">
         <p className="text-xs text-slate-500 flex items-start gap-2">
           <Bell className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-          Список ожидания подписки
+          {t("license.waitlist.title")}
         </p>
         {error && (
           <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">{error}</p>
@@ -107,7 +104,7 @@ export default function SubscriptionWaitlistCard({ disabled }: SubscriptionWaitl
           onClick={() => void submit()}
           className="w-full py-2.5 border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-50"
         >
-          {loading ? "Сохранение..." : "Уведомить о запуске"}
+          {loading ? t("common.saving") : t("license.waitlist.notify")}
         </button>
       </div>
     </div>

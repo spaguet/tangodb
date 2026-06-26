@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { fieldCls as baseFieldCls } from "../components/ui/AppSelect";
+import { useGuestI18n } from "../hooks/useI18n";
 
 interface AuthLayoutProps {
   title: string;
@@ -61,6 +62,7 @@ export function AuthField({
   required?: boolean;
   readOnly?: boolean;
 }) {
+  const { t } = useGuestI18n();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && passwordVisible ? "text" : type;
@@ -87,7 +89,7 @@ export function AuthField({
             type="button"
             onClick={() => setPasswordVisible((v) => !v)}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
-            aria-label={passwordVisible ? "Скрыть пароль" : "Показать пароль"}
+            aria-label={passwordVisible ? t("auth.aria.hidePassword") : t("auth.aria.showPassword")}
           >
             {passwordVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>

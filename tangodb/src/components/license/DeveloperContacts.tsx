@@ -5,12 +5,15 @@ import {
   isSafeWhatsappUrl,
   type DeveloperContactsConfig,
 } from "../../lib/paymentConfig";
+import { useI18n } from "../../hooks/useI18n";
 
 interface DeveloperContactsProps {
   contacts: DeveloperContactsConfig | null | undefined;
 }
 
 export default function DeveloperContacts({ contacts }: DeveloperContactsProps) {
+  const { t } = useI18n();
+
   if (!contacts) return null;
 
   const mailto = isSafeMailto(contacts.email);
@@ -21,7 +24,9 @@ export default function DeveloperContacts({ contacts }: DeveloperContactsProps) 
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Контакты разработчика</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        {t("license.contacts.title")}
+      </p>
       <div className="flex flex-wrap gap-2">
         {mailto && (
           <a

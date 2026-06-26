@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import type { I18nKey } from "../lib/i18n/keys";
+
 export type ConnectionState = "online" | "offline" | "server-unreachable";
 
 const HEALTH_CHECK_INTERVAL_MS = 30_000;
@@ -50,22 +52,34 @@ async function checkSupabaseReachable(): Promise<boolean> {
 
 export function getConnectionBlockReason(
   connectionState: ConnectionState
-): string | undefined {
-  if (connectionState === "offline") return "Нет соединения";
-  if (connectionState === "server-unreachable") return "Сервер недоступен";
+): I18nKey | undefined {
+  if (connectionState === "offline") return "common.noConnection";
+  if (connectionState === "server-unreachable") return "common.serverUnavailable";
   return undefined;
 }
 
 export function getMutationBlockedMessage(
   connectionState: ConnectionState
-): string {
-  if (connectionState === "offline") {
-    return "Нет соединения. Действие недоступно offline";
-  }
-  if (connectionState === "server-unreachable") {
-    return "Сервер недоступен. Действие временно невозможно";
-  }
-  return "";
+): I18nKey | undefined {
+  if (connectionState === "offline") return "common.offline.actionBlocked";
+  if (connectionState === "server-unreachable") return "common.offline.serverActionBlocked";
+  return undefined;
+}
+
+export function translateConnectionBlockReason(
+  connectionState: ConnectionState,
+  translate: (key: I18nKey) => string
+): string | undefined {
+  const key = getConnectionBlockReason(connectionState);
+  return key ? translate(key) : undefined;
+}
+
+export function translateMutationBlockedMessage(
+  connectionState: ConnectionState,
+  translate: (key: I18nKey) => string
+): string | undefined {
+  const key = getMutationBlockedMessage(connectionState);
+  return key ? translate(key) : undefined;
 }
 
 export function useOnlineStatus(): {

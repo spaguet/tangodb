@@ -17,6 +17,7 @@ import {
   isTelegramWebApp,
 } from "../lib/telegram";
 import type { TelegramLoginWidgetPayload } from "../lib/telegram";
+import { useGuestI18n } from "../hooks/useI18n";
 
 declare global {
   interface Window {
@@ -27,6 +28,7 @@ declare global {
 type LoginTab = "telegram" | "email";
 
 export default function LoginPage() {
+  const { t, locale } = useGuestI18n();
   const { signInWithTelegram, signInWithEmail } = useAuth();
   const navigate = useNavigate();
   const widgetRef = useRef<HTMLDivElement>(null);
@@ -54,7 +56,7 @@ export default function LoginPage() {
       .then((result) => {
         if (!result.recoveryCode) goAfterLogin(result.isNewDemo);
       })
-      .catch((err: Error) => setError(err.message ?? "Ошибка входа через Telegram"))
+      .catch((err: Error) => setError(err.message ?? t("auth.login.telegramError")))
       .finally(() => setLoading(false));
   }, [signInWithTelegram, navigate]);
 
@@ -68,7 +70,7 @@ export default function LoginPage() {
         const result = await signInWithTelegram({ widgetPayload: user });
         if (!result.recoveryCode) goAfterLogin(result.isNewDemo);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Ошибка входа");
+        setError(err instanceof Error ? err.message : t("auth.login.error"));
       } finally {
         setLoading(false);
       }
@@ -96,14 +98,14 @@ export default function LoginPage() {
       await signInWithEmail(email.trim(), password);
       goAfterLogin();
     } catch (err) {
-      setError(parseAuthError(err));
+      setError(parseAuthError(err, locale));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthLayout title="TangoDB" subtitle="Вход в CRM">
+    <AuthLayout title="TangoDB" subtitle={t("auth.login.subtitle")}>
       <div className="flex rounded-lg border border-slate-200 p-1 bg-slate-50">
         <button
           type="button"
@@ -128,7 +130,7 @@ export default function LoginPage() {
       {loading && (
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <div className="w-4 h-4 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin" />
-          Авторизация...
+          {t("auth.login.authorizing")}
         </div>
       )}
 
@@ -145,7 +147,7 @@ export default function LoginPage() {
             required
           />
           <AuthField
-            label="Пароль"
+            label={t("auth.password")}
             type="password"
             value={password}
             onChange={setPassword}
@@ -153,32 +155,33 @@ export default function LoginPage() {
             required
           />
           <div className="text-right">
-            <AuthLink to="/auth/forgot-password">Забыли пароль?</AuthLink>
+            <AuthLink to="/auth/forgot-password">{t("auth.login.forgotPasswordLink")}</AuthLink>
           </div>
-          <AuthButton loading={loading}>Войти</AuthButton>
+          <AuthButton loading={loading}>{t("auth.login.submit")}</AuthButton>
         </form>
       ) : isInsideTelegramClient() ? (
         <p className="text-sm text-slate-500 flex items-center gap-2">
           <Send className="w-4 h-4 text-indigo-500" />
           {isTelegramWebApp()
-            ? "Открыто в Telegram Mini App — вход выполняется автоматически."
-            : "Открыто в Telegram, но данные авторизации не получены."}
+            ? t("auth.login.telegramMiniAppAuto")
+            : t("auth.login.telegramNoInitData")}
         </p>
       ) : (
         <div className="space-y-3">
-          <p className="text-sm text-slate-500">Войдите через Telegram Login Widget.</p>
+          <p className="text-sm text-slate-500">{t("auth.login.telegramWidgetHint")}</p>
           {botUsername ? (
             <div ref={widgetRef} className="flex justify-center" />
           ) : (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-              Укажите VITE_TELEGRAM_BOT_USERNAME в .env.local
+              {t("auth.login.telegramBotEnvMissing")}
             </p>
           )}
         </div>
       )}
 
       <p className="text-sm text-slate-500 text-center">
-        Нет аккаунта? <AuthLink to="/register">Регистрация</AuthLink>
+        {t("auth.login.noAccount")}{" "}
+        <AuthLink to="/register">{t("auth.login.registerLink")}</AuthLink>
       </p>
     </AuthLayout>
   );

@@ -25,18 +25,20 @@ import { useScheduleGroups } from "../hooks/useScheduleGroups";
 import { useRecordSubscriptionPayment, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
 import type { PaymentMethod } from "../types";
 import {
-  getConnectionBlockReason,
-  getMutationBlockedMessage,
+  translateConnectionBlockReason,
+  translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
-import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionDaysLeft, getSubscriptionTariffLabel, isMonthlyUnlimitedSubscription, isMonthlyUnlimitedTariff, pluralizeRu, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitleRu } from "../lib/utils";
+import { useI18n } from "../hooks/useI18n";
+import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionDaysLeft, getSubscriptionTariffLabel, isMonthlyUnlimitedSubscription, isMonthlyUnlimitedTariff, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitle } from "../lib/utils";
 import { filterActiveSubscriptions, filterHistorySubscriptions, ALL_LOCATIONS_KEY } from "../lib/subscriptionFilters";
 import { buildGroupNameById, getSubscriptionGroupDisplayNames, listScheduleGroupOptions } from "../lib/scheduleGroups";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules } from "../lib/orgModules";
 import { useSettings } from "../settings/SettingsProvider";
 import { useUIStore } from "../store/ui";
+import { resolveMutationError } from "../lib/resolveMutationError";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
@@ -49,6 +51,7 @@ import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import RequirePermission from "./RequirePermission";
 import type { ToastType } from "../App";
 import type { Client, Discipline, Price, Subscription } from "../types";
+import type { I18nKey } from "../lib/i18n/keys";
 
 const NO_DISCIPLINE_KEY = "__none__";
 const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
@@ -64,6 +67,7 @@ export default function SubscriptionsPanel({
   initialTab = "active",
   toast,
 }: SubscriptionsPanelProps) {
+  const { t, plural, locale } = useI18n();
   const navigate = useNavigate();
   const { connectionState } = useOnlineStatus();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
@@ -278,41 +282,41 @@ export default function SubscriptionsPanel({
 
   const handleCheckout = async () => {
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
     if (!selectedTariff?.id) {
-      toast("Выберите тариф из прайс-листа.", "error");
+      toast(t("subscriptions.error.selectTariff"), "error");
       return;
     }
 
     if (!client1Query || !client1Id) {
-      toast("Выберите клиента из поискового списка.", "error");
+      toast(t("subscriptions.error.selectClient"), "error");
       return;
     }
 
     if (needsSecondClient && (!client2Query || !client2Id)) {
-      toast("Выберите второго клиента пары из списка.", "error");
+      toast(t("subscriptions.error.selectSecondClient"), "error");
       return;
     }
 
     if (needsSecondClient && client1Id === client2Id) {
-      toast("Оба клиента совпадают. Выберите разных клиентов.", "error");
+      toast(t("subscriptions.error.sameClients"), "error");
       return;
     }
 
     if (!disciplineId) {
-      toast("Выберите дисциплину.", "error");
+      toast(t("subscriptions.error.selectDiscipline"), "error");
       return;
     }
 
     if (!activationDate) {
-      toast("Укажите дату активации абонемента.", "error");
+      toast(t("subscriptions.error.activationDate"), "error");
       return;
     }
 
     if (selectedGroupIds.length === 0) {
-      toast("Выберите хотя бы одну группу, в которой действует абонемент.", "error");
+      toast(t("subscriptions.error.selectGroups"), "error");
       return;
     }
 
@@ -334,7 +338,7 @@ export default function SubscriptionsPanel({
 
     const res = await addSubscription.mutateAsync(payload);
     if (!res.success) {
-      toast(res.error || "Абонемент не оформлен", "error");
+      toast(resolveMutationError(res.error, "subscriptions.error.sellFailed", t), "error");
       return;
     }
 
@@ -350,12 +354,12 @@ export default function SubscriptionsPanel({
         method: paymentMethod,
       });
       if (!paymentRes.success) {
-        toast(paymentRes.error || "Абонемент оформлен, но оплата не зафиксирована", "error");
+        toast(resolveMutationError(paymentRes.error, "subscriptions.error.paymentFailed", t), "error");
         return;
       }
     }
 
-    toast("Абонемент продан и оплата зафиксирована", "success");
+    toast(t("subscriptions.success.sold"), "success");
     setClient1Query("");
     setClient1Id("");
     setClient2Query("");
@@ -366,14 +370,14 @@ export default function SubscriptionsPanel({
   const handleConfirmFinish = async () => {
     if (!finishTarget) return;
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
     const res = await finishSubscription.mutateAsync(finishTarget.id);
     if (!res.success) {
-      toast(res.error || "Не удалось завершить абонемент", "error");
+      toast(resolveMutationError(res.error, "subscriptions.error.finishFailed", t), "error");
     } else {
-      toast("Абонемент завершён", "success");
+      toast(t("subscriptions.success.finished"), "success");
       setFinishTarget(null);
     }
   };
@@ -472,12 +476,12 @@ export default function SubscriptionsPanel({
 
     return Array.from(groups.entries()).sort(([keyA], [keyB]) => {
       const nameA =
-        keyA === NO_DISCIPLINE_KEY ? "Без направления" : disciplineMap[keyA]?.name ?? "";
+        keyA === NO_DISCIPLINE_KEY ? t("utils.noDiscipline") : disciplineMap[keyA]?.name ?? "";
       const nameB =
-        keyB === NO_DISCIPLINE_KEY ? "Без направления" : disciplineMap[keyB]?.name ?? "";
+        keyB === NO_DISCIPLINE_KEY ? t("utils.noDiscipline") : disciplineMap[keyB]?.name ?? "";
       return nameA.localeCompare(nameB, "ru");
     });
-  }, [filteredActiveRecords, disciplineMap]);
+  }, [filteredActiveRecords, disciplineMap, t]);
 
   const toggleDiscipline = (key: string) => {
     setExpandedDisciplines((prev) => {
@@ -488,15 +492,18 @@ export default function SubscriptionsPanel({
     });
   };
 
-  if (isLoading) return <LoadingState label="Загрузка абонементов..." />;
+  if (isLoading) return <LoadingState label={t("subscriptions.loading")} />;
   if (isError) return <QueryErrorState error={error} />;
 
+  const subscriptionCountKey = (count: number) =>
+    plural(count, ["subscriptions.count.one", "subscriptions.count.few", "subscriptions.count.many"]) as I18nKey;
+
   const subscriptionTabs = [
-    { id: "active", label: "Активные", icon: FileCheck },
+    { id: "active", label: t("subscriptions.tab.active"), icon: FileCheck },
     ...(canAccessPanel("subscriptions_sell")
-      ? [{ id: "sell" as const, label: "Продажа", icon: Ticket }]
+      ? [{ id: "sell" as const, label: t("subscriptions.tab.sell"), icon: Ticket }]
       : []),
-    { id: "history", label: "История", icon: History },
+    { id: "history", label: t("subscriptions.tab.history"), icon: History },
   ] as const;
 
   return (
@@ -510,9 +517,9 @@ export default function SubscriptionsPanel({
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight text-slate-800">Действующие абонементы</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-800">{t("subscriptions.activeTitle")}</h2>
               <p className="text-xs text-slate-400 mt-1">
-                Фильтруйте по локации, дисциплине или заканчивающимся — без выбора показаны все активные
+                {t("subscriptions.activeHint")}
               </p>
             </div>
 
@@ -523,7 +530,7 @@ export default function SubscriptionsPanel({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Поиск по фамилии клиента..."
+                  placeholder={t("subscriptions.search.placeholder")}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg text-xs transition-all"
                 />
               </div>
@@ -532,11 +539,11 @@ export default function SubscriptionsPanel({
 
           <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <AppSelect
-              label="Локация"
+              label={t("subscriptions.filter.location")}
               value={activeLocationFilter}
               onChange={(e) => setActiveLocationFilter(e.target.value)}
             >
-              <option value="">Все</option>
+              <option value="">{t("subscriptions.filter.all")}</option>
               {locations.map((loc) => (
                 <option key={loc.id} value={loc.id}>
                   {loc.name}
@@ -545,11 +552,11 @@ export default function SubscriptionsPanel({
             </AppSelect>
 
             <AppSelect
-              label="Дисциплина"
+              label={t("subscriptions.filter.discipline")}
               value={activeDisciplineFilter}
               onChange={(e) => setActiveDisciplineFilter(e.target.value)}
             >
-              <option value="">Все дисциплины</option>
+              <option value="">{t("subscriptions.filter.allDisciplines")}</option>
               {disciplines.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
@@ -559,11 +566,11 @@ export default function SubscriptionsPanel({
 
             {activeLocationFilter ? (
               <AppSelect
-                label="Группы"
+                label={t("subscriptions.filter.groups")}
                 value={activeGroupFilter}
                 onChange={(e) => setActiveGroupFilter(e.target.value)}
               >
-                <option value="">Все группы</option>
+                <option value="">{t("subscriptions.filter.allGroups")}</option>
                 {activeLocationGroupOptions.map((group) => (
                   <option key={group.key} value={group.key}>
                     {group.label}
@@ -579,7 +586,7 @@ export default function SubscriptionsPanel({
                 onChange={(e) => setEndingOnlyFilter(e.target.checked)}
                 className={checkboxCls}
               />
-              <span className="font-semibold">Заканчивающиеся (≤ 2 занятия)</span>
+              <span className="font-semibold">{t("subscriptions.filter.expiring")}</span>
             </label>
           </div>
 
@@ -589,15 +596,15 @@ export default function SubscriptionsPanel({
                 <Ticket className="w-8 h-8 mx-auto text-slate-300" />
                 <p className="text-sm">
                   {search.trim() || activeLocationFilter || activeDisciplineFilter || activeGroupFilter || endingOnlyFilter
-                    ? "По выбранным условиям абонементов не найдено."
-                    : "Активных абонементов пока нет."}
+                    ? t("subscriptions.empty.filtered")
+                    : t("subscriptions.empty.none")}
                 </p>
                 {!search.trim() && !activeLocationFilter && !activeDisciplineFilter && !activeGroupFilter && !endingOnlyFilter && (
                   <button
                     onClick={() => switchTab("sell")}
                     className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
                   >
-                    Продать первый абонемент →
+                    {t("subscriptions.sellFirstLink")}
                   </button>
                 )}
               </div>
@@ -605,8 +612,8 @@ export default function SubscriptionsPanel({
               disciplineGroups.map(([disciplineKey, subsInGroup]) => {
                 const disciplineName =
                   disciplineKey === NO_DISCIPLINE_KEY
-                    ? "Без направления"
-                    : disciplineMap[disciplineKey]?.name ?? "Без направления";
+                    ? t("utils.noDiscipline")
+                    : disciplineMap[disciplineKey]?.name ?? t("utils.noDiscipline");
                 const isDisciplineExpanded = expandedDisciplines.has(disciplineKey);
 
                 return (
@@ -623,12 +630,7 @@ export default function SubscriptionsPanel({
                       <div className="min-w-0">
                         <h3 className="text-sm font-semibold text-slate-800 truncate">{disciplineName}</h3>
                         <p className="text-[11px] text-slate-400 font-sans mt-0.5">
-                          {subsInGroup.length}{" "}
-                          {subsInGroup.length === 1
-                            ? "действующий абонемент"
-                            : subsInGroup.length < 5
-                              ? "действующих абонемента"
-                              : "действующих абонементов"}
+                          {t(subscriptionCountKey(subsInGroup.length), { count: subsInGroup.length })}
                         </p>
                       </div>
                       <ChevronDown
@@ -710,20 +712,24 @@ export default function SubscriptionsPanel({
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-400">
-                            {isMonthly ? "Осталось дней" : "Осталось занятий"}
+                            {isMonthly ? t("subscriptions.remaining.days") : t("subscriptions.remaining.lessons")}
                           </span>
                           <span className="font-sans font-semibold text-slate-800">
                             {isMonthly ? (
                               <>
                                 {daysLeft ?? 0}{" "}
                                 <span className="text-slate-400 font-normal">
-                                  {pluralizeRu(daysLeft ?? 0, ["день", "дня", "дней"])}
+                                  {t(
+                                    plural(daysLeft ?? 0, ["common.day.one", "common.day.few", "common.day.many"]) as I18nKey
+                                  )}
                                 </span>
                               </>
                             ) : (
                               <>
                                 {sub.lessonsLeft}{" "}
-                                <span className="text-slate-400 font-normal">из {sub.lessonsTotal}</span>
+                                <span className="text-slate-400 font-normal">
+                                  {t("common.of")} {sub.lessonsTotal}
+                                </span>
                               </>
                             )}
                           </span>
@@ -762,7 +768,7 @@ export default function SubscriptionsPanel({
                             <div className="flex items-center gap-2 flex-wrap">
                               {sub.category === "private" ? (
                                 <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                                  персональный
+                                  {t("subscriptions.card.personal")}
                                 </span>
                               ) : disciplineName ? (
                                 <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-slate-500">
@@ -782,20 +788,23 @@ export default function SubscriptionsPanel({
 
                           <div className="space-y-1.5">
                             <p className="text-[11px] text-slate-400 font-sans">
-                              Активирован: {sub.activationDate || "—"}
+                              {t("subscriptions.card.activated", { date: sub.activationDate || "—" })}
                             </p>
                             <p className="text-[11px] text-slate-400 font-sans">
-                              Посещений: {attendanceStats.visits} · Пропусков: {attendanceStats.absences}
+                              {t("subscriptions.card.visits", {
+                                visits: attendanceStats.visits,
+                                absences: attendanceStats.absences,
+                              })}
                             </p>
 
                             {sub.lessonsTotal === 8 && !isMonthly ? (
                               sub.freezeUsed > 0 ? (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                                  <Snowflake className="w-3 h-3" /> заморозка использована
+                                  <Snowflake className="w-3 h-3" /> {t("subscriptions.card.freezeUsed")}
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
-                                  <Snowflake className="w-3 h-3" /> заморозка доступна
+                                  <Snowflake className="w-3 h-3" /> {t("subscriptions.card.freezeAvailable")}
                                 </span>
                               )
                             ) : null}
@@ -855,11 +864,11 @@ export default function SubscriptionsPanel({
 
                         <div className="flex items-center justify-between pt-1 text-xs">
                           {isMonthly ? (
-                            <span className="text-slate-400">До {sub.expiresAt || "—"}</span>
+                            <span className="text-slate-400">{t("subscriptions.card.expiresAt", { date: sub.expiresAt || "—" })}</span>
                           ) : isAlarm ? (
-                            <span className="text-rose-600 font-semibold">Пора предложить продление</span>
+                            <span className="text-rose-600 font-semibold">{t("subscriptions.card.suggestRenewal")}</span>
                           ) : (
-                            <span className="text-slate-400">Баланс в норме</span>
+                            <span className="text-slate-400">{t("subscriptions.card.balanceOk")}</span>
                           )}
 
                           <RequirePermission action="subscriptions.write">
@@ -867,10 +876,10 @@ export default function SubscriptionsPanel({
                             type="button"
                             onClick={() => setFinishTarget({ id: sub.id, name: clientNameStr })}
                             disabled={connectionState !== "online"}
-                            title={getConnectionBlockReason(connectionState)}
+                            title={translateConnectionBlockReason(connectionState, t)}
                             className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
                           >
-                            Завершить
+                            {t("subscriptions.confirm.finishConfirm")}
                           </button>
                           </RequirePermission>
                         </div>
@@ -892,19 +901,19 @@ export default function SubscriptionsPanel({
           className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
         >
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-800">История абонементов</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-800">{t("subscriptions.historyTitle")}</h2>
             <p className="text-xs text-slate-400 mt-1">
-              Выберите дисциплину, локацию или клиента — без фильтра список не отображается
+              {t("subscriptions.historyHint")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <AppSelect
-              label="Дисциплина"
+              label={t("subscriptions.filter.discipline")}
               value={historyDisciplineId}
               onChange={(e) => setHistoryDisciplineId(e.target.value)}
             >
-              <option value="">Не выбрана</option>
+              <option value="">{t("subscriptions.filter.notSelectedF")}</option>
               {disciplines.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
@@ -913,12 +922,12 @@ export default function SubscriptionsPanel({
             </AppSelect>
 
             <AppSelect
-              label="Локация"
+              label={t("subscriptions.filter.location")}
               value={historyLocationId}
               onChange={(e) => setHistoryLocationId(e.target.value)}
             >
-              <option value="">Не выбрана</option>
-              <option value={ALL_LOCATIONS_KEY}>Все</option>
+              <option value="">{t("subscriptions.filter.notSelectedF")}</option>
+              <option value={ALL_LOCATIONS_KEY}>{t("subscriptions.filter.all")}</option>
               {locations.map((loc) => (
                 <option key={loc.id} value={loc.id}>
                   {loc.name}
@@ -927,14 +936,14 @@ export default function SubscriptionsPanel({
             </AppSelect>
 
             <AppSelect
-              label="Клиент"
+              label={t("subscriptions.sell.client")}
               value={historyClientId}
               onChange={(e) => setHistoryClientId(e.target.value)}
             >
-              <option value="">Не выбран</option>
+              <option value="">{t("subscriptions.filter.notSelectedM")}</option>
               {[...directoryClients]
                 .sort((a, b) =>
-                  `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, "ru")
+                  `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, locale)
                 )
                 .map((c) => (
                   <option key={c.id} value={c.id}>
@@ -950,19 +959,19 @@ export default function SubscriptionsPanel({
                 type="button"
                 onClick={() => setHistoryMonth((m) => shiftMonth(m, -1))}
                 className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                aria-label="Предыдущий месяц"
+                aria-label={t("subscriptions.aria.prevMonth")}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex flex-col items-center gap-0.5 min-w-0">
-                <span className="text-sm font-semibold text-slate-800">{formatMonthTitleRu(historyMonth)}</span>
+                <span className="text-sm font-semibold text-slate-800">{formatMonthTitle(historyMonth, locale)}</span>
                 {!isViewingCurrentHistoryMonth && (
                   <button
                     type="button"
                     onClick={() => setHistoryMonth(currentYearMonth())}
                     className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
                   >
-                    Текущий месяц
+                    {t("subscriptions.history.currentMonth")}
                   </button>
                 )}
               </div>
@@ -970,7 +979,7 @@ export default function SubscriptionsPanel({
                 type="button"
                 onClick={() => setHistoryMonth((m) => shiftMonth(m, 1))}
                 className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                aria-label="Следующий месяц"
+                aria-label={t("subscriptions.aria.nextMonth")}
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -983,19 +992,22 @@ export default function SubscriptionsPanel({
                 type="button"
                 onClick={() => setHistoryYear((y) => y - 1)}
                 className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                aria-label="Предыдущий год"
+                aria-label={t("subscriptions.aria.prevYear")}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex flex-col items-center gap-0.5 min-w-0">
-                <span className="text-sm font-semibold text-slate-800">{historyYear} г.</span>
+                <span className="text-sm font-semibold text-slate-800">
+                  {historyYear}
+                  {t("common.yearSuffix")}
+                </span>
                 {!isViewingCurrentHistoryYear && (
                   <button
                     type="button"
                     onClick={() => setHistoryYear(currentYear())}
                     className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
                   >
-                    Текущий год
+                    {t("subscriptions.history.currentYear")}
                   </button>
                 )}
               </div>
@@ -1003,7 +1015,7 @@ export default function SubscriptionsPanel({
                 type="button"
                 onClick={() => setHistoryYear((y) => y + 1)}
                 className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                aria-label="Следующий год"
+                aria-label={t("subscriptions.aria.nextYear")}
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -1015,13 +1027,13 @@ export default function SubscriptionsPanel({
               <div className="text-center py-16 text-slate-400 space-y-2">
                 <History className="w-8 h-8 mx-auto text-slate-300" />
                 <p className="text-sm max-w-md mx-auto leading-relaxed">
-                  Выберите дисциплину, локацию или клиента, чтобы отобразить историю абонементов.
+                  {t("subscriptions.history.selectFilter")}
                 </p>
               </div>
             ) : historyRecords.length === 0 ? (
               <div className="text-center py-16 text-slate-400 space-y-2">
                 <Ticket className="w-8 h-8 mx-auto text-slate-300" />
-                <p className="text-sm">По выбранным условиям абонементов не найдено.</p>
+                <p className="text-sm">{t("subscriptions.empty.filtered")}</p>
               </div>
             ) : (
               historyRecords.map((sub) => {
@@ -1059,14 +1071,16 @@ export default function SubscriptionsPanel({
                                 : "text-indigo-700 bg-indigo-50 border-indigo-100"
                             }`}
                           >
-                            {isFinished ? "Завершён" : "Активен"}
+                            {isFinished ? t("subscriptions.status.finished") : t("subscriptions.status.active")}
                           </span>
                         </div>
                       </div>
                       <div className="text-right shrink-0 space-y-0.5">
-                        <p className="text-[11px] text-slate-400 font-sans">Активирован: {sub.activationDate || "—"}</p>
+                        <p className="text-[11px] text-slate-400 font-sans">
+                          {t("subscriptions.card.activated", { date: sub.activationDate || "—" })}
+                        </p>
                         <p className="text-xs font-sans font-semibold text-slate-700">
-                          {sub.lessonsLeft} из {sub.lessonsTotal} занятий
+                          {t("subscriptions.card.lessonsOf", { left: sub.lessonsLeft, total: sub.lessonsTotal })}
                         </p>
                       </div>
                     </div>
@@ -1084,9 +1098,9 @@ export default function SubscriptionsPanel({
               <Ticket className="w-5 h-5 text-indigo-600" />
             </div>
             <div className="panel-form-header-text">
-              <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа абонемента</h2>
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("subscriptions.sellTitle")}</h2>
               <p className="text-slate-400 text-[11px] leading-snug">
-                Оформите новый групповой абонемент — запись сразу попадёт в базу.
+                {t("subscriptions.sellSubtitle")}
               </p>
             </div>
           </div>
@@ -1102,15 +1116,15 @@ export default function SubscriptionsPanel({
                 }}
                 className={`${checkboxCls} mt-0.5`}
               />
-              <span className="text-xs leading-snug">Локальный прайс-лист</span>
+              <span className="text-xs leading-snug">{t("subscriptions.sell.localPriceList")}</span>
             </label>
 
             {localPriceList && (
               <div className="field-stack panel-form-full-row-md animate-fade-in">
-                <label className={labelCls}>Локация</label>
+                <label className={labelCls}>{t("subscriptions.filter.location")}</label>
                 {locations.length === 0 ? (
                   <p className="text-xs text-slate-400 font-sans leading-relaxed">
-                    Локации не добавлены. Создайте их в разделе «Настройки CRM» → «Локации».
+                    {t("subscriptions.sell.noLocationsHint")}
                   </p>
                 ) : (
                   <AppSelect
@@ -1132,12 +1146,12 @@ export default function SubscriptionsPanel({
 
             {(!localPriceList || (localPriceList && saleLocationId && locations.length > 0)) && (
             <div className="field-stack">
-              <label className={labelCls}>ТАРИФ АБОНЕМЕНТА</label>
+              <label className={labelCls}>{t("subscriptions.sell.tariffLabel")}</label>
               {groupTariffs.length === 0 ? (
                 <p className="text-xs text-slate-400 font-sans leading-relaxed">
                   {localPriceList
-                    ? "К выбранной локации не привязаны тарифы на абонементы. Добавьте локальный тариф в прайс-лист или используйте глобальные тарифы без галочки «Локальный прайс-лист»."
-                    : "Нет глобальных групповых тарифов в прайс-листе."}
+                    ? t("subscriptions.sell.noTariffs")
+                    : t("subscriptions.sell.noGlobalTariffs")}
                 </p>
               ) : (
                 <AppSelect
@@ -1155,10 +1169,13 @@ export default function SubscriptionsPanel({
                 >
                   {groupTariffs.map((tariff) => (
                     <option key={tariff.id} value={tariff.id!}>
-                      {getPriceLabel(tariff)}
+                      {getPriceLabel(tariff, t)}
                       {isMonthlyUnlimitedTariff(tariff)
-                        ? ` · безлимит на месяц · ${formatCurrency(tariff.price)}`
-                        : ` · ${tariff.lessons} занятий · ${formatCurrency(tariff.price)}`}
+                        ? t("subscriptions.sell.unlimitedMonth", { price: formatCurrency(tariff.price) })
+                        : t("subscriptions.sell.lessonsPrice", {
+                            lessons: tariff.lessons,
+                            price: formatCurrency(tariff.price),
+                          })}
                     </option>
                   ))}
                 </AppSelect>
@@ -1177,20 +1194,20 @@ export default function SubscriptionsPanel({
             />
 
             <GroupCheckboxDropdown
-              label="Групповые уроки"
+              label={t("subscriptions.sell.groupLessons")}
               options={saleGroupOptions}
               selectedKeys={selectedGroupIds}
               onChange={setSelectedGroupIds}
-              placeholder="Выберите группы..."
+              placeholder={t("subscriptions.sell.selectGroups")}
               emptyMessage={
                 disciplineId
-                  ? "Нет групповых уроков для выбранного направления"
-                  : "Сначала выберите дисциплину"
+                  ? t("subscriptions.sell.noGroupsForDiscipline")
+                  : t("subscriptions.sell.selectDisciplineFirst")
               }
             />
 
             <DatePickerField
-              label="Дата активации"
+              label={t("subscriptions.sell.activationDate")}
               value={activationDate}
               onChange={setActivationDate}
               required
@@ -1198,12 +1215,12 @@ export default function SubscriptionsPanel({
 
             <div className="panel-form-full-row-md">
               <ClientAutocomplete
-                label={needsSecondClient ? "Первый клиент" : "Клиент"}
+                label={needsSecondClient ? t("subscriptions.sell.firstClient") : t("subscriptions.sell.client")}
                 clients={activeClients}
                 query={client1Query}
                 selectedId={client1Id}
                 showAddClientButton
-                addClientLinkLabel="Новый клиент"
+                addClientLinkLabel={t("subscriptions.sell.newClient")}
                 toast={toast}
                 onQueryChange={(q) => {
                   setClient1Query(q);
@@ -1219,12 +1236,12 @@ export default function SubscriptionsPanel({
             {needsSecondClient && (
               <div className="animate-fade-in panel-form-full-row-md">
                 <ClientAutocomplete
-                  label="Второй клиент"
+                  label={t("subscriptions.sell.secondClient")}
                   clients={activeClients}
                   query={client2Query}
                   selectedId={client2Id}
                   showAddClientButton
-                  addClientLinkLabel="Новый клиент"
+                  addClientLinkLabel={t("subscriptions.sell.newClient")}
                   toast={toast}
                   onQueryChange={(q) => {
                     setClient2Query(q);
@@ -1242,7 +1259,7 @@ export default function SubscriptionsPanel({
 
             <div className="panel-form-full-row-md grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl md:max-w-none">
               <AppSelect
-                label="Способ оплаты"
+                label={t("subscriptions.sell.paymentMethod")}
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
               >
@@ -1254,7 +1271,7 @@ export default function SubscriptionsPanel({
               </AppSelect>
 
               <div className="field-stack">
-                <span className={labelCls}>Итого к оплате</span>
+                <span className={labelCls}>{t("subscriptions.sell.totalDue")}</span>
                 <div className="flex items-center justify-between h-10 px-3 bg-indigo-50/60 rounded-lg border border-indigo-100">
                   <span className="text-lg font-sans font-semibold text-indigo-700">
                     {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "—"}
@@ -1263,13 +1280,13 @@ export default function SubscriptionsPanel({
               </div>
             </div>
             <p className="text-slate-400 text-xs font-sans text-center -mt-1 panel-form-full-row-md">
-              Для изменения стоимости абонемента перейдите в раздел{" "}
+              {t("subscriptions.sell.priceHint")}{" "}
               <button
                 type="button"
                 onClick={() => navigate("/prices")}
                 className="text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer font-semibold"
               >
-                Прайс-лист
+                {t("subscriptions.sell.priceListLink")}
               </button>
             </p>
 
@@ -1282,12 +1299,12 @@ export default function SubscriptionsPanel({
                 addSubscription.isPending ||
                 recordSubscriptionPayment.isPending
               }
-              title={getConnectionBlockReason(connectionState)}
+              title={translateConnectionBlockReason(connectionState, t)}
               className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60 panel-form-full-row-md"
             >
               {addSubscription.isPending || recordSubscriptionPayment.isPending
-                ? "Оформление..."
-                : "Зафиксировать оплату и продать"}
+                ? t("subscriptions.sell.submitPending")
+                : t("subscriptions.sell.submit")}
             </button>
           </div>
         </div>
@@ -1295,14 +1312,13 @@ export default function SubscriptionsPanel({
 
       <ConfirmDialog
         open={finishTarget !== null}
-        title="Завершить абонемент досрочно?"
+        title={t("subscriptions.confirm.finishTitle")}
         description={
           <>
-            Абонемент <strong className="font-semibold text-slate-800">{finishTarget?.name}</strong> будет закрыт со
-            статусом «завершён». Оставшиеся занятия сгорят.
+            {t("subscriptions.confirm.finishBody", { name: finishTarget?.name ?? "" })}
           </>
         }
-        confirmLabel="Завершить"
+        confirmLabel={t("subscriptions.confirm.finishConfirm")}
         pending={finishSubscription.isPending}
         onConfirm={handleConfirmFinish}
         onCancel={() => setFinishTarget(null)}

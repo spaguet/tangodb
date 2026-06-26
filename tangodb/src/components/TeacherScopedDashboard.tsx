@@ -1,5 +1,6 @@
 import { CalendarDays, ClipboardCheck, Clock, Sparkles } from "lucide-react";
-import { formatDateRu, jsDayToIsoDow } from "../lib/utils";
+import { jsDayToIsoDow } from "../lib/utils";
+import { useI18n } from "../hooks/useI18n";
 import type { PersonalLesson, ScheduleSlot } from "../types";
 
 interface TeacherScopedDashboardProps {
@@ -10,9 +11,9 @@ interface TeacherScopedDashboardProps {
 }
 
 const QUICK_LINKS = [
-  { id: "attendance", label: "Журнал посещений", icon: ClipboardCheck },
-  { id: "schedule", label: "Расписание", icon: CalendarDays },
-  { id: "personalView", label: "Персональные уроки", icon: Sparkles },
+  { id: "attendance", labelKey: "dashboard.teacher.quickAttendance" as const, icon: ClipboardCheck },
+  { id: "schedule", labelKey: "dashboard.teacher.quickSchedule" as const, icon: CalendarDays },
+  { id: "personalView", labelKey: "dashboard.teacher.quickPersonal" as const, icon: Sparkles },
 ] as const;
 
 export default function TeacherScopedDashboard({
@@ -21,6 +22,7 @@ export default function TeacherScopedDashboard({
   disciplineNames,
   onNavigate,
 }: TeacherScopedDashboardProps) {
+  const { t, formatDate } = useI18n();
   const todayIso = jsDayToIsoDow(new Date().getDay());
   const todayDate = localIsoDate();
   const todaySlots = scheduleSlots
@@ -31,7 +33,7 @@ export default function TeacherScopedDashboard({
   return (
     <div id="panel-dashboard" className="panel-page-stack">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {QUICK_LINKS.map(({ id, label, icon: Icon }) => (
+        {QUICK_LINKS.map(({ id, labelKey, icon: Icon }) => (
           <button
             key={id}
             type="button"
@@ -39,7 +41,7 @@ export default function TeacherScopedDashboard({
             className="bg-white rounded-xl px-4 py-3 border border-slate-200/90 shadow-xs hover:shadow-sm transition-all text-left flex items-center gap-3"
           >
             <Icon className="w-5 h-5 text-indigo-600 shrink-0" />
-            <span className="text-sm font-semibold text-slate-800">{label}</span>
+            <span className="text-sm font-semibold text-slate-800">{t(labelKey)}</span>
           </button>
         ))}
       </div>
@@ -47,10 +49,10 @@ export default function TeacherScopedDashboard({
       <section className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
         <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
           <CalendarDays className="w-4 h-4 text-indigo-500" />
-          Сегодня в расписании
+          {t("dashboard.teacher.todaySchedule")}
         </h2>
         {todaySlots.length === 0 ? (
-          <p className="text-slate-400 text-xs font-sans py-3 text-center">Занятий на сегодня нет</p>
+          <p className="text-slate-400 text-xs font-sans py-3 text-center">{t("dashboard.teacher.noClassesToday")}</p>
         ) : (
           <ul className="space-y-1.5">
             {todaySlots.map((slot) => (
@@ -59,7 +61,7 @@ export default function TeacherScopedDashboard({
                 className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs font-sans"
               >
                 <span className="font-semibold text-slate-800">
-                  {slot.groupName || "Группа"}
+                  {slot.groupName || t("common.group")}
                   {slot.disciplineId && disciplineNames[slot.disciplineId]
                     ? ` · ${disciplineNames[slot.disciplineId]}`
                     : ""}
@@ -77,10 +79,10 @@ export default function TeacherScopedDashboard({
       <section className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
         <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-indigo-500" />
-          Ближайшие персональные уроки
+          {t("dashboard.teacher.upcomingPersonal")}
         </h2>
         {upcomingLessons.length === 0 ? (
-          <p className="text-slate-400 text-xs font-sans py-3 text-center">Нет запланированных уроков</p>
+          <p className="text-slate-400 text-xs font-sans py-3 text-center">{t("dashboard.teacher.noUpcoming")}</p>
         ) : (
           <ul className="space-y-1.5">
             {upcomingLessons.map((lesson) => (
@@ -90,7 +92,7 @@ export default function TeacherScopedDashboard({
               >
                 <span className="font-semibold text-slate-800 truncate">{lesson.clientDisplay}</span>
                 <span className="text-slate-500 shrink-0 ml-2">
-                  {formatDateRu(lesson.date)} · {lesson.timeStart}
+                  {formatDate(lesson.date, { day: "numeric", month: "long", year: "numeric" })} · {lesson.timeStart}
                 </span>
               </li>
             ))}

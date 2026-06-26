@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
+import { t, type I18nKey } from "../lib/i18n";
 import type { MemberRole, MemberMeta, TeacherScope } from "../types/organization";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
@@ -62,17 +63,24 @@ export function useTeamMembers() {
   });
 }
 
-const ROLE_LABELS: Record<MemberRole, string> = {
-  owner: "Владелец",
-  director: "Руководитель",
-  admin: "Администратор",
-  teacher: "Преподаватель",
-  accountant: "Бухгалтер",
+const ROLE_KEYS: Record<MemberRole, I18nKey> = {
+  owner: "team.role.owner",
+  director: "team.role.director",
+  admin: "team.role.admin",
+  teacher: "team.role.teacher",
+  accountant: "team.role.accountant",
 };
 
-export function memberRoleLabel(role: MemberRole, meta?: MemberMeta): string {
-  if (role === "admin" && meta?.restricted_admin) return "Кассир";
-  return ROLE_LABELS[role] ?? role;
+export function memberRoleLabel(
+  role: MemberRole,
+  meta?: MemberMeta,
+  locale?: string | null
+): string {
+  if (role === "admin" && meta?.restricted_admin) {
+    return t(locale, "team.role.reception");
+  }
+  const key = ROLE_KEYS[role];
+  return key ? t(locale, key) : role;
 }
 
 export function memberDisplayName(
@@ -84,7 +92,8 @@ export function memberDisplayName(
 }
 
 export function memberListLabel(
-  member: Pick<TeamMemberRow, "first_name" | "last_name" | "patronymic" | "role" | "meta">
+  member: Pick<TeamMemberRow, "first_name" | "last_name" | "patronymic" | "role" | "meta">,
+  locale?: string | null
 ): string {
-  return memberDisplayName(member) ?? memberRoleLabel(member.role, member.meta);
+  return memberDisplayName(member) ?? memberRoleLabel(member.role, member.meta, locale);
 }

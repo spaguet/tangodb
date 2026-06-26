@@ -11,6 +11,7 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { getSiteUrl } from "../lib/siteUrl";
+import { t, getGuestLocale } from "../lib/i18n";
 import type { TelegramLoginWidgetPayload } from "../lib/telegram";
 import { getTelegramInitData, initTelegramWebApp, isTelegramWebApp } from "../lib/telegram";
 
@@ -52,7 +53,7 @@ interface TelegramAuthResponse {
 
 async function applyTelegramAuthResponse(data: TelegramAuthResponse): Promise<void> {
   if (!data?.access_token || !data?.refresh_token) {
-    throw new Error(data?.error ?? "Не удалось получить сессию");
+    throw new Error(data?.error ?? t(getGuestLocale(), "auth.error.generic"));
   }
 
   const { error: sessionError } = await supabase.auth.setSession({
@@ -68,16 +69,17 @@ async function applyTelegramAuthResponse(data: TelegramAuthResponse): Promise<vo
 }
 
 function parseTelegramAuthError(body: { error?: string }): string {
+  const locale = getGuestLocale();
   if (body.error === "Forbidden") {
-    return "Нет доступа к организации. Активируйте ключ или попросите приглашение.";
+    return t(locale, "auth.error.orgAccessDenied");
   }
   if (body.error === "Unauthorized") {
-    return "Не удалось подтвердить вход через Telegram";
+    return t(locale, "auth.error.telegramAuthFailed");
   }
   if (body.error === "Demo already used for this telegram account") {
-    return "Демо для этого Telegram уже использовалось. Активируйте лицензионный ключ или обратитесь в поддержку.";
+    return t(locale, "auth.error.demoUsedTelegram");
   }
-  return body.error ?? "Ошибка входа через Telegram";
+  return body.error ?? t(locale, "auth.login.telegramError");
 }
 
 async function invokeTelegramAuth(payload: {

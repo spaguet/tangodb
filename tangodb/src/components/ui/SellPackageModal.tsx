@@ -12,6 +12,9 @@ import {
   tariffNeedsSecondClient,
   tariffNeedsThirdClient,
 } from "../../lib/utils";
+import { useI18n } from "../../hooks/useI18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
+import { translateMutationBlockedMessage, useOnlineStatus } from "../../hooks/useOnlineStatus";
 import {
   DEFAULT_ORG_MODULES,
   filterPrivatePackageTariffsByModules,
@@ -48,6 +51,8 @@ export default function SellPackageModal({
   stackLayer = "default",
 }: SellPackageModalProps) {
   const addSubscription = useAddSubscription();
+  const { t } = useI18n();
+  const { connectionState } = useOnlineStatus();
   const { settings } = useSettings();
 
   const [createTariffOpen, setCreateTariffOpen] = useState(false);
@@ -117,28 +122,32 @@ export default function SellPackageModal({
   }, [packageTariffs, selectedPackageTariffId]);
 
   const handleSell = async () => {
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
     if (!selectedPackageTariff?.id) {
-      toast("Выберите тариф абонемента.", "error");
+      toast(t("subscriptions.error.selectTariff"), "error");
       return;
     }
     if (!subClient1Query || !subClient1Id) {
-      toast("Выберите клиента из списка.", "error");
+      toast(t("subscriptions.error.selectClient"), "error");
       return;
     }
     if (packageNeedsSecond && (!subClient2Query || !subClient2Id)) {
-      toast("Выберите второго клиента.", "error");
+      toast(t("subscriptions.error.selectSecondClient"), "error");
       return;
     }
     if (packageNeedsThird && (!subClient3Query || !subClient3Id)) {
-      toast("Выберите третьего клиента.", "error");
+      toast(t("subscriptions.error.selectThirdClient"), "error");
       return;
     }
     if (!subDisciplineId) {
-      toast("Выберите дисциплину.", "error");
+      toast(t("subscriptions.error.selectDiscipline"), "error");
       return;
     }
     if (!subActivationDate) {
-      toast("Укажите дату активации.", "error");
+      toast(t("subscriptions.error.activationDate"), "error");
       return;
     }
 
@@ -157,9 +166,9 @@ export default function SellPackageModal({
     });
 
     if (!res.success) {
-      toast(res.error || "Не удалось оформить абонемент", "error");
+      toast(resolveMutationError(res.error, "subscriptions.package.error.sellFailed", t), "error");
     } else {
-      toast("Персональный абонемент продан", "success");
+      toast(t("subscriptions.package.success.sold"), "success");
       onClose();
     }
   };
@@ -191,16 +200,16 @@ export default function SellPackageModal({
                   <Ticket className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа пакета</h2>
+                  <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("subscriptions.package.title")}</h2>
                   <p className="text-slate-400 text-[11px] leading-snug mt-0.5">
-                    Посещения отмечаются в журнале при бронировании уроков с пакета.
+                    {t("subscriptions.package.subtitle")}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
               >
                 <X className="w-4 h-4" />
@@ -209,16 +218,16 @@ export default function SellPackageModal({
 
             <div className="p-4 panel-form-stack panel-form-stack-wide-md">
               <div className="field-stack">
-                <label className={labelCls}>Тариф абонемента</label>
+                <label className={labelCls}>{t("subscriptions.sell.tariffLabel")}</label>
                 {packageTariffs.length === 0 ? (
                   <p className="text-xs text-slate-400 font-sans leading-relaxed">
-                    Нет пакетных тарифов.{" "}
+                    {t("subscriptions.package.noTariffs")}{" "}
                     <button
                       type="button"
                       onClick={() => setCreateTariffOpen(true)}
                       className="text-indigo-600 hover:text-indigo-700 font-semibold underline-offset-2 hover:underline cursor-pointer"
                     >
-                      Создать в прайс-листе
+                      {t("subscriptions.package.createInPriceList")}
                     </button>
                   </p>
                 ) : (
@@ -231,7 +240,11 @@ export default function SellPackageModal({
                   >
                     {packageTariffs.map((tariff) => (
                       <option key={tariff.id} value={tariff.id!}>
-                        {getPriceLabel(tariff)} — {tariff.lessons} занятий · {formatCurrency(tariff.price)}
+                        {t("subscriptions.package.tariffOption", {
+                          label: getPriceLabel(tariff, t),
+                          lessons: tariff.lessons,
+                          price: formatCurrency(tariff.price),
+                        })}
                       </option>
                     ))}
                   </AppSelect>
@@ -247,12 +260,12 @@ export default function SellPackageModal({
 
               <div className="panel-form-full-row-md">
               <ClientAutocomplete
-                label={packageNeedsSecond ? "Первый клиент" : "Клиент"}
+                label={packageNeedsSecond ? t("subscriptions.sell.firstClient") : t("subscriptions.sell.client")}
                 clients={clients}
                 query={subClient1Query}
                 selectedId={subClient1Id}
                 showAddClientButton
-                addClientLinkLabel="Новый клиент"
+                addClientLinkLabel={t("subscriptions.sell.newClient")}
                 toast={toast}
                 onQueryChange={(q) => {
                   setSubClient1Query(q);
@@ -268,12 +281,12 @@ export default function SellPackageModal({
               {packageNeedsSecond && (
                 <div className="panel-form-full-row-md">
                 <ClientAutocomplete
-                  label="Второй клиент"
+                  label={t("subscriptions.sell.secondClient")}
                   clients={clients}
                   query={subClient2Query}
                   selectedId={subClient2Id}
                   showAddClientButton
-                  addClientLinkLabel="Новый клиент"
+                  addClientLinkLabel={t("subscriptions.sell.newClient")}
                   toast={toast}
                   onQueryChange={(q) => {
                     setSubClient2Query(q);
@@ -290,12 +303,12 @@ export default function SellPackageModal({
               {packageNeedsThird && (
                 <div className="panel-form-full-row-md">
                 <ClientAutocomplete
-                  label="Третий клиент"
+                  label={t("subscriptions.package.thirdClient")}
                   clients={clients}
                   query={subClient3Query}
                   selectedId={subClient3Id}
                   showAddClientButton
-                  addClientLinkLabel="Новый клиент"
+                  addClientLinkLabel={t("subscriptions.sell.newClient")}
                   toast={toast}
                   onQueryChange={(q) => {
                     setSubClient3Query(q);
@@ -310,7 +323,7 @@ export default function SellPackageModal({
               )}
 
               <DatePickerField
-                label="Дата активации"
+                label={t("subscriptions.sell.activationDate")}
                 value={subActivationDate}
                 onChange={setSubActivationDate}
                 required
@@ -318,7 +331,7 @@ export default function SellPackageModal({
               />
 
               <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 panel-form-full-row-md">
-                <span className="text-slate-600 font-semibold text-sm">Итого к оплате</span>
+                <span className="text-slate-600 font-semibold text-sm">{t("common.totalDue")}</span>
                 <span className="text-xl font-sans font-semibold text-indigo-700">
                   {selectedPackageTariff ? formatCurrency(selectedPackageTariff.price) : "—"}
                 </span>
@@ -327,10 +340,10 @@ export default function SellPackageModal({
               <button
                 type="button"
                 onClick={handleSell}
-                disabled={addSubscription.isPending || packageTariffs.length === 0}
+                disabled={connectionState !== "online" || addSubscription.isPending || packageTariffs.length === 0}
                 className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60 panel-form-full-row-md"
               >
-                {addSubscription.isPending ? "Оформление..." : "ПРОДАТЬ ПАКЕТ"}
+                {addSubscription.isPending ? t("subscriptions.package.submitPending") : t("subscriptions.package.submit")}
               </button>
             </div>
           </motion.div>

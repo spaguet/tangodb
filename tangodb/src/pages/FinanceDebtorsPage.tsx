@@ -3,11 +3,13 @@ import { AlertCircle } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
+import { useI18n } from "../hooks/useI18n";
 import { sumDebtorAmounts } from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
 import { useOrganization } from "../organization/OrganizationProvider";
 
 export default function FinanceDebtorsPage() {
+  const { t, plural } = useI18n();
   const { settings } = useOrganization();
   const lowBalanceThreshold = settings?.low_balance_threshold ?? 2;
 
@@ -15,7 +17,7 @@ export default function FinanceDebtorsPage() {
   const debtors = debtorsQuery.data ?? [];
   const totalDebt = useMemo(() => sumDebtorAmounts(debtors), [debtors]);
 
-  if (debtorsQuery.isLoading) return <LoadingState label="Загрузка дебиторов..." />;
+  if (debtorsQuery.isLoading) return <LoadingState label={t("finance.debtors.loading")} />;
   if (debtorsQuery.isError) return <QueryErrorState error={debtorsQuery.error} />;
 
   return (
@@ -24,25 +26,25 @@ export default function FinanceDebtorsPage() {
         <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600" />
-            <h2 className="font-sans text-sm font-semibold text-slate-800">Дебиторская задолженность</h2>
+            <h2 className="font-sans text-sm font-semibold text-slate-800">{t("finance.debtors.title")}</h2>
           </div>
           <span className="text-sm font-sans font-semibold text-rose-700">
-            К оплате: {formatCurrency(totalDebt)}
+            {t("finance.debtors.toPay", { amount: formatCurrency(totalDebt) })}
           </span>
         </div>
 
         {debtors.length === 0 ? (
           <div className="py-20 text-center">
             <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm text-slate-500">Должников нет</p>
+            <p className="text-sm text-slate-500">{t("finance.debtors.empty")}</p>
           </div>
         ) : (
           <>
             <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
-              <span>Клиент</span>
+              <span>{t("common.client")}</span>
               <span>Telegram</span>
-              <span>Детали</span>
-              <span className="text-right">Сумма</span>
+              <span>{t("common.details")}</span>
+              <span className="text-right">{t("common.amount")}</span>
             </div>
             <div>
               {debtors.map((entry) => (
@@ -60,9 +62,12 @@ export default function FinanceDebtorsPage() {
               ))}
             </div>
             <div className="px-4 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/60">
-              <span className="text-xs text-slate-500 font-sans">{debtors.length} записей</span>
               <span className="text-xs text-slate-500 font-sans">
-                Абонементы с низким балансом (≤ {lowBalanceThreshold}) и неоплаченные персональные
+                {debtors.length}{" "}
+                {plural(debtors.length, [t("common.records.one", { count: debtors.length }), t("common.records.few", { count: debtors.length }), t("common.records.many", { count: debtors.length })])}
+              </span>
+              <span className="text-xs text-slate-500 font-sans">
+                {t("finance.debtors.hint", { threshold: lowBalanceThreshold })}
               </span>
             </div>
           </>

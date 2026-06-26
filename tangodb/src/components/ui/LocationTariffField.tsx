@@ -1,4 +1,5 @@
 import AppSelect from "./AppSelect";
+import { useI18n } from "../../hooks/useI18n";
 import type { Location } from "../../hooks/useLocations";
 
 const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
@@ -18,6 +19,7 @@ export default function LocationTariffField({
   onLocationChange,
   locations,
 }: LocationTariffFieldProps) {
+  const { t } = useI18n();
   return (
     <div className="space-y-2">
       <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
@@ -28,7 +30,7 @@ export default function LocationTariffField({
           className={`${checkboxCls} mt-0.5`}
         />
         <span className="text-xs leading-snug">
-          Привязать тариф к локации (локальный тариф)
+          {t("ui.tariff.bindLocation")}
         </span>
       </label>
 
@@ -36,15 +38,15 @@ export default function LocationTariffField({
         <div className="animate-fade-in">
           {locations.length === 0 ? (
             <p className="text-xs text-slate-400 font-sans leading-relaxed">
-              Локации не добавлены. Создайте их в разделе «Настройки CRM» → «Локации».
+              {t("ui.tariff.noLocationsHint")}
             </p>
           ) : (
             <AppSelect
-              label="Локация"
+              label={t("subscriptions.filter.location")}
               value={locationId}
               onChange={(e) => onLocationChange(e.target.value)}
             >
-              <option value="">Выберите локацию...</option>
+              <option value="">{t("ui.tariff.selectLocation")}</option>
               {locations.map((loc) => (
                 <option key={loc.id} value={loc.id}>
                   {loc.name}

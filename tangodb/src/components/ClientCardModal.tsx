@@ -4,6 +4,7 @@ import type { Client } from "../types";
 import type { ToastType } from "../App";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useCan } from "../hooks/usePermissions";
+import { useI18n } from "../hooks/useI18n";
 import ClientNotesPanel from "./ClientNotesPanel";
 
 interface ClientCardModalProps {
@@ -13,6 +14,7 @@ interface ClientCardModalProps {
 }
 
 export default function ClientCardModal({ client, onClose, toast }: ClientCardModalProps) {
+  const { t } = useI18n();
   const canReadNotes = useCan("client_notes.read");
 
   return (
@@ -40,7 +42,7 @@ export default function ClientCardModal({ client, onClose, toast }: ClientCardMo
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -63,7 +65,7 @@ export default function ClientCardModal({ client, onClose, toast }: ClientCardMo
                   {formatTelegramDisplay(client.telegram)}
                 </a>
               ) : (
-                <span className="text-xs text-slate-400 italic">Telegram не указан</span>
+                <span className="text-xs text-slate-400 italic">{t("clientCard.telegramNotSet")}</span>
               )}
             </div>
 

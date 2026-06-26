@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Layers, User, X } from "lucide-react";
 import type { MemberRole } from "../../types/organization";
+import { useI18n } from "../../hooks/useI18n";
 
 export interface ScheduleCellPrefill {
   locationId: string;
@@ -26,6 +27,7 @@ export default function AddLessonTypePopup({
   onSelectPersonal,
   onClose,
 }: AddLessonTypePopupProps) {
+  const { t } = useI18n();
   const canOfferGroup = role === "owner" || role === "director";
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function AddLessonTypePopup({
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
-                  Новое занятие
+                  {t("schedule.popup.newClass")}
                 </p>
                 <h3 className="text-base font-semibold tracking-tight text-slate-900">
                   {prefill.locationName} · {prefill.date} · {prefill.timeStart}
@@ -67,7 +69,7 @@ export default function AddLessonTypePopup({
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
@@ -83,8 +85,8 @@ export default function AddLessonTypePopup({
                 >
                   <Layers className="w-5 h-5 text-indigo-600 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">Групповой урок</p>
-                    <p className="text-xs text-slate-500">Еженедельный слот в расписании</p>
+                    <p className="text-sm font-semibold text-slate-800">{t("common.groupLesson")}</p>
+                    <p className="text-xs text-slate-500">{t("schedule.popup.groupWeekly")}</p>
                   </div>
                 </button>
               )}
@@ -96,8 +98,8 @@ export default function AddLessonTypePopup({
               >
                 <User className="w-5 h-5 text-indigo-600 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">Персональный урок</p>
-                  <p className="text-xs text-slate-500">Разовая запись клиента</p>
+                  <p className="text-sm font-semibold text-slate-800">{t("common.personalLesson")}</p>
+                  <p className="text-xs text-slate-500">{t("schedule.popup.personalOnce")}</p>
                 </div>
               </button>
             </div>

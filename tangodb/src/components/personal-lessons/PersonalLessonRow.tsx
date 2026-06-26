@@ -8,6 +8,7 @@ import {
 } from "../../lib/scheduleLessonAccess";
 import { isPastDate, isPersonalLessonLockedForWrite, toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
+import { useI18n } from "../../hooks/useI18n";
 import type { PersonalLesson } from "../../types";
 import type { MemberRole } from "../../types/organization";
 import type { PermissionAction } from "../../lib/permissions";
@@ -32,53 +33,53 @@ interface PersonalLessonRowProps {
   toast: (msg: string, type?: "success" | "error" | "info") => void;
 }
 
-function PaymentBadge({ lesson }: { lesson: PersonalLesson }) {
+function PaymentBadge({ lesson, t }: { lesson: PersonalLesson; t: ReturnType<typeof useI18n>["t"] }) {
   if (lesson.subscriptionId) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-violet-50 text-violet-700 border border-violet-200">
-        Пакет
+        {t("personal.row.package")}
       </span>
     );
   }
   if (lesson.paid === "yes") {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-        Оплачено
+        {t("personal.row.paid")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-      Долг
+      {t("personal.row.debt")}
     </span>
   );
 }
 
-function AttendanceBadge({ lesson }: { lesson: PersonalLesson }) {
+function AttendanceBadge({ lesson, t }: { lesson: PersonalLesson; t: ReturnType<typeof useI18n>["t"] }) {
   if (!lesson.attendanceStatus) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-50 text-slate-500 border border-slate-200">
-        Не отмечено
+        {t("common.notMarked")}
       </span>
     );
   }
   if (lesson.attendanceStatus === "present") {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-        {lesson.subscriptionId ? "Списано" : "Пришёл"}
+        {lesson.subscriptionId ? t("common.charged") : t("personal.row.presentCharged")}
       </span>
     );
   }
   if (lesson.attendanceStatus === "absent") {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-        {lesson.subscriptionId ? "Списано" : "Не пришёл"}
+        {lesson.subscriptionId ? t("common.charged") : t("personal.row.absentCharged")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-      Уважит. пропуск
+      {t("personal.row.excusedSkip")}
     </span>
   );
 }
@@ -98,6 +99,7 @@ export default function PersonalLessonRow({
   onPay,
   toast,
 }: PersonalLessonRowProps) {
+  const { t } = useI18n();
   const displayLesson = {
     kind: "personal" as const,
     lessonId: lesson.id,
@@ -131,11 +133,11 @@ export default function PersonalLessonRow({
       <td className="py-3 px-3 text-xs text-slate-600">{disciplineName ?? "—"}</td>
       <td className="py-3 px-3 text-xs text-slate-600">{teacherName ?? "—"}</td>
       <td className="py-3 px-3 text-xs text-slate-800 font-medium">{clientLabel}</td>
-      <td className="py-3 px-3 text-xs text-slate-500">{personalLessonTypeLabel(lesson.type)}</td>
+      <td className="py-3 px-3 text-xs text-slate-500">{personalLessonTypeLabel(lesson.type, t)}</td>
       <td className="py-3 px-3">
         <div className="flex flex-wrap gap-1">
-          <PaymentBadge lesson={lesson} />
-          {(canShowPaidStatus(role) || !lesson.subscriptionId) && <AttendanceBadge lesson={lesson} />}
+          <PaymentBadge lesson={lesson} t={t} />
+          {(canShowPaidStatus(role) || !lesson.subscriptionId) && <AttendanceBadge lesson={lesson} t={t} />}
         </div>
       </td>
       <td className="py-3 px-3 text-xs text-slate-800 whitespace-nowrap">
@@ -157,7 +159,7 @@ export default function PersonalLessonRow({
             <button
               type="button"
               onClick={() => onPay(lesson)}
-              title="Оплатить"
+              title={t("common.pay")}
               className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 cursor-pointer transition-colors"
             >
               <Coins className="w-3.5 h-3.5" />
@@ -167,7 +169,7 @@ export default function PersonalLessonRow({
             <button
               type="button"
               onClick={() => onEdit(lesson)}
-              title="Редактировать"
+              title={t("common.edit")}
               className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
             >
               <Edit className="w-3.5 h-3.5" />
@@ -177,7 +179,7 @@ export default function PersonalLessonRow({
             <button
               type="button"
               onClick={() => onDelete(lesson)}
-              title="Удалить"
+              title={t("common.delete")}
               className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />

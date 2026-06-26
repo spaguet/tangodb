@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { Ticket } from "lucide-react";
 import { useSchedule } from "../../hooks/useSchedule";
 import { usePersonalLessons } from "../../hooks/usePersonalLessons";
-import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
+import { useTeamMembers } from "../../hooks/useTeamMembers";
+import { useI18n } from "../../hooks/useI18n";
 import PersonalLessonSaleForm from "./PersonalLessonSaleForm";
 
 interface PersonalLessonSalePanelProps {
@@ -10,6 +11,7 @@ interface PersonalLessonSalePanelProps {
 }
 
 export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePanelProps) {
+  const { t } = useI18n();
   const scheduleQuery = useSchedule();
   const personalLessonsQuery = usePersonalLessons();
   const teamQuery = useTeamMembers();
@@ -64,10 +66,8 @@ export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePan
           <Ticket className="w-5 h-5 text-indigo-600" />
         </div>
         <div className="panel-form-header-text">
-          <h2 className="text-base font-semibold tracking-tight text-slate-900">Продажа</h2>
-          <p className="text-slate-400 text-[11px] leading-snug">
-            Запишите персональный урок или продайте пакет.
-          </p>
+          <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("personal.sell.title")}</h2>
+          <p className="text-slate-400 text-[11px] leading-snug">{t("personal.sell.subtitle")}</p>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePan
         personalLessons={personalLessons}
         toast={toast}
         onSuccess={() => {
-          toast("Персональный урок оформлен", "success");
+          toast(t("personal.sell.success"), "success");
         }}
       />
     </div>

@@ -14,10 +14,10 @@ type AuthorJoinRow = {
 } | null;
 
 function authorLabel(author: AuthorJoinRow): string {
-  if (!author) return "Сотрудник";
+  if (!author) return "common.employee";
   const parts = [author.last_name, author.first_name, author.patronymic].filter(Boolean);
   if (parts.length > 0) return parts.join(" ");
-  return "Сотрудник";
+  return "common.employee";
 }
 
 const mapClientNote = (row: Record<string, unknown>): ClientNote => {
@@ -67,12 +67,12 @@ export function useAddClientNote() {
   return useMutation({
     mutationFn: async ({ clientId, body }: { clientId: string; body: string }) => {
       if (!organizationId || !memberId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const trimmed = body.trim();
       if (!trimmed) {
-        return { success: false as const, error: "Текст заметки не может быть пустым" };
+        return { success: false as const, error: "hooks.error.noteEmpty" };
       }
 
       const { error } = await supabase.from("client_notes").insert({

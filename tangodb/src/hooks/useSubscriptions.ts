@@ -128,7 +128,7 @@ export function useAddSubscription() {
       scheduleGroupIds?: string[];
     }) => {
       if (!organizationId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const billingModel = sub.billingModel ?? "lesson_count";
@@ -199,7 +199,7 @@ export function useFinishSubscription() {
 
       const result = data as { success?: boolean; error?: string } | null;
       if (!result?.success) {
-        return { success: false as const, error: result?.error ?? "Не удалось завершить абонемент" };
+        return { success: false as const, error: result?.error ?? "subscriptions.error.finishFailed" };
       }
       return { success: true as const };
     },

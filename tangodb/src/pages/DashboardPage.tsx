@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BarChart3, TrendingUp } from "lucide-react";
 import OperationalDashboard from "../components/OperationalDashboard";
@@ -6,7 +6,7 @@ import FinancialDashboard from "../components/FinancialDashboard";
 import TeacherScopedDashboard from "../components/TeacherScopedDashboard";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
-import PageTabs from "../components/ui/PageTabs";
+import PageTabs, { type PageTabItem } from "../components/ui/PageTabs";
 import { useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
@@ -14,25 +14,39 @@ import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptions } from "../hooks/useSubscriptions";
 import { usePayments } from "../hooks/usePayments";
 import { usePermissions } from "../hooks/usePermissions";
+import { useI18n } from "../hooks/useI18n";
 import { useUIStore } from "../store/ui";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { getDashboardTabs } from "../lib/i18n";
 import { normalizeOrgModules } from "../lib/orgModules";
 import type { Client, Payment, PersonalLesson, Subscription } from "../types";
 import DemoDashboardBanner from "../components/demo/DemoDashboardBanner";
 
 type DashboardTab = "operational" | "financial";
 
-const DASHBOARD_TABS = [
-  { id: "operational", label: "Операционный", icon: BarChart3 },
-  { id: "financial", label: "Финансовый", icon: TrendingUp },
-] as const;
+type DashboardTabItem = PageTabItem & { id: DashboardTab };
+
+const DASHBOARD_TAB_ICONS: Record<DashboardTab, typeof BarChart3> = {
+  operational: BarChart3,
+  financial: TrendingUp,
+};
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { orgLoading, organizationId, settings } = useOrganization();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
   const { can } = usePermissions();
   const [activeTab, setActiveTab] = useState<DashboardTab>("operational");
+
+  const dashboardTabs = useMemo<DashboardTabItem[]>(
+    () =>
+      getDashboardTabs(t).map((tab) => ({
+        ...tab,
+        icon: DASHBOARD_TAB_ICONS[tab.id],
+      })),
+    [t]
+  );
 
   const modules = normalizeOrgModules(settings?.modules);
   const showFinancial = can("reports.financial") && modules.finance_basic;
@@ -68,7 +82,9 @@ export default function DashboardPage() {
     navigate(route.path);
   };
 
-  if (orgLoading || !organizationId) return <LoadingState label="Загрузка организации..." />;
+  if (orgLoading || !organizationId) {
+    return <LoadingState label={t("common.loading.organization")} />;
+  }
   if (!showFinancial && !showOperational && !showScopedSummary) {
     return <DashboardNoAccess />;
   }
@@ -97,7 +113,7 @@ export default function DashboardPage() {
   if (showBoth && activeTab === "financial") {
     return (
       <DashboardShell>
-        <DashboardWithTabs activeTab={activeTab} onTabChange={setActiveTab}>
+        <DashboardWithTabs activeTab={activeTab} onTabChange={setActiveTab} dashboardTabs={dashboardTabs}>
           <FinancialDashboard />
         </DashboardWithTabs>
       </DashboardShell>
@@ -110,6 +126,7 @@ export default function DashboardPage() {
       showBoth={showBoth}
       activeTab={activeTab}
       onTabChange={setActiveTab}
+      dashboardTabs={dashboardTabs}
       clientsQuery={clientsQuery}
       subscriptionsQuery={subscriptionsQuery}
       personalLessonsQuery={personalLessonsQuery}
@@ -131,10 +148,12 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 }
 
 function DashboardNoAccess() {
+  const { t } = useI18n();
+
   return (
     <div className="panel-page-stack">
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs py-20 text-center">
-        <p className="text-sm text-slate-500">Нет доступа к обзору для вашей роли.</p>
+        <p className="text-sm text-slate-500">{t("dashboard.noAccess")}</p>
       </div>
     </div>
   );
@@ -143,15 +162,17 @@ function DashboardNoAccess() {
 function DashboardWithTabs({
   activeTab,
   onTabChange,
+  dashboardTabs,
   children,
 }: {
   activeTab: DashboardTab;
   onTabChange: (tab: DashboardTab) => void;
+  dashboardTabs: DashboardTabItem[];
   children: React.ReactNode;
 }) {
   return (
     <div className="panel-page-stack">
-      <PageTabs tabs={[...DASHBOARD_TABS]} activeTab={activeTab} onChange={(tab) => onTabChange(tab as DashboardTab)} />
+      <PageTabs tabs={dashboardTabs} activeTab={activeTab} onChange={(tab) => onTabChange(tab as DashboardTab)} />
       <div role="tabpanel" className="panel-page-stack">
         {children}
       </div>
@@ -170,12 +191,13 @@ function ScopedDashboardView({
   disciplinesQuery: ReturnType<typeof useDisciplines>;
   onNavigate: (panel: string) => void;
 }) {
+  const { t } = useI18n();
   const isLoading =
     lessonsQuery.isLoading || scheduleQuery.isLoading || disciplinesQuery.isLoading;
   const error =
     queryError(lessonsQuery) ?? queryError(scheduleQuery) ?? queryError(disciplinesQuery);
 
-  if (isLoading) return <LoadingState label="Загрузка обзора..." />;
+  if (isLoading) return <LoadingState label={t("dashboard.loading")} />;
   if (error) return <QueryErrorState error={error} />;
 
   const disciplineNames = Object.fromEntries(
@@ -196,6 +218,7 @@ function OperationalDashboardView({
   showBoth,
   activeTab,
   onTabChange,
+  dashboardTabs,
   clientsQuery,
   subscriptionsQuery,
   personalLessonsQuery,
@@ -206,6 +229,7 @@ function OperationalDashboardView({
   showBoth: boolean;
   activeTab: DashboardTab;
   onTabChange: (tab: DashboardTab) => void;
+  dashboardTabs: DashboardTabItem[];
   clientsQuery: ReturnType<typeof useClientDirectory>;
   subscriptionsQuery: ReturnType<typeof useSubscriptions>;
   personalLessonsQuery: ReturnType<typeof usePersonalLessons>;
@@ -213,6 +237,7 @@ function OperationalDashboardView({
   showOperationalPayments: boolean;
   onNavigate: (panel: string) => void;
 }) {
+  const { t } = useI18n();
   const isLoading =
     clientsQuery.isLoading ||
     subscriptionsQuery.isLoading ||
@@ -224,7 +249,7 @@ function OperationalDashboardView({
     queryError(personalLessonsQuery) ??
     (showOperationalPayments ? queryError(todayPaymentsQuery) : null);
 
-  if (isLoading) return <LoadingState label="Загрузка обзора..." />;
+  if (isLoading) return <LoadingState label={t("dashboard.loading")} />;
   if (error) return <QueryErrorState error={error} />;
 
   const content = (
@@ -242,7 +267,7 @@ function OperationalDashboardView({
 
   return (
     <div className="panel-page-stack">
-      <PageTabs tabs={[...DASHBOARD_TABS]} activeTab={activeTab} onChange={(tab) => onTabChange(tab as DashboardTab)} />
+      <PageTabs tabs={dashboardTabs} activeTab={activeTab} onChange={(tab) => onTabChange(tab as DashboardTab)} />
       <div role="tabpanel" className="panel-page-stack">
         {content}
       </div>

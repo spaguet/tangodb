@@ -73,15 +73,17 @@ export function filtersToQueryOptions(filters: PersonalLessonFilterState): UsePe
   return options;
 }
 
-export function personalLessonTypeLabel(type: string): string {
+import type { TranslateFn } from "../../lib/utils";
+
+export function personalLessonTypeLabel(type: string, t: TranslateFn): string {
   switch (type) {
     case "pair":
-      return "Пара";
+      return t("common.formatPair");
     case "trio":
-      return "Трио";
+      return t("common.formatTrio");
     case "quad":
-      return "Квартет";
+      return t("common.formatQuad");
     default:
-      return "Соло";
+      return t("common.formatSolo");
   }
 }

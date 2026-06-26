@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Copy, Share2, X } from "lucide-react";
 import type { ToastType } from "../../App";
+import { useI18n } from "../../hooks/useI18n";
 import { copyCsvToClipboard, saveCsvFromUserGesture } from "../../lib/exportCsv";
 import { hasTelegramDownloadFile, isInsideTelegramClient } from "../../lib/telegram";
 
@@ -20,6 +21,7 @@ export default function CsvExportModal({
   onClose,
   onStatus,
 }: CsvExportModalProps) {
+  const { t } = useI18n();
   const [saving, setSaving] = useState(false);
   const [copying, setCopying] = useState(false);
 
@@ -38,21 +40,21 @@ export default function CsvExportModal({
       const result = await saveCsvFromUserGesture(content, filename);
       switch (result) {
         case "shared":
-          onStatus("Выберите «Сохранить в Файлы» или другое приложение", "success");
+          onStatus(t("export.status.saveToFiles"), "success");
           onClose();
           break;
         case "telegram":
-          onStatus("Загрузка файла началась в Telegram", "success");
+          onStatus(t("export.status.telegramDownload"), "success");
           onClose();
           break;
         case "clipboard":
-          onStatus("CSV скопирован — вставьте в Excel или Numbers", "success");
+          onStatus(t("export.status.copied"), "success");
           break;
         case "cancelled":
-          onStatus("Сохранение отменено", "info");
+          onStatus(t("export.status.cancelled"), "info");
           break;
         case "failed":
-          onStatus("Не удалось сохранить — попробуйте «Скопировать»", "error");
+          onStatus(t("export.status.saveFailed"), "error");
           break;
       }
     } finally {
@@ -64,10 +66,7 @@ export default function CsvExportModal({
     setCopying(true);
     try {
       const ok = await copyCsvToClipboard(content);
-      onStatus(
-        ok ? "CSV скопирован — вставьте в Excel или Numbers" : "Не удалось скопировать",
-        ok ? "success" : "error"
-      );
+      onStatus(ok ? t("export.status.copied") : t("export.status.copyFailed"), ok ? "success" : "error");
     } finally {
       setCopying(false);
     }
@@ -75,8 +74,8 @@ export default function CsvExportModal({
 
   const primaryLabel =
     isInsideTelegramClient() && hasTelegramDownloadFile()
-      ? "Скачать через Telegram"
-      : "Поделиться / Сохранить";
+      ? t("export.shareLabelTelegram")
+      : t("export.shareLabel");
 
   return (
     <AnimatePresence>
@@ -89,7 +88,7 @@ export default function CsvExportModal({
         >
           <motion.button
             type="button"
-            aria-label="Закрыть"
+            aria-label={t("common.close")}
             className="absolute inset-0 bg-slate-900/40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -106,19 +105,19 @@ export default function CsvExportModal({
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <h2 id="csv-export-title" className="text-base font-semibold text-slate-800">
-                  Экспорт CSV
+                  {t("export.title")}
                 </h2>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   {isInsideTelegramClient() && hasTelegramDownloadFile()
-                    ? "Нажмите кнопку — файл скачается через Telegram или откроется меню «Поделиться»."
-                    : "Нажмите кнопку — откроется меню «Поделиться», выберите «Сохранить в Файлы»."}
+                    ? t("export.hintTelegram")
+                    : t("export.hintShare")}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -136,7 +135,7 @@ export default function CsvExportModal({
                 className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-sans text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
               >
                 <Share2 className="w-4 h-4" />
-                {saving ? "Открываем…" : primaryLabel}
+                {saving ? t("export.openPending") : primaryLabel}
               </button>
 
               <button
@@ -146,7 +145,7 @@ export default function CsvExportModal({
                 className="w-full py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-60 text-slate-700 font-sans text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
               >
                 <Copy className="w-4 h-4" />
-                {copying ? "Копируем…" : "Скопировать"}
+                {copying ? t("export.copyPending") : t("export.copy")}
               </button>
             </div>
           </motion.div>

@@ -18,13 +18,15 @@ import {
 import {
   currentYearMonth,
   formatCurrency,
-  formatMonthTitleRu,
+  formatMonthTitle,
 } from "../lib/utils";
+import { useI18n } from "../hooks/useI18n";
 import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
 import { usePayments, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
 
 export default function FinancialDashboard() {
   const navigate = useNavigate();
+  const { t, locale, plural } = useI18n();
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
   const range = monthDateRange(statsMonth);
@@ -48,26 +50,26 @@ export default function FinancialDashboard() {
         <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
           <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-indigo-500" />
-            Финансовый обзор
+            {t("dashboard.financialOverview")}
           </h2>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setStatsMonth((m) => shiftMonth(m, -1))}
               className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-              aria-label="Предыдущий месяц"
+              aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex flex-col items-center min-w-0">
-              <span className="text-xs font-semibold text-slate-800">{formatMonthTitleRu(statsMonth)}</span>
+              <span className="text-xs font-semibold text-slate-800">{formatMonthTitle(statsMonth, locale)}</span>
               {!isViewingCurrentMonth && (
                 <button
                   type="button"
                   onClick={() => setStatsMonth(currentYearMonth())}
                   className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer whitespace-nowrap"
                 >
-                  Текущий месяц
+                  {t("common.currentMonth")}
                 </button>
               )}
             </div>
@@ -75,7 +77,7 @@ export default function FinancialDashboard() {
               type="button"
               onClick={() => setStatsMonth((m) => shiftMonth(m, 1))}
               className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-              aria-label="Следующий месяц"
+              aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -84,23 +86,26 @@ export default function FinancialDashboard() {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
-            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Выручка</p>
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.revenue")}</p>
             <p className="text-xl font-semibold text-slate-900 mt-0.5">{formatCurrency(stats.total)}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">{stats.count} платежей</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              {stats.count}{" "}
+              {plural(stats.count, [t("common.payment.one"), t("common.payment.few"), t("common.payment.many")])}
+            </p>
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
-            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Абонементы</p>
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.subscriptions")}</p>
             <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.subscriptionTotal)}</p>
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
-            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Персональные</p>
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.personal")}</p>
             <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.personalTotal)}</p>
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
-            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Дебиторка</p>
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.receivables")}</p>
             <p className="text-xl font-semibold text-rose-700 mt-0.5">{formatCurrency(totalDebt)}</p>
             <p className="text-[10px] text-slate-500 mt-0.5">
-              {lowBalanceCount} абон. · {unpaidPersonalCount} перс.
+              {t("dashboard.receivablesBreakdown", { subs: lowBalanceCount, personal: unpaidPersonalCount })}
             </p>
           </div>
         </div>
@@ -133,8 +138,8 @@ export default function FinancialDashboard() {
             <TrendingUp className="w-4 h-4 text-indigo-500" />
             <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <p className="text-xs font-semibold text-slate-800 mt-2">Выручка</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">Детализация по месяцам</p>
+          <p className="text-xs font-semibold text-slate-800 mt-2">{t("dashboard.revenue")}</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.revenueDetail")}</p>
         </motion.button>
 
         <motion.button
@@ -147,8 +152,11 @@ export default function FinancialDashboard() {
             <AlertCircle className="w-4 h-4 text-rose-600" />
             <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <p className="text-xs font-semibold text-slate-800 mt-2">Дебиторы</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">{debtors.length} записей</p>
+          <p className="text-xs font-semibold text-slate-800 mt-2">{t("dashboard.debtors")}</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">
+            {debtors.length}{" "}
+            {plural(debtors.length, [t("common.records.one", { count: debtors.length }), t("common.records.few", { count: debtors.length }), t("common.records.many", { count: debtors.length })])}
+          </p>
         </motion.button>
 
         <motion.button
@@ -161,8 +169,8 @@ export default function FinancialDashboard() {
             <Landmark className="w-4 h-4 text-indigo-500" />
             <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <p className="text-xs font-semibold text-slate-800 mt-2">Журнал платежей</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">Полная история</p>
+          <p className="text-xs font-semibold text-slate-800 mt-2">{t("dashboard.paymentJournal")}</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.fullHistory")}</p>
         </motion.button>
       </div>
     </div>

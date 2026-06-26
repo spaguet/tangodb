@@ -4,6 +4,8 @@ import { Save, X } from "lucide-react";
 import { useToast } from "../../App";
 import { memberDisplayName, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { useTeamMutations } from "../../hooks/useTeamInvites";
+import { useI18n } from "../../hooks/useI18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 
 interface MemberProfileModalProps {
   member: TeamMemberRow | null;
@@ -73,6 +75,7 @@ function ProfileField({
 }
 
 export default function MemberProfileModal({ member, canEdit, onClose }: MemberProfileModalProps) {
+  const { t } = useI18n();
   const showToast = useToast();
   const { updateMember } = useTeamMutations();
   const [form, setForm] = useState<ProfileForm>({
@@ -119,11 +122,14 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
         telegram: form.telegram,
         profileNotes: form.profileNotes,
       });
-      showToast("Данные участника сохранены", "success");
+      showToast(t("memberProfile.success.saved"), "success");
       setDirty(false);
       onClose();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Не удалось сохранить данные", "error");
+      showToast(
+        resolveMutationError(err instanceof Error ? err.message : undefined, "memberProfile.error.saveFailed", t),
+        "error"
+      );
     }
   };
 
@@ -149,7 +155,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="min-w-0 pr-2">
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Редактировать данные</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("memberProfile.editTitle")}</h3>
                 {subtitle && (
                   <p className="text-[10px] text-slate-400 font-sans mt-0.5 truncate">{subtitle}</p>
                 )}
@@ -157,7 +163,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                  aria-label={t("common.close")}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
@@ -167,19 +173,19 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
             <div className="panel-form-stack font-sans">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <ProfileField
-                  label="Фамилия"
+                  label={t("common.lastName")}
                   value={form.lastName}
                   canEdit={canEdit}
                   onChange={(v) => patch("lastName", v)}
                 />
                 <ProfileField
-                  label="Имя"
+                  label={t("common.firstName")}
                   value={form.firstName}
                   canEdit={canEdit}
                   onChange={(v) => patch("firstName", v)}
                 />
                 <ProfileField
-                  label="Отчество"
+                  label={t("memberProfile.field.patronymic")}
                   value={form.patronymic}
                   canEdit={canEdit}
                   onChange={(v) => patch("patronymic", v)}
@@ -192,7 +198,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                   type="email"
                 />
                 <ProfileField
-                  label="Телефон"
+                  label={t("common.contact")}
                   value={form.phone}
                   canEdit={canEdit}
                   onChange={(v) => patch("phone", v)}
@@ -207,7 +213,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
               </div>
 
               <label className="block space-y-1">
-                <span className={labelCls}>Прочее</span>
+                <span className={labelCls}>{t("memberProfile.field.other")}</span>
                 {canEdit ? (
                   <textarea
                     value={form.profileNotes}
@@ -230,7 +236,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                   className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  {updateMember.isPending ? "…" : "Сохранить"}
+                  {updateMember.isPending ? t("common.saving") : t("common.save")}
                 </button>
               ) : (
                 <button
@@ -238,7 +244,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                   onClick={onClose}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
                 >
-                  Закрыть
+                  {t("common.close")}
                 </button>
               )}
               {canEdit && (
@@ -247,7 +253,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                   onClick={onClose}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
                 >
-                  Отмена
+                  {t("common.cancel")}
                 </button>
               )}
             </div>

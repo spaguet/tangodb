@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppSelect from "../../components/ui/AppSelect";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
@@ -7,26 +7,28 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import type { OrgModules, OrgPreset } from "../../types/organization";
 import { PRESET_MODULES } from "../../types/organization";
 import { useSettings } from "../SettingsProvider";
+import { useI18n } from "../../hooks/useI18n";
+import type { I18nKey } from "../../lib/i18n/keys";
 
-const PRESET_OPTIONS: { value: OrgPreset; label: string }[] = [
-  { value: "dance_school", label: "Танцевальная школа" },
-  { value: "solo_teacher", label: "Частный преподаватель" },
-  { value: "sport_section", label: "Спортивная секция" },
-  { value: "gymnastics_club", label: "Кружок / гимнастика" },
-  { value: "custom", label: "Своё" },
+const PRESET_KEYS: Record<OrgPreset, I18nKey> = {
+  dance_school: "settings.org.preset.danceSchool",
+  solo_teacher: "settings.org.preset.soloTeacher",
+  sport_section: "settings.org.preset.sportSection",
+  gymnastics_club: "settings.org.preset.gymnasticsClub",
+  custom: "settings.org.preset.custom",
+};
+
+const MODULE_KEYS: { key: keyof OrgModules; labelKey: I18nKey }[] = [
+  { key: "group_subscriptions", labelKey: "settings.org.module.groupSubscriptions" },
+  { key: "personal_lessons", labelKey: "settings.org.module.personalLessons" },
+  { key: "finance_basic", labelKey: "settings.org.module.financeBasic" },
+  { key: "pair_subscriptions", labelKey: "settings.org.module.pairSubscriptions" },
+  { key: "trio_lessons", labelKey: "settings.org.module.trioLessons" },
+  { key: "multi_discipline", labelKey: "settings.org.module.multiDiscipline" },
+  { key: "locations", labelKey: "settings.org.module.locations" },
 ];
 
-const MODULE_LABELS: { key: keyof OrgModules; label: string }[] = [
-  { key: "group_subscriptions", label: "Групповые абонементы" },
-  { key: "personal_lessons", label: "Персональные уроки" },
-  { key: "finance_basic", label: "Финансы (отчёты и журнал)" },
-  { key: "pair_subscriptions", label: "Парные абонементы" },
-  { key: "trio_lessons", label: "Трио-уроки" },
-  { key: "multi_discipline", label: "Несколько направлений" },
-  { key: "locations", label: "Локации / залы" },
-];
-
-const ROLE_OVERRIDE_LABELS: {
+const ROLE_OVERRIDE_KEYS: {
   key:
     | "teachers_can_sell_subscriptions"
     | "teachers_can_edit_clients"
@@ -34,41 +36,39 @@ const ROLE_OVERRIDE_LABELS: {
     | "teachers_can_view_full_schedule"
     | "admin_can_export"
     | "admin_can_manage_team";
-  label: string;
-  hint?: string;
+  labelKey: I18nKey;
+  hintKey?: I18nKey;
 }[] = [
-  {
-    key: "teachers_can_sell_subscriptions",
-    label: "Преподаватели могут продавать групповые абонементы",
-  },
-  {
-    key: "teachers_can_edit_clients",
-    label: "Преподаватели могут редактировать карточки учеников",
-  },
-  {
-    key: "teachers_can_export",
-    label: "Преподаватели могут экспортировать данные (в своём scope)",
-  },
+  { key: "teachers_can_sell_subscriptions", labelKey: "settings.org.role.teachersSellSubs" },
+  { key: "teachers_can_edit_clients", labelKey: "settings.org.role.teachersEditClients" },
+  { key: "teachers_can_export", labelKey: "settings.org.role.teachersExport" },
   {
     key: "teachers_can_view_full_schedule",
-    label: "Преподаватели видят всё расписание (read-only, без контактов учеников)",
-    hint: "По умолчанию включено",
+    labelKey: "settings.org.role.teachersViewSchedule",
+    hintKey: "common.defaultOn",
   },
-  {
-    key: "admin_can_export",
-    label: "Администратор может экспортировать CSV",
-  },
+  { key: "admin_can_export", labelKey: "settings.org.role.adminExport" },
   {
     key: "admin_can_manage_team",
-    label: "Администратор может управлять командой",
-    hint: "Не рекомендуется",
+    labelKey: "settings.org.role.adminManageTeam",
+    hintKey: "common.notRecommended",
   },
 ];
 
 export default function OrganizationSettingsPage() {
+  const { t } = useI18n();
   const toast = useToast();
   const { organization } = useOrganization();
   const { settings, isLoading, updateSettings, isUpdating } = useSettings();
+
+  const presetOptions = useMemo(
+    () =>
+      (Object.keys(PRESET_KEYS) as OrgPreset[]).map((value) => ({
+        value,
+        label: t(PRESET_KEYS[value]),
+      })),
+    [t]
+  );
 
   const [orgPreset, setOrgPreset] = useState<OrgPreset>("dance_school");
   const [modules, setModules] = useState<OrgModules>(PRESET_MODULES.dance_school);
@@ -97,7 +97,7 @@ export default function OrganizationSettingsPage() {
     setDirty(false);
   }, [settings]);
 
-  if (isLoading || !settings) return <LoadingState label="Загрузка настроек..." />;
+  if (isLoading || !settings) return <LoadingState label={t("settings.general.loading")} />;
 
   const applyPreset = (preset: OrgPreset) => {
     setOrgPreset(preset);
@@ -129,9 +129,9 @@ export default function OrganizationSettingsPage() {
       low_balance_threshold: lowBalanceThreshold,
     });
     if (!res.success) {
-      toast(res.error ?? "Не удалось сохранить", "error");
+      toast(res.error ?? t("settings.saveError"), "error");
     } else {
-      toast("Настройки организации сохранены", "success");
+      toast(t("settings.org.saveSuccess"), "success");
       setDirty(false);
     }
   };
@@ -139,22 +139,30 @@ export default function OrganizationSettingsPage() {
   return (
     <div className="panel-card-stack max-w-xl">
       <div>
-        <h2 className="text-base font-semibold text-slate-900">Организация</h2>
+        <h2 className="text-base font-semibold text-slate-900">{t("settings.org.title")}</h2>
         <p className="text-xs text-slate-500 mt-1">
-          {organization?.name ?? "—"} · пресет и модули CRM.
+          {t("settings.org.subtitle", { name: organization?.name ?? "—" })}
         </p>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4 font-sans">
-        <AppSelect label="Пресет организации" value={orgPreset} onChange={(e) => applyPreset(e.target.value as OrgPreset)}>
-          {PRESET_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+        <AppSelect
+          label={t("settings.org.preset")}
+          value={orgPreset}
+          onChange={(e) => applyPreset(e.target.value as OrgPreset)}
+        >
+          {presetOptions.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
           ))}
         </AppSelect>
 
         <div className="space-y-2">
-          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">Модули</p>
-          {MODULE_LABELS.map(({ key, label }) => (
+          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+            {t("settings.org.modules")}
+          </p>
+          {MODULE_KEYS.map(({ key, labelKey }) => (
             <label key={key} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
               <input
                 type="checkbox"
@@ -162,7 +170,7 @@ export default function OrganizationSettingsPage() {
                 onChange={() => toggleModule(key)}
                 className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
               />
-              {label}
+              {t(labelKey)}
             </label>
           ))}
         </div>
@@ -171,18 +179,21 @@ export default function OrganizationSettingsPage() {
           <input
             type="checkbox"
             checked={teachersCanManageDisciplines}
-            onChange={(e) => { setTeachersCanManageDisciplines(e.target.checked); setDirty(true); }}
+            onChange={(e) => {
+              setTeachersCanManageDisciplines(e.target.checked);
+              setDirty(true);
+            }}
             className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
           />
-          Преподаватели могут редактировать направления
+          {t("settings.org.teachersEditDisciplines")}
         </label>
 
         <RequirePermission action="settings.manage" mode="hide">
           <div className="border-t border-slate-100 pt-4 space-y-2">
             <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
-              Расширенные права ролей
+              {t("settings.org.roleOverrides")}
             </p>
-            {ROLE_OVERRIDE_LABELS.map(({ key, label, hint }) => {
+            {ROLE_OVERRIDE_KEYS.map(({ key, labelKey, hintKey }) => {
               const checkedMap = {
                 teachers_can_sell_subscriptions: teachersCanSellSubscriptions,
                 teachers_can_edit_clients: teachersCanEditClients,
@@ -205,13 +216,16 @@ export default function OrganizationSettingsPage() {
                   <input
                     type="checkbox"
                     checked={checkedMap[key]}
-                    onChange={(e) => { setters[key](e.target.checked); setDirty(true); }}
+                    onChange={(e) => {
+                      setters[key](e.target.checked);
+                      setDirty(true);
+                    }}
                     className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
                   />
                   <span>
-                    {label}
-                    {hint ? (
-                      <span className="block text-xs text-slate-400 mt-0.5">{hint}</span>
+                    {t(labelKey)}
+                    {hintKey ? (
+                      <span className="block text-xs text-slate-400 mt-0.5">{t(hintKey)}</span>
                     ) : null}
                   </span>
                 </label>
@@ -222,13 +236,16 @@ export default function OrganizationSettingsPage() {
 
         <div className="field-stack">
           <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
-            Порог «мало занятий»
+            {t("settings.org.lowBalanceThreshold")}
           </label>
           <input
             type="number"
             min={0}
             value={lowBalanceThreshold}
-            onChange={(e) => { setLowBalanceThreshold(Number(e.target.value)); setDirty(true); }}
+            onChange={(e) => {
+              setLowBalanceThreshold(Number(e.target.value));
+              setDirty(true);
+            }}
             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm"
           />
         </div>
@@ -240,7 +257,7 @@ export default function OrganizationSettingsPage() {
             disabled={!dirty || isUpdating}
             className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
           >
-            {isUpdating ? "Сохранение..." : "Сохранить"}
+            {isUpdating ? t("common.saving") : t("common.save")}
           </button>
         </RequirePermission>
       </div>

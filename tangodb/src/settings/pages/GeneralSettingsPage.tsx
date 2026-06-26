@@ -1,16 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
 import { useToast } from "../../App";
 import { CURRENCY_SELECT_OPTIONS, DEFAULT_CURRENCY_CODE } from "../../lib/currencies";
+import { getLocaleOptions, getWeekStartOptions, setGuestLocale } from "../../lib/i18n";
+import { useI18n } from "../../hooks/useI18n";
 import { useSettings } from "../SettingsProvider";
-
-const LOCALE_OPTIONS = [
-  { value: "ru-RU", label: "Русский (ru-RU)" },
-  { value: "en-US", label: "English (en-US)" },
-  { value: "vi-VN", label: "Tiếng Việt (vi-VN)" },
-];
 
 const TIMEZONE_OPTIONS = [
   { value: "Europe/Moscow", label: "Europe/Moscow" },
@@ -18,14 +14,13 @@ const TIMEZONE_OPTIONS = [
   { value: "UTC", label: "UTC" },
 ];
 
-const WEEK_START_OPTIONS = [
-  { value: "1", label: "Понедельник" },
-  { value: "7", label: "Воскресенье" },
-];
-
 export default function GeneralSettingsPage() {
+  const { t } = useI18n();
   const toast = useToast();
   const { settings, isLoading, updateSettings, isUpdating, formatCurrency } = useSettings();
+
+  const localeOptions = useMemo(() => getLocaleOptions(t), [t]);
+  const weekStartOptions = useMemo(() => getWeekStartOptions(t), [t]);
 
   const [locale, setLocale] = useState("ru-RU");
   const [currencyCode, setCurrencyCode] = useState<string>(DEFAULT_CURRENCY_CODE);
@@ -46,7 +41,7 @@ export default function GeneralSettingsPage() {
     setDirty(false);
   }, [settings]);
 
-  if (isLoading || !settings) return <LoadingState label="Загрузка настроек..." />;
+  if (isLoading || !settings) return <LoadingState label={t("settings.general.loading")} />;
 
   const markDirty = () => setDirty(true);
 
@@ -60,9 +55,10 @@ export default function GeneralSettingsPage() {
       branding_name: brandingName.trim() || null,
     });
     if (!res.success) {
-      toast(res.error ?? "Не удалось сохранить", "error");
+      toast(res.error ?? t("settings.saveError"), "error");
     } else {
-      toast("Настройки сохранены", "success");
+      setGuestLocale(locale);
+      toast(t("settings.saveSuccess"), "success");
       setDirty(false);
     }
   };
@@ -70,47 +66,63 @@ export default function GeneralSettingsPage() {
   return (
     <div className="panel-card-stack max-w-xl">
       <div>
-        <h2 className="text-base font-semibold text-slate-900">Общие настройки</h2>
-        <p className="text-xs text-slate-500 mt-1">Язык, валюта и отображение в CRM.</p>
+        <h2 className="text-base font-semibold text-slate-900">{t("settings.general.title")}</h2>
+        <p className="text-xs text-slate-500 mt-1">{t("settings.general.subtitle")}</p>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4 font-sans">
-        <AppSelect label="Язык интерфейса" value={locale} onChange={(e) => { setLocale(e.target.value); markDirty(); }}>
-          {LOCALE_OPTIONS.map((o) => (
+        <AppSelect
+          label={t("settings.general.field.locale")}
+          value={locale}
+          onChange={(e) => { setLocale(e.target.value); markDirty(); }}
+        >
+          {localeOptions.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </AppSelect>
 
-        <AppSelect label="Валюта" value={currencyCode} onChange={(e) => { setCurrencyCode(e.target.value); markDirty(); }}>
+        <AppSelect
+          label={t("settings.general.field.currency")}
+          value={currencyCode}
+          onChange={(e) => { setCurrencyCode(e.target.value); markDirty(); }}
+        >
           {CURRENCY_SELECT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </AppSelect>
 
         <AppSelect
-          label="Отображение валюты"
+          label={t("settings.general.field.currencyDisplay")}
           value={currencyDisplay}
           onChange={(e) => { setCurrencyDisplay(e.target.value as "symbol" | "code"); markDirty(); }}
         >
-          <option value="symbol">Символ (₽, $)</option>
-          <option value="code">Код (RUB, USD)</option>
+          <option value="symbol">{t("settings.general.currencyDisplay.symbol")}</option>
+          <option value="code">{t("settings.general.currencyDisplay.code")}</option>
         </AppSelect>
 
-        <AppSelect label="Часовой пояс" value={timezone} onChange={(e) => { setTimezone(e.target.value); markDirty(); }}>
+        <AppSelect
+          label={t("settings.general.field.timezone")}
+          value={timezone}
+          onChange={(e) => { setTimezone(e.target.value); markDirty(); }}
+        >
           {TIMEZONE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </AppSelect>
 
-        <AppSelect label="Начало недели" value={weekStartsOn} onChange={(e) => { setWeekStartsOn(e.target.value); markDirty(); }}>
-          {WEEK_START_OPTIONS.map((o) => (
+        <AppSelect
+          label={t("settings.general.field.weekStart")}
+          value={weekStartsOn}
+          onChange={(e) => { setWeekStartsOn(e.target.value); markDirty(); }}
+        >
+          {weekStartOptions.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </AppSelect>
 
         <div className="field-stack">
           <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
-            Название в шапке
+            {t("settings.general.brandingName")}
           </label>
           <input
             type="text"
@@ -122,7 +134,7 @@ export default function GeneralSettingsPage() {
         </div>
 
         <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
-          Пример: {formatCurrency(1250000)}
+          {t("settings.general.currencyPreview", { value: formatCurrency(1250000) })}
         </p>
 
         <RequirePermission action="settings.manage" mode="hide">
@@ -132,7 +144,7 @@ export default function GeneralSettingsPage() {
             disabled={!dirty || isUpdating}
             className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
           >
-            {isUpdating ? "Сохранение..." : "Сохранить"}
+            {isUpdating ? t("common.saving") : t("common.save")}
           </button>
         </RequirePermission>
       </div>

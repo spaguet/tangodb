@@ -1,14 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
-  Users,
-  Ticket,
-  TicketPlus,
-  Calendar,
-  CalendarCheck,
-  Coins,
   LayoutDashboard,
-  Landmark,
   Menu,
   X,
   LogOut,
@@ -16,8 +9,6 @@ import {
   AlertTriangle,
   Info,
   ChevronDown,
-  Settings,
-  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -67,10 +58,17 @@ import OfflineBanner from "./components/ui/OfflineBanner";
 import ReadOnlyBanner from "./components/ui/ReadOnlyBanner";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { usePermissions } from "./hooks/usePermissions";
+import { useI18n } from "./hooks/useI18n";
+import {
+  getNavSections,
+  getMobileTabs,
+  getPanelTitle,
+  type NavItem,
+  type MobileTabItem,
+} from "./lib/i18n";
 import { panelIdFromPath } from "./lib/permissions";
 import { useOrganization } from "./organization/OrganizationProvider";
 import { normalizeOrgModules } from "./lib/orgModules";
-import type { OrgModules } from "./types/organization";
 import DemoBrandBadge from "./components/demo/DemoBrandBadge";
 import DemoPurchaseCta from "./components/demo/DemoPurchaseCta";
 import { useDemoLicenseUi } from "./hooks/useDemoLicenseUi";
@@ -85,112 +83,6 @@ export function useToast() {
   return ctx;
 }
 
-type SubTab = "active" | "sell";
-type PersonalSubTab = "view" | "sell";
-
-interface NavItem {
-  icon: typeof Users;
-  label: string;
-  path: string;
-  subTab?: SubTab;
-  personalSubTab?: PersonalSubTab;
-}
-
-interface NavSection {
-  label: string;
-  items: NavItem[];
-  moduleKey?: keyof OrgModules;
-}
-
-interface MobileTabItem {
-  icon: typeof LayoutDashboard;
-  line1: string;
-  line2: string;
-  path: string;
-  subTab?: SubTab;
-  moduleKey?: keyof OrgModules;
-}
-
-const NAV_SECTIONS: NavSection[] = [
-  {
-    label: "Аналитика",
-    items: [{ icon: LayoutDashboard, label: "Обзор и статистика", path: "/" }],
-  },
-  {
-    label: "Финансы",
-    moduleKey: "finance_basic",
-    items: [{ icon: Landmark, label: "Финансы", path: "/finance" }],
-  },
-  {
-    label: "Клиенты",
-    items: [{ icon: Users, label: "База клиентов", path: "/clients" }],
-  },
-  {
-    label: "Групповые абонементы",
-    moduleKey: "group_subscriptions",
-    items: [
-      { icon: Ticket, label: "Абонементы", path: "/subscriptions", subTab: "active" },
-      { icon: TicketPlus, label: "Продажа абонемента", path: "/subscriptions/sell", subTab: "sell" },
-    ],
-  },
-  {
-    label: "Расписание и журнал",
-    items: [
-      { icon: Calendar, label: "Расписание", path: "/schedule" },
-      { icon: CalendarCheck, label: "Журнал посещений", path: "/attendance" },
-    ],
-  },
-  {
-    label: "Персональные уроки",
-    moduleKey: "personal_lessons",
-    items: [
-      { icon: Sparkles, label: "Персональные уроки", path: "/personal", personalSubTab: "view" },
-      { icon: TicketPlus, label: "Продажа", path: "/personal/sell", personalSubTab: "sell" },
-    ],
-  },
-  {
-    label: "Тарифы",
-    items: [{ icon: Coins, label: "Тарифы и прайс-лист", path: "/prices" }],
-  },
-  {
-    label: "Настройки",
-    items: [{ icon: Settings, label: "Настройки CRM", path: "/settings" }],
-  },
-];
-
-const MOBILE_TABS: MobileTabItem[] = [
-  { icon: LayoutDashboard, line1: "ОБЗОР И", line2: "СТАТИСТИКА", path: "/" },
-  { icon: Ticket, line1: "АБОНЕМЕНТЫ", line2: "И ПРОДАЖА", path: "/subscriptions", subTab: "active", moduleKey: "group_subscriptions" },
-  { icon: CalendarCheck, line1: "ЖУРНАЛ", line2: "ПОСЕЩЕНИЙ", path: "/attendance" },
-  { icon: Calendar, line1: "РАСПИСАНИЕ", line2: "ГРУПП И УРОКОВ", path: "/schedule" },
-];
-
-function getPanelTitle(pathname: string, subscriptionsTab: string): string {
-  if (pathname === "/") return "Обзор и статистика";
-  if (pathname.startsWith("/finance")) return "Финансы";
-  if (pathname === "/clients") return "Клиенты";
-  if (pathname.startsWith("/subscriptions")) {
-    if (subscriptionsTab === "sell") return "Продажа абонемента";
-    if (subscriptionsTab === "history") return "История абонементов";
-    return "Действующие абонементы";
-  }
-  if (pathname === "/schedule") return "Расписание";
-  if (pathname === "/personal/sell") return "Продажа персональных уроков";
-  if (pathname.startsWith("/personal")) return "Персональные уроки";
-  if (pathname === "/attendance") return "Журнал посещений";
-  if (pathname === "/prices") return "Тарифы и прайс-лист";
-  if (pathname.startsWith("/settings/general")) return "Настройки · Общие";
-  if (pathname.startsWith("/settings/organization")) return "Настройки · Организация";
-  if (pathname.startsWith("/settings/subscriptions")) return "Настройки · Абонементы";
-  if (pathname.startsWith("/settings/disciplines")) return "Настройки · Направления";
-  if (pathname.startsWith("/settings/locations")) return "Настройки · Локации";
-  if (pathname.startsWith("/settings/data")) return "Настройки · Экспорт данных";
-  if (pathname.startsWith("/settings/team")) return "Настройки · Команда";
-  if (pathname.startsWith("/settings/license")) return "Настройки · Лицензия";
-  if (pathname.startsWith("/settings")) return "Настройки CRM";
-  return "TangoDB";
-}
-
 const TOAST_STYLES: Record<ToastType, { icon: typeof Info; accent: string }> = {
   success: { icon: CheckCircle2, accent: "text-indigo-600" },
   error: { icon: AlertTriangle, accent: "text-rose-600" },
@@ -198,6 +90,7 @@ const TOAST_STYLES: Record<ToastType, { icon: typeof Info; accent: string }> = {
 };
 
 function ScrollableNav({ children, refreshKey }: { children: React.ReactNode; refreshKey?: unknown }) {
+  const { t } = useI18n();
   const navRef = useRef<HTMLElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
@@ -229,8 +122,8 @@ function ScrollableNav({ children, refreshKey }: { children: React.ReactNode; re
 
   useEffect(() => {
     updateScrollBtn();
-    const t = setTimeout(updateScrollBtn, 250);
-    return () => clearTimeout(t);
+    const timer = setTimeout(updateScrollBtn, 250);
+    return () => clearTimeout(timer);
   }, [refreshKey, updateScrollBtn]);
 
   const scrollDown = () => {
@@ -248,7 +141,7 @@ function ScrollableNav({ children, refreshKey }: { children: React.ReactNode; re
         <button
           type="button"
           onClick={scrollDown}
-          aria-label="Прокрутить меню вниз"
+          aria-label={t("nav.aria.scrollMenuDown")}
           className="absolute bottom-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 shadow-md text-slate-600 hover:text-indigo-600 hover:border-indigo-200 cursor-pointer transition-colors"
         >
           <ChevronDown className="w-4 h-4" />
@@ -259,6 +152,7 @@ function ScrollableNav({ children, refreshKey }: { children: React.ReactNode; re
 }
 
 function AppLayout() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
@@ -282,7 +176,9 @@ function AppLayout() {
     toastTimer.current = setTimeout(() => setToast(null), 3500);
   }, []);
 
-  const panelTitle = getPanelTitle(location.pathname, subscriptionsTab);
+  const navSections = getNavSections(t);
+  const mobileTabs = getMobileTabs(t);
+  const panelTitle = getPanelTitle(location.pathname, subscriptionsTab, t);
 
   useEffect(() => {
     document.title = `${panelTitle} · TangoDB`;
@@ -290,9 +186,9 @@ function AppLayout() {
 
   useEffect(() => {
     if (justReconnected) {
-      showToast("Соединение восстановлено", "success");
+      showToast(t("nav.connectionRestored"), "success");
     }
-  }, [justReconnected, showToast]);
+  }, [justReconnected, showToast, t]);
 
   useEffect(() => {
     if (!mobileDrawerOpen) return;
@@ -329,7 +225,7 @@ function AppLayout() {
           <DemoPurchaseCta variant="nav" onNavigate={closeDrawer} />
         </div>
       )}
-      {NAV_SECTIONS.map((section) => {
+      {navSections.map((section) => {
         if (section.moduleKey && !orgModules[section.moduleKey]) return null;
         const visibleItems = section.items.filter((item) => canAccessPanel(panelIdFromPath(item.path)));
         if (visibleItems.length === 0) return null;
@@ -371,7 +267,7 @@ function AppLayout() {
       <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased font-sans">
         <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white text-slate-700 border-r border-slate-200 flex-shrink-0 relative z-30 shadow-xs">
           <div
-            onClick={() => go({ icon: LayoutDashboard, label: "Обзор", path: "/" })}
+            onClick={() => go({ icon: LayoutDashboard, label: t("nav.item.dashboard"), path: "/" })}
             className="relative px-5 py-4.5 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors flex items-center gap-3.5"
           >
             <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[11px] tracking-tight leading-none shadow-xs">
@@ -393,7 +289,7 @@ function AppLayout() {
 
         {/* Mobile bottom tab bar: most frequent daily actions */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-1 shadow-md pb-[env(safe-area-inset-bottom)]">
-          {MOBILE_TABS.filter((item) => {
+          {mobileTabs.filter((item) => {
             if (item.moduleKey && !orgModules[item.moduleKey]) return false;
             return canAccessPanel(panelIdFromPath(item.path));
           }).map((item) => {
@@ -427,7 +323,7 @@ function AppLayout() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setMobileDrawerOpen(true)}
-                aria-label="Открыть меню"
+                aria-label={t("nav.aria.openMenu")}
                 className="md:hidden p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg cursor-pointer transition-all"
               >
                 <Menu className="w-5 h-5" />
@@ -441,7 +337,7 @@ function AppLayout() {
                 className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                Выйти
+                {t("nav.signOut")}
               </button>
             </div>
           </header>
@@ -485,7 +381,7 @@ function AppLayout() {
                   </div>
                   <button
                     onClick={() => setMobileDrawerOpen(false)}
-                    aria-label="Закрыть меню"
+                    aria-label={t("nav.aria.closeMenu")}
                     className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg bg-slate-50 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
@@ -499,7 +395,7 @@ function AppLayout() {
                     onClick={() => signOut()}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                   >
-                    <LogOut className="w-3.5 h-3.5" /> Выйти
+                    <LogOut className="w-3.5 h-3.5" /> {t("nav.signOut")}
                   </button>
                 </div>
               </motion.div>
@@ -521,7 +417,7 @@ function AppLayout() {
               <span className="flex-1 leading-snug">{toast.msg}</span>
               <button
                 onClick={() => setToast(null)}
-                aria-label="Закрыть уведомление"
+                aria-label={t("nav.aria.closeToast")}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
               >
                 <X className="w-3.5 h-3.5" />

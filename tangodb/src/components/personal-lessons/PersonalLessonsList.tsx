@@ -2,10 +2,10 @@ import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { PERSONAL_LESSON_COLOR } from "../../lib/scheduleColors";
 import { toISODateLocal } from "../../lib/scheduleWeek";
-import { formatDateRu, pluralizeRu } from "../../lib/utils";
 import type { PersonalLesson } from "../../types";
 import type { MemberRole } from "../../types/organization";
 import type { PermissionAction } from "../../lib/permissions";
+import { useI18n } from "../../hooks/useI18n";
 import PersonalLessonRow from "./PersonalLessonRow";
 
 type CanFn = (action: PermissionAction, context?: { disciplineId?: string | null; locationId?: string | null }) => boolean;
@@ -41,6 +41,7 @@ export default function PersonalLessonsList({
   onPay,
   toast,
 }: PersonalLessonsListProps) {
+  const { t, plural, formatDate } = useI18n();
   const todayISO = toISODateLocal(new Date());
 
   const groupedByDate = useMemo(() => {
@@ -64,7 +65,7 @@ export default function PersonalLessonsList({
     return (
       <div className="text-center py-20 text-slate-400 space-y-3 bg-white rounded-xl border border-slate-200">
         <Sparkles className="w-8 h-8 mx-auto text-slate-300" />
-        <p className="text-sm">Персональных уроков с такими критериями нет.</p>
+        <p className="text-sm">{t("personal.empty.filtered")}</p>
       </div>
     );
   }
@@ -83,26 +84,31 @@ export default function PersonalLessonsList({
             }`}
           >
             <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-800">{formatDateRu(date)}</span>
+              <span className="text-xs font-semibold text-slate-800">{formatDate(date)}</span>
               <span className="text-xs text-slate-400">·</span>
               <span className="text-xs font-semibold text-indigo-700">
-                {dateLessons.length} {pluralizeRu(dateLessons.length, ["урок", "урока", "уроков"])}
+                {dateLessons.length}{" "}
+                {plural(dateLessons.length, [
+                  t("common.lesson.one"),
+                  t("common.lesson.few"),
+                  t("common.lesson.many"),
+                ])}
               </span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[960px] text-left">
                 <thead>
                   <tr className="border-b border-slate-100 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
-                    <th className="py-2 px-3">Время</th>
-                    <th className="py-2 px-3">Локация</th>
-                    <th className="py-2 px-3">Направление</th>
-                    <th className="py-2 px-3">Преподаватель</th>
-                    <th className="py-2 px-3">Клиенты</th>
-                    <th className="py-2 px-3">Формат</th>
-                    <th className="py-2 px-3">Статусы</th>
-                    <th className="py-2 px-3">Сумма</th>
-                    <th className="py-2 px-3">Посещение</th>
-                    <th className="py-2 px-3">Действия</th>
+                    <th className="py-2 px-3">{t("common.time")}</th>
+                    <th className="py-2 px-3">{t("schedule.form.location")}</th>
+                    <th className="py-2 px-3">{t("common.discipline")}</th>
+                    <th className="py-2 px-3">{t("schedule.form.teacher")}</th>
+                    <th className="py-2 px-3">{t("common.clients")}</th>
+                    <th className="py-2 px-3">{t("common.format")}</th>
+                    <th className="py-2 px-3">{t("common.statuses")}</th>
+                    <th className="py-2 px-3">{t("common.amount")}</th>
+                    <th className="py-2 px-3">{t("common.attendance")}</th>
+                    <th className="py-2 px-3">{t("common.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>

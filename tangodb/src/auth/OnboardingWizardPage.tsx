@@ -6,6 +6,8 @@ import { useOrganization } from "../organization/OrganizationProvider";
 import type { OrgModules, OrgPreset } from "../types/organization";
 import { PRESET_MODULES } from "../types/organization";
 import { CURRENCY_SELECT_OPTIONS, DEFAULT_CURRENCY_CODE } from "../lib/currencies";
+import { useGuestI18n } from "../hooks/useI18n";
+import type { I18nKey } from "../lib/i18n/keys";
 import {
   AuthButton,
   AuthError,
@@ -15,31 +17,65 @@ import {
 
 type WizardStep = "name" | "preset" | "locale" | "modules";
 
-const PRESET_OPTIONS: { value: OrgPreset; label: string; hint: string }[] = [
-  { value: "dance_school", label: "Танцевальная школа", hint: "Группы, пары, персональные" },
-  { value: "solo_teacher", label: "Частный преподаватель", hint: "Персональные уроки" },
-  { value: "sport_section", label: "Спортивная секция", hint: "Группы без pair cycle" },
-  { value: "gymnastics_club", label: "Кружок / гимнастика", hint: "Группы и локации" },
-  { value: "custom", label: "Своё", hint: "Настроить модули вручную" },
+const PRESET_I18N: Record<OrgPreset, { label: I18nKey; hint: I18nKey }> = {
+  dance_school: {
+    label: "onboarding.preset.danceSchool.label",
+    hint: "onboarding.preset.danceSchool.hint",
+  },
+  solo_teacher: {
+    label: "onboarding.preset.danceStudio.label",
+    hint: "onboarding.preset.danceStudio.hint",
+  },
+  sport_section: {
+    label: "onboarding.preset.school.label",
+    hint: "onboarding.preset.school.hint",
+  },
+  gymnastics_club: {
+    label: "onboarding.preset.club.label",
+    hint: "onboarding.preset.club.hint",
+  },
+  custom: {
+    label: "onboarding.preset.other.label",
+    hint: "onboarding.preset.other.hint",
+  },
+};
+
+const PRESET_VALUES: OrgPreset[] = [
+  "dance_school",
+  "solo_teacher",
+  "sport_section",
+  "gymnastics_club",
+  "custom",
 ];
 
-const LOCALE_OPTIONS = [
-  { value: "ru-RU", label: "Русский (ru-RU)" },
-  { value: "en-US", label: "English (en-US)" },
-  { value: "vi-VN", label: "Tiếng Việt (vi-VN)" },
+const MODULE_I18N: Partial<Record<keyof OrgModules, I18nKey>> = {
+  group_subscriptions: "onboarding.module.groupSubscriptions",
+  personal_lessons: "onboarding.module.personalLessons",
+  finance_basic: "onboarding.module.financeBasic",
+  pair_subscriptions: "onboarding.module.pairSubscriptions",
+  trio_lessons: "onboarding.module.trioLessons",
+  multi_discipline: "onboarding.module.multiDiscipline",
+  locations: "onboarding.module.locations",
+};
+
+const MODULE_KEYS: (keyof OrgModules)[] = [
+  "group_subscriptions",
+  "personal_lessons",
+  "finance_basic",
+  "pair_subscriptions",
+  "trio_lessons",
+  "multi_discipline",
+  "locations",
 ];
 
-const MODULE_LABELS: { key: keyof OrgModules; label: string }[] = [
-  { key: "group_subscriptions", label: "Групповые абонементы" },
-  { key: "personal_lessons", label: "Персональные уроки" },
-  { key: "finance_basic", label: "Финансы (отчёты и журнал)" },
-  { key: "pair_subscriptions", label: "Парные абонементы" },
-  { key: "trio_lessons", label: "Трио-уроки" },
-  { key: "multi_discipline", label: "Несколько направлений" },
-  { key: "locations", label: "Локации / залы" },
+const LOCALE_VALUES = [
+  { value: "ru-RU", key: "common.locale.ru" as const },
+  { value: "en-US", key: "common.locale.en" as const },
+  { value: "vi-VN", key: "common.locale.vi" as const },
 ];
 
 export default function OnboardingWizardPage() {
+  const { t } = useGuestI18n();
   const navigate = useNavigate();
   const { organizationId, refreshOrganization } = useOrganization();
   const [step, setStep] = useState<WizardStep>("name");
@@ -70,7 +106,7 @@ export default function OnboardingWizardPage() {
 
   const finish = async () => {
     if (!organizationId) {
-      setError("Организация не выбрана");
+      setError(t("onboarding.error.noOrgSelected"));
       return;
     }
 
@@ -93,7 +129,7 @@ export default function OnboardingWizardPage() {
 
       if (rpcError) throw rpcError;
       if (!data || (data as { ok?: boolean }).ok !== true) {
-        throw new Error("Не удалось сохранить настройки");
+        throw new Error(t("onboarding.error.saveFailed"));
       }
 
       const { error: postRefreshError } = await supabase.auth.refreshSession();
@@ -110,7 +146,7 @@ export default function OnboardingWizardPage() {
               "message" in err &&
               typeof (err as { message: unknown }).message === "string"
             ? (err as { message: string }).message
-            : "Не удалось сохранить настройки";
+            : t("onboarding.error.saveFailed");
       setError(message);
     } finally {
       setLoading(false);
@@ -120,7 +156,7 @@ export default function OnboardingWizardPage() {
   const next = () => {
     if (step === "name") {
       if (!orgName.trim()) {
-        setError("Укажите название организации");
+        setError(t("onboarding.error.nameRequired"));
         return;
       }
       setError(null);
@@ -146,12 +182,15 @@ export default function OnboardingWizardPage() {
   };
 
   return (
-    <AuthLayout title="TangoDB" subtitle={`Настройка организации · шаг ${stepIndex + 1} из 4`}>
+    <AuthLayout
+      title="TangoDB"
+      subtitle={t("onboarding.subtitleStep", { step: stepIndex + 1, total: 4 })}
+    >
       <AuthError message={error} />
 
       {step === "name" && (
         <AuthField
-          label="Название школы / студии"
+          label={t("onboarding.field.orgName")}
           value={orgName}
           onChange={setOrgName}
           placeholder="Studio Tango N"
@@ -161,19 +200,19 @@ export default function OnboardingWizardPage() {
 
       {step === "preset" && (
         <div className="space-y-2">
-          {PRESET_OPTIONS.map((option) => (
+          {PRESET_VALUES.map((value) => (
             <button
-              key={option.value}
+              key={value}
               type="button"
-              onClick={() => applyPreset(option.value)}
+              onClick={() => applyPreset(value)}
               className={`w-full rounded-lg border px-4 py-3 text-left transition-colors cursor-pointer ${
-                preset === option.value
+                preset === value
                   ? "border-indigo-400 bg-indigo-50"
                   : "border-slate-200 hover:border-indigo-200"
               }`}
             >
-              <p className="text-sm font-semibold text-slate-800">{option.label}</p>
-              <p className="text-xs text-slate-500">{option.hint}</p>
+              <p className="text-sm font-semibold text-slate-800">{t(PRESET_I18N[value].label)}</p>
+              <p className="text-xs text-slate-500">{t(PRESET_I18N[value].hint)}</p>
             </button>
           ))}
         </div>
@@ -181,15 +220,19 @@ export default function OnboardingWizardPage() {
 
       {step === "locale" && (
         <div className="space-y-4">
-          <AppSelect label="Язык интерфейса" value={locale} onChange={(e) => setLocale(e.target.value)}>
-            {LOCALE_OPTIONS.map((option) => (
+          <AppSelect
+            label={t("onboarding.field.locale")}
+            value={locale}
+            onChange={(e) => setLocale(e.target.value)}
+          >
+            {LOCALE_VALUES.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {t(option.key)} ({option.value})
               </option>
             ))}
           </AppSelect>
           <AppSelect
-            label="Валюта"
+            label={t("onboarding.field.currency")}
             value={currencyCode}
             onChange={(e) => setCurrencyCode(e.target.value)}
           >
@@ -204,31 +247,34 @@ export default function OnboardingWizardPage() {
 
       {step === "modules" && (
         <div className="space-y-2">
-          {MODULE_LABELS.map(({ key, label }) => (
-            <label
-              key={key}
-              className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
-            >
-              <span className="text-sm text-slate-700">{label}</span>
-              <input
-                type="checkbox"
-                checked={modules[key]}
-                onChange={() => toggleModule(key)}
-                className="w-4 h-4 accent-indigo-600"
-              />
-            </label>
-          ))}
+          {MODULE_KEYS.map((key) => {
+            const i18nKey = MODULE_I18N[key];
+            return (
+              <label
+                key={key}
+                className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
+              >
+                <span className="text-sm text-slate-700">{i18nKey ? t(i18nKey) : key}</span>
+                <input
+                  type="checkbox"
+                  checked={modules[key]}
+                  onChange={() => toggleModule(key)}
+                  className="w-4 h-4 accent-indigo-600"
+                />
+              </label>
+            );
+          })}
         </div>
       )}
 
       <div className="flex gap-2">
         {step !== "name" && (
           <AuthButton type="button" variant="secondary" onClick={back}>
-            Назад
+            {t("common.back")}
           </AuthButton>
         )}
         <AuthButton loading={loading} onClick={next}>
-          {step === "modules" ? "Завершить" : "Далее"}
+          {step === "modules" ? t("onboarding.finish") : t("onboarding.next")}
         </AuthButton>
       </div>
     </AuthLayout>

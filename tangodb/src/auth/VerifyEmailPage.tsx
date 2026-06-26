@@ -4,11 +4,13 @@ import { useAuth } from "./AuthProvider";
 import RecoveryCodeModal from "./RecoveryCodeModal";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useSelfServiceDemo } from "../hooks/useSelfServiceDemo";
+import { useGuestI18n } from "../hooks/useI18n";
 import { AuthError, AuthLayout, AuthLink } from "./AuthLayout";
 
 type VerifyPhase = "loading" | "creating" | "recovery" | "done" | "idle";
 
 export default function VerifyEmailPage() {
+  const { t } = useGuestI18n();
   const { session, loading: authLoading } = useAuth();
   const { memberships, membershipsLoading, refreshOrganization } = useOrganization();
   const { createDemoOrganization } = useSelfServiceDemo();
@@ -66,7 +68,7 @@ export default function VerifyEmailPage() {
       } catch (err) {
         attemptRef.current = false;
         const message =
-          err instanceof Error ? err.message : "Не удалось создать демо-организацию";
+          err instanceof Error ? err.message : t("auth.verifyEmail.createDemoError");
         setError(message);
         setPhase("idle");
       }
@@ -80,6 +82,7 @@ export default function VerifyEmailPage() {
     refreshOrganization,
     navigate,
     recoveryCode,
+    t,
   ]);
 
   const continueAfterRecovery = () => {
@@ -93,11 +96,13 @@ export default function VerifyEmailPage() {
 
   if (phase === "loading" || phase === "creating") {
     return (
-      <AuthLayout title="TangoDB" subtitle="Подготовка демо-CRM">
+      <AuthLayout title="TangoDB" subtitle={t("auth.verifyEmail.preparingSubtitle")}>
         <div className="flex flex-col items-center gap-3 py-8 text-slate-400">
           <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
           <p className="text-xs font-semibold tracking-widest uppercase">
-            {phase === "creating" ? "Создаём демо-организацию..." : "Загрузка..."}
+            {phase === "creating"
+              ? t("auth.verifyEmail.creatingOrg")
+              : t("common.loading.default")}
           </p>
         </div>
       </AuthLayout>
@@ -105,36 +110,25 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <AuthLayout title="TangoDB" subtitle="Подтверждение email">
+    <AuthLayout title="TangoDB" subtitle={t("auth.verifyEmail.subtitle")}>
       <AuthError message={error} />
 
       {!session ? (
         <>
-          <p className="text-sm text-slate-500">
-            Перейдите по ссылке из письма, чтобы подтвердить email. После подтверждения мы
-            автоматически создадим демо-CRM на 30 дней.
-          </p>
+          <p className="text-sm text-slate-500">{t("auth.verifyEmail.noSessionHint")}</p>
           <p className="text-sm text-center">
-            <AuthLink to="/login">Войти</AuthLink>
+            <AuthLink to="/login">{t("auth.register.signInLink")}</AuthLink>
           </p>
         </>
       ) : !session.user.email_confirmed_at ? (
         <>
-          <p className="text-sm text-slate-500">
-            Email ещё не подтверждён. Откройте ссылку из письма — демо-CRM создастся автоматически.
-          </p>
+          <p className="text-sm text-slate-500">{t("auth.verifyEmail.notConfirmedHint")}</p>
           <p className="text-sm text-center">
-            <AuthLink to="/login">Войти с другим аккаунтом</AuthLink>
+            <AuthLink to="/login">{t("auth.verifyEmail.signInOtherAccount")}</AuthLink>
           </p>
         </>
       ) : (
-        <>
-          <p className="text-sm text-slate-500">
-            Email подтверждён. Если демо-CRM не создалась автоматически, вернитесь на{" "}
-            <AuthLink to="/register">регистрацию</AuthLink> или активируйте{" "}
-            <AuthLink to="/activate-key">лицензионный ключ</AuthLink>.
-          </p>
-        </>
+        <p className="text-sm text-slate-500">{t("auth.verifyEmail.confirmedFallbackHint")}</p>
       )}
     </AuthLayout>
   );

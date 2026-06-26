@@ -4,9 +4,12 @@ import { Coins, X } from "lucide-react";
 import { useCreatePrice } from "../../hooks/usePrices";
 import { useAccessibleLocations } from "../../hooks/useLocations";
 import { useDisciplines } from "../../hooks/useDisciplines";
+import { useI18n } from "../../hooks/useI18n";
+import { translateMutationBlockedMessage, useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { resolvePrivatePackagePriceType, type PrivatePackageFormat } from "../../lib/orgModules";
 import { useSettings } from "../../settings/SettingsProvider";
 import { DEFAULT_ORG_MODULES } from "../../lib/orgModules";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "./AppSelect";
 import LocationTariffField from "./LocationTariffField";
 import DisciplineTariffField from "./DisciplineTariffField";
@@ -31,6 +34,8 @@ export default function CreatePrivatePackageTariffModal({
   onCreated,
 }: CreatePrivatePackageTariffModalProps) {
   const createPrice = useCreatePrice();
+  const { t } = useI18n();
+  const { connectionState } = useOnlineStatus();
   const { locations } = useAccessibleLocations();
   const { data: disciplines = [] } = useDisciplines();
   const { settings } = useSettings();
@@ -72,29 +77,33 @@ export default function CreatePrivatePackageTariffModal({
   }, [open, locations, disciplines]);
 
   const handleSubmit = async () => {
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
     if (!form.label.trim()) {
-      toast("Укажите название тарифа.", "error");
+      toast(t("prices.error.nameRequired"), "error");
       return;
     }
 
     const parsedPrice = parseFloat(form.price);
     if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
-      toast("Введите корректную стоимость.", "error");
+      toast(t("prices.error.invalidCost"), "error");
       return;
     }
 
     const lessons = parseInt(form.lessons, 10);
     if (Number.isNaN(lessons) || lessons < 1) {
-      toast("Укажите количество уроков (не меньше 1).", "error");
+      toast(t("prices.error.lessonsRequired"), "error");
       return;
     }
 
     if (bindToLocation && !formLocationId) {
-      toast("Выберите локацию для локального тарифа.", "error");
+      toast(t("prices.error.locationRequired"), "error");
       return;
     }
     if (bindToDiscipline && !formDisciplineId) {
-      toast("Выберите дисциплину для тарифа.", "error");
+      toast(t("prices.error.disciplineRequired"), "error");
       return;
     }
 
@@ -113,11 +122,11 @@ export default function CreatePrivatePackageTariffModal({
     setPending(false);
 
     if (!res.success) {
-      toast(res.error || "Не удалось создать тариф", "error");
+      toast(resolveMutationError(res.error, "prices.error.createFailed", t), "error");
       return;
     }
 
-    toast("Тариф добавлен в прайс-лист", "success");
+    toast(t("prices.success.created"), "success");
     onCreated?.();
     onClose();
   };
@@ -149,13 +158,13 @@ export default function CreatePrivatePackageTariffModal({
                   <Coins className="w-4 h-4 text-indigo-600" />
                 </div>
                 <h3 className="text-base font-semibold tracking-tight text-slate-900">
-                  Новый тариф · пакет персональных уроков
+                  {t("prices.form.privatePackageTitle")}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -164,20 +173,20 @@ export default function CreatePrivatePackageTariffModal({
 
             <div className="panel-form-stack font-sans">
               <div className="field-stack">
-                <label className={labelCls}>Формат</label>
+                <label className={labelCls}>{t("prices.form.format")}</label>
                 <AppSelect
                   value={form.format}
                   onChange={(e) =>
                     setForm({ ...form, format: e.target.value as PrivatePackageFormat })
                   }
                 >
-                  <option value="solo">Соло</option>
-                  {pairSubscriptionsEnabled && <option value="pair">Пара</option>}
-                  {trioLessonsEnabled && <option value="trio">Трио</option>}
+                  <option value="solo">{t("common.formatSolo")}</option>
+                  {pairSubscriptionsEnabled && <option value="pair">{t("common.formatPair")}</option>}
+                  {trioLessonsEnabled && <option value="trio">{t("common.formatTrio")}</option>}
                 </AppSelect>
               </div>
               <div className="field-stack">
-                <label className={labelCls}>Название</label>
+                <label className={labelCls}>{t("prices.form.name")}</label>
                 <input
                   type="text"
                   value={form.label}
@@ -186,7 +195,7 @@ export default function CreatePrivatePackageTariffModal({
                 />
               </div>
               <div className="field-stack">
-                <label className={labelCls}>Описание</label>
+                <label className={labelCls}>{t("prices.form.description")}</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -195,7 +204,7 @@ export default function CreatePrivatePackageTariffModal({
                 />
               </div>
               <div className="field-stack">
-                <label className={labelCls}>Количество уроков</label>
+                <label className={labelCls}>{t("prices.form.lessons")}</label>
                 <input
                   type="number"
                   min={2}
@@ -205,7 +214,7 @@ export default function CreatePrivatePackageTariffModal({
                 />
               </div>
               <div className="field-stack">
-                <label className={labelCls}>Стоимость</label>
+                <label className={labelCls}>{t("prices.form.cost")}</label>
                 <div className="relative">
                   <input
                     type="number"
@@ -237,17 +246,17 @@ export default function CreatePrivatePackageTariffModal({
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={pending}
+                disabled={connectionState !== "online" || pending}
                 className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
               >
-                {pending ? "..." : "Добавить"}
+                {pending ? t("common.saving") : t("prices.add")}
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer text-xs"
               >
-                Закрыть
+                {t("common.close")}
               </button>
             </div>
           </motion.div>

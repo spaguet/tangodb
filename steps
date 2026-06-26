@@ -102,7 +102,7 @@
              recovery code как доп. фактор;
              всё через Dev Console + audit log
 
-12   S10     English localization:               §8, §10      Промт 17
+12   S10     English localization:               §8, §10      Промт 17 ✅
              ПОСЛЕДНИЙ этап — после заморозки
              всех русских SaaS-текстов;
              en-US для всех основных маршрутов

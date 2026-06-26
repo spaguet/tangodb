@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { getWeekRange, formatWeekRangeLabel, toISODateLocal } from "../../lib/scheduleWeek";
+import { useI18n } from "../../hooks/useI18n";
 import AppSelect from "../ui/AppSelect";
 import WeekPickerPopover from "./WeekPickerPopover";
 
@@ -24,6 +25,7 @@ export default function ScheduleToolbar({
   onTeacherFilterChange,
   teacherFilterOptions,
 }: ScheduleToolbarProps) {
+  const { t } = useI18n();
   const [pickerOpen, setPickerOpen] = useState(false);
   const { weekEnd } = useMemo(() => getWeekRange(weekStart), [weekStart]);
   const label = formatWeekRangeLabel(weekStart, weekEnd);
@@ -49,7 +51,7 @@ export default function ScheduleToolbar({
         <button
           type="button"
           onClick={() => shiftWeek(-1)}
-          aria-label="Предыдущая неделя"
+          aria-label={t("common.aria.prevWeek")}
           className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -63,7 +65,7 @@ export default function ScheduleToolbar({
               onClick={goToCurrentWeek}
               className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
             >
-              Текущая неделя
+              {t("common.currentWeek")}
             </button>
           )}
         </div>
@@ -71,7 +73,7 @@ export default function ScheduleToolbar({
         <button
           type="button"
           onClick={() => shiftWeek(1)}
-          aria-label="Следующая неделя"
+          aria-label={t("common.aria.nextWeek")}
           className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
@@ -82,7 +84,7 @@ export default function ScheduleToolbar({
         <button
           type="button"
           onClick={() => setPickerOpen((v) => !v)}
-          aria-label="Выбрать неделю"
+          aria-label={t("common.aria.pickWeek")}
           aria-expanded={pickerOpen}
           className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
         >
@@ -93,7 +95,7 @@ export default function ScheduleToolbar({
           <>
             <button
               type="button"
-              aria-label="Закрыть календарь"
+              aria-label={t("common.aria.closeCalendar")}
               className="fixed inset-0 z-40 cursor-default"
               onClick={() => setPickerOpen(false)}
             />
@@ -112,12 +114,12 @@ export default function ScheduleToolbar({
 
       {teacherFilterOptions.length > 0 && (
         <AppSelect
-          label="Преподаватель"
+          label={t("schedule.form.teacher")}
           value={teacherFilter}
           onChange={(e) => onTeacherFilterChange(e.target.value)}
           className="min-w-[160px] sm:min-w-[200px]"
         >
-          <option value="">Все преподаватели</option>
+          <option value="">{t("common.allTeachers")}</option>
           {teacherFilterOptions.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}

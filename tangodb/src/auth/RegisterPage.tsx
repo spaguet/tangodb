@@ -4,6 +4,7 @@ import { useAuth } from "./AuthProvider";
 import { parseAuthError } from "./authErrors";
 import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import { useSelfServiceDemo } from "../hooks/useSelfServiceDemo";
+import { useGuestI18n } from "../hooks/useI18n";
 import {
   AuthButton,
   AuthError,
@@ -14,6 +15,7 @@ import {
 } from "./AuthLayout";
 
 export default function RegisterPage() {
+  const { t, locale } = useGuestI18n();
   const { signUpWithEmail } = useAuth();
   const navigate = useNavigate();
   const { verifyRegistrationChallenge, createDemoOrganization } = useSelfServiceDemo();
@@ -34,22 +36,22 @@ export default function RegisterPage() {
 
     const trimmedLogin = login.trim();
     if (!trimmedLogin) {
-      setError("Укажите логин (отображаемое имя)");
+      setError(t("auth.register.loginRequired"));
       return;
     }
     if (password.length < 8) {
-      setError("Пароль должен содержать минимум 8 символов");
+      setError(t("auth.passwordMinLength"));
       return;
     }
     if (password !== confirmPassword) {
-      setError("Пароли не совпадают");
+      setError(t("auth.passwordMismatch"));
       return;
     }
     if (!turnstileToken) {
       setError(
         isTurnstileConfigured()
-          ? "Подтвердите, что вы не робот"
-          : "Captcha недоступна — обратитесь к администратору"
+          ? t("auth.register.captchaRequired")
+          : t("auth.register.captchaUnavailable")
       );
       return;
     }
@@ -66,9 +68,7 @@ export default function RegisterPage() {
       );
 
       if (needsEmailConfirmation) {
-        setSuccess(
-          "Проверьте почту и подтвердите email — после этого откроется демо-версия CRM на 30 дней."
-        );
+        setSuccess(t("auth.register.checkEmailDemo"));
         setTurnstileResetKey((k) => k + 1);
         setTurnstileToken(null);
       } else {
@@ -83,7 +83,7 @@ export default function RegisterPage() {
         }
       }
     } catch (err) {
-      setError(parseAuthError(err));
+      setError(parseAuthError(err, locale));
       setTurnstileResetKey((k) => k + 1);
       setTurnstileToken(null);
     } finally {
@@ -92,21 +92,19 @@ export default function RegisterPage() {
   };
 
   return (
-    <AuthLayout title="TangoDB" subtitle="Регистрация владельца">
-      <p className="text-sm text-slate-500">
-        После подтверждения email вы получите демо-CRM на 30 дней — ключ не нужен.
-      </p>
+    <AuthLayout title="TangoDB" subtitle={t("auth.register.subtitle")}>
+      <p className="text-sm text-slate-500">{t("auth.register.demoHint")}</p>
 
       <AuthError message={error} />
       <AuthSuccess message={success} />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthField
-          label="Логин"
+          label={t("auth.register.loginLabel")}
           value={login}
           onChange={setLogin}
           autoComplete="nickname"
-          placeholder="Как вас показывать в CRM"
+          placeholder={t("auth.register.loginPlaceholder")}
           required
         />
         <AuthField
@@ -118,7 +116,7 @@ export default function RegisterPage() {
           required
         />
         <AuthField
-          label="Пароль"
+          label={t("auth.password")}
           type="password"
           value={password}
           onChange={setPassword}
@@ -126,7 +124,7 @@ export default function RegisterPage() {
           required
         />
         <AuthField
-          label="Подтверждение пароля"
+          label={t("auth.confirmPassword")}
           type="password"
           value={confirmPassword}
           onChange={setConfirmPassword}
@@ -138,16 +136,14 @@ export default function RegisterPage() {
           onToken={setTurnstileToken}
           onError={() => setTurnstileToken(null)}
         />
-        <AuthButton loading={loading}>Создать аккаунт</AuthButton>
+        <AuthButton loading={loading}>{t("auth.register.submit")}</AuthButton>
       </form>
 
       <p className="text-sm text-slate-500 text-center">
-        Уже есть аккаунт? <AuthLink to="/login">Войти</AuthLink>
+        {t("auth.register.hasAccount")}{" "}
+        <AuthLink to="/login">{t("auth.register.signInLink")}</AuthLink>
       </p>
-      <p className="text-xs text-slate-400 text-center">
-        Есть лицензионный ключ?{" "}
-        <AuthLink to="/login">Войдите</AuthLink> и активируйте в настройках.
-      </p>
+      <p className="text-xs text-slate-400 text-center">{t("auth.register.hasLicenseKey")}</p>
     </AuthLayout>
   );
 }

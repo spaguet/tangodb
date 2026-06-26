@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import { useDemoLicenseUi } from "../../hooks/useDemoLicenseUi";
+import { useI18n } from "../../hooks/useI18n";
 
 interface DemoPurchaseCtaProps {
   variant: "nav" | "banner";
@@ -8,6 +9,7 @@ interface DemoPurchaseCtaProps {
 }
 
 export default function DemoPurchaseCta({ variant, onNavigate }: DemoPurchaseCtaProps) {
+  const { t } = useI18n();
   const { showPurchaseCta, purchasePath } = useDemoLicenseUi();
 
   if (!showPurchaseCta) return null;
@@ -20,7 +22,7 @@ export default function DemoPurchaseCta({ variant, onNavigate }: DemoPurchaseCta
   return (
     <Link to={purchasePath} onClick={onNavigate} className={className}>
       <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
-      Купить полную версию
+      {t("demo.purchaseCta")}
     </Link>
   );
 }

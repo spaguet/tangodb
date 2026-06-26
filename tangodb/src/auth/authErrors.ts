@@ -1,27 +1,30 @@
-export function parseAuthError(err: unknown): string {
-  if (!(err instanceof Error)) return "Не удалось выполнить запрос";
+import { t, getGuestLocale } from "../lib/i18n";
+
+export function parseAuthError(err: unknown, locale?: string): string {
+  const loc = locale ?? getGuestLocale();
+  if (!(err instanceof Error)) return t(loc, "auth.error.generic");
 
   const message = err.message;
   if (message === "Invalid login credentials") {
-    return "Неверный email или пароль";
+    return t(loc, "auth.error.invalidCredentials");
   }
   if (message === "Email not confirmed") {
-    return "Подтвердите email перед входом";
+    return t(loc, "auth.error.emailNotConfirmed");
   }
   if (message === "User already registered") {
-    return "Пользователь с таким email уже зарегистрирован";
+    return t(loc, "auth.error.userAlreadyRegistered");
   }
   if (message === "Demo already used for this email") {
-    return "Демо для этого email уже использовалось. Активируйте лицензионный ключ или обратитесь в поддержку.";
+    return t(loc, "auth.error.demoUsedEmail");
   }
   if (message === "Captcha verification failed") {
-    return "Не удалось пройти проверку captcha. Попробуйте ещё раз.";
+    return t(loc, "auth.error.captchaFailed");
   }
   if (message === "Complete registration captcha on the sign-up page first") {
-    return "Сначала завершите регистрацию на странице «Регистрация» (captcha действует 24 часа).";
+    return t(loc, "auth.error.completeRegistrationCaptcha");
   }
   if (message === "Demo already used for this telegram account") {
-    return "Демо для этого Telegram уже использовалось. Активируйте лицензионный ключ или обратитесь в поддержку.";
+    return t(loc, "auth.error.demoUsedTelegram");
   }
   return message;
 }

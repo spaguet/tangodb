@@ -15,12 +15,14 @@ import {
   useUpdateClient,
 } from "../hooks/useClients";
 import {
-  getConnectionBlockReason,
-  getMutationBlockedMessage,
+  translateConnectionBlockReason,
+  translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
+import { resolveMutationError } from "../lib/resolveMutationError";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useCan } from "../hooks/usePermissions";
+import { useI18n } from "../hooks/useI18n";
 import ClientCardModal from "./ClientCardModal";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import RequirePermission from "./RequirePermission";
@@ -37,27 +39,28 @@ interface ClientsPanelProps {
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
-const clientTabs = [
-  { id: "active", label: "Активные", icon: Users },
-  { id: "archive", label: "Архив", icon: Archive },
-] as const;
-
-type ClientTab = (typeof clientTabs)[number]["id"];
-
-function formatArchivedAt(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("ru-RU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+type ClientTab = "active" | "archive";
 
 export default function ClientsPanel({ toast }: ClientsPanelProps) {
+  const { t, formatDateTime } = useI18n();
   const { connectionState } = useOnlineStatus();
+
+  const clientTabs = [
+    { id: "active" as const, label: t("clients.tab.active"), icon: Users },
+    { id: "archive" as const, label: t("clients.tab.archive"), icon: Archive },
+  ];
+
+  const formatArchivedAt = (iso: string): string => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return formatDateTime(d, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
   const canOpenClientCard = useCan("client_notes.read");
   const [activeTab, setActiveTab] = useState<ClientTab>("active");
   const {
@@ -117,19 +120,20 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const handleSubmitAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      const blocked = translateMutationBlockedMessage(connectionState, t);
+      if (blocked) toast(blocked, "error");
       return;
     }
     if (!firstName.trim() || !lastName.trim()) {
-      toast("Заполните имя и фамилию — это обязательные поля.", "error");
+      toast(t("clients.error.nameRequired"), "error");
       return;
     }
 
     const res = await addClient.mutateAsync({ firstName, lastName, telegram });
     if (!res.success) {
-      toast(res.error || "Ошибка добавления", "error");
+      toast(resolveMutationError(res.error, "clients.error.addFailed", t), "error");
     } else {
-      toast("Карточка клиента добавлена в реестр", "success");
+      toast(t("clients.success.added"), "success");
       setFirstName("");
       setLastName("");
       setTelegram("");
@@ -146,11 +150,12 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const handleSaveEdit = async () => {
     if (!editingClient) return;
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      const blocked = translateMutationBlockedMessage(connectionState, t);
+      if (blocked) toast(blocked, "error");
       return;
     }
     if (!editFirst.trim() || !editLast.trim()) {
-      toast("Имя и фамилия не могут быть пустыми.", "error");
+      toast(t("clients.error.emptyName"), "error");
       return;
     }
 
@@ -161,9 +166,9 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       telegram: editTg,
     });
     if (!res.success) {
-      toast(res.error || "Ошибка сохранения изменения", "error");
+      toast(resolveMutationError(res.error, "clients.error.saveFailed", t), "error");
     } else {
-      toast("Информация о клиенте обновлена", "success");
+      toast(t("clients.success.updated"), "success");
       setEditingClient(null);
     }
   };
@@ -171,14 +176,21 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const handleConfirmArchive = async () => {
     if (!deleteTarget) return;
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      const blocked = translateMutationBlockedMessage(connectionState, t);
+      if (blocked) toast(blocked, "error");
       return;
     }
     const res = await archiveClient.mutateAsync(deleteTarget.id);
     if (!res.success) {
-      toast(res.error || "Не удалось архивировать клиента", "error");
+      toast(resolveMutationError(res.error, "clients.error.archiveFailed", t), "error");
     } else {
-      toast(`Клиент ${deleteTarget.lastName} ${deleteTarget.firstName} архивирован`, "success");
+      toast(
+        t("clients.success.archived", {
+          lastName: deleteTarget.lastName,
+          firstName: deleteTarget.firstName,
+        }),
+        "success"
+      );
       setDeleteTarget(null);
     }
   };
@@ -186,14 +198,21 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const handleConfirmRestore = async () => {
     if (!restoreTarget) return;
     if (connectionState !== "online") {
-      toast(getMutationBlockedMessage(connectionState), "error");
+      const blocked = translateMutationBlockedMessage(connectionState, t);
+      if (blocked) toast(blocked, "error");
       return;
     }
     const res = await restoreClient.mutateAsync(restoreTarget.id);
     if (!res.success) {
-      toast(res.error || "Не удалось восстановить клиента", "error");
+      toast(resolveMutationError(res.error, "clients.error.restoreFailed", t), "error");
     } else {
-      toast(`Клиент ${restoreTarget.lastName} ${restoreTarget.firstName} восстановлен`, "success");
+      toast(
+        t("clients.success.restored", {
+          lastName: restoreTarget.lastName,
+          firstName: restoreTarget.firstName,
+        }),
+        "success"
+      );
       setRestoreTarget(null);
     }
   };
@@ -210,7 +229,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const isError = activeTab === "active" ? activeError : directoryError;
   const error = activeTab === "active" ? activeQueryError : directoryQueryError;
 
-  if (isLoading) return <LoadingState label="Загрузка клиентов..." />;
+  if (isLoading) return <LoadingState label={t("clients.loading")} />;
   if (isError) return <QueryErrorState error={error} />;
 
   const filteredClients = clients.filter(
@@ -232,37 +251,37 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
         action="clients.write"
         fallback={
           <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
-            Добавление клиентов недоступно для вашей роли или организация в режиме только чтения.
+            {t("clients.readOnlyHint")}
           </div>
         }
       >
       <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
           <UserPlus className="w-4.5 h-4.5 text-indigo-500" />
-          <h2 className="text-base font-semibold tracking-tight">Добавить клиента</h2>
+          <h2 className="text-base font-semibold tracking-tight">{t("clients.form.addTitle")}</h2>
         </div>
 
         <form onSubmit={handleSubmitAdd} className="panel-form-stack font-sans">
           <div className="field-stack">
-            <label className={labelCls}>Имя</label>
+            <label className={labelCls}>{t("clients.form.firstName")}</label>
             <input
               type="text"
               required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Мария"
+              placeholder={t("clients.placeholder.firstName")}
               className={inputCls}
             />
           </div>
 
           <div className="field-stack">
-            <label className={labelCls}>Фамилия</label>
+            <label className={labelCls}>{t("clients.form.lastName")}</label>
             <input
               type="text"
               required
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="Ньевес"
+              placeholder={t("clients.placeholder.lastName")}
               className={inputCls}
             />
           </div>
@@ -287,17 +306,17 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               />
             </div>
             <p className="text-[10px] text-slate-400 leading-normal">
-              Необязательно. Нужен для связи при окончании абонемента прямо из карточки.
+              {t("clients.form.telegramHint")}
             </p>
           </div>
 
           <button
             type="submit"
             disabled={connectionState !== "online" || addClient.isPending}
-            title={getConnectionBlockReason(connectionState)}
+            title={translateConnectionBlockReason(connectionState, t)}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
           >
-            {addClient.isPending ? "Добавление..." : "Внести в базу"}
+            {addClient.isPending ? t("clients.form.addPending") : t("clients.form.addSubmit")}
           </button>
         </form>
       </div>
@@ -314,7 +333,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
             <div className="flex items-center gap-2.5 text-slate-800">
               <FileText className="w-4.5 h-4.5 text-indigo-500" />
               <h2 className="text-base font-semibold tracking-tight">
-                {activeTab === "active" ? "Активные клиенты" : "Архив клиентов"}
+                {activeTab === "active" ? t("clients.list.activeTitle") : t("clients.list.archiveTitle")}
               </h2>
               <span className="text-[10px] font-sans bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">
                 {activeTab === "active" ? clients.length : archivedClients.length}
@@ -326,7 +345,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Поиск по имени или фамилии..."
+                  placeholder={t("clients.search.placeholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className={`${inputCls} pl-10 text-xs`}
@@ -341,8 +360,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 <div className="text-center py-20 text-slate-400 space-y-1">
                   <p className="text-sm">
                     {search.trim()
-                      ? `По запросу «${search}» никого не найдено.`
-                      : "В базе пока нет клиентов — добавьте первого через форму слева."}
+                      ? t("clients.search.noResults", { query: search })
+                      : t("clients.empty.active")}
                   </p>
                 </div>
               ) : (
@@ -350,9 +369,9 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                   <thead>
                     <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
                       <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
-                      <th className="pb-3 font-semibold">Клиент (Фамилия Имя)</th>
-                      <th className="pb-3 font-semibold text-center">Связь</th>
-                      <th className="pb-3 text-right pr-2 font-semibold">Действия</th>
+                      <th className="pb-3 font-semibold">{t("clients.table.clientName")}</th>
+                      <th className="pb-3 font-semibold text-center">{t("clients.table.contact")}</th>
+                      <th className="pb-3 text-right pr-2 font-semibold">{t("clients.table.actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -393,7 +412,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                               {formatTelegramDisplay(c.telegram)}
                             </a>
                           ) : (
-                            <span className="text-xs text-slate-300 italic font-sans">не указан</span>
+                            <span className="text-xs text-slate-300 italic font-sans">{t("clients.contact.notSet")}</span>
                           )}
                         </td>
                         <td className="py-3 text-right pr-2">
@@ -402,16 +421,16 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                             <button
                               onClick={() => startEdit(c)}
                               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-                              title="Редактировать"
-                              aria-label={`Редактировать ${c.lastName} ${c.firstName}`}
+                              title={t("clients.action.edit")}
+                              aria-label={`${t("clients.action.edit")} ${c.lastName} ${c.firstName}`}
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setDeleteTarget(c)}
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                              title="Архивировать"
-                              aria-label={`Архивировать ${c.lastName} ${c.firstName}`}
+                              title={t("clients.action.archive")}
+                              aria-label={`${t("clients.action.archive")} ${c.lastName} ${c.firstName}`}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -427,8 +446,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               <div className="text-center py-20 text-slate-400 space-y-1">
                 <p className="text-sm">
                   {search.trim()
-                    ? `По запросу «${search}» никого не найдено.`
-                    : "В архиве пока нет клиентов."}
+                    ? t("clients.search.noResults", { query: search })
+                    : t("clients.empty.archive")}
                 </p>
               </div>
             ) : (
@@ -436,11 +455,11 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 <thead>
                   <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
                     <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
-                    <th className="pb-3 font-semibold">Фамилия</th>
-                    <th className="pb-3 font-semibold">Имя</th>
+                    <th className="pb-3 font-semibold">{t("clients.table.lastName")}</th>
+                    <th className="pb-3 font-semibold">{t("clients.table.firstName")}</th>
                     <th className="pb-3 font-semibold text-center">Telegram</th>
-                    <th className="pb-3 font-semibold">Дата архивации</th>
-                    <th className="pb-3 text-right pr-2 font-semibold">Действия</th>
+                    <th className="pb-3 font-semibold">{t("clients.table.archivedAt")}</th>
+                    <th className="pb-3 text-right pr-2 font-semibold">{t("clients.table.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -492,7 +511,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                             {formatTelegramDisplay(c.telegram)}
                           </a>
                         ) : (
-                          <span className="text-xs text-slate-300 italic font-sans">не указан</span>
+                          <span className="text-xs text-slate-300 italic font-sans">{t("clients.contact.notSet")}</span>
                         )}
                       </td>
                       <td className="py-3 text-slate-600 text-xs font-sans">
@@ -504,9 +523,9 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                           <button
                             onClick={() => setRestoreTarget(c)}
                             disabled={connectionState !== "online"}
-                            title={getConnectionBlockReason(connectionState) ?? "Восстановить"}
+                            title={translateConnectionBlockReason(connectionState, t) ?? t("clients.action.restore")}
                             className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                            aria-label={`Восстановить ${c.lastName} ${c.firstName}`}
+                            aria-label={`${t("clients.action.restore")} ${c.lastName} ${c.firstName}`}
                           >
                             <RotateCcw className="w-4 h-4" />
                           </button>
@@ -541,10 +560,10 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Редактировать клиента</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("clients.modal.editTitle")}</h3>
                 <button
                   onClick={() => setEditingClient(null)}
-                  aria-label="Закрыть"
+                  aria-label={t("common.close")}
                   className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -553,17 +572,17 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
               <div className="panel-form-stack font-sans">
                 <div className="field-stack">
-                  <label className={labelCls}>Имя</label>
+                  <label className={labelCls}>{t("clients.form.firstName")}</label>
                   <input type="text" value={editFirst} onChange={(e) => setEditFirst(e.target.value)} className={inputCls} />
                 </div>
 
                 <div className="field-stack">
-                  <label className={labelCls}>Фамилия</label>
+                  <label className={labelCls}>{t("clients.form.lastName")}</label>
                   <input type="text" value={editLast} onChange={(e) => setEditLast(e.target.value)} className={inputCls} />
                 </div>
 
                 <div className="field-stack">
-                  <label className={labelCls}>Telegram ссылка</label>
+                  <label className={labelCls}>{t("clients.form.telegramLink")}</label>
                   <input
                     type="text"
                     value={editTg}
@@ -578,16 +597,16 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 <button
                   onClick={handleSaveEdit}
                   disabled={connectionState !== "online" || updateClient.isPending}
-                  title={getConnectionBlockReason(connectionState)}
+                  title={translateConnectionBlockReason(connectionState, t)}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
-                  {updateClient.isPending ? "..." : "Сохранить"}
+                  {updateClient.isPending ? t("clients.modal.savePending") : t("clients.modal.save")}
                 </button>
                 <button
                   onClick={() => setEditingClient(null)}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
                 >
-                  Отмена
+                  {t("common.cancel")}
                 </button>
               </div>
             </motion.div>
@@ -599,18 +618,17 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        title="Архивировать клиента?"
+        title={t("clients.confirm.archiveTitle")}
         description={
           <>
-            Карточка клиента{" "}
+            {t("clients.confirm.archiveBody")}{" "}
             <strong className="font-semibold text-slate-800">
               {deleteTarget?.lastName} {deleteTarget?.firstName}
-            </strong>{" "}
-            будет скрыта из списков и автокомплитов. История абонементов и уроков сохранится.
+            </strong>
           </>
         }
-        confirmLabel="Архивировать"
-        cancelLabel="Оставить"
+        confirmLabel={t("clients.confirm.archiveConfirm")}
+        cancelLabel={t("clients.confirm.archiveCancel")}
         pending={archiveClient.isPending}
         onConfirm={handleConfirmArchive}
         onCancel={() => setDeleteTarget(null)}
@@ -618,18 +636,17 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
       <ConfirmDialog
         open={restoreTarget !== null}
-        title="Восстановить клиента?"
+        title={t("clients.confirm.restoreTitle")}
         description={
           <>
-            Клиент{" "}
+            {t("clients.confirm.restoreBody")}{" "}
             <strong className="font-semibold text-slate-800">
               {restoreTarget?.lastName} {restoreTarget?.firstName}
-            </strong>{" "}
-            снова появится в списке активных.
+            </strong>
           </>
         }
-        confirmLabel="Восстановить"
-        cancelLabel="Отмена"
+        confirmLabel={t("clients.confirm.restoreConfirm")}
+        cancelLabel={t("common.cancel")}
         pending={restoreClient.isPending}
         onConfirm={handleConfirmRestore}
         onCancel={() => setRestoreTarget(null)}

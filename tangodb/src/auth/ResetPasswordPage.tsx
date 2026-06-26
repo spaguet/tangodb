@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
+import { useGuestI18n } from "../hooks/useI18n";
 import {
   AuthButton,
   AuthError,
@@ -11,6 +12,7 @@ import {
 } from "./AuthLayout";
 
 export default function ResetPasswordPage() {
+  const { t } = useGuestI18n();
   const { session, updatePassword } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
@@ -29,21 +31,21 @@ export default function ResetPasswordPage() {
     setSuccess(null);
 
     if (password.length < 8) {
-      setError("Пароль должен содержать минимум 8 символов");
+      setError(t("auth.passwordMinLength"));
       return;
     }
     if (password !== confirmPassword) {
-      setError("Пароли не совпадают");
+      setError(t("auth.passwordMismatch"));
       return;
     }
 
     setLoading(true);
     try {
       await updatePassword(password);
-      setSuccess("Пароль обновлён. Перенаправляем...");
+      setSuccess(t("auth.resetPassword.success"));
       setTimeout(() => navigate("/", { replace: true }), 1200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось обновить пароль");
+      setError(err instanceof Error ? err.message : t("auth.resetPassword.error"));
     } finally {
       setLoading(false);
     }
@@ -51,23 +53,23 @@ export default function ResetPasswordPage() {
 
   if (!session) {
     return (
-      <AuthLayout title="TangoDB" subtitle="Новый пароль">
+      <AuthLayout title="TangoDB" subtitle={t("auth.resetPassword.subtitle")}>
         <p className="text-sm text-slate-500">
-          Откройте ссылку из письма для восстановления пароля или{" "}
-          <AuthLink to="/auth/forgot-password">запросите новую</AuthLink>.
+          {t("auth.resetPassword.noSessionHint")}{" "}
+          <AuthLink to="/auth/forgot-password">{t("auth.resetPassword.requestNewLink")}</AuthLink>.
         </p>
       </AuthLayout>
     );
   }
 
   return (
-    <AuthLayout title="TangoDB" subtitle="Новый пароль">
+    <AuthLayout title="TangoDB" subtitle={t("auth.resetPassword.subtitle")}>
       <AuthError message={error} />
       <AuthSuccess message={success} />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthField
-          label="Новый пароль"
+          label={t("auth.resetPassword.newPasswordLabel")}
           type="password"
           value={password}
           onChange={setPassword}
@@ -75,14 +77,14 @@ export default function ResetPasswordPage() {
           required
         />
         <AuthField
-          label="Подтверждение пароля"
+          label={t("auth.confirmPassword")}
           type="password"
           value={confirmPassword}
           onChange={setConfirmPassword}
           autoComplete="new-password"
           required
         />
-        <AuthButton loading={loading}>Сохранить пароль</AuthButton>
+        <AuthButton loading={loading}>{t("auth.resetPassword.submit")}</AuthButton>
       </form>
     </AuthLayout>
   );

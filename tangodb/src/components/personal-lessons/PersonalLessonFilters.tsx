@@ -1,13 +1,10 @@
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useMemo } from "react";
 import { addDays, formatWeekRangeLabel, getWeekRange, toISODateLocal } from "../../lib/scheduleWeek";
-import {
-  currentYearMonth,
-  formatMonthTitleRu,
-  shiftMonth,
-} from "../../lib/utils";
+import { currentYearMonth, formatMonthTitle, shiftMonth } from "../../lib/utils";
 import type { Discipline } from "../../types";
 import { memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
+import { useI18n } from "../../hooks/useI18n";
 import AppSelect from "../ui/AppSelect";
 import DatePickerField from "../ui/DatePickerField";
 import type {
@@ -28,18 +25,6 @@ interface PersonalLessonFiltersProps {
   teachers: TeamMemberRow[];
 }
 
-const periodModes: { id: PersonalLessonPeriodMode; label: string }[] = [
-  { id: "week", label: "Неделя" },
-  { id: "month", label: "Месяц" },
-  { id: "range", label: "Период" },
-];
-
-const paidFilters = [
-  { id: "all", label: "Все" },
-  { id: "yes", label: "Оплаченные" },
-  { id: "no", label: "Долг" },
-] as const;
-
 export default function PersonalLessonFilters({
   filters,
   onChange,
@@ -47,6 +32,20 @@ export default function PersonalLessonFilters({
   disciplines,
   teachers,
 }: PersonalLessonFiltersProps) {
+  const { t, locale } = useI18n();
+
+  const periodModes: { id: PersonalLessonPeriodMode; label: string }[] = [
+    { id: "week", label: t("common.week") },
+    { id: "month", label: t("common.month") },
+    { id: "range", label: t("common.period") },
+  ];
+
+  const paidFilters = [
+    { id: "all" as const, label: t("common.all") },
+    { id: "yes" as const, label: t("common.paid") },
+    { id: "no" as const, label: t("common.debt") },
+  ];
+
   const isCurrentMonth = filters.yearMonth === currentYearMonth();
   const weekEndDate = addDays(filters.weekStart, 6);
   const weekLabel = formatWeekRangeLabel(
@@ -94,7 +93,7 @@ export default function PersonalLessonFilters({
               type="button"
               onClick={() => shiftWeek(-1)}
               className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
-              aria-label="Предыдущая неделя"
+              aria-label={t("common.aria.prevWeek")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -106,7 +105,7 @@ export default function PersonalLessonFilters({
                   onClick={goToCurrentWeek}
                   className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
                 >
-                  Текущая неделя
+                  {t("common.currentWeek")}
                 </button>
               )}
             </div>
@@ -114,7 +113,7 @@ export default function PersonalLessonFilters({
               type="button"
               onClick={() => shiftWeek(1)}
               className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
-              aria-label="Следующая неделя"
+              aria-label={t("common.aria.nextWeek")}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -127,13 +126,13 @@ export default function PersonalLessonFilters({
               type="button"
               onClick={() => onChange({ yearMonth: shiftMonth(filters.yearMonth, -1) })}
               className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
-              aria-label="Предыдущий месяц"
+              aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex flex-col items-center gap-0.5 min-w-[120px]">
               <span className="text-sm font-semibold text-slate-800">
-                {formatMonthTitleRu(filters.yearMonth)}
+                {formatMonthTitle(filters.yearMonth, locale)}
               </span>
               {!isCurrentMonth && (
                 <button
@@ -141,7 +140,7 @@ export default function PersonalLessonFilters({
                   onClick={() => onChange({ yearMonth: currentYearMonth() })}
                   className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
                 >
-                  Текущий месяц
+                  {t("common.currentMonth")}
                 </button>
               )}
             </div>
@@ -149,7 +148,7 @@ export default function PersonalLessonFilters({
               type="button"
               onClick={() => onChange({ yearMonth: shiftMonth(filters.yearMonth, 1) })}
               className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
-              aria-label="Следующий месяц"
+              aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -159,12 +158,12 @@ export default function PersonalLessonFilters({
         {filters.periodMode === "range" && (
           <div className="flex flex-wrap items-end gap-2">
             <DatePickerField
-              label="С"
+              label={t("common.dateFrom")}
               value={filters.rangeStart}
               onChange={(v) => onChange({ rangeStart: v })}
             />
             <DatePickerField
-              label="По"
+              label={t("common.dateTo")}
               value={filters.rangeEnd}
               onChange={(v) => onChange({ rangeEnd: v })}
             />
@@ -191,11 +190,11 @@ export default function PersonalLessonFilters({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <AppSelect
-          label="Локация"
+          label={t("schedule.form.location")}
           value={filters.locationId}
           onChange={(e) => onChange({ locationId: e.target.value })}
         >
-          <option value="">Все локации</option>
+          <option value="">{t("common.allLocations")}</option>
           {locations.map((loc) => (
             <option key={loc.id} value={loc.id}>
               {loc.name}
@@ -204,11 +203,11 @@ export default function PersonalLessonFilters({
         </AppSelect>
 
         <AppSelect
-          label="Направление"
+          label={t("common.discipline")}
           value={filters.disciplineId}
           onChange={(e) => onChange({ disciplineId: e.target.value })}
         >
-          <option value="">Все направления</option>
+          <option value="">{t("common.allDisciplines")}</option>
           {disciplines.map((d) => (
             <option key={d.id} value={d.id}>
               {d.name}
@@ -217,26 +216,26 @@ export default function PersonalLessonFilters({
         </AppSelect>
 
         <AppSelect
-          label="Преподаватель"
+          label={t("schedule.form.teacher")}
           value={filters.teacherMemberId}
           onChange={(e) => onChange({ teacherMemberId: e.target.value })}
         >
-          <option value="">Все преподаватели</option>
-          {teachers.map((t) => (
-            <option key={t.id} value={t.id}>
-              {memberListLabel(t)}
+          <option value="">{t("common.allTeachers")}</option>
+          {teachers.map((teacher) => (
+            <option key={teacher.id} value={teacher.id}>
+              {memberListLabel(teacher)}
             </option>
           ))}
         </AppSelect>
 
         <div className="relative">
           <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block mb-1">
-            Поиск клиента
+            {t("common.searchClient")}
           </label>
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-[calc(50%+6px)] -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder="По имени..."
+            placeholder={t("common.searchByName")}
             value={filters.search}
             onChange={(e) => onChange({ search: e.target.value })}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg text-xs transition-all"

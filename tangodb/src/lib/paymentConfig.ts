@@ -156,12 +156,18 @@ export function isSafeWhatsappUrl(url: string): string | null {
   }
 }
 
-export const PURCHASE_ACTIVATION_STEPS = [
-  "Выберите удобный способ оплаты на этой странице.",
-  "Переведите оплату по указанным реквизитам.",
-  "Свяжитесь с разработчиком через email, Telegram или WhatsApp — укажите ваш email регистрации и подтверждение платежа (скриншот или номер транзакции).",
-  "Разработчик проверит платёж и отправит ключ активации на ваш email.",
-  "Войдите в CRM, откройте «Настройки → Лицензия».",
-  "Введите ключ в поле «Активировать полную версию» и нажмите «Активировать».",
-  "Страница обновится — CRM переключится в полную версию. Метка «ДЕМО-ВЕРСИЯ» исчезнет.",
-] as const;
+import type { I18nKey } from "./i18n/keys";
+
+type TranslateFn = (key: I18nKey) => string;
+
+export function getPurchaseActivationSteps(t: TranslateFn): string[] {
+  return [
+    t("license.purchase.step1"),
+    t("license.purchase.step2"),
+    t("license.purchase.step3"),
+    t("license.purchase.step4"),
+    t("license.purchase.step5"),
+    t("license.purchase.step6"),
+    t("license.purchase.step7"),
+  ];
+}

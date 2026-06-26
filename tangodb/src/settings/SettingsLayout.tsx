@@ -10,6 +10,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import { usePermissions } from "../hooks/usePermissions";
+import { useI18n } from "../hooks/useI18n";
 import { useOrganization } from "../organization/OrganizationProvider";
 import {
   canAccessDataExportSection,
@@ -22,26 +23,21 @@ import {
   moduleKeyFromSettingsSection,
   normalizeOrgModules,
 } from "../lib/orgModules";
+import { getSettingsNav } from "../lib/i18n";
 
-interface SettingsNavItem {
-  id: SettingsSectionId;
-  label: string;
-  path: string;
-  icon: typeof Settings;
-}
-
-const SETTINGS_NAV: SettingsNavItem[] = [
-  { id: "general", label: "Общие", path: "/settings/general", icon: Settings },
-  { id: "organization", label: "Организация", path: "/settings/organization", icon: Building2 },
-  { id: "subscriptions", label: "Абонементы", path: "/settings/subscriptions", icon: Ticket },
-  { id: "disciplines", label: "Направления", path: "/settings/disciplines", icon: BookOpen },
-  { id: "locations", label: "Локации", path: "/settings/locations", icon: MapPin },
-  { id: "data", label: "Данные", path: "/settings/data", icon: Database },
-  { id: "team", label: "Команда", path: "/settings/team", icon: Users },
-  { id: "license", label: "Лицензия", path: "/settings/license", icon: KeyRound },
-];
+const SETTINGS_NAV_ICONS: Record<SettingsSectionId, typeof Settings> = {
+  general: Settings,
+  organization: Building2,
+  subscriptions: Ticket,
+  disciplines: BookOpen,
+  locations: MapPin,
+  data: Database,
+  team: Users,
+  license: KeyRound,
+};
 
 export default function SettingsLayout() {
+  const { t } = useI18n();
   const { role, scope, isReadOnly, membership } = usePermissions();
   const { settings } = useOrganization();
   const modules = normalizeOrgModules(settings?.modules);
@@ -50,7 +46,13 @@ export default function SettingsLayout() {
     isReadOnly,
   });
 
-  const visibleNav = SETTINGS_NAV.filter((item) => {
+  const settingsNav = getSettingsNav(t).map((item) => ({
+    ...item,
+    id: item.id as SettingsSectionId,
+    icon: SETTINGS_NAV_ICONS[item.id as SettingsSectionId],
+  }));
+
+  const visibleNav = settingsNav.filter((item) => {
     const moduleKey = moduleKeyFromSettingsSection(item.id);
     if (moduleKey && !isModuleEnabled(modules, moduleKey)) return false;
     if (item.id === "data" && !canAccessDataExportSection(role, modules, options)) return false;
@@ -61,7 +63,7 @@ export default function SettingsLayout() {
     <div className="flex flex-col lg:flex-row gap-5 lg:gap-8">
       <nav className="lg:w-52 shrink-0">
         <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold px-1 mb-2">
-          Настройки CRM
+          {t("settings.nav")}
         </p>
         <div className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0">
           {visibleNav.map((item) => {

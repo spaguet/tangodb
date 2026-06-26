@@ -58,7 +58,7 @@ export function useAddClient() {
       telegram: string;
     }) => {
       if (!organizationId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const fTrim = firstName.trim();
@@ -72,7 +72,7 @@ export function useAddClient() {
           c.lastName.toLowerCase() === lTrim.toLowerCase()
       );
       if (exists) {
-        return { success: false as const, error: "Клиент с таким именем и фамилией уже существует" };
+        return { success: false as const, error: "clients.error.duplicate" };
       }
 
       const id = crypto.randomUUID();
@@ -87,7 +87,7 @@ export function useAddClient() {
         if (error.code === "23505") {
           return {
             success: false as const,
-            error: "Клиент с таким именем и фамилией уже существует",
+            error: "clients.error.duplicate",
           };
         }
         return { success: false as const, error: error.message };

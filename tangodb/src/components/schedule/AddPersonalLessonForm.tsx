@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { type TeamMemberRow } from "../../hooks/useTeamMembers";
 import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
+import { useI18n } from "../../hooks/useI18n";
 import PersonalLessonSaleForm from "../personal-lessons/PersonalLessonSaleForm";
 import type { ScheduleCellPrefill } from "./AddLessonTypePopup";
 
@@ -25,6 +26,8 @@ export default function AddPersonalLessonForm({
   onClose,
   onSuccess,
 }: AddPersonalLessonFormProps) {
+  const { t } = useI18n();
+
   useEffect(() => {
     if (!prefill) return;
     const onKey = (e: KeyboardEvent) => {
@@ -55,14 +58,16 @@ export default function AddPersonalLessonForm({
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
-                  Персональный урок
+                  {t("common.personalLesson")}
                 </p>
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">Новая запись</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                  {t("schedule.popup.newBooking")}
+                </h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />

@@ -18,30 +18,31 @@ import { useSettings } from "../SettingsProvider";
 import { exportAllDashboardCsv } from "../../lib/exportDashboardCsv";
 import { exportAllFinancialCsv } from "../../lib/exportFinancialCsv";
 import { monthDateRange } from "../../lib/financeReports";
-import { currentYearMonth, formatMonthTitleRu } from "../../lib/utils";
+import { currentYearMonth, formatMonthTitle, shiftMonth } from "../../lib/utils";
+import { useI18n } from "../../hooks/useI18n";
 
-function shiftMonth(yearMonth: string, delta: number): string {
-  const [y, m] = yearMonth.split("-").map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+function shiftMonthLocal(yearMonth: string, delta: number): string {
+  return shiftMonth(yearMonth, delta);
 }
 
 function useExportToast() {
   const toast = useToast();
+  const { t } = useI18n();
   return (result: { exported: number; method?: string; manualSave?: unknown }, emptyMsg: string) => {
     if (result.exported === 0) {
       toast(emptyMsg, "error");
     } else if (result.manualSave) {
-      toast("Нажмите кнопку в окне ниже", "info");
+      toast(t("common.exportHintClick"), "info");
     } else if (result.method === "share") {
-      toast("Выберите «Сохранить в Файлы» или другое приложение", "success");
+      toast(t("common.exportHintSave"), "success");
     } else {
-      toast(`Скачано файлов: ${result.exported}`, "success");
+      toast(t("common.exportedFiles", { count: result.exported }), "success");
     }
   };
 }
 
 function OperationalExportSection() {
+  const { t, locale } = useI18n();
   const toast = useToast();
   const showExportToast = useExportToast();
   const { can } = usePermissions();
@@ -74,14 +75,20 @@ function OperationalExportSection() {
 
   const exportSets = useMemo(
     () => [
-      { id: "clients", label: "Клиенты (активные)" },
-      { id: "archive", label: "Архив клиентов" },
-      { id: "subscriptions", label: "Абонементы" },
-      { id: "attendance", label: `Посещаемость (${formatMonthTitleRu(statsMonth)})` },
-      { id: "personal", label: `Персональные (${formatMonthTitleRu(statsMonth)})` },
-      { id: "prices", label: "Тарифы" },
+      { id: "clients", label: t("settings.export.clients") },
+      { id: "archive", label: t("settings.export.archive") },
+      { id: "subscriptions", label: t("settings.export.subscriptions") },
+      {
+        id: "attendance",
+        label: t("settings.export.attendance", { month: formatMonthTitle(statsMonth, locale) }),
+      },
+      {
+        id: "personal",
+        label: t("settings.export.personal", { month: formatMonthTitle(statsMonth, locale) }),
+      },
+      { id: "prices", label: t("settings.export.prices") },
     ],
-    [statsMonth]
+    [statsMonth, t, locale]
   );
 
   const handleExportAll = async () => {
@@ -96,19 +103,19 @@ function OperationalExportSection() {
         statsMonth,
       });
       if (result.manualSave) setManualExport(result.manualSave);
-      showExportToast(result, "Нечего экспортировать");
+      showExportToast(result, t("common.nothingToExport"));
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        toast("Экспорт отменён", "info");
+        toast(t("common.exportCancelled"), "info");
       } else {
-        toast("Не удалось экспортировать данные", "error");
+        toast(t("common.exportFailed"), "error");
       }
     } finally {
       setExporting(false);
     }
   };
 
-  if (isLoading) return <LoadingState label="Загрузка операционных данных..." />;
+  if (isLoading) return <LoadingState label={t("settings.export.loadingOperational")} />;
   if (isError) return <QueryErrorState error={error} />;
 
   return (
@@ -116,7 +123,7 @@ function OperationalExportSection() {
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
         <div>
           <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold mb-2">
-            Операционные наборы
+            {t("settings.export.operationalTitle")}
           </p>
           <ul className="space-y-1.5">
             {exportSets.map((set) => (
@@ -130,25 +137,25 @@ function OperationalExportSection() {
 
         <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
           <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
-            Месяц для посещаемости и персональных
+            {t("settings.export.operationalMonth")}
           </p>
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setStatsMonth((m) => shiftMonth(m, -1))}
+              onClick={() => setStatsMonth((m) => shiftMonthLocal(m, -1))}
               className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 cursor-pointer"
-              aria-label="Предыдущий месяц"
+              aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-xs font-semibold text-slate-800 min-w-[120px] text-center">
-              {formatMonthTitleRu(statsMonth)}
+              {formatMonthTitle(statsMonth, locale)}
             </span>
             <button
               type="button"
-              onClick={() => setStatsMonth((m) => shiftMonth(m, 1))}
+              onClick={() => setStatsMonth((m) => shiftMonthLocal(m, 1))}
               className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 cursor-pointer"
-              aria-label="Следующий месяц"
+              aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -161,7 +168,7 @@ function OperationalExportSection() {
             onClick={() => setStatsMonth(currentYearMonth())}
             className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
           >
-            Текущий месяц
+            {t("common.currentMonth")}
           </button>
         )}
 
@@ -173,7 +180,7 @@ function OperationalExportSection() {
             className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
           >
             <Download className="w-4 h-4" />
-            {exporting ? "Экспорт..." : "Экспорт операционных данных"}
+            {exporting ? t("common.exporting") : t("settings.export.operationalButton")}
           </button>
         )}
       </div>
@@ -190,6 +197,7 @@ function OperationalExportSection() {
 }
 
 function FinancialExportSection() {
+  const { t, locale } = useI18n();
   const toast = useToast();
   const showExportToast = useExportToast();
   const { can } = usePermissions();
@@ -209,10 +217,13 @@ function FinancialExportSection() {
 
   const exportSets = useMemo(
     () => [
-      { id: "payments", label: `Платежи (${formatMonthTitleRu(statsMonth)})` },
-      { id: "debtors", label: "Дебиторы (текущие)" },
+      {
+        id: "payments",
+        label: t("settings.export.payments", { month: formatMonthTitle(statsMonth, locale) }),
+      },
+      { id: "debtors", label: t("settings.export.debtors") },
     ],
-    [statsMonth]
+    [statsMonth, t, locale]
   );
 
   const handleExportAll = async () => {
@@ -225,19 +236,19 @@ function FinancialExportSection() {
         statsMonth,
       });
       if (result.manualSave) setManualExport(result.manualSave);
-      showExportToast(result, "Нечего экспортировать");
+      showExportToast(result, t("common.nothingToExport"));
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        toast("Экспорт отменён", "info");
+        toast(t("common.exportCancelled"), "info");
       } else {
-        toast("Не удалось экспортировать финансовые данные", "error");
+        toast(t("common.exportFinanceFailed"), "error");
       }
     } finally {
       setExporting(false);
     }
   };
 
-  if (isLoading) return <LoadingState label="Загрузка финансовых данных..." />;
+  if (isLoading) return <LoadingState label={t("settings.export.loadingFinance")} />;
   if (isError) return <QueryErrorState error={error} />;
 
   return (
@@ -245,7 +256,7 @@ function FinancialExportSection() {
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
         <div>
           <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold mb-2">
-            Финансовые наборы
+            {t("settings.export.financeTitle")}
           </p>
           <ul className="space-y-1.5">
             {exportSets.map((set) => (
@@ -259,25 +270,25 @@ function FinancialExportSection() {
 
         <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
           <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
-            Месяц для журнала платежей
+            {t("settings.export.financeMonth")}
           </p>
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setStatsMonth((m) => shiftMonth(m, -1))}
+              onClick={() => setStatsMonth((m) => shiftMonthLocal(m, -1))}
               className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 cursor-pointer"
-              aria-label="Предыдущий месяц"
+              aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-xs font-semibold text-slate-800 min-w-[120px] text-center">
-              {formatMonthTitleRu(statsMonth)}
+              {formatMonthTitle(statsMonth, locale)}
             </span>
             <button
               type="button"
-              onClick={() => setStatsMonth((m) => shiftMonth(m, 1))}
+              onClick={() => setStatsMonth((m) => shiftMonthLocal(m, 1))}
               className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 cursor-pointer"
-              aria-label="Следующий месяц"
+              aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -290,7 +301,7 @@ function FinancialExportSection() {
             onClick={() => setStatsMonth(currentYearMonth())}
             className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
           >
-            Текущий месяц
+            {t("common.currentMonth")}
           </button>
         )}
 
@@ -302,7 +313,7 @@ function FinancialExportSection() {
             className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
           >
             <Download className="w-4 h-4" />
-            {exporting ? "Экспорт..." : "Экспорт финансовых данных"}
+            {exporting ? t("common.exporting") : t("settings.export.financeButton")}
           </button>
         )}
       </div>
@@ -319,6 +330,7 @@ function FinancialExportSection() {
 }
 
 export default function DataExportPage() {
+  const { t } = useI18n();
   const { can, role, scope, isReadOnly, membership } = usePermissions();
   const { orgLoading, organizationId, settings } = useOrganization();
   const { settings: exportSettings } = useSettings();
@@ -332,11 +344,11 @@ export default function DataExportPage() {
   const canFinancialExport = can("finance.export") && modules.finance_basic;
   const canAnyExport = canAccessDataExportSection(role, modules, permissionOptions);
 
-  if (orgLoading || !organizationId) return <LoadingState label="Загрузка..." />;
+  if (orgLoading || !organizationId) return <LoadingState label={t("common.loading.default")} />;
   if (!canAnyExport) {
     return (
       <div className="panel-card-stack max-w-xl">
-        <p className="text-sm text-slate-500">Нет прав на экспорт данных.</p>
+        <p className="text-sm text-slate-500">{t("settings.export.noPermission")}</p>
       </div>
     );
   }
@@ -344,10 +356,9 @@ export default function DataExportPage() {
   return (
     <div className="panel-card-stack max-w-xl">
       <div>
-        <h2 className="text-base font-semibold text-slate-900">Экспорт данных</h2>
+        <h2 className="text-base font-semibold text-slate-900">{t("settings.export.title")}</h2>
         <p className="text-xs text-slate-500 mt-1">
-          CSV-выгрузка для бухгалтерии и резервного копирования. Язык заголовков:{" "}
-          {exportSettings?.locale ?? "ru-RU"}.
+          {t("settings.export.subtitle")} {exportSettings?.locale ?? "ru-RU"}.
         </p>
       </div>
 

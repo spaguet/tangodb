@@ -1,24 +1,36 @@
 import type { PriceCategory } from "../types";
+import { t, resolveLocale } from "./i18n";
+import type { I18nKey } from "./i18n/keys";
 
-const DOW_LABELS: Record<number, string> = {
-  1: "Пн",
-  2: "Вт",
-  3: "Ср",
-  4: "Чт",
-  5: "Пт",
-  6: "Сб",
-  7: "Вс",
+const DOW_SHORT_KEYS: Record<number, I18nKey> = {
+  1: "utils.dow.short.mon",
+  2: "utils.dow.short.tue",
+  3: "utils.dow.short.wed",
+  4: "utils.dow.short.thu",
+  5: "utils.dow.short.fri",
+  6: "utils.dow.short.sat",
+  7: "utils.dow.short.sun",
 };
 
-const DOW_FULL: Record<number, string> = {
-  1: "Понедельник",
-  2: "Вторник",
-  3: "Среда",
-  4: "Четверг",
-  5: "Пятница",
-  6: "Суббота",
-  7: "Воскресенье",
+const DOW_FULL_KEYS: Record<number, I18nKey> = {
+  1: "utils.dow.full.mon",
+  2: "utils.dow.full.tue",
+  3: "utils.dow.full.wed",
+  4: "utils.dow.full.thu",
+  5: "utils.dow.full.fri",
+  6: "utils.dow.full.sat",
+  7: "utils.dow.full.sun",
 };
+
+export type TranslateFn = (key: I18nKey, params?: Record<string, string | number>) => string;
+
+export function getDowLabels(locale?: string | null): Record<number, string> {
+  return Object.fromEntries(ISO_DOW_RANGE.map((d) => [d, t(locale, DOW_SHORT_KEYS[d])]));
+}
+
+export function getDowFullLabels(locale?: string | null): Record<number, string> {
+  return Object.fromEntries(ISO_DOW_RANGE.map((d) => [d, t(locale, DOW_FULL_KEYS[d])]));
+}
 
 /** ISO day-of-week: 1 = Monday … 7 = Sunday */
 export const ISO_DOW_RANGE = [1, 2, 3, 4, 5, 6, 7] as const;
@@ -33,19 +45,30 @@ export function timesOverlap(start1: string, end1: string, start2: string, end2:
   return start1 < end2 && start2 < end1;
 }
 
+function conflictMessage(
+  key: I18nKey,
+  translate?: TranslateFn,
+  locale?: string | null
+): string {
+  if (translate) return translate(key);
+  return t(locale, key);
+}
+
 export function findPersonalLessonBookingConflict(
   date: string,
   timeStart: string,
   timeEnd: string,
   personalLessons: Array<{ id: string; date: string; timeStart: string; timeEnd: string }>,
-  excludeLessonId?: string
+  excludeLessonId?: string,
+  translate?: TranslateFn,
+  locale?: string | null
 ): string | null {
   for (const lesson of personalLessons) {
     if (excludeLessonId && lesson.id === excludeLessonId) continue;
     if (lesson.date !== date) continue;
     const lessonEnd = lesson.timeEnd || lesson.timeStart;
     if (timesOverlap(timeStart, timeEnd, lesson.timeStart, lessonEnd)) {
-      return "в это время уже записан персональный урок";
+      return conflictMessage("utils.conflict.personalLesson", translate, locale);
     }
   }
   return null;
@@ -55,13 +78,15 @@ export function findGroupScheduleConflictOnDate(
   date: string,
   timeStart: string,
   timeEnd: string,
-  schedule: Array<{ dayOfWeek: number; time: string; timeEnd: string }>
+  schedule: Array<{ dayOfWeek: number; time: string; timeEnd: string }>,
+  translate?: TranslateFn,
+  locale?: string | null
 ): string | null {
   const dow = jsDayToIsoDow(new Date(date + "T12:00:00").getDay());
   for (const slot of schedule) {
     if (slot.dayOfWeek !== dow) continue;
     if (!timesOverlap(timeStart, timeEnd, slot.time, slot.timeEnd || "21:00")) continue;
-    return "в это время уже записан групповой урок";
+    return conflictMessage("utils.conflict.groupLesson", translate, locale);
   }
   return null;
 }
@@ -72,11 +97,13 @@ export function findBookingScheduleConflict(
   timeEnd: string,
   personalLessons: Array<{ id: string; date: string; timeStart: string; timeEnd: string }>,
   schedule: Array<{ dayOfWeek: number; time: string; timeEnd: string }>,
-  excludeLessonId?: string
+  excludeLessonId?: string,
+  translate?: TranslateFn,
+  locale?: string | null
 ): string | null {
   return (
-    findPersonalLessonBookingConflict(date, timeStart, timeEnd, personalLessons, excludeLessonId) ??
-    findGroupScheduleConflictOnDate(date, timeStart, timeEnd, schedule)
+    findPersonalLessonBookingConflict(date, timeStart, timeEnd, personalLessons, excludeLessonId, translate, locale) ??
+    findGroupScheduleConflictOnDate(date, timeStart, timeEnd, schedule, translate, locale)
   );
 }
 
@@ -86,24 +113,33 @@ export function formatClientName(lastName: string, firstName: string): string {
   return `${lastName} ${firstName}`.trim();
 }
 
-/** «Июнь 2026 г.» — месяц с заглавной, «г.» прописными (без CSS capitalize) */
-export function formatMonthTitleRu(yearMonth: string): string {
+/** «June 2026» / «Июнь 2026 г.» — month capitalized; Russian adds «г.» */
+export function formatMonthTitle(yearMonth: string, locale?: string | null): string {
   const [y, m] = yearMonth.split("-").map(Number);
   if (!y || !m) return yearMonth;
   const date = new Date(y, m - 1, 1);
-  const month = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(date);
+  const code = resolveLocale(locale);
+  const month = new Intl.DateTimeFormat(code, { month: "long" }).format(date);
   const monthCap = month.charAt(0).toUpperCase() + month.slice(1);
-  return `${monthCap} ${y}\u00A0г.`;
+  if (code === "ru-RU") return `${monthCap} ${y}\u00A0г.`;
+  return `${monthCap} ${y}`;
+}
+
+/** @deprecated Use formatMonthTitle(yearMonth, locale) */
+export function formatMonthTitleRu(yearMonth: string): string {
+  return formatMonthTitle(yearMonth, "ru-RU");
 }
 
 export function getPersonalLessonTariffLabel(
   lesson: { type: string; price: number; subscriptionId?: string | null },
   prices: PriceTariffRef[],
-  subscriptions: Array<{ id: string; priceId?: string | null; type: string; lessonsTotal: number; pairMonth: string }> = []
+  subscriptions: Array<{ id: string; priceId?: string | null; type: string; lessonsTotal: number; pairMonth: string }> = [],
+  translate?: TranslateFn,
+  locale?: string | null
 ): string {
   if (lesson.subscriptionId) {
     const sub = subscriptions.find((s) => s.id === lesson.subscriptionId);
-    if (sub) return getSubscriptionTariffLabel(sub, prices);
+    if (sub) return getSubscriptionTariffLabel(sub, prices, translate, locale);
   }
 
   const personalType = `personal_${lesson.type}`;
@@ -114,17 +150,17 @@ export function getPersonalLessonTariffLabel(
       p.type.trim() === personalType &&
       p.price === lesson.price
   );
-  if (byPrice) return getPriceLabel(byPrice);
+  if (byPrice) return getPriceLabel(byPrice, translate, locale);
 
   const byType = prices.find((p) => p.type.trim() === personalType);
-  if (byType) return getPriceLabel(byType);
+  if (byType) return getPriceLabel(byType, translate, locale);
 
-  const catalog = PRICE_LABELS_CATALOG[personalType];
-  if (catalog) return catalog.label;
+  const catalogKey = PRICE_CATALOG_KEYS[personalType]?.labelKey;
+  if (catalogKey) return translate ? translate(catalogKey) : t(locale, catalogKey);
 
-  if (lesson.type === "pair") return "Индивидуальный Парный Урок";
-  if (lesson.type === "trio") return "Индивидуальный Трио Урок";
-  return "Индивидуальный Соло Урок";
+  if (lesson.type === "pair") return translate ? translate("utils.tariff.personal_pair.label") : t(locale, "utils.tariff.personal_pair.label");
+  if (lesson.type === "trio") return translate ? translate("utils.tariff.personal_trio.label") : t(locale, "utils.tariff.personal_trio.label");
+  return translate ? translate("utils.tariff.personal_solo.label") : t(locale, "utils.tariff.personal_solo.label");
 }
 
 export function formatPairName(
@@ -136,16 +172,19 @@ export function formatPairName(
   return `${formatClientName(lastName1, firstName1)} & ${formatClientName(lastName2, firstName2)}`;
 }
 
-export function dowShort(dayOfWeek: number): string {
-  return DOW_LABELS[dayOfWeek] ?? String(dayOfWeek);
+/** @deprecated Use getDowLabels(locale)[dayOfWeek] */
+export function dowShort(dayOfWeek: number, locale?: string | null): string {
+  return getDowLabels(locale)[dayOfWeek] ?? String(dayOfWeek);
 }
 
-export function dowFull(dayOfWeek: number): string {
-  return DOW_FULL[dayOfWeek] ?? String(dayOfWeek);
+/** @deprecated Use getDowFullLabels(locale)[dayOfWeek] */
+export function dowFull(dayOfWeek: number, locale?: string | null): string {
+  return getDowFullLabels(locale)[dayOfWeek] ?? String(dayOfWeek);
 }
 
-export function dowFullEntries(): [number, string][] {
-  return ISO_DOW_RANGE.map((d) => [d, dowFull(d)]);
+export function dowFullEntries(locale?: string | null): [number, string][] {
+  const labels = getDowFullLabels(locale);
+  return ISO_DOW_RANGE.map((d) => [d, labels[d]]);
 }
 
 /** Russian plural form: pluralizeRu(3, ["гость", "гостя", "гостей"]) → "гостя" */
@@ -216,6 +255,34 @@ export interface PriceTariffRef {
   billingModel?: import("../types").BillingModel;
 }
 
+type PriceCatalogMeta = { labelKey: I18nKey; subKey: I18nKey; col: string };
+
+export const PRICE_CATALOG_KEYS: Record<string, PriceCatalogMeta> = {
+  solo: { labelKey: "utils.tariff.solo.label", subKey: "utils.tariff.solo.sub", col: "group" },
+  solo_8: { labelKey: "utils.tariff.solo_8.label", subKey: "utils.tariff.solo_8.sub", col: "group" },
+  pair_hm: { labelKey: "utils.tariff.pair_hm.label", subKey: "utils.tariff.pair_hm.sub", col: "group" },
+  pair_m1: { labelKey: "utils.tariff.pair_m1.label", subKey: "utils.tariff.pair_m1.sub", col: "group" },
+  pair_m2: { labelKey: "utils.tariff.pair_m2.label", subKey: "utils.tariff.pair_m2.sub", col: "group" },
+  pair_m3: { labelKey: "utils.tariff.pair_m3.label", subKey: "utils.tariff.pair_m3.sub", col: "group" },
+  monthly_unlimited: {
+    labelKey: "utils.tariff.monthly_unlimited.label",
+    subKey: "utils.tariff.monthly_unlimited.sub",
+    col: "group",
+  },
+  personal_solo: { labelKey: "utils.tariff.personal_solo.label", subKey: "utils.tariff.personal_solo.sub", col: "private" },
+  personal_pair: { labelKey: "utils.tariff.personal_pair.label", subKey: "utils.tariff.personal_pair.sub", col: "private" },
+  personal_trio: { labelKey: "utils.tariff.personal_trio.label", subKey: "utils.tariff.personal_trio.sub", col: "private" },
+  personal_quad: { labelKey: "utils.tariff.personal_quad.label", subKey: "utils.tariff.personal_quad.sub", col: "private" },
+};
+
+/** @deprecated Use PRICE_CATALOG_KEYS with getPriceLabel(price, translate, locale) */
+export const PRICE_LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }> = Object.fromEntries(
+  Object.entries(PRICE_CATALOG_KEYS).map(([key, meta]) => [
+    key,
+    { label: t("ru-RU", meta.labelKey), sub: t("ru-RU", meta.subKey), col: meta.col },
+  ])
+);
+
 export interface SubscriptionTariffRef {
   type: string;
   lessonsTotal: number;
@@ -224,24 +291,6 @@ export interface SubscriptionTariffRef {
   billingModel?: import("../types").BillingModel;
   expiresAt?: string | null;
 }
-
-export const PRICE_LABELS_CATALOG: Record<string, { label: string; sub: string; col: string }> = {
-  solo: { label: "Соло Абонемент (4 урока)", sub: "Групповые занятия, полмесяца", col: "group" },
-  solo_8: { label: "Соло Абонемент (8 уроков)", sub: "Групповые занятия, один месяц", col: "group" },
-  pair_hm: { label: "Парный Абонемент (4 урока)", sub: "Групповые занятия, полмесяца", col: "group" },
-  pair_m1: { label: "Парный — Месяц 1 (8 уроков)", sub: "Групповые занятия, первый цикл", col: "group" },
-  pair_m2: { label: "Парный — Месяц 2 (8 уроков)", sub: "Групповые занятия, второй цикл", col: "group" },
-  pair_m3: { label: "Парный — Месяц 3 (8 уроков)", sub: "Групповые занятия, третий цикл", col: "group" },
-  monthly_unlimited: {
-    label: "Месячный безлимит",
-    sub: "Неограниченные групповые занятия в выбранных группах",
-    col: "group",
-  },
-  personal_solo: { label: "Индивидуальный Соло Урок", sub: "Приватная сессия (1 клиент)", col: "private" },
-  personal_pair: { label: "Индивидуальный Парный Урок", sub: "Приватная сессия (2 клиента)", col: "private" },
-  personal_trio: { label: "Индивидуальный Трио Урок", sub: "Приватная сессия (3 клиента)", col: "private" },
-  personal_quad: { label: "Индивидуальный урок на 4 клиента", sub: "Приватная сессия (4 клиента)", col: "private" },
-};
 
 export function getPriceCatalogKey(price: Pick<PriceTariffRef, "type"> & Partial<Pick<PriceTariffRef, "lessons">>): string {
   let lookupKey = price.type.trim();
@@ -253,7 +302,7 @@ export function getPriceCategory(
   price: Pick<PriceTariffRef, "type"> & Partial<Pick<PriceTariffRef, "category" | "lessons">>
 ): PriceCategory {
   if (price.category === "group" || price.category === "private") return price.category;
-  const catalogCol = PRICE_LABELS_CATALOG[getPriceCatalogKey(price)]?.col;
+  const catalogCol = PRICE_CATALOG_KEYS[getPriceCatalogKey(price)]?.col;
   if (catalogCol === "private") return "private";
   return "group";
 }
@@ -263,16 +312,28 @@ export function generateTariffTypeKey(): string {
   return `tariff_${id}`;
 }
 
-export function getPriceLabel(price: PriceTariffRef): string {
-  return price.label?.trim() || PRICE_LABELS_CATALOG[getPriceCatalogKey(price)]?.label || price.type;
+export function getPriceLabel(
+  price: PriceTariffRef,
+  translate?: TranslateFn,
+  locale?: string | null
+): string {
+  if (price.label?.trim()) return price.label.trim();
+  const meta = PRICE_CATALOG_KEYS[getPriceCatalogKey(price)];
+  if (meta) return translate ? translate(meta.labelKey) : t(locale, meta.labelKey);
+  return price.type;
 }
 
-export function getPriceDescription(price: PriceTariffRef): string {
-  return (
-    price.description?.trim() ||
-    PRICE_LABELS_CATALOG[getPriceCatalogKey(price)]?.sub ||
-    `${price.lessons} занятий`
-  );
+export function getPriceDescription(
+  price: PriceTariffRef,
+  translate?: TranslateFn,
+  locale?: string | null
+): string {
+  if (price.description?.trim()) return price.description.trim();
+  const meta = PRICE_CATALOG_KEYS[getPriceCatalogKey(price)];
+  if (meta) return translate ? translate(meta.subKey) : t(locale, meta.subKey);
+  return translate
+    ? translate("utils.tariff.lessonsCount", { count: price.lessons })
+    : t(locale, "utils.tariff.lessonsCount", { count: price.lessons });
 }
 
 export function getGroupTariffs<T extends PriceTariffRef>(prices: T[]): T[] {
@@ -526,17 +587,32 @@ export function findSubscriptionPrice(
 
 export function getSubscriptionTariffLabel(
   sub: SubscriptionTariffRef,
-  prices: PriceTariffRef[]
+  prices: PriceTariffRef[],
+  translate?: TranslateFn,
+  locale?: string | null
 ): string {
   const matched = findSubscriptionPrice(sub, prices);
-  if (matched) return getPriceLabel(matched);
-  if (isMonthlyUnlimitedSubscription(sub)) return "Месячный безлимит";
+  if (matched) return getPriceLabel(matched, translate, locale);
+  if (isMonthlyUnlimitedSubscription(sub)) {
+    return translate
+      ? translate("utils.tariff.subscription.monthlyUnlimited")
+      : t(locale, "utils.tariff.subscription.monthlyUnlimited");
+  }
 
-  if (sub.type === "solo") return "Соло";
-  if (sub.type === "pair_hm") return `Пара (${sub.lessonsTotal} занятий)`;
-  if (sub.type === "pair") return `Пара (${sub.lessonsTotal} занятий)`;
-  if (sub.type === "trio") return "Трио";
-  if (sub.type === "quad") return "Квартет";
+  if (sub.type === "solo") {
+    return translate ? translate("utils.tariff.subscription.solo") : t(locale, "utils.tariff.subscription.solo");
+  }
+  if (sub.type === "pair_hm" || sub.type === "pair") {
+    return translate
+      ? translate("utils.tariff.subscription.pair", { count: sub.lessonsTotal })
+      : t(locale, "utils.tariff.subscription.pair", { count: sub.lessonsTotal });
+  }
+  if (sub.type === "trio") {
+    return translate ? translate("utils.tariff.subscription.trio") : t(locale, "utils.tariff.subscription.trio");
+  }
+  if (sub.type === "quad") {
+    return translate ? translate("utils.tariff.subscription.quad") : t(locale, "utils.tariff.subscription.quad");
+  }
   return sub.type;
 }
 

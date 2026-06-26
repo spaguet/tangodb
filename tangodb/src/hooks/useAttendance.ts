@@ -379,7 +379,7 @@ export function useMarkAttendance() {
 
       const result = data as { success?: boolean; error?: string; newLessonsLeft?: number } | null;
       if (!result?.success) {
-        return { success: false as const, error: result?.error ?? "Не удалось сохранить изменения" };
+        return { success: false as const, error: result?.error ?? "common.saveFailed" };
       }
 
       return {
