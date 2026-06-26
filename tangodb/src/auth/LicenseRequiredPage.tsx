@@ -28,7 +28,9 @@ export default function LicenseRequiredPage() {
           </p>
           {organization?.data_purge_at && (
             <p className="text-xs text-amber-700/80">
-              Данные будут удалены {formatDate(organization.data_purge_at)}.
+              {new Date(organization.data_purge_at) <= new Date()
+                ? `Данные будут удалены в ближайшее время (запланировано ${formatDate(organization.data_purge_at)}).`
+                : `Данные будут удалены ${formatDate(organization.data_purge_at)}.`}
             </p>
           )}
         </div>

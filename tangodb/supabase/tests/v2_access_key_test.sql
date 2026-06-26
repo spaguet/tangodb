@@ -35,6 +35,12 @@ DECLARE
   v_key_status text;
   v_org_status text;
   v_purge_at timestamptz;
+  v_purge_user uuid := '66666666-6666-6666-6666-666666666666';
+  v_purge_demo_hash text := _test_hash('TDB-DEMO-PURGE-0001');
+  v_purge_org_id uuid;
+  v_client_count int;
+  v_retention_count int;
+  v_demo_expires timestamptz;
 BEGIN
   SELECT id INTO v_version_id FROM crm_product_versions WHERE code = 'v2';
 
@@ -120,29 +126,67 @@ BEGIN
     'organization_licenses row created'
   );
 
-  -- Lifecycle transition demo_active -> demo_retention
+  -- S5: strict 30-day purge on separate demo org (licensed org above must not be purged)
+  INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+  VALUES (
+    v_purge_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+    'purge-user@test.local', crypt('testpass123', gen_salt('bf')), now(), now(), now()
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO access_keys (key_hash, key_type, status, crm_version_id, email)
+  VALUES (v_purge_demo_hash, 'demo', 'pending', v_version_id, 'purge-user@test.local');
+
+  PERFORM set_config(
+    'request.jwt.claims',
+    json_build_object('sub', v_purge_user::text)::text,
+    true
+  );
+
+  v_result := activate_access_key(v_purge_demo_hash, 'Purge Test Org');
+  v_purge_org_id := (v_result ->> 'organization_id')::uuid;
+
+  SELECT demo_expires_at, data_purge_at
+  INTO v_demo_expires, v_purge_at
+  FROM organizations
+  WHERE id = v_purge_org_id;
+
+  PERFORM _test_assert(v_demo_expires IS NOT NULL, 'purge demo demo_expires_at set');
+  PERFORM _test_assert(v_purge_at = v_demo_expires, 'data_purge_at equals demo_expires_at (strict 30d)');
+
+  INSERT INTO clients (organization_id, first_name, last_name)
+  VALUES (v_purge_org_id, 'Purge', 'Client');
+
   UPDATE organizations
-  SET status = 'demo_active', demo_expires_at = now() - interval '1 hour'
-  WHERE id = v_org_id;
+  SET demo_expires_at = now() - interval '1 hour',
+      data_purge_at = now() - interval '1 hour'
+  WHERE id = v_purge_org_id;
 
   v_result := run_demo_lifecycle();
-  PERFORM _test_assert((v_result ->> 'transitioned_to_retention')::int >= 1, 'demo lifecycle transition');
+  PERFORM _test_assert((v_result ->> 'transitioned_to_retention')::int = 0, 'no demo_retention transition');
 
-  SELECT status INTO v_org_status FROM organizations WHERE id = v_org_id;
-  PERFORM _test_assert(v_org_status = 'demo_retention', 'org in demo_retention');
-
-  -- Purge after data_purge_at
-  UPDATE organizations
-  SET data_purge_at = now() - interval '1 hour'
-  WHERE id = v_org_id;
+  SELECT status INTO v_org_status FROM organizations WHERE id = v_purge_org_id;
+  PERFORM _test_assert(v_org_status = 'demo_active', 'expired demo stays demo_active until purge');
 
   v_result := purge_expired_demo_organizations();
   PERFORM _test_assert((v_result ->> 'purged_count')::int >= 1, 'purge removes expired demo org');
 
-  SELECT status INTO v_org_status FROM organizations WHERE id = v_org_id;
-  PERFORM _test_assert(v_org_status = 'purged', 'org tombstone purged');
+  PERFORM _test_assert(
+    NOT EXISTS (SELECT 1 FROM organizations WHERE id = v_purge_org_id),
+    'org row deleted after purge'
+  );
 
-  SELECT status INTO v_key_status FROM access_keys WHERE key_hash = v_demo_hash;
+  SELECT count(*) INTO v_client_count FROM clients WHERE organization_id = v_purge_org_id;
+  PERFORM _test_assert(v_client_count = 0, 'clients deleted after purge');
+
+  SELECT count(*) INTO v_retention_count
+  FROM demo_owner_retention
+  WHERE owner_email_hash = owner_email_hash('purge-user@test.local')
+    AND purged_at IS NOT NULL;
+
+  PERFORM _test_assert(v_retention_count >= 1, 'demo_owner_retention record after purge');
+
+  SELECT status INTO v_key_status FROM access_keys WHERE key_hash = v_purge_demo_hash;
   PERFORM _test_assert(v_key_status = 'consumed', 'demo key consumed after purge');
 
   RAISE NOTICE 'v2 access key tests passed';

@@ -72,7 +72,7 @@
              ручной purge с подтверждением;
              payment config CRUD
 
- 7   S5      Demo purge/retention:               §8.2, §8.9,  Промт 12
+ 7   S5      Demo purge/retention:               §8.2, §8.9,  Промт 12 ✅
              data_purge_at = demo_expires_at     §8.10
              (строго 30 дней);
              удалить business-данные (clients/
@@ -130,11 +130,11 @@ KNOWN INCOMPATIBILITIES — что нужно исправить
                     известный TG ID → login как раньше
 • LicenseSettingsPage → ✅ S4 (2026-06-26): Stripe «Скоро» + waitlist; manual purchase UI + QR
 • purge_expired_demo_organizations
-                  → НЕ удаляет clients/payments/schedule
-                    (цель: DELETE + retention record)
+                  → ✅ S5 (2026-06-26): DELETE org + CASCADE business data;
+                    retention в demo_owner_retention; licensed/subscription skip
 • run_demo_lifecycle()
-                  → переводит в demo_retention на 31-й день
-                    (цель: purge строго на demo_expires_at)
+                  → ✅ S5 (2026-06-26): только уведомления 7d/1d;
+                    без перехода demo_active → demo_retention
 • OrgsPage        → ✅ DC1 (2026-06-26): Tenants table, owner email/name,
                     storage, last login, restore password, purge, issue key;
                     `/payment-methods` CRUD via EF
@@ -142,7 +142,6 @@ KNOWN INCOMPATIBILITIES — что нужно исправить
                     (цель: S6, 20 ISO-4217)
 • finance_basic   → ✅ Этап 1 (2026-06-26)
 • normalizeOrgModules → ✅ Этап 1 (2026-06-26)
-• legacy demo-key → data_purge_at = now() + 60 days
-                    (цель: S5, strict 30 days)
+• legacy demo-key → ✅ S5 (2026-06-26): data_purge_at = demo_expires_at (30 days)
 • ACTIVATION_DEBUG → default "true"
                     (цель: S7, false в production)

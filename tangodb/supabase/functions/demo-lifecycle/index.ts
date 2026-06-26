@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   }
 
   logEvent("demo_lifecycle_complete", {
-    transitioned: Number((data as Record<string, unknown>)?.transitioned_to_retention ?? 0),
+    notifications_expiring: Number((data as Record<string, unknown>)?.notifications_expiring ?? 0),
   });
 
   return jsonResponse({ ok: true, ...(data as Record<string, unknown>) }, 200, req);

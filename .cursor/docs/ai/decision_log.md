@@ -15,7 +15,7 @@
 ### DC1 — estimate_org_storage heuristic (2026-06-26)
 
 - **Дата:** 2026-06-26
-- **Решение:** RPC `estimate_org_storage(p_org_id)` возвращает `total_rows`, `estimated_bytes = total_rows * 2048`, `breakdown` по tenant-таблицам (clients, subscriptions, payments, attendance, personal_lessons, schedule_slots, prices, disciplines, locations, classes, members). UI показывает KB/MB из heuristic bytes. Ручной purge — `purge_single_organization` (та же tombstone-логика, что `purge_expired_demo_organizations`; business DELETE — этап S5).
+- **Решение:** RPC `estimate_org_storage(p_org_id)` возвращает `total_rows`, `estimated_bytes = total_rows * 2048`, `breakdown` по tenant-таблицам (clients, subscriptions, payments, attendance, personal_lessons, schedule_slots, prices, disciplines, locations, classes, members). UI показывает KB/MB из heuristic bytes. Ручной purge — `purge_single_organization` → `_purge_demo_organization_core` (DELETE org + retention; S5).
 - **Контекст:** Промт 18 (DC1) — Dev Console tenant admin.
 - **Альтернативы:** `pg_total_relation_size` per org — отклонено для MVP: нет per-org tablespaces; `sum(pg_column_size)` sample — дороже на Edge Function cold start.
 - **Почему так:** Достаточно для support triage «пустая vs наполненная demo»; согласовано с §8.11.5 ТЗ.
@@ -27,6 +27,14 @@
 - **Контекст:** Промт 8 (S1) — email registration без demo-key.
 - **Альтернативы:** Вариант B — auto-complete onboarding в RPC с defaults → сразу dashboard; отклонено: теряется выбор пресета/модулей на первом входе.
 - **Почему так:** Переиспользует готовый wizard и `needsOnboarding`; полный функционал CRM после wizard; согласовано с §8.2 ТЗ.
+
+### S5 — Strict 30-day demo purge (2026-06-26)
+
+- **Дата:** 2026-06-26
+- **Решение:** Политика purge по умолчанию — `data_purge_at = demo_expires_at` (30 календарных дней), **без** обязательной фазы `demo_retention` 31–60. По `data_purge_at`: RPC `_purge_demo_organization_core` пишет `demo_owner_retention` (email/telegram hash), затем `DELETE FROM organizations` (ON DELETE CASCADE на business-таблицы). Licensed org и org с active/past_due subscription не purge'ятся. `run_demo_lifecycle()` — только stub-уведомления за 7 и 1 день; cron `purge-expired-demo-orgs` удаляет просроченные demo. Expired `demo_active` — read-only в UI и `organization_allows_writes` до purge.
+- **Контекст:** Промт 12 (S5) — заказчик: удаление через 30 дней без read-only retention.
+- **Альтернативы:** Вариант B+ (read-only +7 дней) — не выбран; tombstone `status = purged` — заменён на полное DELETE org row.
+- **Почему так:** Согласовано с §8.2 ТЗ; anti-abuse через retention registry; минимальный diff к Dev Console manual purge (та же core RPC).
 
 ### PL-4 — Раздел `/personal` (2026-06-24)
 

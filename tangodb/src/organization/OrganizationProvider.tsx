@@ -310,6 +310,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   const isReadOnly =
     organization?.status === "demo_retention" ||
+    (organization?.status === "demo_active" &&
+      !!organization.demo_expires_at &&
+      new Date(organization.demo_expires_at) <= new Date()) ||
     (organization?.status === "licensed" &&
       license?.license_type === "subscription" &&
       subscription?.status === "past_due");

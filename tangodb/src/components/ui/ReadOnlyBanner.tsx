@@ -12,7 +12,9 @@ export default function ReadOnlyBanner() {
       <div className="flex items-start gap-2 text-sm text-amber-900">
         <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
         <span>
-          Демо завершено — CRM в режиме только чтения
+          {organization?.status === "demo_retention"
+            ? "Демо завершено — CRM в режиме только чтения"
+            : "Срок демо истёк — CRM в режиме только чтения"}
           {organization?.data_purge_at
             ? ` до удаления данных ${new Date(organization.data_purge_at).toLocaleDateString("ru-RU")}`
             : ""}
