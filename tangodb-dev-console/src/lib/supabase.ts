@@ -82,21 +82,9 @@ export async function loadPaymentConfig(): Promise<{ config: unknown; updatedAt:
 }
 
 export async function savePaymentConfig(config: unknown): Promise<string | null> {
-  if (supabaseEnvError) throw new Error(supabaseEnvError);
-
-  const { data, error } = await supabase
-    .from("platform_payment_methods")
-    .update({ config })
-    .eq("id", 1)
-    .select("updated_at")
-    .single();
-
-  if (error) {
-    if (error.code === "42501" || error.message.includes("permission")) {
-      throw new Error("Нет прав на сохранение — нужен platform_role=developer у аккаунта Dev Console.");
-    }
-    throw new Error(error.message);
-  }
-
-  return data?.updated_at ?? null;
+  const result = await invokeDevFunction<{ updated_at: string | null }>("dev-console-payment-methods", {
+    action: "update",
+    config,
+  });
+  return result.updated_at ?? null;
 }

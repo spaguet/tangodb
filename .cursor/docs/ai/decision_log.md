@@ -12,6 +12,14 @@
 
 ## Записи
 
+### DC1 — estimate_org_storage heuristic (2026-06-26)
+
+- **Дата:** 2026-06-26
+- **Решение:** RPC `estimate_org_storage(p_org_id)` возвращает `total_rows`, `estimated_bytes = total_rows * 2048`, `breakdown` по tenant-таблицам (clients, subscriptions, payments, attendance, personal_lessons, schedule_slots, prices, disciplines, locations, classes, members). UI показывает KB/MB из heuristic bytes. Ручной purge — `purge_single_organization` (та же tombstone-логика, что `purge_expired_demo_organizations`; business DELETE — этап S5).
+- **Контекст:** Промт 18 (DC1) — Dev Console tenant admin.
+- **Альтернативы:** `pg_total_relation_size` per org — отклонено для MVP: нет per-org tablespaces; `sum(pg_column_size)` sample — дороже на Edge Function cold start.
+- **Почему так:** Достаточно для support triage «пустая vs наполненная demo»; согласовано с §8.11.5 ТЗ.
+
 ### S1 — Self-service demo onboarding (2026-06-26)
 
 - **Дата:** 2026-06-26

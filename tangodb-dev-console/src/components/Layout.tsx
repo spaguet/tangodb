@@ -29,7 +29,7 @@ export default function Layout({ onSignOut }: LayoutProps) {
           <Wallet className="w-4 h-4" /> Payment methods
         </NavLink>
         <NavLink to="/orgs" className={linkCls}>
-          <Building2 className="w-4 h-4" /> Organizations
+          <Building2 className="w-4 h-4" /> Tenants
         </NavLink>
         <NavLink to="/billing" className={linkCls}>
           <CreditCard className="w-4 h-4" /> Billing

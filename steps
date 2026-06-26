@@ -62,7 +62,7 @@
              поле ввода ключа;
              Stripe → «Скоро» + waitlist
 
- 6   DC1     Dev Console — SaaS-support:         §8.11        Промт 18
+ 6   DC1     Dev Console — SaaS-support:         §8.11        Промт 18 ✅
              список CRM-баз клиентов + фильтры;
              owner email/имя; demo/lifetime;
              размер данных org; last login;
@@ -135,9 +135,9 @@ KNOWN INCOMPATIBILITIES — что нужно исправить
 • run_demo_lifecycle()
                   → переводит в demo_retention на 31-й день
                     (цель: purge строго на demo_expires_at)
-• OrgsPage        → нет owner email, размера, last login,
-                    кнопок действий
-                    (цель: DC1)
+• OrgsPage        → ✅ DC1 (2026-06-26): Tenants table, owner email/name,
+                    storage, last login, restore password, purge, issue key;
+                    `/payment-methods` CRUD via EF
 • GeneralSettingsPage → только 4 валюты
                     (цель: S6, 20 ISO-4217)
 • finance_basic   → ✅ Этап 1 (2026-06-26)
