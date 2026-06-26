@@ -4,6 +4,10 @@ import {
   handleOptions,
   jsonResponse,
 } from "../_shared/http.ts";
+import {
+  buildIlikeOrFilter,
+  sanitizePostgrestSearchTerm,
+} from "../_shared/postgrestSearch.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
@@ -25,10 +29,6 @@ type OrgRow = {
   schema_version_locked: boolean;
   crm_product_versions: { code: string } | { code: string }[] | null;
 };
-
-function sanitizeSearchTerm(q: string): string {
-  return q.trim().slice(0, 100).replace(/[%_\\]/g, "");
-}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     body = {};
   }
 
-  const q = sanitizeSearchTerm(body.query ?? "");
+  const q = sanitizePostgrestSearchTerm(body.query ?? "");
   const status = (body.status ?? "").trim();
   const expiringSoon = body.expiring_soon === true;
   const awaitingPayment = body.awaiting_payment === true;
@@ -110,10 +110,8 @@ Deno.serve(async (req) => {
     if (PAYMENT_REF_RE.test(ref)) {
       query = query.eq("payment_ref", ref);
     } else {
-      const safe = sanitizeSearchTerm(q);
-      if (safe) {
-        query = query.or(`name.ilike.%${safe}%,slug.ilike.%${safe}%,payment_ref.ilike.%${safe}%`);
-      }
+      const ilikeFilter = buildIlikeOrFilter(["name", "slug", "payment_ref"], q);
+      if (ilikeFilter) query = query.or(ilikeFilter);
     }
   }
 

@@ -11,6 +11,18 @@
 
 ## Записи
 
+### 2026-06-26 — Dev Console PostgREST search injection (S7)
+
+- **Ошибка:** `dev-console-search-orgs` и `dev-console-search-billing` вставляли raw user query в `.or(\`name.ilike.%${q}%\`)` — символы `,`, `(`, `)`, `%`, `_` ломали фильтр или расширяли ilike.
+- **Причина:** Быстрый MVP-поиск без экранирования; в `dev-console-list-tenants` sanitize был частичным (без `,()`).
+- **Как избежать:** Общий `_shared/postgrestSearch.ts`: `sanitizePostgrestSearchTerm` + `buildIlikeOrFilter`; email-поиск — только через RPC `dev_console_user_ids_by_email`.
+
+### 2026-06-26 — ACTIVATION_DEBUG default true (S7)
+
+- **Ошибка:** Edge Function `activate-access-key` по умолчанию возвращала `debug` с SQL/RPC message клиенту (`ACTIVATION_DEBUG ?? "true"`).
+- **Причина:** Debug включён для локальной разработки и не переключён перед production hardening.
+- **Как избежать:** Default `"false"`; явный `ACTIVATION_DEBUG=true` только в local `.env`; audit metadata без `message` когда debug off.
+
 ### 2026-06-26 — activate_access_key overload ambiguity после S5
 
 - **Ошибка:** `function activate_access_key(text, unknown) is not unique` при вызове с двумя аргументами; `db push` fix-миграции падал с `input parameters after one with a default value must also have defaults`.

@@ -12,6 +12,14 @@
 
 ## Записи
 
+### S7 — PostgREST search sanitization (2026-06-26)
+
+- **Дата:** 2026-06-26
+- **Решение:** Общий модуль `_shared/postgrestSearch.ts` для Dev Console Edge Functions: strip `%`, `_`, `\`, `,`, `(`, `)`, limit 100 chars; email search — RPC `dev_console_user_ids_by_email` (уже есть). `ACTIVATION_DEBUG` default `false`; activation audit без raw RPC message unless debug on.
+- **Контекст:** Промт 14 (S7) — §8.7 anti-abuse / injection.
+- **Альтернативы:** Новая SQL RPC `dev_console_search_orgs(p_query)` — отложено; sanitize достаточен для MVP developer-only search.
+- **Почему так:** Минимальный diff; согласовано с частичным sanitize в DC1 tenants EF; не меняет RLS.
+
 ### DC1 — estimate_org_storage heuristic (2026-06-26)
 
 - **Дата:** 2026-06-26

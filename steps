@@ -84,7 +84,7 @@
              lib/currencies.ts — до 20 ISO-4217;
              контакты developer в license UI
 
- 9   S7      Security hardening:                 §8.7         Промт 14
+ 9   S7      Security hardening:                 §8.7         Промт 14 ✅
              rate limit ключей + audit;
              Turnstile только backend-side;
              ACTIVATION_DEBUG = false в prod;
@@ -143,5 +143,4 @@ KNOWN INCOMPATIBILITIES — что нужно исправить
 • finance_basic   → ✅ Этап 1 (2026-06-26)
 • normalizeOrgModules → ✅ Этап 1 (2026-06-26)
 • legacy demo-key → ✅ S5 (2026-06-26): data_purge_at = demo_expires_at (30 days)
-• ACTIVATION_DEBUG → default "true"
-                    (цель: S7, false в production)
+• ACTIVATION_DEBUG → ✅ S7 (2026-06-26): default `false`; debug/audit message только при `ACTIVATION_DEBUG=true`

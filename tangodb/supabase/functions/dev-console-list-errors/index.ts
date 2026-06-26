@@ -4,6 +4,7 @@ import {
   handleOptions,
   jsonResponse,
 } from "../_shared/http.ts";
+import { buildIlikeOrFilter } from "../_shared/postgrestSearch.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
@@ -41,6 +42,10 @@ Deno.serve(async (req) => {
 
   const q = (body.query ?? "").trim();
   const limit = Math.min(Math.max(body.limit ?? 50, 1), 100);
+  const ilikeFilter = buildIlikeOrFilter(
+    ["action", "target_type", "metadata->>message", "metadata->>code"],
+    q
+  );
   const admin = createServiceClient();
 
   let query = admin
@@ -50,11 +55,7 @@ Deno.serve(async (req) => {
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (q) {
-    query = query.or(
-      `action.ilike.%${q}%,target_type.ilike.%${q}%,metadata->>message.ilike.%${q}%,metadata->>code.ilike.%${q}%`
-    );
-  }
+  if (ilikeFilter) query = query.or(ilikeFilter);
 
   const { data, error } = await query;
   if (error) {

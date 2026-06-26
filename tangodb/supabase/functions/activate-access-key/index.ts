@@ -9,7 +9,7 @@ import { createServiceClient, createUserClient, logEvent } from "../_shared/supa
 
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 15 * 60_000;
-const ACTIVATION_DEBUG = (Deno.env.get("ACTIVATION_DEBUG") ?? "true") === "true";
+const ACTIVATION_DEBUG = (Deno.env.get("ACTIVATION_DEBUG") ?? "false") === "true";
 
 type ActivationAuditMetadata = Record<string, string | number | boolean | null>;
 
@@ -94,13 +94,14 @@ Deno.serve(async (req) => {
   if (error) {
     const message = error.message ?? "Activation failed";
     const code = error.code ?? "unknown";
-    logEvent("activate_key_error", { code, message });
-    await auditActivation(admin, "activation.error", userData.user.id, {
+    const auditBase = {
       code,
-      message,
       email_domain: email.includes("@") ? email.split("@")[1] : null,
       client_ip: clientIp,
-    });
+      ...(ACTIVATION_DEBUG ? { message } : {}),
+    };
+    logEvent("activate_key_error", { code, ...(ACTIVATION_DEBUG ? { message } : {}) });
+    await auditActivation(admin, "activation.error", userData.user.id, auditBase);
     if (
       message.includes("invalid access key") ||
       message.includes("different CRM version") ||
@@ -109,27 +110,27 @@ Deno.serve(async (req) => {
     ) {
       logEvent("activate_key_rejected", { reason: "validation" });
       await auditActivation(admin, "activation.rejected", userData.user.id, {
+        ...auditBase,
         reason: "validation",
-        code,
-        message,
-        email_domain: email.includes("@") ? email.split("@")[1] : null,
-        client_ip: clientIp,
       });
+      const debug = debugMessage(message, code);
       return jsonResponse(
-        { error: "Invalid access key", debug: debugMessage(message, code) },
+        debug ? { error: "Invalid access key", debug } : { error: "Invalid access key" },
         400,
         req
       );
     }
     if (message.includes("not authenticated")) {
+      const debug = debugMessage(message, code);
       return jsonResponse(
-        { error: "Session expired", debug: debugMessage(message, code) },
+        debug ? { error: "Session expired", debug } : { error: "Session expired" },
         401,
         req
       );
     }
+    const debug = debugMessage(message, code);
     return jsonResponse(
-      { error: "Activation failed", debug: debugMessage(message, code) },
+      debug ? { error: "Activation failed", debug } : { error: "Activation failed" },
       500,
       req
     );
