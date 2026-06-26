@@ -3,6 +3,7 @@ import { useAuth } from "./AuthProvider";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePermissions } from "../hooks/usePermissions";
 import { getOrganizationIdFromSession } from "../lib/authClaims";
+import { isSyntheticTelegramEmail } from "../lib/telegram";
 import {
   findFirstAccessibleSettingsSection,
   findFirstEnabledAccessiblePanelPath,
@@ -86,6 +87,9 @@ export function OrgWorkspaceRoute() {
   if (memberships.length === 0) {
     if (location.pathname === "/activate-key") return <Outlet />;
     if (location.pathname === "/onboarding" && jwtOrganizationId) return <Outlet />;
+    if (isSyntheticTelegramEmail(session.user.email)) {
+      return <Navigate to="/login" replace />;
+    }
     const emailConfirmed = Boolean(session.user.email_confirmed_at);
     const hasEmail = Boolean(session.user.email?.trim());
     if (emailConfirmed && hasEmail) {

@@ -38,7 +38,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? "";
 
-  const goAfterLogin = () => navigate("/", { replace: true });
+  const goAfterLogin = (isNewDemo = false) => {
+    navigate(isNewDemo ? "/onboarding" : "/", { replace: true });
+  };
 
   useEffect(() => {
     if (!isTelegramWebApp()) return;
@@ -49,7 +51,9 @@ export default function LoginPage() {
 
     setLoading(true);
     signInWithTelegram({ initData })
-      .then(goAfterLogin)
+      .then((result) => {
+        if (!result.recoveryCode) goAfterLogin(result.isNewDemo);
+      })
       .catch((err: Error) => setError(err.message ?? "Ошибка входа через Telegram"))
       .finally(() => setLoading(false));
   }, [signInWithTelegram, navigate]);
@@ -61,8 +65,8 @@ export default function LoginPage() {
       setLoading(true);
       setError(null);
       try {
-        await signInWithTelegram({ widgetPayload: user });
-        goAfterLogin();
+        const result = await signInWithTelegram({ widgetPayload: user });
+        if (!result.recoveryCode) goAfterLogin(result.isNewDemo);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Ошибка входа");
       } finally {

@@ -5,6 +5,10 @@ import {
   jsonResponse,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import {
+  generateRecoveryCode,
+  hashRecoveryCode,
+} from "../_shared/recoveryCode.ts";
 import { createServiceClient, logEvent } from "../_shared/supabase.ts";
 import {
   syntheticTelegramEmail,
@@ -22,12 +26,54 @@ const RATE_WINDOW_MS = 60_000;
  * 1. Admin invites teacher@school.com; user registers or signs in with email.
  * 2. On invite accept, backend sets app_metadata.telegram_id on the existing user row.
  * 3. Telegram login resolves the user via findAuthUserByTelegramId (not tg_* synthetic email).
- * 4. ensureTelegramUser never creates a second account when telegram_id is already linked.
+ * 4. New Telegram ID (no linked user): synthetic auth user + self-service demo org (S2).
  */
 
 interface ActiveMembership {
   organization_id: string;
   member_id: string;
+}
+
+interface AuthRequestBody {
+  initData?: string;
+  widgetPayload?: WidgetPayload;
+}
+
+function extractDisplayName(body: AuthRequestBody, telegramId: number): string {
+  if (body.widgetPayload) {
+    const { first_name, last_name, username } = body.widgetPayload;
+    const parts = [first_name, last_name].filter(Boolean);
+    if (parts.length > 0) return parts.join(" ");
+    if (username) return username;
+  }
+
+  if (body.initData) {
+    try {
+      const params = new URLSearchParams(body.initData);
+      const userRaw = params.get("user");
+      if (userRaw) {
+        const user = JSON.parse(userRaw) as {
+          id?: number;
+          first_name?: string;
+          last_name?: string;
+          username?: string;
+        };
+        if (user.id === telegramId) {
+          const parts = [user.first_name, user.last_name].filter(Boolean);
+          if (parts.length > 0) return parts.join(" ");
+          if (user.username) return user.username;
+        }
+      }
+    } catch {
+      // ignore malformed initData user payload
+    }
+  }
+
+  return "";
+}
+
+function isSyntheticTelegramEmail(email: string, telegramId: number): boolean {
+  return email.trim().toLowerCase() === syntheticTelegramEmail(telegramId).toLowerCase();
 }
 
 async function findAuthUserByEmail(
@@ -72,23 +118,66 @@ async function resolveTelegramUser(
   return findAuthUserByEmail(admin, syntheticEmail);
 }
 
-async function syncTelegramMetadata(
+async function ensureSyntheticTelegramUser(
   admin: ReturnType<typeof createServiceClient>,
-  user: User,
-  telegramId: number
-): Promise<void> {
-  const currentTg = (user.app_metadata as Record<string, unknown> | undefined)?.telegram_id;
-  if (currentTg === String(telegramId)) return;
+  telegramId: number,
+  displayName: string
+): Promise<User> {
+  const existing = await resolveTelegramUser(admin, telegramId);
+  if (existing) return existing;
 
-  const { error } = await admin.auth.admin.updateUserById(user.id, {
+  const email = syntheticTelegramEmail(telegramId);
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
     app_metadata: {
-      ...(user.app_metadata ?? {}),
       telegram_id: String(telegramId),
       provider: "telegram",
     },
     user_metadata: {
-      ...(user.user_metadata ?? {}),
       telegram_id: telegramId,
+      ...(displayName ? { display_name: displayName } : {}),
+    },
+  });
+
+  if (error) {
+    const retry = await resolveTelegramUser(admin, telegramId);
+    if (retry) return retry;
+    throw error;
+  }
+
+  if (!data.user) throw new Error("Failed to create telegram user");
+  return data.user;
+}
+
+async function syncTelegramMetadata(
+  admin: ReturnType<typeof createServiceClient>,
+  user: User,
+  telegramId: number,
+  displayName?: string
+): Promise<void> {
+  const currentTg = (user.app_metadata as Record<string, unknown> | undefined)?.telegram_id;
+  const needsTg = currentTg !== String(telegramId);
+  const currentDisplay =
+    typeof user.user_metadata?.display_name === "string"
+      ? user.user_metadata.display_name.trim()
+      : "";
+  const needsDisplay = Boolean(displayName) && !currentDisplay;
+
+  if (!needsTg && !needsDisplay) return;
+
+  const { error } = await admin.auth.admin.updateUserById(user.id, {
+    app_metadata: needsTg
+      ? {
+          ...(user.app_metadata ?? {}),
+          telegram_id: String(telegramId),
+          provider: "telegram",
+        }
+      : user.app_metadata,
+    user_metadata: {
+      ...(user.user_metadata ?? {}),
+      ...(needsTg ? { telegram_id: telegramId } : {}),
+      ...(needsDisplay && displayName ? { display_name: displayName } : {}),
     },
   });
   if (error) throw error;
@@ -111,6 +200,61 @@ async function getActiveMemberships(
     organization_id: row.organization_id as string,
     member_id: row.id as string,
   }));
+}
+
+async function createTelegramDemoOrg(
+  admin: ReturnType<typeof createServiceClient>,
+  userId: string,
+  telegramId: number,
+  displayName: string
+): Promise<{ recoveryCode: string }> {
+  const recoveryCode = generateRecoveryCode();
+  const recoveryCodeHash = await hashRecoveryCode(recoveryCode);
+
+  const { data, error } = await admin.rpc("create_telegram_self_service_demo_org", {
+    p_user_id: userId,
+    p_telegram_id: telegramId,
+    p_display_name: displayName || null,
+    p_recovery_code_hash: recoveryCodeHash,
+  });
+
+  if (error) {
+    const message = error.message ?? "Creation failed";
+    if (message.includes("demo already used for this telegram")) {
+      throw new DemoAlreadyUsedError();
+    }
+    if (message.includes("already has organization membership")) {
+      throw new AlreadyHasOrgError();
+    }
+    throw error;
+  }
+
+  await admin
+    .from("user_recovery_codes")
+    .update({ shown_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .eq("code_hash", recoveryCodeHash)
+    .is("revoked_at", null);
+
+  logEvent("telegram_demo_created", {
+    organization_id: (data as Record<string, unknown> | null)?.organization_id ?? null,
+  });
+
+  return { recoveryCode };
+}
+
+class DemoAlreadyUsedError extends Error {
+  constructor() {
+    super("Demo already used for this telegram account");
+    this.name = "DemoAlreadyUsedError";
+  }
+}
+
+class AlreadyHasOrgError extends Error {
+  constructor() {
+    super("User already has organization membership");
+    this.name = "AlreadyHasOrgError";
+  }
 }
 
 async function setActiveOrganizationForUser(
@@ -185,7 +329,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Service unavailable" }, 500, req);
   }
 
-  let body: { initData?: string; widgetPayload?: WidgetPayload };
+  let body: AuthRequestBody;
   try {
     body = await req.json();
   } catch {
@@ -215,9 +359,18 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Service unavailable" }, 500, req);
   }
 
-  let user: User | null;
+  const displayName = extractDisplayName(body, telegramId);
+  let isNewDemo = false;
+  let recoveryCode: string | undefined;
+
+  let user: User;
   try {
-    user = await resolveTelegramUser(admin, telegramId);
+    const existing = await resolveTelegramUser(admin, telegramId);
+    if (existing?.email) {
+      user = existing;
+    } else {
+      user = await ensureSyntheticTelegramUser(admin, telegramId, displayName);
+    }
   } catch (err) {
     logEvent("telegram_auth_error", {
       request_id: requestId,
@@ -227,7 +380,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Authentication failed" }, 500, req);
   }
 
-  if (!user?.email) {
+  if (!user.email) {
     logEvent("telegram_auth_rejected", { request_id: requestId, reason: "no_account" });
     return jsonResponse({ error: "Forbidden" }, 403, req);
   }
@@ -245,19 +398,53 @@ Deno.serve(async (req) => {
   }
 
   if (memberships.length === 0) {
-    logEvent("telegram_auth_rejected", { request_id: requestId, reason: "not_member" });
-    return jsonResponse({ error: "Forbidden" }, 403, req);
-  }
+    const canSelfServiceDemo = isSyntheticTelegramEmail(user.email, telegramId);
 
-  try {
-    await syncTelegramMetadata(admin, user, telegramId);
-  } catch (err) {
-    logEvent("telegram_auth_error", {
-      request_id: requestId,
-      stage: "metadata",
-      message: err instanceof Error ? err.message : "unknown",
-    });
-    return jsonResponse({ error: "Authentication failed" }, 500, req);
+    if (!canSelfServiceDemo) {
+      logEvent("telegram_auth_rejected", {
+        request_id: requestId,
+        reason: "not_member",
+      });
+      return jsonResponse({ error: "Forbidden" }, 403, req);
+    }
+
+    try {
+      await syncTelegramMetadata(admin, user, telegramId, displayName);
+      const demoResult = await createTelegramDemoOrg(admin, user.id, telegramId, displayName);
+      recoveryCode = demoResult.recoveryCode;
+      isNewDemo = true;
+      memberships = await getActiveMemberships(admin, user.id);
+    } catch (err) {
+      if (err instanceof DemoAlreadyUsedError) {
+        return jsonResponse({ error: err.message }, 409, req);
+      }
+      if (err instanceof AlreadyHasOrgError) {
+        memberships = await getActiveMemberships(admin, user.id);
+      } else {
+        logEvent("telegram_auth_error", {
+          request_id: requestId,
+          stage: "create_demo",
+          message: err instanceof Error ? err.message : "unknown",
+        });
+        return jsonResponse({ error: "Authentication failed" }, 500, req);
+      }
+    }
+
+    if (memberships.length === 0) {
+      logEvent("telegram_auth_rejected", { request_id: requestId, reason: "not_member" });
+      return jsonResponse({ error: "Forbidden" }, 403, req);
+    }
+  } else {
+    try {
+      await syncTelegramMetadata(admin, user, telegramId, displayName);
+    } catch (err) {
+      logEvent("telegram_auth_error", {
+        request_id: requestId,
+        stage: "metadata",
+        message: err instanceof Error ? err.message : "unknown",
+      });
+      return jsonResponse({ error: "Authentication failed" }, 500, req);
+    }
   }
 
   const session = await issueSession(admin, user.email);
@@ -284,6 +471,7 @@ Deno.serve(async (req) => {
     request_id: requestId,
     membership_count: memberships.length,
     needs_org_picker: needsOrgPicker,
+    is_new_demo: isNewDemo,
     auth_mode: body.initData ? "mini_app" : "widget",
   });
 
@@ -292,6 +480,8 @@ Deno.serve(async (req) => {
       access_token: session.access_token,
       refresh_token: session.refresh_token,
       needs_org_picker: needsOrgPicker,
+      ...(isNewDemo ? { is_new_demo: true } : {}),
+      ...(recoveryCode ? { recovery_code: recoveryCode } : {}),
     },
     200,
     req

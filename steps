@@ -42,7 +42,7 @@
              без ключа; Turnstile; Emergency
              Recovery Code показывается 1 раз
 
- 3   S2      Telegram demo signup:               §8.3, §8.7,  Промт 9
+ 3   S2      Telegram demo signup:               §8.3, §8.7,  Промт 9 ✅
              новый Telegram ID → demo CRM        §8.9
              без email/пароля;
              известный TG ID → вход как сейчас
@@ -125,8 +125,9 @@ KNOWN INCOMPATIBILITIES — что нужно исправить
 
 • RegisterPage    → ✅ S1 (2026-06-26): verify email → auto demo org
                     (lifetime key flow через /activate-key сохранён)
-• Telegram        → неизвестный ID → 403
-                    (цель: self-service demo org)
+• Telegram        → ✅ S2 (2026-06-26): новый TG ID → demo CRM
+                    (synthetic user + create_telegram_self_service_demo_org);
+                    известный TG ID → login как раньше
 • LicenseSettingsPage → Stripe «Месяц/Год» активны
                     (цель: скрыть/пометить «Скоро»)
 • purge_expired_demo_organizations

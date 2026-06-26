@@ -30,6 +30,7 @@ import {
   PanelAccessRoute,
 } from "./auth/ProtectedRoute";
 import LoginPage from "./auth/LoginPage";
+import RecoveryCodeModal from "./auth/RecoveryCodeModal";
 import RegisterPage from "./auth/RegisterPage";
 import ForgotPasswordPage from "./auth/ForgotPasswordPage";
 import ResetPasswordPage from "./auth/ResetPasswordPage";
@@ -536,6 +537,23 @@ function RouteSync() {
   return null;
 }
 
+function TelegramRecoveryGate() {
+  const { pendingRecoveryCode, clearPendingRecoveryCode } = useAuth();
+  const navigate = useNavigate();
+
+  if (!pendingRecoveryCode) return null;
+
+  return (
+    <RecoveryCodeModal
+      code={pendingRecoveryCode}
+      onContinue={() => {
+        clearPendingRecoveryCode();
+        navigate("/onboarding", { replace: true });
+      }}
+    />
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -611,6 +629,7 @@ export default function App() {
                 </Route>
               </Route>
             </Routes>
+            <TelegramRecoveryGate />
           </BrowserRouter>
           </SettingsProvider>
         </OrganizationProvider>

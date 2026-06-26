@@ -398,6 +398,9 @@ verify_jwt = false
 [functions.verify-self-service-registration]
 verify_jwt = false
 
+[functions.telegram-auth]
+verify_jwt = false
+
 [functions.create-self-service-demo-org]
 verify_jwt = true
 

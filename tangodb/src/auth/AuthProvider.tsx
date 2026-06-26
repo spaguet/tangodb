@@ -14,13 +14,20 @@ import { getSiteUrl } from "../lib/siteUrl";
 import type { TelegramLoginWidgetPayload } from "../lib/telegram";
 import { getTelegramInitData, initTelegramWebApp, isTelegramWebApp } from "../lib/telegram";
 
+export interface TelegramSignInResult {
+  recoveryCode: string | null;
+  isNewDemo: boolean;
+}
+
 interface AuthContextValue {
   session: Session | null;
   loading: boolean;
+  pendingRecoveryCode: string | null;
+  clearPendingRecoveryCode: () => void;
   signInWithTelegram: (payload: {
     initData?: string;
     widgetPayload?: TelegramLoginWidgetPayload;
-  }) => Promise<void>;
+  }) => Promise<TelegramSignInResult>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (
     email: string,
@@ -34,12 +41,16 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function applyTelegramAuthResponse(data: {
+interface TelegramAuthResponse {
   access_token?: string;
   refresh_token?: string;
   needs_org_picker?: boolean;
+  recovery_code?: string;
+  is_new_demo?: boolean;
   error?: string;
-}): Promise<void> {
+}
+
+async function applyTelegramAuthResponse(data: TelegramAuthResponse): Promise<void> {
   if (!data?.access_token || !data?.refresh_token) {
     throw new Error(data?.error ?? "Не удалось получить сессию");
   }
@@ -56,9 +67,57 @@ async function applyTelegramAuthResponse(data: {
   }
 }
 
+function parseTelegramAuthError(body: { error?: string }): string {
+  if (body.error === "Forbidden") {
+    return "Нет доступа к организации. Активируйте ключ или попросите приглашение.";
+  }
+  if (body.error === "Unauthorized") {
+    return "Не удалось подтвердить вход через Telegram";
+  }
+  if (body.error === "Demo already used for this telegram account") {
+    return "Демо для этого Telegram уже использовалось. Активируйте лицензионный ключ или обратитесь в поддержку.";
+  }
+  return body.error ?? "Ошибка входа через Telegram";
+}
+
+async function invokeTelegramAuth(payload: {
+  initData?: string;
+  widgetPayload?: TelegramLoginWidgetPayload;
+}): Promise<TelegramAuthResponse> {
+  const { data, error } = await supabase.functions.invoke("telegram-auth", {
+    body: payload,
+  });
+
+  if (error) {
+    const ctx = (error as { context?: Response }).context;
+    if (ctx) {
+      try {
+        const body = await ctx.json();
+        if (body?.error) {
+          throw new Error(parseTelegramAuthError(body));
+        }
+      } catch (parseErr) {
+        if (parseErr instanceof Error && parseErr.message !== error.message) throw parseErr;
+      }
+    }
+    throw error;
+  }
+
+  if (data?.error) {
+    throw new Error(parseTelegramAuthError(data));
+  }
+
+  return data as TelegramAuthResponse;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingRecoveryCode, setPendingRecoveryCode] = useState<string | null>(null);
+
+  const clearPendingRecoveryCode = useCallback(() => {
+    setPendingRecoveryCode(null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,12 +137,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const initData = getTelegramInitData();
         if (initData) {
           try {
-            const { data: authData, error } = await supabase.functions.invoke("telegram-auth", {
-              body: { initData },
-            });
-            if (!error && authData?.access_token && authData?.refresh_token) {
+            const authData = await invokeTelegramAuth({ initData });
+            if (authData.access_token && authData.refresh_token) {
               try {
                 await applyTelegramAuthResponse(authData);
+                if (typeof authData.recovery_code === "string") {
+                  setPendingRecoveryCode(authData.recovery_code);
+                }
                 const { data: sessionData } = await supabase.auth.getSession();
                 if (sessionData.session) {
                   setSession(sessionData.session);
@@ -119,33 +179,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithTelegram = useCallback(
-    async (payload: { initData?: string; widgetPayload?: TelegramLoginWidgetPayload }) => {
-      const { data, error } = await supabase.functions.invoke("telegram-auth", {
-        body: payload,
-      });
+    async (payload: {
+      initData?: string;
+      widgetPayload?: TelegramLoginWidgetPayload;
+    }): Promise<TelegramSignInResult> => {
+      const data = await invokeTelegramAuth(payload);
+      await applyTelegramAuthResponse(data);
 
-      if (error) {
-        const ctx = (error as { context?: Response }).context;
-        if (ctx) {
-          try {
-            const body = await ctx.json();
-            if (body?.error) {
-              const message =
-                body.error === "Forbidden"
-                  ? "Нет доступа к организации. Активируйте ключ или попросите приглашение."
-                  : body.error === "Unauthorized"
-                    ? "Не удалось подтвердить вход через Telegram"
-                    : body.error;
-              throw new Error(message);
-            }
-          } catch (parseErr) {
-            if (parseErr instanceof Error && parseErr.message !== error.message) throw parseErr;
-          }
-        }
-        throw error;
+      const recoveryCode =
+        typeof data.recovery_code === "string" ? data.recovery_code : null;
+      if (recoveryCode) {
+        setPendingRecoveryCode(recoveryCode);
       }
 
-      await applyTelegramAuthResponse(data);
+      return {
+        recoveryCode,
+        isNewDemo: Boolean(data.is_new_demo),
+      };
     },
     []
   );
@@ -192,6 +242,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       loading,
+      pendingRecoveryCode,
+      clearPendingRecoveryCode,
       signInWithTelegram,
       signInWithEmail,
       signUpWithEmail,
@@ -202,6 +254,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [
       session,
       loading,
+      pendingRecoveryCode,
+      clearPendingRecoveryCode,
       signInWithTelegram,
       signInWithEmail,
       signUpWithEmail,

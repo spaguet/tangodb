@@ -20,5 +20,8 @@ export function parseAuthError(err: unknown): string {
   if (message === "Complete registration captcha on the sign-up page first") {
     return "Сначала завершите регистрацию на странице «Регистрация» (captcha действует 24 часа).";
   }
+  if (message === "Demo already used for this telegram account") {
+    return "Демо для этого Telegram уже использовалось. Активируйте лицензионный ключ или обратитесь в поддержку.";
+  }
   return message;
 }

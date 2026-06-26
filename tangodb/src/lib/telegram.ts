@@ -88,6 +88,11 @@ export function formatTelegramDisplay(value: string): string {
   return value;
 }
 
+export function isSyntheticTelegramEmail(email: string | undefined | null): boolean {
+  if (!email) return false;
+  return /^tg_\d+@tangodb\.auth$/i.test(email.trim());
+}
+
 /** True when opened inside the Telegram client (Mini App). */
 export function isInsideTelegramClient(): boolean {
   if (typeof window === "undefined") return false;

@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-26 — S2 (Промт 9): Telegram self-service demo — новый Telegram ID → synthetic auth user (`tg_*@tangodb.auth`) + demo org без email/пароля; RPC `create_telegram_self_service_demo_org`, `telegram_id_hash` anti-abuse; `telegram-auth` Edge Function создаёт demo + recovery code; известный TG ID → login как раньше; `TelegramRecoveryGate` в App; миграция `20260722000001_telegram_self_service_demo.sql`.
 2026-06-26 — fix: `owner_email_hash` migration — `search_path = public, extensions` для `digest()` на hosted Supabase.
 2026-06-26 — S1 (Промт 8): self-service demo email — поле «Логин», Turnstile на `/register`, Edge Functions `verify-self-service-registration` + `create-self-service-demo-org`, RPC `create_self_service_demo_org`, recovery code (bcrypt hash), `VerifyEmailPage` auto-create demo без `/activate-key`; миграция `20260721000001_self_service_demo_registration.sql`; onboarding вариант A (wizard).
 2026-06-26 — Этап 1 (Промт 1): module gate — `finance_basic` в `OrgModules`, `normalizeOrgModules`, gating в nav/mobile/settings/routes/dashboard/export; миграция `20260720000001_finance_basic_module_default.sql`. — единое название вместо «Календарь и журнал» / «Журнал посещений и календарь».
