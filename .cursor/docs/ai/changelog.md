@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-26 — CSV export i18n: заголовки колонок и значения (статусы, способы оплаты, да/нет) через `exportCsvI18n.ts` + `organization_settings.locale`.
 2026-06-26 — S10 follow-up: audit log labels + settings error keys через `resolveMutationError`; push/deploy завершение после прерванного push.
 2026-06-26 — S10 (Промт 17): English localization — модульная i18n (`lib/i18n/`: `keys.ts`, `ru.ts`, `en.ts`, `vi.ts`, `core.ts`, `navHelpers.ts`); `useI18n` / `useGuestI18n`; locale из `organization_settings.locale` + `setGuestLocale` при сохранении; `en-US` для auth, nav, dashboard, clients, schedule, subscriptions, personal, attendance, prices, finance, settings, team, license/demo; `parseAuthError(err, locale)`; locale-aware `utils` (DOW, tariffs, conflicts, dates).
 2026-06-26 — i18n batch 4: завершена локализация remaining UI в `SubscriptionsPanel`, `SchedulePanel`, `PricesPanel`, модалках/полях (`AddClientModal`, `SellPackageModal`, `CreatePrivatePackageTariffModal`, `AddDisciplineModal`, `CsvExportModal`, `DisciplineSelect`, `DatePickerField`, `GroupCheckboxDropdown`, `DisciplineTariffField`, `LocationTariffField`), а также `DisciplinesPanel`, `ClientNotesPanel`, `ClientCardModal`, `MemberProfileModal`; добавлены `resolveMutationError` и `translateConnectionBlockReason`/`translateMutationBlockedMessage` для mutation errors и offline/server-unreachable блокировок.

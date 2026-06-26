@@ -1,31 +1,16 @@
-import type { Payment, PaymentMethod } from "../types";
+import type { Payment } from "../types";
 import type { DebtorEntry } from "./financeReports";
 import { exportCsvItems } from "./exportCsv";
 import type { CsvExportMethod, CsvManualSave } from "./exportCsv";
+import { getCsvExportLabels } from "./exportCsvI18n";
 
-const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  cash: "Наличные",
-  transfer: "Перевод",
-  card: "Карта",
-  other: "Другое",
-};
-
-function paymentSourceLabel(payment: Payment): string {
-  if (payment.subscriptionId) return "Абонемент";
-  if (payment.personalLessonId) return "Персональный урок";
+function paymentSourceLabel(
+  payment: Payment,
+  labels: ReturnType<typeof getCsvExportLabels>
+): string {
+  if (payment.subscriptionId) return labels.paymentSourceSubscription;
+  if (payment.personalLessonId) return labels.paymentSourcePersonal;
   return "—";
-}
-
-function formatPaymentDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("ru-RU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function todayDateStr(): string {
@@ -37,6 +22,7 @@ export interface FinancialExportParams {
   payments: Payment[];
   debtors: DebtorEntry[];
   statsMonth: string;
+  locale?: string | null;
 }
 
 export interface FinancialExportResult {
@@ -48,15 +34,16 @@ export interface FinancialExportResult {
 
 export async function exportAllFinancialCsv(params: FinancialExportParams): Promise<FinancialExportResult> {
   const dateStr = todayDateStr();
-  const { statsMonth } = params;
+  const { statsMonth, locale } = params;
+  const labels = getCsvExportLabels(locale);
   const skipped: string[] = [];
   const items = [];
 
   const paymentRows = params.payments.map((p) => ({
     client: p.clientDisplay || "—",
-    date: formatPaymentDate(p.createdAt),
-    source: paymentSourceLabel(p),
-    method: PAYMENT_METHOD_LABELS[p.method],
+    date: labels.formatDateTime(p.createdAt),
+    source: paymentSourceLabel(p, labels),
+    method: labels.paymentMethod(p.method),
     amount: p.amount,
   }));
 
@@ -64,22 +51,16 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
     items.push({
       rows: paymentRows,
       filename: `tangodb_payments_${statsMonth}_${dateStr}.csv`,
-      columnLabels: {
-        client: "Клиент",
-        date: "Дата",
-        source: "Источник",
-        method: "Способ оплаты",
-        amount: "Сумма",
-      },
+      columnLabels: labels.payments,
     });
   } else {
-    skipped.push("Платежи");
+    skipped.push(labels.skipPayments);
   }
 
   const debtorRows = params.debtors.map((d) => ({
     client: d.clientDisplay,
     contact: d.contact,
-    kind: d.kind === "subscription" ? "Абонемент" : "Персональный",
+    kind: d.kind === "subscription" ? labels.debtorKindSubscription : labels.debtorKindPersonal,
     detail: d.detail,
     amount: d.amount,
   }));
@@ -88,16 +69,10 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
     items.push({
       rows: debtorRows,
       filename: `tangodb_debtors_${dateStr}.csv`,
-      columnLabels: {
-        client: "Клиент",
-        contact: "Контакт",
-        kind: "Тип",
-        detail: "Детали",
-        amount: "Сумма долга",
-      },
+      columnLabels: labels.debtors,
     });
   } else {
-    skipped.push("Дебиторы");
+    skipped.push(labels.skipDebtors);
   }
 
   if (items.length === 0) {

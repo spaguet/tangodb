@@ -2,29 +2,11 @@ import type { AttendanceRecord, Client, PersonalLesson, Subscription } from "../
 import { formatClientName } from "./utils";
 import { exportCsvItems } from "./exportCsv";
 import type { CsvExportMethod, CsvManualSave } from "./exportCsv";
-
-const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
-  present: "Пришёл",
-  absent: "Не пришёл",
-  freeze: "Заморозка",
-  excused: "Уважит.",
-};
+import { getCsvExportLabels } from "./exportCsvI18n";
 
 function todayDateStr(): string {
   const today = new Date();
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-}
-
-function formatArchivedAt(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("ru-RU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function lessonYearMonth(dateStr: string): string {
@@ -40,8 +22,12 @@ function clientNameFromMap(clientMap: Record<string, Client>, clientId: string):
   return id;
 }
 
-function renderPersonalLessonClients(lesson: PersonalLesson, clientMap: Record<string, Client>): string {
-  if (lesson.clientDisplay && lesson.clientDisplay !== "Клиент не указан") {
+function renderPersonalLessonClients(
+  lesson: PersonalLesson,
+  clientMap: Record<string, Client>,
+  clientNotSpecified: string
+): string {
+  if (lesson.clientDisplay && lesson.clientDisplay !== clientNotSpecified) {
     return lesson.clientDisplay;
   }
 
@@ -51,7 +37,7 @@ function renderPersonalLessonClients(lesson: PersonalLesson, clientMap: Record<s
     lesson.clientId3 ? clientNameFromMap(clientMap, lesson.clientId3) : "",
   ].filter(Boolean);
 
-  return names.length ? names.join(" & ") : "Клиент не указан";
+  return names.length ? names.join(" & ") : clientNotSpecified;
 }
 
 export interface DashboardExportParams {
@@ -60,6 +46,7 @@ export interface DashboardExportParams {
   personalLessons: PersonalLesson[];
   attendanceRecords: AttendanceRecord[];
   statsMonth: string;
+  locale?: string | null;
 }
 
 export interface DashboardExportResult {
@@ -72,7 +59,8 @@ export interface DashboardExportResult {
 /** Export all CRM datasets as separate CSV files (sequential downloads). */
 export async function exportAllDashboardCsv(params: DashboardExportParams): Promise<DashboardExportResult> {
   const dateStr = todayDateStr();
-  const { statsMonth } = params;
+  const { statsMonth, locale } = params;
+  const labels = getCsvExportLabels(locale);
   const skipped: string[] = [];
 
   const clientMap = Object.fromEntries(params.clients.map((c) => [c.id, c])) as Record<string, Client>;
@@ -95,16 +83,10 @@ export async function exportAllDashboardCsv(params: DashboardExportParams): Prom
         createdAt: c.createdAt ?? "",
       })),
       filename: `clients_${dateStr}.csv`,
-      labels: {
-        id: "ID",
-        lastName: "Фамилия",
-        firstName: "Имя",
-        telegram: "Telegram",
-        createdAt: "Дата создания",
-      },
+      labels: labels.clientsActive,
     });
   } else {
-    skipped.push("клиенты");
+    skipped.push(labels.skipClients);
   }
 
   if (archivedClients.length > 0) {
@@ -114,16 +96,10 @@ export async function exportAllDashboardCsv(params: DashboardExportParams): Prom
         lastName: c.lastName,
         firstName: c.firstName,
         telegram: c.telegram,
-        archivedAt: c.archivedAt ? formatArchivedAt(c.archivedAt) : "",
+        archivedAt: c.archivedAt ? labels.formatDateTime(c.archivedAt) : "",
       })),
       filename: `clients_archive_${dateStr}.csv`,
-      labels: {
-        id: "ID",
-        lastName: "Фамилия",
-        firstName: "Имя",
-        telegram: "Telegram",
-        archivedAt: "Дата архивации",
-      },
+      labels: labels.clientsArchive,
     });
   }
 
@@ -136,23 +112,14 @@ export async function exportAllDashboardCsv(params: DashboardExportParams): Prom
         client2: sub.clientId2 ? clientNameFromMap(clientMap, sub.clientId2) : "",
         client3: sub.clientId3 ? clientNameFromMap(clientMap, sub.clientId3) : "",
         lessonsLeft: sub.lessonsLeft,
-        status: sub.status === "active" ? "Активен" : "Завершён",
+        status: sub.status === "active" ? labels.subscriptionActive : labels.subscriptionFinished,
         activationDate: sub.activationDate ?? "",
       })),
       filename: `subscriptions_${dateStr}.csv`,
-      labels: {
-        id: "ID",
-        type: "Тип",
-        client1: "Клиент 1",
-        client2: "Клиент 2",
-        client3: "Клиент 3",
-        lessonsLeft: "Уроков осталось",
-        status: "Статус",
-        activationDate: "Дата активации",
-      },
+      labels: labels.subscriptions,
     });
   } else {
-    skipped.push("абонементы");
+    skipped.push(labels.skipSubscriptions);
   }
 
   if (params.attendanceRecords.length > 0) {
@@ -162,24 +129,19 @@ export async function exportAllDashboardCsv(params: DashboardExportParams): Prom
     if (monthAttendance.length > 0) {
       exports.push({
         rows: monthAttendance.map((record) => ({
-        date: record.date,
-        subscriptionId: record.subscriptionId,
-        clientDisplay: record.clientDisplay,
-        status: ATTENDANCE_STATUS_LABELS[record.attendanceStatus] ?? record.attendanceStatus,
-      })),
-      filename: `attendance_${statsMonth}.csv`,
-      labels: {
-        date: "Дата",
-        subscriptionId: "ID абонемента",
-        clientDisplay: "Клиенты",
-        status: "Статус",
-      },
-    });
+          date: record.date,
+          subscriptionId: record.subscriptionId,
+          clientDisplay: record.clientDisplay,
+          status: labels.attendanceStatus(record.attendanceStatus),
+        })),
+        filename: `attendance_${statsMonth}.csv`,
+        labels: labels.attendance,
+      });
     } else {
-      skipped.push(`посещаемость за ${statsMonth}`);
+      skipped.push(labels.skipAttendance(statsMonth));
     }
   } else {
-    skipped.push(`посещаемость за ${statsMonth}`);
+    skipped.push(labels.skipAttendance(statsMonth));
   }
 
   if (monthPersonalLessons.length > 0) {
@@ -187,21 +149,15 @@ export async function exportAllDashboardCsv(params: DashboardExportParams): Prom
       rows: monthPersonalLessons.map((l) => ({
         date: l.date,
         time: `${l.timeStart} – ${l.timeEnd}`,
-        clients: renderPersonalLessonClients(l, clientMap),
-        paid: l.paid === "yes" ? "Да" : "Нет",
+        clients: renderPersonalLessonClients(l, clientMap, labels.clientNotSpecified),
+        paid: l.paid === "yes" ? labels.yes : labels.no,
         price: l.price,
       })),
       filename: `personal_lessons_${statsMonth}.csv`,
-      labels: {
-        date: "Дата",
-        time: "Время",
-        clients: "Клиенты",
-        paid: "Оплачено",
-        price: "Сумма",
-      },
+      labels: labels.personalLessons,
     });
   } else {
-    skipped.push(`персональные уроки за ${statsMonth}`);
+    skipped.push(labels.skipPersonal(statsMonth));
   }
 
   if (exports.length === 0) {

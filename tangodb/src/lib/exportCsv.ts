@@ -254,7 +254,7 @@ export async function exportCsvItems(
   return { count: files.length, method: "download" };
 }
 
-/** Колонки: ключ → заголовок в CSV (русский) */
+/** Column key → localized CSV header (via exportCsvI18n). */
 export async function downloadCsv(
   rows: Record<string, string | number | null | undefined>[],
   filename: string,

@@ -101,6 +101,7 @@ function OperationalExportSection() {
         personalLessons: personalLessonsQuery.data ?? [],
         attendanceRecords: attendanceQuery.data ?? [],
         statsMonth,
+        locale,
       });
       if (result.manualSave) setManualExport(result.manualSave);
       showExportToast(result, t("common.nothingToExport"));
@@ -234,6 +235,7 @@ function FinancialExportSection() {
         payments: paymentsQuery.data ?? [],
         debtors: debtorsQuery.data ?? [],
         statsMonth,
+        locale,
       });
       if (result.manualSave) setManualExport(result.manualSave);
       showExportToast(result, t("common.nothingToExport"));
