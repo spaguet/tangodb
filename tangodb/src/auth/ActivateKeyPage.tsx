@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { KeyRound } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { KeyRound, ShoppingBag } from "lucide-react";
+import { DEMO_PURCHASE_PATH } from "../lib/demoLicense";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthProvider";
 import { useOrganization } from "../organization/OrganizationProvider";
@@ -115,14 +116,29 @@ export default function ActivateKeyPage() {
             покупки).
           </li>
           <li>
-            Подписка Stripe (месяц/год) оформляется позже в{" "}
-            <strong className="text-slate-600">Настройки → Лицензия</strong>, когда организация уже создана.
+            Покупка полной версии — реквизиты и инструкция на странице{" "}
+            <Link to={DEMO_PURCHASE_PATH} className="text-indigo-600 hover:underline font-medium">
+              «Купить полную версию»
+            </Link>
+            .
+          </li>
+          <li>
+            Подписка Stripe (месяц/год) — скоро; уведомление можно оставить в{" "}
+            <strong className="text-slate-600">Настройки → Лицензия</strong>.
           </li>
         </ul>
       </div>
 
       <AuthError message={error} />
       <AuthSuccess message={success} />
+
+      <Link
+        to={DEMO_PURCHASE_PATH}
+        className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition-colors"
+      >
+        <ShoppingBag className="w-4 h-4" />
+        Купить полную версию
+      </Link>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthField

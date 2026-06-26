@@ -6,6 +6,7 @@ import { supabase } from "./lib/supabase";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import KeysPage from "./pages/KeysPage";
+import PaymentMethodsPage from "./pages/PaymentMethodsPage";
 import OrgsPage from "./pages/OrgsPage";
 import MigrationsPage from "./pages/MigrationsPage";
 import BillingPage from "./pages/BillingPage";
@@ -50,6 +51,7 @@ function App() {
         <Route element={<Layout onSignOut={() => supabase.auth.signOut()} />}>
           <Route index element={<DashboardPage />} />
           <Route path="keys" element={<KeysPage />} />
+          <Route path="payment-methods" element={<PaymentMethodsPage />} />
           <Route path="orgs" element={<OrgsPage />} />
           <Route path="billing" element={<BillingPage />} />
           <Route path="migrations" element={<MigrationsPage />} />

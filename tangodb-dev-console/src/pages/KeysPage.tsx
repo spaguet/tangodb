@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Copy, Check } from "lucide-react";
 import { invokeDevFunction } from "../lib/supabase";
 
@@ -52,7 +53,11 @@ export default function KeysPage() {
       <h2 className="text-2xl font-bold text-white">Lifetime keys</h2>
       <p className="text-xs text-slate-500">
         Ключ показывается здесь один раз — на email не отправляется. Скопируйте и передайте клиенту или
-        вставьте на странице активации CRM.
+        вставьте на странице активации CRM. Реквизиты оплаты — в{" "}
+        <Link to="/payment-methods" className="text-indigo-400 hover:text-indigo-300 underline">
+          Payment methods
+        </Link>
+        .
       </p>
 
       <div className="flex gap-2">

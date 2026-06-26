@@ -54,7 +54,7 @@
              в sidebar/меню и на Dashboard
              «Обзор и статистика»
 
- 5   S4      Ручная покупка + активация:         §8.4–§8.5,   Промт 11
+ 5   S4      Ручная покупка + активация:         §8.4–§8.5,   Промт 11 ✅
              crypto QR (из Dev Console config),  §8.10
              банк/MasterCard, МИР;
              контакты developer (email/TG/WA);
@@ -128,8 +128,7 @@ KNOWN INCOMPATIBILITIES — что нужно исправить
 • Telegram        → ✅ S2 (2026-06-26): новый TG ID → demo CRM
                     (synthetic user + create_telegram_self_service_demo_org);
                     известный TG ID → login как раньше
-• LicenseSettingsPage → Stripe «Месяц/Год» активны
-                    (цель: скрыть/пометить «Скоро»)
+• LicenseSettingsPage → ✅ S4 (2026-06-26): Stripe «Скоро» + waitlist; manual purchase UI + QR
 • purge_expired_demo_organizations
                   → НЕ удаляет clients/payments/schedule
                     (цель: DELETE + retention record)

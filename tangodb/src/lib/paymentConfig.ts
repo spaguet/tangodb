@@ -1,0 +1,167 @@
+export interface CryptoPaymentMethod {
+  coin: string;
+  network: string;
+  address: string;
+  uriTemplate?: string;
+}
+
+export interface BankTransferConfig {
+  beneficiary: string;
+  bankName?: string;
+  ibanOrAccount: string;
+  swiftOrBic?: string;
+  cardLast4?: string;
+  note: string;
+}
+
+export interface MirPaymentConfig {
+  recipient: string;
+  phoneOrCard: string;
+  bankName?: string;
+  note: string;
+}
+
+export interface DeveloperContactsConfig {
+  email: string;
+  telegramUrl: string;
+  whatsappUrl: string;
+}
+
+export interface ManualPaymentConfig {
+  crypto?: CryptoPaymentMethod[];
+  bankTransfer?: BankTransferConfig | null;
+  mir?: MirPaymentConfig | null;
+  contacts?: DeveloperContactsConfig | null;
+}
+
+const EMPTY_CONFIG: ManualPaymentConfig = {};
+
+export function parseManualPaymentConfig(raw: unknown): ManualPaymentConfig {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return EMPTY_CONFIG;
+  const value = raw as Record<string, unknown>;
+
+  const crypto = Array.isArray(value.crypto)
+    ? value.crypto
+        .filter((row): row is Record<string, unknown> => !!row && typeof row === "object")
+        .map((row) => ({
+          coin: String(row.coin ?? "").trim(),
+          network: String(row.network ?? "").trim(),
+          address: String(row.address ?? "").trim(),
+          uriTemplate: row.uriTemplate ? String(row.uriTemplate).trim() : undefined,
+        }))
+        .filter((row) => row.coin && row.address)
+    : undefined;
+
+  const bankTransfer =
+    value.bankTransfer && typeof value.bankTransfer === "object" && !Array.isArray(value.bankTransfer)
+      ? normalizeBankTransfer(value.bankTransfer as Record<string, unknown>)
+      : null;
+
+  const mir =
+    value.mir && typeof value.mir === "object" && !Array.isArray(value.mir)
+      ? normalizeMir(value.mir as Record<string, unknown>)
+      : null;
+
+  const contacts =
+    value.contacts && typeof value.contacts === "object" && !Array.isArray(value.contacts)
+      ? normalizeContacts(value.contacts as Record<string, unknown>)
+      : null;
+
+  return {
+    crypto: crypto?.length ? crypto : undefined,
+    bankTransfer: bankTransfer?.beneficiary || bankTransfer?.ibanOrAccount ? bankTransfer : null,
+    mir: mir?.recipient || mir?.phoneOrCard ? mir : null,
+    contacts,
+  };
+}
+
+function normalizeBankTransfer(row: Record<string, unknown>): BankTransferConfig {
+  return {
+    beneficiary: String(row.beneficiary ?? "").trim(),
+    bankName: row.bankName ? String(row.bankName).trim() : undefined,
+    ibanOrAccount: String(row.ibanOrAccount ?? "").trim(),
+    swiftOrBic: row.swiftOrBic ? String(row.swiftOrBic).trim() : undefined,
+    cardLast4: row.cardLast4 ? String(row.cardLast4).trim() : undefined,
+    note: String(row.note ?? "").trim(),
+  };
+}
+
+function normalizeMir(row: Record<string, unknown>): MirPaymentConfig {
+  return {
+    recipient: String(row.recipient ?? "").trim(),
+    phoneOrCard: String(row.phoneOrCard ?? "").trim(),
+    bankName: row.bankName ? String(row.bankName).trim() : undefined,
+    note: String(row.note ?? "").trim(),
+  };
+}
+
+function normalizeContacts(row: Record<string, unknown>): DeveloperContactsConfig {
+  return {
+    email: String(row.email ?? "").trim(),
+    telegramUrl: String(row.telegramUrl ?? "").trim(),
+    whatsappUrl: String(row.whatsappUrl ?? "").trim(),
+  };
+}
+
+export function hasManualPaymentContent(config: ManualPaymentConfig): boolean {
+  return !!(
+    config.crypto?.length ||
+    config.bankTransfer?.beneficiary ||
+    config.bankTransfer?.ibanOrAccount ||
+    config.mir?.recipient ||
+    config.mir?.phoneOrCard ||
+    config.contacts?.email ||
+    config.contacts?.telegramUrl ||
+    config.contacts?.whatsappUrl
+  );
+}
+
+export function buildCryptoQrValue(method: CryptoPaymentMethod): string {
+  if (method.uriTemplate) return method.uriTemplate;
+  const address = method.address.trim();
+  const coin = method.coin.toUpperCase();
+  if (coin === "BTC") return `bitcoin:${address}`;
+  if (coin === "ETH" || coin.startsWith("USDT_ERC")) return `ethereum:${address}`;
+  if (coin === "TON") return `ton://transfer/${address}`;
+  return address;
+}
+
+export function isSafeMailto(email: string): string | null {
+  const trimmed = email.trim();
+  if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return null;
+  return `mailto:${trimmed}`;
+}
+
+export function isSafeTelegramUrl(url: string): string | null {
+  const trimmed = url.trim();
+  if (!trimmed.startsWith("https://t.me/")) return null;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "https:" || parsed.hostname !== "t.me") return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+export function isSafeWhatsappUrl(url: string): string | null {
+  const trimmed = url.trim();
+  if (!trimmed.startsWith("https://wa.me/")) return null;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "https:" || parsed.hostname !== "wa.me") return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+export const PURCHASE_ACTIVATION_STEPS = [
+  "Выберите удобный способ оплаты на этой странице.",
+  "Переведите оплату по указанным реквизитам.",
+  "Свяжитесь с разработчиком через email, Telegram или WhatsApp — укажите ваш email регистрации и подтверждение платежа (скриншот или номер транзакции).",
+  "Разработчик проверит платёж и отправит ключ активации на ваш email.",
+  "Войдите в CRM, откройте «Настройки → Лицензия».",
+  "Введите ключ в поле «Активировать полную версию» и нажмите «Активировать».",
+  "Страница обновится — CRM переключится в полную версию. Метка «ДЕМО-ВЕРСИЯ» исчезнет.",
+] as const;

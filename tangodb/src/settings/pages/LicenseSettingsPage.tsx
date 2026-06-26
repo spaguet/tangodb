@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, CreditCard, KeyRound, Shield } from "lucide-react";
+import { AlertTriangle, CheckCircle2, KeyRound, Shield } from "lucide-react";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
+import ManualPurchasePanel from "../../components/license/ManualPurchasePanel";
+import SubscriptionWaitlistCard from "../../components/license/SubscriptionWaitlistCard";
 import { useToast } from "../../App";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { supabase } from "../../lib/supabase";
@@ -40,11 +42,9 @@ const BILLING_PERIOD_LABELS: Record<string, string> = {
 export default function LicenseSettingsPage() {
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { organization, organizationId, orgLoading, license, subscription, refreshOrganization } =
-    useOrganization();
+  const { organization, orgLoading, license, subscription, refreshOrganization } = useOrganization();
   const [key, setKey] = useState("");
   const [loading, setLoading] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function LicenseSettingsPage() {
       void refreshOrganization();
       searchParams.delete("checkout");
       setSearchParams(searchParams, { replace: true });
-    } else if (checkout === "canceled") {
+    } else if (checkout === "cancelled" || checkout === "canceled") {
       toast("Оплата отменена", "info");
       searchParams.delete("checkout");
       setSearchParams(searchParams, { replace: true });
@@ -68,6 +68,7 @@ export default function LicenseSettingsPage() {
   const statusInfo = STATUS_LABELS[organization.status] ?? STATUS_LABELS.suspended;
   const isDemo = isDemoOrgStatus(organization.status);
   const isPurchaseFlow = searchParams.get("purchase") === "1";
+  const showManualPurchase = isPurchaseFlow && isDemo;
   const canSubscribe = !isLifetime && organization.status !== "suspended";
 
   const handleActivate = async (e: React.FormEvent) => {
@@ -109,51 +110,15 @@ export default function LicenseSettingsPage() {
     }
   };
 
-  const handleSubscribe = async (billingPeriod: "monthly" | "yearly") => {
-    if (!organizationId) return;
-    setCheckoutLoading(billingPeriod);
-    setError(null);
-
-    try {
-      const { data, error: fnError } = await supabase.functions.invoke("create-subscription-checkout", {
-        body: { organization_id: organizationId, billing_period: billingPeriod },
-      });
-
-      if (fnError) {
-        const ctx = (fnError as { context?: Response }).context;
-        if (ctx) {
-          try {
-            const body = await ctx.json();
-            if (body?.error) throw new Error(body.error);
-          } catch (parseErr) {
-            if (parseErr instanceof Error && parseErr.message !== fnError.message) throw parseErr;
-          }
-        }
-        throw fnError;
-      }
-
-      if (!data?.ok || !data?.url) {
-        throw new Error(data?.error ?? "Не удалось создать сессию оплаты");
-      }
-
-      window.location.href = data.url as string;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Ошибка оплаты";
-      setError(message === "Billing not configured" ? "Оплата временно недоступна" : message);
-    } finally {
-      setCheckoutLoading(null);
-    }
-  };
-
   return (
     <div className="panel-card-stack max-w-xl">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-900">
-            {isPurchaseFlow && isDemo ? "Покупка полной версии" : "Лицензия и тариф"}
+            {showManualPurchase ? "Покупка полной версии" : "Лицензия и тариф"}
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            {isPurchaseFlow && isDemo
+            {showManualPurchase
               ? "Выберите способ оплаты или активируйте полученный ключ ниже."
               : "Статус доступа, подписка SaaS или пожизненная лицензия по ключу."}
           </p>
@@ -203,32 +168,15 @@ export default function LicenseSettingsPage() {
           </div>
         </div>
 
+        {showManualPurchase && (
+          <RequirePermission action="license.activate" mode="hide">
+            <ManualPurchasePanel />
+          </RequirePermission>
+        )}
+
         {canSubscribe && !isLifetime && (
           <RequirePermission action="license.activate" mode="hide">
-            <div className="space-y-3 border-t border-slate-100 pt-4">
-              <p className="text-xs text-slate-500 flex items-start gap-2">
-                <CreditCard className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                Оформите подписку для полного доступа без ограничения по времени.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  disabled={!!checkoutLoading}
-                  onClick={() => void handleSubscribe("monthly")}
-                  className="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-50"
-                >
-                  {checkoutLoading === "monthly" ? "..." : "Месяц"}
-                </button>
-                <button
-                  type="button"
-                  disabled={!!checkoutLoading}
-                  onClick={() => void handleSubscribe("yearly")}
-                  className="py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-50"
-                >
-                  {checkoutLoading === "yearly" ? "..." : "Год"}
-                </button>
-              </div>
-            </div>
+            <SubscriptionWaitlistCard />
           </RequirePermission>
         )}
 
@@ -237,7 +185,9 @@ export default function LicenseSettingsPage() {
             <form onSubmit={handleActivate} className="space-y-3 border-t border-slate-100 pt-4">
               <p className="text-xs text-slate-500 flex items-start gap-2">
                 <KeyRound className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                Или введите lifetime-ключ для пожизненного доступа.
+                {showManualPurchase
+                  ? "Активировать полную версию — введите lifetime-ключ из письма."
+                  : "Или введите lifetime-ключ для пожизненного доступа."}
               </p>
               {error && (
                 <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">{error}</p>
