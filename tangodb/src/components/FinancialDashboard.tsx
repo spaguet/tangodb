@@ -10,18 +10,29 @@ import {
   ArrowRight,
   ArrowDown,
   ArrowUp,
+  UserPlus,
+  Users,
+  GraduationCap,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   aggregatePaymentStats,
   aggregatePaymentsByMonth,
+  buildClassTeacherMap,
   buildMonthSeries,
   buildRevenueSplit,
+  buildTopClientsByRevenue,
+  buildTopTeachersByRevenue,
   computeMomChangePercent,
+  computeOccupancyStats,
+  countNewClientsInMonth,
   formatMomPercent,
+  formatOccupancyPercent,
   paymentsInMonth,
   shiftMonth,
   sumDebtorAmounts,
   type MonthlyRevenuePoint,
+  type RevenueRankEntry,
   type RevenueSplitKey,
   type RevenueSplitSegment,
 } from "../lib/financeReports";
@@ -31,8 +42,14 @@ import {
   formatMonthTitle,
 } from "../lib/utils";
 import { useI18n } from "../hooks/useI18n";
+import { useAttendanceRecords } from "../hooks/useAttendance";
+import { useClients } from "../hooks/useClients";
 import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
-import { usePayments, usePaymentsTrend, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
+import { usePersonalLessons } from "../hooks/usePersonalLessons";
+import { usePaymentsTrend, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
+import { useSchedule } from "../hooks/useSchedule";
+import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
+import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
 
 const SPLIT_COLORS: Record<RevenueSplitKey, string> = {
   subscription: "bg-indigo-500",
@@ -156,6 +173,58 @@ function RevenueSplitChart({
   );
 }
 
+function RevenueRankList({
+  title,
+  icon: Icon,
+  entries,
+  emptyLabel,
+  loadingLabel,
+  loading,
+}: {
+  title: string;
+  icon: typeof Users;
+  entries: RevenueRankEntry[];
+  emptyLabel: string;
+  loadingLabel: string;
+  loading?: boolean;
+}) {
+  const maxAmount = Math.max(...entries.map((entry) => entry.amount), 1);
+
+  return (
+    <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+      <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider flex items-center gap-1.5">
+        <Icon className="w-3.5 h-3.5" />
+        {title}
+      </p>
+      {loading ? (
+        <p className="text-xs text-slate-500 py-6 text-center">{loadingLabel}</p>
+      ) : entries.length === 0 ? (
+        <p className="text-xs text-slate-500 py-6 text-center">{emptyLabel}</p>
+      ) : (
+        <ol className="space-y-2">
+          {entries.map((entry, index) => (
+            <li key={entry.key} className="space-y-1">
+              <div className="flex items-center justify-between gap-2 text-xs font-sans">
+                <span className="text-slate-600 truncate min-w-0">
+                  <span className="text-slate-400 mr-1.5">{index + 1}.</span>
+                  {entry.label}
+                </span>
+                <span className="font-semibold text-slate-800 shrink-0">{formatCurrency(entry.amount)}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-indigo-500"
+                  style={{ width: `${(entry.amount / maxAmount) * 100}%` }}
+                />
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 export default function FinancialDashboard() {
   const navigate = useNavigate();
   const { t, locale, plural } = useI18n();
@@ -164,6 +233,20 @@ export default function FinancialDashboard() {
 
   const paymentsQuery = usePaymentsTrend(statsMonth);
   const debtorsQuery = useFinancialDebtors();
+  const clientsQuery = useClients();
+  const attendanceQuery = useAttendanceRecords(statsMonth);
+  const personalLessonsQuery = usePersonalLessons({ yearMonth: statsMonth });
+  const scheduleQuery = useSchedule();
+  const subscriptionGroupsQuery = useSubscriptionGroups();
+  const teamQuery = useTeamMembers();
+
+  const analyticsLoading =
+    clientsQuery.isLoading ||
+    attendanceQuery.isLoading ||
+    personalLessonsQuery.isLoading ||
+    scheduleQuery.isLoading ||
+    subscriptionGroupsQuery.isLoading ||
+    teamQuery.isLoading;
 
   const monthSeries = useMemo(() => buildMonthSeries(statsMonth), [statsMonth]);
   const trendPoints = useMemo(
@@ -184,6 +267,49 @@ export default function FinancialDashboard() {
   }, [stats.total, statsMonth, trendPoints]);
 
   const revenueSplit = useMemo(() => buildRevenueSplit(stats), [stats]);
+
+  const monthPayments = useMemo(
+    () => paymentsInMonth(paymentsQuery.data ?? [], statsMonth),
+    [paymentsQuery.data, statsMonth]
+  );
+
+  const newClientsCount = useMemo(
+    () => countNewClientsInMonth(clientsQuery.data ?? [], statsMonth),
+    [clientsQuery.data, statsMonth]
+  );
+
+  const occupancyStats = useMemo(
+    () =>
+      computeOccupancyStats(attendanceQuery.data ?? [], personalLessonsQuery.data ?? []),
+    [attendanceQuery.data, personalLessonsQuery.data]
+  );
+
+  const topClients = useMemo(
+    () => buildTopClientsByRevenue(monthPayments),
+    [monthPayments]
+  );
+
+  const topTeachers = useMemo(() => {
+    const teacherLabels = new Map(
+      (teamQuery.data ?? []).map((member) => [member.id, memberListLabel(member, locale)])
+    );
+    const personalLessonById = new Map(
+      (personalLessonsQuery.data ?? []).map((lesson) => [lesson.id, lesson])
+    );
+    return buildTopTeachersByRevenue(monthPayments, {
+      personalLessonById,
+      groupsBySubId: subscriptionGroupsQuery.groupsBySubId,
+      classTeacherByGroupId: buildClassTeacherMap(scheduleQuery.data ?? []),
+      teacherLabels,
+    });
+  }, [
+    monthPayments,
+    teamQuery.data,
+    personalLessonsQuery.data,
+    subscriptionGroupsQuery.groupsBySubId,
+    scheduleQuery.data,
+    locale,
+  ]);
 
   const splitLabel = (key: RevenueSplitKey) => {
     if (key === "subscription") return t("dashboard.subscriptions");
@@ -316,6 +442,55 @@ export default function FinancialDashboard() {
               <p className="text-xs text-slate-500 py-8 text-center">{t("dashboard.noRevenueInMonth")}</p>
             )}
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1 border-t border-slate-100">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider flex items-center gap-1">
+              <UserPlus className="w-3 h-3" />
+              {t("dashboard.newClients")}
+            </p>
+            <p className="text-xl font-semibold text-slate-900 mt-0.5">
+              {analyticsLoading ? "…" : newClientsCount}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.newClientsInMonth")}</p>
+          </div>
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100 col-span-1 lg:col-span-1">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider flex items-center gap-1">
+              <ClipboardCheck className="w-3 h-3" />
+              {t("dashboard.occupancy")}
+            </p>
+            <p className="text-xl font-semibold text-emerald-700 mt-0.5">
+              {analyticsLoading ? "…" : formatOccupancyPercent(occupancyStats.rate)}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              {occupancyStats.marked > 0
+                ? t("dashboard.occupancyDetail", {
+                    present: occupancyStats.present,
+                    absent: occupancyStats.absent,
+                  })
+                : t("dashboard.noOccupancyData")}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
+          <RevenueRankList
+            title={t("dashboard.topClients")}
+            icon={Users}
+            entries={topClients}
+            emptyLabel={t("dashboard.noRankingData")}
+            loadingLabel={t("dashboard.loading")}
+            loading={analyticsLoading || paymentsQuery.isLoading}
+          />
+          <RevenueRankList
+            title={t("dashboard.topTeachers")}
+            icon={GraduationCap}
+            entries={topTeachers}
+            emptyLabel={t("dashboard.noRankingData")}
+            loadingLabel={t("dashboard.loading")}
+            loading={analyticsLoading || paymentsQuery.isLoading}
+          />
         </div>
       </div>
 

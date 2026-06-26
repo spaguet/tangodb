@@ -12,6 +12,14 @@
 
 ## Записи
 
+### F3 — Client-side dashboard analytics без RPC (2026-06-26)
+
+- **Дата:** 2026-06-26
+- **Решение:** F3 KPI (новые клиенты, топ-5 клиентов/преподавателей, заполняемость) — чистые функции в `financeReports.ts` + существующие TanStack Query hooks; без view/RPC.
+- **Контекст:** Промт 4 (F3) — расширенная аналитика owner dashboard после F2.
+- **Альтернативы:** SQL view/RPC для rank/occupancy — отложено до org с очень большим объёмом данных.
+- **Почему так:** Один batch запросов (clients, payments trend, attendance, personal lessons, schedule, subscription_groups, team) с client-side O(n) агрегацией; без N+1. Выручка преподавателя: personal payment → `teacher_member_id` урока; subscription payment → первый teacher из `schedule_slots` по `subscription_groups.schedule_group_id`. Заполняемость = present / (present + absent) по group attendance + personal lessons (freeze/excused не в знаменателе).
+
 ### S10 — Lightweight typed i18n без react-i18next (2026-06-26)
 
 - **Дата:** 2026-06-26

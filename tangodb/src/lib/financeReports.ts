@@ -1,4 +1,11 @@
-import type { Payment } from "../types";
+import type {
+  AttendanceRecord,
+  Client,
+  Payment,
+  PersonalLesson,
+  ScheduleSlot,
+  SubscriptionGroupLink,
+} from "../types";
 
 export function monthDateRange(yearMonth: string): { dateFrom: string; dateTo: string } {
   const [y, m] = yearMonth.split("-").map(Number);
@@ -148,4 +155,143 @@ export function buildRevenueSplit(stats: PaymentStats): RevenueSplitSegment[] {
       ...segment,
       percent: (segment.amount / stats.total) * 100,
     }));
+}
+
+export function recordsInMonth(
+  createdAt: string | undefined,
+  yearMonth: string
+): boolean {
+  if (!createdAt) return false;
+  const { dateFrom, dateTo } = monthDateRange(yearMonth);
+  const from = `${dateFrom}T00:00:00`;
+  const to = `${dateTo}T23:59:59`;
+  return createdAt >= from && createdAt <= to;
+}
+
+export function countNewClientsInMonth(clients: Client[], yearMonth: string): number {
+  return clients.filter((client) => recordsInMonth(client.createdAt, yearMonth)).length;
+}
+
+export interface RevenueRankEntry {
+  key: string;
+  label: string;
+  amount: number;
+}
+
+export function buildTopClientsByRevenue(
+  payments: Payment[],
+  limit = 5
+): RevenueRankEntry[] {
+  const totals = new Map<string, { label: string; amount: number }>();
+
+  for (const payment of payments) {
+    const key = payment.clientId || payment.clientDisplay;
+    if (!key) continue;
+    const existing = totals.get(key);
+    if (existing) {
+      existing.amount += payment.amount;
+    } else {
+      totals.set(key, { label: payment.clientDisplay || key, amount: payment.amount });
+    }
+  }
+
+  return [...totals.entries()]
+    .map(([key, { label, amount }]) => ({ key, label, amount }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, limit);
+}
+
+export function buildClassTeacherMap(slots: ScheduleSlot[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const slot of slots) {
+    const groupId = slot.scheduleGroupId;
+    if (groupId && slot.teacherMemberId && !map.has(groupId)) {
+      map.set(groupId, slot.teacherMemberId);
+    }
+  }
+  return map;
+}
+
+export interface TeacherRevenueContext {
+  personalLessonById: Map<string, Pick<PersonalLesson, "teacherMemberId">>;
+  groupsBySubId: Record<string, SubscriptionGroupLink[]>;
+  classTeacherByGroupId: Map<string, string>;
+  teacherLabels: Map<string, string>;
+}
+
+function resolvePaymentTeacherId(
+  payment: Payment,
+  ctx: TeacherRevenueContext
+): string | null {
+  if (payment.personalLessonId) {
+    return ctx.personalLessonById.get(payment.personalLessonId)?.teacherMemberId ?? null;
+  }
+  if (payment.subscriptionId) {
+    for (const group of ctx.groupsBySubId[payment.subscriptionId] ?? []) {
+      const teacherId = ctx.classTeacherByGroupId.get(group.scheduleGroupId);
+      if (teacherId) return teacherId;
+    }
+  }
+  return null;
+}
+
+export function buildTopTeachersByRevenue(
+  payments: Payment[],
+  ctx: TeacherRevenueContext,
+  limit = 5
+): RevenueRankEntry[] {
+  const totals = new Map<string, number>();
+
+  for (const payment of payments) {
+    const teacherId = resolvePaymentTeacherId(payment, ctx);
+    if (!teacherId) continue;
+    totals.set(teacherId, (totals.get(teacherId) ?? 0) + payment.amount);
+  }
+
+  return [...totals.entries()]
+    .map(([key, amount]) => ({
+      key,
+      label: ctx.teacherLabels.get(key) ?? key,
+      amount,
+    }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, limit);
+}
+
+export interface OccupancyStats {
+  present: number;
+  absent: number;
+  marked: number;
+  rate: number | null;
+}
+
+export function computeOccupancyStats(
+  attendance: AttendanceRecord[],
+  personalLessons: PersonalLesson[]
+): OccupancyStats {
+  let present = 0;
+  let absent = 0;
+
+  for (const record of attendance) {
+    if (record.attendanceStatus === "present") present += 1;
+    else if (record.attendanceStatus === "absent") absent += 1;
+  }
+
+  for (const lesson of personalLessons) {
+    if (lesson.attendanceStatus === "present") present += 1;
+    else if (lesson.attendanceStatus === "absent") absent += 1;
+  }
+
+  const marked = present + absent;
+  return {
+    present,
+    absent,
+    marked,
+    rate: marked > 0 ? (present / marked) * 100 : null,
+  };
+}
+
+export function formatOccupancyPercent(rate: number | null): string {
+  if (rate === null) return "—";
+  return `${rate.toFixed(0)}%`;
 }
