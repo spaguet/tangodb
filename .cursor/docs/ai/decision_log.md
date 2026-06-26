@@ -12,6 +12,14 @@
 
 ## Записи
 
+### F5/F6 — Payroll rates MVP: % от атрибутированной выручки (2026-06-26, план)
+
+- **Дата:** 2026-06-26
+- **Решение:** План F5/F6 зафиксирован в `tangodb_expenses_payroll_plan.md`. Для F6 MVP — **вариант A**: ставка `rate_percent` на teacher, начисление = атрибутированная выручка × rate; переиспользовать логику `resolvePaymentTeacherId` из `financeReports.ts`. Частичные выплаты — таблица `teacher_settlement_payments` + `amount_paid` на `teacher_settlements`. Teacher — read-only доступ к `/finance/payroll` (route exception), без полного finance panel.
+- **Контекст:** Промт 7 — план expenses/payroll перед кодом; миграции не начинать до согласования.
+- **Альтернативы:** фикс за занятие (B); гибрид % + фикс (C); отдельный route `/my-payroll` для teacher — отложено.
+- **Почему так:** Минимальная схема, согласована с F3 top-teachers attribution; не требует ledger/cash-balance; accountant CRUD expenses + payroll write; salary category в expenses — для non-teacher costs, не дублирует F6 автоматически.
+
 ### F3 — Client-side dashboard analytics без RPC (2026-06-26)
 
 - **Дата:** 2026-06-26
