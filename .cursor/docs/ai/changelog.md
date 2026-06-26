@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-26 — F1 (Промт 2): фильтры журнала платежей — `FinancePaymentsPage`: период (`DatePickerField` + `usePayments({ dateFrom, dateTo })`), источник (абон./перс.), способ оплаты (`AppSelect`); клиентская фильтрация source/method + поиск; «Итого» по отфильтрованным; `emptyFiltered`; i18n `getPaymentMethodLabel`/`paymentSourceLabel`.
 2026-06-26 — CSV export i18n: заголовки колонок и значения (статусы, способы оплаты, да/нет) через `exportCsvI18n.ts` + `organization_settings.locale`.
 2026-06-26 — S10 follow-up: audit log labels + settings error keys через `resolveMutationError`; push/deploy завершение после прерванного push.
 2026-06-26 — S10 (Промт 17): English localization — модульная i18n (`lib/i18n/`: `keys.ts`, `ru.ts`, `en.ts`, `vi.ts`, `core.ts`, `navHelpers.ts`); `useI18n` / `useGuestI18n`; locale из `organization_settings.locale` + `setGuestLocale` при сохранении; `en-US` для auth, nav, dashboard, clients, schedule, subscriptions, personal, attendance, prices, finance, settings, team, license/demo; `parseAuthError(err, locale)`; locale-aware `utils` (DOW, tariffs, conflicts, dates).

@@ -917,6 +917,7 @@ export const EN: Record<I18nKey, string> = {
   "finance.payments.title": "Payment journal",
   "finance.payments.search": "Search by client...",
   "finance.payments.empty": "No payments yet",
+  "finance.payments.emptyFiltered": "No payments match the selected filters",
   "finance.payments.total": "Total: {{amount}}",
   "finance.revenue.title": "Revenue",
   "finance.revenue.total": "Total",

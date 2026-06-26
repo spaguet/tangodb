@@ -869,6 +869,7 @@ export type I18nKey =
   | "finance.payments.title"
   | "finance.payments.search"
   | "finance.payments.empty"
+  | "finance.payments.emptyFiltered"
   | "finance.payments.total"
   | "finance.revenue.title"
   | "finance.revenue.total"

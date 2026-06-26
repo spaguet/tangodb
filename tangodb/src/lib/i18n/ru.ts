@@ -914,6 +914,7 @@ export const RU: Record<I18nKey, string> = {
   "finance.payments.title": "Журнал платежей",
   "finance.payments.search": "Поиск по клиенту...",
   "finance.payments.empty": "Платежей пока нет",
+  "finance.payments.emptyFiltered": "Нет платежей по выбранным фильтрам",
   "finance.payments.total": "Итого: {{amount}}",
   "finance.revenue.title": "Выручка",
   "finance.revenue.total": "Итого",
