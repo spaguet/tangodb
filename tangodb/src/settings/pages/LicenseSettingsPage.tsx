@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, KeyRound, Shield } from "lucide-react";
+import { AlertTriangle, CheckCircle2, KeyRound, LifeBuoy, Shield } from "lucide-react";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
 import DeveloperContacts from "../../components/license/DeveloperContacts";
@@ -222,6 +222,30 @@ export default function LicenseSettingsPage() {
         )}
 
         {!showManualPurchase && <DeveloperContacts contacts={paymentConfig.contacts} />}
+
+        <div className="border-t border-slate-100 pt-4 space-y-2">
+          <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <LifeBuoy className="w-4 h-4 text-sky-600" />
+            Восстановление доступа владельца
+          </h3>
+          <ul className="text-xs text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+            <li>
+              Забыли пароль — если email доступен, запросите сброс на странице{" "}
+              <Link to="/auth/forgot-password" className="text-indigo-600 hover:underline">
+                восстановления пароля
+              </Link>
+              .
+            </li>
+            <li>
+              Утрачен email владельца — обратитесь к разработчику. Подготовьте Emergency Recovery Code
+              (из регистрации), подтверждение оплаты или lifetime-ключ, данные организации и контакт,
+              указанный при покупке.
+            </li>
+            <li className="text-slate-500">
+              Смена owner email выполняется только вручную через support — автоматического восстановления нет.
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );

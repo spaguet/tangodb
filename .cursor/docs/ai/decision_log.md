@@ -12,6 +12,14 @@
 
 ## Записи
 
+### S9 — Owner emergency recovery flow (2026-06-26)
+
+- **Дата:** 2026-06-26
+- **Решение:** Manual owner email transfer только через Dev Console EF `dev-console-transfer-owner-email`: минимум 2 фактора (recovery code bcrypt + payment ref / lifetime / telegram / purchase contact / org data); режим `update_email` (Admin API) или `reassign_user` (RPC `dev_console_reassign_org_owner` если новый email уже зарегистрирован); audit с SHA-256 email hashes; anti-abuse block для demo→email с purged retention. Публичный self-service смены owner email — запрещён; CRM UI — инструкции на LicenseSettingsPage + существующий `/auth/forgot-password`.
+- **Контекст:** Промт 16 (S9) — §8.8, §8.11.3.
+- **Альтернативы:** Публичный endpoint с recovery code only — отклонено (§8.8); автоматический transfer по Telegram ID — отклонено.
+- **Почему так:** Согласовано с DC1 restore password; service role только в EF; RLS не ослаблен; recovery code — дополнительный фактор, не единственный.
+
 ### S7 — PostgREST search sanitization (2026-06-26)
 
 - **Дата:** 2026-06-26

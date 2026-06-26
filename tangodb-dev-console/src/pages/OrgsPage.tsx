@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Copy, Key, Trash2, UserCog } from "lucide-react";
+import { Check, Copy, Key, Mail, Trash2, UserCog } from "lucide-react";
 import { invokeDevFunction } from "../lib/supabase";
 
 interface TenantRow {
@@ -28,7 +28,51 @@ interface TenantRow {
   } | null;
 }
 
-type ModalKind = "password" | "purge" | "issueKey" | null;
+type ModalKind = "password" | "purge" | "issueKey" | "transferOwner" | null;
+
+type TransferVerification = {
+  recovery_code: string;
+  payment_ref_verified: boolean;
+  lifetime_license_verified: boolean;
+  telegram_binding_verified: boolean;
+  purchase_contact_verified: boolean;
+  org_data_verified: boolean;
+};
+
+const EMPTY_TRANSFER_VERIFICATION: TransferVerification = {
+  recovery_code: "",
+  payment_ref_verified: false,
+  lifetime_license_verified: false,
+  telegram_binding_verified: false,
+  purchase_contact_verified: false,
+  org_data_verified: false,
+};
+
+function countTransferFactors(v: TransferVerification): number {
+  let n = 0;
+  if (v.recovery_code.trim()) n += 1;
+  if (v.payment_ref_verified) n += 1;
+  if (v.lifetime_license_verified) n += 1;
+  if (v.telegram_binding_verified) n += 1;
+  if (v.purchase_contact_verified) n += 1;
+  if (v.org_data_verified) n += 1;
+  return n;
+}
+
+function transferErrorMessage(code: string): string {
+  const map: Record<string, string> = {
+    insufficient_verification_factors: "Нужно минимум 2 фактора проверки владения.",
+    invalid_recovery_code: "Emergency Recovery Code не совпадает.",
+    no_active_recovery_code: "У owner нет активного recovery code.",
+    payment_ref_not_available: "У org нет payment_ref — снимите галочку.",
+    lifetime_license_not_confirmed: "Org не licensed/lifetime — снимите галочку.",
+    telegram_not_bound: "Telegram не привязан — снимите галочку.",
+    anti_abuse_purged_demo_email: "Новый email в anti-abuse (purged demo) — перенос запрещён.",
+    new_email_same_as_current: "Новый email совпадает с текущим.",
+    new_email_already_registered: "Email занят другим аккаунтом — используйте reassign или другой email.",
+  };
+  return map[code] ?? code;
+}
 
 export default function OrgsPage() {
   const [query, setQuery] = useState("");
@@ -47,6 +91,12 @@ export default function OrgsPage() {
   const [purgeNameConfirm, setPurgeNameConfirm] = useState("");
   const [purgeReason, setPurgeReason] = useState("");
   const [copied, setCopied] = useState(false);
+  const [transferEmail, setTransferEmail] = useState("");
+  const [transferReason, setTransferReason] = useState("");
+  const [transferVerification, setTransferVerification] = useState<TransferVerification>(
+    EMPTY_TRANSFER_VERIFICATION
+  );
+  const [transferSuccess, setTransferSuccess] = useState<string | null>(null);
 
   const search = async () => {
     setLoading(true);
@@ -76,6 +126,10 @@ export default function OrgsPage() {
     setPurgeNameConfirm("");
     setPurgeReason("");
     setCopied(false);
+    setTransferEmail("");
+    setTransferReason("");
+    setTransferVerification(EMPTY_TRANSFER_VERIFICATION);
+    setTransferSuccess(null);
   };
 
   const closeModal = () => {
@@ -84,6 +138,10 @@ export default function OrgsPage() {
     setModalError("");
     setTempPassword(null);
     setIssuedKey(null);
+    setTransferEmail("");
+    setTransferReason("");
+    setTransferVerification(EMPTY_TRANSFER_VERIFICATION);
+    setTransferSuccess(null);
   };
 
   const resetPassword = async () => {
@@ -115,6 +173,42 @@ export default function OrgsPage() {
       setIssuedKey(result.key);
     } catch (e) {
       setModalError(e instanceof Error ? e.message : "Issue failed");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const transferOwnerEmail = async () => {
+    if (!activeTenant) return;
+    setModalLoading(true);
+    setModalError("");
+    setTransferSuccess(null);
+    try {
+      const result = await invokeDevFunction<{ transfer_mode: string; message: string }>(
+        "dev-console-transfer-owner-email",
+        {
+          organization_id: activeTenant.id,
+          new_email: transferEmail.trim(),
+          reason: transferReason.trim(),
+          verification: {
+            recovery_code: transferVerification.recovery_code.trim() || undefined,
+            payment_ref_verified: transferVerification.payment_ref_verified || undefined,
+            lifetime_license_verified: transferVerification.lifetime_license_verified || undefined,
+            telegram_binding_verified: transferVerification.telegram_binding_verified || undefined,
+            purchase_contact_verified: transferVerification.purchase_contact_verified || undefined,
+            org_data_verified: transferVerification.org_data_verified || undefined,
+          },
+        }
+      );
+      setTransferSuccess(
+        result.transfer_mode === "reassign_user"
+          ? "Owner переназначен на существующий аккаунт. Старый owner потерял доступ."
+          : "Email owner обновлён. Передайте инструкции входа один раз."
+      );
+      await search();
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : "Transfer failed";
+      setModalError(transferErrorMessage(raw));
     } finally {
       setModalLoading(false);
     }
@@ -302,6 +396,15 @@ export default function OrgsPage() {
                     </button>
                     <button
                       type="button"
+                      title="Сменить owner email (S9)"
+                      onClick={() => openModal("transferOwner", t)}
+                      disabled={!t.owner_email || t.status === "purged"}
+                      className="p-1.5 rounded bg-slate-800 hover:bg-amber-900/40 text-amber-300 disabled:opacity-40 cursor-pointer"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
                       title="Lifetime key"
                       onClick={() => openModal("issueKey", t)}
                       disabled={!t.owner_email}
@@ -347,8 +450,8 @@ export default function OrgsPage() {
                 {!tempPassword ? (
                   <>
                     <p className="text-xs text-amber-400">
-                      Одноразовый пароль показывается один раз. Передайте owner по email / Telegram / WhatsApp.
-                      Пароль не сохраняется в audit log.
+                      Если owner email доступен — сначала попросите «Забыли пароль?» в CRM. Здесь — сброс
+                      support-пароля, если email недоступен или письмо не доходит. Пароль не сохраняется в audit log.
                     </p>
                     {modalError && <p className="text-sm text-rose-400">{modalError}</p>}
                     <div className="flex gap-2 justify-end">
@@ -374,6 +477,163 @@ export default function OrgsPage() {
                         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
+                    <button type="button" onClick={closeModal} className="w-full py-2 text-sm text-slate-400 cursor-pointer">
+                      Закрыть
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+
+            {modal === "transferOwner" && (
+              <>
+                <h3 className="text-lg font-semibold text-white">Смена owner email (emergency)</h3>
+                <p className="text-sm text-slate-400">
+                  Org: <span className="text-slate-200">{activeTenant.name}</span>
+                  <br />
+                  Текущий owner: {activeTenant.owner_email}
+                </p>
+                {!transferSuccess ? (
+                  <>
+                    <p className="text-xs text-amber-400">
+                      Минимум 2 фактора владения. Recovery code — только дополнительный фактор, не единственный.
+                      Все действия пишутся в audit log (email — только hash).
+                    </p>
+                    <label className="block space-y-1">
+                      <span className="text-xs text-slate-500">Новый email owner</span>
+                      <input
+                        type="email"
+                        value={transferEmail}
+                        onChange={(e) => setTransferEmail(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+                      />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-xs text-slate-500">Причина (support ticket / заметка)</span>
+                      <input
+                        value={transferReason}
+                        onChange={(e) => setTransferReason(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+                      />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-xs text-slate-500">Emergency Recovery Code (optional)</span>
+                      <input
+                        value={transferVerification.recovery_code}
+                        onChange={(e) =>
+                          setTransferVerification((v) => ({ ...v, recovery_code: e.target.value }))
+                        }
+                        placeholder="XXXX-XXXX-XXXX"
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm font-mono"
+                      />
+                    </label>
+                    <div className="space-y-2 text-xs text-slate-400">
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={transferVerification.payment_ref_verified}
+                          disabled={!activeTenant.payment_ref}
+                          onChange={(e) =>
+                            setTransferVerification((v) => ({
+                              ...v,
+                              payment_ref_verified: e.target.checked,
+                            }))
+                          }
+                          className="mt-0.5 rounded"
+                        />
+                        <span>
+                          Payment ref подтверждён
+                          {activeTenant.payment_ref ? ` (${activeTenant.payment_ref})` : " — нет ref"}
+                        </span>
+                      </label>
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={transferVerification.lifetime_license_verified}
+                          disabled={activeTenant.license_badge !== "Lifetime" && activeTenant.status !== "licensed"}
+                          onChange={(e) =>
+                            setTransferVerification((v) => ({
+                              ...v,
+                              lifetime_license_verified: e.target.checked,
+                            }))
+                          }
+                          className="mt-0.5 rounded"
+                        />
+                        <span>Lifetime / licensed org ({activeTenant.license_badge})</span>
+                      </label>
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={transferVerification.telegram_binding_verified}
+                          disabled={!activeTenant.telegram_masked}
+                          onChange={(e) =>
+                            setTransferVerification((v) => ({
+                              ...v,
+                              telegram_binding_verified: e.target.checked,
+                            }))
+                          }
+                          className="mt-0.5 rounded"
+                        />
+                        <span>
+                          Telegram binding проверен
+                          {activeTenant.telegram_masked ? ` (${activeTenant.telegram_masked})` : " — нет TG"}
+                        </span>
+                      </label>
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={transferVerification.purchase_contact_verified}
+                          onChange={(e) =>
+                            setTransferVerification((v) => ({
+                              ...v,
+                              purchase_contact_verified: e.target.checked,
+                            }))
+                          }
+                          className="mt-0.5 rounded"
+                        />
+                        <span>Контакт покупки (email/TG/WA) подтверждён</span>
+                      </label>
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={transferVerification.org_data_verified}
+                          onChange={(e) =>
+                            setTransferVerification((v) => ({
+                              ...v,
+                              org_data_verified: e.target.checked,
+                            }))
+                          }
+                          className="mt-0.5 rounded"
+                        />
+                        <span>Данные организации проверены вручную</span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Факторов: {countTransferFactors(transferVerification)} / мин. 2
+                    </p>
+                    {modalError && <p className="text-sm text-rose-400">{modalError}</p>}
+                    <div className="flex gap-2 justify-end">
+                      <button type="button" onClick={closeModal} className="px-3 py-2 text-sm text-slate-400 cursor-pointer">
+                        Отмена
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void transferOwnerEmail()}
+                        disabled={
+                          modalLoading ||
+                          !transferEmail.trim() ||
+                          !transferReason.trim() ||
+                          countTransferFactors(transferVerification) < 2
+                        }
+                        className="px-4 py-2 bg-amber-700 hover:bg-amber-600 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
+                      >
+                        {modalLoading ? "…" : "Сменить owner email"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-emerald-400">{transferSuccess}</p>
                     <button type="button" onClick={closeModal} className="w-full py-2 text-sm text-slate-400 cursor-pointer">
                       Закрыть
                     </button>

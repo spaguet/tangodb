@@ -97,7 +97,7 @@
              деактивация + re-invite при
              потере email участника
 
-11   S9      Owner emergency recovery:           §8.8, §8.11  Промт 16
+11   S9      Owner emergency recovery:           §8.8, §8.11  Промт 16 ✅
              manual developer support;
              recovery code как доп. фактор;
              всё через Dev Console + audit log
