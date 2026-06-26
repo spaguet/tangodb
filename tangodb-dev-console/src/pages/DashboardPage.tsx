@@ -27,7 +27,22 @@ export default function DashboardPage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Failed"));
   }, []);
 
-  if (error) return <p className="text-rose-400">{error}</p>;
+  if (error) {
+    return (
+      <div className="space-y-2">
+        <p className="text-rose-400">{error}</p>
+        {(error.includes("VITE_SUPABASE") ||
+          error.includes("ALLOWED_ORIGINS") ||
+          error.includes("origin_not_allowed") ||
+          error.includes("Edge Function")) && (
+          <p className="text-xs text-slate-500">
+            Vercel → Dev Console → Settings → Environment Variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY.
+            Supabase → Edge Functions → Secrets: ALLOWED_ORIGINS с https://tangodb-dev-console.vercel.app
+          </p>
+        )}
+      </div>
+    );
+  }
   if (!metrics) {
     return (
       <div className="flex justify-center py-12">

@@ -1,5 +1,6 @@
 import { Outlet, NavLink } from "react-router-dom";
 import { Key, LayoutDashboard, Building2, ArrowLeftRight, LogOut, CreditCard, TriangleAlert, Wallet } from "lucide-react";
+import { supabaseEnvError } from "../lib/supabase";
 
 interface LayoutProps {
   onSignOut: () => void;
@@ -48,6 +49,11 @@ export default function Layout({ onSignOut }: LayoutProps) {
         </button>
       </aside>
       <main className="flex-1 p-6 overflow-y-auto">
+        {supabaseEnvError && (
+          <p className="mb-4 text-sm text-amber-400 bg-amber-950/40 border border-amber-900 rounded-lg px-3 py-2">
+            {supabaseEnvError}
+          </p>
+        )}
         <Outlet />
       </main>
     </div>
