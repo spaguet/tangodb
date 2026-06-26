@@ -310,19 +310,19 @@ tangodb/src/types/payroll.ts
 
 ---
 
-## 4. Порядок реализации (после согласования плана)
+## 4. Порядок реализации
 
-| Шаг | Scope | Промт (будущий) |
-|-----|-------|-----------------|
-| 1 | Migration F5: `expenses` + RLS + audit trigger | новый промт «F5 implement» |
-| 2 | `useExpenses` + `FinanceExpensesPage` + nav + i18n | |
-| 3 | FinancialDashboard profit card + DataExportPage CSV | |
-| 4 | Migration F6: rates + settlements + payments + RLS + recalculate RPC | новый промт «F6 implement» |
-| 5 | Teacher rate UI in team settings | |
-| 6 | Replace `FinancePayrollPage` + teacher route exception + guard teacher delete | |
-| 7 | Permissions tests in `permissions.ts` self-check block | |
+| Шаг | Scope | Промт (§10) |
+|-----|-------|-------------|
+| 0 | План F5/F6 | **Промт 7** ✅ |
+| 1–3 | F5: migration + UI + dashboard/CSV | **Промт 19** |
+| 4–7 | F6: migration + rates + payroll UI + guards | **Промт 20** |
 
-**Один промт на подэтап** — не смешивать F5 и F6 в одном запросе.
+```
+Промт 7 ✅ → Промт 19 (F5) → Промт 20 (F6)
+```
+
+**Один промт на этап** — не смешивать F5 и F6 в одном запросе. F6 только после закрытия F5.
 
 ---
 

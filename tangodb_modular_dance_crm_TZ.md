@@ -346,7 +346,7 @@ Guardians · pipeline (`lead/active/archived` в clients) · F5 expenses · F6 p
 - [x] **F2:** `FinancialDashboard` — MoM %, line 6 мес., pie/bar по split абон./перс.
 - [x] **F3:** новые клиенты за период, топ-5, заполняемость — без тяжёлых N+1 на клиенте
 
-**F5/F6:** детальный план — `tangodb_expenses_payroll_plan.md` (Промт 7, 2026-06-26). Код — после согласования схемы.
+**F5/F6:** детальный план — `tangodb_expenses_payroll_plan.md` (Промт 7, 2026-06-26). Реализация — **Промт 19** (F5), **Промт 20** (F6).
 
 ---
 
@@ -762,7 +762,7 @@ SELECT sum(cnt) FROM (
 | 2 — UX-упрощения форм | ⏸ после gate/SaaS | Промт 5 |
 | 3 — UX настроек модулей | ⏸ | Промт 6 |
 | 4 — Guardians / pipeline | ⏸ по запросу | отдельный ТЗ |
-| F5–F6 — Expenses / Payroll | ✅ план (2026-06-26) | Промт 7 |
+| F5–F6 — Expenses / Payroll | ✅ план (2026-06-26) | Промт 7 → **Промт 19** (F5) → **Промт 20** (F6) |
 
 ### 9.1. Пошаговый план разработки (шаги и промты для ИИ)
 
@@ -797,6 +797,16 @@ SELECT sum(cnt) FROM (
 | Этап 2 — UX-упрощения форм | Промт 5 |
 | Этап 3 — UX настроек модулей | Промт 6 |
 | F5/F6 — expenses / payroll (сначала план) | Промт 7 ✅ → `tangodb_expenses_payroll_plan.md` |
+| **F5** — expenses (реализация) | **Промт 19** |
+| **F6** — payroll (реализация) | **Промт 20** (после F5) |
+
+**Следующая работа (после закрытия SaaS MVP и F1–F3):**
+
+```
+Промт 7 ✅ (план) → Промт 19 (F5 expenses) → Промт 20 (F6 payroll)
+```
+
+Один запрос = один промт. F6 не начинать до завершения F5.
 
 **Как давать задачу ИИ:** скопировать текст нужного промта из §10 целиком и указать «реализуй этап N». Не смешивать несколько промтов в одном запросе.
 
@@ -1174,6 +1184,95 @@ SELECT sum(cnt) FROM (
 
 Проверка: `npm run lint` в `tangodb-dev-console/`; list tenants; reset password modal; manual purge demo org; issue key from row; licensed org purge blocked; audit entries created.
 После кода обнови `.cursor/docs/ai/changelog.md`; RPC/storage decisions → `decision_log.md`.
+```
+
+### Промт 19 — F5: Expenses (реализация)
+
+```text
+Реализуй F5 из `tangodb_modular_dance_crm_TZ.md` §7.3 и `tangodb_expenses_payroll_plan.md` §2.
+
+Перед кодом прочитай `.cursor/docs/ai/AI_CONTEXT.md`, план и файлы:
+- `tangodb_expenses_payroll_plan.md` §2 (схема, RLS, permissions, UI)
+- `tangodb/supabase/migrations/20260630000001_v2_payments_module.sql` (паттерн RLS/audit)
+- `tangodb/src/pages/FinancePaymentsPage.tsx` (паттерн UI фильтров)
+- `tangodb/src/pages/FinancePage.tsx`, `FinanceLayout.tsx`
+- `tangodb/src/lib/i18n/navHelpers.ts`, `permissions.ts`, `orgModules.ts`
+- `tangodb/src/components/FinancialDashboard.tsx`
+- `tangodb/src/settings/pages/DataExportPage.tsx`
+- `tangodb/src/hooks/usePayments.ts`
+
+Цель: учёт операционных расходов — таблица `expenses`, CRUD для owner/director/accountant, маршрут `/finance/expenses`.
+
+Миграция (новый файл, старые не редактировать):
+- `expenses`: id, organization_id, amount (>0), category (rent/utilities/marketing/salary/other), description, expense_date, created_by, created_at, updated_at
+- CHECK `expense_date <= CURRENT_DATE`
+- RLS: SELECT/INSERT/UPDATE/DELETE — owner, director, accountant; teacher/admin/reception — нет
+- tenant consistency для created_by; audit trigger как у payments
+- `organization_allows_writes()` для demo read-only
+
+Клиент:
+- `PermissionAction`: `expenses.read`, `expenses.write` — owner/director/accountant
+- `tangodb/src/types/expense.ts`, `lib/expenseCategories.ts`, `hooks/useExpenses.ts`
+- `FinanceExpensesPage.tsx`: список, фильтры период+категория, «Итого», CRUD modal (AppSelect, DatePickerField max=today)
+- route `/finance/expenses` + nav item в `getFinanceNav` + иконка в `FinanceLayout`
+- module gate `finance_basic` — как у других finance routes
+- i18n: `finance.nav.expenses`, `finance.expenses.*` (ru/en)
+
+FinancialDashboard: карточки «Расходы за месяц» + «Прибыль» = выручка − расходы; подпись «без учёта кассы/банка»; **не** cash-balance.
+
+DataExportPage: CSV расходов за месяц (date, category, description, amount); доступ `finance.export && finance_basic`; без регрессии payments CSV.
+
+Не делать: ledger касса/банк, recurring, attachments, автосвязь F6 payroll с expenses.
+
+Проверка: `npm run lint` в `tangodb/`; CRUD owner/accountant; teacher/admin не видят раздел; expense_date в будущем — ошибка; finance_basic off — route скрыт; CSV expenses работает.
+После кода: `.cursor/docs/ai/changelog.md`; архитектурные решения → `decision_log.md`.
+```
+
+### Промт 20 — F6: Teacher Payroll (реализация)
+
+```text
+Реализуй F6 из `tangodb_modular_dance_crm_TZ.md` §7.3 и `tangodb_expenses_payroll_plan.md` §3.
+
+Предусловие: F5 (Промт 19) завершён.
+
+Перед кодом прочитай `.cursor/docs/ai/AI_CONTEXT.md`, план, `decision_log.md` (ставки MVP: % от атрибутированной выручки) и файлы:
+- `tangodb_expenses_payroll_plan.md` §3
+- `tangodb/src/lib/financeReports.ts` (`resolvePaymentTeacherId`, `buildTopTeachersByRevenue`)
+- `tangodb/src/pages/FinancePayrollPage.tsx` (заменить заглушку)
+- `tangodb/src/pages/FinancePage.tsx`, `FinanceLayout.tsx`
+- `tangodb/src/auth/routeGuards.tsx`, `App.tsx`
+- `tangodb/src/lib/permissions.ts`
+- `tangodb/src/settings/TeamSettingsPage.tsx`, `MemberProfileModal.tsx`
+- `tangodb/src/components/TeacherScopedDashboard.tsx`
+- `tangodb/supabase/migrations/20260630000001_v2_payments_module.sql`
+
+Цель: заменить заглушку `/finance/payroll` — начисления и выплаты преподавателям за месяц; teacher видит только свои строки.
+
+Ставки (вариант A, MVP): `teacher_pay_rates` — rate_percent 0–100, effective_from; одна активная ставка на teacher (последняя по effective_from). UI: поле «% от выручки» в team settings для role=teacher (owner/director edit).
+
+Миграция (новый файл):
+- `teacher_pay_rates`, `teacher_settlements` (period_year/month, amount_accrued, amount_paid, CHECK paid<=accrued), `teacher_settlement_payments` (partial payments audit)
+- RPC `recalculate_teacher_settlement(p_org_id, p_year, p_month)` — идемпотентный; accrued = sum(attributed payment amount × rate_percent/100); attribution как в `resolvePaymentTeacherId` (personal → teacher_member_id; subscription → первый teacher из schedule)
+- RLS: financial roles — full; teacher — read own settlements/payments only; rates write — owner/director
+- Guard: block deactivate/delete teacher member if future `schedule_slots` or `personal_lessons` exist (RPC или trigger — согласовать в decision_log)
+
+Permissions:
+- `payroll.read`, `payroll.write`, `payroll.read.own`, `payroll.rates.manage`
+- Route exception: `/finance/payroll` доступен teacher при `payroll.read.own` + `finance_basic`; **не** открывать весь finance panel teacher
+- `FinanceLayout`: для teacher скрыть sub-nav payments/revenue/debtors; только payroll content
+- Опционально: ссылка «Мои выплаты» в `TeacherScopedDashboard`
+
+UI:
+- owner/director/accountant: таблица teachers × месяц (accrued, paid, balance), drill-down partial payments, «Записать выплату», фильтр период
+- teacher: свои settlements (read-only), без write-кнопок
+- Удалить `finance.payroll.comingSoon`; i18n ru/en
+
+Hooks: `usePayroll.ts`, `types/payroll.ts`, `lib/payrollAccrual.ts` (preview); authoritative accrued — RPC. Invalidate on payment/rate change.
+
+Не делать: фикс за занятие, налоги, автодублирование teacher payout в F5 expenses.
+
+Проверка: `npm run lint`; owner records partial/full payment; teacher sees only own rows; accrued recalculates; paid>accrued blocked; teacher-with-future-lessons guard; stub removed; permissions self-check в `permissions.ts`.
+После кода: `.cursor/docs/ai/changelog.md`; решения по RPC/guard → `decision_log.md`.
 ```
 
 ---
