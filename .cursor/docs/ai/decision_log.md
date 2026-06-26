@@ -12,6 +12,14 @@
 
 ## Записи
 
+### S1 — Self-service demo onboarding (2026-06-26)
+
+- **Дата:** 2026-06-26
+- **Решение:** Вариант **A** для onboarding после self-service demo: RPC `create_self_service_demo_org` создаёт org с placeholder `Demo Organization` → пользователь проходит существующий `OnboardingWizardPage`. Turnstile проверяется на backend в Edge Functions; challenge хранится 24 ч по `owner_email_hash`. Emergency Recovery Code генерируется в Edge Function, хэш bcrypt в `user_recovery_codes`, plaintext показывается один раз на `VerifyEmailPage`. `data_purge_at = demo_expires_at` (strict 30 дней) для self-service demo.
+- **Контекст:** Промт 8 (S1) — email registration без demo-key.
+- **Альтернативы:** Вариант B — auto-complete onboarding в RPC с defaults → сразу dashboard; отклонено: теряется выбор пресета/модулей на первом входе.
+- **Почему так:** Переиспользует готовый wizard и `needsOnboarding`; полный функционал CRM после wizard; согласовано с §8.2 ТЗ.
+
 ### PL-4 — Раздел `/personal` (2026-06-24)
 
 - **Дата:** 2026-06-24

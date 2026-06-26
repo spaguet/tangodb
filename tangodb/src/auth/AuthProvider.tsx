@@ -22,7 +22,11 @@ interface AuthContextValue {
     widgetPayload?: TelegramLoginWidgetPayload;
   }) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  signUpWithEmail: (
+    email: string,
+    password: string,
+    displayName?: string
+  ) => Promise<{ needsEmailConfirmation: boolean }>;
   resetPasswordForEmail: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -151,17 +155,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, []);
 
-  const signUpWithEmail = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${getSiteUrl()}/auth/verify-email`,
-      },
-    });
-    if (error) throw error;
-    return { needsEmailConfirmation: !data.session };
-  }, []);
+  const signUpWithEmail = useCallback(
+    async (email: string, password: string, displayName?: string) => {
+      const trimmedName = displayName?.trim();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${getSiteUrl()}/auth/verify-email`,
+          data: trimmedName ? { display_name: trimmedName } : undefined,
+        },
+      });
+      if (error) throw error;
+      return { needsEmailConfirmation: !data.session };
+    },
+    []
+  );
 
   const resetPasswordForEmail = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {

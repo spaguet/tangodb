@@ -36,7 +36,7 @@
              скрытие отключённых модулей
              в nav / mobile / settings / routes
 
- 2   S1      Регистрация:                        §8.0–§8.4,   Промт 8
+ 2   S1      Регистрация:                        §8.0–§8.4,   Промт 8 ✅
              email + логин (display name)        §8.9
              + пароль; verify email → demo CRM
              без ключа; Turnstile; Emergency
@@ -123,8 +123,8 @@ KNOWN INCOMPATIBILITIES — что нужно исправить
 =======================================================
 (Проверено 2026-06-26, подробнее — §9.1 ТЗ)
 
-• RegisterPage    → редирект на /activate-key
-                    (цель: auto-create demo org после verify)
+• RegisterPage    → ✅ S1 (2026-06-26): verify email → auto demo org
+                    (lifetime key flow через /activate-key сохранён)
 • Telegram        → неизвестный ID → 403
                     (цель: self-service demo org)
 • LicenseSettingsPage → Stripe «Месяц/Год» активны
