@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-26 — fix: `owner_email_hash` migration — `search_path = public, extensions` для `digest()` на hosted Supabase.
 2026-06-26 — S1 (Промт 8): self-service demo email — поле «Логин», Turnstile на `/register`, Edge Functions `verify-self-service-registration` + `create-self-service-demo-org`, RPC `create_self_service_demo_org`, recovery code (bcrypt hash), `VerifyEmailPage` auto-create demo без `/activate-key`; миграция `20260721000001_self_service_demo_registration.sql`; onboarding вариант A (wizard).
 2026-06-26 — Этап 1 (Промт 1): module gate — `finance_basic` в `OrgModules`, `normalizeOrgModules`, gating в nav/mobile/settings/routes/dashboard/export; миграция `20260720000001_finance_basic_module_default.sql`. — единое название вместо «Календарь и журнал» / «Журнал посещений и календарь».
 2026-06-25 — Персональные уроки, форма «Продажа»: подпись «Стоимость за один урок»; кнопка «Забронировать» в режиме «Списать с пакета» на всю ширину.

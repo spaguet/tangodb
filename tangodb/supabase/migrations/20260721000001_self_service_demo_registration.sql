@@ -1,6 +1,5 @@
 -- S1: Self-service demo registration (email + Turnstile + recovery code)
-
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- pgcrypto on Supabase lives in schema `extensions` (pre-enabled).
 
 -- =============================================================================
 -- 1. Anti-abuse retention registry (no public read)
@@ -73,7 +72,7 @@ CREATE OR REPLACE FUNCTION owner_email_hash(p_email text)
 RETURNS text
 LANGUAGE sql
 IMMUTABLE
-SET search_path = public
+SET search_path = public, extensions
 AS $$
   SELECT encode(digest(lower(trim(coalesce(p_email, ''))), 'sha256'), 'hex');
 $$;
