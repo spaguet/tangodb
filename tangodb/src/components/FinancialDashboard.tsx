@@ -47,6 +47,7 @@ import { useClients } from "../hooks/useClients";
 import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { usePaymentsTrend, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
+import { sumExpenses, useExpensesForMonth } from "../hooks/useExpenses";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
@@ -232,6 +233,7 @@ export default function FinancialDashboard() {
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
 
   const paymentsQuery = usePaymentsTrend(statsMonth);
+  const expensesQuery = useExpensesForMonth(statsMonth);
   const debtorsQuery = useFinancialDebtors();
   const clientsQuery = useClients();
   const attendanceQuery = useAttendanceRecords(statsMonth);
@@ -258,6 +260,13 @@ export default function FinancialDashboard() {
     const monthPayments = paymentsInMonth(paymentsQuery.data ?? [], statsMonth);
     return aggregatePaymentStats(monthPayments);
   }, [paymentsQuery.data, statsMonth]);
+
+  const expensesTotal = useMemo(
+    () => sumExpenses(expensesQuery.data ?? []),
+    [expensesQuery.data]
+  );
+
+  const profit = stats.total - expensesTotal;
 
   const momPercent = useMemo(() => {
     const previousMonth = shiftMonth(statsMonth, -1);
@@ -402,6 +411,30 @@ export default function FinancialDashboard() {
             <p className="text-[10px] text-slate-500 mt-0.5">
               {t("dashboard.receivablesBreakdown", { subs: lowBalanceCount, personal: unpaidPersonalCount })}
             </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
+              {t("dashboard.expensesMonth")}
+            </p>
+            <p className="text-xl font-semibold text-rose-700 mt-0.5">
+              {expensesQuery.isLoading ? "…" : formatCurrency(expensesTotal)}
+            </p>
+          </div>
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
+              {t("dashboard.profit")}
+            </p>
+            <p
+              className={`text-xl font-semibold mt-0.5 ${
+                profit >= 0 ? "text-emerald-700" : "text-rose-700"
+              }`}
+            >
+              {expensesQuery.isLoading ? "…" : formatCurrency(profit)}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.profitHint")}</p>
           </div>
         </div>
 

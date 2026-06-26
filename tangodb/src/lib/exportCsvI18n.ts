@@ -8,6 +8,7 @@ export interface CsvExportLabels {
   attendance: Record<string, string>;
   personalLessons: Record<string, string>;
   payments: Record<string, string>;
+  expenses: Record<string, string>;
   debtors: Record<string, string>;
   subscriptionActive: string;
   subscriptionFinished: string;
@@ -25,8 +26,10 @@ export interface CsvExportLabels {
   skipAttendance: (month: string) => string;
   skipPersonal: (month: string) => string;
   skipPayments: string;
+  skipExpenses: string;
   skipDebtors: string;
   formatDateTime: (iso: string) => string;
+  formatDate: (isoDate: string) => string;
 }
 
 export function getCsvExportLabels(locale?: string | null): CsvExportLabels {
@@ -77,6 +80,12 @@ export function getCsvExportLabels(locale?: string | null): CsvExportLabels {
       method: col("csv.column.method"),
       amount: col("csv.column.amount"),
     },
+    expenses: {
+      date: col("csv.column.date"),
+      category: col("csv.column.category"),
+      description: col("csv.column.description"),
+      amount: col("csv.column.amount"),
+    },
     debtors: {
       client: col("csv.column.client"),
       contact: col("csv.column.contact"),
@@ -117,6 +126,7 @@ export function getCsvExportLabels(locale?: string | null): CsvExportLabels {
     skipAttendance: (month: string) => t(locale, "csv.skip.attendance", { month }),
     skipPersonal: (month: string) => t(locale, "csv.skip.personal", { month }),
     skipPayments: col("csv.skip.payments"),
+    skipExpenses: col("csv.skip.expenses"),
     skipDebtors: col("csv.skip.debtors"),
     formatDateTime: (iso: string) => {
       const d = new Date(iso);
@@ -127,6 +137,15 @@ export function getCsvExportLabels(locale?: string | null): CsvExportLabels {
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
+      });
+    },
+    formatDate: (isoDate: string) => {
+      const d = new Date(`${isoDate}T12:00:00`);
+      if (Number.isNaN(d.getTime())) return isoDate;
+      return formatDateTimeLocale(d, locale, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
       });
     },
   };

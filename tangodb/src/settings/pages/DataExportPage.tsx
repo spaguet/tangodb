@@ -10,6 +10,7 @@ import { useSubscriptions } from "../../hooks/useSubscriptions";
 import { usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { useAttendanceRecords } from "../../hooks/useAttendance";
 import { usePayments } from "../../hooks/usePayments";
+import { useExpenses } from "../../hooks/useExpenses";
 import { useFinancialDebtors } from "../../hooks/useFinancialDebtors";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { canAccessDataExportSection, permissionOptionsFromSettings } from "../../lib/permissions";
@@ -208,11 +209,12 @@ function FinancialExportSection() {
 
   const range = monthDateRange(statsMonth);
   const paymentsQuery = usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
+  const expensesQuery = useExpenses({ dateFrom: range.dateFrom, dateTo: range.dateTo });
   const debtorsQuery = useFinancialDebtors();
 
-  const isLoading = paymentsQuery.isLoading || debtorsQuery.isLoading;
-  const isError = paymentsQuery.isError || debtorsQuery.isError;
-  const error = paymentsQuery.error ?? debtorsQuery.error;
+  const isLoading = paymentsQuery.isLoading || expensesQuery.isLoading || debtorsQuery.isLoading;
+  const isError = paymentsQuery.isError || expensesQuery.isError || debtorsQuery.isError;
+  const error = paymentsQuery.error ?? expensesQuery.error ?? debtorsQuery.error;
 
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
 
@@ -221,6 +223,10 @@ function FinancialExportSection() {
       {
         id: "payments",
         label: t("settings.export.payments", { month: formatMonthTitle(statsMonth, locale) }),
+      },
+      {
+        id: "expenses",
+        label: t("settings.export.expenses", { month: formatMonthTitle(statsMonth, locale) }),
       },
       { id: "debtors", label: t("settings.export.debtors") },
     ],
@@ -233,6 +239,7 @@ function FinancialExportSection() {
     try {
       const result = await exportAllFinancialCsv({
         payments: paymentsQuery.data ?? [],
+        expenses: expensesQuery.data ?? [],
         debtors: debtorsQuery.data ?? [],
         statsMonth,
         locale,

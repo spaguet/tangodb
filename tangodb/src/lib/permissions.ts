@@ -58,6 +58,8 @@ export type PermissionAction =
   | "reports.financial"
   | "finance.read"
   | "finance.export"
+  | "expenses.read"
+  | "expenses.write"
   | "payments.write"
   | "payments.read.operational"
   | "settings.manage"
@@ -100,6 +102,7 @@ const WRITE_ACTIONS = new Set<PermissionAction>([
   "prices.write",
   "disciplines.write",
   "payments.write",
+  "expenses.write",
   "settings.manage",
   "team.manage",
   "license.activate",
@@ -289,6 +292,8 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
 
     case "finance.read":
     case "finance.export":
+    case "expenses.read":
+    case "expenses.write":
       return FINANCIAL_READ_ROLES.includes(role);
 
     case "payments.write":

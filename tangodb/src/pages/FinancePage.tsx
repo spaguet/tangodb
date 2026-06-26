@@ -3,6 +3,7 @@ import FinanceLayout from "./FinanceLayout";
 import FinancePaymentsPage from "./FinancePaymentsPage";
 import FinanceRevenuePage from "./FinanceRevenuePage";
 import FinanceDebtorsPage from "./FinanceDebtorsPage";
+import FinanceExpensesPage from "./FinanceExpensesPage";
 import FinancePayrollPage from "./FinancePayrollPage";
 
 export default function FinancePage() {
@@ -13,6 +14,7 @@ export default function FinancePage() {
         <Route path="payments" element={<FinancePaymentsPage />} />
         <Route path="revenue" element={<FinanceRevenuePage />} />
         <Route path="debtors" element={<FinanceDebtorsPage />} />
+        <Route path="expenses" element={<FinanceExpensesPage />} />
         <Route path="payroll" element={<FinancePayrollPage />} />
       </Route>
       <Route path="*" element={<Navigate to="payments" replace />} />

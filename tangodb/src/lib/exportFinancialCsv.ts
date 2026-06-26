@@ -1,8 +1,11 @@
 import type { Payment } from "../types";
+import type { Expense } from "../types/expense";
 import type { DebtorEntry } from "./financeReports";
 import { exportCsvItems } from "./exportCsv";
 import type { CsvExportMethod, CsvManualSave } from "./exportCsv";
 import { getCsvExportLabels } from "./exportCsvI18n";
+import { expenseCategoryKey } from "./expenseCategories";
+import { t } from "./i18n";
 
 function paymentSourceLabel(
   payment: Payment,
@@ -20,6 +23,7 @@ function todayDateStr(): string {
 
 export interface FinancialExportParams {
   payments: Payment[];
+  expenses: Expense[];
   debtors: DebtorEntry[];
   statsMonth: string;
   locale?: string | null;
@@ -55,6 +59,23 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
     });
   } else {
     skipped.push(labels.skipPayments);
+  }
+
+  const expenseRows = params.expenses.map((e) => ({
+    date: labels.formatDate(e.expenseDate),
+    category: t(locale, expenseCategoryKey(e.category)),
+    description: e.description || "—",
+    amount: e.amount,
+  }));
+
+  if (expenseRows.length > 0) {
+    items.push({
+      rows: expenseRows,
+      filename: `tangodb_expenses_${statsMonth}_${dateStr}.csv`,
+      columnLabels: labels.expenses,
+    });
+  } else {
+    skipped.push(labels.skipExpenses);
   }
 
   const debtorRows = params.debtors.map((d) => ({

@@ -10,6 +10,7 @@ interface DatePickerFieldProps {
   value: string;
   onChange: (isoDate: string) => void;
   min?: string;
+  max?: string;
   required?: boolean;
   className?: string;
 }
@@ -47,6 +48,7 @@ export default function DatePickerField({
   value,
   onChange,
   min,
+  max,
   required,
   className,
 }: DatePickerFieldProps) {
@@ -100,8 +102,10 @@ export default function DatePickerField({
   }, [value]);
 
   const isDisabled = (day: Date): boolean => {
-    if (!min) return false;
-    return toISODateLocal(day) < min;
+    const iso = toISODateLocal(day);
+    if (min && iso < min) return true;
+    if (max && iso > max) return true;
+    return false;
   };
 
   const handleSelect = (day: Date) => {

@@ -125,14 +125,14 @@
 
   Промт 7 ✅  План F5/F6 → tangodb_expenses_payroll_plan.md
        ↓
-  Промт 19    F5 — Expenses: миграция + /finance/expenses + dashboard profit + CSV
+  Промт 19 ✅  F5 — Expenses: миграция + /finance/expenses + dashboard profit + CSV
        ↓      (не начинать F6, пока F5 не закрыт)
   Промт 20    F6 — Payroll: ставки %, settlements, выплаты, замена заглушки /finance/payroll
 
 Как дать задачу:
   «Реализуй Промт 19» + скопировать блок ```text``` из §10 целиком.
 
-  F5   Expenses (расходы)              §7.3    Промт 19 🔲
+  F5   Expenses (расходы)              §7.3    Промт 19 ✅
   F6   Payroll (зарплаты преподав.)    §7.3    Промт 20 🔲
 
 =======================================================
