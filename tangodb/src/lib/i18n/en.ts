@@ -947,6 +947,11 @@ export const EN: Record<I18nKey, string> = {
   "settings.org.subtitle": "{{name}} · CRM preset and modules.",
   "settings.org.preset": "Organization preset",
   "settings.org.modules": "Modules",
+  "orgModules.group.crmSections": "CRM sections",
+  "orgModules.group.lessonFormats": "Lesson formats",
+  "orgModules.group.infrastructure": "Infrastructure",
+  "orgModules.disableHint":
+    "Disabling a module hides its section in the UI. Your data is kept.",
   "settings.org.teachersEditDisciplines": "Teachers can edit disciplines",
   "settings.org.roleOverrides": "Extended role permissions",
   "settings.org.lowBalanceThreshold": "Low balance threshold",

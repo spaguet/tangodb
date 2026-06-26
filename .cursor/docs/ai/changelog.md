@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-26 — Этап 3 (Промт 6): UX настроек модулей — `ORG_MODULE_GROUPS` в `orgModules.ts` (Разделы CRM / Форматы занятий / Инфраструктура); группировка чекбоксов + пояснение «выключение скрывает UI, данные сохраняются» в `OrganizationSettingsPage` и `OnboardingWizardPage`; i18n `orgModules.group.*`, `orgModules.disableHint`.
 2026-06-26 — Этап 2 (Промт 5): UX-упрощения форм — `shouldShowLocationPicker` / `shouldShowDisciplinePicker` в `orgModules.ts`; `LocationSelect` + auto-hide в `DisciplineSelect` при `locations: false` / одной локации и `multi_discipline: false` / одном направлении; формы расписания/продажи/фильтры (`SchedulePanel`, `PersonalLessonSaleForm`, `EditLessonPopup`, `AddGroupLessonForm`, `SubscriptionsPanel`, `PersonalLessonFilters`, `LocationTariffField`).
 2026-06-26 — F3 (Промт 4): расширенная аналитика dashboard — `financeReports.ts`: новые клиенты за месяц, топ-5 клиентов/преподавателей по выручке, заполняемость (present/absent); `FinancialDashboard`: карточки + rank lists; client-side агрегация через `useClients`, `useAttendanceRecords`, `usePersonalLessons`, `useSchedule`, `useSubscriptionGroups`, `useTeamMembers`; i18n `dashboard.newClients/occupancy/top*`.
 2026-06-26 — F2 (Промт 3): owner finance KPI — `financeReports.ts`: MoM %, 6-month series, revenue split; `usePaymentsTrend`; `FinancialDashboard`: line trend + stacked bar split, MoM на карточке выручки; i18n `dashboard.mom*`, `dashboard.revenueTrend/Split`.

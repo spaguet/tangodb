@@ -944,6 +944,11 @@ export const RU: Record<I18nKey, string> = {
   "settings.org.subtitle": "{{name}} · пресет и модули CRM.",
   "settings.org.preset": "Пресет организации",
   "settings.org.modules": "Модули",
+  "orgModules.group.crmSections": "Разделы CRM",
+  "orgModules.group.lessonFormats": "Форматы занятий",
+  "orgModules.group.infrastructure": "Инфраструктура",
+  "orgModules.disableHint":
+    "Выключение модуля скрывает соответствующий раздел в интерфейсе. Данные сохраняются.",
   "settings.org.teachersEditDisciplines": "Преподаватели могут редактировать направления",
   "settings.org.roleOverrides": "Расширенные права ролей",
   "settings.org.lowBalanceThreshold": "Порог «мало занятий»",

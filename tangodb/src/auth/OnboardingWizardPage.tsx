@@ -6,6 +6,7 @@ import { useOrganization } from "../organization/OrganizationProvider";
 import type { OrgModules, OrgPreset } from "../types/organization";
 import { PRESET_MODULES } from "../types/organization";
 import { CURRENCY_SELECT_OPTIONS, DEFAULT_CURRENCY_CODE } from "../lib/currencies";
+import { ORG_MODULE_GROUPS, type OrgModuleGroupId } from "../lib/orgModules";
 import { useGuestI18n } from "../hooks/useI18n";
 import type { I18nKey } from "../lib/i18n/keys";
 import {
@@ -48,7 +49,7 @@ const PRESET_VALUES: OrgPreset[] = [
   "custom",
 ];
 
-const MODULE_I18N: Partial<Record<keyof OrgModules, I18nKey>> = {
+const MODULE_I18N: Record<keyof OrgModules, I18nKey> = {
   group_subscriptions: "onboarding.module.groupSubscriptions",
   personal_lessons: "onboarding.module.personalLessons",
   finance_basic: "onboarding.module.financeBasic",
@@ -58,15 +59,11 @@ const MODULE_I18N: Partial<Record<keyof OrgModules, I18nKey>> = {
   locations: "onboarding.module.locations",
 };
 
-const MODULE_KEYS: (keyof OrgModules)[] = [
-  "group_subscriptions",
-  "personal_lessons",
-  "finance_basic",
-  "pair_subscriptions",
-  "trio_lessons",
-  "multi_discipline",
-  "locations",
-];
+const MODULE_GROUP_LABEL_KEYS: Record<OrgModuleGroupId, I18nKey> = {
+  crm_sections: "orgModules.group.crmSections",
+  lesson_formats: "orgModules.group.lessonFormats",
+  infrastructure: "orgModules.group.infrastructure",
+};
 
 const LOCALE_VALUES = [
   { value: "ru-RU", key: "common.locale.ru" as const },
@@ -246,24 +243,29 @@ export default function OnboardingWizardPage() {
       )}
 
       {step === "modules" && (
-        <div className="space-y-2">
-          {MODULE_KEYS.map((key) => {
-            const i18nKey = MODULE_I18N[key];
-            return (
-              <label
-                key={key}
-                className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
-              >
-                <span className="text-sm text-slate-700">{i18nKey ? t(i18nKey) : key}</span>
-                <input
-                  type="checkbox"
-                  checked={modules[key]}
-                  onChange={() => toggleModule(key)}
-                  className="w-4 h-4 accent-indigo-600"
-                />
-              </label>
-            );
-          })}
+        <div className="space-y-4">
+          <p className="text-xs text-slate-500">{t("orgModules.disableHint")}</p>
+          {ORG_MODULE_GROUPS.map((group) => (
+            <div key={group.id} className="space-y-2">
+              <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                {t(MODULE_GROUP_LABEL_KEYS[group.id])}
+              </p>
+              {group.keys.map((key) => (
+                <label
+                  key={key}
+                  className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
+                >
+                  <span className="text-sm text-slate-700">{t(MODULE_I18N[key])}</span>
+                  <input
+                    type="checkbox"
+                    checked={modules[key]}
+                    onChange={() => toggleModule(key)}
+                    className="w-4 h-4 accent-indigo-600"
+                  />
+                </label>
+              ))}
+            </div>
+          ))}
         </div>
       )}
 

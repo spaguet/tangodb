@@ -23,6 +23,29 @@ export function isModuleEnabled(modules: OrgModules, key: keyof OrgModules): boo
   return modules[key];
 }
 
+export type OrgModuleGroupId = "crm_sections" | "lesson_formats" | "infrastructure";
+
+export interface OrgModuleGroup {
+  id: OrgModuleGroupId;
+  keys: (keyof OrgModules)[];
+}
+
+/** Grouped module toggles for settings / onboarding (Этап 3). */
+export const ORG_MODULE_GROUPS: OrgModuleGroup[] = [
+  {
+    id: "crm_sections",
+    keys: ["group_subscriptions", "personal_lessons", "finance_basic"],
+  },
+  {
+    id: "lesson_formats",
+    keys: ["pair_subscriptions", "trio_lessons"],
+  },
+  {
+    id: "infrastructure",
+    keys: ["multi_discipline", "locations"],
+  },
+];
+
 /** Show location picker in forms when module is on and org has more than one location. */
 export function shouldShowLocationPicker(modules: OrgModules, locationCount: number): boolean {
   return isModuleEnabled(modules, "locations") && locationCount > 1;

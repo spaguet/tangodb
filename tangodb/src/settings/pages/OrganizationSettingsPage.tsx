@@ -10,6 +10,7 @@ import { useSettings } from "../SettingsProvider";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { I18nKey } from "../../lib/i18n/keys";
+import { ORG_MODULE_GROUPS, type OrgModuleGroupId } from "../../lib/orgModules";
 
 const PRESET_KEYS: Record<OrgPreset, I18nKey> = {
   dance_school: "settings.org.preset.danceSchool",
@@ -19,15 +20,21 @@ const PRESET_KEYS: Record<OrgPreset, I18nKey> = {
   custom: "settings.org.preset.custom",
 };
 
-const MODULE_KEYS: { key: keyof OrgModules; labelKey: I18nKey }[] = [
-  { key: "group_subscriptions", labelKey: "settings.org.module.groupSubscriptions" },
-  { key: "personal_lessons", labelKey: "settings.org.module.personalLessons" },
-  { key: "finance_basic", labelKey: "settings.org.module.financeBasic" },
-  { key: "pair_subscriptions", labelKey: "settings.org.module.pairSubscriptions" },
-  { key: "trio_lessons", labelKey: "settings.org.module.trioLessons" },
-  { key: "multi_discipline", labelKey: "settings.org.module.multiDiscipline" },
-  { key: "locations", labelKey: "settings.org.module.locations" },
-];
+const MODULE_LABEL_KEYS: Record<keyof OrgModules, I18nKey> = {
+  group_subscriptions: "settings.org.module.groupSubscriptions",
+  personal_lessons: "settings.org.module.personalLessons",
+  finance_basic: "settings.org.module.financeBasic",
+  pair_subscriptions: "settings.org.module.pairSubscriptions",
+  trio_lessons: "settings.org.module.trioLessons",
+  multi_discipline: "settings.org.module.multiDiscipline",
+  locations: "settings.org.module.locations",
+};
+
+const MODULE_GROUP_LABEL_KEYS: Record<OrgModuleGroupId, I18nKey> = {
+  crm_sections: "orgModules.group.crmSections",
+  lesson_formats: "orgModules.group.lessonFormats",
+  infrastructure: "orgModules.group.infrastructure",
+};
 
 const ROLE_OVERRIDE_KEYS: {
   key:
@@ -159,20 +166,30 @@ export default function OrganizationSettingsPage() {
           ))}
         </AppSelect>
 
-        <div className="space-y-2">
-          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
-            {t("settings.org.modules")}
-          </p>
-          {MODULE_KEYS.map(({ key, labelKey }) => (
-            <label key={key} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={modules[key]}
-                onChange={() => toggleModule(key)}
-                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              {t(labelKey)}
-            </label>
+        <div className="space-y-4">
+          <div>
+            <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+              {t("settings.org.modules")}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">{t("orgModules.disableHint")}</p>
+          </div>
+          {ORG_MODULE_GROUPS.map((group) => (
+            <div key={group.id} className="space-y-2">
+              <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                {t(MODULE_GROUP_LABEL_KEYS[group.id])}
+              </p>
+              {group.keys.map((key) => (
+                <label key={key} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={modules[key]}
+                    onChange={() => toggleModule(key)}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  {t(MODULE_LABEL_KEYS[key])}
+                </label>
+              ))}
+            </div>
           ))}
         </div>
 
