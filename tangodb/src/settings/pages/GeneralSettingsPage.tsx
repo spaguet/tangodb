@@ -5,6 +5,7 @@ import RequirePermission from "../../components/RequirePermission";
 import { useToast } from "../../App";
 import { CURRENCY_SELECT_OPTIONS, DEFAULT_CURRENCY_CODE } from "../../lib/currencies";
 import { getLocaleOptions, getWeekStartOptions, setGuestLocale } from "../../lib/i18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import { useI18n } from "../../hooks/useI18n";
 import { useSettings } from "../SettingsProvider";
 
@@ -55,7 +56,7 @@ export default function GeneralSettingsPage() {
       branding_name: brandingName.trim() || null,
     });
     if (!res.success) {
-      toast(res.error ?? t("settings.saveError"), "error");
+      toast(resolveMutationError(res.error, "settings.saveError", t), "error");
     } else {
       setGuestLocale(locale);
       toast(t("settings.saveSuccess"), "success");

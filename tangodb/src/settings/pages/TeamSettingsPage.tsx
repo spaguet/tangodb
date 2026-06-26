@@ -472,7 +472,7 @@ export default function TeamSettingsPage() {
                 className="flex justify-between gap-2 text-[11px] text-slate-500 py-1 border-b border-slate-50 last:border-0"
               >
                 <span>
-                  {auditTableLabel(row.table_name)} · {row.operation}
+                  {auditTableLabel(row.table_name, locale)} · {row.operation}
                 </span>
                 <span className="shrink-0 text-slate-400">
                   {formatDateTime(row.changed_at, {

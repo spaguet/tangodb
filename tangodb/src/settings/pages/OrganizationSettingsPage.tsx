@@ -8,6 +8,7 @@ import type { OrgModules, OrgPreset } from "../../types/organization";
 import { PRESET_MODULES } from "../../types/organization";
 import { useSettings } from "../SettingsProvider";
 import { useI18n } from "../../hooks/useI18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { I18nKey } from "../../lib/i18n/keys";
 
 const PRESET_KEYS: Record<OrgPreset, I18nKey> = {
@@ -129,7 +130,7 @@ export default function OrganizationSettingsPage() {
       low_balance_threshold: lowBalanceThreshold,
     });
     if (!res.success) {
-      toast(res.error ?? t("settings.saveError"), "error");
+      toast(resolveMutationError(res.error, "settings.saveError", t), "error");
     } else {
       toast(t("settings.org.saveSuccess"), "success");
       setDirty(false);

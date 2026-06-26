@@ -411,6 +411,9 @@ export const EN: Record<I18nKey, string> = {
   "team.role.reception": "Cashier",
   "team.role.teacher": "Teacher",
   "team.role.accountant": "Accountant",
+  "team.auditTable.members": "Team",
+  "team.auditTable.invites": "Invites",
+  "team.auditTable.settings": "Settings",
 
   // clients
   "clients.tab.active": "Active",

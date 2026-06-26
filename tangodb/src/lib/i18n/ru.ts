@@ -408,6 +408,9 @@ export const RU: Record<I18nKey, string> = {
   "team.role.reception": "Кассир",
   "team.role.teacher": "Преподаватель",
   "team.role.accountant": "Бухгалтер",
+  "team.auditTable.members": "Команда",
+  "team.auditTable.invites": "Приглашения",
+  "team.auditTable.settings": "Настройки",
 
   // clients
   "clients.tab.active": "Активные",

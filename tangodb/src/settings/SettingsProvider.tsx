@@ -56,7 +56,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const updateMutation = useMutation({
     mutationFn: async (patch: SettingsPatch) => {
       if (!organizationId) {
-        return { success: false as const, error: "Организация не выбрана" };
+        return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
       const { error } = await supabase

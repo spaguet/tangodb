@@ -4,6 +4,7 @@ import RequirePermission from "../../components/RequirePermission";
 import { useToast } from "../../App";
 import { useSettings } from "../SettingsProvider";
 import { useI18n } from "../../hooks/useI18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 
 export default function SubscriptionSettingsPage() {
   const { t } = useI18n();
@@ -32,7 +33,7 @@ export default function SubscriptionSettingsPage() {
       freeze_deducts_lesson: freezeDeductsLesson,
     });
     if (!res.success) {
-      toast(res.error ?? t("settings.saveError"), "error");
+      toast(resolveMutationError(res.error, "settings.saveError", t), "error");
     } else {
       toast(t("settings.subscriptions.saveSuccess"), "success");
       setDirty(false);

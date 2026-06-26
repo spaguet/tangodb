@@ -373,6 +373,9 @@ export type I18nKey =
   | "team.role.reception"
   | "team.role.teacher"
   | "team.role.accountant"
+  | "team.auditTable.members"
+  | "team.auditTable.invites"
+  | "team.auditTable.settings"
   // clients
   | "clients.tab.active"
   | "clients.tab.archive"

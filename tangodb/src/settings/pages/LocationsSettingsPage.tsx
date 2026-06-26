@@ -15,6 +15,7 @@ import {
 } from "../../hooks/useLocations";
 import { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import { useI18n } from "../../hooks/useI18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
@@ -46,7 +47,7 @@ export default function LocationsSettingsPage() {
   const handleAdd = async () => {
     const res = await addLocation.mutateAsync({ name: newName, address: newAddress });
     if (!res.success) {
-      toast(res.error ?? t("settings.locations.addFailed"), "error");
+      toast(resolveMutationError(res.error, "settings.locations.addFailed", t), "error");
     } else {
       toast(t("settings.locations.addSuccess"), "success");
       setNewName("");
@@ -69,7 +70,7 @@ export default function LocationsSettingsPage() {
       address: editAddress,
     });
     if (!res.success) {
-      toast(res.error ?? t("settings.saveError"), "error");
+      toast(resolveMutationError(res.error, "settings.saveError", t), "error");
     } else {
       toast(t("settings.locations.updateSuccess"), "success");
       setEditing(null);
@@ -80,7 +81,7 @@ export default function LocationsSettingsPage() {
     if (!deleteTarget) return;
     const res = await deleteLocation.mutateAsync(deleteTarget.id);
     if (!res.success) {
-      toast(res.error ?? t("common.deleteFailed"), "error");
+      toast(resolveMutationError(res.error, "common.deleteFailed", t), "error");
     } else {
       toast(t("settings.locations.deleteSuccess", { name: deleteTarget.name }), "success");
       setDeleteTarget(null);

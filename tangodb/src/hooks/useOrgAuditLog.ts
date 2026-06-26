@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { t, type I18nKey } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
@@ -18,6 +19,12 @@ const TEAM_TABLES = new Set([
   "organization_invites",
   "organization_settings",
 ]);
+
+const AUDIT_TABLE_KEYS: Record<string, I18nKey> = {
+  organization_members: "team.auditTable.members",
+  organization_invites: "team.auditTable.invites",
+  organization_settings: "team.auditTable.settings",
+};
 
 export function useOrgAuditLog(limit = 30) {
   const { enabled, organizationId, withOrgId } = useOrgQueryScope();
@@ -41,15 +48,7 @@ export function useOrgAuditLog(limit = 30) {
   });
 }
 
-export function auditTableLabel(table: string): string {
-  switch (table) {
-    case "organization_members":
-      return "Команда";
-    case "organization_invites":
-      return "Приглашения";
-    case "organization_settings":
-      return "Настройки";
-    default:
-      return table;
-  }
+export function auditTableLabel(table: string, locale?: string | null): string {
+  const key = AUDIT_TABLE_KEYS[table];
+  return key ? t(locale, key) : table;
 }
