@@ -1,8 +1,62 @@
 import type { OrgModules } from "../types/organization";
-import { PRESET_MODULES } from "../types/organization";
 import type { PriceTariffRef } from "./utils";
 
-export const DEFAULT_ORG_MODULES: OrgModules = PRESET_MODULES.dance_school;
+export const DEFAULT_ORG_MODULES: OrgModules = {
+  group_subscriptions: true,
+  personal_lessons: true,
+  pair_subscriptions: true,
+  trio_lessons: true,
+  multi_discipline: true,
+  locations: true,
+  finance_basic: true,
+};
+
+export function normalizeOrgModules(raw: Partial<OrgModules> | null | undefined): OrgModules {
+  const merged = { ...DEFAULT_ORG_MODULES, ...(raw ?? {}) };
+  return {
+    ...merged,
+    finance_basic: raw?.finance_basic ?? true,
+  };
+}
+
+export function isModuleEnabled(modules: OrgModules, key: keyof OrgModules): boolean {
+  return modules[key];
+}
+
+export type ModuleGatedPanel =
+  | "finance"
+  | "subscriptions"
+  | "subscriptions_sell"
+  | "personal"
+  | "personal_sell";
+
+export function moduleKeyFromPanel(panel: string): keyof OrgModules | null {
+  switch (panel) {
+    case "finance":
+      return "finance_basic";
+    case "subscriptions":
+    case "subscriptions_sell":
+      return "group_subscriptions";
+    case "personal":
+    case "personal_sell":
+      return "personal_lessons";
+    default:
+      return null;
+  }
+}
+
+export type ModuleGatedSettingsSection = "disciplines" | "locations";
+
+export function moduleKeyFromSettingsSection(section: string): keyof OrgModules | null {
+  switch (section) {
+    case "disciplines":
+      return "multi_discipline";
+    case "locations":
+      return "locations";
+    default:
+      return null;
+  }
+}
 
 export type GroupParticipantFormat = "solo" | "pair" | "monthly_unlimited";
 export type PrivatePackageFormat = "solo" | "pair" | "trio";

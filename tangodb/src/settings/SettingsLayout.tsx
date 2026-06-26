@@ -11,7 +11,17 @@ import {
 } from "lucide-react";
 import { usePermissions } from "../hooks/usePermissions";
 import { useOrganization } from "../organization/OrganizationProvider";
-import { canAccessSettingsSection, permissionOptionsFromSettings, type SettingsSectionId } from "../lib/permissions";
+import {
+  canAccessDataExportSection,
+  canAccessSettingsSection,
+  permissionOptionsFromSettings,
+  type SettingsSectionId,
+} from "../lib/permissions";
+import {
+  isModuleEnabled,
+  moduleKeyFromSettingsSection,
+  normalizeOrgModules,
+} from "../lib/orgModules";
 
 interface SettingsNavItem {
   id: SettingsSectionId;
@@ -34,14 +44,18 @@ const SETTINGS_NAV: SettingsNavItem[] = [
 export default function SettingsLayout() {
   const { role, scope, isReadOnly, membership } = usePermissions();
   const { settings } = useOrganization();
+  const modules = normalizeOrgModules(settings?.modules);
   const options = permissionOptionsFromSettings(settings, scope, {
     restrictedAdmin: membership?.meta?.restricted_admin ?? false,
     isReadOnly,
   });
 
-  const visibleNav = SETTINGS_NAV.filter((item) =>
-    canAccessSettingsSection(role, item.id, options)
-  );
+  const visibleNav = SETTINGS_NAV.filter((item) => {
+    const moduleKey = moduleKeyFromSettingsSection(item.id);
+    if (moduleKey && !isModuleEnabled(modules, moduleKey)) return false;
+    if (item.id === "data" && !canAccessDataExportSection(role, modules, options)) return false;
+    return canAccessSettingsSection(role, item.id, options);
+  });
 
   return (
     <div className="flex flex-col lg:flex-row gap-5 lg:gap-8">

@@ -38,6 +38,7 @@ const CURRENCY_OPTIONS = [
 const MODULE_LABELS: { key: keyof OrgModules; label: string }[] = [
   { key: "group_subscriptions", label: "Групповые абонементы" },
   { key: "personal_lessons", label: "Персональные уроки" },
+  { key: "finance_basic", label: "Финансы (отчёты и журнал)" },
   { key: "pair_subscriptions", label: "Парные абонементы" },
   { key: "trio_lessons", label: "Трио-уроки" },
   { key: "multi_discipline", label: "Несколько направлений" },

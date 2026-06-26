@@ -12,6 +12,8 @@ import { useAttendanceRecords } from "../../hooks/useAttendance";
 import { usePayments } from "../../hooks/usePayments";
 import { useFinancialDebtors } from "../../hooks/useFinancialDebtors";
 import { useOrganization } from "../../organization/OrganizationProvider";
+import { canAccessDataExportSection, permissionOptionsFromSettings } from "../../lib/permissions";
+import { normalizeOrgModules } from "../../lib/orgModules";
 import { useSettings } from "../SettingsProvider";
 import { exportAllDashboardCsv } from "../../lib/exportDashboardCsv";
 import { exportAllFinancialCsv } from "../../lib/exportFinancialCsv";
@@ -317,15 +319,21 @@ function FinancialExportSection() {
 }
 
 export default function DataExportPage() {
-  const { can } = usePermissions();
-  const { orgLoading, organizationId } = useOrganization();
-  const { settings } = useSettings();
+  const { can, role, scope, isReadOnly, membership } = usePermissions();
+  const { orgLoading, organizationId, settings } = useOrganization();
+  const { settings: exportSettings } = useSettings();
+  const modules = normalizeOrgModules(settings?.modules);
+  const permissionOptions = permissionOptionsFromSettings(settings, scope, {
+    restrictedAdmin: membership?.meta?.restricted_admin ?? false,
+    isReadOnly,
+  });
 
   const canDashboardExport = can("dashboard.export");
-  const canFinancialExport = can("finance.export");
+  const canFinancialExport = can("finance.export") && modules.finance_basic;
+  const canAnyExport = canAccessDataExportSection(role, modules, permissionOptions);
 
   if (orgLoading || !organizationId) return <LoadingState label="Загрузка..." />;
-  if (!canDashboardExport && !canFinancialExport) {
+  if (!canAnyExport) {
     return (
       <div className="panel-card-stack max-w-xl">
         <p className="text-sm text-slate-500">Нет прав на экспорт данных.</p>
@@ -339,7 +347,7 @@ export default function DataExportPage() {
         <h2 className="text-base font-semibold text-slate-900">Экспорт данных</h2>
         <p className="text-xs text-slate-500 mt-1">
           CSV-выгрузка для бухгалтерии и резервного копирования. Язык заголовков:{" "}
-          {settings?.locale ?? "ru-RU"}.
+          {exportSettings?.locale ?? "ru-RU"}.
         </p>
       </div>
 

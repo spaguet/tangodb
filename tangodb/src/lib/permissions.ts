@@ -1,4 +1,5 @@
-import type { MemberRole, TeacherScope } from "../types/organization";
+import type { MemberRole, OrgModules, TeacherScope } from "../types/organization";
+import { isModuleEnabled, moduleKeyFromPanel, moduleKeyFromSettingsSection } from "./orgModules.ts";
 
 export const EMPTY_TEACHER_SCOPE: TeacherScope = {
   discipline_ids: [],
@@ -493,6 +494,55 @@ export function findFirstAccessiblePanelPath(
   options?: PermissionOptions
 ): string | null {
   for (const { panel, path } of PANEL_FALLBACK_PATHS) {
+    if (canAccessPanel(role, panel, options)) return path;
+  }
+  return null;
+}
+
+const SETTINGS_SECTION_ORDER: SettingsSectionId[] = [
+  "general",
+  "organization",
+  "subscriptions",
+  "disciplines",
+  "locations",
+  "data",
+  "team",
+  "license",
+];
+
+export function canAccessDataExportSection(
+  role: MemberRole | null,
+  modules: OrgModules,
+  options?: PermissionOptions
+): boolean {
+  const financial = isModuleEnabled(modules, "finance_basic") && can(role, "finance.export", options);
+  const operational = can(role, "dashboard.export", options);
+  return financial || operational;
+}
+
+export function findFirstAccessibleSettingsSection(
+  role: MemberRole | null,
+  modules: OrgModules,
+  options?: PermissionOptions
+): SettingsSectionId | null {
+  for (const section of SETTINGS_SECTION_ORDER) {
+    const moduleKey = moduleKeyFromSettingsSection(section);
+    if (moduleKey && !isModuleEnabled(modules, moduleKey)) continue;
+    if (section === "data" && !canAccessDataExportSection(role, modules, options)) continue;
+    if (canAccessSettingsSection(role, section, options)) return section;
+  }
+  return null;
+}
+
+/** Первая доступная панель с учётом module gate. */
+export function findFirstEnabledAccessiblePanelPath(
+  role: MemberRole | null,
+  modules: OrgModules,
+  options?: PermissionOptions
+): string | null {
+  for (const { panel, path } of PANEL_FALLBACK_PATHS) {
+    const moduleKey = moduleKeyFromPanel(panel);
+    if (moduleKey && !isModuleEnabled(modules, moduleKey)) continue;
     if (canAccessPanel(role, panel, options)) return path;
   }
   return null;

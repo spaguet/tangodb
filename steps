@@ -1,0 +1,148 @@
+Актуальные шаги разработки и промты для ИИ
+
+Последнее ревью: 2026-06-26
+Полная версия (критерии, файлы, тексты промтов):
+  tangodb_modular_dance_crm_TZ.md §9, §9.1, §10
+
+=======================================================
+КАК ДАВАТЬ ЗАДАЧУ ИИ
+=======================================================
+1. Скажи агенту: «реализуй этап <N>» и скопируй
+   полный текст Промта из §10 ТЗ целиком.
+2. Один запрос = один этап. Не смешивай промты.
+3. Агент обязан сначала прочитать:
+     .cursor/docs/ai/AI_CONTEXT.md
+   затем — только разделы и файлы из списка промта.
+4. После завершения агент обновляет:
+     changelog.md          — если менялся код
+     architecture.md       — если менялась архитектура
+     decision_log.md       — если принято арх. решение
+     lessons.md            — если найдена и исправлена ошибка
+
+=======================================================
+ПОРЯДОК РЕАЛИЗАЦИИ SaaS MVP
+=======================================================
+
+Этап 1 → S1 → S2 → S3 → S4 → DC1 → S5 → S6 → S7 → S8 → S9 → S10
+
+Не начинать F1–F6 и UX-этапы 2–3 до закрытия SaaS MVP
+(если отдельно не попросишь).
+
+-------------------------------------------------------
+ #   Этап    Что делаем                          ТЗ раздел    Промт §10
+-------------------------------------------------------
+ 1   Этап 1  Module gate:                        §4, §6       Промт 1 ✅
+             finance_basic, normalizeOrgModules,
+             скрытие отключённых модулей
+             в nav / mobile / settings / routes
+
+ 2   S1      Регистрация:                        §8.0–§8.4,   Промт 8
+             email + логин (display name)        §8.9
+             + пароль; verify email → demo CRM
+             без ключа; Turnstile; Emergency
+             Recovery Code показывается 1 раз
+
+ 3   S2      Telegram demo signup:               §8.3, §8.7,  Промт 9
+             новый Telegram ID → demo CRM        §8.9
+             без email/пароля;
+             известный TG ID → вход как сейчас
+
+ 4   S3      Demo UI + CTA:                      §8.3–§8.4    Промт 10
+             «ДЕМО-ВЕРСИЯ» под логотипом +
+             срок окончания demo;
+             кнопка «Купить полную версию»
+             в sidebar/меню и на Dashboard
+             «Обзор и статистика»
+
+ 5   S4      Ручная покупка + активация:         §8.4–§8.5,   Промт 11
+             crypto QR (из Dev Console config),  §8.10
+             банк/MasterCard, МИР;
+             контакты developer (email/TG/WA);
+             7-шаговая инструкция активации;
+             поле ввода ключа;
+             Stripe → «Скоро» + waitlist
+
+ 6   DC1     Dev Console — SaaS-support:         §8.11        Промт 18
+             список CRM-баз клиентов + фильтры;
+             owner email/имя; demo/lifetime;
+             размер данных org; last login;
+             метаданные ключа (не plaintext);
+             Восстановить доступ → modal с
+             одноразовым паролем (не в логах);
+             ручной purge с подтверждением;
+             payment config CRUD
+
+ 7   S5      Demo purge/retention:               §8.2, §8.9,  Промт 12
+             data_purge_at = demo_expires_at     §8.10
+             (строго 30 дней);
+             удалить business-данные (clients/
+             payments/schedule и т.д.);
+             retention email/hash в отдельной
+             таблице; licensed org не трогать
+
+ 8   S6      Валюты + контакты:                  §8.6         Промт 13
+             lib/currencies.ts — до 20 ISO-4217;
+             контакты developer в license UI
+
+ 9   S7      Security hardening:                 §8.7         Промт 14
+             rate limit ключей + audit;
+             Turnstile только backend-side;
+             ACTIVATION_DEBUG = false в prod;
+             no SQL concat / no innerHTML;
+             Dev Console search через RPC
+
+10   S8      Команда + member recovery:          §8.8         Промт 15
+             owner invite → accept → login;
+             reset password по email;
+             деактивация + re-invite при
+             потере email участника
+
+11   S9      Owner emergency recovery:           §8.8, §8.11  Промт 16
+             manual developer support;
+             recovery code как доп. фактор;
+             всё через Dev Console + audit log
+
+12   S10     English localization:               §8, §10      Промт 17
+             ПОСЛЕДНИЙ этап — после заморозки
+             всех русских SaaS-текстов;
+             en-US для всех основных маршрутов
+
+=======================================================
+ОТЛОЖЕНО — после SaaS MVP или по отдельному запросу
+=======================================================
+
+  F1   Фильтры журнала платежей        §7.3    Промт 2
+  F2   KPI и графики owner             §7.3    Промт 3
+  F3   Расширенная аналитика dashboard §7.3    Промт 4
+  Эт.2 UX-упрощения форм              §6      Промт 5
+  Эт.3 UX настроек модулей            §6      Промт 6
+  F5/6 Expenses / Payroll (план→код)  §7.3    Промт 7
+
+=======================================================
+KNOWN INCOMPATIBILITIES — что нужно исправить
+=======================================================
+(Проверено 2026-06-26, подробнее — §9.1 ТЗ)
+
+• RegisterPage    → редирект на /activate-key
+                    (цель: auto-create demo org после verify)
+• Telegram        → неизвестный ID → 403
+                    (цель: self-service demo org)
+• LicenseSettingsPage → Stripe «Месяц/Год» активны
+                    (цель: скрыть/пометить «Скоро»)
+• purge_expired_demo_organizations
+                  → НЕ удаляет clients/payments/schedule
+                    (цель: DELETE + retention record)
+• run_demo_lifecycle()
+                  → переводит в demo_retention на 31-й день
+                    (цель: purge строго на demo_expires_at)
+• OrgsPage        → нет owner email, размера, last login,
+                    кнопок действий
+                    (цель: DC1)
+• GeneralSettingsPage → только 4 валюты
+                    (цель: S6, 20 ISO-4217)
+• finance_basic   → ✅ Этап 1 (2026-06-26)
+• normalizeOrgModules → ✅ Этап 1 (2026-06-26)
+• legacy demo-key → data_purge_at = now() + 60 days
+                    (цель: S5, strict 30 days)
+• ACTIVATION_DEBUG → default "true"
+                    (цель: S7, false в production)

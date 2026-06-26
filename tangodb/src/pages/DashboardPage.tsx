@@ -16,6 +16,7 @@ import { usePayments } from "../hooks/usePayments";
 import { usePermissions } from "../hooks/usePermissions";
 import { useUIStore } from "../store/ui";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { normalizeOrgModules } from "../lib/orgModules";
 import type { Client, Payment, PersonalLesson, Subscription } from "../types";
 
 type DashboardTab = "operational" | "financial";
@@ -27,12 +28,13 @@ const DASHBOARD_TABS = [
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { orgLoading, organizationId } = useOrganization();
+  const { orgLoading, organizationId, settings } = useOrganization();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
   const { can } = usePermissions();
   const [activeTab, setActiveTab] = useState<DashboardTab>("operational");
 
-  const showFinancial = can("reports.financial");
+  const modules = normalizeOrgModules(settings?.modules);
+  const showFinancial = can("reports.financial") && modules.finance_basic;
   const showOperational = can("reports.operational");
   const showBoth = showOperational && showFinancial;
   const showScopedSummary = can("dashboard.scoped_summary");

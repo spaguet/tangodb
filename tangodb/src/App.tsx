@@ -68,7 +68,7 @@ import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { usePermissions } from "./hooks/usePermissions";
 import { panelIdFromPath } from "./lib/permissions";
 import { useOrganization } from "./organization/OrganizationProvider";
-import { DEFAULT_ORG_MODULES } from "./lib/orgModules";
+import { normalizeOrgModules } from "./lib/orgModules";
 import type { OrgModules } from "./types/organization";
 
 export type ToastType = "success" | "error" | "info";
@@ -104,6 +104,7 @@ interface MobileTabItem {
   line2: string;
   path: string;
   subTab?: SubTab;
+  moduleKey?: keyof OrgModules;
 }
 
 const NAV_SECTIONS: NavSection[] = [
@@ -113,6 +114,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     label: "Финансы",
+    moduleKey: "finance_basic",
     items: [{ icon: Landmark, label: "Финансы", path: "/finance" }],
   },
   {
@@ -121,6 +123,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     label: "Групповые абонементы",
+    moduleKey: "group_subscriptions",
     items: [
       { icon: Ticket, label: "Абонементы", path: "/subscriptions", subTab: "active" },
       { icon: TicketPlus, label: "Продажа абонемента", path: "/subscriptions/sell", subTab: "sell" },
@@ -153,7 +156,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 const MOBILE_TABS: MobileTabItem[] = [
   { icon: LayoutDashboard, line1: "ОБЗОР И", line2: "СТАТИСТИКА", path: "/" },
-  { icon: Ticket, line1: "АБОНЕМЕНТЫ", line2: "И ПРОДАЖА", path: "/subscriptions", subTab: "active" },
+  { icon: Ticket, line1: "АБОНЕМЕНТЫ", line2: "И ПРОДАЖА", path: "/subscriptions", subTab: "active", moduleKey: "group_subscriptions" },
   { icon: CalendarCheck, line1: "ЖУРНАЛ", line2: "ПОСЕЩЕНИЙ", path: "/attendance" },
   { icon: Calendar, line1: "РАСПИСАНИЕ", line2: "ГРУПП И УРОКОВ", path: "/schedule" },
 ];
@@ -261,7 +264,7 @@ function AppLayout() {
   const personalTab = useUIStore((s) => s.personalTab);
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
   const { settings } = useOrganization();
-  const orgModules = settings?.modules ?? DEFAULT_ORG_MODULES;
+  const orgModules = normalizeOrgModules(settings?.modules);
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: ToastType } | null>(null);
@@ -379,7 +382,10 @@ function AppLayout() {
 
         {/* Mobile bottom tab bar: most frequent daily actions */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-1 shadow-md pb-[env(safe-area-inset-bottom)]">
-          {MOBILE_TABS.filter((item) => canAccessPanel(panelIdFromPath(item.path))).map((item) => {
+          {MOBILE_TABS.filter((item) => {
+            if (item.moduleKey && !orgModules[item.moduleKey]) return false;
+            return canAccessPanel(panelIdFromPath(item.path));
+          }).map((item) => {
             const active =
               item.path === "/"
                 ? location.pathname === "/"

@@ -4,13 +4,19 @@ import { useOrganization } from "../organization/OrganizationProvider";
 import { usePermissions } from "../hooks/usePermissions";
 import { getOrganizationIdFromSession } from "../lib/authClaims";
 import {
+  findFirstAccessibleSettingsSection,
+  findFirstEnabledAccessiblePanelPath,
   panelIdFromPath,
   settingsSectionFromPath,
   canAccessSettingsSection,
-  findFirstAccessiblePanelPath,
   permissionOptionsFromSettings,
-  type SettingsSectionId,
 } from "../lib/permissions";
+import {
+  isModuleEnabled,
+  moduleKeyFromPanel,
+  moduleKeyFromSettingsSection,
+  normalizeOrgModules,
+} from "../lib/orgModules";
 
 function LoadingScreen({ label }: { label: string }) {
   return (
@@ -107,21 +113,34 @@ export function PanelAccessRoute() {
   const { settings } = useOrganization();
   const panel = panelIdFromPath(location.pathname);
   const settingsSection = settingsSectionFromPath(location.pathname);
+  const modules = normalizeOrgModules(settings?.modules);
 
   const options = permissionOptionsFromSettings(settings, scope, {
     restrictedAdmin: membership?.meta?.restricted_admin ?? false,
     isReadOnly,
   });
 
-  if (settingsSection && !canAccessSettingsSection(role, settingsSection, options)) {
-    const fallbackSections: SettingsSectionId[] = ["data", "license", "disciplines", "general", "organization", "subscriptions", "locations", "team"];
-    const fallback = fallbackSections.find((section) => canAccessSettingsSection(role, section, options));
-    return <Navigate to={fallback ? `/settings/${fallback}` : "/"} replace />;
+  if (settingsSection) {
+    const settingsModuleKey = moduleKeyFromSettingsSection(settingsSection);
+    if (settingsModuleKey && !isModuleEnabled(modules, settingsModuleKey)) {
+      const fallbackSection = findFirstAccessibleSettingsSection(role, modules, options);
+      return <Navigate to={fallbackSection ? `/settings/${fallbackSection}` : "/"} replace />;
+    }
+    if (!canAccessSettingsSection(role, settingsSection, options)) {
+      const fallbackSection = findFirstAccessibleSettingsSection(role, modules, options);
+      return <Navigate to={fallbackSection ? `/settings/${fallbackSection}` : "/"} replace />;
+    }
+  }
+
+  const panelModuleKey = moduleKeyFromPanel(panel);
+  if (panelModuleKey && !isModuleEnabled(modules, panelModuleKey)) {
+    const fallbackPath = findFirstEnabledAccessiblePanelPath(role, modules, options);
+    return <Navigate to={fallbackPath ?? "/"} replace />;
   }
 
   if (!canAccessPanel(panel)) {
     if (panel === "dashboard") {
-      const fallbackPath = findFirstAccessiblePanelPath(role, options);
+      const fallbackPath = findFirstEnabledAccessiblePanelPath(role, modules, options);
       if (fallbackPath) return <Navigate to={fallbackPath} replace />;
       return <Outlet />;
     }

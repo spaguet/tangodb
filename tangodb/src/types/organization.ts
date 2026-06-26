@@ -77,6 +77,7 @@ export interface OrgModules {
   trio_lessons: boolean;
   multi_discipline: boolean;
   locations: boolean;
+  finance_basic: boolean;
 }
 
 export interface OrganizationSettings {
@@ -124,6 +125,7 @@ export const PRESET_MODULES: Record<OrgPreset, OrgModules> = {
     trio_lessons: true,
     multi_discipline: true,
     locations: true,
+    finance_basic: true,
   },
   solo_teacher: {
     group_subscriptions: false,
@@ -132,6 +134,7 @@ export const PRESET_MODULES: Record<OrgPreset, OrgModules> = {
     trio_lessons: false,
     multi_discipline: false,
     locations: false,
+    finance_basic: true,
   },
   sport_section: {
     group_subscriptions: true,
@@ -140,6 +143,7 @@ export const PRESET_MODULES: Record<OrgPreset, OrgModules> = {
     trio_lessons: false,
     multi_discipline: true,
     locations: true,
+    finance_basic: true,
   },
   gymnastics_club: {
     group_subscriptions: true,
@@ -148,6 +152,7 @@ export const PRESET_MODULES: Record<OrgPreset, OrgModules> = {
     trio_lessons: false,
     multi_discipline: true,
     locations: true,
+    finance_basic: true,
   },
   custom: {
     group_subscriptions: true,
@@ -156,5 +161,6 @@ export const PRESET_MODULES: Record<OrgPreset, OrgModules> = {
     trio_lessons: true,
     multi_discipline: true,
     locations: true,
+    finance_basic: true,
   },
 };

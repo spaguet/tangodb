@@ -7,10 +7,12 @@ import {
   canAccessPanel,
   canAccessSettingsSection,
   findFirstAccessiblePanelPath,
+  findFirstEnabledAccessiblePanelPath,
   panelIdFromPath,
   assertReceptionPermissions,
   EMPTY_TEACHER_SCOPE,
 } from "../src/lib/permissions.ts";
+import { normalizeOrgModules } from "../src/lib/orgModules.ts";
 
 const ROLES = ["owner", "director", "admin", "teacher", "accountant"];
 const ALL_PANELS = [
@@ -130,6 +132,40 @@ assert(
 assert(
   findFirstAccessiblePanelPath("teacher", { scope: emptyTeacherScope }) === null,
   "empty teacher no fallback"
+);
+
+// Module gate (Этап 1)
+const soloModules = normalizeOrgModules({
+  group_subscriptions: false,
+  personal_lessons: true,
+  pair_subscriptions: false,
+  trio_lessons: false,
+  multi_discipline: false,
+  locations: false,
+});
+assert(!soloModules.group_subscriptions, "solo_teacher: group_subscriptions off");
+assert(soloModules.finance_basic, "solo_teacher: finance_basic defaults true");
+assert(
+  findFirstEnabledAccessiblePanelPath("owner", soloModules, optsFor("owner")) === "/finance",
+  "solo_teacher owner skips /subscriptions fallback"
+);
+
+const noFinanceModules = normalizeOrgModules({
+  group_subscriptions: true,
+  personal_lessons: true,
+  pair_subscriptions: true,
+  trio_lessons: true,
+  multi_discipline: true,
+  locations: true,
+  finance_basic: false,
+});
+assert(
+  findFirstEnabledAccessiblePanelPath("accountant", noFinanceModules, optsFor("accountant")) === "/settings",
+  "accountant with finance_basic off falls back to settings"
+);
+assert(
+  findFirstEnabledAccessiblePanelPath("owner", noFinanceModules, optsFor("owner")) === "/clients",
+  "owner with finance_basic off skips /finance"
 );
 
 // RBAC-2 settings guards

@@ -47,4 +47,12 @@
 - **Org overrides (§9):** boolean-флаги в `organization_settings` (`teachers_can_*`, `admin_can_*`); читаются в `permissions.ts` через `permissionOptionsFromSettings()` и в SQL через `can_export_data()`.
 - **Export split (RBAC-8):** `can_export_data()` — operational dashboard CSV (owner/director; admin при `admin_can_export`; teacher при `teachers_can_export` + scope). `can_export_financial()` — owner/director/accountant. UI: `DataExportPage` — отдельные секции; accountant не грузит CRM-хуки.
 
+## Org modules (module gate, Этап 1)
+
+- **Хранение:** `organization_settings.modules` (JSONB), тип `OrgModules` в `types/organization.ts`.
+- **Нормализация:** `normalizeOrgModules()` в `lib/orgModules.ts` — merge с defaults; `finance_basic` для старых org → `true`.
+- **Ключи с UI-gate:** `group_subscriptions`, `personal_lessons`, `finance_basic`, `multi_discipline`, `locations`; `pair_subscriptions` / `trio_lessons` — только фильтр тарифов.
+- **Точки gate:** desktop nav + mobile tabs (`App.tsx`), `PanelAccessRoute` (`routeGuards.tsx`), settings nav/redirect, financial tab на `/`, financial export в `DataExportPage`.
+- **Не gate:** операционная оплата при продаже; RBAC и RLS не заменяются.
+
 ## Записи

@@ -15,6 +15,7 @@ import {
   getOrganizationIdFromSession,
 } from "../lib/authClaims";
 import { supabase } from "../lib/supabase";
+import { normalizeOrgModules } from "../lib/orgModules";
 import { resetUIStore } from "../store/ui";
 import type {
   MemberRole,
@@ -98,7 +99,7 @@ function mapSettings(row: Record<string, unknown>): OrganizationSettings {
     week_starts_on: row.week_starts_on as number,
     org_preset: row.org_preset as OrganizationSettings["org_preset"],
     terminology: (row.terminology as Record<string, string>) ?? {},
-    modules: row.modules as OrganizationSettings["modules"],
+    modules: normalizeOrgModules(row.modules as Partial<OrganizationSettings["modules"]>),
     freeze_max_count: row.freeze_max_count as number,
     freeze_min_lessons: row.freeze_min_lessons as number,
     freeze_deducts_lesson: row.freeze_deducts_lesson as boolean,
