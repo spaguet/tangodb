@@ -35,7 +35,7 @@ import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, fil
 import { filterActiveSubscriptions, filterHistorySubscriptions, ALL_LOCATIONS_KEY } from "../lib/subscriptionFilters";
 import { buildGroupNameById, getSubscriptionGroupDisplayNames, listScheduleGroupOptions } from "../lib/scheduleGroups";
 import { useAccessibleLocations } from "../hooks/useLocations";
-import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules } from "../lib/orgModules";
+import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules, normalizeOrgModules, shouldShowDisciplinePicker, shouldShowLocationPicker } from "../lib/orgModules";
 import { useSettings } from "../settings/SettingsProvider";
 import { useUIStore } from "../store/ui";
 import { resolveMutationError } from "../lib/resolveMutationError";
@@ -44,6 +44,7 @@ import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import DatePickerField from "./ui/DatePickerField";
 import DisciplineSelect from "./ui/DisciplineSelect";
+import LocationSelect from "./ui/LocationSelect";
 import GroupCheckboxDropdown from "./ui/GroupCheckboxDropdown";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
@@ -402,6 +403,9 @@ export default function SubscriptionsPanel({
     () => Object.fromEntries(disciplines.map((d) => [d.id, d])) as Record<string, Discipline>,
     [disciplines]
   );
+  const orgModules = normalizeOrgModules(settings?.modules);
+  const showLocationFilter = shouldShowLocationPicker(orgModules, locations.length);
+  const showDisciplineFilter = shouldShowDisciplinePicker(orgModules, disciplines.length);
   const priceMap = useMemo(
     () =>
       Object.fromEntries(
@@ -538,6 +542,7 @@ export default function SubscriptionsPanel({
           </div>
 
           <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {showLocationFilter && (
             <AppSelect
               label={t("subscriptions.filter.location")}
               value={activeLocationFilter}
@@ -550,7 +555,9 @@ export default function SubscriptionsPanel({
                 </option>
               ))}
             </AppSelect>
+            )}
 
+            {showDisciplineFilter && (
             <AppSelect
               label={t("subscriptions.filter.discipline")}
               value={activeDisciplineFilter}
@@ -563,6 +570,7 @@ export default function SubscriptionsPanel({
                 </option>
               ))}
             </AppSelect>
+            )}
 
             {activeLocationFilter ? (
               <AppSelect
@@ -908,6 +916,7 @@ export default function SubscriptionsPanel({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {showDisciplineFilter && (
             <AppSelect
               label={t("subscriptions.filter.discipline")}
               value={historyDisciplineId}
@@ -920,7 +929,9 @@ export default function SubscriptionsPanel({
                 </option>
               ))}
             </AppSelect>
+            )}
 
+            {showLocationFilter && (
             <AppSelect
               label={t("subscriptions.filter.location")}
               value={historyLocationId}
@@ -934,6 +945,7 @@ export default function SubscriptionsPanel({
                 </option>
               ))}
             </AppSelect>
+            )}
 
             <AppSelect
               label={t("subscriptions.sell.client")}
@@ -1121,25 +1133,20 @@ export default function SubscriptionsPanel({
 
             {localPriceList && (
               <div className="field-stack panel-form-full-row-md animate-fade-in">
-                <label className={labelCls}>{t("subscriptions.filter.location")}</label>
                 {locations.length === 0 ? (
                   <p className="text-xs text-slate-400 font-sans leading-relaxed">
                     {t("subscriptions.sell.noLocationsHint")}
                   </p>
                 ) : (
-                  <AppSelect
+                  <LocationSelect
+                    label={t("subscriptions.filter.location")}
+                    locations={locations}
                     value={saleLocationId}
-                    onChange={(e) => {
-                      setSaleLocationId(e.target.value);
+                    onChange={(id) => {
+                      setSaleLocationId(id);
                       setSelectedTariffId("");
                     }}
-                  >
-                    {locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.name}
-                      </option>
-                    ))}
-                  </AppSelect>
+                  />
                 )}
               </div>
             )}

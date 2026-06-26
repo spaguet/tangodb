@@ -4,6 +4,7 @@ import { CalendarDays, Info, MapPin, Trash2, User, X } from "lucide-react";
 import { useAddGroupSchedule, useDeleteScheduleSlot, useEditGroupSchedule } from "../../hooks/useSchedule";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useOrganization } from "../../organization/OrganizationProvider";
+import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { usePermissions } from "../../hooks/usePermissions";
 import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import {
@@ -20,6 +21,7 @@ import { useI18n } from "../../hooks/useI18n";
 import type { Discipline, DisplayLesson } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import DisciplineSelect from "../ui/DisciplineSelect";
+import LocationSelect from "../ui/LocationSelect";
 import RequirePermission from "../RequirePermission";
 import TimeSelect from "../ui/TimeSelect";
 
@@ -116,7 +118,9 @@ export default function EditLessonPopup({
   onSuccess,
 }: EditLessonPopupProps) {
   const { t, locale, formatDate } = useI18n();
-  const { memberId } = useOrganization();
+  const { memberId, settings } = useOrganization();
+  const orgModules = normalizeOrgModules(settings?.modules);
+  const showLocationInForm = shouldShowLocationPicker(orgModules, locations?.length ?? 0);
   const { role, can } = usePermissions();
   const { connectionState } = useOnlineStatus();
   const editGroupSchedule = useEditGroupSchedule();
@@ -553,7 +557,7 @@ export default function EditLessonPopup({
               </p>
             ) : (
               <div className="panel-form-stack">
-                {lesson.kind === "group" && locationName && (
+                {lesson.kind === "group" && locationName && showLocationInForm && (
                   <div className="field-stack">
                     <label className={labelCls}>{t("schedule.form.location")}</label>
                     <div className={readOnlyCls}>
@@ -563,7 +567,7 @@ export default function EditLessonPopup({
                   </div>
                 )}
 
-                {lesson.kind === "personal" && !personalListEdit && locationName && (
+                {lesson.kind === "personal" && !personalListEdit && locationName && showLocationInForm && (
                   <div className="field-stack">
                     <label className={labelCls}>{t("schedule.form.location")}</label>
                     <div className={readOnlyCls}>
@@ -728,18 +732,12 @@ export default function EditLessonPopup({
                     )}
 
                     {personalListEdit && locations && locations.length > 0 && (
-                      <AppSelect
-                        label={t("schedule.form.location")}
+                      <LocationSelect
+                        locations={locations}
                         value={locationId}
-                        onChange={(e) => setLocationId(e.target.value)}
+                        onChange={setLocationId}
                         required
-                      >
-                        {locations.map((loc) => (
-                          <option key={loc.id} value={loc.id}>
-                            {loc.name}
-                          </option>
-                        ))}
-                      </AppSelect>
+                      />
                     )}
 
                     <DisciplineSelect

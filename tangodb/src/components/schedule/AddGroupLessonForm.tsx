@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { MapPin, Trash2, X } from "lucide-react";
 import { useAddGroupSchedule } from "../../hooks/useSchedule";
+import { useLocations } from "../../hooks/useLocations";
+import { useOrganization } from "../../organization/OrganizationProvider";
+import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { findScheduleConflict } from "../../lib/scheduleConflicts";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
@@ -84,6 +87,10 @@ export default function AddGroupLessonForm({
   onSuccess,
 }: AddGroupLessonFormProps) {
   const { t, locale } = useI18n();
+  const { settings } = useOrganization();
+  const { data: locations = [] } = useLocations();
+  const orgModules = normalizeOrgModules(settings?.modules);
+  const showLocationInForm = shouldShowLocationPicker(orgModules, locations.length);
   const addGroupSchedule = useAddGroupSchedule();
 
   const [groupName, setGroupName] = useState("");
@@ -280,6 +287,7 @@ export default function AddGroupLessonForm({
             </div>
 
             <form onSubmit={handleSubmit} className="panel-form-stack">
+              {showLocationInForm && (
               <div className="field-stack">
                 <label className={labelCls}>{t("schedule.form.location")}</label>
                 <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
@@ -287,6 +295,7 @@ export default function AddGroupLessonForm({
                   {prefill.locationName}
                 </div>
               </div>
+              )}
 
               <div className="field-stack">
                 <label className={labelCls}>{t("schedule.form.groupName")}</label>

@@ -1,5 +1,8 @@
 import AppSelect from "./AppSelect";
+import { useEffect } from "react";
 import { useI18n } from "../../hooks/useI18n";
+import { useOrganization } from "../../organization/OrganizationProvider";
+import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import type { Location } from "../../hooks/useLocations";
 
 const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
@@ -20,6 +23,21 @@ export default function LocationTariffField({
   locations,
 }: LocationTariffFieldProps) {
   const { t } = useI18n();
+  const { settings } = useOrganization();
+  const modules = normalizeOrgModules(settings?.modules);
+  const show = shouldShowLocationPicker(modules, locations.length);
+
+  useEffect(() => {
+    if (!show && locations.length > 0) {
+      onBindChange(true);
+      if (locationId !== locations[0].id) {
+        onLocationChange(locations[0].id);
+      }
+    }
+  }, [show, locations, locationId, onBindChange, onLocationChange]);
+
+  if (!show) return null;
+
   return (
     <div className="space-y-2">
       <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">

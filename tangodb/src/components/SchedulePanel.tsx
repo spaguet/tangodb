@@ -23,6 +23,7 @@ import ConfirmDialog from "./ui/ConfirmDialog";
 import RequirePermission from "./RequirePermission";
 import AppSelect, { fieldCls } from "./ui/AppSelect";
 import DisciplineSelect from "./ui/DisciplineSelect";
+import LocationSelect from "./ui/LocationSelect";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import { usePermissions } from "../hooks/usePermissions";
@@ -494,21 +495,12 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               toast={toast}
             />
 
-            <AppSelect
-              label={t("schedule.form.location")}
+            <LocationSelect
+              locations={locations}
               value={locationId}
-              onChange={(e) => setLocationId(e.target.value)}
-            >
-              {locations.length === 0 ? (
-                <option value="">{t("common.noLocationsAvailable")}</option>
-              ) : (
-                locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </option>
-                ))
-              )}
-            </AppSelect>
+              onChange={setLocationId}
+              required
+            />
 
             <AppSelect
               label={t("schedule.form.teacher")}
@@ -719,21 +711,12 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               </div>
 
               <div className="panel-form-stack font-sans">
-                <AppSelect
-                  label={t("schedule.form.location")}
+                <LocationSelect
+                  locations={locations}
                   value={editLocationId}
-                  onChange={(e) => setEditLocationId(e.target.value)}
-                >
-                  {locations.length === 0 ? (
-                    <option value="">{t("common.noLocationsAvailable")}</option>
-                  ) : (
-                    locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.name}
-                      </option>
-                    ))
-                  )}
-                </AppSelect>
+                  onChange={setEditLocationId}
+                  required
+                />
 
                 {canEditScheduleTeacher ? (
                   <AppSelect

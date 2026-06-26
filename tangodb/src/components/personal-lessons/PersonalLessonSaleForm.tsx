@@ -8,6 +8,7 @@ import { useRecordPersonalLessonPayment } from "../../hooks/usePayments";
 import { usePrices } from "../../hooks/usePrices";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
 import { useOrganization } from "../../organization/OrganizationProvider";
+import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { usePermissions } from "../../hooks/usePermissions";
 import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import {
@@ -44,6 +45,7 @@ import AppSelect, { fieldCls } from "../ui/AppSelect";
 import ClientAutocomplete from "../ui/ClientAutocomplete";
 import DatePickerField from "../ui/DatePickerField";
 import DisciplineSelect from "../ui/DisciplineSelect";
+import LocationSelect from "../ui/LocationSelect";
 import SellPackageModal from "../ui/SellPackageModal";
 import TimeSelect from "../ui/TimeSelect";
 import type { ScheduleCellPrefill } from "../schedule/AddLessonTypePopup";
@@ -117,7 +119,7 @@ export default function PersonalLessonSaleForm({
   const isScheduleCell = mode === "schedule-cell";
   const todayISO = toISODateLocal(new Date());
 
-  const { memberId } = useOrganization();
+  const { memberId, settings } = useOrganization();
   const { role, can } = usePermissions();
   const { connectionState } = useOnlineStatus();
   const { data: activeClients = [] } = useClients();
@@ -126,6 +128,8 @@ export default function PersonalLessonSaleForm({
   const { data: prices = [] } = usePrices();
   const { data: subscriptions = [] } = useSubscriptions();
   const { locations: accessibleLocations = [] } = useAccessibleLocations();
+  const orgModules = normalizeOrgModules(settings?.modules);
+  const showLocationInForm = shouldShowLocationPicker(orgModules, accessibleLocations.length);
   const addPersonalLessons = useAddPersonalLessons();
   const recordPersonalLessonPayment = useRecordPersonalLessonPayment();
 
@@ -672,7 +676,7 @@ export default function PersonalLessonSaleForm({
           </button>
         )}
 
-        {isScheduleCell ? (
+        {isScheduleCell && showLocationInForm ? (
           <div className="field-stack">
             <label className={labelCls}>{t("schedule.form.location")}</label>
             <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
@@ -680,24 +684,14 @@ export default function PersonalLessonSaleForm({
               {selectedLocationName}
             </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <AppSelect
-              label={t("schedule.form.location")}
+        ) : !isScheduleCell ? (
+          <div className={`grid grid-cols-1 gap-3 ${showLocationInForm ? "sm:grid-cols-2" : ""}`}>
+            <LocationSelect
+              locations={accessibleLocations}
               value={locationId}
-              onChange={(e) => setLocationId(e.target.value)}
+              onChange={setLocationId}
               required
-            >
-              {accessibleLocations.length === 0 ? (
-                <option value="">{t("common.noLocationsAvailable")}</option>
-              ) : (
-                accessibleLocations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </option>
-                ))
-              )}
-            </AppSelect>
+            />
             <DisciplineSelect
               disciplines={disciplines}
               value={disciplineId}
@@ -705,7 +699,7 @@ export default function PersonalLessonSaleForm({
               toast={toast}
             />
           </div>
-        )}
+        ) : null}
 
         {renderDateSection()}
 

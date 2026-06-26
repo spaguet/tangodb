@@ -1,5 +1,7 @@
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useMemo } from "react";
+import { useOrganization } from "../../organization/OrganizationProvider";
+import { normalizeOrgModules, shouldShowDisciplinePicker, shouldShowLocationPicker } from "../../lib/orgModules";
 import { addDays, formatWeekRangeLabel, getWeekRange, toISODateLocal } from "../../lib/scheduleWeek";
 import { currentYearMonth, formatMonthTitle, shiftMonth } from "../../lib/utils";
 import type { Discipline } from "../../types";
@@ -33,6 +35,10 @@ export default function PersonalLessonFilters({
   teachers,
 }: PersonalLessonFiltersProps) {
   const { t, locale } = useI18n();
+  const { settings } = useOrganization();
+  const orgModules = normalizeOrgModules(settings?.modules);
+  const showLocationFilter = shouldShowLocationPicker(orgModules, locations.length);
+  const showDisciplineFilter = shouldShowDisciplinePicker(orgModules, disciplines.length);
 
   const periodModes: { id: PersonalLessonPeriodMode; label: string }[] = [
     { id: "week", label: t("common.week") },
@@ -189,6 +195,7 @@ export default function PersonalLessonFilters({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {showLocationFilter && (
         <AppSelect
           label={t("schedule.form.location")}
           value={filters.locationId}
@@ -201,7 +208,9 @@ export default function PersonalLessonFilters({
             </option>
           ))}
         </AppSelect>
+        )}
 
+        {showDisciplineFilter && (
         <AppSelect
           label={t("common.discipline")}
           value={filters.disciplineId}
@@ -214,6 +223,7 @@ export default function PersonalLessonFilters({
             </option>
           ))}
         </AppSelect>
+        )}
 
         <AppSelect
           label={t("schedule.form.teacher")}

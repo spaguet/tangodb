@@ -23,6 +23,16 @@ export function isModuleEnabled(modules: OrgModules, key: keyof OrgModules): boo
   return modules[key];
 }
 
+/** Show location picker in forms when module is on and org has more than one location. */
+export function shouldShowLocationPicker(modules: OrgModules, locationCount: number): boolean {
+  return isModuleEnabled(modules, "locations") && locationCount > 1;
+}
+
+/** Show discipline picker in forms when module is on and org has more than one discipline. */
+export function shouldShowDisciplinePicker(modules: OrgModules, disciplineCount: number): boolean {
+  return isModuleEnabled(modules, "multi_discipline") && disciplineCount > 1;
+}
+
 export type ModuleGatedPanel =
   | "finance"
   | "subscriptions"

@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import type { ToastType } from "../../App";
 import type { Discipline } from "../../types";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useI18n } from "../../hooks/useI18n";
+import { useOrganization } from "../../organization/OrganizationProvider";
+import { normalizeOrgModules, shouldShowDisciplinePicker } from "../../lib/orgModules";
 import AddDisciplineModal from "./AddDisciplineModal";
 import AppSelect from "./AppSelect";
 
@@ -14,6 +16,9 @@ interface DisciplineSelectProps {
   onChange: (id: string) => void;
   toast: (msg: string, type?: ToastType) => void;
   required?: boolean;
+  /** Include empty "all disciplines" option (for filters). */
+  allowAll?: boolean;
+  allOptionLabel?: string;
 }
 
 export default function DisciplineSelect({
@@ -23,12 +28,28 @@ export default function DisciplineSelect({
   onChange,
   toast,
   required = true,
+  allowAll = false,
+  allOptionLabel,
 }: DisciplineSelectProps) {
   const { t } = useI18n();
+  const { settings } = useOrganization();
+  const modules = normalizeOrgModules(settings?.modules);
+  const show = shouldShowDisciplinePicker(modules, disciplines.length);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const { can } = usePermissions();
   const canAddDiscipline = can("disciplines.write");
   const resolvedLabel = label ?? t("common.discipline");
+
+  useEffect(() => {
+    if (disciplines.length === 0) return;
+    const defaultId = disciplines[0].id;
+    if (allowAll) return;
+    if (!value || (!show && value !== defaultId)) {
+      onChange(defaultId);
+    }
+  }, [show, disciplines, value, onChange, allowAll]);
+
+  if (!show) return null;
 
   return (
     <div className="field-stack">
@@ -38,12 +59,16 @@ export default function DisciplineSelect({
         required={required}
         onChange={(e) => {
           const next = e.target.value;
-          if (next) onChange(next);
+          if (allowAll || next) onChange(next);
         }}
       >
-        <option value="" disabled>
-          {t("ui.disciplineSelect.placeholder")}
-        </option>
+        {allowAll ? (
+          <option value="">{allOptionLabel ?? t("common.allDisciplines")}</option>
+        ) : (
+          <option value="" disabled>
+            {t("ui.disciplineSelect.placeholder")}
+          </option>
+        )}
         {disciplines.map((d) => (
           <option key={d.id} value={d.id}>
             {d.name}
