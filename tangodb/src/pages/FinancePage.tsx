@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { usePermissions } from "../hooks/usePermissions";
 import FinanceLayout from "./FinanceLayout";
 import FinancePaymentsPage from "./FinancePaymentsPage";
 import FinanceRevenuePage from "./FinanceRevenuePage";
@@ -6,18 +7,26 @@ import FinanceDebtorsPage from "./FinanceDebtorsPage";
 import FinanceExpensesPage from "./FinanceExpensesPage";
 import FinancePayrollPage from "./FinancePayrollPage";
 
+function FinanceIndexRedirect() {
+  const { can } = usePermissions();
+  if (can("payroll.read.own") && !can("finance.read")) {
+    return <Navigate to="payroll" replace />;
+  }
+  return <Navigate to="payments" replace />;
+}
+
 export default function FinancePage() {
   return (
     <Routes>
       <Route element={<FinanceLayout />}>
-        <Route index element={<Navigate to="payments" replace />} />
+        <Route index element={<FinanceIndexRedirect />} />
         <Route path="payments" element={<FinancePaymentsPage />} />
         <Route path="revenue" element={<FinanceRevenuePage />} />
         <Route path="debtors" element={<FinanceDebtorsPage />} />
         <Route path="expenses" element={<FinanceExpensesPage />} />
         <Route path="payroll" element={<FinancePayrollPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="payments" replace />} />
+      <Route path="*" element={<FinanceIndexRedirect />} />
     </Routes>
   );
 }

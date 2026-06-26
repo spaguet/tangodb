@@ -219,7 +219,7 @@ export interface TeacherRevenueContext {
   teacherLabels: Map<string, string>;
 }
 
-function resolvePaymentTeacherId(
+export function resolvePaymentTeacherId(
   payment: Payment,
   ctx: TeacherRevenueContext
 ): string | null {

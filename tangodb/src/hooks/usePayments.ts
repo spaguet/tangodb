@@ -223,7 +223,7 @@ export function useVoidPersonalLessonPayment() {
   });
 }
 
-const PAYMENT_METHOD_KEYS: Record<PaymentMethod, I18nKey> = {
+export const PAYMENT_METHOD_KEYS: Record<PaymentMethod, I18nKey> = {
   cash: "common.payment.cash",
   transfer: "common.payment.transfer",
   card: "common.payment.card",

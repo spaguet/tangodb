@@ -75,6 +75,7 @@ export default function DashboardPage() {
       personalView: { path: "/personal" },
       attendance: { path: "/attendance" },
       schedule: { path: "/schedule" },
+      payroll: { path: "/finance/payroll" },
     };
 
     const route = routes[panel] ?? { path: "/" };

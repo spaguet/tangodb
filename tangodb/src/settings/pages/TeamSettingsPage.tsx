@@ -148,7 +148,12 @@ export default function TeamSettingsPage() {
       showToast(t("team.deactivateSuccess"), "info");
       setDeactivateTarget(null);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : t("team.inviteError"), "error");
+      const message = err instanceof Error ? err.message : "";
+      if (message.includes("teacher_has_future_lessons")) {
+        showToast(t("team.deactivateFutureLessons"), "error");
+      } else {
+        showToast(message || t("team.inviteError"), "error");
+      }
     }
   };
 

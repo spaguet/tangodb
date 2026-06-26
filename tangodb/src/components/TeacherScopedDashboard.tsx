@@ -1,6 +1,9 @@
-import { CalendarDays, ClipboardCheck, Clock, Sparkles } from "lucide-react";
+import { CalendarDays, ClipboardCheck, Clock, Sparkles, Wallet } from "lucide-react";
 import { jsDayToIsoDow } from "../lib/utils";
 import { useI18n } from "../hooks/useI18n";
+import { usePermissions } from "../hooks/usePermissions";
+import { useOrganization } from "../organization/OrganizationProvider";
+import { normalizeOrgModules } from "../lib/orgModules";
 import type { PersonalLesson, ScheduleSlot } from "../types";
 
 interface TeacherScopedDashboardProps {
@@ -23,6 +26,18 @@ export default function TeacherScopedDashboard({
   onNavigate,
 }: TeacherScopedDashboardProps) {
   const { t, formatDate } = useI18n();
+  const { can } = usePermissions();
+  const { settings } = useOrganization();
+  const modules = normalizeOrgModules(settings?.modules);
+  const showPayrollLink =
+    modules.finance_basic && can("payroll.read.own") && !can("finance.read");
+
+  const quickLinks = [
+    ...QUICK_LINKS,
+    ...(showPayrollLink
+      ? [{ id: "payroll" as const, labelKey: "dashboard.teacher.quickPayroll" as const, icon: Wallet }]
+      : []),
+  ];
   const todayIso = jsDayToIsoDow(new Date().getDay());
   const todayDate = localIsoDate();
   const todaySlots = scheduleSlots
@@ -33,7 +48,7 @@ export default function TeacherScopedDashboard({
   return (
     <div id="panel-dashboard" className="panel-page-stack">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {QUICK_LINKS.map(({ id, labelKey, icon: Icon }) => (
+        {quickLinks.map(({ id, labelKey, icon: Icon }) => (
           <button
             key={id}
             type="button"

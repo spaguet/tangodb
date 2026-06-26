@@ -1,4 +1,5 @@
 import type { MemberRole, OrgModules, TeacherScope } from "../types/organization";
+import { PRESET_MODULES } from "../types/organization";
 import { isModuleEnabled, moduleKeyFromPanel, moduleKeyFromSettingsSection } from "./orgModules.ts";
 
 export const EMPTY_TEACHER_SCOPE: TeacherScope = {
@@ -60,6 +61,10 @@ export type PermissionAction =
   | "finance.export"
   | "expenses.read"
   | "expenses.write"
+  | "payroll.read"
+  | "payroll.read.own"
+  | "payroll.write"
+  | "payroll.rates.manage"
   | "payments.write"
   | "payments.read.operational"
   | "settings.manage"
@@ -103,6 +108,8 @@ const WRITE_ACTIONS = new Set<PermissionAction>([
   "disciplines.write",
   "payments.write",
   "expenses.write",
+  "payroll.write",
+  "payroll.rates.manage",
   "settings.manage",
   "team.manage",
   "license.activate",
@@ -294,7 +301,15 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
     case "finance.export":
     case "expenses.read":
     case "expenses.write":
+    case "payroll.read":
+    case "payroll.write":
       return FINANCIAL_READ_ROLES.includes(role);
+
+    case "payroll.read.own":
+      return role === "teacher";
+
+    case "payroll.rates.manage":
+      return STRATEGIC_ROLES.includes(role);
 
     case "payments.write":
       return isFullOperationalAdmin(role, options) || canReceptionWrite(role, options);
@@ -553,6 +568,20 @@ export function findFirstEnabledAccessiblePanelPath(
   return null;
 }
 
+/** Route-level access to `/finance/payroll` (teacher exception — not full finance panel). */
+export function canAccessPayrollRoute(
+  role: MemberRole | null,
+  modules: OrgModules,
+  options?: PermissionOptions
+): boolean {
+  if (!isModuleEnabled(modules, "finance_basic")) return false;
+  return can(role, "payroll.read", options) || can(role, "payroll.read.own", options);
+}
+
+export function isTeacherPayrollOnly(role: MemberRole | null, options?: PermissionOptions): boolean {
+  return can(role, "payroll.read.own", options) && !can(role, "finance.read", options);
+}
+
 export function panelIdFromPath(pathname: string): PanelId {
   if (pathname === "/") return "dashboard";
   if (pathname.startsWith("/finance")) return "finance";
@@ -666,5 +695,47 @@ export function assertReceptionPermissions(): void {
   const teacherExportOpts: PermissionOptions = { ...teacherOpts, teachersCanExport: true };
   if (!can("teacher", "dashboard.export", teacherExportOpts)) {
     throw new Error("teacher with teachers_can_export and scope must export (RBAC-8)");
+  }
+}
+
+/** F6 payroll permission regression checks — dev-only via main.tsx */
+export function assertPayrollPermissions(): void {
+  const adminOpts: PermissionOptions = { restrictedAdmin: false };
+  const teacherScope: TeacherScope = {
+    discipline_ids: ["d1"],
+    location_ids: [],
+    all_disciplines: false,
+    all_locations: false,
+    can_view_all_clients: false,
+  };
+  const teacherOpts: PermissionOptions = { scope: teacherScope };
+  const modules = PRESET_MODULES.dance_school;
+
+  if (!can("owner", "payroll.read", adminOpts)) {
+    throw new Error("owner must have payroll.read");
+  }
+  if (!can("accountant", "payroll.write", adminOpts)) {
+    throw new Error("accountant must have payroll.write");
+  }
+  if (!can("teacher", "payroll.read.own", teacherOpts)) {
+    throw new Error("teacher must have payroll.read.own");
+  }
+  if (can("teacher", "payroll.read", teacherOpts)) {
+    throw new Error("teacher must not have payroll.read");
+  }
+  if (can("teacher", "payroll.write", teacherOpts)) {
+    throw new Error("teacher must not have payroll.write");
+  }
+  if (!canAccessPayrollRoute("teacher", modules, teacherOpts)) {
+    throw new Error("teacher must access payroll route with finance_basic");
+  }
+  if (canAccessPanel("teacher", "finance", teacherOpts)) {
+    throw new Error("teacher must not access full finance panel");
+  }
+  if (!can("owner", "payroll.rates.manage", adminOpts)) {
+    throw new Error("owner must manage payroll rates");
+  }
+  if (can("accountant", "payroll.rates.manage", adminOpts)) {
+    throw new Error("accountant must not manage payroll rates");
   }
 }

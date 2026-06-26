@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Save, X } from "lucide-react";
 import { useToast } from "../../App";
 import { memberDisplayName, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { useTeamMutations } from "../../hooks/useTeamInvites";
+import { activeRateByMember, useTeacherPayRates, useUpsertTeacherPayRate } from "../../hooks/usePayroll";
+import { usePermissions } from "../../hooks/usePermissions";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 
@@ -77,7 +79,11 @@ function ProfileField({
 export default function MemberProfileModal({ member, canEdit, onClose }: MemberProfileModalProps) {
   const { t } = useI18n();
   const showToast = useToast();
+  const { can } = usePermissions();
   const { updateMember } = useTeamMutations();
+  const ratesQuery = useTeacherPayRates();
+  const upsertRate = useUpsertTeacherPayRate();
+  const canManageRate = can("payroll.rates.manage");
   const [form, setForm] = useState<ProfileForm>({
     firstName: "",
     lastName: "",
@@ -88,12 +94,24 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
     profileNotes: "",
   });
   const [dirty, setDirty] = useState(false);
+  const [ratePercent, setRatePercent] = useState("");
+  const [initialRatePercent, setInitialRatePercent] = useState("");
+
+  const activeRate = useMemo(() => {
+    if (!member) return null;
+    const map = activeRateByMember(ratesQuery.data ?? []);
+    return map.get(member.id) ?? null;
+  }, [member, ratesQuery.data]);
 
   useEffect(() => {
     if (!member) return;
     setForm(toForm(member));
+    const rate = activeRate?.ratePercent;
+    const rateStr = rate != null ? String(rate) : "";
+    setRatePercent(rateStr);
+    setInitialRatePercent(rateStr);
     setDirty(false);
-  }, [member]);
+  }, [member, activeRate]);
 
   useEffect(() => {
     if (!member) return;
@@ -122,6 +140,28 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
         telegram: form.telegram,
         profileNotes: form.profileNotes,
       });
+
+      if (
+        member.role === "teacher" &&
+        canManageRate &&
+        canEdit &&
+        ratePercent !== initialRatePercent
+      ) {
+        const parsed = Number(ratePercent);
+        if (Number.isNaN(parsed) || parsed < 0 || parsed > 100) {
+          showToast(t("finance.payroll.error.amount"), "error");
+          return;
+        }
+        const rateResult = await upsertRate.mutateAsync({
+          memberId: member.id,
+          ratePercent: parsed,
+        });
+        if (!rateResult.success) {
+          showToast(resolveMutationError(rateResult.error, "memberProfile.error.saveFailed", t), "error");
+          return;
+        }
+      }
+
       showToast(t("memberProfile.success.saved"), "success");
       setDirty(false);
       onClose();
@@ -132,6 +172,11 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
       );
     }
   };
+
+  const showRateField = member?.role === "teacher" && canManageRate && canEdit;
+  const isSaving = updateMember.isPending || upsertRate.isPending;
+  const isDirty =
+    dirty || (showRateField && ratePercent !== initialRatePercent);
 
   const subtitle = member ? memberDisplayName(member) : null;
 
@@ -225,6 +270,25 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                   <p className={`${readOnlyCls} whitespace-pre-wrap`}>{form.profileNotes || "—"}</p>
                 )}
               </label>
+
+              {showRateField && (
+                <label className="block space-y-1">
+                  <span className={labelCls}>{t("memberProfile.field.ratePercent")}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={ratePercent}
+                    onChange={(e) => {
+                      setRatePercent(e.target.value);
+                      setDirty(true);
+                    }}
+                    className={fieldCls}
+                  />
+                  <p className="text-[10px] text-slate-400">{t("memberProfile.field.ratePercentHint")}</p>
+                </label>
+              )}
             </div>
 
             <div className="flex items-center gap-3 pt-1 text-xs">
@@ -232,11 +296,11 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={!dirty || updateMember.isPending}
+                  disabled={!isDirty || isSaving}
                   className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  {updateMember.isPending ? t("common.saving") : t("common.save")}
+                  {isSaving ? t("common.saving") : t("common.save")}
                 </button>
               ) : (
                 <button

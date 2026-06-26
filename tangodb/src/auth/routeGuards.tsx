@@ -11,6 +11,7 @@ import {
   panelIdFromPath,
   settingsSectionFromPath,
   canAccessSettingsSection,
+  canAccessPayrollRoute,
   permissionOptionsFromSettings,
 } from "../lib/permissions";
 import {
@@ -150,6 +151,11 @@ export function PanelAccessRoute() {
   if (panelModuleKey && !isModuleEnabled(modules, panelModuleKey)) {
     const fallbackPath = findFirstEnabledAccessiblePanelPath(role, modules, options);
     return <Navigate to={fallbackPath ?? "/"} replace />;
+  }
+
+  const isPayrollRoute = location.pathname.startsWith("/finance/payroll");
+  if (isPayrollRoute && canAccessPayrollRoute(role, modules, options)) {
+    return <Outlet />;
   }
 
   if (!canAccessPanel(panel)) {

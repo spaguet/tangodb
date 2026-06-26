@@ -12,6 +12,14 @@
 
 ## Записи
 
+### F6 — Payroll implementation details (2026-06-26, Промт 20)
+
+- **Дата:** 2026-06-26
+- **Решение:** Recalculate on-demand при открытии payroll UI financial-ролями (RPC `recalculate_teacher_settlement`). Guard деактивации teacher — RPC helper `teacher_member_has_future_lessons` (future `personal_lessons.date` OR active `schedule_slots` with `valid_to IS NULL OR valid_to >= today`) в `update_team_member`, не отдельный trigger на DELETE member. Subscription attribution в SQL дублирует F3: первый teacher из `schedule_slots` по `subscription_groups.schedule_group_id`. При recalculate `amount_accrued` не опускается ниже уже выплаченного `amount_paid`.
+- **Контекст:** Промт 20 — реализация F6 после F5.
+- **Альтернативы:** nightly cron recalculate; trigger на payments INSERT — отложено; отдельный `/my-payroll` route — отклонено в плане.
+- **Почему так:** On-demand + invalidation проще для MVP; guard в существующем `update_team_member` без нового RPC для UI; защита CHECK `amount_paid <= amount_accrued` при изменении payments задним числом.
+
 ### F5/F6 — Payroll rates MVP: % от атрибутированной выручки (2026-06-26, план)
 
 - **Дата:** 2026-06-26
