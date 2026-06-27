@@ -22,7 +22,7 @@ import {
 } from "../hooks/useSubscriptions";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useScheduleGroups } from "../hooks/useScheduleGroups";
-import { useRecordSubscriptionPayment, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
+import { useRecordSubscriptionPayment, PAYMENT_METHODS, getPaymentMethodLabel } from "../hooks/usePayments";
 import type { PaymentMethod } from "../types";
 import {
   translateConnectionBlockReason,
@@ -1270,9 +1270,9 @@ export default function SubscriptionsPanel({
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
               >
-                {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+                {PAYMENT_METHODS.map((method) => (
+                  <option key={method} value={method}>
+                    {getPaymentMethodLabel(method, t)}
                   </option>
                 ))}
               </AppSelect>

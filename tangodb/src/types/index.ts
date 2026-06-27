@@ -3,6 +3,8 @@ export interface Client {
   firstName: string;
   lastName: string;
   telegram: string;
+  phone: string;
+  email: string;
   createdAt?: string;
   archivedAt?: string | null;
 }

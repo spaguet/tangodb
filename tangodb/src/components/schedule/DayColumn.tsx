@@ -44,7 +44,7 @@ export default function DayColumn({
   onEmptyCellClick,
   canClickEmpty = false,
 }: DayColumnProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const positioned = useMemo(() => layoutDayLessons(lessons), [lessons]);
   const gridHeight = gridHeightPx(rangeStartMin, rangeEndMin);
   const rowCount = (rangeEndMin - rangeStartMin) / SLOT_MINUTES;
@@ -76,7 +76,7 @@ export default function DayColumn({
     <div className="flex-1 min-w-0 border-l border-slate-100 first:border-l-0">
       <div className="text-center border-b border-slate-100 py-2 px-1 bg-slate-50/80">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-          {dowShort(dayOfWeek)}
+          {dowShort(dayOfWeek, locale)}
         </div>
         <div className="text-sm font-semibold text-slate-800 tabular-nums">{dayNumber}</div>
       </div>

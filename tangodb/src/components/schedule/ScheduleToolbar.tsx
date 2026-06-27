@@ -25,10 +25,10 @@ export default function ScheduleToolbar({
   onTeacherFilterChange,
   teacherFilterOptions,
 }: ScheduleToolbarProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [pickerOpen, setPickerOpen] = useState(false);
   const { weekEnd } = useMemo(() => getWeekRange(weekStart), [weekStart]);
-  const label = formatWeekRangeLabel(weekStart, weekEnd);
+  const label = formatWeekRangeLabel(weekStart, weekEnd, locale);
   const isCurrentWeek = useMemo(() => {
     const { weekStart: current } = getWeekRange(new Date());
     return toISODateLocal(weekStart) === toISODateLocal(current);

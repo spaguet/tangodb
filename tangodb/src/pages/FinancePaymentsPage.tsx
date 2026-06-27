@@ -181,7 +181,6 @@ export default function FinancePaymentsPage() {
             </div>
             <div className="px-4 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/60">
               <span className="text-xs text-slate-500 font-sans">
-                {filtered.length}{" "}
                 {plural(filtered.length, [
                   t("common.records.one", { count: filtered.length }),
                   t("common.records.few", { count: filtered.length }),

@@ -4,12 +4,12 @@ import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
 import { useI18n } from "../hooks/useI18n";
-import { sumDebtorAmounts } from "../lib/financeReports";
+import { sumDebtorAmounts, formatDebtorDetail } from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
 import { useOrganization } from "../organization/OrganizationProvider";
 
 export default function FinanceDebtorsPage() {
-  const { t, plural } = useI18n();
+  const { t, plural, formatDate } = useI18n();
   const { settings } = useOrganization();
   const lowBalanceThreshold = settings?.low_balance_threshold ?? 2;
 
@@ -54,7 +54,9 @@ export default function FinanceDebtorsPage() {
                 >
                   <p className="text-sm font-semibold text-slate-800 truncate">{entry.clientDisplay}</p>
                   <p className="text-xs text-slate-500 font-sans hidden sm:block">{entry.contact}</p>
-                  <p className="text-xs text-slate-500 font-sans hidden sm:block">{entry.detail}</p>
+                  <p className="text-xs text-slate-500 font-sans hidden sm:block">
+                    {formatDebtorDetail(entry, t, formatDate)}
+                  </p>
                   <p className="text-sm font-sans font-semibold text-right whitespace-nowrap text-rose-700">
                     {entry.amount > 0 ? formatCurrency(entry.amount) : "—"}
                   </p>
@@ -63,8 +65,11 @@ export default function FinanceDebtorsPage() {
             </div>
             <div className="px-4 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/60">
               <span className="text-xs text-slate-500 font-sans">
-                {debtors.length}{" "}
-                {plural(debtors.length, [t("common.records.one", { count: debtors.length }), t("common.records.few", { count: debtors.length }), t("common.records.many", { count: debtors.length })])}
+                {plural(debtors.length, [
+                  t("common.records.one", { count: debtors.length }),
+                  t("common.records.few", { count: debtors.length }),
+                  t("common.records.many", { count: debtors.length }),
+                ])}
               </span>
               <span className="text-xs text-slate-500 font-sans">
                 {t("finance.debtors.hint", { threshold: lowBalanceThreshold })}

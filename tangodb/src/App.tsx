@@ -70,6 +70,7 @@ import { panelIdFromPath } from "./lib/permissions";
 import { useOrganization } from "./organization/OrganizationProvider";
 import { normalizeOrgModules } from "./lib/orgModules";
 import DemoBrandBadge from "./components/demo/DemoBrandBadge";
+import LocaleDocumentSync from "./components/LocaleDocumentSync";
 import DemoPurchaseCta from "./components/demo/DemoPurchaseCta";
 import { useDemoLicenseUi } from "./hooks/useDemoLicenseUi";
 
@@ -263,6 +264,7 @@ function AppLayout() {
 
   return (
     <ToastContext.Provider value={showToast}>
+      <LocaleDocumentSync />
       <RouteSync />
       <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased font-sans">
         <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white text-slate-700 border-r border-slate-200 flex-shrink-0 relative z-30 shadow-xs">

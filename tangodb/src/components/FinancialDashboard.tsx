@@ -46,7 +46,8 @@ import { useAttendanceRecords } from "../hooks/useAttendance";
 import { useClients } from "../hooks/useClients";
 import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
-import { usePaymentsTrend, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
+import { usePaymentsTrend, getPaymentMethodLabel } from "../hooks/usePayments";
+import type { PaymentMethod } from "../types";
 import { sumExpenses, useExpensesForMonth } from "../hooks/useExpenses";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
@@ -446,7 +447,7 @@ export default function FinancialDashboard() {
                 className="flex items-center justify-between px-3 py-2 rounded-lg border border-slate-100 text-xs font-sans"
               >
                 <span className="text-slate-500">
-                  {PAYMENT_METHOD_LABELS[method as keyof typeof PAYMENT_METHOD_LABELS] ?? method}
+                  {getPaymentMethodLabel(method as PaymentMethod, t) ?? method}
                 </span>
                 <span className="font-semibold text-slate-800">{formatCurrency(amount)}</span>
               </div>
@@ -554,8 +555,11 @@ export default function FinancialDashboard() {
           </div>
           <p className="text-xs font-semibold text-slate-800 mt-2">{t("dashboard.debtors")}</p>
           <p className="text-[10px] text-slate-500 mt-0.5">
-            {debtors.length}{" "}
-            {plural(debtors.length, [t("common.records.one", { count: debtors.length }), t("common.records.few", { count: debtors.length }), t("common.records.many", { count: debtors.length })])}
+            {plural(debtors.length, [
+              t("common.records.one", { count: debtors.length }),
+              t("common.records.few", { count: debtors.length }),
+              t("common.records.many", { count: debtors.length }),
+            ])}
           </p>
         </motion.button>
 

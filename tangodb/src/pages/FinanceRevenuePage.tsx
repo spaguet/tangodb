@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
-import { usePayments, PAYMENT_METHOD_LABELS } from "../hooks/usePayments";
+import { usePayments, getPaymentMethodLabel } from "../hooks/usePayments";
+import type { PaymentMethod } from "../types";
 import { useI18n } from "../hooks/useI18n";
 import {
   aggregatePaymentStats,
@@ -101,7 +102,7 @@ export default function FinanceRevenuePage() {
                     className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-slate-100 text-sm font-sans"
                   >
                     <span className="text-slate-600">
-                      {PAYMENT_METHOD_LABELS[method as keyof typeof PAYMENT_METHOD_LABELS] ?? method}
+                      {getPaymentMethodLabel(method as PaymentMethod, t) ?? method}
                     </span>
                     <span className="font-semibold text-slate-800">{formatCurrency(amount)}</span>
                   </div>

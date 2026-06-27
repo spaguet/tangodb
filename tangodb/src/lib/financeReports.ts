@@ -62,6 +62,27 @@ export interface DebtorEntry {
   kind: "subscription" | "personal";
   detail: string;
   amount: number;
+  lessonsLeft?: number | null;
+  lessonsTotal?: number | null;
+  lessonDate?: string | null;
+}
+
+export function formatDebtorDetail(
+  entry: DebtorEntry,
+  translate: (key: import("./i18n/keys").I18nKey, params?: Record<string, string | number>) => string,
+  formatDate?: (iso: string | Date, options?: Intl.DateTimeFormatOptions) => string
+): string {
+  if (entry.kind === "subscription" && entry.lessonsLeft != null && entry.lessonsTotal != null) {
+    return translate("finance.debtors.detail.subscription", {
+      left: entry.lessonsLeft,
+      total: entry.lessonsTotal,
+    });
+  }
+  if (entry.kind === "personal" && entry.lessonDate) {
+    const dateLabel = formatDate ? formatDate(entry.lessonDate) : entry.lessonDate;
+    return translate("finance.debtors.detail.personal", { date: dateLabel });
+  }
+  return entry.detail;
 }
 
 export function sumDebtorAmounts(entries: DebtorEntry[]): number {

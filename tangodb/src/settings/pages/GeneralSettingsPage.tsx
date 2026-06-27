@@ -10,8 +10,16 @@ import { useI18n } from "../../hooks/useI18n";
 import { useSettings } from "../SettingsProvider";
 
 const TIMEZONE_OPTIONS = [
-  { value: "Europe/Moscow", label: "Europe/Moscow" },
-  { value: "Asia/Ho_Chi_Minh", label: "Asia/Ho_Chi_Minh" },
+  { value: "Europe/Moscow", label: "Europe/Moscow (UTC+3)" },
+  { value: "Europe/London", label: "Europe/London (UTC+0/+1)" },
+  { value: "Europe/Berlin", label: "Europe/Berlin (UTC+1/+2)" },
+  { value: "Europe/Paris", label: "Europe/Paris (UTC+1/+2)" },
+  { value: "America/New_York", label: "America/New_York (UTC-5/-4)" },
+  { value: "America/Los_Angeles", label: "America/Los_Angeles (UTC-8/-7)" },
+  { value: "Asia/Dubai", label: "Asia/Dubai (UTC+4)" },
+  { value: "Asia/Ho_Chi_Minh", label: "Asia/Ho_Chi_Minh (UTC+7)" },
+  { value: "Asia/Tokyo", label: "Asia/Tokyo (UTC+9)" },
+  { value: "Australia/Sydney", label: "Australia/Sydney (UTC+10/+11)" },
   { value: "UTC", label: "UTC" },
 ];
 

@@ -56,7 +56,8 @@ export default function PersonalLessonFilters({
   const weekEndDate = addDays(filters.weekStart, 6);
   const weekLabel = formatWeekRangeLabel(
     new Date(`${filters.weekStart}T12:00:00`),
-    new Date(`${weekEndDate}T12:00:00`)
+    new Date(`${weekEndDate}T12:00:00`),
+    locale
   );
   const isCurrentWeek = useMemo(() => {
     const { weekStart: current } = getWeekRange(new Date());

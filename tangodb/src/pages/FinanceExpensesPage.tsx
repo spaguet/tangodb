@@ -276,7 +276,6 @@ export default function FinanceExpensesPage() {
             </div>
             <div className="px-4 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/60">
               <span className="text-xs text-slate-500 font-sans">
-                {items.length}{" "}
                 {plural(items.length, [
                   t("common.records.one", { count: items.length }),
                   t("common.records.few", { count: items.length }),

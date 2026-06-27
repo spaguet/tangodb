@@ -24,6 +24,8 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [telegram, setTelegram] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const resolvedSubmitLabel = submitLabel || t("clients.form.addSubmit");
 
   useEffect(() => {
@@ -40,6 +42,8 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
       setFirstName("");
       setLastName("");
       setTelegram("");
+      setPhone("");
+      setEmail("");
     }
   }, [open]);
 
@@ -50,7 +54,7 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
       return;
     }
 
-    const res = await addClient.mutateAsync({ firstName, lastName, telegram });
+    const res = await addClient.mutateAsync({ firstName, lastName, telegram, phone, email });
     if (!res.success) {
       toast(resolveMutationError(res.error, "clients.error.addFailed", t), "error");
       return;
@@ -62,6 +66,8 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       telegram: telegram.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
     });
     onClose();
   };
@@ -121,6 +127,28 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder={t("clients.placeholder.lastName")}
+                  className={inputCls}
+                />
+              </div>
+
+              <div className="field-stack">
+                <label className={labelCls}>{t("clients.form.phone")}</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder={t("clients.placeholder.phone")}
+                  className={inputCls}
+                />
+              </div>
+
+              <div className="field-stack">
+                <label className={labelCls}>{t("clients.form.email")}</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t("clients.placeholder.email")}
                   className={inputCls}
                 />
               </div>

@@ -174,7 +174,6 @@ export function getLocaleOptions(t: TranslateFn) {
   return [
     { value: "ru-RU", label: t("common.locale.ru") },
     { value: "en-US", label: t("common.locale.en") },
-    { value: "vi-VN", label: t("common.locale.vi") },
   ];
 }
 

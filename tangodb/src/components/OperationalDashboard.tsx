@@ -21,7 +21,7 @@ import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { shiftMonth } from "../lib/financeReports";
 import { useI18n } from "../hooks/useI18n";
 import type { Client, Payment, PersonalLesson, Subscription } from "../types";
-import { PAYMENT_METHOD_LABELS, paymentSourceLabel } from "../hooks/usePayments";
+import { PAYMENT_METHODS, getPaymentMethodLabel, paymentSourceLabel } from "../hooks/usePayments";
 import { useAttendanceRecords } from "../hooks/useAttendance";
 import { useOrganization } from "../organization/OrganizationProvider";
 
@@ -148,7 +148,7 @@ export default function OperationalDashboard({
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-slate-800 truncate">{payment.clientDisplay}</p>
                     <p className="text-[10px] text-slate-400">
-                      {paymentSourceLabel(payment)} · {PAYMENT_METHOD_LABELS[payment.method]}
+                      {paymentSourceLabel(payment, t)} · {getPaymentMethodLabel(payment.method, t)}
                     </p>
                   </div>
                   <span className="text-xs font-semibold text-indigo-700 shrink-0">

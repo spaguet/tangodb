@@ -68,7 +68,6 @@ const MODULE_GROUP_LABEL_KEYS: Record<OrgModuleGroupId, I18nKey> = {
 const LOCALE_VALUES = [
   { value: "ru-RU", key: "common.locale.ru" as const },
   { value: "en-US", key: "common.locale.en" as const },
-  { value: "vi-VN", key: "common.locale.vi" as const },
 ];
 
 export default function OnboardingWizardPage() {

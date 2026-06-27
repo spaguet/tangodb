@@ -16,6 +16,8 @@ const mapClient = (row: Record<string, unknown>): Client => ({
   firstName: row.first_name as string,
   lastName: row.last_name as string,
   telegram: (row.telegram as string) || "",
+  phone: (row.phone as string) || "",
+  email: (row.email as string) || "",
   createdAt: row.created_at as string | undefined,
   archivedAt: (row.archived_at as string | null) ?? null,
 });
@@ -52,10 +54,14 @@ export function useAddClient() {
       firstName,
       lastName,
       telegram,
+      phone,
+      email,
     }: {
       firstName: string;
       lastName: string;
       telegram: string;
+      phone?: string;
+      email?: string;
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
@@ -82,6 +88,8 @@ export function useAddClient() {
         first_name: fTrim,
         last_name: lTrim,
         telegram: normalizeTelegramForStorage(telegram),
+        phone: (phone ?? "").trim(),
+        email: (email ?? "").trim(),
       });
       if (error) {
         if (error.code === "23505") {
@@ -112,11 +120,15 @@ export function useUpdateClient() {
       firstName,
       lastName,
       telegram,
+      phone,
+      email,
     }: {
       clientId: string;
       firstName: string;
       lastName: string;
       telegram: string;
+      phone?: string;
+      email?: string;
     }) => {
       const { error } = await supabase
         .from("clients")
@@ -124,6 +136,8 @@ export function useUpdateClient() {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           telegram: normalizeTelegramForStorage(telegram),
+          phone: (phone ?? "").trim(),
+          email: (email ?? "").trim(),
         })
         .eq("id", clientId);
       if (error) return { success: false as const, error: error.message };

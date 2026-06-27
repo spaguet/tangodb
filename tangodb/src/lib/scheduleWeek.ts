@@ -1,4 +1,5 @@
 import { jsDayToIsoDow } from "./utils";
+import { resolveLocale } from "./i18n";
 import type { GroupDisplayLesson, ScheduleSlot } from "../types";
 
 /** Local calendar date as YYYY-MM-DD (school TZ = browser local). */
@@ -113,17 +114,24 @@ export function expandSlotsToWeek(
   );
 }
 
-export function formatWeekRangeLabel(weekStart: Date, weekEnd: Date): string {
+export function formatWeekRangeLabel(weekStart: Date, weekEnd: Date, locale?: string | null): string {
+  const code = resolveLocale(locale);
   const startDay = weekStart.getDate();
   const endDay = weekEnd.getDate();
   const year = weekEnd.getFullYear();
-  const startMonth = weekStart.toLocaleDateString("ru-RU", { month: "long" });
-  const endMonth = weekEnd.toLocaleDateString("ru-RU", { month: "long" });
+  const startMonth = weekStart.toLocaleDateString(code, { month: "long" });
+  const endMonth = weekEnd.toLocaleDateString(code, { month: "long" });
 
   if (weekStart.getMonth() === weekEnd.getMonth()) {
-    return `${startDay}–${endDay} ${startMonth} ${year}`;
+    if (code === "ru-RU") {
+      return `${startDay}–${endDay} ${startMonth} ${year}`;
+    }
+    return `${startMonth} ${startDay}–${endDay}, ${year}`;
   }
-  return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${year}`;
+  if (code === "ru-RU") {
+    return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${year}`;
+  }
+  return `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${year}`;
 }
 
 export function isPastDate(dateISO: string): boolean {

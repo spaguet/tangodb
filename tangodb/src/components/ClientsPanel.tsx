@@ -83,12 +83,16 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [telegram, setTelegram] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
 
   // Editing state
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [editFirst, setEditFirst] = useState("");
   const [editLast, setEditLast] = useState("");
   const [editTg, setEditTg] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
 
   // Delete confirm state
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
@@ -129,7 +133,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       return;
     }
 
-    const res = await addClient.mutateAsync({ firstName, lastName, telegram });
+    const res = await addClient.mutateAsync({ firstName, lastName, telegram, phone, email });
     if (!res.success) {
       toast(resolveMutationError(res.error, "clients.error.addFailed", t), "error");
     } else {
@@ -137,6 +141,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       setFirstName("");
       setLastName("");
       setTelegram("");
+      setPhone("");
+      setEmail("");
     }
   };
 
@@ -145,6 +151,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
     setEditFirst(c.firstName);
     setEditLast(c.lastName);
     setEditTg(c.telegram);
+    setEditPhone(c.phone);
+    setEditEmail(c.email);
   };
 
   const handleSaveEdit = async () => {
@@ -164,6 +172,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       firstName: editFirst,
       lastName: editLast,
       telegram: editTg,
+      phone: editPhone,
+      email: editEmail,
     });
     if (!res.success) {
       toast(resolveMutationError(res.error, "clients.error.saveFailed", t), "error");
@@ -282,6 +292,28 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               placeholder={t("clients.placeholder.lastName")}
+              className={inputCls}
+            />
+          </div>
+
+          <div className="field-stack">
+            <label className={labelCls}>{t("clients.form.phone")}</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder={t("clients.placeholder.phone")}
+              className={inputCls}
+            />
+          </div>
+
+          <div className="field-stack">
+            <label className={labelCls}>{t("clients.form.email")}</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("clients.placeholder.email")}
               className={inputCls}
             />
           </div>
@@ -579,6 +611,28 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 <div className="field-stack">
                   <label className={labelCls}>{t("clients.form.lastName")}</label>
                   <input type="text" value={editLast} onChange={(e) => setEditLast(e.target.value)} className={inputCls} />
+                </div>
+
+                <div className="field-stack">
+                  <label className={labelCls}>{t("clients.form.phone")}</label>
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder={t("clients.placeholder.phone")}
+                    className={inputCls}
+                  />
+                </div>
+
+                <div className="field-stack">
+                  <label className={labelCls}>{t("clients.form.email")}</label>
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder={t("clients.placeholder.email")}
+                    className={inputCls}
+                  />
                 </div>
 
                 <div className="field-stack">
