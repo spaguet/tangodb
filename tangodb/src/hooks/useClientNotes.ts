@@ -3,38 +3,25 @@ import { supabase } from "../lib/supabase";
 import type { ClientNote } from "../types";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { memberDisplayName, useTeamMembers } from "./useTeamMembers";
 
 export const clientNotesQueryKey = ["clientNotes"] as const;
 
-type AuthorJoinRow = {
-  first_name?: string | null;
-  last_name?: string | null;
-  patronymic?: string | null;
-  role?: string;
-} | null;
+const NOTES_SELECT = "id, client_id, author_member_id, body, created_at";
 
-function authorLabel(author: AuthorJoinRow): string {
-  if (!author) return "common.employee";
-  const parts = [author.last_name, author.first_name, author.patronymic].filter(Boolean);
-  if (parts.length > 0) return parts.join(" ");
-  return "common.employee";
-}
-
-const mapClientNote = (row: Record<string, unknown>): ClientNote => {
-  const author = row.author as AuthorJoinRow;
-  return {
-    id: row.id as string,
-    clientId: row.client_id as string,
-    authorMemberId: row.author_member_id as string,
-    authorDisplayName: authorLabel(author),
-    authorRole: author?.role ?? "",
-    body: row.body as string,
-    createdAt: String(row.created_at ?? ""),
-  };
-};
-
-const NOTES_SELECT =
-  "id, client_id, author_member_id, body, created_at, author:organization_members!author_member_id(first_name, last_name, patronymic, role)";
+const mapClientNote = (
+  row: Record<string, unknown>,
+  authorLabel: string,
+  authorRole: string
+): ClientNote => ({
+  id: row.id as string,
+  clientId: row.client_id as string,
+  authorMemberId: row.author_member_id as string,
+  authorDisplayName: authorLabel,
+  authorRole,
+  body: row.body as string,
+  createdAt: String(row.created_at ?? ""),
+});
 
 export function clientNotesListQueryKey(clientId: string) {
   return [...clientNotesQueryKey, clientId] as const;
@@ -42,18 +29,39 @@ export function clientNotesListQueryKey(clientId: string) {
 
 export function useClientNotes(clientId: string | null) {
   const { enabled, withOrgId } = useOrgQueryScope();
+  const { data: teamMembers = [] } = useTeamMembers();
 
   return useQuery({
-    queryKey: withOrgId(clientNotesListQueryKey(clientId ?? "")),
+    queryKey: withOrgId([
+      ...clientNotesListQueryKey(clientId ?? ""),
+      teamMembers.length,
+    ]),
     enabled: enabled && Boolean(clientId),
     queryFn: async () => {
+      const authorByMemberId = new Map<string, { label: string; role: string }>();
+      for (const member of teamMembers) {
+        authorByMemberId.set(member.id, {
+          label: memberDisplayName(member),
+          role: member.role,
+        });
+      }
+
       const { data, error } = await supabase
         .from("client_notes")
         .select(NOTES_SELECT)
         .eq("client_id", clientId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((row) => mapClientNote(row as unknown as Record<string, unknown>));
+      return (data ?? []).map((row) => {
+        const record = row as unknown as Record<string, unknown>;
+        const authorMemberId = record.author_member_id as string;
+        const author = authorByMemberId.get(authorMemberId);
+        return mapClientNote(
+          record,
+          author?.label ?? "common.employee",
+          author?.role ?? ""
+        );
+      });
     },
     staleTime: 30 * 1000,
   });

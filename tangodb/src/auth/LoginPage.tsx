@@ -29,7 +29,7 @@ type LoginTab = "telegram" | "email";
 
 export default function LoginPage() {
   const { t, locale } = useGuestI18n();
-  const { signInWithTelegram, signInWithEmail } = useAuth();
+  const { signInWithTelegram, signInWithEmail, session } = useAuth();
   const navigate = useNavigate();
   const widgetRef = useRef<HTMLDivElement>(null);
 
@@ -40,12 +40,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? "";
 
-  const goAfterLogin = (isNewDemo = false) => {
-    navigate(isNewDemo ? "/onboarding" : "/", { replace: true });
+  const goAfterLogin = (opts?: { isNewDemo?: boolean; needsOrgPicker?: boolean }) => {
+    if (opts?.needsOrgPicker) {
+      navigate("/select-organization", { replace: true });
+      return;
+    }
+    navigate(opts?.isNewDemo ? "/onboarding" : "/", { replace: true });
   };
 
   useEffect(() => {
-    if (!isTelegramWebApp()) return;
+    if (!isTelegramWebApp() || session) return;
 
     initTelegramWebApp();
     const initData = getTelegramInitData();
@@ -54,11 +58,13 @@ export default function LoginPage() {
     setLoading(true);
     signInWithTelegram({ initData })
       .then((result) => {
-        if (!result.recoveryCode) goAfterLogin(result.isNewDemo);
+        if (!result.recoveryCode) {
+          goAfterLogin({ isNewDemo: result.isNewDemo, needsOrgPicker: result.needsOrgPicker });
+        }
       })
       .catch((err: Error) => setError(err.message ?? t("auth.login.telegramError")))
       .finally(() => setLoading(false));
-  }, [signInWithTelegram, navigate]);
+  }, [signInWithTelegram, session, t]);
 
   useEffect(() => {
     if (isInsideTelegramClient() || !botUsername || !widgetRef.current) return;
@@ -68,7 +74,9 @@ export default function LoginPage() {
       setError(null);
       try {
         const result = await signInWithTelegram({ widgetPayload: user });
-        if (!result.recoveryCode) goAfterLogin(result.isNewDemo);
+        if (!result.recoveryCode) {
+          goAfterLogin({ isNewDemo: result.isNewDemo, needsOrgPicker: result.needsOrgPicker });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : t("auth.login.error"));
       } finally {
@@ -114,7 +122,7 @@ export default function LoginPage() {
             tab === "telegram" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-500"
           }`}
         >
-          Telegram
+          {t("auth.login.tabTelegram")}
         </button>
         <button
           type="button"
@@ -123,7 +131,7 @@ export default function LoginPage() {
             tab === "email" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-500"
           }`}
         >
-          Email
+          {t("auth.login.tabEmail")}
         </button>
       </div>
 
@@ -139,7 +147,7 @@ export default function LoginPage() {
       {tab === "email" ? (
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <AuthField
-            label="Email"
+            label={t("auth.login.emailLabel")}
             type="email"
             value={email}
             onChange={setEmail}

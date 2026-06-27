@@ -13,6 +13,62 @@ interface ClientCardModalProps {
   toast: (msg: string, type?: ToastType) => void;
 }
 
+function ProfileField({ label, value }: { label: string; value: string }) {
+  if (!value.trim()) return null;
+  return (
+    <div>
+      <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">{label}</p>
+      <p className="text-sm text-slate-700 mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+function GuardianBlock({
+  title,
+  name,
+  phone,
+  telegram,
+  address,
+  t,
+}: {
+  title: string;
+  name: string;
+  phone: string;
+  telegram: string;
+  address: string;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  const hasData = [name, phone, telegram, address].some((v) => v.trim());
+  if (!hasData) return null;
+
+  return (
+    <div className="border border-slate-100 rounded-lg p-3 space-y-2">
+      <p className="text-xs font-semibold text-slate-600">{title}</p>
+      <ProfileField label={t("clients.form.guardianName")} value={name} />
+      <ProfileField label={t("clients.form.phone")} value={phone} />
+      {telegram && normalizeTelegramContact(telegram) ? (
+        <div>
+          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">Telegram</p>
+          <a
+            href={normalizeTelegramContact(telegram)!}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => {
+              e.preventDefault();
+              openTelegramContact(telegram);
+            }}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-0.5 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans transition-colors"
+          >
+            <Send className="w-3 h-3" />
+            {formatTelegramDisplay(telegram)}
+          </a>
+        </div>
+      ) : null}
+      <ProfileField label={t("clients.form.guardianAddress")} value={address} />
+    </div>
+  );
+}
+
 export default function ClientCardModal({ client, onClose, toast }: ClientCardModalProps) {
   const { t } = useI18n();
   const canReadNotes = useCan("client_notes.read");
@@ -49,24 +105,58 @@ export default function ClientCardModal({ client, onClose, toast }: ClientCardMo
               </button>
             </div>
 
-            <div className="text-sm text-slate-600 font-sans space-y-1">
-              {client.telegram && normalizeTelegramContact(client.telegram) ? (
-                <a
-                  href={normalizeTelegramContact(client.telegram)!}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    openTelegramContact(client.telegram);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans transition-colors"
-                >
-                  <Send className="w-3 h-3" />
-                  {formatTelegramDisplay(client.telegram)}
-                </a>
-              ) : (
-                <span className="text-xs text-slate-400 italic">{t("clientCard.telegramNotSet")}</span>
-              )}
+            <div className="space-y-3 font-sans">
+              <div className="grid grid-cols-1 gap-3">
+                <ProfileField label={t("clients.form.firstName")} value={client.firstName} />
+                <ProfileField label={t("clients.form.lastName")} value={client.lastName} />
+                <ProfileField label={t("clients.form.phone")} value={client.phone} />
+                <ProfileField label={t("clients.form.email")} value={client.email} />
+              </div>
+
+              <div>
+                <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">Telegram</p>
+                {client.telegram && normalizeTelegramContact(client.telegram) ? (
+                  <a
+                    href={normalizeTelegramContact(client.telegram)!}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openTelegramContact(client.telegram);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-0.5 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans transition-colors"
+                  >
+                    <Send className="w-3 h-3" />
+                    {formatTelegramDisplay(client.telegram)}
+                  </a>
+                ) : (
+                  <span className="text-xs text-slate-400 italic">{t("clientCard.telegramNotSet")}</span>
+                )}
+              </div>
+
+              {client.isMinor ? (
+                <div className="space-y-2 border-t border-slate-100 pt-3">
+                  <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                    {t("clients.form.isMinor")}
+                  </p>
+                  <GuardianBlock
+                    title={t("clients.form.guardian1")}
+                    name={client.guardian1Name}
+                    phone={client.guardian1Phone}
+                    telegram={client.guardian1Telegram}
+                    address={client.guardian1Address}
+                    t={t}
+                  />
+                  <GuardianBlock
+                    title={t("clients.form.guardian2")}
+                    name={client.guardian2Name}
+                    phone={client.guardian2Phone}
+                    telegram={client.guardian2Telegram}
+                    address={client.guardian2Address}
+                    t={t}
+                  />
+                </div>
+              ) : null}
             </div>
 
             {canReadNotes && <ClientNotesPanel clientId={client.id} toast={toast} />}

@@ -38,6 +38,7 @@ interface ClientsPanelProps {
 }
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
 
 type ClientTab = "active" | "archive";
 
@@ -61,7 +62,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       minute: "2-digit",
     });
   };
-  const canOpenClientCard = useCan("client_notes.read");
+  const canOpenClientCard = useCan("clients.read");
   const [activeTab, setActiveTab] = useState<ClientTab>("active");
   const {
     data: clients = [],
@@ -85,6 +86,15 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const [telegram, setTelegram] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [isMinor, setIsMinor] = useState(false);
+  const [guardian1Name, setGuardian1Name] = useState("");
+  const [guardian1Phone, setGuardian1Phone] = useState("");
+  const [guardian1Telegram, setGuardian1Telegram] = useState("");
+  const [guardian1Address, setGuardian1Address] = useState("");
+  const [guardian2Name, setGuardian2Name] = useState("");
+  const [guardian2Phone, setGuardian2Phone] = useState("");
+  const [guardian2Telegram, setGuardian2Telegram] = useState("");
+  const [guardian2Address, setGuardian2Address] = useState("");
 
   // Editing state
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -133,7 +143,22 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       return;
     }
 
-    const res = await addClient.mutateAsync({ firstName, lastName, telegram, phone, email });
+    const res = await addClient.mutateAsync({
+      firstName,
+      lastName,
+      telegram,
+      phone,
+      email,
+      isMinor,
+      guardian1Name,
+      guardian1Phone,
+      guardian1Telegram,
+      guardian1Address,
+      guardian2Name,
+      guardian2Phone,
+      guardian2Telegram,
+      guardian2Address,
+    });
     if (!res.success) {
       toast(resolveMutationError(res.error, "clients.error.addFailed", t), "error");
     } else {
@@ -143,6 +168,15 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       setTelegram("");
       setPhone("");
       setEmail("");
+      setIsMinor(false);
+      setGuardian1Name("");
+      setGuardian1Phone("");
+      setGuardian1Telegram("");
+      setGuardian1Address("");
+      setGuardian2Name("");
+      setGuardian2Phone("");
+      setGuardian2Telegram("");
+      setGuardian2Address("");
     }
   };
 
@@ -341,6 +375,80 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               {t("clients.form.telegramHint")}
             </p>
           </div>
+
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isMinor}
+              onChange={(e) => setIsMinor(e.target.checked)}
+              className={checkboxCls}
+            />
+            {t("clients.form.isMinor")}
+          </label>
+
+          {isMinor ? (
+            <div className="space-y-4 border border-slate-100 rounded-lg p-3">
+              <p className="text-xs font-semibold text-slate-600">{t("clients.form.guardian1")}</p>
+              <div className="field-stack">
+                <label className={labelCls}>{t("clients.form.guardianName")}</label>
+                <input type="text" value={guardian1Name} onChange={(e) => setGuardian1Name(e.target.value)} className={inputCls} />
+              </div>
+              <div className="field-stack">
+                <label className={labelCls}>{t("clients.form.phone")}</label>
+                <input type="tel" value={guardian1Phone} onChange={(e) => setGuardian1Phone(e.target.value)} className={inputCls} />
+              </div>
+              <div className="field-stack">
+                <label className={labelCls}>Telegram</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
+                  <input
+                    type="text"
+                    value={guardian1Telegram.replace(/https?:\/\/t\.me\//, "")}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      setGuardian1Telegram(val === "" ? "" : `https://t.me/${val.replace(/@/, "")}`);
+                    }}
+                    placeholder="username"
+                    className={`${inputCls} pl-12 font-sans`}
+                  />
+                </div>
+              </div>
+              <div className="field-stack">
+                <label className={labelCls}>{t("clients.form.guardianAddress")}</label>
+                <input type="text" value={guardian1Address} onChange={(e) => setGuardian1Address(e.target.value)} className={inputCls} />
+              </div>
+
+              <p className="text-xs font-semibold text-slate-600 pt-1">{t("clients.form.guardian2")}</p>
+              <div className="field-stack">
+                <label className={labelCls}>{t("clients.form.guardianName")}</label>
+                <input type="text" value={guardian2Name} onChange={(e) => setGuardian2Name(e.target.value)} className={inputCls} />
+              </div>
+              <div className="field-stack">
+                <label className={labelCls}>{t("clients.form.phone")}</label>
+                <input type="tel" value={guardian2Phone} onChange={(e) => setGuardian2Phone(e.target.value)} className={inputCls} />
+              </div>
+              <div className="field-stack">
+                <label className={labelCls}>Telegram</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
+                  <input
+                    type="text"
+                    value={guardian2Telegram.replace(/https?:\/\/t\.me\//, "")}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      setGuardian2Telegram(val === "" ? "" : `https://t.me/${val.replace(/@/, "")}`);
+                    }}
+                    placeholder="username"
+                    className={`${inputCls} pl-12 font-sans`}
+                  />
+                </div>
+              </div>
+              <div className="field-stack">
+                <label className={labelCls}>{t("clients.form.guardianAddress")}</label>
+                <input type="text" value={guardian2Address} onChange={(e) => setGuardian2Address(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+          ) : null}
 
           <button
             type="submit"

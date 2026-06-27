@@ -94,7 +94,7 @@ export function OrgWorkspaceRoute() {
     if (location.pathname === "/activate-key") return <Outlet />;
     if (location.pathname === "/onboarding" && jwtOrganizationId) return <Outlet />;
     if (isSyntheticTelegramEmail(session.user.email)) {
-      return <Navigate to="/login" replace />;
+      return <Navigate to="/activate-key" replace />;
     }
     const emailConfirmed = Boolean(session.user.email_confirmed_at);
     const hasEmail = Boolean(session.user.email?.trim());

@@ -30,9 +30,12 @@ export function getGuestLocale(): LocaleCode {
   return "ru-RU";
 }
 
+export const GUEST_LOCALE_CHANGED = "tangodb-guest-locale-changed";
+
 export function setGuestLocale(locale: string): void {
   try {
     localStorage.setItem(GUEST_LOCALE_KEY, locale);
+    window.dispatchEvent(new CustomEvent(GUEST_LOCALE_CHANGED, { detail: locale }));
   } catch {
     /* ignore */
   }

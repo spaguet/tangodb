@@ -68,6 +68,15 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
       telegram: telegram.trim(),
       phone: phone.trim(),
       email: email.trim(),
+      isMinor: false,
+      guardian1Name: "",
+      guardian1Phone: "",
+      guardian1Telegram: "",
+      guardian1Address: "",
+      guardian2Name: "",
+      guardian2Phone: "",
+      guardian2Telegram: "",
+      guardian2Address: "",
     });
     onClose();
   };

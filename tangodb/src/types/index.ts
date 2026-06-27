@@ -5,6 +5,15 @@ export interface Client {
   telegram: string;
   phone: string;
   email: string;
+  isMinor: boolean;
+  guardian1Name: string;
+  guardian1Phone: string;
+  guardian1Telegram: string;
+  guardian1Address: string;
+  guardian2Name: string;
+  guardian2Phone: string;
+  guardian2Telegram: string;
+  guardian2Address: string;
   createdAt?: string;
   archivedAt?: string | null;
 }

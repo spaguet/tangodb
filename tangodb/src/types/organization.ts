@@ -101,6 +101,8 @@ export interface OrganizationSettings {
   teachers_can_view_full_schedule: boolean;
   admin_can_export: boolean;
   admin_can_manage_team: boolean;
+  admin_can_accept_payments: boolean;
+  admin_can_edit_schedule: boolean;
   pair_cycle_enabled: boolean;
   branding_name: string | null;
   branding_logo_url: string | null;

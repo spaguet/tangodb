@@ -1,8 +1,9 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useOrganization } from "../organization/OrganizationProvider";
 import {
   t,
   getGuestLocale,
+  GUEST_LOCALE_CHANGED,
   pluralize,
   formatDateLocale,
   formatDateTimeLocale,
@@ -45,7 +46,13 @@ export function useI18n() {
 
 /** For auth pages and other contexts outside org settings */
 export function useGuestI18n() {
-  const locale = getGuestLocale();
+  const [locale, setLocale] = useState(getGuestLocale);
+
+  useEffect(() => {
+    const onLocaleChange = () => setLocale(getGuestLocale());
+    window.addEventListener(GUEST_LOCALE_CHANGED, onLocaleChange);
+    return () => window.removeEventListener(GUEST_LOCALE_CHANGED, onLocaleChange);
+  }, []);
 
   const translate = useCallback(
     (key: I18nKey, params?: TranslateParams) => t(locale, key, params),

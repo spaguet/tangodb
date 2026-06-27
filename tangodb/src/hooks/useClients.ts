@@ -11,6 +11,26 @@ export function clientsListQueryKey(includeArchived: boolean) {
   return [...clientsQueryKey, { includeArchived }] as const;
 }
 
+export type GuardianFields = {
+  guardian1Name?: string;
+  guardian1Phone?: string;
+  guardian1Telegram?: string;
+  guardian1Address?: string;
+  guardian2Name?: string;
+  guardian2Phone?: string;
+  guardian2Telegram?: string;
+  guardian2Address?: string;
+};
+
+export type ClientFormInput = {
+  firstName: string;
+  lastName: string;
+  telegram: string;
+  phone?: string;
+  email?: string;
+  isMinor?: boolean;
+} & GuardianFields;
+
 const mapClient = (row: Record<string, unknown>): Client => ({
   id: row.id as string,
   firstName: row.first_name as string,
@@ -18,9 +38,38 @@ const mapClient = (row: Record<string, unknown>): Client => ({
   telegram: (row.telegram as string) || "",
   phone: (row.phone as string) || "",
   email: (row.email as string) || "",
+  isMinor: Boolean(row.is_minor),
+  guardian1Name: (row.guardian1_name as string) || "",
+  guardian1Phone: (row.guardian1_phone as string) || "",
+  guardian1Telegram: (row.guardian1_telegram as string) || "",
+  guardian1Address: (row.guardian1_address as string) || "",
+  guardian2Name: (row.guardian2_name as string) || "",
+  guardian2Phone: (row.guardian2_phone as string) || "",
+  guardian2Telegram: (row.guardian2_telegram as string) || "",
+  guardian2Address: (row.guardian2_address as string) || "",
   createdAt: row.created_at as string | undefined,
   archivedAt: (row.archived_at as string | null) ?? null,
 });
+
+function clientRowFromInput(input: ClientFormInput) {
+  const isMinor = Boolean(input.isMinor);
+  return {
+    first_name: input.firstName.trim(),
+    last_name: input.lastName.trim(),
+    telegram: normalizeTelegramForStorage(input.telegram),
+    phone: (input.phone ?? "").trim(),
+    email: (input.email ?? "").trim(),
+    is_minor: isMinor,
+    guardian1_name: isMinor ? (input.guardian1Name ?? "").trim() : "",
+    guardian1_phone: isMinor ? (input.guardian1Phone ?? "").trim() : "",
+    guardian1_telegram: isMinor ? normalizeTelegramForStorage(input.guardian1Telegram ?? "") : "",
+    guardian1_address: isMinor ? (input.guardian1Address ?? "").trim() : "",
+    guardian2_name: isMinor ? (input.guardian2Name ?? "").trim() : "",
+    guardian2_phone: isMinor ? (input.guardian2Phone ?? "").trim() : "",
+    guardian2_telegram: isMinor ? normalizeTelegramForStorage(input.guardian2Telegram ?? "") : "",
+    guardian2_address: isMinor ? (input.guardian2Address ?? "").trim() : "",
+  };
+}
 
 export function useClients(options?: { includeArchived?: boolean; enabled?: boolean }) {
   const includeArchived = options?.includeArchived ?? false;
@@ -50,25 +99,13 @@ export function useAddClient() {
   const { organizationId, withOrgId } = useOrgQueryScope();
 
   return useMutation({
-    mutationFn: async ({
-      firstName,
-      lastName,
-      telegram,
-      phone,
-      email,
-    }: {
-      firstName: string;
-      lastName: string;
-      telegram: string;
-      phone?: string;
-      email?: string;
-    }) => {
+    mutationFn: async (input: ClientFormInput) => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
-      const fTrim = firstName.trim();
-      const lTrim = lastName.trim();
+      const fTrim = input.firstName.trim();
+      const lTrim = input.lastName.trim();
       const cached =
         queryClient.getQueryData<Client[]>(withOrgId(clientsListQueryKey(false))) ?? [];
       const exists = cached.some(
@@ -85,11 +122,7 @@ export function useAddClient() {
       const { error } = await supabase.from("clients").insert({
         id,
         organization_id: organizationId,
-        first_name: fTrim,
-        last_name: lTrim,
-        telegram: normalizeTelegramForStorage(telegram),
-        phone: (phone ?? "").trim(),
-        email: (email ?? "").trim(),
+        ...clientRowFromInput(input),
       });
       if (error) {
         if (error.code === "23505") {
@@ -115,30 +148,10 @@ export function useUpdateClient() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      clientId,
-      firstName,
-      lastName,
-      telegram,
-      phone,
-      email,
-    }: {
-      clientId: string;
-      firstName: string;
-      lastName: string;
-      telegram: string;
-      phone?: string;
-      email?: string;
-    }) => {
+    mutationFn: async ({ clientId, ...input }: ClientFormInput & { clientId: string }) => {
       const { error } = await supabase
         .from("clients")
-        .update({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          telegram: normalizeTelegramForStorage(telegram),
-          phone: (phone ?? "").trim(),
-          email: (email ?? "").trim(),
-        })
+        .update(clientRowFromInput(input))
         .eq("id", clientId);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };

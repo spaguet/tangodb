@@ -5,6 +5,7 @@ export {
   resolveLocale,
   getGuestLocale,
   setGuestLocale,
+  GUEST_LOCALE_CHANGED,
   pluralize,
   formatDateLocale,
   formatDateTimeLocale,

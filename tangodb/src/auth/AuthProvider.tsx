@@ -18,6 +18,7 @@ import { getTelegramInitData, initTelegramWebApp, isTelegramWebApp } from "../li
 export interface TelegramSignInResult {
   recoveryCode: string | null;
   isNewDemo: boolean;
+  needsOrgPicker: boolean;
 }
 
 interface AuthContextValue {
@@ -141,23 +142,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const authData = await invokeTelegramAuth({ initData });
             if (authData.access_token && authData.refresh_token) {
-              try {
-                await applyTelegramAuthResponse(authData);
-                if (typeof authData.recovery_code === "string") {
-                  setPendingRecoveryCode(authData.recovery_code);
-                }
-                const { data: sessionData } = await supabase.auth.getSession();
-                if (sessionData.session) {
-                  setSession(sessionData.session);
-                  setLoading(false);
-                  return;
-                }
-              } catch {
-                // LoginPage will show the error
+              await applyTelegramAuthResponse(authData);
+              if (typeof authData.recovery_code === "string") {
+                setPendingRecoveryCode(authData.recovery_code);
+              }
+              const { data: sessionData } = await supabase.auth.getSession();
+              if (sessionData.session) {
+                setSession(sessionData.session);
+                setLoading(false);
+                return;
               }
             }
           } catch {
-            // LoginPage will show the error
+            // LoginPage will show the error when user lands there
           }
         }
       }
@@ -197,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return {
         recoveryCode,
         isNewDemo: Boolean(data.is_new_demo),
+        needsOrgPicker: Boolean(data.needs_org_picker),
       };
     },
     []

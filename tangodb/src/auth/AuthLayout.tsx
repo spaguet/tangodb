@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { fieldCls as baseFieldCls } from "../components/ui/AppSelect";
 import { useGuestI18n } from "../hooks/useI18n";
+import AuthLocalePicker from "./AuthLocalePicker";
 
 interface AuthLayoutProps {
   title: string;
@@ -15,6 +16,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6 py-10">
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm p-8 space-y-6">
+        <AuthLocalePicker />
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[11px] tracking-tight leading-none shadow-xs">
             TDB

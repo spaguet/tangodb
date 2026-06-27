@@ -43,7 +43,9 @@ const ROLE_OVERRIDE_KEYS: {
     | "teachers_can_export"
     | "teachers_can_view_full_schedule"
     | "admin_can_export"
-    | "admin_can_manage_team";
+    | "admin_can_manage_team"
+    | "admin_can_accept_payments"
+    | "admin_can_edit_schedule";
   labelKey: I18nKey;
   hintKey?: I18nKey;
 }[] = [
@@ -60,6 +62,16 @@ const ROLE_OVERRIDE_KEYS: {
     key: "admin_can_manage_team",
     labelKey: "settings.org.role.adminManageTeam",
     hintKey: "common.notRecommended",
+  },
+  {
+    key: "admin_can_accept_payments",
+    labelKey: "settings.org.role.adminAcceptPayments",
+    hintKey: "common.defaultOn",
+  },
+  {
+    key: "admin_can_edit_schedule",
+    labelKey: "settings.org.role.adminEditSchedule",
+    hintKey: "common.defaultOn",
   },
 ];
 
@@ -87,6 +99,8 @@ export default function OrganizationSettingsPage() {
   const [teachersCanViewFullSchedule, setTeachersCanViewFullSchedule] = useState(true);
   const [adminCanExport, setAdminCanExport] = useState(false);
   const [adminCanManageTeam, setAdminCanManageTeam] = useState(false);
+  const [adminCanAcceptPayments, setAdminCanAcceptPayments] = useState(true);
+  const [adminCanEditSchedule, setAdminCanEditSchedule] = useState(true);
   const [lowBalanceThreshold, setLowBalanceThreshold] = useState(2);
   const [dirty, setDirty] = useState(false);
 
@@ -101,6 +115,8 @@ export default function OrganizationSettingsPage() {
     setTeachersCanViewFullSchedule(settings.teachers_can_view_full_schedule);
     setAdminCanExport(settings.admin_can_export);
     setAdminCanManageTeam(settings.admin_can_manage_team);
+    setAdminCanAcceptPayments(settings.admin_can_accept_payments);
+    setAdminCanEditSchedule(settings.admin_can_edit_schedule);
     setLowBalanceThreshold(settings.low_balance_threshold);
     setDirty(false);
   }, [settings]);
@@ -133,6 +149,8 @@ export default function OrganizationSettingsPage() {
       teachers_can_view_full_schedule: teachersCanViewFullSchedule,
       admin_can_export: adminCanExport,
       admin_can_manage_team: adminCanManageTeam,
+      admin_can_accept_payments: adminCanAcceptPayments,
+      admin_can_edit_schedule: adminCanEditSchedule,
       pair_cycle_enabled: false,
       low_balance_threshold: lowBalanceThreshold,
     });
@@ -219,6 +237,8 @@ export default function OrganizationSettingsPage() {
                 teachers_can_view_full_schedule: teachersCanViewFullSchedule,
                 admin_can_export: adminCanExport,
                 admin_can_manage_team: adminCanManageTeam,
+                admin_can_accept_payments: adminCanAcceptPayments,
+                admin_can_edit_schedule: adminCanEditSchedule,
               } as const;
               const setters = {
                 teachers_can_sell_subscriptions: setTeachersCanSellSubscriptions,
@@ -227,6 +247,8 @@ export default function OrganizationSettingsPage() {
                 teachers_can_view_full_schedule: setTeachersCanViewFullSchedule,
                 admin_can_export: setAdminCanExport,
                 admin_can_manage_team: setAdminCanManageTeam,
+                admin_can_accept_payments: setAdminCanAcceptPayments,
+                admin_can_edit_schedule: setAdminCanEditSchedule,
               } as const;
 
               return (

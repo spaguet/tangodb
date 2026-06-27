@@ -86,6 +86,8 @@ export interface PermissionOptions {
   teachersCanViewFullSchedule?: boolean;
   adminCanExport?: boolean;
   adminCanManageTeam?: boolean;
+  adminCanAcceptPayments?: boolean;
+  adminCanEditSchedule?: boolean;
   restrictedAdmin?: boolean;
   isReadOnly?: boolean;
   context?: PermissionContext;
@@ -124,6 +126,18 @@ export function isRestrictedReceptionAdmin(
   options?: PermissionOptions
 ): boolean {
   return role === "admin" && (options?.restrictedAdmin ?? false);
+}
+
+function adminHasPaymentAccess(role: MemberRole, options?: PermissionOptions): boolean {
+  if (role !== "admin") return true;
+  if (isRestrictedReceptionAdmin(role, options)) return true;
+  return options?.adminCanAcceptPayments ?? true;
+}
+
+function adminHasScheduleWriteAccess(role: MemberRole, options?: PermissionOptions): boolean {
+  if (role !== "admin") return true;
+  if (isRestrictedReceptionAdmin(role, options)) return false;
+  return options?.adminCanEditSchedule ?? true;
 }
 
 function isFullOperationalAdmin(role: MemberRole, options?: PermissionOptions): boolean {
@@ -232,6 +246,8 @@ export function permissionOptionsFromSettings(
     teachers_can_view_full_schedule?: boolean;
     admin_can_export?: boolean;
     admin_can_manage_team?: boolean;
+    admin_can_accept_payments?: boolean;
+    admin_can_edit_schedule?: boolean;
   } | null,
   scope: TeacherScope,
   extras?: Pick<PermissionOptions, "restrictedAdmin" | "isReadOnly">
@@ -245,6 +261,8 @@ export function permissionOptionsFromSettings(
     teachersCanViewFullSchedule: settings?.teachers_can_view_full_schedule ?? true,
     adminCanExport: settings?.admin_can_export ?? false,
     adminCanManageTeam: settings?.admin_can_manage_team ?? false,
+    adminCanAcceptPayments: settings?.admin_can_accept_payments ?? true,
+    adminCanEditSchedule: settings?.admin_can_edit_schedule ?? true,
     restrictedAdmin: extras?.restrictedAdmin ?? false,
     isReadOnly: extras?.isReadOnly ?? false,
   };
@@ -312,7 +330,11 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return STRATEGIC_ROLES.includes(role);
 
     case "payments.write":
-      return isFullOperationalAdmin(role, options) || canReceptionWrite(role, options);
+      if (canReceptionWrite(role, options)) return true;
+      if (isFullOperationalAdmin(role, options)) {
+        return adminHasPaymentAccess(role, options);
+      }
+      return false;
 
     case "payments.read.operational":
       return isFullOperationalAdmin(role, options);
@@ -356,6 +378,13 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return canWriteScopedCrm(role, scope, context, options);
 
     case "schedule.write":
+      if (isFullOperationalAdmin(role, options)) {
+        return adminHasScheduleWriteAccess(role, options);
+      }
+      if (role === "teacher") {
+        return teacherMatchesContext(scope, context);
+      }
+      return false;
     case "personal_lessons.write":
     case "personal_lessons.sell":
       return canWriteScopedCrm(role, scope, context, options);
