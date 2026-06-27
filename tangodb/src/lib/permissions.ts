@@ -67,6 +67,7 @@ export type PermissionAction =
   | "payroll.rates.manage"
   | "payments.write"
   | "payments.read.operational"
+  | "single_visits.record"
   | "settings.manage"
   | "team.manage"
   | "license.view"
@@ -88,6 +89,8 @@ export interface PermissionOptions {
   adminCanManageTeam?: boolean;
   adminCanAcceptPayments?: boolean;
   adminCanEditSchedule?: boolean;
+  teachersCanRecordSingleVisits?: boolean;
+  adminCanRecordSingleVisits?: boolean;
   restrictedAdmin?: boolean;
   isReadOnly?: boolean;
   context?: PermissionContext;
@@ -109,6 +112,7 @@ const WRITE_ACTIONS = new Set<PermissionAction>([
   "prices.write",
   "disciplines.write",
   "payments.write",
+    "single_visits.record",
   "expenses.write",
   "payroll.write",
   "payroll.rates.manage",
@@ -248,6 +252,8 @@ export function permissionOptionsFromSettings(
     admin_can_manage_team?: boolean;
     admin_can_accept_payments?: boolean;
     admin_can_edit_schedule?: boolean;
+    teachers_can_record_single_visits?: boolean;
+    admin_can_record_single_visits?: boolean;
   } | null,
   scope: TeacherScope,
   extras?: Pick<PermissionOptions, "restrictedAdmin" | "isReadOnly">
@@ -263,6 +269,8 @@ export function permissionOptionsFromSettings(
     adminCanManageTeam: settings?.admin_can_manage_team ?? false,
     adminCanAcceptPayments: settings?.admin_can_accept_payments ?? true,
     adminCanEditSchedule: settings?.admin_can_edit_schedule ?? true,
+    teachersCanRecordSingleVisits: settings?.teachers_can_record_single_visits ?? false,
+    adminCanRecordSingleVisits: settings?.admin_can_record_single_visits ?? true,
     restrictedAdmin: extras?.restrictedAdmin ?? false,
     isReadOnly: extras?.isReadOnly ?? false,
   };
@@ -333,6 +341,16 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       if (canReceptionWrite(role, options)) return true;
       if (isFullOperationalAdmin(role, options)) {
         return adminHasPaymentAccess(role, options);
+      }
+      return false;
+
+    case "single_visits.record":
+      if (STRATEGIC_ROLES.includes(role)) return true;
+      if (role === "admin" && isFullOperationalAdmin(role, options)) {
+        return (options?.adminCanRecordSingleVisits ?? true) && adminHasPaymentAccess(role, options);
+      }
+      if (role === "teacher") {
+        return (options?.teachersCanRecordSingleVisits ?? false) && teacherMatchesContext(scope, context);
       }
       return false;
 

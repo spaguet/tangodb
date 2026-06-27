@@ -12,6 +12,7 @@ export interface TeacherAccrualBreakdown {
   fixedAmount: number;
   groupPercentAmount: number;
   personalPercentAmount: number;
+  singleVisitPercentAmount: number;
   total: number;
 }
 
@@ -23,7 +24,13 @@ export function computeTeacherAccrualBreakdown(
   ctx: TeacherRevenueContext
 ): TeacherAccrualBreakdown {
   if (!rate) {
-    return { fixedAmount: 0, groupPercentAmount: 0, personalPercentAmount: 0, total: 0 };
+    return {
+      fixedAmount: 0,
+      groupPercentAmount: 0,
+      personalPercentAmount: 0,
+      singleVisitPercentAmount: 0,
+      total: 0,
+    };
   }
 
   const fixedAmount =
@@ -31,12 +38,15 @@ export function computeTeacherAccrualBreakdown(
 
   let groupPercentAmount = 0;
   let personalPercentAmount = 0;
+  let singleVisitPercentAmount = 0;
 
   if (rate.payMode === "percent" || rate.payMode === "fixed_plus_percent") {
     for (const payment of payments) {
       if (resolvePaymentTeacherId(payment, ctx) !== memberId) continue;
       if (payment.personalLessonId) {
         personalPercentAmount += payment.amount * (rate.personalRatePercent / 100);
+      } else if (payment.singleVisitId) {
+        singleVisitPercentAmount += payment.amount * (rate.singleVisitRatePercent / 100);
       } else if (payment.subscriptionId) {
         groupPercentAmount += payment.amount * (rate.groupRatePercent / 100);
       }
@@ -47,7 +57,8 @@ export function computeTeacherAccrualBreakdown(
     fixedAmount,
     groupPercentAmount,
     personalPercentAmount,
-    total: fixedAmount + groupPercentAmount + personalPercentAmount,
+    singleVisitPercentAmount,
+    total: fixedAmount + groupPercentAmount + personalPercentAmount + singleVisitPercentAmount,
   };
 }
 

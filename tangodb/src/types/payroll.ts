@@ -10,6 +10,7 @@ export interface TeacherPayRate {
   ratePercent: number;
   groupRatePercent: number;
   personalRatePercent: number;
+  singleVisitRatePercent: number;
   effectiveFrom: string;
   createdAt: string;
 }
@@ -49,5 +50,6 @@ export interface TeacherPayRateInput {
   fixedAmount: number;
   groupRatePercent: number;
   personalRatePercent: number;
+  singleVisitRatePercent: number;
   effectiveFrom?: string;
 }

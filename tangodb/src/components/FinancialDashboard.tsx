@@ -54,10 +54,12 @@ import { useRecalculateTeacherSettlement, useTeacherSettlements } from "../hooks
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
+import { useSingleVisits } from "../hooks/useSingleVisits";
 
 const SPLIT_COLORS: Record<RevenueSplitKey, string> = {
   subscription: "bg-indigo-500",
-  personal: "bg-violet-500",
+  personal: "bg-indigo-700",
+  single_visit: "bg-indigo-400",
   other: "bg-slate-400",
 };
 
@@ -248,6 +250,7 @@ export default function FinancialDashboard() {
   const scheduleQuery = useSchedule();
   const subscriptionGroupsQuery = useSubscriptionGroups();
   const teamQuery = useTeamMembers();
+  const singleVisitsQuery = useSingleVisits({ yearMonth: statsMonth });
 
   const analyticsLoading =
     clientsQuery.isLoading ||
@@ -255,7 +258,8 @@ export default function FinancialDashboard() {
     personalLessonsQuery.isLoading ||
     scheduleQuery.isLoading ||
     subscriptionGroupsQuery.isLoading ||
-    teamQuery.isLoading;
+    teamQuery.isLoading ||
+    singleVisitsQuery.isLoading;
 
   const monthSeries = useMemo(() => buildMonthSeries(statsMonth), [statsMonth]);
   const trendPoints = useMemo(
@@ -306,8 +310,8 @@ export default function FinancialDashboard() {
 
   const occupancyStats = useMemo(
     () =>
-      computeOccupancyStats(attendanceQuery.data ?? [], personalLessonsQuery.data ?? []),
-    [attendanceQuery.data, personalLessonsQuery.data]
+      computeOccupancyStats(attendanceQuery.data ?? [], personalLessonsQuery.data ?? [], singleVisitsQuery.data ?? []),
+    [attendanceQuery.data, personalLessonsQuery.data, singleVisitsQuery.data]
   );
 
   const topClients = useMemo(
@@ -322,8 +326,12 @@ export default function FinancialDashboard() {
     const personalLessonById = new Map(
       (personalLessonsQuery.data ?? []).map((lesson) => [lesson.id, lesson])
     );
+    const singleVisitById = new Map(
+      (singleVisitsQuery.data ?? []).map((visit) => [visit.id, visit])
+    );
     return buildTopTeachersByRevenue(monthPayments, {
       personalLessonById,
+      singleVisitById,
       groupsBySubId: subscriptionGroupsQuery.groupsBySubId,
       classTeacherByGroupId: buildClassTeacherMap(scheduleQuery.data ?? []),
       teacherLabels,
@@ -332,6 +340,7 @@ export default function FinancialDashboard() {
     monthPayments,
     teamQuery.data,
     personalLessonsQuery.data,
+    singleVisitsQuery.data,
     subscriptionGroupsQuery.groupsBySubId,
     scheduleQuery.data,
     locale,
@@ -340,6 +349,7 @@ export default function FinancialDashboard() {
   const splitLabel = (key: RevenueSplitKey) => {
     if (key === "subscription") return t("dashboard.subscriptions");
     if (key === "personal") return t("dashboard.personal");
+    if (key === "single_visit") return t("dashboard.singleVisits");
     return t("finance.revenue.other");
   };
 
@@ -391,7 +401,7 @@ export default function FinancialDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.revenue")}</p>
             <p className="text-xl font-semibold text-slate-900 mt-0.5">{formatCurrency(stats.total)}</p>
@@ -421,6 +431,10 @@ export default function FinancialDashboard() {
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.personal")}</p>
             <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.personalTotal)}</p>
+          </div>
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.singleVisits")}</p>
+            <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.singleVisitTotal)}</p>
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.receivables")}</p>

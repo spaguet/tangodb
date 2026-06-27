@@ -21,6 +21,7 @@ export interface CsvExportLabels {
   paymentMethod: (method: PaymentMethod) => string;
   paymentSourceSubscription: string;
   paymentSourcePersonal: string;
+  paymentSourceSingleVisit: string;
   skipClients: string;
   skipSubscriptions: string;
   skipAttendance: (month: string) => string;
@@ -121,6 +122,7 @@ export function getCsvExportLabels(locale?: string | null): CsvExportLabels {
     },
     paymentSourceSubscription: col("common.payment.source.subscription"),
     paymentSourcePersonal: col("common.payment.source.personalLesson"),
+    paymentSourceSingleVisit: col("common.payment.source.singleVisit"),
     skipClients: col("csv.skip.clients"),
     skipSubscriptions: col("csv.skip.subscriptions"),
     skipAttendance: (month: string) => t(locale, "csv.skip.attendance", { month }),

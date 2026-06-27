@@ -1,0 +1,112 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "../lib/supabase";
+import type { PaymentMethod, SingleVisit } from "../types";
+import { useOrgQueryScope } from "./useOrgQueryScope";
+import { paymentsQueryKey } from "./usePayments";
+import { payrollQueryKey } from "./usePayroll";
+
+export const singleVisitsQueryKey = ["single-visits"] as const;
+
+const SINGLE_VISITS_SELECT =
+  "id, visit_date, schedule_slot_id, schedule_group_id, client_id, client_display, price_id, amount, method, attendance_status, location_id, discipline_id, teacher_member_id, created_at";
+
+const mapSingleVisit = (row: Record<string, unknown>): SingleVisit => ({
+  id: String(row.id),
+  visitDate: String(row.visit_date ?? "").slice(0, 10),
+  scheduleSlotId: String(row.schedule_slot_id),
+  scheduleGroupId: String(row.schedule_group_id),
+  clientId: String(row.client_id),
+  clientDisplay: (row.client_display as string) || "",
+  priceId: String(row.price_id),
+  amount: Number(row.amount) || 0,
+  method: (row.method as PaymentMethod) || "cash",
+  attendanceStatus: "present",
+  locationId: row.location_id != null ? String(row.location_id) : null,
+  disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
+  teacherMemberId: row.teacher_member_id != null ? String(row.teacher_member_id) : null,
+  createdAt: String(row.created_at ?? ""),
+});
+
+export interface SingleVisitsFilter {
+  dateFrom?: string;
+  dateTo?: string;
+  yearMonth?: string;
+  enabled?: boolean;
+}
+
+function rangeFromFilter(filter?: SingleVisitsFilter): { dateFrom?: string; dateTo?: string } {
+  if (filter?.yearMonth) {
+    const [y, m] = filter.yearMonth.split("-").map(Number);
+    if (y && m) {
+      const mm = String(m).padStart(2, "0");
+      const lastDay = new Date(y, m, 0).getDate();
+      return {
+        dateFrom: `${y}-${mm}-01`,
+        dateTo: `${y}-${mm}-${String(lastDay).padStart(2, "0")}`,
+      };
+    }
+  }
+  return { dateFrom: filter?.dateFrom, dateTo: filter?.dateTo };
+}
+
+export function useSingleVisits(filter?: SingleVisitsFilter) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const queryEnabled = orgEnabled && (filter?.enabled ?? true);
+  const range = rangeFromFilter(filter);
+
+  return useQuery({
+    queryKey: withOrgId([...singleVisitsQueryKey, filter ?? {}]),
+    enabled: queryEnabled,
+    queryFn: async () => {
+      let query = supabase
+        .from("single_visits")
+        .select(SINGLE_VISITS_SELECT)
+        .order("visit_date", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (range.dateFrom) query = query.gte("visit_date", range.dateFrom);
+      if (range.dateTo) query = query.lte("visit_date", range.dateTo);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data ?? []).map((row) => mapSingleVisit(row as unknown as Record<string, unknown>));
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useRecordSingleVisit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      visitDate: string;
+      scheduleSlotId: string;
+      clientId: string;
+      priceId: string;
+      method: PaymentMethod;
+    }) => {
+      const { data, error } = await supabase.rpc("record_single_visit", {
+        p_visit_date: input.visitDate,
+        p_schedule_slot_id: input.scheduleSlotId,
+        p_client_id: input.clientId,
+        p_price_id: input.priceId,
+        p_method: input.method,
+      });
+
+      if (error) return { success: false as const, error: error.message };
+      const result = data as { success?: boolean; error?: string; visitId?: string } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "attendance.singleVisit.error.recordFailed" };
+      }
+      return { success: true as const, visitId: result.visitId };
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        void queryClient.invalidateQueries({ queryKey: singleVisitsQueryKey });
+        void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
+        void queryClient.invalidateQueries({ queryKey: payrollQueryKey });
+      }
+    },
+  });
+}

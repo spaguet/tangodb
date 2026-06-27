@@ -89,7 +89,7 @@ export interface PersonalDisplayLesson {
 
 export type DisplayLesson = GroupDisplayLesson | PersonalDisplayLesson;
 
-export type PriceCategory = "group" | "private";
+export type PriceCategory = "group" | "private" | "single_visit";
 
 export interface Price {
   id?: string;
@@ -139,6 +139,23 @@ export interface AttendanceRecord {
   attendanceStatus: "present" | "absent" | "freeze" | "excused";
 }
 
+export interface SingleVisit {
+  id: string;
+  visitDate: string;
+  scheduleSlotId: string;
+  scheduleGroupId: string;
+  clientId: string;
+  clientDisplay: string;
+  priceId: string;
+  amount: number;
+  method: PaymentMethod;
+  attendanceStatus: "present";
+  locationId?: string | null;
+  disciplineId?: string | null;
+  teacherMemberId?: string | null;
+  createdAt: string;
+}
+
 export interface PersonalLesson {
   id: string;
   type: "solo" | "pair" | "trio" | string;
@@ -169,6 +186,7 @@ export interface Payment {
   method: PaymentMethod;
   subscriptionId: string | null;
   personalLessonId: string | null;
+  singleVisitId: string | null;
   createdAt: string;
 }
 

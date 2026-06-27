@@ -32,6 +32,7 @@
   - **Переиспользование:** `PayPersonalLessonModal`, `EditLessonPopup`, `SellPackageModal`; attendance — `useMarkPersonalLessonAttendance`
   - **Nav gate:** `modules.personal_lessons`; Zustand `personalTab` синхронизирован с URL
   - **Delete/edit guard:** `date > today` — UI (`canWritePersonalLesson` + `isPersonalLessonLockedForWrite`), hooks, RPC
+- **Разовые групповые посещения:** отдельная финансово-операционная сущность `single_visits`, создаётся только через RPC `record_single_visit` из popup журнала посещений. Не моделировать как абонемент на 1 урок. `payments.single_visit_id` связывает поступление с визитом; тарифы имеют `prices.category = 'single_visit'` и используют те же `location_id` / `discipline_id` binding rules, что персональные тарифы. Payroll считает разовые отдельно через `teacher_pay_rates.single_visit_rate_percent`, по умолчанию от группового процента.
 - `supabase/` — миграции, RLS, edge functions
 
 ## RBAC / RLS (v2)

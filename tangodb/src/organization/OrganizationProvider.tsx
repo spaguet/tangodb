@@ -113,6 +113,8 @@ function mapSettings(row: Record<string, unknown>): OrganizationSettings {
     admin_can_manage_team: (row.admin_can_manage_team as boolean) ?? false,
     admin_can_accept_payments: (row.admin_can_accept_payments as boolean) ?? true,
     admin_can_edit_schedule: (row.admin_can_edit_schedule as boolean) ?? true,
+    teachers_can_record_single_visits: (row.teachers_can_record_single_visits as boolean) ?? false,
+    admin_can_record_single_visits: (row.admin_can_record_single_visits as boolean) ?? true,
     pair_cycle_enabled: row.pair_cycle_enabled as boolean,
     branding_name: (row.branding_name as string | null) ?? null,
     branding_logo_url: (row.branding_logo_url as string | null) ?? null,

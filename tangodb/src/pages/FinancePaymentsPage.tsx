@@ -13,12 +13,13 @@ import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
+import { useSingleVisits } from "../hooks/useSingleVisits";
 import { useI18n } from "../hooks/useI18n";
 import { buildClassTeacherMap, resolvePaymentTeacherId, type TeacherRevenueContext } from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
 import type { Payment, PaymentMethod } from "../types";
 
-type PaymentSourceFilter = "all" | "subscription" | "personal_lesson";
+type PaymentSourceFilter = "all" | "subscription" | "personal_lesson" | "single_visit";
 type PaymentMethodFilter = "all" | PaymentMethod;
 
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "transfer", "card", "other"];
@@ -60,7 +61,8 @@ function PaymentRow({
 function matchesSourceFilter(payment: Payment, source: PaymentSourceFilter): boolean {
   if (source === "all") return true;
   if (source === "subscription") return payment.subscriptionId != null;
-  return payment.personalLessonId != null;
+  if (source === "personal_lesson") return payment.personalLessonId != null;
+  return payment.singleVisitId != null;
 }
 
 export default function FinancePaymentsPage() {
@@ -79,6 +81,7 @@ export default function FinancePaymentsPage() {
   const paymentsQuery = usePayments(paymentsFilter);
   const teamQuery = useTeamMembers();
   const personalLessonsQuery = usePersonalLessons();
+  const singleVisitsQuery = useSingleVisits();
   const scheduleQuery = useSchedule();
   const subscriptionGroupsQuery = useSubscriptionGroups();
 
@@ -98,8 +101,12 @@ export default function FinancePaymentsPage() {
     const personalLessonById = new Map(
       (personalLessonsQuery.data ?? []).map((lesson) => [lesson.id, lesson])
     );
+    const singleVisitById = new Map(
+      (singleVisitsQuery.data ?? []).map((visit) => [visit.id, visit])
+    );
     return {
       personalLessonById,
+      singleVisitById,
       groupsBySubId: subscriptionGroupsQuery.groupsBySubId,
       classTeacherByGroupId: buildClassTeacherMap(scheduleQuery.data ?? []),
       teacherLabels: memberNameById,
@@ -108,6 +115,7 @@ export default function FinancePaymentsPage() {
     teamQuery.data,
     locale,
     personalLessonsQuery.data,
+    singleVisitsQuery.data,
     subscriptionGroupsQuery.groupsBySubId,
     scheduleQuery.data,
   ]);
@@ -137,6 +145,7 @@ export default function FinancePaymentsPage() {
     teacherFilter !== "all" &&
     (teamQuery.isLoading ||
       personalLessonsQuery.isLoading ||
+      singleVisitsQuery.isLoading ||
       scheduleQuery.isLoading ||
       subscriptionGroupsQuery.isLoading);
 
@@ -209,6 +218,7 @@ export default function FinancePaymentsPage() {
               <option value="all">{t("common.all")}</option>
               <option value="subscription">{t("common.payment.source.subscription")}</option>
               <option value="personal_lesson">{t("common.payment.source.personalLesson")}</option>
+              <option value="single_visit">{t("common.payment.source.singleVisit")}</option>
             </AppSelect>
             <AppSelect
               label={t("common.method")}

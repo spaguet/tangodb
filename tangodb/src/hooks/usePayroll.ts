@@ -21,7 +21,7 @@ const PAYMENTS_SELECT =
   "id, settlement_id, amount, paid_at, method, note, created_by, created_at";
 
 const RATES_SELECT =
-  "id, member_id, pay_mode, fixed_amount, rate_percent, group_rate_percent, personal_rate_percent, effective_from, created_at";
+  "id, member_id, pay_mode, fixed_amount, rate_percent, group_rate_percent, personal_rate_percent, single_visit_rate_percent, effective_from, created_at";
 
 function mapSettlement(row: Record<string, unknown>): TeacherSettlement {
   return {
@@ -58,6 +58,8 @@ function mapPayRate(row: Record<string, unknown>): TeacherPayRate {
     ratePercent: legacyRatePercent,
     groupRatePercent: Number(row.group_rate_percent) || legacyRatePercent,
     personalRatePercent: Number(row.personal_rate_percent) || legacyRatePercent,
+    singleVisitRatePercent:
+      Number(row.single_visit_rate_percent) || Number(row.group_rate_percent) || legacyRatePercent,
     effectiveFrom: String(row.effective_from ?? ""),
     createdAt: String(row.created_at ?? ""),
   };
@@ -230,9 +232,10 @@ export function useUpsertTeacherPayRate() {
         member_id: input.memberId,
         pay_mode: input.payMode,
         fixed_amount: input.fixedAmount,
-        rate_percent: Math.max(input.groupRatePercent, input.personalRatePercent),
+        rate_percent: Math.max(input.groupRatePercent, input.personalRatePercent, input.singleVisitRatePercent),
         group_rate_percent: input.groupRatePercent,
         personal_rate_percent: input.personalRatePercent,
+        single_visit_rate_percent: input.singleVisitRatePercent,
         effective_from: effectiveFrom,
       });
 

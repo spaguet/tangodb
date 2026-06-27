@@ -13,6 +13,7 @@ function paymentSourceLabel(
 ): string {
   if (payment.subscriptionId) return labels.paymentSourceSubscription;
   if (payment.personalLessonId) return labels.paymentSourcePersonal;
+  if (payment.singleVisitId) return labels.paymentSourceSingleVisit;
   return "—";
 }
 

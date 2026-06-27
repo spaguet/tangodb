@@ -37,6 +37,7 @@ const mapAttendanceRecord = (row: Record<string, unknown>): AttendanceRecord => 
 });
 
 export type ScheduleDateEntry = {
+  slotId?: string;
   date: string;
   time: string;
   timeEnd: string;
@@ -44,6 +45,7 @@ export type ScheduleDateEntry = {
   scheduleGroupId?: string | null;
   disciplineId?: string | null;
   locationId?: string | null;
+  teacherMemberId?: string | null;
 };
 
 export function filterScheduleByLocation(
@@ -86,6 +88,7 @@ export function computeScheduleDatesForMonth(
       if (slot.validTo != null && dateStr > slot.validTo) return;
 
       dates.push({
+        slotId: slot.id,
         date: dateStr,
         time: slot.time,
         timeEnd: slot.timeEnd || "21:00",
@@ -93,6 +96,7 @@ export function computeScheduleDatesForMonth(
         scheduleGroupId: slot.scheduleGroupId ?? null,
         disciplineId: slot.disciplineId ?? null,
         locationId: slot.locationId ?? null,
+        teacherMemberId: slot.teacherMemberId ?? null,
       });
     });
   }

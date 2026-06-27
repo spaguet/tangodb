@@ -273,6 +273,7 @@ export const PRICE_CATALOG_KEYS: Record<string, PriceCatalogMeta> = {
   personal_pair: { labelKey: "utils.tariff.personal_pair.label", subKey: "utils.tariff.personal_pair.sub", col: "private" },
   personal_trio: { labelKey: "utils.tariff.personal_trio.label", subKey: "utils.tariff.personal_trio.sub", col: "private" },
   personal_quad: { labelKey: "utils.tariff.personal_quad.label", subKey: "utils.tariff.personal_quad.sub", col: "private" },
+  single_visit: { labelKey: "utils.tariff.single_visit.label", subKey: "utils.tariff.single_visit.sub", col: "single_visit" },
 };
 
 /** @deprecated Use PRICE_CATALOG_KEYS with getPriceLabel(price, translate, locale) */
@@ -301,9 +302,12 @@ export function getPriceCatalogKey(price: Pick<PriceTariffRef, "type"> & Partial
 export function getPriceCategory(
   price: Pick<PriceTariffRef, "type"> & Partial<Pick<PriceTariffRef, "category" | "lessons">>
 ): PriceCategory {
-  if (price.category === "group" || price.category === "private") return price.category;
+  if (price.category === "group" || price.category === "private" || price.category === "single_visit") {
+    return price.category;
+  }
   const catalogCol = PRICE_CATALOG_KEYS[getPriceCatalogKey(price)]?.col;
   if (catalogCol === "private") return "private";
+  if (catalogCol === "single_visit") return "single_visit";
   return "group";
 }
 
@@ -415,6 +419,17 @@ export function filterPrivatePackageTariffsForSale<T extends PriceTariffRef>(
   options: { locationId?: string | null; disciplineId?: string | null }
 ): T[] {
   return filterTariffsForSale(getPrivatePackageTariffs(prices), options);
+}
+
+export function filterSingleVisitTariffsForSale<T extends PriceTariffRef>(
+  prices: T[],
+  options: { locationId?: string | null; disciplineId?: string | null }
+): T[] {
+  return filterTariffsForSale(getSingleVisitTariffs(prices), options);
+}
+
+export function getSingleVisitTariffs<T extends PriceTariffRef>(prices: T[]): T[] {
+  return prices.filter((p) => getPriceCategory(p) === "single_visit");
 }
 
 export function getPrivatePackageTariffs<T extends PriceTariffRef>(prices: T[]): T[] {

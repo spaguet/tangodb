@@ -45,13 +45,16 @@ const ROLE_OVERRIDE_KEYS: {
     | "admin_can_export"
     | "admin_can_manage_team"
     | "admin_can_accept_payments"
-    | "admin_can_edit_schedule";
+    | "admin_can_edit_schedule"
+    | "teachers_can_record_single_visits"
+    | "admin_can_record_single_visits";
   labelKey: I18nKey;
   hintKey?: I18nKey;
 }[] = [
   { key: "teachers_can_sell_subscriptions", labelKey: "settings.org.role.teachersSellSubs" },
   { key: "teachers_can_edit_clients", labelKey: "settings.org.role.teachersEditClients" },
   { key: "teachers_can_export", labelKey: "settings.org.role.teachersExport" },
+  { key: "teachers_can_record_single_visits", labelKey: "settings.org.role.teachersRecordSingleVisits" },
   {
     key: "teachers_can_view_full_schedule",
     labelKey: "settings.org.role.teachersViewSchedule",
@@ -66,6 +69,11 @@ const ROLE_OVERRIDE_KEYS: {
   {
     key: "admin_can_accept_payments",
     labelKey: "settings.org.role.adminAcceptPayments",
+    hintKey: "common.defaultOn",
+  },
+  {
+    key: "admin_can_record_single_visits",
+    labelKey: "settings.org.role.adminRecordSingleVisits",
     hintKey: "common.defaultOn",
   },
   {
@@ -101,6 +109,8 @@ export default function OrganizationSettingsPage() {
   const [adminCanManageTeam, setAdminCanManageTeam] = useState(false);
   const [adminCanAcceptPayments, setAdminCanAcceptPayments] = useState(true);
   const [adminCanEditSchedule, setAdminCanEditSchedule] = useState(true);
+  const [teachersCanRecordSingleVisits, setTeachersCanRecordSingleVisits] = useState(false);
+  const [adminCanRecordSingleVisits, setAdminCanRecordSingleVisits] = useState(true);
   const [lowBalanceThreshold, setLowBalanceThreshold] = useState(2);
   const [dirty, setDirty] = useState(false);
 
@@ -117,6 +127,8 @@ export default function OrganizationSettingsPage() {
     setAdminCanManageTeam(settings.admin_can_manage_team);
     setAdminCanAcceptPayments(settings.admin_can_accept_payments);
     setAdminCanEditSchedule(settings.admin_can_edit_schedule);
+    setTeachersCanRecordSingleVisits(settings.teachers_can_record_single_visits);
+    setAdminCanRecordSingleVisits(settings.admin_can_record_single_visits);
     setLowBalanceThreshold(settings.low_balance_threshold);
     setDirty(false);
   }, [settings]);
@@ -151,6 +163,8 @@ export default function OrganizationSettingsPage() {
       admin_can_manage_team: adminCanManageTeam,
       admin_can_accept_payments: adminCanAcceptPayments,
       admin_can_edit_schedule: adminCanEditSchedule,
+      teachers_can_record_single_visits: teachersCanRecordSingleVisits,
+      admin_can_record_single_visits: adminCanRecordSingleVisits,
       pair_cycle_enabled: false,
       low_balance_threshold: lowBalanceThreshold,
     });
@@ -239,6 +253,8 @@ export default function OrganizationSettingsPage() {
                 admin_can_manage_team: adminCanManageTeam,
                 admin_can_accept_payments: adminCanAcceptPayments,
                 admin_can_edit_schedule: adminCanEditSchedule,
+                teachers_can_record_single_visits: teachersCanRecordSingleVisits,
+                admin_can_record_single_visits: adminCanRecordSingleVisits,
               } as const;
               const setters = {
                 teachers_can_sell_subscriptions: setTeachersCanSellSubscriptions,
@@ -249,6 +265,8 @@ export default function OrganizationSettingsPage() {
                 admin_can_manage_team: setAdminCanManageTeam,
                 admin_can_accept_payments: setAdminCanAcceptPayments,
                 admin_can_edit_schedule: setAdminCanEditSchedule,
+                teachers_can_record_single_visits: setTeachersCanRecordSingleVisits,
+                admin_can_record_single_visits: setAdminCanRecordSingleVisits,
               } as const;
 
               return (

@@ -4,6 +4,7 @@ import type {
   Payment,
   PersonalLesson,
   ScheduleSlot,
+  SingleVisit,
   SubscriptionGroupLink,
 } from "../types";
 
@@ -28,6 +29,7 @@ export interface PaymentStats {
   count: number;
   subscriptionTotal: number;
   personalTotal: number;
+  singleVisitTotal: number;
   otherTotal: number;
   byMethod: Record<string, number>;
 }
@@ -36,12 +38,14 @@ export function aggregatePaymentStats(payments: Payment[]): PaymentStats {
   const byMethod: Record<string, number> = {};
   let subscriptionTotal = 0;
   let personalTotal = 0;
+  let singleVisitTotal = 0;
   let otherTotal = 0;
 
   for (const payment of payments) {
     byMethod[payment.method] = (byMethod[payment.method] ?? 0) + payment.amount;
     if (payment.subscriptionId) subscriptionTotal += payment.amount;
     else if (payment.personalLessonId) personalTotal += payment.amount;
+    else if (payment.singleVisitId) singleVisitTotal += payment.amount;
     else otherTotal += payment.amount;
   }
 
@@ -50,6 +54,7 @@ export function aggregatePaymentStats(payments: Payment[]): PaymentStats {
     count: payments.length,
     subscriptionTotal,
     personalTotal,
+    singleVisitTotal,
     otherTotal,
     byMethod,
   };
@@ -130,6 +135,7 @@ export interface MonthlyRevenuePoint {
   total: number;
   subscriptionTotal: number;
   personalTotal: number;
+  singleVisitTotal: number;
 }
 
 export function aggregatePaymentsByMonth(
@@ -143,6 +149,7 @@ export function aggregatePaymentsByMonth(
       total: stats.total,
       subscriptionTotal: stats.subscriptionTotal,
       personalTotal: stats.personalTotal,
+      singleVisitTotal: stats.singleVisitTotal,
     };
   });
 }
@@ -159,7 +166,7 @@ export function formatMomPercent(value: number | null): string {
   return `${sign}${value.toFixed(1)}%`;
 }
 
-export type RevenueSplitKey = "subscription" | "personal" | "other";
+export type RevenueSplitKey = "subscription" | "personal" | "single_visit" | "other";
 
 export interface RevenueSplitSegment {
   key: RevenueSplitKey;
@@ -173,6 +180,7 @@ export function buildRevenueSplit(stats: PaymentStats): RevenueSplitSegment[] {
   const segments: Array<{ key: RevenueSplitKey; amount: number }> = [
     { key: "subscription", amount: stats.subscriptionTotal },
     { key: "personal", amount: stats.personalTotal },
+    { key: "single_visit", amount: stats.singleVisitTotal },
   ];
   if (stats.otherTotal > 0) {
     segments.push({ key: "other", amount: stats.otherTotal });
@@ -243,6 +251,7 @@ export function buildClassTeacherMap(slots: ScheduleSlot[]): Map<string, string>
 
 export interface TeacherRevenueContext {
   personalLessonById: Map<string, Pick<PersonalLesson, "teacherMemberId">>;
+  singleVisitById: Map<string, Pick<SingleVisit, "teacherMemberId">>;
   groupsBySubId: Record<string, SubscriptionGroupLink[]>;
   classTeacherByGroupId: Map<string, string>;
   teacherLabels: Map<string, string>;
@@ -254,6 +263,9 @@ export function resolvePaymentTeacherId(
 ): string | null {
   if (payment.personalLessonId) {
     return ctx.personalLessonById.get(payment.personalLessonId)?.teacherMemberId ?? null;
+  }
+  if (payment.singleVisitId) {
+    return ctx.singleVisitById.get(payment.singleVisitId)?.teacherMemberId ?? null;
   }
   if (payment.subscriptionId) {
     for (const group of ctx.groupsBySubId[payment.subscriptionId] ?? []) {
@@ -296,7 +308,8 @@ export interface OccupancyStats {
 
 export function computeOccupancyStats(
   attendance: AttendanceRecord[],
-  personalLessons: PersonalLesson[]
+  personalLessons: PersonalLesson[],
+  singleVisits: SingleVisit[] = []
 ): OccupancyStats {
   let present = 0;
   let absent = 0;
@@ -310,6 +323,8 @@ export function computeOccupancyStats(
     if (lesson.attendanceStatus === "present") present += 1;
     else if (lesson.attendanceStatus === "absent") absent += 1;
   }
+
+  present += singleVisits.length;
 
   const marked = present + absent;
   return {

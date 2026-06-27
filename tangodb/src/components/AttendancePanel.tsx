@@ -24,12 +24,15 @@ import {
 } from "../hooks/useAttendance";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
+import { useClientDirectory } from "../hooks/useClients";
+import { singleVisitsQueryKey, useRecordSingleVisit, useSingleVisits } from "../hooks/useSingleVisits";
 import {
   translateConnectionBlockReason,
   translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
+import { PAYMENT_METHOD_KEYS } from "../hooks/usePayments";
 import { useSettings } from "../settings/SettingsProvider";
 import {
   canApplyFreeze,
@@ -42,6 +45,8 @@ import {
   formatCurrency,
   formatMonthTitle,
   getDowLabels,
+  filterSingleVisitTariffsForSale,
+  getPriceLabel,
   getSubscriptionDaysLeft,
   getSubscriptionTariffLabel,
   isMonthlyUnlimitedSubscription,
@@ -53,6 +58,8 @@ import { useUIStore } from "../store/ui";
 import QueryErrorState from "./ui/QueryErrorState";
 import LoadingState from "./ui/LoadingState";
 import VirtualList from "./ui/VirtualList";
+import AppSelect from "./ui/AppSelect";
+import ClientAutocomplete from "./ui/ClientAutocomplete";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./schedule/PayPersonalLessonModal";
 import type { ToastType } from "../App";
 import type { PersonalLesson, SubForDate } from "../types";
@@ -67,6 +74,8 @@ const ATTENDANCE_MARK_KEYS = [
   { labelKey: "common.freeze" as const, hintKey: "attendance.legend.freezeHint" as const, status: "freeze" as const },
   { labelKey: "common.excusedShort" as const, hintKey: "attendance.legend.excusedHint" as const, status: "excused" as const },
 ];
+
+const SINGLE_VISIT_PAYMENT_METHODS = ["cash", "transfer", "card", "other"] as const;
 
 function attendanceStatusLabel(
   status: "present" | "absent" | "freeze" | "excused",
@@ -111,11 +120,13 @@ type DayLessonEntry =
   | {
       kind: "group";
       key: string;
+      slotId?: string;
       start: string;
       time: string;
       timeEnd: string;
       label: string;
       disciplineId?: string | null;
+      locationId?: string | null;
       scheduleGroupId?: string | null;
     }
   | { kind: "personal"; key: string; start: string; lesson: PersonalLesson; label: string };
@@ -181,10 +192,20 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   });
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = usePrices();
   const { groupsBySubId } = useSubscriptionGroups();
+  const clientsQuery = useClientDirectory();
+  const singleVisitsQuery = useSingleVisits({
+    yearMonth: selectedLocationId ? selectedMonth : undefined,
+    enabled: selectedLocationId != null,
+  });
 
   const [selectedDate, setSelectedDate] = useState(todayDateStr);
   const [selectedLesson, setSelectedLesson] = useState<DayLessonEntry | null>(null);
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
+  const [singleVisitOpen, setSingleVisitOpen] = useState(false);
+  const [singleVisitClientQuery, setSingleVisitClientQuery] = useState("");
+  const [singleVisitClientId, setSingleVisitClientId] = useState("");
+  const [singleVisitPriceId, setSingleVisitPriceId] = useState("");
+  const [singleVisitMethod, setSingleVisitMethod] = useState<"cash" | "transfer" | "card" | "other">("cash");
 
   useEffect(() => {
     if (selectedLocationId != null || locations.length !== 1) return;
@@ -193,6 +214,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   useEffect(() => {
     setSelectedLesson(null);
+    setSingleVisitOpen(false);
   }, [selectedLocationId]);
 
   useEffect(() => {
@@ -217,6 +239,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [selectedLesson]);
+
+  useEffect(() => {
+    setSingleVisitOpen(false);
+    setSingleVisitClientQuery("");
+    setSingleVisitClientId("");
+    setSingleVisitPriceId("");
+    setSingleVisitMethod("cash");
   }, [selectedLesson]);
 
   const groupLessonsForDay = useMemo(
@@ -244,11 +274,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         .filter((slot) => slot.scheduleGroupId)
         .map((slot) => ({
         kind: "group" as const,
+        slotId: slot.slotId,
         start: slot.time,
         key: `g-${slot.date}|${slot.time}|${slot.scheduleGroupId}`,
         time: slot.time,
         timeEnd: slot.timeEnd,
         disciplineId: slot.disciplineId ?? null,
+        locationId: slot.locationId ?? null,
         scheduleGroupId: slot.scheduleGroupId ?? null,
         label: slot.groupName
           ? `${slot.groupName} · ${slot.time} – ${slot.timeEnd}`
@@ -290,15 +322,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const markAttendance = useMarkAttendance();
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
+  const recordSingleVisit = useRecordSingleVisit();
   const { can, isReadOnly } = usePermissions();
   const { freezePolicy } = useSettings();
   const isLoading =
     locationsLoading ||
-    (selectedLocationId != null && (scheduleLoading || personalLoading || pricesLoading));
+    (selectedLocationId != null && (scheduleLoading || personalLoading || pricesLoading || clientsQuery.isLoading || singleVisitsQuery.isLoading));
   const isError =
     locationsError ||
-    (selectedLocationId != null && (scheduleError || personalError || pricesError));
-  const error = locationsErr ?? scheduleErr ?? personalErr ?? pricesErr;
+    (selectedLocationId != null && (scheduleError || personalError || pricesError || clientsQuery.isError || singleVisitsQuery.isError));
+  const error = locationsErr ?? scheduleErr ?? personalErr ?? pricesErr ?? clientsQuery.error ?? singleVisitsQuery.error;
   const canMarkAttendance = isDateMarkable(selectedDate) && can("attendance.write");
 
   const calendarCells = useMemo(() => {
@@ -424,9 +457,88 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     }
   };
 
+  const selectedGroupLesson = selectedLesson?.kind === "group" ? selectedLesson : null;
+  const singleVisitTariffs = useMemo(
+    () =>
+      selectedGroupLesson
+        ? filterSingleVisitTariffsForSale(prices, {
+            locationId: selectedLocationId,
+            disciplineId: selectedGroupLesson.disciplineId ?? null,
+          })
+        : [],
+    [prices, selectedGroupLesson, selectedLocationId]
+  );
+  const selectedSingleVisitPrice = singleVisitTariffs.find((price) => price.id === singleVisitPriceId) ?? null;
+  const selectedClient = (clientsQuery.data ?? []).find((client) => client.id === singleVisitClientId) ?? null;
+  const groupSingleVisits = useMemo(
+    () =>
+      selectedGroupLesson
+        ? (singleVisitsQuery.data ?? [])
+            .filter(
+              (visit) =>
+                visit.visitDate === selectedDate &&
+                visit.scheduleSlotId === selectedGroupLesson.slotId
+            )
+            .sort((a, b) => a.clientDisplay.localeCompare(b.clientDisplay, locale))
+        : [],
+    [singleVisitsQuery.data, selectedDate, selectedGroupLesson, locale]
+  );
+  const canRecordSingleVisit =
+    !!selectedGroupLesson &&
+    !!selectedGroupLesson.slotId &&
+    !isReadOnly &&
+    isDateMarkable(selectedDate) &&
+    can("single_visits.record", {
+      disciplineId: selectedGroupLesson.disciplineId ?? null,
+      locationId: selectedGroupLesson.locationId ?? null,
+    });
+
+  const handleRecordSingleVisit = async () => {
+    if (!selectedGroupLesson?.slotId) {
+      toast(t("attendance.error.groupUnknown"), "error");
+      return;
+    }
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
+    if (!canRecordSingleVisit) {
+      toast(t("attendance.singleVisit.error.noAccess"), "error");
+      return;
+    }
+    if (!singleVisitClientId || !selectedClient) {
+      toast(t("attendance.singleVisit.error.clientRequired"), "error");
+      return;
+    }
+    if (!singleVisitPriceId) {
+      toast(t("attendance.singleVisit.error.tariffRequired"), "error");
+      return;
+    }
+
+    const res = await recordSingleVisit.mutateAsync({
+      visitDate: selectedDate,
+      scheduleSlotId: selectedGroupLesson.slotId,
+      clientId: singleVisitClientId,
+      priceId: singleVisitPriceId,
+      method: singleVisitMethod,
+    });
+    if (!res.success) {
+      toast(res.error || t("attendance.singleVisit.error.recordFailed"), "error");
+      return;
+    }
+
+    toast(t("attendance.singleVisit.success.recorded"), "success");
+    setSingleVisitOpen(false);
+    setSingleVisitClientQuery("");
+    setSingleVisitClientId("");
+    setSingleVisitPriceId("");
+    void queryClient.invalidateQueries({ queryKey: singleVisitsQueryKey });
+  };
+
   const handleRefresh = () => {
     void queryClient.invalidateQueries({ queryKey: attendanceQueryKey });
     void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
+    void queryClient.invalidateQueries({ queryKey: singleVisitsQueryKey });
     toast(t("attendance.info.refreshed"), "info");
   };
 
@@ -596,6 +708,117 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       locationId: lesson.locationId ?? null,
       disciplineId: lesson.disciplineId ?? null,
     });
+  };
+
+  const renderSingleVisitPanel = () => {
+    if (!selectedGroupLesson) return null;
+
+    return (
+      <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50/70 p-3 space-y-3">
+        {canRecordSingleVisit && (
+          <button
+            type="button"
+            onClick={() => setSingleVisitOpen((value) => !value)}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 border border-dashed border-slate-300 hover:border-indigo-300 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 rounded-lg text-[11px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+          >
+            <Ticket className="w-3.5 h-3.5" />
+            {t("attendance.singleVisit.button")}
+          </button>
+        )}
+
+        {singleVisitOpen && canRecordSingleVisit && (
+          <div className="space-y-3 pt-1">
+            <ClientAutocomplete
+              label={t("common.client")}
+              clients={clientsQuery.data ?? []}
+              query={singleVisitClientQuery}
+              selectedId={singleVisitClientId}
+              onQueryChange={(value) => {
+                setSingleVisitClientQuery(value);
+                setSingleVisitClientId("");
+              }}
+              onSelect={(client) => {
+                setSingleVisitClientId(client.id);
+                setSingleVisitClientQuery(`${client.lastName} ${client.firstName}`.trim());
+              }}
+              showAddClientButton
+              addClientLinkLabel={t("common.newClient")}
+              modalSubmitLabel={t("clients.form.addSubmit")}
+              toast={toast}
+            />
+
+            <AppSelect
+              label={t("attendance.singleVisit.tariff")}
+              value={singleVisitPriceId}
+              onChange={(e) => setSingleVisitPriceId(e.target.value)}
+            >
+              <option value="">{t("attendance.singleVisit.tariffPlaceholder")}</option>
+              {singleVisitTariffs.map((tariff) => (
+                <option key={tariff.id} value={tariff.id!}>
+                  {getPriceLabel(tariff, t)} · {formatCurrency(tariff.price)}
+                </option>
+              ))}
+            </AppSelect>
+
+            {singleVisitTariffs.length === 0 && (
+              <p className="text-[11px] text-amber-600 font-sans">
+                {t("attendance.singleVisit.noTariffs")}{" "}
+                <Link to="/prices" className="font-semibold text-indigo-600 hover:text-indigo-800 underline-offset-2 hover:underline">
+                  {t("attendance.singleVisit.openPrices")}
+                </Link>
+              </p>
+            )}
+
+            <AppSelect
+              label={t("common.method")}
+              value={singleVisitMethod}
+              onChange={(e) => setSingleVisitMethod(e.target.value as typeof singleVisitMethod)}
+            >
+              {SINGLE_VISIT_PAYMENT_METHODS.map((method) => (
+                <option key={method} value={method}>
+                  {t(PAYMENT_METHOD_KEYS[method])}
+                </option>
+              ))}
+            </AppSelect>
+
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-white border border-slate-100 px-3 py-2">
+              <span className="text-xs text-slate-500 font-sans">{t("common.amount")}</span>
+              <span className="text-sm font-semibold text-slate-800">
+                {selectedSingleVisitPrice ? formatCurrency(selectedSingleVisitPrice.price) : "—"}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleRecordSingleVisit}
+              disabled={
+                recordSingleVisit.isPending ||
+                connectionState !== "online" ||
+                !singleVisitClientId ||
+                !singleVisitPriceId
+              }
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+            >
+              {recordSingleVisit.isPending ? t("common.saving") : t("attendance.singleVisit.record")}
+            </button>
+          </div>
+        )}
+
+        {groupSingleVisits.length > 0 && (
+          <div className="space-y-1.5 pt-2 border-t border-slate-100">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              {t("attendance.singleVisit.recordedTitle")}
+            </p>
+            {groupSingleVisits.map((visit) => (
+              <div key={visit.id} className="flex items-center justify-between gap-2 text-xs font-sans">
+                <span className="text-slate-700 truncate">{visit.clientDisplay}</span>
+                <span className="text-indigo-700 font-semibold whitespace-nowrap">{formatCurrency(visit.amount)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (isError) {
@@ -983,12 +1206,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     <p className="text-xs">{t("attendance.loadingSubscriptions")}</p>
                   </div>
                 ) : modalSubs.length === 0 ? (
-                  <div className="text-center py-20 text-slate-400 space-y-3">
-                    <Ticket className="w-8 h-8 mx-auto text-slate-300" />
-                    <p className="text-sm">{t("attendance.noSubscriptions")}</p>
+                  <div>
+                    {renderSingleVisitPanel()}
+                    <div className="text-center py-20 text-slate-400 space-y-3">
+                      <Ticket className="w-8 h-8 mx-auto text-slate-300" />
+                      <p className="text-sm">{t("attendance.noSubscriptions")}</p>
+                    </div>
                   </div>
                 ) : (
                   <div>
+                    {renderSingleVisitPanel()}
                     {!canMarkAttendance && (
                       <p className="text-[11px] text-amber-600 font-sans mb-3">
                         {t("attendance.error.pastOnly")}

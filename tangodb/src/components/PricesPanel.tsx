@@ -20,11 +20,13 @@ import {
 } from "../lib/orgModules";
 import {
   formatCurrency,
+  generateTariffTypeKey,
   getPriceCategory,
   getPriceDescription,
   getPriceLabel,
   getPrivateLessonTariffs,
   getPrivatePackageTariffs,
+  getSingleVisitTariffs,
   isMonthlyUnlimitedTariff,
 } from "../lib/utils";
 import { useSettings } from "../settings/SettingsProvider";
@@ -49,7 +51,7 @@ interface PricesPanelProps {
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
-type CreateTabId = "group" | "privateLesson" | "privatePackage";
+type CreateTabId = "group" | "privateLesson" | "privatePackage" | "singleVisit";
 type CreateModalStep = "picker" | "form";
 
 function TariffCreateSection({
@@ -92,7 +94,7 @@ function TariffCreateSection({
   );
 }
 
-const CREATE_TAB_IDS: CreateTabId[] = ["group", "privateLesson", "privatePackage"];
+const CREATE_TAB_IDS: CreateTabId[] = ["group", "privateLesson", "singleVisit", "privatePackage"];
 
 export default function PricesPanel({ toast }: PricesPanelProps) {
   const { t, plural } = useI18n();
@@ -127,6 +129,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     format: "solo" as GroupParticipantFormat,
   });
   const [privateLessonForm, setPrivateLessonForm] = useState({ label: "", description: "", price: "" });
+  const [singleVisitForm, setSingleVisitForm] = useState({ label: "", description: "", price: "" });
   const [privatePackageForm, setPrivatePackageForm] = useState({
     label: "",
     description: "",
@@ -142,14 +145,13 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const [editLocationId, setEditLocationId] = useState("");
   const [editBindToDiscipline, setEditBindToDiscipline] = useState(false);
   const [editDisciplineId, setEditDisciplineId] = useState("");
-  const [creatingSection, setCreatingSection] = useState<"group" | "privateLesson" | "privatePackage" | null>(
-    null
-  );
+  const [creatingSection, setCreatingSection] = useState<CreateTabId | null>(null);
   const [activeCreateTab, setActiveCreateTab] = useState<CreateTabId>("group");
 
   const CREATE_TABS = [
     { id: "group" as const, label: t("prices.tab.group"), formTitle: t("prices.form.groupTitle") },
     { id: "privateLesson" as const, label: t("prices.tab.privateLesson"), formTitle: t("prices.form.privateLessonTitle") },
+    { id: "singleVisit" as const, label: t("prices.tab.singleVisit"), formTitle: t("prices.form.singleVisitTitle") },
     {
       id: "privatePackage" as const,
       label: t("prices.tab.privatePackage"),
@@ -198,6 +200,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     if (createModalStep !== null) return;
     setGroupForm({ label: "", description: "", lessons: "8", price: "", format: "solo" });
     setPrivateLessonForm({ label: "", description: "", price: "" });
+    setSingleVisitForm({ label: "", description: "", price: "" });
     setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "", format: "solo" });
     setCreatingSection(null);
     setActiveCreateTab("group");
@@ -315,7 +318,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     }
   };
 
-  const handleCreateTariff = async (section: "group" | "privateLesson" | "privatePackage") => {
+  const handleCreateTariff = async (section: CreateTabId) => {
     if (connectionState !== "online") {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
@@ -325,7 +328,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         ? groupForm
         : section === "privateLesson"
           ? privateLessonForm
-          : privatePackageForm;
+          : section === "singleVisit"
+            ? singleVisitForm
+            : privatePackageForm;
 
     if (!form.label.trim()) {
       toast(t("prices.error.nameRequired"), "error");
@@ -378,6 +383,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       billingModel = resolved.billingModel;
     } else if (section === "privateLesson") {
       priceType = "personal_solo";
+    } else if (section === "singleVisit") {
+      priceType = generateTariffTypeKey();
     } else {
       priceType = resolvePrivatePackagePriceType(privatePackageForm.format);
     }
@@ -388,7 +395,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       price: parsedPrice,
       label: form.label,
       description: form.description,
-      category: section === "group" ? "group" : "private",
+      category: section === "group" ? "group" : section === "singleVisit" ? "single_visit" : "private",
       locationId: bindToLocation ? formLocationId : null,
       disciplineId: bindToDiscipline ? formDisciplineId : null,
       billingModel,
@@ -404,6 +411,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         setGroupForm({ label: "", description: "", lessons: "8", price: "", format: "solo" });
       } else if (section === "privateLesson") {
         setPrivateLessonForm({ label: "", description: "", price: "" });
+      } else if (section === "singleVisit") {
+        setSingleVisitForm({ label: "", description: "", price: "" });
       } else {
         setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "", format: "solo" });
       }
@@ -415,6 +424,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     modules
   ).map((priceObj) => ({ priceObj }));
   const privateLessonItems = getPrivateLessonTariffs(prices).map((priceObj) => ({ priceObj }));
+  const singleVisitItems = getSingleVisitTariffs(prices).map((priceObj) => ({ priceObj }));
   const privatePackageItems = getPrivatePackageTariffs(prices).map((priceObj) => ({ priceObj }));
 
   const activeCreateTabMeta = CREATE_TABS.find((tab) => tab.id === activeCreateTab)!;
@@ -607,6 +617,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         ) : (
           <div className="space-y-6">
             {renderTariffSection(t("prices.section.group"), groupItems)}
+            {renderTariffSection(t("prices.section.singleVisit"), singleVisitItems)}
             {renderTariffSection(t("prices.section.privateLesson"), privateLessonItems)}
             {renderTariffSection(t("prices.section.privatePackage"), privatePackageItems)}
           </div>
@@ -896,6 +907,48 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                           min={0}
                           value={privateLessonForm.price}
                           onChange={(e) => setPrivateLessonForm({ ...privateLessonForm, price: e.target.value })}
+                          className={`${inputCls} pr-8`}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                      </div>
+                    </div>
+                    {locationTariffField}
+                    {disciplineTariffField}
+                  </TariffCreateSection>
+                )}
+
+                {activeCreateTab === "singleVisit" && (
+                  <TariffCreateSection
+                    compact
+                    onSubmit={() => handleCreateTariff("singleVisit")}
+                    pending={creatingSection === "singleVisit"}
+                  >
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("prices.form.name")}</label>
+                      <input
+                        type="text"
+                        value={singleVisitForm.label}
+                        onChange={(e) => setSingleVisitForm({ ...singleVisitForm, label: e.target.value })}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("prices.form.description")}</label>
+                      <textarea
+                        value={singleVisitForm.description}
+                        onChange={(e) => setSingleVisitForm({ ...singleVisitForm, description: e.target.value })}
+                        rows={2}
+                        className={descriptionFieldCls}
+                      />
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("prices.form.cost")}</label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min={0}
+                          value={singleVisitForm.price}
+                          onChange={(e) => setSingleVisitForm({ ...singleVisitForm, price: e.target.value })}
                           className={`${inputCls} pr-8`}
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>

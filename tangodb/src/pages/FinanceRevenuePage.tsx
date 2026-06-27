@@ -69,7 +69,7 @@ export default function FinanceRevenuePage() {
         </div>
 
         <div className="p-4 space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.total")}</p>
               <p className="text-lg font-semibold text-slate-900 mt-0.5">{formatCurrency(stats.total)}</p>
@@ -85,6 +85,10 @@ export default function FinanceRevenuePage() {
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.personal")}</p>
               <p className="text-lg font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.personalTotal)}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.singleVisits")}</p>
+              <p className="text-lg font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.singleVisitTotal)}</p>
             </div>
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.other")}</p>

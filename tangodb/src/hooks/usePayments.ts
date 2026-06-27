@@ -14,7 +14,7 @@ import { financialDebtorsQueryKey } from "./useFinancialDebtors";
 export const paymentsQueryKey = ["payments"] as const;
 
 const PAYMENTS_SELECT =
-  "id, client_id, client_display, amount, method, subscription_id, personal_lesson_id, created_at";
+  "id, client_id, client_display, amount, method, subscription_id, personal_lesson_id, single_visit_id, created_at";
 
 const mapPayment = (row: Record<string, unknown>): Payment => ({
   id: row.id as string,
@@ -24,6 +24,7 @@ const mapPayment = (row: Record<string, unknown>): Payment => ({
   method: (row.method as PaymentMethod) || "cash",
   subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
   personalLessonId: row.personal_lesson_id != null ? (row.personal_lesson_id as string) : null,
+  singleVisitId: row.single_visit_id != null ? (row.single_visit_id as string) : null,
   createdAt: String(row.created_at ?? ""),
 });
 
@@ -86,6 +87,7 @@ export function useRecordPayment() {
       method: PaymentMethod;
       subscriptionId?: string;
       personalLessonId?: string;
+      singleVisitId?: string;
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
@@ -99,6 +101,7 @@ export function useRecordPayment() {
         method: input.method,
         subscription_id: input.subscriptionId ?? null,
         personal_lesson_id: input.personalLessonId ?? null,
+        single_visit_id: input.singleVisitId ?? null,
         created_by: memberId ?? null,
       });
 
@@ -266,6 +269,11 @@ export function paymentSourceLabel(
     return translate
       ? translate("common.payment.source.personalLesson")
       : t(locale, "common.payment.source.personalLesson");
+  }
+  if (payment.singleVisitId) {
+    return translate
+      ? translate("common.payment.source.singleVisit")
+      : t(locale, "common.payment.source.singleVisit");
   }
   return "—";
 }

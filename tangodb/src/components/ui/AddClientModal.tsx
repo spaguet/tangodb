@@ -26,6 +26,15 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
   const [telegram, setTelegram] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [isMinor, setIsMinor] = useState(false);
+  const [guardian1Name, setGuardian1Name] = useState("");
+  const [guardian1Phone, setGuardian1Phone] = useState("");
+  const [guardian1Telegram, setGuardian1Telegram] = useState("");
+  const [guardian1Address, setGuardian1Address] = useState("");
+  const [guardian2Name, setGuardian2Name] = useState("");
+  const [guardian2Phone, setGuardian2Phone] = useState("");
+  const [guardian2Telegram, setGuardian2Telegram] = useState("");
+  const [guardian2Address, setGuardian2Address] = useState("");
   const resolvedSubmitLabel = submitLabel || t("clients.form.addSubmit");
 
   useEffect(() => {
@@ -44,6 +53,15 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
       setTelegram("");
       setPhone("");
       setEmail("");
+      setIsMinor(false);
+      setGuardian1Name("");
+      setGuardian1Phone("");
+      setGuardian1Telegram("");
+      setGuardian1Address("");
+      setGuardian2Name("");
+      setGuardian2Phone("");
+      setGuardian2Telegram("");
+      setGuardian2Address("");
     }
   }, [open]);
 
@@ -54,7 +72,22 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
       return;
     }
 
-    const res = await addClient.mutateAsync({ firstName, lastName, telegram, phone, email });
+    const res = await addClient.mutateAsync({
+      firstName,
+      lastName,
+      telegram,
+      phone,
+      email,
+      isMinor,
+      guardian1Name,
+      guardian1Phone,
+      guardian1Telegram,
+      guardian1Address,
+      guardian2Name,
+      guardian2Phone,
+      guardian2Telegram,
+      guardian2Address,
+    });
     if (!res.success) {
       toast(resolveMutationError(res.error, "clients.error.addFailed", t), "error");
       return;
@@ -68,15 +101,15 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
       telegram: telegram.trim(),
       phone: phone.trim(),
       email: email.trim(),
-      isMinor: false,
-      guardian1Name: "",
-      guardian1Phone: "",
-      guardian1Telegram: "",
-      guardian1Address: "",
-      guardian2Name: "",
-      guardian2Phone: "",
-      guardian2Telegram: "",
-      guardian2Address: "",
+      isMinor,
+      guardian1Name: isMinor ? guardian1Name.trim() : "",
+      guardian1Phone: isMinor ? guardian1Phone.trim() : "",
+      guardian1Telegram: isMinor ? guardian1Telegram.trim() : "",
+      guardian1Address: isMinor ? guardian1Address.trim() : "",
+      guardian2Name: isMinor ? guardian2Name.trim() : "",
+      guardian2Phone: isMinor ? guardian2Phone.trim() : "",
+      guardian2Telegram: isMinor ? guardian2Telegram.trim() : "",
+      guardian2Address: isMinor ? guardian2Address.trim() : "",
     });
     onClose();
   };
@@ -97,7 +130,7 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack modal-wide-md-sm"
+            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-y-auto max-h-[90vh] max-w-sm w-full p-4 panel-card-stack modal-wide-md-sm"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2 text-slate-800">
@@ -185,6 +218,95 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
                   {t("common.telegramOptionalHint")}
                 </p>
               </div>
+
+              <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isMinor}
+                  onChange={(e) => setIsMinor(e.target.checked)}
+                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                {t("clients.form.isMinor")}
+              </label>
+
+              {isMinor && (
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("clients.form.guardian1")} · {t("clients.form.guardianName")}</label>
+                      <input
+                        type="text"
+                        value={guardian1Name}
+                        onChange={(e) => setGuardian1Name(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("clients.form.guardian1")} · {t("clients.form.phone")}</label>
+                      <input
+                        type="tel"
+                        value={guardian1Phone}
+                        onChange={(e) => setGuardian1Phone(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("clients.form.guardian1")} · Telegram</label>
+                      <input
+                        type="text"
+                        value={guardian1Telegram}
+                        onChange={(e) => setGuardian1Telegram(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("clients.form.guardian1")} · {t("clients.form.guardianAddress")}</label>
+                      <input
+                        type="text"
+                        value={guardian1Address}
+                        onChange={(e) => setGuardian1Address(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("clients.form.guardian2")} · {t("clients.form.guardianName")}</label>
+                      <input
+                        type="text"
+                        value={guardian2Name}
+                        onChange={(e) => setGuardian2Name(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("clients.form.guardian2")} · {t("clients.form.phone")}</label>
+                      <input
+                        type="tel"
+                        value={guardian2Phone}
+                        onChange={(e) => setGuardian2Phone(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("clients.form.guardian2")} · Telegram</label>
+                      <input
+                        type="text"
+                        value={guardian2Telegram}
+                        onChange={(e) => setGuardian2Telegram(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("clients.form.guardian2")} · {t("clients.form.guardianAddress")}</label>
+                      <input
+                        type="text"
+                        value={guardian2Address}
+                        onChange={(e) => setGuardian2Address(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-3 pt-1">
                 <button

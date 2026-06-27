@@ -103,6 +103,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
   const [fixedAmount, setFixedAmount] = useState("");
   const [groupRatePercent, setGroupRatePercent] = useState("");
   const [personalRatePercent, setPersonalRatePercent] = useState("");
+  const [singleVisitRatePercent, setSingleVisitRatePercent] = useState("");
   const [initialPayrollKey, setInitialPayrollKey] = useState("");
 
   const activeRate = useMemo(() => {
@@ -118,11 +119,15 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
     const nextFixedAmount = activeRate ? String(activeRate.fixedAmount) : "";
     const nextGroupRate = activeRate ? String(activeRate.groupRatePercent) : "";
     const nextPersonalRate = activeRate ? String(activeRate.personalRatePercent) : "";
+    const nextSingleVisitRate = activeRate
+      ? String(activeRate.singleVisitRatePercent)
+      : nextGroupRate;
     setPayMode(nextPayMode);
     setFixedAmount(nextFixedAmount);
     setGroupRatePercent(nextGroupRate);
     setPersonalRatePercent(nextPersonalRate);
-    setInitialPayrollKey([nextPayMode, nextFixedAmount, nextGroupRate, nextPersonalRate].join("|"));
+    setSingleVisitRatePercent(nextSingleVisitRate);
+    setInitialPayrollKey([nextPayMode, nextFixedAmount, nextGroupRate, nextPersonalRate, nextSingleVisitRate].join("|"));
     setDirty(false);
   }, [member, activeRate]);
 
@@ -158,7 +163,16 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
         const parsedFixed = Number(fixedAmount) || 0;
         const parsedGroup = Number(groupRatePercent) || 0;
         const parsedPersonal = Number(personalRatePercent) || 0;
-        if (parsedFixed < 0 || parsedGroup < 0 || parsedGroup > 100 || parsedPersonal < 0 || parsedPersonal > 100) {
+        const parsedSingleVisit = Number(singleVisitRatePercent) || 0;
+        if (
+          parsedFixed < 0 ||
+          parsedGroup < 0 ||
+          parsedGroup > 100 ||
+          parsedPersonal < 0 ||
+          parsedPersonal > 100 ||
+          parsedSingleVisit < 0 ||
+          parsedSingleVisit > 100
+        ) {
           showToast(t("finance.payroll.error.amount"), "error");
           return;
         }
@@ -168,6 +182,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
           fixedAmount: payMode === "percent" ? 0 : parsedFixed,
           groupRatePercent: payMode === "fixed" ? 0 : parsedGroup,
           personalRatePercent: payMode === "fixed" ? 0 : parsedPersonal,
+          singleVisitRatePercent: payMode === "fixed" ? 0 : parsedSingleVisit,
         });
         if (!rateResult.success) {
           showToast(resolveMutationError(rateResult.error, "memberProfile.error.saveFailed", t), "error");
@@ -188,7 +203,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
 
   const showRateField = !!member && canManageRate && canEdit;
   const isSaving = updateMember.isPending || upsertRate.isPending;
-  const payrollKey = [payMode, fixedAmount, groupRatePercent, personalRatePercent].join("|");
+  const payrollKey = [payMode, fixedAmount, groupRatePercent, personalRatePercent, singleVisitRatePercent].join("|");
   const isDirty =
     dirty || (showRateField && payrollKey !== initialPayrollKey);
 
@@ -323,7 +338,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                   )}
 
                   {(payMode === "percent" || payMode === "fixed_plus_percent") && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <label className="block space-y-1">
                         <span className={labelCls}>{t("memberProfile.field.groupRatePercent")}</span>
                         <input
@@ -349,6 +364,21 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                           value={personalRatePercent}
                           onChange={(e) => {
                             setPersonalRatePercent(e.target.value);
+                            setDirty(true);
+                          }}
+                          className={fieldCls}
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className={labelCls}>{t("memberProfile.field.singleVisitRatePercent")}</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={singleVisitRatePercent}
+                          onChange={(e) => {
+                            setSingleVisitRatePercent(e.target.value);
                             setDirty(true);
                           }}
                           className={fieldCls}

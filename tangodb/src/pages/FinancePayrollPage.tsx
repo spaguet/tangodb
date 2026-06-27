@@ -21,6 +21,7 @@ import { usePayments } from "../hooks/usePayments";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
+import { useSingleVisits } from "../hooks/useSingleVisits";
 import {
   activeRateByMember,
   useOwnTeacherSettlements,
@@ -63,6 +64,7 @@ function payRatePercentLabel(rate: TeacherPayRate | undefined, t: ReturnType<typ
   return t("finance.payroll.ratePercentSplit", {
     group: rate.groupRatePercent,
     personal: rate.personalRatePercent,
+    singleVisit: rate.singleVisitRatePercent,
   });
 }
 
@@ -142,11 +144,12 @@ function MemberPayrollBreakdown({
     { label: t("finance.payroll.breakdownFixed"), amount: breakdown.fixedAmount },
     { label: t("finance.payroll.breakdownGroup"), amount: breakdown.groupPercentAmount },
     { label: t("finance.payroll.breakdownPersonal"), amount: breakdown.personalPercentAmount },
+    { label: t("finance.payroll.breakdownSingleVisit"), amount: breakdown.singleVisitPercentAmount },
   ];
 
   return (
     <div className="px-3 py-3 bg-slate-50/80 rounded-lg border border-slate-100 space-y-2">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
         {rows.map((row) => (
           <div key={row.label} className="text-xs font-sans">
             <p className="text-[10px] text-slate-400 uppercase font-semibold">{row.label}</p>
@@ -293,6 +296,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
   const paymentsQuery = usePayments({ dateFrom: monthRange.dateFrom, dateTo: monthRange.dateTo });
   const scheduleQuery = useSchedule();
   const personalLessonsQuery = usePersonalLessons();
+  const singleVisitsQuery = useSingleVisits({ yearMonth });
   const subscriptionGroupsQuery = useSubscriptionGroups();
 
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
@@ -330,14 +334,19 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
     const personalLessonById = new Map(
       (personalLessonsQuery.data ?? []).map((lesson) => [lesson.id, lesson])
     );
+    const singleVisitById = new Map(
+      (singleVisitsQuery.data ?? []).map((visit) => [visit.id, visit])
+    );
     return {
       personalLessonById,
+      singleVisitById,
       groupsBySubId: subscriptionGroupsQuery.groupsBySubId,
       classTeacherByGroupId: buildClassTeacherMap(scheduleQuery.data ?? []),
       teacherLabels: memberNameById,
     };
   }, [
     personalLessonsQuery.data,
+    singleVisitsQuery.data,
     subscriptionGroupsQuery.groupsBySubId,
     scheduleQuery.data,
     memberNameById,
@@ -352,6 +361,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
     paymentsQuery.isLoading ||
     scheduleQuery.isLoading ||
     personalLessonsQuery.isLoading ||
+    singleVisitsQuery.isLoading ||
     subscriptionGroupsQuery.isLoading ||
     recalculate.isPending
   ) {
