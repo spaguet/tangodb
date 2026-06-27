@@ -700,6 +700,7 @@ export const RU: Record<I18nKey, string> = {
   "common.packageSuffix": " · абонемент",
   "common.edit": "Редактировать",
   "common.pay": "Оплатить",
+  "common.markPaid": "Оплатил",
   "common.change": "Изменить",
   "common.add": "Добавить",
   "common.addDay": "Добавить день",

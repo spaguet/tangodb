@@ -703,6 +703,7 @@ export const EN: Record<I18nKey, string> = {
   "common.packageSuffix": " · package",
   "common.edit": "Edit",
   "common.pay": "Pay",
+  "common.markPaid": "Marked paid",
   "common.change": "Change",
   "common.add": "Add",
   "common.addDay": "Add day",

@@ -14,6 +14,7 @@ import {
   MapPin,
   ArrowLeft,
   ShieldCheck,
+  Coins,
 } from "lucide-react";
 import {
   attendanceQueryKey,
@@ -52,6 +53,7 @@ import { useUIStore } from "../store/ui";
 import QueryErrorState from "./ui/QueryErrorState";
 import LoadingState from "./ui/LoadingState";
 import VirtualList from "./ui/VirtualList";
+import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./schedule/PayPersonalLessonModal";
 import type { ToastType } from "../App";
 import type { PersonalLesson, SubForDate } from "../types";
 
@@ -182,6 +184,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const [selectedDate, setSelectedDate] = useState(todayDateStr);
   const [selectedLesson, setSelectedLesson] = useState<DayLessonEntry | null>(null);
+  const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
 
   useEffect(() => {
     if (selectedLocationId != null || locations.length !== 1) return;
@@ -287,7 +290,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const markAttendance = useMarkAttendance();
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
-  const { can } = usePermissions();
+  const { can, isReadOnly } = usePermissions();
   const { freezePolicy } = useSettings();
   const isLoading =
     locationsLoading ||
@@ -565,11 +568,35 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     !!activePersonalLesson;
 
   const isPersonalAttendanceView = isPersonalOneOffView || isPersonalPackageView;
+  const canPayActivePersonalLesson =
+    !!activePersonalLesson &&
+    activePersonalLesson.paid === "no" &&
+    !isReadOnly &&
+    can("payments.write", {
+      disciplineId: activePersonalLesson.disciplineId ?? null,
+      locationId: activePersonalLesson.locationId ?? null,
+    });
 
   const isSubsListView =
     !!selectedLesson && !isPersonalAttendanceView && !subsError && !subsLoading && modalSubs.length > 0;
 
   const useVirtualSubsList = isSubsListView && modalSubs.length >= 20;
+
+  const openPayPersonalLesson = (lesson: PersonalLesson) => {
+    setPayTarget({
+      lessonId: lesson.id,
+      date: lesson.date,
+      timeStart: lesson.timeStart,
+      timeEnd: lesson.timeEnd,
+      clientId1: lesson.clientId1,
+      clientId2: lesson.clientId2,
+      clientId3: lesson.clientId3,
+      clientDisplay: lesson.clientDisplay,
+      price: lesson.price,
+      locationId: lesson.locationId ?? null,
+      disciplineId: lesson.disciplineId ?? null,
+    });
+  };
 
   if (isError) {
     return (
@@ -890,6 +917,18 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       <>
                         <AttendanceMarkLegend showFreeze={false} t={t} />
                         <div className="flex flex-wrap items-center gap-2 pt-1">
+                          {canPayActivePersonalLesson ? (
+                            <button
+                              type="button"
+                              onClick={() => openPayPersonalLesson(activePersonalLesson)}
+                              disabled={connectionState !== "online"}
+                              title={translateConnectionBlockReason(connectionState, t)}
+                              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border bg-indigo-600 border-indigo-600 text-white shadow-xs cursor-pointer disabled:opacity-60"
+                            >
+                              <Coins className="w-3.5 h-3.5" />
+                              {t("common.markPaid")}
+                            </button>
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => handleMarkPersonal(activePersonalLesson.id, "present")}
@@ -996,6 +1035,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           </div>
         )}
       </AnimatePresence>
+
+      <PayPersonalLessonModal
+        lesson={payTarget}
+        toast={toast}
+        onClose={() => setPayTarget(null)}
+        onSuccess={() => {
+          setPayTarget(null);
+          setSelectedLesson(null);
+        }}
+      />
     </div>
   );
 }

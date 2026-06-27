@@ -114,7 +114,7 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="panel-form-stack font-sans">
+            <form onSubmit={handleSubmit} noValidate className="panel-form-stack font-sans">
               <div className="field-stack">
                 <label className={labelCls}>{t("clients.form.firstName")}</label>
                 <input

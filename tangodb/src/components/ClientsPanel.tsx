@@ -103,6 +103,15 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const [editTg, setEditTg] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editIsMinor, setEditIsMinor] = useState(false);
+  const [editGuardian1Name, setEditGuardian1Name] = useState("");
+  const [editGuardian1Phone, setEditGuardian1Phone] = useState("");
+  const [editGuardian1Telegram, setEditGuardian1Telegram] = useState("");
+  const [editGuardian1Address, setEditGuardian1Address] = useState("");
+  const [editGuardian2Name, setEditGuardian2Name] = useState("");
+  const [editGuardian2Phone, setEditGuardian2Phone] = useState("");
+  const [editGuardian2Telegram, setEditGuardian2Telegram] = useState("");
+  const [editGuardian2Address, setEditGuardian2Address] = useState("");
 
   // Delete confirm state
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
@@ -187,6 +196,15 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
     setEditTg(c.telegram);
     setEditPhone(c.phone);
     setEditEmail(c.email);
+    setEditIsMinor(c.isMinor);
+    setEditGuardian1Name(c.guardian1Name);
+    setEditGuardian1Phone(c.guardian1Phone);
+    setEditGuardian1Telegram(c.guardian1Telegram);
+    setEditGuardian1Address(c.guardian1Address);
+    setEditGuardian2Name(c.guardian2Name);
+    setEditGuardian2Phone(c.guardian2Phone);
+    setEditGuardian2Telegram(c.guardian2Telegram);
+    setEditGuardian2Address(c.guardian2Address);
   };
 
   const handleSaveEdit = async () => {
@@ -208,6 +226,15 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       telegram: editTg,
       phone: editPhone,
       email: editEmail,
+      isMinor: editIsMinor,
+      guardian1Name: editGuardian1Name,
+      guardian1Phone: editGuardian1Phone,
+      guardian1Telegram: editGuardian1Telegram,
+      guardian1Address: editGuardian1Address,
+      guardian2Name: editGuardian2Name,
+      guardian2Phone: editGuardian2Phone,
+      guardian2Telegram: editGuardian2Telegram,
+      guardian2Address: editGuardian2Address,
     });
     if (!res.success) {
       toast(resolveMutationError(res.error, "clients.error.saveFailed", t), "error");
@@ -305,7 +332,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
           <h2 className="text-base font-semibold tracking-tight">{t("clients.form.addTitle")}</h2>
         </div>
 
-        <form onSubmit={handleSubmitAdd} className="panel-form-stack font-sans">
+        <form onSubmit={handleSubmitAdd} noValidate className="panel-form-stack font-sans">
           <div className="field-stack">
             <label className={labelCls}>{t("clients.form.firstName")}</label>
             <input
@@ -697,7 +724,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-y-auto max-h-[90vh] max-w-lg w-full p-4 panel-card-stack"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("clients.modal.editTitle")}</h3>
@@ -753,6 +780,84 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                     className={`${inputCls} font-sans text-xs`}
                   />
                 </div>
+
+                <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editIsMinor}
+                    onChange={(e) => setEditIsMinor(e.target.checked)}
+                    className={checkboxCls}
+                  />
+                  {t("clients.form.isMinor")}
+                </label>
+
+                {editIsMinor ? (
+                  <div className="space-y-4 border border-slate-100 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-slate-600">{t("clients.form.guardian1")}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="field-stack">
+                        <label className={labelCls}>{t("clients.form.guardianName")}</label>
+                        <input type="text" value={editGuardian1Name} onChange={(e) => setEditGuardian1Name(e.target.value)} className={inputCls} />
+                      </div>
+                      <div className="field-stack">
+                        <label className={labelCls}>{t("clients.form.phone")}</label>
+                        <input type="tel" value={editGuardian1Phone} onChange={(e) => setEditGuardian1Phone(e.target.value)} className={inputCls} />
+                      </div>
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>Telegram</label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
+                        <input
+                          type="text"
+                          value={editGuardian1Telegram.replace(/https?:\/\/t\.me\//, "")}
+                          onChange={(e) => {
+                            const val = e.target.value.trim();
+                            setEditGuardian1Telegram(val === "" ? "" : `https://t.me/${val.replace(/@/, "")}`);
+                          }}
+                          placeholder="username"
+                          className={`${inputCls} pl-12 font-sans`}
+                        />
+                      </div>
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("clients.form.guardianAddress")}</label>
+                      <input type="text" value={editGuardian1Address} onChange={(e) => setEditGuardian1Address(e.target.value)} className={inputCls} />
+                    </div>
+
+                    <p className="text-xs font-semibold text-slate-600 pt-1">{t("clients.form.guardian2")}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="field-stack">
+                        <label className={labelCls}>{t("clients.form.guardianName")}</label>
+                        <input type="text" value={editGuardian2Name} onChange={(e) => setEditGuardian2Name(e.target.value)} className={inputCls} />
+                      </div>
+                      <div className="field-stack">
+                        <label className={labelCls}>{t("clients.form.phone")}</label>
+                        <input type="tel" value={editGuardian2Phone} onChange={(e) => setEditGuardian2Phone(e.target.value)} className={inputCls} />
+                      </div>
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>Telegram</label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
+                        <input
+                          type="text"
+                          value={editGuardian2Telegram.replace(/https?:\/\/t\.me\//, "")}
+                          onChange={(e) => {
+                            const val = e.target.value.trim();
+                            setEditGuardian2Telegram(val === "" ? "" : `https://t.me/${val.replace(/@/, "")}`);
+                          }}
+                          placeholder="username"
+                          className={`${inputCls} pl-12 font-sans`}
+                        />
+                      </div>
+                    </div>
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("clients.form.guardianAddress")}</label>
+                      <input type="text" value={editGuardian2Address} onChange={(e) => setEditGuardian2Address(e.target.value)} className={inputCls} />
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-3 pt-1 text-xs">

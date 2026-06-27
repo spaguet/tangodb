@@ -655,6 +655,7 @@ export type I18nKey =
   | "common.packageSuffix"
   | "common.edit"
   | "common.pay"
+  | "common.markPaid"
   | "common.change"
   | "common.add"
   | "common.addDay"

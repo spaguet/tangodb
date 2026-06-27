@@ -11,6 +11,18 @@
 
 ## Записи
 
+### 2026-06-27 — Native validation оставалась на языке браузера
+
+- **Ошибка:** В английском UI форма добавления клиента показывала системное «Заполните это поле.».
+- **Причина:** `required` блокировал `onSubmit` до локализованной проверки, а язык native validation зависит от окружения браузера.
+- **Как избежать:** Для кастомных i18n-форм использовать `noValidate` и показывать ошибки через `t()`, либо явно задавать custom validity на каждый required field.
+
+### 2026-06-27 — Старый Telegram-профиль не находился без app_metadata.telegram_id
+
+- **Ошибка:** Пользователь с существующим email-профилем мог получить `Authentication failed` при входе через Telegram.
+- **Причина:** `telegram-auth` искал auth user только по `app_metadata.telegram_id` или synthetic `tg_*@tangodb.auth`; старые профили команды с заполненным Telegram username, но без metadata, не подхватывались.
+- **Как избежать:** При Telegram-login сначала искать по metadata, затем fallback по нормализованному `organization_members.telegram`, после успешного совпадения синхронизировать `app_metadata.telegram_id`.
+
 ### 2026-06-27 — Payroll показывал только преподавателей
 
 - **Ошибка:** В «Зарплаты» owner/director/admin/accountant не попадали в таблицу и начисления, даже если проводили уроки или им нужен оклад.

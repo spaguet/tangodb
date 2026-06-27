@@ -57,6 +57,14 @@ export function aggregatePaymentStats(payments: Payment[]): PaymentStats {
 
 export interface DebtorEntry {
   id: string;
+  personalLessonId?: string | null;
+  clientId1?: string | null;
+  clientId2?: string | null;
+  clientId3?: string | null;
+  lessonTimeStart?: string | null;
+  lessonTimeEnd?: string | null;
+  locationId?: string | null;
+  disciplineId?: string | null;
   clientDisplay: string;
   contact: string;
   kind: "subscription" | "personal";

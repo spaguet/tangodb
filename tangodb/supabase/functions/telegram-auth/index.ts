@@ -72,6 +72,35 @@ function extractDisplayName(body: AuthRequestBody, telegramId: number): string {
   return "";
 }
 
+function extractUsername(body: AuthRequestBody, telegramId: number): string {
+  if (body.widgetPayload?.username) return body.widgetPayload.username;
+
+  if (body.initData) {
+    try {
+      const params = new URLSearchParams(body.initData);
+      const userRaw = params.get("user");
+      if (userRaw) {
+        const user = JSON.parse(userRaw) as { id?: number; username?: string };
+        if (user.id === telegramId && user.username) return user.username;
+      }
+    } catch {
+      // ignore malformed initData user payload
+    }
+  }
+
+  return "";
+}
+
+function normalizeTelegramUsername(value: string | null | undefined): string {
+  return (value ?? "")
+    .trim()
+    .replace(/^https?:\/\/t\.me\//i, "")
+    .replace(/^t\.me\//i, "")
+    .replace(/^@/, "")
+    .split(/[/?#]/, 1)[0]
+    .toLowerCase();
+}
+
 function isSyntheticTelegramEmail(email: string, telegramId: number): boolean {
   return email.trim().toLowerCase() === syntheticTelegramEmail(telegramId).toLowerCase();
 }
@@ -116,6 +145,33 @@ async function resolveTelegramUser(
 
   const syntheticEmail = syntheticTelegramEmail(telegramId);
   return findAuthUserByEmail(admin, syntheticEmail);
+}
+
+async function findAuthUserByTeamTelegram(
+  admin: ReturnType<typeof createServiceClient>,
+  username: string
+): Promise<User | null> {
+  const normalizedUsername = normalizeTelegramUsername(username);
+  if (!normalizedUsername) return null;
+
+  const { data, error } = await admin
+    .from("organization_members")
+    .select("user_id, telegram")
+    .eq("is_active", true)
+    .not("telegram", "is", null);
+
+  if (error) throw error;
+
+  const matched = (data ?? []).find(
+    (row) => normalizeTelegramUsername(row.telegram as string | null) === normalizedUsername
+  );
+  if (!matched?.user_id) return null;
+
+  const { data: userData, error: userError } = await admin.auth.admin.getUserById(
+    matched.user_id as string
+  );
+  if (userError) throw userError;
+  return userData.user ?? null;
 }
 
 async function ensureSyntheticTelegramUser(
@@ -360,12 +416,15 @@ Deno.serve(async (req) => {
   }
 
   const displayName = extractDisplayName(body, telegramId);
+  const username = extractUsername(body, telegramId);
   let isNewDemo = false;
   let recoveryCode: string | undefined;
 
   let user: User;
   try {
-    const existing = await resolveTelegramUser(admin, telegramId);
+    const existing =
+      (await resolveTelegramUser(admin, telegramId)) ||
+      (await findAuthUserByTeamTelegram(admin, username));
     if (existing?.email) {
       user = existing;
     } else {

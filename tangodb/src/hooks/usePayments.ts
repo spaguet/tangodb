@@ -9,6 +9,7 @@ import type { Payment, PaymentMethod } from "../types";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { personalLessonsQueryKey } from "./usePersonalLessons";
+import { financialDebtorsQueryKey } from "./useFinancialDebtors";
 
 export const paymentsQueryKey = ["payments"] as const;
 
@@ -189,6 +190,7 @@ export function useRecordPersonalLessonPayment() {
       if (result.success) {
         void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
         void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
+        void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey });
       }
     },
   });
@@ -218,6 +220,7 @@ export function useVoidPersonalLessonPayment() {
       if (result.success) {
         void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
         void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
+        void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey });
       }
     },
   });
