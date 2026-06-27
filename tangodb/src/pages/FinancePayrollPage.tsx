@@ -16,7 +16,7 @@ import DatePickerField from "../components/ui/DatePickerField";
 import { useToast } from "../App";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
-import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
+import { memberListLabel, memberRoleLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import {
   activeRateByMember,
   useOwnTeacherSettlements,
@@ -32,12 +32,28 @@ import { shiftMonth } from "../lib/financeReports";
 import { resolveMutationError } from "../lib/resolveMutationError";
 import { currentYearMonth, formatCurrency, formatMonthTitle } from "../lib/utils";
 import { toISODateLocal } from "../lib/scheduleWeek";
-import type { TeacherSettlement } from "../types/payroll";
+import type { TeacherPayRate, TeacherSettlement } from "../types/payroll";
 import type { PaymentMethod } from "../types";
 
 const inputCls =
   "w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 font-sans";
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+
+function payRateLabel(rate: TeacherPayRate | undefined, t: ReturnType<typeof useI18n>["t"]): string {
+  if (!rate) return "—";
+  if (rate.payMode === "fixed") return t("finance.payroll.rateFixed", { amount: formatCurrency(rate.fixedAmount) });
+  const percent = t("finance.payroll.ratePercentSplit", {
+    group: rate.groupRatePercent,
+    personal: rate.personalRatePercent,
+  });
+  if (rate.payMode === "fixed_plus_percent") {
+    return t("finance.payroll.rateFixedPlusPercent", {
+      amount: formatCurrency(rate.fixedAmount),
+      percent,
+    });
+  }
+  return percent;
+}
 
 function SettlementPaymentsList({ settlementId }: { settlementId: string }) {
   const { t, formatDate } = useI18n();
@@ -98,10 +114,6 @@ function RecordPaymentModal({
       toast(t("finance.payroll.error.amount"), "error");
       return;
     }
-    if (amount > balance) {
-      toast(t("finance.payroll.error.overpay"), "error");
-      return;
-    }
     if (paidAt > todayIso) {
       toast(t("finance.payroll.error.futureDate"), "error");
       return;
@@ -148,7 +160,8 @@ function RecordPaymentModal({
 
         <div className="panel-form-stack font-sans">
           <p className="text-xs text-slate-500">
-            {t("finance.payroll.balanceDue")}: <span className="font-semibold text-slate-800">{formatCurrency(balance)}</span>
+            {t(balance < 0 ? "finance.payroll.advanceBalance" : "finance.payroll.balanceDue")}:{" "}
+            <span className="font-semibold text-slate-800">{formatCurrency(balance)}</span>
           </p>
           <label className="block space-y-1">
             <span className={labelCls}>{t("finance.payroll.amountLabel")}</span>
@@ -215,8 +228,8 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
     void recalculate.mutateAsync(yearMonth);
   }, [yearMonth, canWrite]);
 
-  const teachers = useMemo(
-    () => (teamQuery.data ?? []).filter((m) => m.role === "teacher" && m.is_active),
+  const payrollMembers = useMemo(
+    () => (teamQuery.data ?? []).filter((m) => m.is_active),
     [teamQuery.data]
   );
 
@@ -240,9 +253,9 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
   if (ratesQuery.isError) return <QueryErrorState error={ratesQuery.error} />;
   if (settlementsQuery.isError) return <QueryErrorState error={settlementsQuery.error} />;
 
-  if (teachers.length === 0) {
+  if (payrollMembers.length === 0) {
     return (
-      <p className="text-sm text-slate-400 py-8 text-center">{t("finance.payroll.noTeachers")}</p>
+      <p className="text-sm text-slate-400 py-8 text-center">{t("finance.payroll.noMembers")}</p>
     );
   }
 
@@ -252,7 +265,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
         <table className="w-full text-sm font-sans">
           <thead>
             <tr className="text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
-              <th className="text-left py-2 px-3 font-semibold">{t("finance.payroll.colTeacher")}</th>
+              <th className="text-left py-2 px-3 font-semibold">{t("finance.payroll.colMember")}</th>
               <th className="text-right py-2 px-3 font-semibold">{t("finance.payroll.colRate")}</th>
               <th className="text-right py-2 px-3 font-semibold">{t("finance.payroll.colAccrued")}</th>
               <th className="text-right py-2 px-3 font-semibold">{t("finance.payroll.colPaid")}</th>
@@ -261,25 +274,26 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
             </tr>
           </thead>
           <tbody>
-            {teachers.map((teacher) => {
-              const rate = rateMap.get(teacher.id);
-              const settlement = settlementByMember.get(teacher.id);
+            {payrollMembers.map((member) => {
+              const rate = rateMap.get(member.id);
+              const settlement = settlementByMember.get(member.id);
               const accrued = settlement?.amountAccrued ?? 0;
               const paid = settlement?.amountPaid ?? 0;
               const balance = settlement ? settlementBalance(settlement) : 0;
               const expanded = expandedId === settlement?.id;
 
               return (
-                <Fragment key={teacher.id}>
+                <Fragment key={member.id}>
                   <tr className="border-b border-slate-50 hover:bg-slate-50/50">
                     <td className="py-2.5 px-3">
-                      <p className="font-semibold text-slate-800">{memberListLabel(teacher, locale)}</p>
+                      <p className="font-semibold text-slate-800">{memberListLabel(member, locale)}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{memberRoleLabel(member.role, member.meta, locale)}</p>
                       {!rate && (
                         <p className="text-[10px] text-amber-600 mt-0.5">{t("finance.payroll.noRate")}</p>
                       )}
                     </td>
                     <td className="py-2.5 px-3 text-right text-slate-600">
-                      {rate ? `${rate.ratePercent}%` : "—"}
+                      {payRateLabel(rate, t)}
                     </td>
                     <td className="py-2.5 px-3 text-right font-semibold text-slate-800">{formatCurrency(accrued)}</td>
                     <td className="py-2.5 px-3 text-right text-emerald-700">{formatCurrency(paid)}</td>
@@ -297,16 +311,14 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
                               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                             </button>
                           )}
-                          {balance > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => setPaymentTarget(settlement)}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg cursor-pointer"
-                            >
-                              <Plus className="w-3 h-3" />
-                              {t("finance.payroll.recordPayment")}
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => setPaymentTarget(settlement)}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" />
+                            {balance < 0 ? t("finance.payroll.recordAdvance") : t("finance.payroll.recordPayment")}
+                          </button>
                         </div>
                       </td>
                     )}

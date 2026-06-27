@@ -1,9 +1,15 @@
 import type { PaymentMethod } from "../types";
 
+export type PayrollPayMode = "percent" | "fixed" | "fixed_plus_percent";
+
 export interface TeacherPayRate {
   id: string;
   memberId: string;
+  payMode: PayrollPayMode;
+  fixedAmount: number;
   ratePercent: number;
+  groupRatePercent: number;
+  personalRatePercent: number;
   effectiveFrom: string;
   createdAt: string;
 }
@@ -38,6 +44,9 @@ export interface SettlementPaymentInput {
 
 export interface TeacherPayRateInput {
   memberId: string;
-  ratePercent: number;
+  payMode: PayrollPayMode;
+  fixedAmount: number;
+  groupRatePercent: number;
+  personalRatePercent: number;
   effectiveFrom?: string;
 }

@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Save, X } from "lucide-react";
 import { useToast } from "../../App";
+import AppSelect from "../../components/ui/AppSelect";
 import { memberDisplayName, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { useTeamMutations } from "../../hooks/useTeamInvites";
 import { activeRateByMember, useTeacherPayRates, useUpsertTeacherPayRate } from "../../hooks/usePayroll";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
+import type { PayrollPayMode } from "../../types/payroll";
 
 interface MemberProfileModalProps {
   member: TeamMemberRow | null;
@@ -94,8 +96,11 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
     profileNotes: "",
   });
   const [dirty, setDirty] = useState(false);
-  const [ratePercent, setRatePercent] = useState("");
-  const [initialRatePercent, setInitialRatePercent] = useState("");
+  const [payMode, setPayMode] = useState<PayrollPayMode>("percent");
+  const [fixedAmount, setFixedAmount] = useState("");
+  const [groupRatePercent, setGroupRatePercent] = useState("");
+  const [personalRatePercent, setPersonalRatePercent] = useState("");
+  const [initialPayrollKey, setInitialPayrollKey] = useState("");
 
   const activeRate = useMemo(() => {
     if (!member) return null;
@@ -106,10 +111,15 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
   useEffect(() => {
     if (!member) return;
     setForm(toForm(member));
-    const rate = activeRate?.ratePercent;
-    const rateStr = rate != null ? String(rate) : "";
-    setRatePercent(rateStr);
-    setInitialRatePercent(rateStr);
+    const nextPayMode = activeRate?.payMode ?? "percent";
+    const nextFixedAmount = activeRate ? String(activeRate.fixedAmount) : "";
+    const nextGroupRate = activeRate ? String(activeRate.groupRatePercent) : "";
+    const nextPersonalRate = activeRate ? String(activeRate.personalRatePercent) : "";
+    setPayMode(nextPayMode);
+    setFixedAmount(nextFixedAmount);
+    setGroupRatePercent(nextGroupRate);
+    setPersonalRatePercent(nextPersonalRate);
+    setInitialPayrollKey([nextPayMode, nextFixedAmount, nextGroupRate, nextPersonalRate].join("|"));
     setDirty(false);
   }, [member, activeRate]);
 
@@ -141,20 +151,20 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
         profileNotes: form.profileNotes,
       });
 
-      if (
-        member.role === "teacher" &&
-        canManageRate &&
-        canEdit &&
-        ratePercent !== initialRatePercent
-      ) {
-        const parsed = Number(ratePercent);
-        if (Number.isNaN(parsed) || parsed < 0 || parsed > 100) {
+      if (canManageRate && canEdit && payrollKey !== initialPayrollKey) {
+        const parsedFixed = Number(fixedAmount) || 0;
+        const parsedGroup = Number(groupRatePercent) || 0;
+        const parsedPersonal = Number(personalRatePercent) || 0;
+        if (parsedFixed < 0 || parsedGroup < 0 || parsedGroup > 100 || parsedPersonal < 0 || parsedPersonal > 100) {
           showToast(t("finance.payroll.error.amount"), "error");
           return;
         }
         const rateResult = await upsertRate.mutateAsync({
           memberId: member.id,
-          ratePercent: parsed,
+          payMode,
+          fixedAmount: payMode === "percent" ? 0 : parsedFixed,
+          groupRatePercent: payMode === "fixed" ? 0 : parsedGroup,
+          personalRatePercent: payMode === "fixed" ? 0 : parsedPersonal,
         });
         if (!rateResult.success) {
           showToast(resolveMutationError(rateResult.error, "memberProfile.error.saveFailed", t), "error");
@@ -173,10 +183,11 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
     }
   };
 
-  const showRateField = member?.role === "teacher" && canManageRate && canEdit;
+  const showRateField = !!member && canManageRate && canEdit;
   const isSaving = updateMember.isPending || upsertRate.isPending;
+  const payrollKey = [payMode, fixedAmount, groupRatePercent, personalRatePercent].join("|");
   const isDirty =
-    dirty || (showRateField && ratePercent !== initialRatePercent);
+    dirty || (showRateField && payrollKey !== initialPayrollKey);
 
   const subtitle = member ? memberDisplayName(member) : null;
 
@@ -272,22 +283,73 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
               </label>
 
               {showRateField && (
-                <label className="block space-y-1">
-                  <span className={labelCls}>{t("memberProfile.field.ratePercent")}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    value={ratePercent}
+                <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                  <AppSelect
+                    label={t("memberProfile.field.payMode")}
+                    value={payMode}
                     onChange={(e) => {
-                      setRatePercent(e.target.value);
+                      setPayMode(e.target.value as PayrollPayMode);
                       setDirty(true);
                     }}
-                    className={fieldCls}
-                  />
-                  <p className="text-[10px] text-slate-400">{t("memberProfile.field.ratePercentHint")}</p>
-                </label>
+                  >
+                    <option value="percent">{t("memberProfile.payMode.percent")}</option>
+                    <option value="fixed">{t("memberProfile.payMode.fixed")}</option>
+                    <option value="fixed_plus_percent">{t("memberProfile.payMode.fixedPlusPercent")}</option>
+                  </AppSelect>
+
+                  {(payMode === "fixed" || payMode === "fixed_plus_percent") && (
+                    <label className="block space-y-1">
+                      <span className={labelCls}>{t("memberProfile.field.fixedAmount")}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={fixedAmount}
+                        onChange={(e) => {
+                          setFixedAmount(e.target.value);
+                          setDirty(true);
+                        }}
+                        className={fieldCls}
+                      />
+                    </label>
+                  )}
+
+                  {(payMode === "percent" || payMode === "fixed_plus_percent") && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <label className="block space-y-1">
+                        <span className={labelCls}>{t("memberProfile.field.groupRatePercent")}</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={groupRatePercent}
+                          onChange={(e) => {
+                            setGroupRatePercent(e.target.value);
+                            setDirty(true);
+                          }}
+                          className={fieldCls}
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className={labelCls}>{t("memberProfile.field.personalRatePercent")}</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={personalRatePercent}
+                          onChange={(e) => {
+                            setPersonalRatePercent(e.target.value);
+                            setDirty(true);
+                          }}
+                          className={fieldCls}
+                        />
+                      </label>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-slate-400">{t("memberProfile.field.payrollHint")}</p>
+                </div>
               )}
             </div>
 

@@ -20,7 +20,8 @@ const SETTLEMENTS_SELECT =
 const PAYMENTS_SELECT =
   "id, settlement_id, amount, paid_at, method, note, created_at";
 
-const RATES_SELECT = "id, member_id, rate_percent, effective_from, created_at";
+const RATES_SELECT =
+  "id, member_id, pay_mode, fixed_amount, rate_percent, group_rate_percent, personal_rate_percent, effective_from, created_at";
 
 function mapSettlement(row: Record<string, unknown>): TeacherSettlement {
   return {
@@ -47,10 +48,15 @@ function mapSettlementPayment(row: Record<string, unknown>): TeacherSettlementPa
 }
 
 function mapPayRate(row: Record<string, unknown>): TeacherPayRate {
+  const legacyRatePercent = Number(row.rate_percent) || 0;
   return {
     id: row.id as string,
     memberId: row.member_id as string,
-    ratePercent: Number(row.rate_percent) || 0,
+    payMode: (row.pay_mode as TeacherPayRate["payMode"]) || "percent",
+    fixedAmount: Number(row.fixed_amount) || 0,
+    ratePercent: legacyRatePercent,
+    groupRatePercent: Number(row.group_rate_percent) || legacyRatePercent,
+    personalRatePercent: Number(row.personal_rate_percent) || legacyRatePercent,
     effectiveFrom: String(row.effective_from ?? ""),
     createdAt: String(row.created_at ?? ""),
   };
@@ -221,7 +227,11 @@ export function useUpsertTeacherPayRate() {
       const { error } = await supabase.from("teacher_pay_rates").insert({
         organization_id: organizationId,
         member_id: input.memberId,
-        rate_percent: input.ratePercent,
+        pay_mode: input.payMode,
+        fixed_amount: input.fixedAmount,
+        rate_percent: Math.max(input.groupRatePercent, input.personalRatePercent),
+        group_rate_percent: input.groupRatePercent,
+        personal_rate_percent: input.personalRatePercent,
         effective_from: effectiveFrom,
       });
 

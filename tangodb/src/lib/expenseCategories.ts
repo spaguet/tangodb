@@ -5,7 +5,6 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   "rent",
   "utilities",
   "marketing",
-  "salary",
   "other",
 ];
 

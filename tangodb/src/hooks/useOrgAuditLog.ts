@@ -8,6 +8,8 @@ export interface AuditLogRow {
   table_name: string;
   operation: string;
   row_id: string;
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
   changed_at: string;
   changed_by: string | null;
 }
@@ -35,7 +37,7 @@ export function useOrgAuditLog(limit = 30) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("audit_log")
-        .select("id, table_name, operation, row_id, changed_at, changed_by")
+        .select("id, table_name, operation, row_id, old_data, new_data, changed_at, changed_by")
         .in("table_name", [...TEAM_TABLES])
         .order("changed_at", { ascending: false })
         .limit(limit);

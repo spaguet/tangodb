@@ -16,6 +16,7 @@ import { useTeamInvites, useTeamMutations } from "../../hooks/useTeamInvites";
 import { auditTableLabel, useOrgAuditLog } from "../../hooks/useOrgAuditLog";
 import { useI18n } from "../../hooks/useI18n";
 import { getTeamRolePresets } from "../../lib/i18n";
+import type { I18nKey } from "../../lib/i18n/keys";
 import { usePermissions } from "../../hooks/usePermissions";
 import type { MemberMeta, MemberRole, TeacherScope } from "../../types/organization";
 
@@ -64,6 +65,82 @@ function inviteListLabel(inv: { first_name?: string | null; last_name?: string |
   const parts = [inv.last_name, inv.first_name].filter(Boolean);
   if (parts.length > 0) return parts.join(" ");
   return inv.email;
+}
+
+const AUDIT_FIELD_LABEL_KEYS: Record<string, I18nKey> = {
+  role: "team.auditField.role",
+  scope: "team.auditField.scope",
+  meta: "team.auditField.meta",
+  display_name: "team.auditField.displayName",
+  first_name: "common.firstName",
+  last_name: "common.lastName",
+  patronymic: "memberProfile.field.patronymic",
+  contact_email: "team.auditField.contactEmail",
+  phone: "team.auditField.phone",
+  telegram: "team.auditField.telegram",
+  profile_notes: "memberProfile.field.other",
+  is_active: "team.auditField.isActive",
+  email: "team.auditField.contactEmail",
+  expires_at: "team.auditField.expiresAt",
+  locale: "team.auditField.locale",
+  currency_code: "team.auditField.currencyCode",
+  currency_display: "team.auditField.currencyDisplay",
+  modules: "team.auditField.modules",
+};
+
+const HIDDEN_AUDIT_FIELDS = new Set([
+  "id",
+  "organization_id",
+  "user_id",
+  "created_at",
+  "updated_at",
+  "joined_at",
+  "invited_at",
+]);
+
+function auditOperationLabel(operation: string, translate: ReturnType<typeof useI18n>["t"]): string {
+  if (operation === "INSERT") return translate("team.auditOperation.insert");
+  if (operation === "UPDATE") return translate("team.auditOperation.update");
+  if (operation === "DELETE") return translate("team.auditOperation.delete");
+  return operation;
+}
+
+function auditValueLabel(value: unknown, translate: ReturnType<typeof useI18n>["t"]): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "boolean") return value ? translate("common.yes") : translate("common.no");
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  return JSON.stringify(value);
+}
+
+function auditChangedFields(row: {
+  operation: string;
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
+}, translate: ReturnType<typeof useI18n>["t"]): string[] {
+  const oldData = row.old_data ?? {};
+  const newData = row.new_data ?? {};
+  const keys = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
+  const details: string[] = [];
+
+  for (const key of keys) {
+    if (HIDDEN_AUDIT_FIELDS.has(key)) continue;
+    const oldValue = oldData[key];
+    const newValue = newData[key];
+    if (row.operation === "UPDATE" && JSON.stringify(oldValue) === JSON.stringify(newValue)) continue;
+    if (row.operation === "INSERT" && (newValue === null || newValue === undefined || newValue === "")) continue;
+
+    const labelKey = AUDIT_FIELD_LABEL_KEYS[key];
+    const label = labelKey ? translate(labelKey) : key;
+    if (row.operation === "INSERT") {
+      details.push(`${label}: ${auditValueLabel(newValue, translate)}`);
+    } else if (row.operation === "DELETE") {
+      details.push(`${label}: ${auditValueLabel(oldValue, translate)}`);
+    } else {
+      details.push(`${label}: ${auditValueLabel(oldValue, translate)} → ${auditValueLabel(newValue, translate)}`);
+    }
+  }
+
+  return details;
 }
 
 export default function TeamSettingsPage() {
@@ -163,6 +240,7 @@ export default function TeamSettingsPage() {
   const activeMembers = members.filter((m) => m.is_active);
   const inactiveMembers = members.filter((m) => !m.is_active);
   const canShowRecoveryGuide = currentRole === "owner" || currentRole === "director";
+  const memberNameById = new Map(members.map((member) => [member.id, memberListLabel(member, locale)]));
 
   const copyInviteUrl = async () => {
     if (!lastInviteUrl) return;
@@ -471,24 +549,43 @@ export default function TeamSettingsPage() {
             {t("team.audit")}
           </h3>
           <div className="space-y-1 max-h-48 overflow-y-auto">
-            {auditRows.map((row) => (
-              <div
-                key={row.id}
-                className="flex justify-between gap-2 text-[11px] text-slate-500 py-1 border-b border-slate-50 last:border-0"
-              >
-                <span>
-                  {auditTableLabel(row.table_name, locale)} · {row.operation}
-                </span>
-                <span className="shrink-0 text-slate-400">
-                  {formatDateTime(row.changed_at, {
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-            ))}
+            {auditRows.map((row) => {
+              const details = auditChangedFields(row, t);
+              const actor = row.changed_by ? memberNameById.get(row.changed_by) ?? row.changed_by : t("team.auditSystem");
+              return (
+                <div
+                  key={row.id}
+                  className="text-[11px] text-slate-500 py-2 border-b border-slate-50 last:border-0 space-y-1"
+                >
+                  <div className="flex justify-between gap-2">
+                    <span className="font-semibold text-slate-700">
+                      {auditTableLabel(row.table_name, locale)} · {auditOperationLabel(row.operation, t)}
+                    </span>
+                    <span className="shrink-0 text-slate-400">
+                      {formatDateTime(row.changed_at, {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-slate-400">{t("team.auditActor", { actor })}</p>
+                  {details.length > 0 && (
+                    <ul className="space-y-0.5">
+                      {details.slice(0, 6).map((detail) => (
+                        <li key={detail} className="text-slate-600">
+                          {detail}
+                        </li>
+                      ))}
+                      {details.length > 6 && (
+                        <li className="text-slate-400">{t("team.auditMore", { count: details.length - 6 })}</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

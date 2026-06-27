@@ -34,17 +34,16 @@ export function formatCurrency(amount: number, options: FormatOptions = DEFAULT_
     maximumFractionDigits: 0,
   });
 
-  if (currencyDisplay === "symbol") {
-    const symbolOverride = getCurrencySymbolOverride(currencyCode);
-    if (symbolOverride) {
-      return formatter
-        .formatToParts(amount)
-        .map((part) => (part.type === "currency" ? symbolOverride : part.value))
-        .join("");
-    }
-  }
-
-  return formatter.format(amount);
+  const symbolOverride = currencyDisplay === "symbol" ? getCurrencySymbolOverride(currencyCode) : null;
+  return formatter
+    .formatToParts(amount)
+    .map((part) => {
+      if (part.type === "group") return " ";
+      if (part.type === "currency" && symbolOverride) return symbolOverride;
+      if (part.type === "literal") return part.value.replace(/[\u00A0\u202F]/g, " ");
+      return part.value;
+    })
+    .join("");
 }
 
 let activeFormatOptions: FormatOptions = DEFAULT_FORMAT_OPTIONS;
