@@ -479,7 +479,7 @@ BEGIN
     v_member_id,
     now()
   )
-  ON CONFLICT (organization_id, single_visit_id)
+  ON CONFLICT (organization_id, single_visit_id) WHERE single_visit_id IS NOT NULL
   DO UPDATE SET
     client_id = EXCLUDED.client_id,
     client_display = EXCLUDED.client_display,

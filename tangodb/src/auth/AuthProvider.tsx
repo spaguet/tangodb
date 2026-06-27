@@ -80,6 +80,13 @@ function parseTelegramAuthError(body: { error?: string }): string {
   if (body.error === "Demo already used for this telegram account") {
     return t(locale, "auth.error.demoUsedTelegram");
   }
+  if (
+    body.error === "Authentication failed" ||
+    body.error === "Service unavailable" ||
+    body.error === "Could not create demo organization"
+  ) {
+    return t(locale, "auth.error.generic");
+  }
   return body.error ?? t(locale, "auth.login.telegramError");
 }
 

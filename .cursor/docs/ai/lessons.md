@@ -11,7 +11,13 @@
 
 ## Записи
 
-### 2026-06-27 — Telegram ID хранился в разных форматах
+### 2026-06-27 — parseTelegramAuthError не переводил «Authentication failed»
+
+- **Ошибка:** Пользователь видел «Authentication failed» (на английском) вместо локализованного сообщения при ошибке Telegram-авторизации.
+- **Причина:** `parseTelegramAuthError` в `AuthProvider.tsx` не имел кейса для `"Authentication failed"` / `"Service unavailable"` / `"Could not create demo organization"` — все эти строки возвращались as-is.
+- **Как избежать:** Для каждой возможной backend-ошибки в `parseTelegramAuthError` и `parseAuthError` добавлять явный маппинг или общий fallback на `auth.error.generic`; не полагаться на то, что backend вернёт локализованную строку.
+
+
 
 - **Ошибка:** Вход из Telegram Mini App мог завершаться `Authentication failed`, если старый профиль был привязан не строковым `app_metadata.telegram_id`, а числовым ID, `user_metadata.telegram_id` или значением в `organization_members.telegram`.
 - **Причина:** `telegram-auth` сравнивал только строковый `app_metadata.telegram_id` и username fallback, не учитывая числовой ID и `tg://user?id=...`.

@@ -29,5 +29,8 @@ export function parseAuthError(err: unknown, locale?: string): string {
   if (message === "Service unavailable") {
     return t(loc, "common.serverUnavailable");
   }
+  if (message === "Could not create demo organization") {
+    return t(loc, "auth.error.generic");
+  }
   return message;
 }
