@@ -66,7 +66,7 @@ import {
   type NavItem,
   type MobileTabItem,
 } from "./lib/i18n";
-import { panelIdFromPath } from "./lib/permissions";
+import { panelIdFromPath, canAccessSettingsSection, permissionOptionsFromSettings } from "./lib/permissions";
 import { useOrganization } from "./organization/OrganizationProvider";
 import { normalizeOrgModules } from "./lib/orgModules";
 import DemoBrandBadge from "./components/demo/DemoBrandBadge";
@@ -112,12 +112,17 @@ function ScrollableNav({ children, refreshKey }: { children: React.ReactNode; re
     if (!el) return;
 
     el.addEventListener("scroll", updateScrollBtn, { passive: true });
-    const ro = new ResizeObserver(updateScrollBtn);
-    ro.observe(el);
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(updateScrollBtn);
+      ro.observe(el);
+      return () => {
+        el.removeEventListener("scroll", updateScrollBtn);
+        ro.disconnect();
+      };
+    }
 
     return () => {
       el.removeEventListener("scroll", updateScrollBtn);
-      ro.disconnect();
     };
   }, [updateScrollBtn]);
 
@@ -157,7 +162,7 @@ function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
-  const { canAccessPanel } = usePermissions();
+  const { canAccessPanel, role, scope, isReadOnly, membership } = usePermissions();
   const subscriptionsTab = useUIStore((s) => s.subscriptionsTab);
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
   const personalTab = useUIStore((s) => s.personalTab);
@@ -165,6 +170,10 @@ function AppLayout() {
   const { settings } = useOrganization();
   const { showPurchaseCta } = useDemoLicenseUi();
   const orgModules = normalizeOrgModules(settings?.modules);
+  const permissionOptions = permissionOptionsFromSettings(settings, scope, {
+    restrictedAdmin: membership?.meta?.restricted_admin ?? false,
+    isReadOnly,
+  });
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: ToastType } | null>(null);
@@ -209,7 +218,10 @@ function AppLayout() {
 
   const isItemActive = (item: NavItem) => {
     if (item.path === "/") return location.pathname === "/";
-    if (item.path.startsWith("/settings")) return location.pathname.startsWith("/settings");
+    if (item.path === "/settings/team") return location.pathname.startsWith("/settings/team");
+    if (item.path === "/settings") {
+      return location.pathname.startsWith("/settings") && !location.pathname.startsWith("/settings/team");
+    }
     if (item.path.startsWith("/subscriptions")) {
       return location.pathname.startsWith("/subscriptions") && subscriptionsTab === item.subTab;
     }
@@ -228,7 +240,12 @@ function AppLayout() {
       )}
       {navSections.map((section) => {
         if (section.moduleKey && !orgModules[section.moduleKey]) return null;
-        const visibleItems = section.items.filter((item) => canAccessPanel(panelIdFromPath(item.path)));
+        const visibleItems = section.items.filter((item) => {
+          if (item.settingsSection) {
+            return canAccessSettingsSection(role, item.settingsSection, permissionOptions);
+          }
+          return canAccessPanel(panelIdFromPath(item.path));
+        });
         if (visibleItems.length === 0) return null;
 
         return (
@@ -524,6 +541,7 @@ export default function App() {
                   <Route path="personal/book" element={<Navigate to="/personal/sell" replace />} />
                   <Route path="prices" element={<ErrorBoundary><PricesPage /></ErrorBoundary>} />
                   <Route path="finance/*" element={<ErrorBoundary><FinancePage /></ErrorBoundary>} />
+                  <Route path="settings/team" element={<ErrorBoundary><TeamSettingsPage /></ErrorBoundary>} />
                   <Route path="settings" element={<ErrorBoundary><SettingsLayout /></ErrorBoundary>}>
                     <Route index element={<ErrorBoundary><SettingsIndexRedirect /></ErrorBoundary>} />
                     <Route path="general" element={<ErrorBoundary><GeneralSettingsPage /></ErrorBoundary>} />
@@ -532,7 +550,6 @@ export default function App() {
                     <Route path="disciplines" element={<ErrorBoundary><DisciplinesSettingsPage /></ErrorBoundary>} />
                     <Route path="locations" element={<ErrorBoundary><LocationsSettingsPage /></ErrorBoundary>} />
                     <Route path="data" element={<ErrorBoundary><DataExportPage /></ErrorBoundary>} />
-                    <Route path="team" element={<ErrorBoundary><TeamSettingsPage /></ErrorBoundary>} />
                     <Route path="license" element={<ErrorBoundary><LicenseSettingsPage /></ErrorBoundary>} />
                   </Route>
                   <Route path="*" element={<Navigate to="/" replace />} />

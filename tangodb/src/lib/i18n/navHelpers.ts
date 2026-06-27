@@ -10,8 +10,10 @@ import {
   Landmark,
   Settings,
   Sparkles,
+  UserCog,
 } from "lucide-react";
 import type { OrgModules } from "../../types/organization";
+import type { SettingsSectionId } from "../permissions";
 import type { I18nKey } from "./keys";
 
 type TranslateFn = (key: I18nKey) => string;
@@ -22,6 +24,8 @@ export interface NavItem {
   path: string;
   subTab?: "active" | "sell";
   personalSubTab?: "view" | "sell";
+  /** When set, nav visibility uses settings-section RBAC instead of panel RBAC. */
+  settingsSection?: SettingsSectionId;
 }
 
 export interface NavSection {
@@ -83,7 +87,10 @@ export function getNavSections(t: TranslateFn): NavSection[] {
     },
     {
       label: t("nav.section.settings"),
-      items: [{ icon: Settings, label: t("nav.item.settings"), path: "/settings" }],
+      items: [
+        { icon: UserCog, label: t("nav.item.team"), path: "/settings/team", settingsSection: "team" },
+        { icon: Settings, label: t("nav.item.settings"), path: "/settings" },
+      ],
     },
   ];
 }
@@ -134,7 +141,7 @@ export function getPanelTitle(pathname: string, subscriptionsTab: string, t: Tra
   if (pathname.startsWith("/settings/disciplines")) return t("nav.panel.settingsDisciplines");
   if (pathname.startsWith("/settings/locations")) return t("nav.panel.settingsLocations");
   if (pathname.startsWith("/settings/data")) return t("nav.panel.settingsData");
-  if (pathname.startsWith("/settings/team")) return t("nav.panel.settingsTeam");
+  if (pathname.startsWith("/settings/team")) return t("nav.panel.team");
   if (pathname.startsWith("/settings/license")) return t("nav.panel.settingsLicense");
   if (pathname.startsWith("/settings")) return t("nav.panel.settings");
   return "TangoDB";
@@ -148,7 +155,6 @@ export function getSettingsNav(t: TranslateFn): { id: string; label: string; pat
     { id: "disciplines", label: t("settings.section.disciplines"), path: "/settings/disciplines" },
     { id: "locations", label: t("settings.section.locations"), path: "/settings/locations" },
     { id: "data", label: t("settings.section.data"), path: "/settings/data" },
-    { id: "team", label: t("settings.section.team"), path: "/settings/team" },
     { id: "license", label: t("settings.section.license"), path: "/settings/license" },
   ];
 }

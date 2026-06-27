@@ -579,7 +579,7 @@ export default function TeamSettingsPage() {
                       })}
                     </span>
                   </div>
-                  <p className="text-slate-400">{t("team.auditActor", { actor })}</p>
+                  <p className="text-slate-400">{actor}</p>
                   {details.length > 0 && (
                     <ul className="space-y-0.5">
                       {details.slice(0, 6).map((detail) => (

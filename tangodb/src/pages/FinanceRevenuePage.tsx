@@ -89,6 +89,7 @@ export default function FinanceRevenuePage() {
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.other")}</p>
               <p className="text-lg font-semibold text-slate-800 mt-0.5">{formatCurrency(stats.otherTotal)}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">{t("common.inDevelopment")}</p>
             </div>
           </div>
 

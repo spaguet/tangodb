@@ -526,7 +526,6 @@ const SETTINGS_SECTION_ORDER: SettingsSectionId[] = [
   "disciplines",
   "locations",
   "data",
-  "team",
   "license",
 ];
 

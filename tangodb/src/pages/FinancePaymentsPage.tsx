@@ -9,7 +9,12 @@ import {
   getPaymentMethodLabel,
   paymentSourceLabel,
 } from "../hooks/usePayments";
+import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
+import { usePersonalLessons } from "../hooks/usePersonalLessons";
+import { useSchedule } from "../hooks/useSchedule";
+import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useI18n } from "../hooks/useI18n";
+import { buildClassTeacherMap, resolvePaymentTeacherId, type TeacherRevenueContext } from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
 import type { Payment, PaymentMethod } from "../types";
 
@@ -59,18 +64,53 @@ function matchesSourceFilter(payment: Payment, source: PaymentSourceFilter): boo
 }
 
 export default function FinancePaymentsPage() {
-  const { t, formatDateTime, plural } = useI18n();
+  const { t, locale, formatDateTime, plural } = useI18n();
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sourceFilter, setSourceFilter] = useState<PaymentSourceFilter>("all");
   const [methodFilter, setMethodFilter] = useState<PaymentMethodFilter>("all");
+  const [teacherFilter, setTeacherFilter] = useState("all");
 
   const paymentsFilter = useMemo(
     () => (dateFrom || dateTo ? { dateFrom: dateFrom || undefined, dateTo: dateTo || undefined } : undefined),
     [dateFrom, dateTo]
   );
   const paymentsQuery = usePayments(paymentsFilter);
+  const teamQuery = useTeamMembers();
+  const personalLessonsQuery = usePersonalLessons();
+  const scheduleQuery = useSchedule();
+  const subscriptionGroupsQuery = useSubscriptionGroups();
+
+  const teacherOptions = useMemo(
+    () =>
+      (teamQuery.data ?? [])
+        .filter((member) => member.is_active)
+        .map((member) => ({ id: member.id, label: memberListLabel(member, locale) }))
+        .sort((a, b) => a.label.localeCompare(b.label, locale)),
+    [teamQuery.data, locale]
+  );
+
+  const teacherCtx = useMemo((): TeacherRevenueContext => {
+    const memberNameById = new Map(
+      (teamQuery.data ?? []).map((member) => [member.id, memberListLabel(member, locale)])
+    );
+    const personalLessonById = new Map(
+      (personalLessonsQuery.data ?? []).map((lesson) => [lesson.id, lesson])
+    );
+    return {
+      personalLessonById,
+      groupsBySubId: subscriptionGroupsQuery.groupsBySubId,
+      classTeacherByGroupId: buildClassTeacherMap(scheduleQuery.data ?? []),
+      teacherLabels: memberNameById,
+    };
+  }, [
+    teamQuery.data,
+    locale,
+    personalLessonsQuery.data,
+    subscriptionGroupsQuery.groupsBySubId,
+    scheduleQuery.data,
+  ]);
 
   const filtered = useMemo(() => {
     let items = paymentsQuery.data ?? [];
@@ -81,6 +121,9 @@ export default function FinancePaymentsPage() {
     if (methodFilter !== "all") {
       items = items.filter((p) => p.method === methodFilter);
     }
+    if (teacherFilter !== "all") {
+      items = items.filter((p) => resolvePaymentTeacherId(p, teacherCtx) === teacherFilter);
+    }
 
     const q = search.trim().toLowerCase();
     if (q) {
@@ -88,15 +131,28 @@ export default function FinancePaymentsPage() {
     }
 
     return items;
-  }, [paymentsQuery.data, sourceFilter, methodFilter, search]);
+  }, [paymentsQuery.data, sourceFilter, methodFilter, teacherFilter, teacherCtx, search]);
 
-  if (paymentsQuery.isLoading) return <LoadingState label={t("finance.payments.loading")} />;
+  const contextLoading =
+    teacherFilter !== "all" &&
+    (teamQuery.isLoading ||
+      personalLessonsQuery.isLoading ||
+      scheduleQuery.isLoading ||
+      subscriptionGroupsQuery.isLoading);
+
+  if (paymentsQuery.isLoading || contextLoading) {
+    return <LoadingState label={t("finance.payments.loading")} />;
+  }
   if (paymentsQuery.isError) return <QueryErrorState error={paymentsQuery.error} />;
 
   const total = filtered.reduce((sum, p) => sum + p.amount, 0);
   const hasAnyPayments = (paymentsQuery.data?.length ?? 0) > 0;
   const hasActiveFilters =
-    Boolean(dateFrom || dateTo) || sourceFilter !== "all" || methodFilter !== "all" || search.trim().length > 0;
+    Boolean(dateFrom || dateTo) ||
+    sourceFilter !== "all" ||
+    methodFilter !== "all" ||
+    teacherFilter !== "all" ||
+    search.trim().length > 0;
 
   return (
     <div className="panel-page-stack">
@@ -119,7 +175,7 @@ export default function FinancePaymentsPage() {
         </div>
 
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/40">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <DatePickerField
               label={t("common.dateFrom")}
               value={dateFrom}
@@ -133,6 +189,18 @@ export default function FinancePaymentsPage() {
               min={dateFrom || undefined}
               className="min-w-0"
             />
+            <AppSelect
+              label={t("schedule.form.teacher")}
+              value={teacherFilter}
+              onChange={(e) => setTeacherFilter(e.target.value)}
+            >
+              <option value="all">{t("common.allTeachers")}</option>
+              {teacherOptions.map((teacher) => (
+                <option key={teacher.id} value={teacher.id}>
+                  {teacher.label}
+                </option>
+              ))}
+            </AppSelect>
             <AppSelect
               label={t("common.source")}
               value={sourceFilter}

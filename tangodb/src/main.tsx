@@ -9,8 +9,20 @@ if (import.meta.env.DEV) {
   assertPayrollPermissions();
 }
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+function showBootError() {
+  const el = document.getElementById("boot-error");
+  if (el) el.classList.add("visible");
+}
+
+window.addEventListener("error", showBootError);
+window.addEventListener("unhandledrejection", showBootError);
+
+try {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+} catch {
+  showBootError();
+}
