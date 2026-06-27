@@ -240,7 +240,9 @@ export default function TeamSettingsPage() {
   const activeMembers = members.filter((m) => m.is_active);
   const inactiveMembers = members.filter((m) => !m.is_active);
   const canShowRecoveryGuide = currentRole === "owner" || currentRole === "director";
-  const memberNameById = new Map(members.map((member) => [member.id, memberListLabel(member, locale)]));
+  const memberNameByUserId = new Map(
+    members.map((member) => [member.user_id, memberListLabel(member, locale)])
+  );
 
   const copyInviteUrl = async () => {
     if (!lastInviteUrl) return;
@@ -551,7 +553,14 @@ export default function TeamSettingsPage() {
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {auditRows.map((row) => {
               const details = auditChangedFields(row, t);
-              const actor = row.changed_by ? memberNameById.get(row.changed_by) ?? row.changed_by : t("team.auditSystem");
+              const actor = row.changed_by
+                ? memberNameByUserId.has(row.changed_by)
+                  ? t("team.auditActor", {
+                      name: memberNameByUserId.get(row.changed_by)!,
+                      id: row.changed_by,
+                    })
+                  : t("team.auditActorIdOnly", { id: row.changed_by })
+                : t("team.auditSystem");
               return (
                 <div
                   key={row.id}

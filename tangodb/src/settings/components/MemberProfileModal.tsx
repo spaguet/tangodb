@@ -8,6 +8,7 @@ import { useTeamMutations } from "../../hooks/useTeamInvites";
 import { activeRateByMember, useTeacherPayRates, useUpsertTeacherPayRate } from "../../hooks/usePayroll";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useI18n } from "../../hooks/useI18n";
+import { useSettings } from "../useSettings";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { PayrollPayMode } from "../../types/payroll";
 
@@ -80,6 +81,8 @@ function ProfileField({
 
 export default function MemberProfileModal({ member, canEdit, onClose }: MemberProfileModalProps) {
   const { t } = useI18n();
+  const { settings } = useSettings();
+  const currencyCode = settings?.currency_code ?? "RUB";
   const showToast = useToast();
   const { can } = usePermissions();
   const { updateMember } = useTeamMutations();
@@ -300,17 +303,22 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                   {(payMode === "fixed" || payMode === "fixed_plus_percent") && (
                     <label className="block space-y-1">
                       <span className={labelCls}>{t("memberProfile.field.fixedAmount")}</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        value={fixedAmount}
-                        onChange={(e) => {
-                          setFixedAmount(e.target.value);
-                          setDirty(true);
-                        }}
-                        className={fieldCls}
-                      />
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={fixedAmount}
+                          onChange={(e) => {
+                            setFixedAmount(e.target.value);
+                            setDirty(true);
+                          }}
+                          className={`${fieldCls} pr-14`}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium pointer-events-none">
+                          {currencyCode}
+                        </span>
+                      </div>
                     </label>
                   )}
 

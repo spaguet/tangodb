@@ -18,7 +18,7 @@ const SETTLEMENTS_SELECT =
   "id, member_id, period_year, period_month, amount_accrued, amount_paid, computed_at";
 
 const PAYMENTS_SELECT =
-  "id, settlement_id, amount, paid_at, method, note, created_at";
+  "id, settlement_id, amount, paid_at, method, note, created_by, created_at";
 
 const RATES_SELECT =
   "id, member_id, pay_mode, fixed_amount, rate_percent, group_rate_percent, personal_rate_percent, effective_from, created_at";
@@ -43,6 +43,7 @@ function mapSettlementPayment(row: Record<string, unknown>): TeacherSettlementPa
     paidAt: String(row.paid_at ?? ""),
     method: row.method as TeacherSettlementPayment["method"],
     note: (row.note as string) || "",
+    createdBy: (row.created_by as string) || null,
     createdAt: String(row.created_at ?? ""),
   };
 }

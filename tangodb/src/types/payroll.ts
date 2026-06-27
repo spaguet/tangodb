@@ -31,6 +31,7 @@ export interface TeacherSettlementPayment {
   paidAt: string;
   method: PaymentMethod;
   note: string;
+  createdBy: string | null;
   createdAt: string;
 }
 

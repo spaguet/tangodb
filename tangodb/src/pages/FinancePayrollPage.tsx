@@ -17,6 +17,10 @@ import { useToast } from "../App";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { memberListLabel, memberRoleLabel, useTeamMembers } from "../hooks/useTeamMembers";
+import { usePayments } from "../hooks/usePayments";
+import { usePersonalLessons } from "../hooks/usePersonalLessons";
+import { useSchedule } from "../hooks/useSchedule";
+import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import {
   activeRateByMember,
   useOwnTeacherSettlements,
@@ -27,35 +31,48 @@ import {
   useTeacherSettlements,
 } from "../hooks/usePayroll";
 import { PAYMENT_METHOD_KEYS } from "../hooks/usePayments";
+import {
+  buildClassTeacherMap,
+  monthDateRange,
+  paymentsInMonth,
+  type TeacherRevenueContext,
+} from "../lib/financeReports";
+import { computeTeacherAccrualBreakdown } from "../lib/payrollAccrual";
 import { settlementBalance } from "../lib/payrollAccrual";
 import { shiftMonth } from "../lib/financeReports";
 import { resolveMutationError } from "../lib/resolveMutationError";
 import { currentYearMonth, formatCurrency, formatMonthTitle } from "../lib/utils";
 import { toISODateLocal } from "../lib/scheduleWeek";
 import type { TeacherPayRate, TeacherSettlement } from "../types/payroll";
-import type { PaymentMethod } from "../types";
+import type { PaymentMethod, Payment } from "../types";
 
 const inputCls =
   "w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 font-sans";
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
-function payRateLabel(rate: TeacherPayRate | undefined, t: ReturnType<typeof useI18n>["t"]): string {
+function fixedSalaryDisplay(rate: TeacherPayRate | undefined): string {
   if (!rate) return "—";
-  if (rate.payMode === "fixed") return t("finance.payroll.rateFixed", { amount: formatCurrency(rate.fixedAmount) });
-  const percent = t("finance.payroll.ratePercentSplit", {
+  if (rate.payMode === "percent") return "—";
+  if (rate.fixedAmount <= 0) return "—";
+  return formatCurrency(rate.fixedAmount);
+}
+
+function payRatePercentLabel(rate: TeacherPayRate | undefined, t: ReturnType<typeof useI18n>["t"]): string {
+  if (!rate) return "—";
+  if (rate.payMode === "fixed") return "—";
+  return t("finance.payroll.ratePercentSplit", {
     group: rate.groupRatePercent,
     personal: rate.personalRatePercent,
   });
-  if (rate.payMode === "fixed_plus_percent") {
-    return t("finance.payroll.rateFixedPlusPercent", {
-      amount: formatCurrency(rate.fixedAmount),
-      percent,
-    });
-  }
-  return percent;
 }
 
-function SettlementPaymentsList({ settlementId }: { settlementId: string }) {
+function SettlementPaymentsList({
+  settlementId,
+  memberNameById,
+}: {
+  settlementId: string;
+  memberNameById: Map<string, string>;
+}) {
   const { t, formatDate } = useI18n();
   const paymentsQuery = useSettlementPayments(settlementId);
 
@@ -68,26 +85,79 @@ function SettlementPaymentsList({ settlementId }: { settlementId: string }) {
 
   const payments = paymentsQuery.data ?? [];
   if (payments.length === 0) {
-    return <p className="text-xs text-slate-400 py-2">{t("finance.payroll.noPayments")}</p>;
+    return null;
   }
 
   return (
-    <ul className="space-y-1.5 py-2">
-      {payments.map((payment) => (
-        <li
-          key={payment.id}
-          className="flex items-center justify-between gap-2 text-xs font-sans px-2 py-1.5 bg-white rounded-lg border border-slate-100"
-        >
-          <span className="text-slate-600">
-            {formatDate(payment.paidAt, { day: "numeric", month: "short", year: "numeric" })}
-            {payment.note ? ` · ${payment.note}` : ""}
-          </span>
-          <span className="font-semibold text-emerald-700 whitespace-nowrap">
-            {formatCurrency(payment.amount)}
-          </span>
-        </li>
-      ))}
+    <ul className="space-y-1.5 pt-2 border-t border-slate-100">
+      {payments.map((payment) => {
+        const dateLabel = formatDate(payment.paidAt, { day: "numeric", month: "short", year: "numeric" });
+        const issuer = payment.createdBy
+          ? memberNameById.get(payment.createdBy) ?? payment.createdBy
+          : t("team.auditSystem");
+        return (
+          <li key={payment.id} className="flex items-center justify-between gap-2 text-xs font-sans">
+            <span className="text-slate-600">
+              {t("finance.payroll.paymentIssuedBy", { date: dateLabel, issuer })}
+              {payment.note ? ` · ${payment.note}` : ""}
+            </span>
+            <span className="font-semibold text-emerald-700 whitespace-nowrap">
+              {formatCurrency(payment.amount)}
+            </span>
+          </li>
+        );
+      })}
     </ul>
+  );
+}
+
+function MemberPayrollBreakdown({
+  memberId,
+  rate,
+  settlement,
+  yearMonth,
+  payments,
+  teacherCtx,
+  memberNameById,
+}: {
+  memberId: string;
+  rate: TeacherPayRate | undefined;
+  settlement: TeacherSettlement | undefined;
+  yearMonth: string;
+  payments: Payment[];
+  teacherCtx: TeacherRevenueContext;
+  memberNameById: Map<string, string>;
+}) {
+  const { t } = useI18n();
+  const monthPayments = useMemo(
+    () => paymentsInMonth(payments, yearMonth),
+    [payments, yearMonth]
+  );
+  const breakdown = useMemo(
+    () => computeTeacherAccrualBreakdown(monthPayments, memberId, rate, teacherCtx),
+    [monthPayments, memberId, rate, teacherCtx]
+  );
+
+  const rows = [
+    { label: t("finance.payroll.breakdownFixed"), amount: breakdown.fixedAmount },
+    { label: t("finance.payroll.breakdownGroup"), amount: breakdown.groupPercentAmount },
+    { label: t("finance.payroll.breakdownPersonal"), amount: breakdown.personalPercentAmount },
+  ];
+
+  return (
+    <div className="px-3 py-3 bg-slate-50/80 rounded-lg border border-slate-100 space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {rows.map((row) => (
+          <div key={row.label} className="text-xs font-sans">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold">{row.label}</p>
+            <p className="font-semibold text-slate-800 mt-0.5">{formatCurrency(row.amount)}</p>
+          </div>
+        ))}
+      </div>
+      {settlement && settlement.amountPaid > 0 && (
+        <SettlementPaymentsList settlementId={settlement.id} memberNameById={memberNameById} />
+      )}
+    </div>
   );
 }
 
@@ -211,7 +281,7 @@ function RecordPaymentModal({
 }
 
 function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
-  const { t, locale, formatDate } = useI18n();
+  const { t, locale } = useI18n();
   const { can } = usePermissions();
   const canWrite = can("payroll.write");
 
@@ -219,8 +289,13 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
   const ratesQuery = useTeacherPayRates();
   const settlementsQuery = useTeacherSettlements(yearMonth);
   const recalculate = useRecalculateTeacherSettlement();
+  const monthRange = monthDateRange(yearMonth);
+  const paymentsQuery = usePayments({ dateFrom: monthRange.dateFrom, dateTo: monthRange.dateTo });
+  const scheduleQuery = useSchedule();
+  const personalLessonsQuery = usePersonalLessons();
+  const subscriptionGroupsQuery = useSubscriptionGroups();
 
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
   const [paymentTarget, setPaymentTarget] = useState<TeacherSettlement | null>(null);
 
   useEffect(() => {
@@ -246,12 +321,46 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
     return map;
   }, [settlementsQuery.data]);
 
-  if (teamQuery.isLoading || ratesQuery.isLoading || settlementsQuery.isLoading || recalculate.isPending) {
+  const memberNameById = useMemo(
+    () => new Map((teamQuery.data ?? []).map((member) => [member.id, memberListLabel(member, locale)])),
+    [teamQuery.data, locale]
+  );
+
+  const teacherCtx = useMemo((): TeacherRevenueContext => {
+    const personalLessonById = new Map(
+      (personalLessonsQuery.data ?? []).map((lesson) => [lesson.id, lesson])
+    );
+    return {
+      personalLessonById,
+      groupsBySubId: subscriptionGroupsQuery.groupsBySubId,
+      classTeacherByGroupId: buildClassTeacherMap(scheduleQuery.data ?? []),
+      teacherLabels: memberNameById,
+    };
+  }, [
+    personalLessonsQuery.data,
+    subscriptionGroupsQuery.groupsBySubId,
+    scheduleQuery.data,
+    memberNameById,
+  ]);
+
+  const payments = paymentsQuery.data ?? [];
+
+  if (
+    teamQuery.isLoading ||
+    ratesQuery.isLoading ||
+    settlementsQuery.isLoading ||
+    paymentsQuery.isLoading ||
+    scheduleQuery.isLoading ||
+    personalLessonsQuery.isLoading ||
+    subscriptionGroupsQuery.isLoading ||
+    recalculate.isPending
+  ) {
     return <LoadingState label={t("finance.payroll.loading")} />;
   }
   if (teamQuery.isError) return <QueryErrorState error={teamQuery.error} />;
   if (ratesQuery.isError) return <QueryErrorState error={ratesQuery.error} />;
   if (settlementsQuery.isError) return <QueryErrorState error={settlementsQuery.error} />;
+  if (paymentsQuery.isError) return <QueryErrorState error={paymentsQuery.error} />;
 
   if (payrollMembers.length === 0) {
     return (
@@ -266,6 +375,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
           <thead>
             <tr className="text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
               <th className="text-left py-2 px-3 font-semibold">{t("finance.payroll.colMember")}</th>
+              <th className="text-right py-2 px-3 font-semibold">{t("finance.payroll.colFixedSalary")}</th>
               <th className="text-right py-2 px-3 font-semibold">{t("finance.payroll.colRate")}</th>
               <th className="text-right py-2 px-3 font-semibold">{t("finance.payroll.colAccrued")}</th>
               <th className="text-right py-2 px-3 font-semibold">{t("finance.payroll.colPaid")}</th>
@@ -280,20 +390,38 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
               const accrued = settlement?.amountAccrued ?? 0;
               const paid = settlement?.amountPaid ?? 0;
               const balance = settlement ? settlementBalance(settlement) : 0;
-              const expanded = expandedId === settlement?.id;
+              const expanded = expandedMemberId === member.id;
 
               return (
                 <Fragment key={member.id}>
                   <tr className="border-b border-slate-50 hover:bg-slate-50/50">
                     <td className="py-2.5 px-3">
-                      <p className="font-semibold text-slate-800">{memberListLabel(member, locale)}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{memberRoleLabel(member.role, member.meta, locale)}</p>
-                      {!rate && (
-                        <p className="text-[10px] text-amber-600 mt-0.5">{t("finance.payroll.noRate")}</p>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => setExpandedMemberId(expanded ? null : member.id)}
+                        className="text-left w-full group cursor-pointer"
+                      >
+                        <div className="flex items-start gap-1.5">
+                          <span className="mt-0.5 text-slate-400 group-hover:text-indigo-500 transition-colors">
+                            {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                          </span>
+                          <span>
+                            <p className="font-semibold text-slate-800 group-hover:text-indigo-700 transition-colors">
+                              {memberListLabel(member, locale)}
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{memberRoleLabel(member.role, member.meta, locale)}</p>
+                            {!rate && (
+                              <p className="text-[10px] text-amber-600 mt-0.5">{t("finance.payroll.noRate")}</p>
+                            )}
+                          </span>
+                        </div>
+                      </button>
+                    </td>
+                    <td className="py-2.5 px-3 text-right text-slate-600 whitespace-nowrap">
+                      {fixedSalaryDisplay(rate)}
                     </td>
                     <td className="py-2.5 px-3 text-right text-slate-600">
-                      {payRateLabel(rate, t)}
+                      {payRatePercentLabel(rate, t)}
                     </td>
                     <td className="py-2.5 px-3 text-right font-semibold text-slate-800">{formatCurrency(accrued)}</td>
                     <td className="py-2.5 px-3 text-right text-emerald-700">{formatCurrency(paid)}</td>
@@ -301,16 +429,6 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
                     {canWrite && settlement && (
                       <td className="py-2.5 px-3">
                         <div className="flex items-center justify-end gap-1">
-                          {paid > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => setExpandedId(expanded ? null : settlement.id)}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg cursor-pointer"
-                              aria-label={t("finance.payroll.togglePayments")}
-                            >
-                              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                            </button>
-                          )}
                           <button
                             type="button"
                             onClick={() => setPaymentTarget(settlement)}
@@ -323,10 +441,18 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
                       </td>
                     )}
                   </tr>
-                  {expanded && settlement && (
+                  {expanded && (
                     <tr>
-                      <td colSpan={canWrite ? 6 : 5} className="px-3 pb-3 bg-slate-50/80">
-                        <SettlementPaymentsList settlementId={settlement.id} />
+                      <td colSpan={canWrite ? 7 : 6} className="px-3 pb-3">
+                        <MemberPayrollBreakdown
+                          memberId={member.id}
+                          rate={rate}
+                          settlement={settlement}
+                          yearMonth={yearMonth}
+                          payments={payments}
+                          teacherCtx={teacherCtx}
+                          memberNameById={memberNameById}
+                        />
                       </td>
                     </tr>
                   )}
