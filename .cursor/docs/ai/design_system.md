@@ -417,13 +417,13 @@ bg-slate-100 rounded-lg animate-pulse
 
 ---
 
-### Finance sub-layout (R5)
+### Finance sub-layout (R5, updated 2026-06-27)
 
-Боковая навигация внутри `/finance/*` — по образцу `SettingsLayout`:
+Навигация внутри `/finance/*` — горизонтальная верхняя панель на всех размерах экрана:
 
 ```
-flex flex-col lg:flex-row gap-5 lg:gap-8
-nav: lg:w-52, NavLink с active = bg-indigo-50 text-indigo-700 border-indigo-100
+flex flex-col gap-5
+nav: flex gap-1 overflow-x-auto, NavLink с active = bg-indigo-50 text-indigo-700 border-indigo-100
 ```
 
 Эталон: `tangodb/src/pages/FinanceLayout.tsx`.

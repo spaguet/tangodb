@@ -105,6 +105,7 @@ export type I18nKey =
   | "auth.verifyEmail.notConfirmedHint"
   | "auth.verifyEmail.signInOtherAccount"
   | "auth.verifyEmail.confirmedFallbackHint"
+  | "auth.verifyEmail.retryCreate"
   | "auth.acceptInvite"
   | "auth.acceptInviteHint"
   | "auth.acceptInviteSetupHint"

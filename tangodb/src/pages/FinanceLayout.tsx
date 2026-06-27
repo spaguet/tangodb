@@ -38,13 +38,13 @@ export default function FinanceLayout() {
   }, [t, teacherPayrollOnly, can]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-5 lg:gap-8">
+    <div className="flex flex-col gap-5">
       {!teacherPayrollOnly && (
-        <nav className="lg:w-52 shrink-0">
+        <nav className="shrink-0">
           <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold px-1 mb-2">
             {t("finance.nav.title")}
           </p>
-          <div className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0">
+          <div className="flex gap-1 overflow-x-auto pb-1">
             {financeNav.map((item) => {
               const Icon = item.icon;
               return (

@@ -26,5 +26,8 @@ export function parseAuthError(err: unknown, locale?: string): string {
   if (message === "Demo already used for this telegram account") {
     return t(loc, "auth.error.demoUsedTelegram");
   }
+  if (message === "Service unavailable") {
+    return t(loc, "common.serverUnavailable");
+  }
   return message;
 }

@@ -1,16 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
+import { parseAuthError } from "./authErrors";
 import RecoveryCodeModal from "./RecoveryCodeModal";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useSelfServiceDemo } from "../hooks/useSelfServiceDemo";
 import { useGuestI18n } from "../hooks/useI18n";
-import { AuthError, AuthLayout, AuthLink } from "./AuthLayout";
+import { AuthButton, AuthError, AuthLayout, AuthLink } from "./AuthLayout";
 
 type VerifyPhase = "loading" | "creating" | "recovery" | "done" | "idle";
 
 export default function VerifyEmailPage() {
-  const { t } = useGuestI18n();
+  const { t, locale } = useGuestI18n();
   const { session, loading: authLoading } = useAuth();
   const { memberships, membershipsLoading, refreshOrganization } = useOrganization();
   const { createDemoOrganization } = useSelfServiceDemo();
@@ -26,6 +27,31 @@ export default function VerifyEmailPage() {
   const [phase, setPhase] = useState<VerifyPhase>(initialRecoveryCode ? "recovery" : "idle");
   const [recoveryCode, setRecoveryCode] = useState<string | null>(initialRecoveryCode);
   const [error, setError] = useState<string | null>(null);
+
+  const attemptCreateDemo = useCallback(async () => {
+    if (attemptRef.current) return;
+
+    attemptRef.current = true;
+    setError(null);
+    setPhase("creating");
+
+    try {
+      const result = await createDemoOrganization();
+      await refreshOrganization();
+
+      if (result.recoveryCode) {
+        setRecoveryCode(result.recoveryCode);
+        setPhase("recovery");
+        return;
+      }
+
+      navigate(result.alreadyHasOrg ? "/" : "/onboarding", { replace: true });
+    } catch (err) {
+      attemptRef.current = false;
+      setError(parseAuthError(err, locale));
+      setPhase("idle");
+    }
+  }, [createDemoOrganization, locale, navigate, refreshOrganization]);
 
   useEffect(() => {
     if (authLoading || membershipsLoading) {
@@ -50,39 +76,14 @@ export default function VerifyEmailPage() {
 
     if (recoveryCode || attemptRef.current) return;
 
-    attemptRef.current = true;
-    setPhase("creating");
-
-    void (async () => {
-      try {
-        const result = await createDemoOrganization();
-        await refreshOrganization();
-
-        if (result.recoveryCode) {
-          setRecoveryCode(result.recoveryCode);
-          setPhase("recovery");
-          return;
-        }
-
-        navigate(result.alreadyHasOrg ? "/" : "/onboarding", { replace: true });
-      } catch (err) {
-        attemptRef.current = false;
-        const message =
-          err instanceof Error ? err.message : t("auth.verifyEmail.createDemoError");
-        setError(message);
-        setPhase("idle");
-      }
-    })();
+    void attemptCreateDemo();
   }, [
     authLoading,
     membershipsLoading,
     session,
     memberships.length,
-    createDemoOrganization,
-    refreshOrganization,
-    navigate,
     recoveryCode,
-    t,
+    attemptCreateDemo,
   ]);
 
   const continueAfterRecovery = () => {
@@ -128,7 +129,12 @@ export default function VerifyEmailPage() {
           </p>
         </>
       ) : (
-        <p className="text-sm text-slate-500">{t("auth.verifyEmail.confirmedFallbackHint")}</p>
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">{t("auth.verifyEmail.confirmedFallbackHint")}</p>
+          <AuthButton type="button" onClick={() => void attemptCreateDemo()}>
+            {t("auth.verifyEmail.retryCreate")}
+          </AuthButton>
+        </div>
       )}
     </AuthLayout>
   );

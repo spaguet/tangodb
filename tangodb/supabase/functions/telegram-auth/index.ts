@@ -101,6 +101,30 @@ function normalizeTelegramUsername(value: string | null | undefined): string {
     .toLowerCase();
 }
 
+function normalizeTelegramId(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value)) return String(Math.trunc(value));
+  if (typeof value !== "string") return "";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  const tgUrlMatch = trimmed.match(/^tg:\/\/user\?id=(\d+)$/i);
+  if (tgUrlMatch) return tgUrlMatch[1];
+
+  const withoutAt = trimmed.replace(/^@/, "");
+  return /^\d+$/.test(withoutAt) ? withoutAt : "";
+}
+
+function telegramMetadataMatches(user: User, telegramId: number): boolean {
+  const target = String(telegramId);
+  const appMetadata = (user.app_metadata as Record<string, unknown> | undefined) ?? {};
+  const userMetadata = (user.user_metadata as Record<string, unknown> | undefined) ?? {};
+  return (
+    normalizeTelegramId(appMetadata.telegram_id) === target ||
+    normalizeTelegramId(userMetadata.telegram_id) === target
+  );
+}
+
 function isSyntheticTelegramEmail(email: string, telegramId: number): boolean {
   return email.trim().toLowerCase() === syntheticTelegramEmail(telegramId).toLowerCase();
 }
@@ -123,14 +147,11 @@ async function findAuthUserByTelegramId(
   admin: ReturnType<typeof createServiceClient>,
   telegramId: number
 ): Promise<User | null> {
-  const target = String(telegramId);
   const perPage = 1000;
   for (let page = 1; ; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
     if (error) throw error;
-    const existing = data.users.find(
-      (u) => (u.app_metadata as Record<string, unknown> | undefined)?.telegram_id === target
-    );
+    const existing = data.users.find((u) => telegramMetadataMatches(u, telegramId));
     if (existing) return existing;
     if (data.users.length < perPage) return null;
   }
@@ -149,10 +170,12 @@ async function resolveTelegramUser(
 
 async function findAuthUserByTeamTelegram(
   admin: ReturnType<typeof createServiceClient>,
-  username: string
+  username: string,
+  telegramId: number
 ): Promise<User | null> {
   const normalizedUsername = normalizeTelegramUsername(username);
-  if (!normalizedUsername) return null;
+  const normalizedTelegramId = String(telegramId);
+  if (!normalizedUsername && !normalizedTelegramId) return null;
 
   const { data, error } = await admin
     .from("organization_members")
@@ -162,9 +185,15 @@ async function findAuthUserByTeamTelegram(
 
   if (error) throw error;
 
-  const matched = (data ?? []).find(
-    (row) => normalizeTelegramUsername(row.telegram as string | null) === normalizedUsername
-  );
+  const matched = (data ?? []).find((row) => {
+    const telegram = row.telegram as string | null;
+    const rowUsername = normalizeTelegramUsername(telegram);
+    const rowTelegramId = normalizeTelegramId(telegram);
+    return (
+      (normalizedUsername && rowUsername === normalizedUsername) ||
+      (rowTelegramId && rowTelegramId === normalizedTelegramId)
+    );
+  });
   if (!matched?.user_id) return null;
 
   const { data: userData, error: userError } = await admin.auth.admin.getUserById(
@@ -424,7 +453,7 @@ Deno.serve(async (req) => {
   try {
     const existing =
       (await resolveTelegramUser(admin, telegramId)) ||
-      (await findAuthUserByTeamTelegram(admin, username));
+      (await findAuthUserByTeamTelegram(admin, username, telegramId));
     if (existing?.email) {
       user = existing;
     } else {

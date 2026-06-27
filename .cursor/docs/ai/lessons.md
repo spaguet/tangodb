@@ -11,6 +11,24 @@
 
 ## Записи
 
+### 2026-06-27 — Telegram ID хранился в разных форматах
+
+- **Ошибка:** Вход из Telegram Mini App мог завершаться `Authentication failed`, если старый профиль был привязан не строковым `app_metadata.telegram_id`, а числовым ID, `user_metadata.telegram_id` или значением в `organization_members.telegram`.
+- **Причина:** `telegram-auth` сравнивал только строковый `app_metadata.telegram_id` и username fallback, не учитывая числовой ID и `tg://user?id=...`.
+- **Как избежать:** Для внешних идентификаторов всегда нормализовать все поддержанные форматы хранения и искать по canonical ID + username fallback перед созданием synthetic user.
+
+### 2026-06-27 — Verify email был тупиком после сбоя создания демо
+
+- **Ошибка:** После регистрации пользователь мог попасть на `/auth/verify-email` с `Service unavailable` и текстом про подтверждённый email без действия для восстановления.
+- **Причина:** Автосоздание демо-CRM выполнялось один раз; после ошибки страница показывала fallback-текст без кнопки retry, а backend-ошибка не локализовалась.
+- **Как избежать:** Для post-auth provisioning добавлять повторяемое действие и переводить известные edge-function ошибки через `parseAuthError`.
+
+### 2026-06-27 — ON CONFLICT без предиката partial unique index
+
+- **Ошибка:** При «Отметить и оплатить» RPC `record_single_visit` падал с «there is no unique or exclusion constraint matching the ON CONFLICT specification».
+- **Причина:** В `payments` уникальность по `(organization_id, single_visit_id)` задана partial index с `WHERE single_visit_id IS NOT NULL`, а `INSERT ... ON CONFLICT (organization_id, single_visit_id)` не указывал тот же предикат.
+- **Как избежать:** Для partial unique index в `ON CONFLICT` всегда повторять `WHERE`-условие индекса; для новых upsert-паттернов сверять определение индекса и conflict target.
+
 ### 2026-06-27 — Native validation оставалась на языке браузера
 
 - **Ошибка:** В английском UI форма добавления клиента показывала системное «Заполните это поле.».

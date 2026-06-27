@@ -112,6 +112,7 @@ export const RU: Record<I18nKey, string> = {
   "auth.verifyEmail.signInOtherAccount": "Войти с другим аккаунтом",
   "auth.verifyEmail.confirmedFallbackHint":
     "Email подтверждён. Если демо-CRM не создалась автоматически, вернитесь на регистрацию или активируйте лицензионный ключ.",
+  "auth.verifyEmail.retryCreate": "Повторить создание демо-CRM",
   "auth.acceptInvite": "Принять приглашение",
   "auth.acceptInviteHint": "Войдите с email, указанным в приглашении",
   "auth.acceptInviteSetupHint": "Задайте пароль для входа в CRM",

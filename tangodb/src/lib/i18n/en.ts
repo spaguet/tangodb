@@ -112,6 +112,7 @@ export const EN: Record<I18nKey, string> = {
   "auth.verifyEmail.signInOtherAccount": "Sign in with another account",
   "auth.verifyEmail.confirmedFallbackHint":
     "Email confirmed. If the demo CRM was not created automatically, return to registration or activate a license key.",
+  "auth.verifyEmail.retryCreate": "Retry demo CRM creation",
   "auth.acceptInvite": "Accept invitation",
   "auth.acceptInviteHint": "Sign in with the email from the invitation",
   "auth.acceptInviteSetupHint": "Set a password to sign in to the CRM",
