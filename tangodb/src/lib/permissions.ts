@@ -408,7 +408,9 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return canWriteScopedCrm(role, scope, context, options);
 
     case "prices.read":
-      return isFullOperationalAdmin(role, options) || role === "accountant";
+      if (isFullOperationalAdmin(role, options) || role === "accountant") return true;
+      if (role === "teacher") return teacherHasAnyScopeAccess(scope);
+      return false;
 
     case "prices.write":
       return STRATEGIC_ROLES.includes(role);
@@ -484,7 +486,7 @@ export function canAccessPanel(
     case "personal_sell":
       return can(role, "personal_lessons.sell", options);
     case "prices":
-      if (role === "accountant") return false;
+      if (role === "accountant" || role === "teacher") return false;
       return can(role, "prices.read", options);
     case "settings":
       if (can(role, "settings.manage", options)) return true;

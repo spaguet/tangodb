@@ -77,6 +77,16 @@ assert(can("admin", "disciplines.read", optsFor("admin")), "admin disciplines.re
 assert(can("teacher", "attendance.write", optsFor("teacher")), "teacher attendance");
 assert(can("teacher", "personal_lessons.sell", optsFor("teacher")), "teacher personal sell");
 assert(!can("teacher", "subscriptions.sell", optsFor("teacher")), "teacher no sub sell default");
+assert(can("teacher", "prices.read", optsFor("teacher")), "teacher prices.read with scope (for sales)");
+assert(!can("teacher", "prices.read", { scope: emptyTeacherScope }), "empty teacher no prices.read");
+assert(!canAccessPanel("teacher", "prices", optsFor("teacher")), "teacher no prices panel");
+assert(
+  can("teacher", "subscriptions.sell", {
+    ...optsFor("teacher"),
+    teachersCanSellSubscriptions: true,
+  }),
+  "teacher sub sell when org flag on"
+);
 assert(can("accountant", "finance.read", optsFor("accountant")), "accountant finance");
 assert(!can("accountant", "clients.read", optsFor("accountant")), "accountant no clients");
 assert(!canAccessPanel("accountant", "personal", optsFor("accountant")), "accountant no personal");
