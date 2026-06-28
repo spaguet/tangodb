@@ -557,7 +557,8 @@ export const RU: Record<I18nKey, string> = {
   "subscriptions.status.active": "Активен",
   "subscriptions.sell.noTariffs":
     "К выбранной локации не привязаны тарифы на абонементы. Добавьте локальный тариф в прайс-лист или используйте глобальные тарифы без галочки «Локальный прайс-лист».",
-  "subscriptions.sell.noGlobalTariffs": "Нет глобальных групповых тарифов в прайс-листе.",
+  "subscriptions.sell.noGlobalTariffs":
+    "Нет глобальных групповых тарифов в прайс-листе. Включите Локальный прайс-лист.",
   "subscriptions.sell.groupLessons": "Групповые уроки",
   "subscriptions.sell.selectGroups": "Выберите группы...",
   "subscriptions.sell.noGroupsForDiscipline": "Нет групповых уроков для выбранного направления",

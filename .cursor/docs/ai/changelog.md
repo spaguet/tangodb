@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-28 — UX: в «Продажа абонемента» подсказка при отсутствии глобальных групповых тарифов предлагает включить «Локальный прайс-лист».
 2026-06-28 — fix: кнопка «Добавить» на «Настройки · Направления» всегда видна; в «Продажа абонемента» при пустом списке дисциплин — ссылка на настройки направлений.
 2026-06-28 — fix: teacher team invite без scope — UI `TeacherScopeFields` в приглашении и профиле участника; default scope `all_disciplines/all_locations` в `create_organization_invite` + backfill активных teacher; migration `20260804000001`; после accept-invite invalidate memberships.
 2026-06-28 — License purchase inbox: добавлена заявка самостоятельной оплаты из CRM (`submit-purchase-request` + `platform_purchase_requests`), Dev Console `/inbox` с активацией lifetime-доступа после проверки оплаты, обновлены инструкции сценариев покупки и кнопки поддержки в верхней панели CRM.
