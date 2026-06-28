@@ -66,6 +66,7 @@ export type I18nKey =
   | "auth.login.error"
   | "auth.login.authorizing"
   | "auth.login.forgotPasswordLink"
+  | "auth.login.rememberMe"
   | "auth.login.submit"
   | "auth.login.telegramMiniAppAuto"
   | "auth.login.telegramNoInitData"

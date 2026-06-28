@@ -68,6 +68,7 @@ export const RU: Record<I18nKey, string> = {
   "auth.login.error": "Ошибка входа",
   "auth.login.authorizing": "Авторизация...",
   "auth.login.forgotPasswordLink": "Забыли пароль?",
+  "auth.login.rememberMe": "Запомнить меня",
   "auth.login.submit": "Войти",
   "auth.login.telegramMiniAppAuto": "Открыто в Telegram Mini App — вход выполняется автоматически.",
   "auth.login.telegramNoInitData": "Открыто в Telegram, но данные авторизации не получены.",

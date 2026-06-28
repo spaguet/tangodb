@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-28 — Auth: на `/login` отключён вход через Telegram (код закомментирован); остался email/password с чекбоксом «Запомнить меня» (localStorage vs sessionStorage через `setAuthRememberMe` в `supabase.ts`).
 2026-06-28 — fix: orphan cleanup — `self_service_demo_challenges` не имеет `user_id`, удаление по `owner_email_hash`.
 2026-06-28 — fix: Dev Console orphan cleanup — удалена перегрузка RPC `(uuid, boolean)`, перед удалением auth user сбрасываются FK (`owner_user_id`, `created_by`, `actor_user_id` и др.).
 2026-06-28 — Dev Console `/users`: выборочное удаление orphan-аккаунтов — чекбоксы в модалке «Delete orphan accounts», RPC `dev_console_cleanup_orphan_auth_users` принимает `p_user_ids`.

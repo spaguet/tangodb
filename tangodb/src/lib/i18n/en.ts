@@ -68,6 +68,7 @@ export const EN: Record<I18nKey, string> = {
   "auth.login.error": "Sign-in failed",
   "auth.login.authorizing": "Authorizing...",
   "auth.login.forgotPasswordLink": "Forgot password?",
+  "auth.login.rememberMe": "Remember me",
   "auth.login.submit": "Sign in",
   "auth.login.telegramMiniAppAuto": "Opened in Telegram Mini App — sign-in runs automatically.",
   "auth.login.telegramNoInitData": "Opened in Telegram, but authorization data was not received.",

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabase";
+import { setAuthRememberMe, supabase } from "../lib/supabase";
 import { getSiteUrl } from "../lib/siteUrl";
 import { t, getGuestLocale } from "../lib/i18n";
 import type { TelegramLoginWidgetPayload } from "../lib/telegram";
@@ -30,7 +30,7 @@ interface AuthContextValue {
     initData?: string;
     widgetPayload?: TelegramLoginWidgetPayload;
   }) => Promise<TelegramSignInResult>;
-  signInWithEmail: (email: string, password: string) => Promise<Session>;
+  signInWithEmail: (email: string, password: string, rememberMe?: boolean) => Promise<Session>;
   signUpWithEmail: (
     email: string,
     password: string,
@@ -207,7 +207,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const signInWithEmail = useCallback(async (email: string, password: string) => {
+  const signInWithEmail = useCallback(async (email: string, password: string, rememberMe = true) => {
+    setAuthRememberMe(rememberMe);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     if (!data.session) throw new Error(t(getGuestLocale(), "auth.error.generic"));
