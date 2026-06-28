@@ -32,11 +32,11 @@ export default function LocationScheduleSection({
   const showGrid = lessons.length > 0 || (canClickEmpty && locationId);
 
   return (
-    <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+    <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs">
       <button
         type="button"
         onClick={() => setIsExpanded((prev) => !prev)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 bg-slate-50/60 text-left cursor-pointer hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 bg-slate-50/60 text-left cursor-pointer hover:bg-slate-50 transition-colors rounded-t-xl"
         aria-expanded={isExpanded}
       >
         <h3 className="text-sm font-semibold text-slate-800 tracking-tight min-w-0 truncate">

@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-28 — UX: мобильное расписание — sticky колонка времени слева и sticky заголовки дня/даты сверху при прокрутке таблицы; компактные заголовки на маленьких экранах (`WeeklyScheduleGrid`, `DayColumn`, `LocationScheduleSection`).
 2026-06-28 — fix: при выключенном модуле «Персональные уроки» они скрыты во всём CRM — дашборд (операционный/финансовый/преподавательский), журнал посещаемости, расписание, должники, экспорт (`useOrgModules`, `TeacherScopedDashboard`, `OperationalDashboard`, `FinancialDashboard`, `DashboardPage`, `AttendancePanel`, `ScheduleDebtorsBlock`, `FinanceDebtorsPage`, `DataExportPage`).
 2026-06-28 — fix: клик по пустой ячейке расписания учитывает модули организации — при выключенных персональных уроках popup персонального урока недоступен; преподаватель с «Продажа групповых абонементов» открывает форму группового занятия (`scheduleLessonAccess`, `SchedulePageContainer`, `AddLessonTypePopup`).
 2026-06-28 — fix: оплата при продаже абонемента всегда через RPC `record_subscription_payment` (убран client-side INSERT по роли; RPC расширен на owner/admin/reception с `member_can_accept_payments`); migration `20260809000001`.
