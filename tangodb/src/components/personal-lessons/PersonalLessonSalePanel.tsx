@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Ticket } from "lucide-react";
 import { useSchedule } from "../../hooks/useSchedule";
 import { usePersonalLessons } from "../../hooks/usePersonalLessons";
@@ -76,7 +77,16 @@ export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePan
       {locations.length === 0 ? (
         <div className="text-center py-20 text-slate-400 space-y-3">
           <Ticket className="w-8 h-8 mx-auto text-slate-300" />
-          <p className="text-sm">{t("common.addLocationsInSettings")}</p>
+          <p className="text-sm">
+            {t("attendance.noLocationsHint")}{" "}
+            <Link
+              to="/settings/locations"
+              className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline"
+            >
+              {t("attendance.settingsLocations")}
+            </Link>
+            .
+          </p>
         </div>
       ) : (
         <PersonalLessonSaleForm

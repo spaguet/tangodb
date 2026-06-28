@@ -1,9 +1,12 @@
 import { ListOrdered } from "lucide-react";
 import { getPurchaseActivationSteps } from "../../lib/paymentConfig";
+import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
 import { useI18n } from "../../hooks/useI18n";
+import DeveloperContacts from "./DeveloperContacts";
 
 export default function PurchaseActivationInstructions() {
   const { t } = useI18n();
+  const { config } = usePlatformPaymentConfig(true);
   const steps = getPurchaseActivationSteps(t);
 
   return (
@@ -25,22 +28,8 @@ export default function PurchaseActivationInstructions() {
           <ListOrdered className="w-3.5 h-3.5" />
           {t("license.purchase.developerKeyTitle")}
         </p>
-        <p className="text-xs text-slate-600 leading-relaxed">
-          {t("license.purchase.developerKeyIntro")}{" "}
-          <a href="mailto:omowdance@gmail.com" className="text-indigo-600 hover:text-indigo-700 hover:underline">
-            omowdance@gmail.com
-          </a>{" "}
-          {t("common.or")}{" "}
-          <a
-            href="https://t.me/omow_second"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:text-indigo-700 hover:underline"
-          >
-            Telegram
-          </a>
-          .
-        </p>
+        <p className="text-xs text-slate-600 leading-relaxed">{t("license.purchase.developerKeyIntro")}</p>
+        <DeveloperContacts contacts={config.contacts} embedded />
       </div>
     </div>
   );

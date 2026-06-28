@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
@@ -1127,7 +1127,16 @@ export default function SubscriptionsPanel({
           {locations.length === 0 ? (
             <div className="text-center py-20 text-slate-400 space-y-3">
               <Ticket className="w-8 h-8 mx-auto text-slate-300" />
-              <p className="text-sm">{t("common.addLocationsInSettings")}</p>
+              <p className="text-sm">
+                {t("attendance.noLocationsHint")}{" "}
+                <Link
+                  to="/settings/locations"
+                  className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline"
+                >
+                  {t("attendance.settingsLocations")}
+                </Link>
+                .
+              </p>
             </div>
           ) : (
           <div className="panel-form-stack panel-form-stack-wide-md panel-form-stack-compact">

@@ -9,6 +9,8 @@ import { useI18n } from "../../hooks/useI18n";
 
 interface DeveloperContactsProps {
   contacts: DeveloperContactsConfig | null | undefined;
+  showTitle?: boolean;
+  embedded?: boolean;
 }
 
 const DEFAULT_DEVELOPER_CONTACTS: DeveloperContactsConfig = {
@@ -17,7 +19,11 @@ const DEFAULT_DEVELOPER_CONTACTS: DeveloperContactsConfig = {
   whatsappUrl: "",
 };
 
-export default function DeveloperContacts({ contacts }: DeveloperContactsProps) {
+export default function DeveloperContacts({
+  contacts,
+  showTitle = true,
+  embedded = false,
+}: DeveloperContactsProps) {
   const { t } = useI18n();
 
   const resolvedContacts = {
@@ -31,12 +37,8 @@ export default function DeveloperContacts({ contacts }: DeveloperContactsProps) 
 
   if (!mailto && !telegram && !whatsapp) return null;
 
-  return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-        {t("license.contacts.title")}
-      </p>
-      <div className="flex flex-wrap gap-2">
+  const buttons = (
+    <div className="flex flex-wrap gap-2">
         {mailto && (
           <a
             href={mailto}
@@ -68,7 +70,19 @@ export default function DeveloperContacts({ contacts }: DeveloperContactsProps) 
             WhatsApp
           </a>
         )}
-      </div>
+    </div>
+  );
+
+  if (embedded) return buttons;
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 space-y-2">
+      {showTitle && (
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          {t("license.contacts.title")}
+        </p>
+      )}
+      {buttons}
     </div>
   );
 }
