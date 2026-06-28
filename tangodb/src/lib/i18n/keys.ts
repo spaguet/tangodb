@@ -1236,6 +1236,7 @@ export type I18nKey =
   | "subscriptions.sellSubtitle"
   | "subscriptions.sell.localPriceList"
   | "subscriptions.sell.noLocationsHint"
+  | "subscriptions.sell.noDisciplinesHint"
   | "subscriptions.sell.tariffLabel"
   | "subscriptions.sell.unlimitedMonth"
   | "subscriptions.sell.lessonsPrice"

@@ -1288,6 +1288,7 @@ export const RU: Record<I18nKey, string> = {
   "subscriptions.sellSubtitle": "Оформите новый групповой абонемент — запись сразу попадёт в базу.",
   "subscriptions.sell.localPriceList": "Локальный прайс-лист",
   "subscriptions.sell.noLocationsHint": "Локации не добавлены. Создайте их в разделе «Настройки CRM» → «Локации».",
+  "subscriptions.sell.noDisciplinesHint": "Добавьте направления в",
   "subscriptions.sell.tariffLabel": "ТАРИФ АБОНЕМЕНТА",
   "subscriptions.sell.unlimitedMonth": " · безлимит на месяц · {{price}}",
   "subscriptions.sell.lessonsPrice": " · {{lessons}} занятий · {{price}}",

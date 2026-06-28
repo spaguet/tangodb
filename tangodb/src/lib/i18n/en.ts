@@ -1291,6 +1291,7 @@ export const EN: Record<I18nKey, string> = {
   "subscriptions.sellSubtitle": "Create a new group subscription — it will be saved immediately.",
   "subscriptions.sell.localPriceList": "Local price list",
   "subscriptions.sell.noLocationsHint": "No locations added. Create them in Settings → Locations.",
+  "subscriptions.sell.noDisciplinesHint": "Add disciplines in",
   "subscriptions.sell.tariffLabel": "SUBSCRIPTION TARIFF",
   "subscriptions.sell.unlimitedMonth": " · unlimited for a month · {{price}}",
   "subscriptions.sell.lessonsPrice": " · {{lessons}} lessons · {{price}}",

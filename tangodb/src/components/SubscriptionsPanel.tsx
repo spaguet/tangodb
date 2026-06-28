@@ -47,6 +47,7 @@ import DisciplineSelect from "./ui/DisciplineSelect";
 import LocationSelect from "./ui/LocationSelect";
 import GroupCheckboxDropdown from "./ui/GroupCheckboxDropdown";
 import LoadingState from "./ui/LoadingState";
+import AddDisciplinesInSettingsHint from "./ui/AddDisciplinesInSettingsHint";
 import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
 import QueryErrorState from "./ui/QueryErrorState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
@@ -1202,15 +1203,19 @@ export default function SubscriptionsPanel({
             </div>
             )}
 
-            <DisciplineSelect
-              disciplines={disciplines}
-              value={disciplineId}
-              onChange={(value) => {
-                setDisciplineId(value);
-                setSelectedGroupIds([]);
-              }}
-              toast={toast}
-            />
+            {disciplines.length === 0 ? (
+              <AddDisciplinesInSettingsHint className="text-xs text-slate-400 font-sans leading-relaxed" />
+            ) : (
+              <DisciplineSelect
+                disciplines={disciplines}
+                value={disciplineId}
+                onChange={(value) => {
+                  setDisciplineId(value);
+                  setSelectedGroupIds([]);
+                }}
+                toast={toast}
+              />
+            )}
 
             <GroupCheckboxDropdown
               label={t("subscriptions.sell.groupLessons")}
