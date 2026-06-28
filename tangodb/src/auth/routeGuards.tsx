@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePermissions } from "../hooks/usePermissions";
+import { useEnsureOwnMemberProfile } from "../hooks/useEnsureOwnMemberProfile";
 import { useGuestI18n } from "../hooks/useI18n";
 import { getOrganizationIdFromSession } from "../lib/authClaims";
 import { isSyntheticTelegramEmail } from "../lib/telegram";
@@ -81,6 +82,7 @@ export function OrgWorkspaceRoute() {
     orgLoading,
     needsOnboarding,
   } = useOrganization();
+  useEnsureOwnMemberProfile();
   const location = useLocation();
   const jwtOrganizationId = getOrganizationIdFromSession(session);
 
