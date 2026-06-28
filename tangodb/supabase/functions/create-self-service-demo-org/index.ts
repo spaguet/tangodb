@@ -91,13 +91,15 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Service unavailable" }, 500, req);
   }
 
-  let recoveryCode: string;
-  let recoveryCodeHash: string;
+  let recoveryCode: string | null = null;
+  let recoveryCodeHash: string | null = null;
   try {
     recoveryCode = generateRecoveryCode();
     recoveryCodeHash = await hashRecoveryCode(recoveryCode);
-  } catch {
-    return jsonResponse({ error: "Service unavailable" }, 500, req);
+  } catch (err) {
+    logEvent("self_service_recovery_code_error", {
+      message: err instanceof Error ? err.message : "unknown",
+    });
   }
 
   const { data, error } = await admin.rpc("create_self_service_demo_org", {
@@ -131,12 +133,14 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Could not create demo organization" }, 500, req);
   }
 
-  await admin
-    .from("user_recovery_codes")
-    .update({ shown_at: new Date().toISOString() })
-    .eq("user_id", user.id)
-    .eq("code_hash", recoveryCodeHash)
-    .is("revoked_at", null);
+  if (recoveryCodeHash) {
+    await admin
+      .from("user_recovery_codes")
+      .update({ shown_at: new Date().toISOString() })
+      .eq("user_id", user.id)
+      .eq("code_hash", recoveryCodeHash)
+      .is("revoked_at", null);
+  }
 
   const { error: refreshError } = await supabase.auth.refreshSession();
   if (refreshError) {
@@ -151,7 +155,7 @@ Deno.serve(async (req) => {
     {
       ok: true,
       ...(data as Record<string, unknown>),
-      recovery_code: recoveryCode,
+      ...(recoveryCode ? { recovery_code: recoveryCode } : {}),
     },
     200,
     req

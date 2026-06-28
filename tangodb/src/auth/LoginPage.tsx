@@ -19,6 +19,7 @@ import {
 } from "../lib/telegram";
 import type { TelegramLoginWidgetPayload } from "../lib/telegram";
 import { useGuestI18n } from "../hooks/useI18n";
+import { getOrganizationIdFromSession } from "../lib/authClaims";
 
 declare global {
   interface Window {
@@ -104,7 +105,11 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await signInWithEmail(email.trim(), password);
+      const nextSession = await signInWithEmail(email.trim(), password);
+      if (nextSession.user.email_confirmed_at && !getOrganizationIdFromSession(nextSession)) {
+        navigate("/auth/verify-email", { replace: true });
+        return;
+      }
       goAfterLogin();
     } catch (err) {
       setError(parseAuthError(err, locale));

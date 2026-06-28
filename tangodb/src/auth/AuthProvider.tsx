@@ -30,7 +30,7 @@ interface AuthContextValue {
     initData?: string;
     widgetPayload?: TelegramLoginWidgetPayload;
   }) => Promise<TelegramSignInResult>;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<Session>;
   signUpWithEmail: (
     email: string,
     password: string,
@@ -208,8 +208,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    if (!data.session) throw new Error(t(getGuestLocale(), "auth.error.generic"));
+    return data.session;
   }, []);
 
   const signUpWithEmail = useCallback(

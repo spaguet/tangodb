@@ -6,6 +6,7 @@ import RecoveryCodeModal from "./RecoveryCodeModal";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useSelfServiceDemo } from "../hooks/useSelfServiceDemo";
 import { useGuestI18n } from "../hooks/useI18n";
+import { supabase } from "../lib/supabase";
 import { AuthButton, AuthError, AuthLayout, AuthLink } from "./AuthLayout";
 
 type VerifyPhase = "loading" | "creating" | "recovery" | "done" | "idle";
@@ -37,6 +38,8 @@ export default function VerifyEmailPage() {
 
     try {
       const result = await createDemoOrganization();
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) throw refreshError;
       await refreshOrganization();
 
       if (result.recoveryCode) {

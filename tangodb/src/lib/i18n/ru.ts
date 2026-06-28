@@ -112,7 +112,7 @@ export const RU: Record<I18nKey, string> = {
     "Email ещё не подтверждён. Откройте ссылку из письма — демо-CRM создастся автоматически.",
   "auth.verifyEmail.signInOtherAccount": "Войти с другим аккаунтом",
   "auth.verifyEmail.confirmedFallbackHint":
-    "Email подтверждён. Если демо-CRM не создалась автоматически, вернитесь на регистрацию или активируйте лицензионный ключ.",
+    "Email подтверждён. Если демо-CRM не создалась автоматически, нажмите кнопку ниже — мы повторим создание.",
   "auth.verifyEmail.retryCreate": "Повторить создание демо-CRM",
   "auth.acceptInvite": "Принять приглашение",
   "auth.acceptInviteHint": "Войдите с email, указанным в приглашении",
@@ -152,7 +152,8 @@ export const RU: Record<I18nKey, string> = {
   "auth.error.generic": "Не удалось выполнить запрос",
   "auth.error.invalidCredentials": "Неверный email или пароль",
   "auth.error.emailNotConfirmed": "Подтвердите email перед входом",
-  "auth.error.userAlreadyRegistered": "Пользователь с таким email уже зарегистрирован",
+  "auth.error.userAlreadyRegistered":
+    "Пользователь с таким email уже зарегистрирован. Войдите с этим email, чтобы продолжить создание демо-CRM.",
   "auth.error.demoUsedEmail":
     "Демо для этого email уже использовалось. Активируйте лицензионный ключ или обратитесь в поддержку.",
   "auth.error.captchaFailed": "Не удалось пройти проверку captcha. Попробуйте ещё раз.",

@@ -112,7 +112,7 @@ export const EN: Record<I18nKey, string> = {
     "Your email is not confirmed yet. Open the email link — the demo CRM will be created automatically.",
   "auth.verifyEmail.signInOtherAccount": "Sign in with another account",
   "auth.verifyEmail.confirmedFallbackHint":
-    "Email confirmed. If the demo CRM was not created automatically, return to registration or activate a license key.",
+    "Email confirmed. If the demo CRM was not created automatically, use the button below and we will retry creation.",
   "auth.verifyEmail.retryCreate": "Retry demo CRM creation",
   "auth.acceptInvite": "Accept invitation",
   "auth.acceptInviteHint": "Sign in with the email from the invitation",
@@ -152,7 +152,8 @@ export const EN: Record<I18nKey, string> = {
   "auth.error.generic": "Request failed",
   "auth.error.invalidCredentials": "Invalid email or password",
   "auth.error.emailNotConfirmed": "Confirm your email before signing in",
-  "auth.error.userAlreadyRegistered": "A user with this email is already registered",
+  "auth.error.userAlreadyRegistered":
+    "A user with this email is already registered. Sign in with this email to continue demo CRM creation.",
   "auth.error.demoUsedEmail":
     "A demo for this email has already been used. Activate a license key or contact support.",
   "auth.error.captchaFailed": "Captcha verification failed. Please try again.",

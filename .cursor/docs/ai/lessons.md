@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-06-28 — Recovery-code не должен блокировать создание tenant
+
+- **Ошибка:** Self-service регистрация могла оставить пользователя в Supabase Auth без tenant, если Edge Function падала на генерации или хэшировании аварийного recovery-code.
+- **Причина:** Recovery-code создавался до RPC `create_self_service_demo_org`; ошибка вспомогательного security-артефакта возвращала `Service unavailable` и останавливала основной provisioning.
+- **Как избежать:** В post-confirm provisioning отделять обязательное создание org/member от необязательных артефактов восстановления: сбой recovery-code логировать и продолжать создание tenant, а UI должен вести существующий auth-профиль без org обратно в retry flow.
+
 ### 2026-06-28 — После self-service создания org не обновлялся браузерный JWT
 
 - **Ошибка:** Регистрация могла создать demo org/member на backend, но пользователь не проходил дальше, потому что фронтенд оставался со старой Supabase-сессией без org-claims.
