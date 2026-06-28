@@ -89,6 +89,12 @@
 - **Причина:** Debug включён для локальной разработки и не переключён перед production hardening.
 - **Как избежать:** Default `"false"`; явный `ACTIVATION_DEBUG=true` только в local `.env`; audit metadata без `message` когда debug off.
 
+### 2026-06-28 — Dev Console orphan cleanup «Cleanup failed»
+
+- **Ошибка:** Удаление orphan-пользователей в Dev Console падало с «Cleanup failed».
+- **Причина:** После добавления `p_user_ids` осталась перегрузка `dev_console_cleanup_orphan_auth_users(uuid, boolean)` — PostgREST/RPC неоднозначность. Плюс FK `organizations.owner_user_id`, `access_keys.created_by`, `platform_audit_log.actor_user_id` блокировали `DELETE FROM auth.users` у бывших owner с inactive membership.
+- **Как избежать:** При расширении сигнатуры RPC — `DROP FUNCTION` старой перегрузки в той же или следующей миграции. Перед purge auth user сбрасывать все NO ACTION ссылки на `auth.users`.
+
 ### 2026-06-26 — activate_access_key overload ambiguity после S5
 
 - **Ошибка:** `function activate_access_key(text, unknown) is not unique` при вызове с двумя аргументами; `db push` fix-миграции падал с `input parameters after one with a default value must also have defaults`.
