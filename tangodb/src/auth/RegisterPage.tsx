@@ -5,8 +5,11 @@ import { parseAuthError } from "./authErrors";
 import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import { useSelfServiceDemo } from "../hooks/useSelfServiceDemo";
 import { useGuestI18n } from "../hooks/useI18n";
+import { useOrganization } from "../organization/OrganizationProvider";
+import { supabase } from "../lib/supabase";
 import {
   AuthButton,
+  AuthDeveloperContact,
   AuthError,
   AuthField,
   AuthLayout,
@@ -19,6 +22,7 @@ export default function RegisterPage() {
   const { signUpWithEmail } = useAuth();
   const navigate = useNavigate();
   const { verifyRegistrationChallenge, createDemoOrganization } = useSelfServiceDemo();
+  const { refreshOrganization } = useOrganization();
   const [login, setLogin] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -73,6 +77,10 @@ export default function RegisterPage() {
         setTurnstileToken(null);
       } else {
         const result = await createDemoOrganization();
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) throw refreshError;
+        await refreshOrganization();
+
         if (result.recoveryCode) {
           navigate("/auth/verify-email", {
             replace: true,
@@ -143,6 +151,7 @@ export default function RegisterPage() {
         {t("auth.register.hasAccount")}{" "}
         <AuthLink to="/login">{t("auth.register.signInLink")}</AuthLink>
       </p>
+      <AuthDeveloperContact />
       <p className="text-xs text-slate-400 text-center">{t("auth.register.hasLicenseKey")}</p>
     </AuthLayout>
   );

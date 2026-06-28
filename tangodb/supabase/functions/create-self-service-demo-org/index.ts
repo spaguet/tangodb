@@ -7,6 +7,7 @@ import {
   handleOptions,
   jsonResponse,
 } from "../_shared/http.ts";
+import { ownerEmailHash } from "../_shared/emailHash.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
@@ -80,11 +81,13 @@ Deno.serve(async (req) => {
     );
   }
 
-  const { data: emailHash, error: hashError } = await admin.rpc("owner_email_hash", {
-    p_email: email,
-  });
-
-  if (hashError || typeof emailHash !== "string") {
+  let emailHash: string;
+  try {
+    emailHash = await ownerEmailHash(email);
+  } catch (err) {
+    logEvent("self_service_hash_error", {
+      message: err instanceof Error ? err.message : "unknown",
+    });
     return jsonResponse({ error: "Service unavailable" }, 500, req);
   }
 

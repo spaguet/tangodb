@@ -75,6 +75,7 @@ export const EN: Record<I18nKey, string> = {
   "auth.login.telegramBotEnvMissing": "Set VITE_TELEGRAM_BOT_USERNAME in .env.local",
   "auth.login.noAccount": "No account yet?",
   "auth.login.registerLink": "Register",
+  "auth.developerContact.label": "Contact the developer:",
   "auth.register.subtitle": "Owner registration",
   "auth.register.demoHint": "After email confirmation you will get a 30-day demo CRM — no key required.",
   "auth.register.loginRequired": "Enter a login (display name)",

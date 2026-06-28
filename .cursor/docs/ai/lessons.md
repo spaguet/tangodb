@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-06-28 — После self-service создания org не обновлялся браузерный JWT
+
+- **Ошибка:** Регистрация могла создать demo org/member на backend, но пользователь не проходил дальше, потому что фронтенд оставался со старой Supabase-сессией без org-claims.
+- **Причина:** `supabase.auth.refreshSession()` внутри Edge Function не обновляет refresh/access token в браузере; `RegisterPage` после `createDemoOrganization()` сразу переходил дальше без клиентского refresh и reload org context.
+- **Как избежать:** После backend provisioning, который меняет active org/JWT claims, всегда обновлять браузерную Supabase-сессию и refetch organization context перед навигацией.
+
 ### 2026-06-27 — parseTelegramAuthError не переводил «Authentication failed»
 
 - **Ошибка:** Пользователь видел «Authentication failed» (на английском) вместо локализованного сообщения при ошибке Telegram-авторизации.

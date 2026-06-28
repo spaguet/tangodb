@@ -43,6 +43,19 @@ export function AuthLink({ to, children }: { to: string; children: React.ReactNo
   );
 }
 
+export function AuthDeveloperContact() {
+  const { t } = useGuestI18n();
+
+  return (
+    <p className="text-xs text-slate-400 text-center">
+      {t("auth.developerContact.label")}{" "}
+      <a href="mailto:omowdance@gmail.com" className="text-indigo-600 hover:text-indigo-700 font-medium">
+        omowdance@gmail.com
+      </a>
+    </p>
+  );
+}
+
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block mb-1";
 
 export function AuthField({

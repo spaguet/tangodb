@@ -4,6 +4,7 @@ import { Send } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import {
   AuthButton,
+  AuthDeveloperContact,
   AuthError,
   AuthField,
   AuthLayout,
@@ -191,6 +192,7 @@ export default function LoginPage() {
         {t("auth.login.noAccount")}{" "}
         <AuthLink to="/register">{t("auth.login.registerLink")}</AuthLink>
       </p>
+      <AuthDeveloperContact />
     </AuthLayout>
   );
 }

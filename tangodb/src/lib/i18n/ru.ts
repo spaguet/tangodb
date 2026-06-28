@@ -75,6 +75,7 @@ export const RU: Record<I18nKey, string> = {
   "auth.login.telegramBotEnvMissing": "Укажите VITE_TELEGRAM_BOT_USERNAME в .env.local",
   "auth.login.noAccount": "Нет аккаунта?",
   "auth.login.registerLink": "Регистрация",
+  "auth.developerContact.label": "Связаться с разработчиком:",
   "auth.register.subtitle": "Регистрация владельца",
   "auth.register.demoHint": "После подтверждения email вы получите демо-CRM на 30 дней — ключ не нужен.",
   "auth.register.loginRequired": "Укажите логин (отображаемое имя)",

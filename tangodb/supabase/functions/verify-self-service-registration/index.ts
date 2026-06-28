@@ -5,6 +5,7 @@ import {
   jsonResponse,
   normalizeEmail,
 } from "../_shared/http.ts";
+import { ownerEmailHash } from "../_shared/emailHash.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, logEvent } from "../_shared/supabase.ts";
 import { verifyTurnstileToken } from "../_shared/turnstile.ts";
@@ -46,16 +47,17 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Captcha verification failed" }, 400, req);
   }
 
-  const admin = createServiceClient();
-  const { data: emailHash, error: hashError } = await admin.rpc("owner_email_hash", {
-    p_email: email,
-  });
-
-  if (hashError || typeof emailHash !== "string") {
-    logEvent("self_service_hash_error", { message: hashError?.message ?? "missing" });
+  let emailHash: string;
+  try {
+    emailHash = await ownerEmailHash(email);
+  } catch (err) {
+    logEvent("self_service_hash_error", {
+      message: err instanceof Error ? err.message : "unknown",
+    });
     return jsonResponse({ error: "Service unavailable" }, 500, req);
   }
 
+  const admin = createServiceClient();
   const { data: retention } = await admin
     .from("demo_owner_retention")
     .select("id")

@@ -73,6 +73,7 @@ export type I18nKey =
   | "auth.login.telegramBotEnvMissing"
   | "auth.login.noAccount"
   | "auth.login.registerLink"
+  | "auth.developerContact.label"
   | "auth.register.subtitle"
   | "auth.register.demoHint"
   | "auth.register.loginRequired"
