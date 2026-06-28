@@ -61,8 +61,9 @@ Deno.serve(async (req) => {
   });
 
   if (error) {
-    logEvent("dev_console_cleanup_orphans_error", { message: error.message ?? "unknown" });
-    return jsonResponse({ error: "Cleanup failed" }, 500, req);
+    const message = error.message ?? "unknown";
+    logEvent("dev_console_cleanup_orphans_error", { message });
+    return jsonResponse({ error: message }, 500, req);
   }
 
   logEvent("dev_console_cleanup_orphans", {
