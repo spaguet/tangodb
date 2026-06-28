@@ -46,9 +46,11 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cleanupLoading, setCleanupLoading] = useState(false);
-  const [cleanupPreview, setCleanupPreview] = useState<{ count: number; users: { email: string | null }[] } | null>(
-    null
-  );
+  const [cleanupPreview, setCleanupPreview] = useState<{
+    count: number;
+    users: { user_id: string; email: string | null }[];
+  } | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [confirmPhrase, setConfirmPhrase] = useState("");
   const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [cleanupMessage, setCleanupMessage] = useState("");
@@ -80,10 +82,12 @@ export default function UsersPage() {
     try {
       const result = await invokeDevFunction<{
         count: number;
-        users: { email: string | null }[];
+        users: { user_id: string; email: string | null }[];
         dry_run: boolean;
       }>("dev-console-cleanup-orphan-users", { dry_run: true });
-      setCleanupPreview({ count: result.count, users: result.users ?? [] });
+      const previewUsers = result.users ?? [];
+      setCleanupPreview({ count: result.count, users: previewUsers });
+      setSelectedUserIds(new Set(previewUsers.map((u) => u.user_id)));
       setShowCleanupModal(true);
       setConfirmPhrase("");
     } catch (e) {
@@ -100,10 +104,12 @@ export default function UsersPage() {
       const result = await invokeDevFunction<{ count: number }>("dev-console-cleanup-orphan-users", {
         dry_run: false,
         confirm: "DELETE ORPHAN USERS",
+        user_ids: [...selectedUserIds],
       });
       setCleanupMessage(`Removed ${result.count} orphan account(s).`);
       setShowCleanupModal(false);
       setCleanupPreview(null);
+      setSelectedUserIds(new Set());
       await loadUsers();
     } catch (e) {
       setCleanupMessage(e instanceof Error ? e.message : "Cleanup failed");
@@ -243,18 +249,66 @@ export default function UsersPage() {
               <div>
                 <h3 className="text-lg font-semibold text-white">Delete orphan accounts</h3>
                 <p className="text-sm text-slate-400 mt-1">
-                  {cleanupPreview.count} account(s) without active organization will be permanently removed,
-                  including demo keys and retention records for their emails.
+                  Select orphan accounts to remove permanently. Selected accounts will be deleted along with
+                  demo keys and retention records for their emails.
                 </p>
               </div>
             </div>
 
             {cleanupPreview.users.length > 0 && (
-              <ul className="max-h-40 overflow-y-auto text-sm text-slate-300 bg-slate-950 rounded-lg p-3 space-y-1">
-                {cleanupPreview.users.map((u, i) => (
-                  <li key={`${u.email ?? "unknown"}-${i}`}>{u.email ?? "—"}</li>
-                ))}
-              </ul>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span>
+                    {selectedUserIds.size} of {cleanupPreview.users.length} selected
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedUserIds(new Set(cleanupPreview.users.map((u) => u.user_id)))
+                      }
+                      className="text-indigo-400 hover:text-indigo-300"
+                    >
+                      Select all
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedUserIds(new Set())}
+                      className="text-slate-400 hover:text-slate-300"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+                <ul className="max-h-48 overflow-y-auto text-sm text-slate-300 bg-slate-950 rounded-lg divide-y divide-slate-800">
+                  {cleanupPreview.users.map((u) => {
+                    const checked = selectedUserIds.has(u.user_id);
+                    return (
+                      <li key={u.user_id}>
+                        <label className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-900/60">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setSelectedUserIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(u.user_id)) {
+                                  next.delete(u.user_id);
+                                } else {
+                                  next.add(u.user_id);
+                                }
+                                return next;
+                              });
+                            }}
+                            className="rounded border-slate-600 bg-slate-900 text-rose-600 focus:ring-rose-500"
+                          />
+                          <span className="text-white">{u.email ?? "—"}</span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             )}
 
             <label className="block text-sm text-slate-400">
@@ -273,6 +327,7 @@ export default function UsersPage() {
                 onClick={() => {
                   setShowCleanupModal(false);
                   setCleanupPreview(null);
+                  setSelectedUserIds(new Set());
                 }}
                 className="px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800"
               >
@@ -281,10 +336,16 @@ export default function UsersPage() {
               <button
                 type="button"
                 onClick={() => void handleConfirmCleanup()}
-                disabled={cleanupLoading || confirmPhrase !== "DELETE ORPHAN USERS"}
+                disabled={
+                  cleanupLoading ||
+                  confirmPhrase !== "DELETE ORPHAN USERS" ||
+                  selectedUserIds.size === 0
+                }
                 className="px-3 py-2 rounded-lg text-sm bg-rose-600 text-white hover:bg-rose-500 disabled:opacity-50"
               >
-                {cleanupLoading ? "Deleting…" : "Delete permanently"}
+                {cleanupLoading
+                  ? "Deleting…"
+                  : `Delete ${selectedUserIds.size} account${selectedUserIds.size === 1 ? "" : "s"}`}
               </button>
             </div>
           </div>

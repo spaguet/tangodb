@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "developer_access_required" }, 403, req);
   }
 
-  let body: { dry_run?: boolean; confirm?: string };
+  let body: { dry_run?: boolean; confirm?: string; user_ids?: string[] };
   try {
     body = await req.json();
   } catch {
@@ -41,15 +41,23 @@ Deno.serve(async (req) => {
 
   const dryRun = body.dry_run !== false;
   const confirm = (body.confirm ?? "").trim();
+  const userIds = Array.isArray(body.user_ids)
+    ? body.user_ids.filter((id): id is string => typeof id === "string" && id.trim() !== "")
+    : undefined;
 
   if (!dryRun && confirm !== "DELETE ORPHAN USERS") {
     return jsonResponse({ error: "confirm_phrase_required" }, 400, req);
+  }
+
+  if (!dryRun && (!userIds || userIds.length === 0)) {
+    return jsonResponse({ error: "no_users_selected" }, 400, req);
   }
 
   const admin = createServiceClient();
   const { data, error } = await admin.rpc("dev_console_cleanup_orphan_auth_users", {
     p_actor_user_id: userData.user.id,
     p_dry_run: dryRun,
+    p_user_ids: userIds ?? null,
   });
 
   if (error) {
