@@ -996,6 +996,7 @@ export const EN: Record<I18nKey, string> = {
   "dashboard.singleVisits": "Single visits",
   "dashboard.receivables": "Receivables",
   "dashboard.receivablesBreakdown": "{{subs}} subs · {{personal}} priv.",
+  "dashboard.receivablesBreakdownSubsOnly": "{{subs}} subs",
   "dashboard.expensesMonth": "Expenses this month",
   "dashboard.payrollAccrued": "Payroll",
   "dashboard.payrollAccruedHint": "Accrued for the selected month",

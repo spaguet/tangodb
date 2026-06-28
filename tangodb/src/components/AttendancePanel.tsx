@@ -32,6 +32,7 @@ import {
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
+import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { PAYMENT_METHOD_KEYS } from "../hooks/usePayments";
 import { useSettings } from "../settings/SettingsProvider";
 import {
@@ -164,6 +165,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const queryClient = useQueryClient();
   const { connectionState } = useOnlineStatus();
+  const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const selectedMonth = useUIStore((s) => s.selectedMonth);
   const setSelectedMonth = useUIStore((s) => s.setSelectedMonth);
   const {
@@ -189,7 +191,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     error: personalErr,
   } = usePersonalLessons({
     yearMonth: selectedLocationId ? selectedMonth : undefined,
-    enabled: selectedLocationId != null,
+    enabled: selectedLocationId != null && personalLessonsEnabled,
   });
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = usePrices();
   const { groupsBySubId } = useSubscriptionGroups();
@@ -328,11 +330,27 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const { freezePolicy } = useSettings();
   const isLoading =
     locationsLoading ||
-    (selectedLocationId != null && (scheduleLoading || personalLoading || pricesLoading || clientsQuery.isLoading || singleVisitsQuery.isLoading));
+    (selectedLocationId != null &&
+      (scheduleLoading ||
+        (personalLessonsEnabled && personalLoading) ||
+        pricesLoading ||
+        clientsQuery.isLoading ||
+        singleVisitsQuery.isLoading));
   const isError =
     locationsError ||
-    (selectedLocationId != null && (scheduleError || personalError || pricesError || clientsQuery.isError || singleVisitsQuery.isError));
-  const error = locationsErr ?? scheduleErr ?? personalErr ?? pricesErr ?? clientsQuery.error ?? singleVisitsQuery.error;
+    (selectedLocationId != null &&
+      (scheduleError ||
+        (personalLessonsEnabled && personalError) ||
+        pricesError ||
+        clientsQuery.isError ||
+        singleVisitsQuery.isError));
+  const error =
+    locationsErr ??
+    scheduleErr ??
+    (personalLessonsEnabled ? personalErr : null) ??
+    pricesErr ??
+    clientsQuery.error ??
+    singleVisitsQuery.error;
   const canMarkAttendance = isDateMarkable(selectedDate) && can("attendance.write");
 
   const calendarCells = useMemo(() => {
@@ -998,9 +1016,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             <span className="inline-flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-indigo-500" /> {t("common.groupShort")}
             </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-indigo-700" /> {t("common.personalShort")}
-            </span>
+            {personalLessonsEnabled ? (
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-indigo-700" /> {t("common.personalShort")}
+              </span>
+            ) : null}
           </div>
         </div>
 

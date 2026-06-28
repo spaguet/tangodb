@@ -49,6 +49,7 @@ export default function DashboardPage() {
   );
 
   const modules = normalizeOrgModules(settings?.modules);
+  const personalLessonsEnabled = modules.personal_lessons;
   const showFinancial = can("reports.financial") && modules.finance_basic;
   const showOperational = can("reports.operational");
   const showBoth = showOperational && showFinancial;
@@ -59,13 +60,17 @@ export default function DashboardPage() {
 
   const clientsQuery = useClientDirectory({ enabled: operationalEnabled });
   const subscriptionsQuery = useSubscriptions({ enabled: operationalEnabled });
-  const personalLessonsQuery = usePersonalLessons({ enabled: operationalEnabled });
+  const personalLessonsQuery = usePersonalLessons({
+    enabled: operationalEnabled && personalLessonsEnabled,
+  });
   const showOperationalPayments = operationalEnabled && can("payments.read.operational");
   const todayPaymentsQuery = usePayments(
     showOperationalPayments ? { todayOnly: true } : { enabled: false }
   );
 
-  const scopedLessonsQuery = usePersonalLessons({ enabled: scopedOnly });
+  const scopedLessonsQuery = usePersonalLessons({
+    enabled: scopedOnly && personalLessonsEnabled,
+  });
   const scopedScheduleQuery = useSchedule({ enabled: scopedOnly });
   const disciplinesQuery = useDisciplines({ enabled: scopedOnly });
 
@@ -97,6 +102,7 @@ export default function DashboardPage() {
           lessonsQuery={scopedLessonsQuery}
           scheduleQuery={scopedScheduleQuery}
           disciplinesQuery={disciplinesQuery}
+          personalLessonsEnabled={personalLessonsEnabled}
           onNavigate={handleNavigate}
         />
       </DashboardShell>
@@ -133,6 +139,7 @@ export default function DashboardPage() {
       personalLessonsQuery={personalLessonsQuery}
       todayPaymentsQuery={todayPaymentsQuery}
       showOperationalPayments={showOperationalPayments}
+      personalLessonsEnabled={personalLessonsEnabled}
       onNavigate={handleNavigate}
     />
     </DashboardShell>
@@ -188,18 +195,24 @@ function ScopedDashboardView({
   lessonsQuery,
   scheduleQuery,
   disciplinesQuery,
+  personalLessonsEnabled,
   onNavigate,
 }: {
   lessonsQuery: ReturnType<typeof usePersonalLessons>;
   scheduleQuery: ReturnType<typeof useSchedule>;
   disciplinesQuery: ReturnType<typeof useDisciplines>;
+  personalLessonsEnabled: boolean;
   onNavigate: (panel: string) => void;
 }) {
   const { t } = useI18n();
   const isLoading =
-    lessonsQuery.isLoading || scheduleQuery.isLoading || disciplinesQuery.isLoading;
+    (personalLessonsEnabled && lessonsQuery.isLoading) ||
+    scheduleQuery.isLoading ||
+    disciplinesQuery.isLoading;
   const error =
-    queryError(lessonsQuery) ?? queryError(scheduleQuery) ?? queryError(disciplinesQuery);
+    (personalLessonsEnabled ? queryError(lessonsQuery) : null) ??
+    queryError(scheduleQuery) ??
+    queryError(disciplinesQuery);
 
   if (isLoading) return <LoadingState label={t("dashboard.loading")} />;
   if (error) return <QueryErrorState error={error} />;
@@ -228,6 +241,7 @@ function OperationalDashboardView({
   personalLessonsQuery,
   todayPaymentsQuery,
   showOperationalPayments,
+  personalLessonsEnabled,
   onNavigate,
 }: {
   showBoth: boolean;
@@ -239,18 +253,19 @@ function OperationalDashboardView({
   personalLessonsQuery: ReturnType<typeof usePersonalLessons>;
   todayPaymentsQuery: ReturnType<typeof usePayments>;
   showOperationalPayments: boolean;
+  personalLessonsEnabled: boolean;
   onNavigate: (panel: string) => void;
 }) {
   const { t } = useI18n();
   const isLoading =
     clientsQuery.isLoading ||
     subscriptionsQuery.isLoading ||
-    personalLessonsQuery.isLoading ||
+    (personalLessonsEnabled && personalLessonsQuery.isLoading) ||
     (showOperationalPayments && todayPaymentsQuery.isLoading);
   const error =
     queryError(clientsQuery) ??
     queryError(subscriptionsQuery) ??
-    queryError(personalLessonsQuery) ??
+    (personalLessonsEnabled ? queryError(personalLessonsQuery) : null) ??
     (showOperationalPayments ? queryError(todayPaymentsQuery) : null);
 
   if (isLoading) return <LoadingState label={t("dashboard.loading")} />;

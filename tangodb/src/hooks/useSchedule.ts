@@ -11,6 +11,7 @@ import {
 import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { usePersonalLessons, personalLessonsQueryKey } from "./usePersonalLessons";
+import { usePersonalLessonsModuleEnabled } from "./useOrgModules";
 
 export const scheduleQueryKey = ["schedule"] as const;
 
@@ -82,10 +83,11 @@ export function useScheduleForWeek(
   const weekStartISO = toISODateLocal(weekStart);
   const weekEndISO = toISODateLocal(weekEnd);
   const queryEnabled = orgEnabled && (options?.enabled ?? true);
+  const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
 
   const personalQuery = usePersonalLessons({
     dateRange: { start: weekStartISO, end: weekEndISO },
-    enabled: queryEnabled,
+    enabled: queryEnabled && personalLessonsEnabled,
   });
 
   const scheduleQuery = useQuery({
@@ -134,7 +136,7 @@ export function useScheduleForWeek(
   return {
     ...scheduleQuery,
     data,
-    isLoading: scheduleQuery.isLoading || personalQuery.isLoading,
+    isLoading: scheduleQuery.isLoading || (personalLessonsEnabled && personalQuery.isLoading),
     isError: scheduleQuery.isError || personalQuery.isError,
     error: scheduleQuery.error ?? personalQuery.error,
   };

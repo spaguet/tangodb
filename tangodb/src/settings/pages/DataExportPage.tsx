@@ -15,6 +15,7 @@ import { useFinancialDebtors } from "../../hooks/useFinancialDebtors";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { canAccessDataExportSection, permissionOptionsFromSettings } from "../../lib/permissions";
 import { normalizeOrgModules } from "../../lib/orgModules";
+import { usePersonalLessonsModuleEnabled } from "../../hooks/useOrgModules";
 import { useSettings } from "../SettingsProvider";
 import { exportAllDashboardCsv } from "../../lib/exportDashboardCsv";
 import { exportAllFinancialCsv } from "../../lib/exportFinancialCsv";
@@ -47,29 +48,30 @@ function OperationalExportSection() {
   const toast = useToast();
   const showExportToast = useExportToast();
   const { can } = usePermissions();
+  const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
   const [exporting, setExporting] = useState(false);
   const [manualExport, setManualExport] = useState<{ filename: string; content: string } | null>(null);
 
   const clientsQuery = useClientDirectory();
   const subscriptionsQuery = useSubscriptions();
-  const personalLessonsQuery = usePersonalLessons();
+  const personalLessonsQuery = usePersonalLessons({ enabled: personalLessonsEnabled });
   const attendanceQuery = useAttendanceRecords();
 
   const isLoading =
     clientsQuery.isLoading ||
     subscriptionsQuery.isLoading ||
-    personalLessonsQuery.isLoading ||
+    (personalLessonsEnabled && personalLessonsQuery.isLoading) ||
     attendanceQuery.isLoading;
   const isError =
     clientsQuery.isError ||
     subscriptionsQuery.isError ||
-    personalLessonsQuery.isError ||
+    (personalLessonsEnabled && personalLessonsQuery.isError) ||
     attendanceQuery.isError;
   const error =
     clientsQuery.error ??
     subscriptionsQuery.error ??
-    personalLessonsQuery.error ??
+    (personalLessonsEnabled ? personalLessonsQuery.error : null) ??
     attendanceQuery.error;
 
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
@@ -83,13 +85,17 @@ function OperationalExportSection() {
         id: "attendance",
         label: t("settings.export.attendance", { month: formatMonthTitle(statsMonth, locale) }),
       },
-      {
-        id: "personal",
-        label: t("settings.export.personal", { month: formatMonthTitle(statsMonth, locale) }),
-      },
+      ...(personalLessonsEnabled
+        ? [
+            {
+              id: "personal",
+              label: t("settings.export.personal", { month: formatMonthTitle(statsMonth, locale) }),
+            },
+          ]
+        : []),
       { id: "prices", label: t("settings.export.prices") },
     ],
-    [statsMonth, t, locale]
+    [statsMonth, t, locale, personalLessonsEnabled]
   );
 
   const handleExportAll = async () => {

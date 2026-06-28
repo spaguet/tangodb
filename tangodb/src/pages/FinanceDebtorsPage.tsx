@@ -6,6 +6,7 @@ import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { useToast } from "../App";
+import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { sumDebtorAmounts, formatDebtorDetail } from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "../components/schedule/PayPersonalLessonModal";
@@ -14,10 +15,17 @@ export default function FinanceDebtorsPage() {
   const { t, plural, formatDate } = useI18n();
   const toast = useToast();
   const { can, isReadOnly } = usePermissions();
+  const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
 
   const debtorsQuery = useFinancialDebtors();
-  const debtors = debtorsQuery.data ?? [];
+  const debtors = useMemo(
+    () =>
+      personalLessonsEnabled
+        ? (debtorsQuery.data ?? [])
+        : (debtorsQuery.data ?? []).filter((entry) => entry.kind !== "personal"),
+    [debtorsQuery.data, personalLessonsEnabled]
+  );
   const totalDebt = useMemo(() => sumDebtorAmounts(debtors), [debtors]);
 
   if (debtorsQuery.isLoading) return <LoadingState label={t("finance.debtors.loading")} />;

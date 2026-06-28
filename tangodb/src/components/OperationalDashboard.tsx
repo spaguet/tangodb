@@ -24,6 +24,7 @@ import type { Client, Payment, PersonalLesson, Subscription } from "../types";
 import { PAYMENT_METHODS, getPaymentMethodLabel, paymentSourceLabel } from "../hooks/usePayments";
 import { useAttendanceRecords } from "../hooks/useAttendance";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 
 interface OperationalDashboardProps {
   clients: Client[];
@@ -44,6 +45,7 @@ export default function OperationalDashboard({
 }: OperationalDashboardProps) {
   const { t, locale, plural } = useI18n();
   const { settings } = useOrganization();
+  const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const lowBalanceThreshold = settings?.low_balance_threshold ?? 2;
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
@@ -86,7 +88,7 @@ export default function OperationalDashboard({
   return (
     <div id="panel-dashboard" className="panel-page-stack">
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+        <div className={`grid gap-3 ${personalLessonsEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
           <motion.div
             whileHover={{ y: -2 }}
             className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all min-w-0"
@@ -104,24 +106,26 @@ export default function OperationalDashboard({
             </p>
           </motion.div>
 
-          <motion.div
-            whileHover={{ y: -2 }}
-            className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all"
-            onClick={() => onNavigate("personalView")}
-          >
-            <p className={`text-[10px] uppercase font-sans tracking-wider font-semibold leading-tight ${pendingPaymentColor}`}>
-              {t("dashboard.debtorsPersonal")}
-            </p>
-            <div className={`flex items-center gap-1.5 mt-0.5 text-xl leading-none ${pendingPaymentColor}`}>
-              <AlertCircle className="shrink-0 w-5 h-5" />
-              <h3 className="font-sans font-semibold">
-                {pendingUnpaidCount} / {formatCurrency(pendingRevenue)}
-              </h3>
-            </div>
-            <p className={`text-[10px] font-sans mt-0.5 leading-tight ${pendingPaymentColor}`}>
-              {t("dashboard.unpaidLessons")}
-            </p>
-          </motion.div>
+          {personalLessonsEnabled ? (
+            <motion.div
+              whileHover={{ y: -2 }}
+              className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all"
+              onClick={() => onNavigate("personalView")}
+            >
+              <p className={`text-[10px] uppercase font-sans tracking-wider font-semibold leading-tight ${pendingPaymentColor}`}>
+                {t("dashboard.debtorsPersonal")}
+              </p>
+              <div className={`flex items-center gap-1.5 mt-0.5 text-xl leading-none ${pendingPaymentColor}`}>
+                <AlertCircle className="shrink-0 w-5 h-5" />
+                <h3 className="font-sans font-semibold">
+                  {pendingUnpaidCount} / {formatCurrency(pendingRevenue)}
+                </h3>
+              </div>
+              <p className={`text-[10px] font-sans mt-0.5 leading-tight ${pendingPaymentColor}`}>
+                {t("dashboard.unpaidLessons")}
+              </p>
+            </motion.div>
+          ) : null}
         </div>
       </div>
 

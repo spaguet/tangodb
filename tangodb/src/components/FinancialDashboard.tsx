@@ -50,6 +50,7 @@ import { usePaymentsTrend, getPaymentMethodLabel } from "../hooks/usePayments";
 import type { PaymentMethod } from "../types";
 import { sumExpenses, useExpensesForMonth } from "../hooks/useExpenses";
 import { usePermissions } from "../hooks/usePermissions";
+import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { useRecalculateTeacherSettlement, useTeacherSettlements } from "../hooks/usePayroll";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
@@ -235,6 +236,7 @@ export default function FinancialDashboard() {
   const navigate = useNavigate();
   const { t, locale, plural } = useI18n();
   const { can } = usePermissions();
+  const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const canWritePayroll = can("payroll.write");
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
@@ -246,7 +248,10 @@ export default function FinancialDashboard() {
   const debtorsQuery = useFinancialDebtors();
   const clientsQuery = useClients();
   const attendanceQuery = useAttendanceRecords(statsMonth);
-  const personalLessonsQuery = usePersonalLessons({ yearMonth: statsMonth });
+  const personalLessonsQuery = usePersonalLessons({
+    yearMonth: statsMonth,
+    enabled: personalLessonsEnabled,
+  });
   const scheduleQuery = useSchedule();
   const subscriptionGroupsQuery = useSubscriptionGroups();
   const teamQuery = useTeamMembers();
@@ -255,7 +260,7 @@ export default function FinancialDashboard() {
   const analyticsLoading =
     clientsQuery.isLoading ||
     attendanceQuery.isLoading ||
-    personalLessonsQuery.isLoading ||
+    (personalLessonsEnabled && personalLessonsQuery.isLoading) ||
     scheduleQuery.isLoading ||
     subscriptionGroupsQuery.isLoading ||
     teamQuery.isLoading ||
@@ -296,7 +301,10 @@ export default function FinancialDashboard() {
     return computeMomChangePercent(stats.total, previousTotal);
   }, [stats.total, statsMonth, trendPoints]);
 
-  const revenueSplit = useMemo(() => buildRevenueSplit(stats), [stats]);
+  const revenueSplit = useMemo(() => {
+    const segments = buildRevenueSplit(stats);
+    return personalLessonsEnabled ? segments : segments.filter((segment) => segment.key !== "personal");
+  }, [stats, personalLessonsEnabled]);
 
   const monthPayments = useMemo(
     () => paymentsInMonth(paymentsQuery.data ?? [], statsMonth),
@@ -310,8 +318,12 @@ export default function FinancialDashboard() {
 
   const occupancyStats = useMemo(
     () =>
-      computeOccupancyStats(attendanceQuery.data ?? [], personalLessonsQuery.data ?? [], singleVisitsQuery.data ?? []),
-    [attendanceQuery.data, personalLessonsQuery.data, singleVisitsQuery.data]
+      computeOccupancyStats(
+        attendanceQuery.data ?? [],
+        personalLessonsEnabled ? (personalLessonsQuery.data ?? []) : [],
+        singleVisitsQuery.data ?? []
+      ),
+    [attendanceQuery.data, personalLessonsQuery.data, singleVisitsQuery.data, personalLessonsEnabled]
   );
 
   const topClients = useMemo(
@@ -324,7 +336,9 @@ export default function FinancialDashboard() {
       (teamQuery.data ?? []).map((member) => [member.id, memberListLabel(member, locale)])
     );
     const personalLessonById = new Map(
-      (personalLessonsQuery.data ?? []).map((lesson) => [lesson.id, lesson])
+      personalLessonsEnabled
+        ? (personalLessonsQuery.data ?? []).map((lesson) => [lesson.id, lesson])
+        : []
     );
     const singleVisitById = new Map(
       (singleVisitsQuery.data ?? []).map((visit) => [visit.id, visit])
@@ -344,6 +358,7 @@ export default function FinancialDashboard() {
     subscriptionGroupsQuery.groupsBySubId,
     scheduleQuery.data,
     locale,
+    personalLessonsEnabled,
   ]);
 
   const splitLabel = (key: RevenueSplitKey) => {
@@ -353,10 +368,18 @@ export default function FinancialDashboard() {
     return t("finance.revenue.other");
   };
 
-  const debtors = debtorsQuery.data ?? [];
+  const debtors = useMemo(
+    () =>
+      personalLessonsEnabled
+        ? (debtorsQuery.data ?? [])
+        : (debtorsQuery.data ?? []).filter((entry) => entry.kind !== "personal"),
+    [debtorsQuery.data, personalLessonsEnabled]
+  );
   const totalDebt = sumDebtorAmounts(debtors);
   const lowBalanceCount = debtors.filter((d) => d.kind === "subscription").length;
-  const unpaidPersonalCount = debtors.filter((d) => d.kind === "personal").length;
+  const unpaidPersonalCount = personalLessonsEnabled
+    ? debtors.filter((d) => d.kind === "personal").length
+    : 0;
 
   const momPositive = momPercent !== null && momPercent > 0;
   const momNegative = momPercent !== null && momPercent < 0;
@@ -401,7 +424,7 @@ export default function FinancialDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className={`grid gap-3 ${personalLessonsEnabled ? "grid-cols-2 lg:grid-cols-5" : "grid-cols-2 lg:grid-cols-4"}`}>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.revenue")}</p>
             <p className="text-xl font-semibold text-slate-900 mt-0.5">{formatCurrency(stats.total)}</p>
@@ -428,10 +451,12 @@ export default function FinancialDashboard() {
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.subscriptions")}</p>
             <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.subscriptionTotal)}</p>
           </div>
-          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
-            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.personal")}</p>
-            <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.personalTotal)}</p>
-          </div>
+          {personalLessonsEnabled ? (
+            <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.personal")}</p>
+              <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.personalTotal)}</p>
+            </div>
+          ) : null}
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.singleVisits")}</p>
             <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.singleVisitTotal)}</p>
@@ -440,7 +465,9 @@ export default function FinancialDashboard() {
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.receivables")}</p>
             <p className="text-xl font-semibold text-rose-700 mt-0.5">{formatCurrency(totalDebt)}</p>
             <p className="text-[10px] text-slate-500 mt-0.5">
-              {t("dashboard.receivablesBreakdown", { subs: lowBalanceCount, personal: unpaidPersonalCount })}
+              {personalLessonsEnabled
+                ? t("dashboard.receivablesBreakdown", { subs: lowBalanceCount, personal: unpaidPersonalCount })
+                : t("dashboard.receivablesBreakdownSubsOnly", { subs: lowBalanceCount })}
             </p>
           </div>
         </div>

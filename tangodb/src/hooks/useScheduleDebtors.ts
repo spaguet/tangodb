@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { MemberRole } from "../types/organization";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePersonalLessons } from "./usePersonalLessons";
+import { usePersonalLessonsModuleEnabled } from "./useOrgModules";
 
 export const scheduleDebtorsQueryKey = ["scheduleDebtors"] as const;
 
@@ -28,10 +29,11 @@ export function canShowScheduleDebtAmount(role: MemberRole | null): boolean {
 export function useScheduleDebtors(options?: { enabled?: boolean }) {
   const { role, memberId } = useOrganization();
   const includeAmount = canShowScheduleDebtAmount(role);
+  const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
 
   const lessonsQuery = usePersonalLessons({
     paidFilter: "no",
-    enabled: options?.enabled ?? true,
+    enabled: personalLessonsEnabled && (options?.enabled ?? true),
   });
 
   const data = useMemo((): ScheduleDebtorEntry[] => {

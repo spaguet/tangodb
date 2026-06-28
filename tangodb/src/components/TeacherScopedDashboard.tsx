@@ -3,6 +3,7 @@ import { jsDayToIsoDow } from "../lib/utils";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { normalizeOrgModules } from "../lib/orgModules";
 import type { PersonalLesson, ScheduleSlot } from "../types";
 
@@ -29,11 +30,12 @@ export default function TeacherScopedDashboard({
   const { can } = usePermissions();
   const { settings } = useOrganization();
   const modules = normalizeOrgModules(settings?.modules);
+  const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const showPayrollLink =
     modules.finance_basic && can("payroll.read.own") && !can("finance.read");
 
   const quickLinks = [
-    ...QUICK_LINKS,
+    ...QUICK_LINKS.filter((link) => link.id !== "personalView" || personalLessonsEnabled),
     ...(showPayrollLink
       ? [{ id: "payroll" as const, labelKey: "dashboard.teacher.quickPayroll" as const, icon: Wallet }]
       : []),
@@ -91,29 +93,31 @@ export default function TeacherScopedDashboard({
         )}
       </section>
 
-      <section className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
-        <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-indigo-500" />
-          {t("dashboard.teacher.upcomingPersonal")}
-        </h2>
-        {upcomingLessons.length === 0 ? (
-          <p className="text-slate-400 text-xs font-sans py-3 text-center">{t("dashboard.teacher.noUpcoming")}</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {upcomingLessons.map((lesson) => (
-              <li
-                key={lesson.id}
-                className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs font-sans"
-              >
-                <span className="font-semibold text-slate-800 truncate">{lesson.clientDisplay}</span>
-                <span className="text-slate-500 shrink-0 ml-2">
-                  {formatDate(lesson.date, { day: "numeric", month: "long", year: "numeric" })} · {lesson.timeStart}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {personalLessonsEnabled ? (
+        <section className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
+          <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-500" />
+            {t("dashboard.teacher.upcomingPersonal")}
+          </h2>
+          {upcomingLessons.length === 0 ? (
+            <p className="text-slate-400 text-xs font-sans py-3 text-center">{t("dashboard.teacher.noUpcoming")}</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {upcomingLessons.map((lesson) => (
+                <li
+                  key={lesson.id}
+                  className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs font-sans"
+                >
+                  <span className="font-semibold text-slate-800 truncate">{lesson.clientDisplay}</span>
+                  <span className="text-slate-500 shrink-0 ml-2">
+                    {formatDate(lesson.date, { day: "numeric", month: "long", year: "numeric" })} · {lesson.timeStart}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

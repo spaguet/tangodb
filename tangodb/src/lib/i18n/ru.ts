@@ -994,6 +994,7 @@ export const RU: Record<I18nKey, string> = {
   "dashboard.singleVisits": "Разовые",
   "dashboard.receivables": "Дебиторка",
   "dashboard.receivablesBreakdown": "{{subs}} абон. · {{personal}} перс.",
+  "dashboard.receivablesBreakdownSubsOnly": "{{subs}} абон.",
   "dashboard.expensesMonth": "Расходы за месяц",
   "dashboard.payrollAccrued": "Зарплаты",
   "dashboard.payrollAccruedHint": "Начислено за выбранный месяц",

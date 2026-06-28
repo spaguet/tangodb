@@ -942,6 +942,7 @@ export type I18nKey =
   | "dashboard.singleVisits"
   | "dashboard.receivables"
   | "dashboard.receivablesBreakdown"
+  | "dashboard.receivablesBreakdownSubsOnly"
   | "dashboard.expensesMonth"
   | "dashboard.payrollAccrued"
   | "dashboard.payrollAccruedHint"

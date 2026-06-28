@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { AlertCircle, Clock, Coins } from "lucide-react";
 import { useScheduleDebtors } from "../../hooks/useScheduleDebtors";
 import { usePermissions } from "../../hooks/usePermissions";
+import { usePersonalLessonsModuleEnabled } from "../../hooks/useOrgModules";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
 import {
@@ -156,7 +157,8 @@ export default function ScheduleDebtorsBlock({
   const toast = useToast();
   const { memberId } = useOrganization();
   const { role, can, isReadOnly } = usePermissions();
-  const debtorsQuery = useScheduleDebtors();
+  const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
+  const debtorsQuery = useScheduleDebtors({ enabled: personalLessonsEnabled });
   const { data: debtors = [], showAmount, isLoading, isError, error } = debtorsQuery;
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
 
@@ -201,6 +203,10 @@ export default function ScheduleDebtorsBlock({
 
   const subtitle =
     role === "teacher" ? t("schedule.debtors.subtitleTeacher") : t("schedule.debtors.subtitleAll");
+
+  if (!personalLessonsEnabled) {
+    return null;
+  }
 
   if (isLoading) {
     return <LoadingState label={t("schedule.debtors.loading")} />;
