@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Layers, User, X } from "lucide-react";
-import type { MemberRole } from "../../types/organization";
 import { useI18n } from "../../hooks/useI18n";
 
 export interface ScheduleCellPrefill {
@@ -14,7 +13,8 @@ export interface ScheduleCellPrefill {
 
 interface AddLessonTypePopupProps {
   prefill: ScheduleCellPrefill | null;
-  role: MemberRole | null;
+  canOfferGroup: boolean;
+  canOfferPersonal: boolean;
   onSelectGroup: () => void;
   onSelectPersonal: () => void;
   onClose: () => void;
@@ -22,13 +22,13 @@ interface AddLessonTypePopupProps {
 
 export default function AddLessonTypePopup({
   prefill,
-  role,
+  canOfferGroup,
+  canOfferPersonal,
   onSelectGroup,
   onSelectPersonal,
   onClose,
 }: AddLessonTypePopupProps) {
   const { t } = useI18n();
-  const canOfferGroup = role === "owner" || role === "director";
 
   useEffect(() => {
     if (!prefill) return;
@@ -91,17 +91,19 @@ export default function AddLessonTypePopup({
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={onSelectPersonal}
-                className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors cursor-pointer text-left"
-              >
-                <User className="w-5 h-5 text-indigo-600 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">{t("common.personalLesson")}</p>
-                  <p className="text-xs text-slate-500">{t("schedule.popup.personalOnce")}</p>
-                </div>
-              </button>
+              {canOfferPersonal && (
+                <button
+                  type="button"
+                  onClick={onSelectPersonal}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors cursor-pointer text-left"
+                >
+                  <User className="w-5 h-5 text-indigo-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{t("common.personalLesson")}</p>
+                    <p className="text-xs text-slate-500">{t("schedule.popup.personalOnce")}</p>
+                  </div>
+                </button>
+              )}
             </div>
           </motion.div>
         </div>

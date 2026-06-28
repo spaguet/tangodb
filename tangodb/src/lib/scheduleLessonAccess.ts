@@ -1,5 +1,6 @@
-import type { MemberRole } from "../types/organization";
+import type { MemberRole, OrgModules } from "../types/organization";
 import type { DisplayLesson, PersonalDisplayLesson } from "../types";
+import { isModuleEnabled } from "./orgModules";
 import { isPastDate, isPersonalLessonLockedForWrite } from "./scheduleWeek";
 import type { PermissionAction } from "./permissions";
 
@@ -69,29 +70,50 @@ export function canShowPaidStatus(role: MemberRole | null): boolean {
   return role === "owner" || role === "director" || role === "admin" || role === "teacher";
 }
 
-export function canOfferGroupLessonAdd(role: MemberRole | null, isReadOnly: boolean): boolean {
-  if (isReadOnly) return false;
-  return role === "owner" || role === "director";
+export interface ScheduleGridAddOptions {
+  isReadOnly: boolean;
+  modules: OrgModules;
+  teachersCanSellSubscriptions?: boolean;
+}
+
+export function canOfferGroupLessonAdd(
+  role: MemberRole | null,
+  can: CanFn,
+  options: ScheduleGridAddOptions,
+  context?: { disciplineId?: string | null; locationId?: string | null }
+): boolean {
+  if (options.isReadOnly) return false;
+  if (!isModuleEnabled(options.modules, "group_subscriptions")) return false;
+  if (!can("schedule.write", context)) return false;
+
+  if (role === "owner" || role === "director") return true;
+
+  if (role === "teacher") {
+    return options.teachersCanSellSubscriptions ?? false;
+  }
+
+  return false;
 }
 
 export function canAddPersonalFromGrid(
   role: MemberRole | null,
   can: CanFn,
-  isReadOnly: boolean,
+  options: ScheduleGridAddOptions,
   context?: { disciplineId?: string | null; locationId?: string | null }
 ): boolean {
-  if (isReadOnly) return false;
+  if (options.isReadOnly) return false;
+  if (!isModuleEnabled(options.modules, "personal_lessons")) return false;
   return can("personal_lessons.write", context);
 }
 
 export function canClickEmptyCell(
   role: MemberRole | null,
   can: CanFn,
-  isReadOnly: boolean,
+  options: ScheduleGridAddOptions,
   context?: { disciplineId?: string | null; locationId?: string | null }
 ): boolean {
   return (
-    canOfferGroupLessonAdd(role, isReadOnly) ||
-    canAddPersonalFromGrid(role, can, isReadOnly, context)
+    canOfferGroupLessonAdd(role, can, options, context) ||
+    canAddPersonalFromGrid(role, can, options, context)
   );
 }

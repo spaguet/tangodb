@@ -13,6 +13,10 @@ import {
   EMPTY_TEACHER_SCOPE,
 } from "../src/lib/permissions.ts";
 import { normalizeOrgModules } from "../src/lib/orgModules.ts";
+import {
+  canAddPersonalFromGrid,
+  canOfferGroupLessonAdd,
+} from "../src/lib/scheduleLessonAccess.ts";
 
 const ROLES = ["owner", "director", "admin", "teacher", "accountant"];
 const ALL_PANELS = [
@@ -176,6 +180,40 @@ assert(
 assert(
   findFirstEnabledAccessiblePanelPath("owner", noFinanceModules, optsFor("owner")) === "/clients",
   "owner with finance_basic off skips /finance"
+);
+
+// Schedule grid: sport_section-style org (group on, personal off)
+const sportSectionModules = normalizeOrgModules({
+  group_subscriptions: true,
+  personal_lessons: false,
+  pair_subscriptions: false,
+  trio_lessons: false,
+  multi_discipline: true,
+  locations: true,
+  finance_basic: true,
+});
+const gridOpts = { isReadOnly: false, modules: sportSectionModules };
+const teacherSellOpts = {
+  ...gridOpts,
+  teachersCanSellSubscriptions: true,
+};
+const teacherGridCan = (action, context) =>
+  can("teacher", action, { ...optsFor("teacher"), context });
+assert(
+  !canAddPersonalFromGrid("teacher", teacherGridCan, gridOpts),
+  "teacher no personal add when personal_lessons module off"
+);
+assert(
+  canOfferGroupLessonAdd("teacher", teacherGridCan, teacherSellOpts),
+  "teacher group add when group module on and teachers_can_sell_subscriptions"
+);
+assert(
+  !canOfferGroupLessonAdd("teacher", teacherGridCan, gridOpts),
+  "teacher no group add without teachers_can_sell_subscriptions"
+);
+assert(
+  canOfferGroupLessonAdd("owner", (action, context) => can("owner", action, { ...optsFor("owner"), context }), gridOpts),
+  "owner group add when group module on"
 );
 
 // RBAC-2 settings guards

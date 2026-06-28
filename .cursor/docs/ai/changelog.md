@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-28 — fix: клик по пустой ячейке расписания учитывает модули организации — при выключенных персональных уроках popup персонального урока недоступен; преподаватель с «Продажа групповых абонементов» открывает форму группового занятия (`scheduleLessonAccess`, `SchedulePageContainer`, `AddLessonTypePopup`).
 2026-06-28 — fix: оплата при продаже абонемента всегда через RPC `record_subscription_payment` (убран client-side INSERT по роли; RPC расширен на owner/admin/reception с `member_can_accept_payments`); migration `20260809000001`.
 2026-06-28 — fix: продажа абонемента преподавателем — `enforce_tenant_row_org_consistency` теперь SECURITY DEFINER, чтобы EXISTS-проверки subscription/personal_lesson в payments trigger не падали под teacher RLS (ошибка «subscription_id does not belong to organization» при успешной продаже); migration `20260808000001`.
 2026-06-28 — fix: продажа абонемента преподавателем — оплата через RPC `record_subscription_payment` (SECURITY DEFINER), обход tenant-trigger/RLS при прямом INSERT в `payments`; migration `20260807000001`.

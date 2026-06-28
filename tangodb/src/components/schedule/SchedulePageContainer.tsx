@@ -8,6 +8,7 @@ import { usePrices } from "../../hooks/usePrices";
 import { useAccessibleLocations } from "../../hooks/useLocations";
 import { useTeamMembers, memberDisplayName, memberListLabel } from "../../hooks/useTeamMembers";
 import { usePermissions } from "../../hooks/usePermissions";
+import { normalizeOrgModules } from "../../lib/orgModules";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
 import { useI18n } from "../../hooks/useI18n";
@@ -60,8 +61,17 @@ export default function SchedulePageContainer() {
   const { data: activeClients = [] } = useClients();
   const { data: prices = [] } = usePrices();
 
-  const canAddGroup = canOfferGroupLessonAdd(role, isReadOnly) && can("schedule.write");
-  const canAddPersonal = canAddPersonalFromGrid(role, can, isReadOnly);
+  const scheduleGridAddOptions = useMemo(
+    () => ({
+      isReadOnly,
+      modules: normalizeOrgModules(settings?.modules),
+      teachersCanSellSubscriptions: settings?.teachers_can_sell_subscriptions ?? false,
+    }),
+    [isReadOnly, settings?.modules, settings?.teachers_can_sell_subscriptions]
+  );
+
+  const canAddGroup = canOfferGroupLessonAdd(role, can, scheduleGridAddOptions);
+  const canAddPersonal = canAddPersonalFromGrid(role, can, scheduleGridAddOptions);
   const canClickEmpty = canAddGroup || canAddPersonal;
 
   const teachersCanViewFullSchedule = settings?.teachers_can_view_full_schedule ?? true;
@@ -270,7 +280,7 @@ export default function SchedulePageContainer() {
 
   const handleEmptyCellClick = useCallback(
     (locationId: string, locationName: string, dateISO: string, dayOfWeek: number, timeStart: string) => {
-      if (!canClickEmptyCell(role, can, isReadOnly, { locationId })) return;
+      if (!canClickEmptyCell(role, can, scheduleGridAddOptions, { locationId })) return;
 
       if (isPastDate(dateISO)) {
         toast(t("schedule.error.pastAdd"), "error");
@@ -293,7 +303,7 @@ export default function SchedulePageContainer() {
         setAddFlow({ mode: "personal", prefill });
       }
     },
-    [role, can, isReadOnly, canAddGroup, canAddPersonal, toast, t]
+    [role, can, scheduleGridAddOptions, canAddGroup, canAddPersonal, toast, t]
   );
 
   const resolveLocationName = useCallback(
@@ -443,7 +453,8 @@ export default function SchedulePageContainer() {
 
       <AddLessonTypePopup
         prefill={typeSelectPrefill}
-        role={role}
+        canOfferGroup={canAddGroup}
+        canOfferPersonal={canAddPersonal}
         onClose={closeAddFlow}
         onSelectGroup={() => {
           if (addFlow?.mode === "type-select") {
