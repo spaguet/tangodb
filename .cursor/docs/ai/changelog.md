@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-28 — UX: журнал изменений — записи за текущий день, человекочитаемые scope/продажи/удаления, popup с выбором дня; «Трио-уроки» → «Персональные уроки до троих человек»; сокращены шаги сценария 2 покупки лицензии (`AuditLogSection`, `auditLogFormat`, `useOrgAuditLog`, i18n, `paymentConfig`).
 2026-06-28 — fix: при выключенном модуле «Персональные уроки» скрыты тарифы персональных/пакетов, % по персональным в карточке члена команды, строки payroll; `can(personal_lessons.*)` учитывает `settings.modules` (`PricesPanel`, `MemberProfileModal`, `FinancePayrollPage`, `permissions`, `usePermissions`).
 2026-06-28 — UX: мобильное расписание — sticky колонка времени слева и sticky заголовки дня/даты сверху при прокрутке таблицы; компактные заголовки на маленьких экранах (`WeeklyScheduleGrid`, `DayColumn`, `LocationScheduleSection`).
 2026-06-28 — fix: при выключенном модуле «Персональные уроки» они скрыты во всём CRM — дашборд (операционный/финансовый/преподавательский), журнал посещаемости, расписание, должники, экспорт (`useOrgModules`, `TeacherScopedDashboard`, `OperationalDashboard`, `FinancialDashboard`, `DashboardPage`, `AttendancePanel`, `ScheduleDebtorsBlock`, `FinanceDebtorsPage`, `DataExportPage`).

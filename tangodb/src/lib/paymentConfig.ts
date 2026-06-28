@@ -222,6 +222,5 @@ export function getPurchaseActivationSteps(t: TranslateFn): string[] {
     t("license.purchase.step4"),
     t("license.purchase.step5"),
     t("license.purchase.step6"),
-    t("license.purchase.step7"),
   ];
 }

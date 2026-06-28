@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
-import { Mail, UserMinus, Users, ClipboardList, Copy, Check, Edit, LifeBuoy, UserPlus } from "lucide-react";
+import { Mail, UserMinus, Users, Copy, Check, Edit, LifeBuoy, UserPlus } from "lucide-react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
+import AuditLogSection from "../components/AuditLogSection";
 import MemberProfileModal from "../components/MemberProfileModal";
 import TeacherScopeFields from "../components/TeacherScopeFields";
 import { useToast } from "../../App";
@@ -14,10 +15,8 @@ import {
   type TeamMemberRow,
 } from "../../hooks/useTeamMembers";
 import { useTeamInvites, useTeamMutations } from "../../hooks/useTeamInvites";
-import { auditTableLabel, useOrgAuditLog } from "../../hooks/useOrgAuditLog";
 import { useI18n } from "../../hooks/useI18n";
 import { getTeamRolePresets } from "../../lib/i18n";
-import type { I18nKey } from "../../lib/i18n/keys";
 import { usePermissions } from "../../hooks/usePermissions";
 import { DEFAULT_TEACHER_INVITE_SCOPE, isTeacherScopeConfigured } from "../../lib/teacherScope";
 import type { MemberMeta, MemberRole, TeacherScope } from "../../types/organization";
@@ -69,142 +68,13 @@ function inviteListLabel(inv: { first_name?: string | null; last_name?: string |
   return inv.email;
 }
 
-const AUDIT_FIELD_LABEL_KEYS: Record<string, I18nKey> = {
-  role: "team.auditField.role",
-  scope: "team.auditField.scope",
-  meta: "team.auditField.meta",
-  display_name: "team.auditField.displayName",
-  first_name: "common.firstName",
-  last_name: "common.lastName",
-  patronymic: "memberProfile.field.patronymic",
-  contact_email: "team.auditField.contactEmail",
-  phone: "team.auditField.phone",
-  telegram: "team.auditField.telegram",
-  profile_notes: "memberProfile.field.other",
-  is_active: "team.auditField.isActive",
-  email: "team.auditField.contactEmail",
-  expires_at: "team.auditField.expiresAt",
-  locale: "team.auditField.locale",
-  currency_code: "team.auditField.currencyCode",
-  currency_display: "team.auditField.currencyDisplay",
-  modules: "team.auditField.modules",
-  branding_name: "team.auditField.brandingName",
-  pair_cycle_enabled: "team.auditField.pairCycleEnabled",
-};
-
-const AUDIT_MODULE_LABEL_KEYS: Record<string, I18nKey> = {
-  group_subscriptions: "settings.org.module.groupSubscriptions",
-  personal_lessons: "settings.org.module.personalLessons",
-  finance_basic: "settings.org.module.financeBasic",
-  pair_subscriptions: "settings.org.module.pairSubscriptions",
-  trio_lessons: "settings.org.module.trioLessons",
-  multi_discipline: "settings.org.module.multiDiscipline",
-  locations: "settings.org.module.locations",
-};
-
-const HIDDEN_AUDIT_FIELDS = new Set([
-  "id",
-  "organization_id",
-  "user_id",
-  "created_at",
-  "updated_at",
-  "joined_at",
-  "invited_at",
-]);
-
-function auditOperationLabel(operation: string, translate: ReturnType<typeof useI18n>["t"]): string {
-  if (operation === "INSERT") return translate("team.auditOperation.insert");
-  if (operation === "UPDATE") return translate("team.auditOperation.update");
-  if (operation === "DELETE") return translate("team.auditOperation.delete");
-  return operation;
-}
-
-function auditValueLabel(value: unknown, translate: ReturnType<typeof useI18n>["t"]): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (typeof value === "boolean") return value ? translate("common.yes") : translate("common.no");
-  if (typeof value === "string" || typeof value === "number") return String(value);
-  return JSON.stringify(value);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function auditModuleLabel(key: string, translate: ReturnType<typeof useI18n>["t"]): string {
-  const labelKey = AUDIT_MODULE_LABEL_KEYS[key];
-  return labelKey ? translate(labelKey) : key;
-}
-
-function auditModulesInsertLabel(value: unknown, translate: ReturnType<typeof useI18n>["t"]): string {
-  if (!isRecord(value)) return auditValueLabel(value, translate);
-
-  const enabled = Object.entries(value)
-    .filter(([, enabled]) => enabled === true)
-    .map(([key]) => auditModuleLabel(key, translate));
-
-  return enabled.length > 0 ? enabled.join(", ") : "—";
-}
-
-function auditChangedFields(row: {
-  operation: string;
-  old_data: Record<string, unknown> | null;
-  new_data: Record<string, unknown> | null;
-}, translate: ReturnType<typeof useI18n>["t"]): string[] {
-  const oldData = row.old_data ?? {};
-  const newData = row.new_data ?? {};
-  const keys = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
-  const details: string[] = [];
-
-  for (const key of keys) {
-    if (HIDDEN_AUDIT_FIELDS.has(key)) continue;
-    const oldValue = oldData[key];
-    const newValue = newData[key];
-    if (row.operation === "UPDATE" && JSON.stringify(oldValue) === JSON.stringify(newValue)) continue;
-    if (row.operation === "INSERT" && (newValue === null || newValue === undefined || newValue === "")) continue;
-
-    const labelKey = AUDIT_FIELD_LABEL_KEYS[key];
-    const label = labelKey ? translate(labelKey) : key;
-    if (key === "modules") {
-      if (row.operation === "INSERT") {
-        details.push(`${label}: ${auditModulesInsertLabel(newValue, translate)}`);
-      } else if (row.operation === "DELETE") {
-        details.push(`${label}: ${auditModulesInsertLabel(oldValue, translate)}`);
-      } else if (isRecord(oldValue) && isRecord(newValue)) {
-        const moduleKeys = new Set([...Object.keys(oldValue), ...Object.keys(newValue)]);
-        for (const moduleKey of moduleKeys) {
-          if (JSON.stringify(oldValue[moduleKey]) === JSON.stringify(newValue[moduleKey])) continue;
-          details.push(
-            `${label}: ${auditModuleLabel(moduleKey, translate)}: ${auditValueLabel(
-              oldValue[moduleKey],
-              translate
-            )} → ${auditValueLabel(newValue[moduleKey], translate)}`
-          );
-        }
-      } else {
-        details.push(`${label}: ${auditValueLabel(oldValue, translate)} → ${auditValueLabel(newValue, translate)}`);
-      }
-      continue;
-    }
-    if (row.operation === "INSERT") {
-      details.push(`${label}: ${auditValueLabel(newValue, translate)}`);
-    } else if (row.operation === "DELETE") {
-      details.push(`${label}: ${auditValueLabel(oldValue, translate)}`);
-    } else {
-      details.push(`${label}: ${auditValueLabel(oldValue, translate)} → ${auditValueLabel(newValue, translate)}`);
-    }
-  }
-
-  return details;
-}
-
 export default function TeamSettingsPage() {
-  const { t, locale, formatDate, formatDateTime } = useI18n();
+  const { t, locale, formatDate } = useI18n();
   const invitePresets = getTeamRolePresets(t);
   const showToast = useToast();
   const { role: currentRole, can } = usePermissions();
   const { data: members = [], isLoading, isError, error } = useTeamMembers();
   const { data: invites = [], isLoading: invitesLoading } = useTeamInvites();
-  const { data: auditRows = [] } = useOrgAuditLog(20);
   const { invite, revokeInvite, updateMember } = useTeamMutations();
 
   const [email, setEmail] = useState("");
@@ -305,9 +175,6 @@ export default function TeamSettingsPage() {
   const activeMembers = members.filter((m) => m.is_active);
   const inactiveMembers = members.filter((m) => !m.is_active);
   const canShowRecoveryGuide = currentRole === "owner" || currentRole === "director";
-  const memberNameByUserId = new Map(
-    members.map((member) => [member.user_id, memberListLabel(member, locale)])
-  );
 
   const copyInviteUrl = async () => {
     if (!lastInviteUrl) return;
@@ -616,60 +483,7 @@ export default function TeamSettingsPage() {
         onCancel={() => setDeactivateTarget(null)}
       />
 
-      {canInvite && auditRows.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
-          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <ClipboardList className="w-4 h-4 text-indigo-500" />
-            {t("team.audit")}
-          </h3>
-          <div className="space-y-1 max-h-48 overflow-y-auto">
-            {auditRows.map((row) => {
-              const details = auditChangedFields(row, t);
-              const actor = row.changed_by
-                ? memberNameByUserId.has(row.changed_by)
-                  ? t("team.auditActor", {
-                      name: memberNameByUserId.get(row.changed_by)!,
-                      id: row.changed_by,
-                    })
-                  : t("team.auditActorIdOnly", { id: row.changed_by })
-                : t("team.auditSystem");
-              return (
-                <div
-                  key={row.id}
-                  className="text-[11px] text-slate-500 py-2 border-b border-slate-50 last:border-0 space-y-1"
-                >
-                  <div className="flex justify-between gap-2">
-                    <span className="font-semibold text-slate-700">
-                      {auditTableLabel(row.table_name, locale)} · {auditOperationLabel(row.operation, t)}
-                    </span>
-                    <span className="shrink-0 text-slate-400">
-                      {formatDateTime(row.changed_at, {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                  <p className="text-slate-400">{actor}</p>
-                  {details.length > 0 && (
-                    <ul className="space-y-0.5">
-                      {details.slice(0, 6).map((detail) => (
-                        <li key={detail} className="text-slate-600">
-                          {detail}
-                        </li>
-                      ))}
-                      {details.length > 6 && (
-                        <li className="text-slate-400">{t("team.auditMore", { count: details.length - 6 })}</li>
-                      )}
-                    </ul>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {canInvite && <AuditLogSection />}
     </div>
   );
 }
