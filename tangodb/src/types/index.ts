@@ -102,6 +102,7 @@ export interface Price {
   category: PriceCategory;
   locationId?: string | null;
   disciplineId?: string | null;
+  teacherMemberIds?: string[];
   billingModel?: BillingModel;
 }
 

@@ -37,6 +37,7 @@ import { buildGroupNameById, getSubscriptionGroupDisplayNames, listScheduleGroup
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules, normalizeOrgModules, shouldShowDisciplinePicker, shouldShowLocationPicker } from "../lib/orgModules";
 import { useSettings } from "../settings/SettingsProvider";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { useUIStore } from "../store/ui";
 import { resolveMutationError } from "../lib/resolveMutationError";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
@@ -118,6 +119,7 @@ export default function SubscriptionsPanel({
   const recordSubscriptionPayment = useRecordSubscriptionPayment();
   const { canAccessPanel } = usePermissions();
   const { settings } = useSettings();
+  const { role, memberId } = useOrganization();
   const {
     locations,
     isLoading: locationsLoading,
@@ -202,6 +204,7 @@ export default function SubscriptionsPanel({
       localPriceList,
       locationId: localPriceList ? saleLocationId || null : null,
       disciplineId: disciplineId || null,
+      teacherMemberId: role === "teacher" ? memberId : null,
     }),
     settings?.modules ?? DEFAULT_ORG_MODULES
   );
@@ -1303,6 +1306,7 @@ export default function SubscriptionsPanel({
                 </div>
               </div>
             </div>
+            {role !== "teacher" && (
             <p className="text-slate-400 text-xs font-sans text-center -mt-1 panel-form-full-row-md">
               {t("subscriptions.sell.priceHint")}{" "}
               <button
@@ -1313,6 +1317,7 @@ export default function SubscriptionsPanel({
                 {t("subscriptions.sell.priceListLink")}
               </button>
             </p>
+            )}
 
             <div className="panel-form-divider panel-form-full-row-md" />
 

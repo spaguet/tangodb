@@ -597,6 +597,7 @@ export type I18nKey =
   | "prices.error.lessonsRequired"
   | "prices.error.createFailed"
   | "prices.success.created"
+  | "prices.success.teacherBindingUpdated"
   | "prices.action.edit"
   | "prices.action.delete"
   | "prices.lesson.one"
@@ -1279,6 +1280,8 @@ export type I18nKey =
   | "prices.globalTariff"
   | "prices.fallbackLocation"
   | "prices.fallbackDiscipline"
+  | "prices.fallbackTeacher"
+  | "prices.teacherLabel"
   | "prices.noTariffs"
   | "prices.aria.price"
   | "prices.confirm.deleteBody"
@@ -1448,5 +1451,6 @@ export type I18nKey =
   | "ui.tariff.noDisciplinesHint"
   | "ui.tariff.selectDiscipline"
   | "ui.tariff.bindLocation"
+  | "ui.tariff.bindTeacher"
   | "ui.tariff.noLocationsHint"
   | "ui.tariff.selectLocation";

@@ -252,6 +252,7 @@ export interface PriceTariffRef {
   category?: PriceCategory;
   locationId?: string | null;
   disciplineId?: string | null;
+  teacherMemberIds?: string[];
   billingModel?: import("../types").BillingModel;
 }
 
@@ -386,23 +387,44 @@ function matchesDisciplineBinding<T extends Pick<PriceTariffRef, "disciplineId">
   return isGlobalDisciplineTariff(price) || price.disciplineId === disciplineId;
 }
 
+export function isGlobalTeacherTariff(price: Pick<PriceTariffRef, "teacherMemberIds">): boolean {
+  return !price.teacherMemberIds || price.teacherMemberIds.length === 0;
+}
+
+function matchesTeacherBinding<T extends Pick<PriceTariffRef, "teacherMemberIds">>(
+  price: T,
+  teacherMemberId?: string | null
+): boolean {
+  if (!teacherMemberId) return true;
+  if (isGlobalTeacherTariff(price)) return true;
+  return price.teacherMemberIds!.includes(teacherMemberId);
+}
+
 export function filterTariffsForSale<T extends PriceTariffRef>(
   prices: T[],
   options: {
     localPriceList?: boolean;
     locationId?: string | null;
     disciplineId?: string | null;
+    teacherMemberId?: string | null;
   }
 ): T[] {
   return prices.filter(
     (p) =>
-      matchesLocationBinding(p, options) && matchesDisciplineBinding(p, options.disciplineId ?? null)
+      matchesLocationBinding(p, options) &&
+      matchesDisciplineBinding(p, options.disciplineId ?? null) &&
+      matchesTeacherBinding(p, options.teacherMemberId ?? null)
   );
 }
 
 export function filterGroupTariffsForSale<T extends PriceTariffRef>(
   prices: T[],
-  options: { localPriceList: boolean; locationId?: string | null; disciplineId?: string | null }
+  options: {
+    localPriceList: boolean;
+    locationId?: string | null;
+    disciplineId?: string | null;
+    teacherMemberId?: string | null;
+  }
 ): T[] {
   return filterTariffsForSale(getGroupTariffs(prices), options);
 }

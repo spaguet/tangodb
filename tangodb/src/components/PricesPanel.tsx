@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Coins, Edit, Ticket, Trash2, X } from "lucide-react";
-import { useCreatePrice, useDeletePrice, usePrices, useUpdatePrice, useUpdatePriceMeta } from "../hooks/usePrices";
+import { useCreatePrice, useDeletePrice, usePrices, useUpdatePrice, useUpdatePriceMeta, useUpdatePriceTeachers } from "../hooks/usePrices";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { useDisciplines } from "../hooks/useDisciplines";
+import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import {
   filterGroupTariffsByModules,
   isLegacyPairCycleTariff,
@@ -28,6 +29,7 @@ import {
   getPrivateLessonTariffs,
   getPrivatePackageTariffs,
   getSingleVisitTariffs,
+  isGlobalTeacherTariff,
   isMonthlyUnlimitedTariff,
 } from "../lib/utils";
 import { useSettings } from "../settings/SettingsProvider";
@@ -35,6 +37,7 @@ import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "./ui/AppSe
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LocationTariffField from "./ui/LocationTariffField";
 import DisciplineTariffField from "./ui/DisciplineTariffField";
+import TeacherTariffDropdown from "./ui/TeacherTariffDropdown";
 import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
@@ -110,6 +113,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     error: locationsErr,
   } = useAccessibleLocations();
   const { data: disciplines = [] } = useDisciplines();
+  const { data: teamMembers = [] } = useTeamMembers();
   const { settings } = useSettings();
   const currencySuffix = getCurrencyInputSuffix(formatOptionsFromSettings(settings));
   const modules = settings?.modules;
@@ -119,6 +123,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const canWritePrices = can("prices.write");
   const updatePrice = useUpdatePrice();
   const updatePriceMeta = useUpdatePriceMeta();
+  const updatePriceTeachers = useUpdatePriceTeachers();
   const deletePrice = useDeletePrice();
   const createPrice = useCreatePrice();
 
@@ -153,6 +158,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const [editLocationId, setEditLocationId] = useState("");
   const [editBindToDiscipline, setEditBindToDiscipline] = useState(false);
   const [editDisciplineId, setEditDisciplineId] = useState("");
+  const [formTeacherMemberIds, setFormTeacherMemberIds] = useState<string[]>([]);
+  const [editTeacherMemberIds, setEditTeacherMemberIds] = useState<string[]>([]);
+  const [syncingTeacherRows, setSyncingTeacherRows] = useState<Record<string, boolean>>({});
   const [creatingSection, setCreatingSection] = useState<CreateTabId | null>(null);
   const [activeCreateTab, setActiveCreateTab] = useState<CreateTabId>("group");
 
@@ -172,6 +180,24 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
   const locationMap = Object.fromEntries(locations.map((l) => [l.id, l.name]));
   const disciplineMap = Object.fromEntries(disciplines.map((d) => [d.id, d.name]));
+  const teacherOptions = useMemo(
+    () =>
+      teamMembers
+        .filter(
+          (member) =>
+            member.is_active &&
+            (member.role === "teacher" ||
+              member.role === "owner" ||
+              member.role === "director" ||
+              member.role === "admin")
+        )
+        .map((member) => ({
+          id: member.id,
+          label: memberListLabel(member),
+        })),
+    [teamMembers]
+  );
+  const teacherMap = Object.fromEntries(teacherOptions.map((teacher) => [teacher.id, teacher.label]));
 
   const closeCreateModal = () => setCreateModalStep(null);
 
@@ -216,6 +242,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     setFormLocationId(locations[0]?.id ?? "");
     setBindToDiscipline(false);
     setFormDisciplineId(disciplines[0]?.id ?? "");
+    setFormTeacherMemberIds([]);
   }, [createModalStep, locations, disciplines]);
 
   useEffect(() => {
@@ -274,6 +301,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     setEditLocationId(p.locationId ?? locations[0]?.id ?? "");
     setEditBindToDiscipline(!!p.disciplineId);
     setEditDisciplineId(p.disciplineId ?? disciplines[0]?.id ?? "");
+    setEditTeacherMemberIds(p.teacherMemberIds ?? []);
   };
 
   const handleSaveMeta = async () => {
@@ -301,6 +329,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       description: editDescription,
       locationId: editBindToLocation ? editLocationId : null,
       disciplineId: editBindToDiscipline ? editDisciplineId : null,
+      teacherMemberIds: editTeacherMemberIds,
     });
 
     if (!res.success) {
@@ -308,6 +337,23 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     } else {
       toast(t("prices.success.updated"), "success");
       setEditingPrice(null);
+    }
+  };
+
+  const handleTeacherBindingChange = async (priceId: string, teacherMemberIds: string[]) => {
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
+
+    setSyncingTeacherRows((prev) => ({ ...prev, [priceId]: true }));
+    const res = await updatePriceTeachers.mutateAsync({ priceId, teacherMemberIds });
+    setSyncingTeacherRows((prev) => ({ ...prev, [priceId]: false }));
+
+    if (res.success === false) {
+      toast(resolveMutationError(res.error, "prices.error.updateFailed", t), "error");
+    } else {
+      toast(t("prices.success.teacherBindingUpdated"), "success");
     }
   };
 
@@ -407,6 +453,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       locationId: bindToLocation ? formLocationId : null,
       disciplineId: bindToDiscipline ? formDisciplineId : null,
       billingModel,
+      teacherMemberIds: formTeacherMemberIds,
     });
     setCreatingSection(null);
 
@@ -454,6 +501,15 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       disciplineId={formDisciplineId}
       onDisciplineChange={setFormDisciplineId}
       disciplines={disciplines}
+    />
+  );
+
+  const teacherTariffField = (
+    <TeacherTariffDropdown
+      label={t("ui.tariff.bindTeacher")}
+      teachers={teacherOptions}
+      selectedTeacherIds={formTeacherMemberIds}
+      onChange={setFormTeacherMemberIds}
     />
   );
 
@@ -550,7 +606,25 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 ) : null}
               </>
             )}
+            {!isGlobalTeacherTariff(p) ? (
+              <span className="text-emerald-600 font-semibold">
+                {t("prices.teacherLabel")} ·{" "}
+                {(p.teacherMemberIds ?? [])
+                  .map((id) => teacherMap[id] ?? t("prices.fallbackTeacher"))
+                  .join(", ")}
+              </span>
+            ) : null}
           </p>
+          {canWritePrices && (
+            <TeacherTariffDropdown
+              label={t("ui.tariff.bindTeacher")}
+              teachers={teacherOptions}
+              selectedTeacherIds={p.teacherMemberIds ?? []}
+              onChange={(teacherMemberIds) => handleTeacherBindingChange(priceId, teacherMemberIds)}
+              disabled={syncingTeacherRows[priceId] || updatePriceTeachers.isPending}
+              compact
+            />
+          )}
         </div>
 
         <div className="flex items-center gap-2 w-full justify-end shrink-0 mt-auto">
@@ -709,6 +783,12 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                   disciplineId={editDisciplineId}
                   onDisciplineChange={setEditDisciplineId}
                   disciplines={disciplines}
+                />
+                <TeacherTariffDropdown
+                  label={t("ui.tariff.bindTeacher")}
+                  teachers={teacherOptions}
+                  selectedTeacherIds={editTeacherMemberIds}
+                  onChange={setEditTeacherMemberIds}
                 />
               </div>
 
@@ -899,6 +979,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     </div>
                     {locationTariffField}
                     {disciplineTariffField}
+                    {teacherTariffField}
                   </TariffCreateSection>
                 )}
 
@@ -943,6 +1024,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     </div>
                     {locationTariffField}
                     {disciplineTariffField}
+                    {teacherTariffField}
                   </TariffCreateSection>
                 )}
 
@@ -985,6 +1067,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     </div>
                     {locationTariffField}
                     {disciplineTariffField}
+                    {teacherTariffField}
                   </TariffCreateSection>
                 )}
 
@@ -1055,6 +1138,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     </div>
                     {locationTariffField}
                     {disciplineTariffField}
+                    {teacherTariffField}
                   </TariffCreateSection>
                 )}
               </div>
