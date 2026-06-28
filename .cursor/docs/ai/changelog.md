@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-28 — fix: orphan cleanup — `self_service_demo_challenges` не имеет `user_id`, удаление по `owner_email_hash`.
 2026-06-28 — fix: Dev Console orphan cleanup — удалена перегрузка RPC `(uuid, boolean)`, перед удалением auth user сбрасываются FK (`owner_user_id`, `created_by`, `actor_user_id` и др.).
 2026-06-28 — Dev Console `/users`: выборочное удаление orphan-аккаунтов — чекбоксы в модалке «Delete orphan accounts», RPC `dev_console_cleanup_orphan_auth_users` принимает `p_user_ids`.
 2026-06-28 — UX: единый компонент `AddLocationsInSettingsHint` (text-xs + ссылка на `/settings/locations`) в расписании, посещаемости, абонементах, персональных уроках, прайс-листе и полях тарифа. Dev Console `/users`: список auth-аккаунтов с org/ролями; очистка orphan-пользователей (`dev-console-list-users`, `dev-console-cleanup-orphan-users`, RPC `20260732000001`).

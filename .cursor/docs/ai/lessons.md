@@ -93,7 +93,7 @@
 
 - **Ошибка:** Удаление orphan-пользователей в Dev Console падало с «Cleanup failed».
 - **Причина:** После добавления `p_user_ids` осталась перегрузка `dev_console_cleanup_orphan_auth_users(uuid, boolean)` — PostgREST/RPC неоднозначность. Плюс FK `organizations.owner_user_id`, `access_keys.created_by`, `platform_audit_log.actor_user_id` блокировали `DELETE FROM auth.users` у бывших owner с inactive membership.
-- **Как избежать:** При расширении сигнатуры RPC — `DROP FUNCTION` старой перегрузки в той же или следующей миграции. Перед purge auth user сбрасывать все NO ACTION ссылки на `auth.users`.
+- **Как избежать:** При расширении сигнатуры RPC — `DROP FUNCTION` старой перегрузки в той же или следующей миграции. Перед purge auth user сбрасывать все NO ACTION ссылки на `auth.users`. Проверять реальные колонки таблицы (`self_service_demo_challenges.owner_email_hash`, не `user_id`).
 
 ### 2026-06-26 — activate_access_key overload ambiguity после S5
 
