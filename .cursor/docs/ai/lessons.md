@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-06-28 — Tenant trigger + teacher RLS на payments
+
+- **Ошибка:** При продаже абонемента преподавателем toast «subscription_id does not belong to organization», хотя абонемент создавался успешно.
+- **Причина:** RPC `record_subscription_payment` (SECURITY DEFINER) обходит RLS при INSERT, но BEFORE trigger `enforce_tenant_row_org_consistency` выполняется в контексте вызывающего пользователя; у teacher нет прямого SELECT на `subscriptions` (только view `subscriptions_teacher_v`), поэтому EXISTS в trigger возвращал false.
+- **Как избежать:** Cross-table consistency triggers, которые проверяют FK по org_id, делать SECURITY DEFINER; authorization оставлять в RLS/RPC, а trigger — только integrity check без RLS.
+
 ### 2026-06-28 — Teacher invite без scope блокировал CRM
 
 - **Ошибка:** Преподаватель принимал приглашение, становился членом команды, но видел «Нет доступа к обзору для вашей роли» и не мог пользоваться CRM.
