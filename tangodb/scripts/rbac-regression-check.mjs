@@ -204,6 +204,10 @@ assert(
   "teacher no personal add when personal_lessons module off"
 );
 assert(
+  !can("teacher", "personal_lessons.sell", { ...optsFor("teacher"), modules: sportSectionModules }),
+  "teacher no personal sell when personal_lessons module off"
+);
+assert(
   canOfferGroupLessonAdd("teacher", teacherGridCan, teacherSellOpts),
   "teacher group add when group module on and teachers_can_sell_subscriptions"
 );

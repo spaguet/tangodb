@@ -13,7 +13,10 @@ import { useDisciplines } from "../hooks/useDisciplines";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import {
   filterGroupTariffsByModules,
+  filterPrivatePackageTariffsByModules,
   isLegacyPairCycleTariff,
+  isModuleEnabled,
+  normalizeOrgModules,
   resolveGroupPriceType,
   resolvePrivatePackagePriceType,
   type GroupParticipantFormat,
@@ -116,9 +119,10 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const { data: teamMembers = [] } = useTeamMembers();
   const { settings } = useSettings();
   const currencySuffix = getCurrencyInputSuffix(formatOptionsFromSettings(settings));
-  const modules = settings?.modules;
-  const pairSubscriptionsEnabled = modules?.pair_subscriptions ?? true;
-  const trioLessonsEnabled = modules?.trio_lessons ?? true;
+  const modules = normalizeOrgModules(settings?.modules);
+  const personalLessonsEnabled = isModuleEnabled(modules, "personal_lessons");
+  const pairSubscriptionsEnabled = modules.pair_subscriptions;
+  const trioLessonsEnabled = modules.trio_lessons;
   const { can } = usePermissions();
   const canWritePrices = can("prices.write");
   const updatePrice = useUpdatePrice();
@@ -166,13 +170,17 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
 
   const CREATE_TABS = [
     { id: "group" as const, label: t("prices.tab.group"), formTitle: t("prices.form.groupTitle") },
-    { id: "privateLesson" as const, label: t("prices.tab.privateLesson"), formTitle: t("prices.form.privateLessonTitle") },
+    ...(personalLessonsEnabled
+      ? [
+          { id: "privateLesson" as const, label: t("prices.tab.privateLesson"), formTitle: t("prices.form.privateLessonTitle") },
+          {
+            id: "privatePackage" as const,
+            label: t("prices.tab.privatePackage"),
+            formTitle: t("prices.form.privatePackageTitle"),
+          },
+        ]
+      : []),
     { id: "singleVisit" as const, label: t("prices.tab.singleVisit"), formTitle: t("prices.form.singleVisitTitle") },
-    {
-      id: "privatePackage" as const,
-      label: t("prices.tab.privatePackage"),
-      formTitle: t("prices.form.privatePackageTitle"),
-    },
   ];
 
   const lessonCountKey = (count: number) =>
@@ -212,14 +220,17 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     const create = searchParams.get("create");
     if (!create || !CREATE_TAB_IDS.includes(create as CreateTabId)) return;
 
+    const tab = create as CreateTabId;
+    if (!personalLessonsEnabled && (tab === "privateLesson" || tab === "privatePackage")) return;
+
     if (canWritePrices) {
-      openCreateForm(create as CreateTabId);
+      openCreateForm(tab);
     }
 
     const next = new URLSearchParams(searchParams);
     next.delete("create");
     setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams, canWritePrices]);
+  }, [searchParams, setSearchParams, canWritePrices, personalLessonsEnabled]);
 
   useEffect(() => {
     if (createModalStep === null) return;
@@ -478,9 +489,15 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     prices.filter((p) => getPriceCategory(p) === "group" && !isLegacyPairCycleTariff(p.type)),
     modules
   ).map((priceObj) => ({ priceObj }));
-  const privateLessonItems = getPrivateLessonTariffs(prices).map((priceObj) => ({ priceObj }));
+  const privateLessonItems = personalLessonsEnabled
+    ? getPrivateLessonTariffs(prices).map((priceObj) => ({ priceObj }))
+    : [];
   const singleVisitItems = getSingleVisitTariffs(prices).map((priceObj) => ({ priceObj }));
-  const privatePackageItems = getPrivatePackageTariffs(prices).map((priceObj) => ({ priceObj }));
+  const privatePackageItems = personalLessonsEnabled
+    ? filterPrivatePackageTariffsByModules(getPrivatePackageTariffs(prices), modules).map((priceObj) => ({
+        priceObj,
+      }))
+    : [];
 
   const activeCreateTabMeta = CREATE_TABS.find((tab) => tab.id === activeCreateTab)!;
 
@@ -721,8 +738,12 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           <div className="space-y-6">
             {renderTariffSection(t("prices.section.group"), groupItems)}
             {renderTariffSection(t("prices.section.singleVisit"), singleVisitItems)}
-            {renderTariffSection(t("prices.section.privateLesson"), privateLessonItems)}
-            {renderTariffSection(t("prices.section.privatePackage"), privatePackageItems)}
+            {personalLessonsEnabled
+              ? renderTariffSection(t("prices.section.privateLesson"), privateLessonItems)
+              : null}
+            {personalLessonsEnabled
+              ? renderTariffSection(t("prices.section.privatePackage"), privatePackageItems)
+              : null}
           </div>
         )}
       </div>

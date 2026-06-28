@@ -19,6 +19,7 @@ import { usePermissions } from "../hooks/usePermissions";
 import { memberListLabel, memberRoleLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import { usePayments } from "../hooks/usePayments";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
+import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useSingleVisits } from "../hooks/useSingleVisits";
@@ -58,9 +59,19 @@ function fixedSalaryDisplay(rate: TeacherPayRate | undefined): string {
   return formatCurrency(rate.fixedAmount);
 }
 
-function payRatePercentLabel(rate: TeacherPayRate | undefined, t: ReturnType<typeof useI18n>["t"]): string {
+function payRatePercentLabel(
+  rate: TeacherPayRate | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+  personalLessonsEnabled: boolean
+): string {
   if (!rate) return "—";
   if (rate.payMode === "fixed") return "—";
+  if (!personalLessonsEnabled) {
+    return t("finance.payroll.ratePercentSplitNoPersonal", {
+      group: rate.groupRatePercent,
+      singleVisit: rate.singleVisitRatePercent,
+    });
+  }
   return t("finance.payroll.ratePercentSplit", {
     group: rate.groupRatePercent,
     personal: rate.personalRatePercent,
@@ -121,6 +132,7 @@ function MemberPayrollBreakdown({
   payments,
   teacherCtx,
   memberNameById,
+  personalLessonsEnabled,
 }: {
   memberId: string;
   rate: TeacherPayRate | undefined;
@@ -129,6 +141,7 @@ function MemberPayrollBreakdown({
   payments: Payment[];
   teacherCtx: TeacherRevenueContext;
   memberNameById: Map<string, string>;
+  personalLessonsEnabled: boolean;
 }) {
   const { t } = useI18n();
   const monthPayments = useMemo(
@@ -143,7 +156,9 @@ function MemberPayrollBreakdown({
   const rows = [
     { label: t("finance.payroll.breakdownFixed"), amount: breakdown.fixedAmount },
     { label: t("finance.payroll.breakdownGroup"), amount: breakdown.groupPercentAmount },
-    { label: t("finance.payroll.breakdownPersonal"), amount: breakdown.personalPercentAmount },
+    ...(personalLessonsEnabled
+      ? [{ label: t("finance.payroll.breakdownPersonal"), amount: breakdown.personalPercentAmount }]
+      : []),
     { label: t("finance.payroll.breakdownSingleVisit"), amount: breakdown.singleVisitPercentAmount },
   ];
 
@@ -287,6 +302,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
   const { t, locale } = useI18n();
   const { can } = usePermissions();
   const canWrite = can("payroll.write");
+  const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
 
   const teamQuery = useTeamMembers();
   const ratesQuery = useTeacherPayRates();
@@ -295,7 +311,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
   const monthRange = monthDateRange(yearMonth);
   const paymentsQuery = usePayments({ dateFrom: monthRange.dateFrom, dateTo: monthRange.dateTo });
   const scheduleQuery = useSchedule();
-  const personalLessonsQuery = usePersonalLessons();
+  const personalLessonsQuery = usePersonalLessons({ enabled: personalLessonsEnabled });
   const singleVisitsQuery = useSingleVisits({ yearMonth });
   const subscriptionGroupsQuery = useSubscriptionGroups();
 
@@ -431,7 +447,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
                       {fixedSalaryDisplay(rate)}
                     </td>
                     <td className="py-2.5 px-3 text-right text-slate-600">
-                      {payRatePercentLabel(rate, t)}
+                      {payRatePercentLabel(rate, t, personalLessonsEnabled)}
                     </td>
                     <td className="py-2.5 px-3 text-right font-semibold text-slate-800">{formatCurrency(accrued)}</td>
                     <td className="py-2.5 px-3 text-right text-emerald-700">{formatCurrency(paid)}</td>
@@ -462,6 +478,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
                           payments={payments}
                           teacherCtx={teacherCtx}
                           memberNameById={memberNameById}
+                          personalLessonsEnabled={personalLessonsEnabled}
                         />
                       </td>
                     </tr>

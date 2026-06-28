@@ -12,6 +12,7 @@ import { useSettings } from "../useSettings";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import TeacherScopeFields from "./TeacherScopeFields";
 import { isTeacherScopeConfigured, normalizeTeacherScope } from "../../lib/teacherScope";
+import { isModuleEnabled, normalizeOrgModules } from "../../lib/orgModules";
 import type { PayrollPayMode } from "../../types/payroll";
 import type { TeacherScope } from "../../types/organization";
 
@@ -86,6 +87,10 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
   const { t } = useI18n();
   const { settings } = useSettings();
   const currencyCode = settings?.currency_code ?? "RUB";
+  const personalLessonsEnabled = isModuleEnabled(
+    normalizeOrgModules(settings?.modules),
+    "personal_lessons"
+  );
   const showToast = useToast();
   const { can } = usePermissions();
   const { updateMember } = useTeamMutations();
@@ -196,7 +201,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
           payMode,
           fixedAmount: payMode === "percent" ? 0 : parsedFixed,
           groupRatePercent: payMode === "fixed" ? 0 : parsedGroup,
-          personalRatePercent: payMode === "fixed" ? 0 : parsedPersonal,
+          personalRatePercent: payMode === "fixed" ? 0 : personalLessonsEnabled ? parsedPersonal : activeRate?.personalRatePercent ?? 0,
           singleVisitRatePercent: payMode === "fixed" ? 0 : parsedSingleVisit,
         });
         if (!rateResult.success) {
@@ -367,7 +372,11 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                   )}
 
                   {(payMode === "percent" || payMode === "fixed_plus_percent") && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div
+                      className={`grid grid-cols-1 gap-3 ${
+                        personalLessonsEnabled ? "sm:grid-cols-3" : "sm:grid-cols-2"
+                      }`}
+                    >
                       <label className="block space-y-1">
                         <span className={labelCls}>{t("memberProfile.field.groupRatePercent")}</span>
                         <input
@@ -383,21 +392,23 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                           className={fieldCls}
                         />
                       </label>
-                      <label className="block space-y-1">
-                        <span className={labelCls}>{t("memberProfile.field.personalRatePercent")}</span>
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          step={0.1}
-                          value={personalRatePercent}
-                          onChange={(e) => {
-                            setPersonalRatePercent(e.target.value);
-                            setDirty(true);
-                          }}
-                          className={fieldCls}
-                        />
-                      </label>
+                      {personalLessonsEnabled ? (
+                        <label className="block space-y-1">
+                          <span className={labelCls}>{t("memberProfile.field.personalRatePercent")}</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            value={personalRatePercent}
+                            onChange={(e) => {
+                              setPersonalRatePercent(e.target.value);
+                              setDirty(true);
+                            }}
+                            className={fieldCls}
+                          />
+                        </label>
+                      ) : null}
                       <label className="block space-y-1">
                         <span className={labelCls}>{t("memberProfile.field.singleVisitRatePercent")}</span>
                         <input

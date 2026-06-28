@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { normalizeOrgModules } from "../lib/orgModules";
 import {
   can,
   canAccessPanel,
@@ -22,11 +23,13 @@ export function usePermissions() {
   const scope = membership?.scope ?? EMPTY_TEACHER_SCOPE;
 
   const options: PermissionOptions = useMemo(
-    () =>
-      permissionOptionsFromSettings(settings, scope, {
+    () => ({
+      ...permissionOptionsFromSettings(settings, scope, {
         restrictedAdmin: membership?.meta?.restricted_admin ?? false,
         isReadOnly,
       }),
+      modules: normalizeOrgModules(settings?.modules),
+    }),
     [settings, scope, membership?.meta?.restricted_admin, isReadOnly]
   );
 

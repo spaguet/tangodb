@@ -1103,6 +1103,7 @@ export const EN: Record<I18nKey, string> = {
   "finance.payroll.computedAt": "Recalculated: {{date}}",
   "finance.payroll.rateFixed": "Fixed {{amount}}",
   "finance.payroll.ratePercentSplit": "Groups {{group}}% · private {{personal}}% · single {{singleVisit}}%",
+  "finance.payroll.ratePercentSplitNoPersonal": "Groups {{group}}% · single {{singleVisit}}%",
   "finance.payroll.rateFixedPlusPercent": "{{amount}} + {{percent}}",
   "finance.payroll.error.amount": "Enter an amount greater than zero",
   "finance.payroll.error.overpay": "Amount exceeds balance due",

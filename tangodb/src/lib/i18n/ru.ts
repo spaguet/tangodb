@@ -1101,6 +1101,7 @@ export const RU: Record<I18nKey, string> = {
   "finance.payroll.computedAt": "Пересчёт: {{date}}",
   "finance.payroll.rateFixed": "Оклад {{amount}}",
   "finance.payroll.ratePercentSplit": "Группы {{group}}% · персональные {{personal}}% · разовые {{singleVisit}}%",
+  "finance.payroll.ratePercentSplitNoPersonal": "Группы {{group}}% · разовые {{singleVisit}}%",
   "finance.payroll.rateFixedPlusPercent": "{{amount}} + {{percent}}",
   "finance.payroll.error.amount": "Укажите сумму больше нуля",
   "finance.payroll.error.overpay": "Сумма превышает остаток к выплате",

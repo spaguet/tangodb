@@ -1049,6 +1049,7 @@ export type I18nKey =
   | "finance.payroll.computedAt"
   | "finance.payroll.rateFixed"
   | "finance.payroll.ratePercentSplit"
+  | "finance.payroll.ratePercentSplitNoPersonal"
   | "finance.payroll.rateFixedPlusPercent"
   | "finance.payroll.error.amount"
   | "finance.payroll.error.overpay"

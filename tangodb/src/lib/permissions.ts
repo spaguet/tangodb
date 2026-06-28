@@ -1,6 +1,11 @@
 import type { MemberRole, OrgModules, TeacherScope } from "../types/organization";
 import { PRESET_MODULES } from "../types/organization";
-import { isModuleEnabled, moduleKeyFromPanel, moduleKeyFromSettingsSection } from "./orgModules.ts";
+import {
+  DEFAULT_ORG_MODULES,
+  isModuleEnabled,
+  moduleKeyFromPanel,
+  moduleKeyFromSettingsSection,
+} from "./orgModules.ts";
 
 export const EMPTY_TEACHER_SCOPE: TeacherScope = {
   discipline_ids: [],
@@ -80,6 +85,7 @@ export interface PermissionContext {
 
 export interface PermissionOptions {
   scope?: TeacherScope;
+  modules?: OrgModules;
   teachersCanManageDisciplines?: boolean;
   teachersCanSellSubscriptions?: boolean;
   teachersCanEditClients?: boolean;
@@ -241,6 +247,10 @@ function teachersCanSellSubscriptions(options?: PermissionOptions): boolean {
   return options?.teachersCanSellSubscriptions ?? false;
 }
 
+function personalLessonsModuleEnabled(options?: PermissionOptions): boolean {
+  return isModuleEnabled(options?.modules ?? DEFAULT_ORG_MODULES, "personal_lessons");
+}
+
 export function permissionOptionsFromSettings(
   settings: {
     teachers_can_manage_disciplines?: boolean;
@@ -386,6 +396,7 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return canReadScopedCrm(role, scope, context, options);
 
     case "personal_lessons.read":
+      if (!personalLessonsModuleEnabled(options)) return false;
       return canReadScopedCrm(role, scope, context, options);
 
     case "subscriptions.write":
@@ -405,6 +416,7 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return false;
     case "personal_lessons.write":
     case "personal_lessons.sell":
+      if (!personalLessonsModuleEnabled(options)) return false;
       return canWriteScopedCrm(role, scope, context, options);
 
     case "prices.read":
