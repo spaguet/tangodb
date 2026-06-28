@@ -8,6 +8,7 @@ import DashboardPage from "./pages/DashboardPage";
 import KeysPage from "./pages/KeysPage";
 import PaymentMethodsPage from "./pages/PaymentMethodsPage";
 import OrgsPage from "./pages/OrgsPage";
+import UsersPage from "./pages/UsersPage";
 import MigrationsPage from "./pages/MigrationsPage";
 import BillingPage from "./pages/BillingPage";
 import ErrorsPage from "./pages/ErrorsPage";
@@ -53,6 +54,7 @@ function App() {
           <Route path="keys" element={<KeysPage />} />
           <Route path="payment-methods" element={<PaymentMethodsPage />} />
           <Route path="orgs" element={<OrgsPage />} />
+          <Route path="users" element={<UsersPage />} />
           <Route path="billing" element={<BillingPage />} />
           <Route path="migrations" element={<MigrationsPage />} />
           <Route path="errors" element={<ErrorsPage />} />

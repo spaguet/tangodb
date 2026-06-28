@@ -57,6 +57,7 @@ import { useI18n } from "../hooks/useI18n";
 import { useUIStore } from "../store/ui";
 import QueryErrorState from "./ui/QueryErrorState";
 import LoadingState from "./ui/LoadingState";
+import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
 import VirtualList from "./ui/VirtualList";
 import AppSelect from "./ui/AppSelect";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
@@ -844,16 +845,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             <div className="text-center py-16 text-slate-400 space-y-3">
               <MapPin className="w-8 h-8 mx-auto text-slate-300" />
               <p className="text-sm">{t("attendance.noLocations")}</p>
-              <p className="text-xs font-sans">
-                {t("attendance.noLocationsHint")}{" "}
-                <Link
-                  to="/settings/locations"
-                  className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline"
-                >
-                  {t("attendance.settingsLocations")}
-                </Link>
-                .
-              </p>
+              <AddLocationsInSettingsHint />
             </div>
           ) : (
             <div className="space-y-2">

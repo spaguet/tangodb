@@ -36,6 +36,7 @@ import LocationTariffField from "./ui/LocationTariffField";
 import DisciplineTariffField from "./ui/DisciplineTariffField";
 import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
+import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
 import QueryErrorState from "./ui/QueryErrorState";
 import { usePermissions } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
@@ -471,7 +472,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </div>
           <div className="text-center py-20 text-slate-400 space-y-3">
             <Ticket className="w-8 h-8 mx-auto text-slate-300" />
-            <p className="text-sm">{t("common.addLocationsInSettings")}</p>
+            <AddLocationsInSettingsHint />
           </div>
         </div>
       </div>

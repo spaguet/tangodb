@@ -1,4 +1,5 @@
 import AppSelect from "./AppSelect";
+import AddLocationsInSettingsHint from "./AddLocationsInSettingsHint";
 import { useEffect } from "react";
 import { useI18n } from "../../hooks/useI18n";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -55,9 +56,7 @@ export default function LocationTariffField({
       {bindToLocation && (
         <div className="animate-fade-in">
           {locations.length === 0 ? (
-            <p className="text-xs text-slate-400 font-sans leading-relaxed">
-              {t("ui.tariff.noLocationsHint")}
-            </p>
+            <AddLocationsInSettingsHint className="text-xs text-slate-400 font-sans leading-relaxed" />
           ) : (
             <AppSelect
               label={t("subscriptions.filter.location")}
