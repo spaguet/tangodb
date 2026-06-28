@@ -18,6 +18,7 @@ import {
   type GroupParticipantFormat,
   type PrivatePackageFormat,
 } from "../lib/orgModules";
+import { formatOptionsFromSettings, getCurrencyInputSuffix } from "../lib/format";
 import {
   formatCurrency,
   generateTariffTypeKey,
@@ -110,6 +111,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   } = useAccessibleLocations();
   const { data: disciplines = [] } = useDisciplines();
   const { settings } = useSettings();
+  const currencySuffix = getCurrencyInputSuffix(formatOptionsFromSettings(settings));
   const modules = settings?.modules;
   const pairSubscriptionsEnabled = modules?.pair_subscriptions ?? true;
   const trioLessonsEnabled = modules?.trio_lessons ?? true;
@@ -564,7 +566,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-2.5 py-1.5 text-xs text-right font-semibold pr-6 transition-all disabled:opacity-60"
             />
             <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-sans font-normal text-slate-400">
-              ₫
+              {currencySuffix}
             </span>
           </div>
 
@@ -892,7 +894,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                           onChange={(e) => setGroupForm({ ...groupForm, price: e.target.value })}
                           className={`${inputCls} pr-8`}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{currencySuffix}</span>
                       </div>
                     </div>
                     {locationTariffField}
@@ -936,7 +938,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                           onChange={(e) => setPrivateLessonForm({ ...privateLessonForm, price: e.target.value })}
                           className={`${inputCls} pr-8`}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{currencySuffix}</span>
                       </div>
                     </div>
                     {locationTariffField}
@@ -978,7 +980,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                           onChange={(e) => setSingleVisitForm({ ...singleVisitForm, price: e.target.value })}
                           className={`${inputCls} pr-8`}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{currencySuffix}</span>
                       </div>
                     </div>
                     {locationTariffField}
@@ -1048,7 +1050,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                           onChange={(e) => setPrivatePackageForm({ ...privatePackageForm, price: e.target.value })}
                           className={`${inputCls} pr-8`}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{currencySuffix}</span>
                       </div>
                     </div>
                     {locationTariffField}

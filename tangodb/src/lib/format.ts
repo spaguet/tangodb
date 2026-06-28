@@ -1,4 +1,4 @@
-import { getCurrencySymbolOverride } from "./currencies";
+import { getCurrencySymbolHint, getCurrencySymbolOverride } from "./currencies";
 import type { OrganizationSettings } from "../types/organization";
 
 export interface FormatOptions {
@@ -59,4 +59,10 @@ export function getActiveFormatOptions(): FormatOptions {
 
 export function formatCurrencyActive(amount: number): string {
   return formatCurrency(amount, activeFormatOptions);
+}
+
+/** Symbol or ISO code shown beside numeric price inputs. */
+export function getCurrencyInputSuffix(options: FormatOptions): string {
+  if (options.currencyDisplay === "code") return options.currencyCode;
+  return getCurrencySymbolHint(options.currencyCode);
 }

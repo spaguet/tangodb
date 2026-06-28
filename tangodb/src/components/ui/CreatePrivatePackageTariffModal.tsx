@@ -7,6 +7,7 @@ import { useDisciplines } from "../../hooks/useDisciplines";
 import { useI18n } from "../../hooks/useI18n";
 import { translateMutationBlockedMessage, useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { resolvePrivatePackagePriceType, type PrivatePackageFormat } from "../../lib/orgModules";
+import { formatOptionsFromSettings, getCurrencyInputSuffix } from "../../lib/format";
 import { useSettings } from "../../settings/SettingsProvider";
 import { DEFAULT_ORG_MODULES } from "../../lib/orgModules";
 import { resolveMutationError } from "../../lib/resolveMutationError";
@@ -39,6 +40,7 @@ export default function CreatePrivatePackageTariffModal({
   const { locations } = useAccessibleLocations();
   const { data: disciplines = [] } = useDisciplines();
   const { settings } = useSettings();
+  const currencySuffix = getCurrencyInputSuffix(formatOptionsFromSettings(settings));
   const modules = settings?.modules ?? DEFAULT_ORG_MODULES;
   const pairSubscriptionsEnabled = modules.pair_subscriptions ?? true;
   const trioLessonsEnabled = modules.trio_lessons ?? true;
@@ -223,7 +225,7 @@ export default function CreatePrivatePackageTariffModal({
                     onChange={(e) => setForm({ ...form, price: e.target.value })}
                     className={`${inputCls} pr-8`}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₫</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{currencySuffix}</span>
                 </div>
               </div>
               <LocationTariffField
