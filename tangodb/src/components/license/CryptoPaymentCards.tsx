@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, ChevronDown, Copy } from "lucide-react";
 import type { CryptoPaymentMethod } from "../../lib/paymentConfig";
 import { useI18n } from "../../hooks/useI18n";
+import { QrImagePreview } from "./QrImagePreview";
 
 interface CryptoPaymentCardsProps {
   methods: CryptoPaymentMethod[];
@@ -49,18 +50,7 @@ function CryptoCard({ method }: { method: CryptoPaymentMethod }) {
         <code className="flex-1 text-[11px] leading-relaxed break-all text-slate-700 bg-slate-50 border border-slate-100 rounded-lg px-2 py-2">
           {method.address}
         </code>
-        {method.qrImageUrl && (
-          <div className="space-y-1">
-            <p className="text-[10px] uppercase tracking-wider text-slate-400">
-              {t("license.payment.field.qr")}
-            </p>
-            <img
-              src={method.qrImageUrl}
-              alt={t("license.payment.field.qr")}
-              className="w-36 h-36 rounded-lg border border-slate-100 bg-white object-contain p-2"
-            />
-          </div>
-        )}
+        <QrImagePreview value={method.qrImageUrl} />
       </div>
     </details>
   );

@@ -319,6 +319,7 @@ export type I18nKey =
   | "license.payment.field.phoneOrCard"
   | "license.payment.field.amount"
   | "license.payment.field.qr"
+  | "license.payment.qr.download"
   | "license.contacts.title"
   // settings
   | "settings.nav"

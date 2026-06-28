@@ -6,6 +6,7 @@ import type {
   VietnameseBankTransferConfig,
 } from "../../lib/paymentConfig";
 import { useI18n } from "../../hooks/useI18n";
+import { QrImagePreview } from "./QrImagePreview";
 
 function DetailRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
@@ -21,23 +22,6 @@ function AmountRow({ amount, currency }: { amount?: string; currency?: string })
   const { t } = useI18n();
   if (!amount && !currency) return null;
   return <DetailRow label={t("license.payment.field.amount")} value={[amount, currency].filter(Boolean).join(" ")} />;
-}
-
-function QrImage({ value }: { value?: string }) {
-  const { t } = useI18n();
-  if (!value) return null;
-  return (
-    <div className="space-y-1">
-      <p className="text-[10px] uppercase tracking-wider text-slate-400">
-        {t("license.payment.field.qr")}
-      </p>
-      <img
-        src={value}
-        alt={t("license.payment.field.qr")}
-        className="w-36 h-36 rounded-lg border border-slate-100 bg-white object-contain p-2"
-      />
-    </div>
-  );
 }
 
 function PaymentDetails({
@@ -80,7 +64,7 @@ export function BankTransferSection({ config }: { config: BankTransferConfig | n
         value={config.cardLast4 ? `•••• ${config.cardLast4}` : undefined}
       />
       <DetailRow label={t("license.payment.field.note")} value={config.note} />
-      <QrImage value={config.qrImageUrl} />
+      <QrImagePreview value={config.qrImageUrl} />
     </PaymentDetails>
   );
 }
@@ -97,7 +81,7 @@ export function MirPaymentSection({ config }: { config: MirPaymentConfig | null 
       <DetailRow label={t("license.payment.field.phoneOrCard")} value={config.phoneOrCard} />
       <DetailRow label={t("license.payment.field.bank")} value={config.bankName} />
       <DetailRow label={t("license.payment.field.note")} value={config.note} />
-      <QrImage value={config.qrImageUrl} />
+      <QrImagePreview value={config.qrImageUrl} />
     </PaymentDetails>
   );
 }
@@ -118,7 +102,7 @@ export function VietnameseBankTransferSection({
       <DetailRow label={t("license.payment.field.bank")} value={config.bankName} />
       <DetailRow label={t("license.payment.field.accountNumber")} value={config.accountNumber} />
       <DetailRow label={t("license.payment.field.note")} value={config.note} />
-      <QrImage value={config.qrImageUrl} />
+      <QrImagePreview value={config.qrImageUrl} />
     </PaymentDetails>
   );
 }

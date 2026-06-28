@@ -350,6 +350,7 @@ export const EN: Record<I18nKey, string> = {
   "license.payment.field.phoneOrCard": "Phone / card",
   "license.payment.field.amount": "Amount due",
   "license.payment.field.qr": "Payment QR",
+  "license.payment.qr.download": "Download QR",
   "license.contacts.title": "Developer contacts",
 
   // settings

@@ -348,6 +348,7 @@ export const RU: Record<I18nKey, string> = {
   "license.payment.field.phoneOrCard": "Телефон / карта",
   "license.payment.field.amount": "Сумма к оплате",
   "license.payment.field.qr": "QR для оплаты",
+  "license.payment.qr.download": "Скачать QR",
   "license.contacts.title": "Контакты разработчика",
 
   // settings
