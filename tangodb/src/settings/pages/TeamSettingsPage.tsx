@@ -5,6 +5,7 @@ import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import MemberProfileModal from "../components/MemberProfileModal";
+import TeacherScopeFields from "../components/TeacherScopeFields";
 import { useToast } from "../../App";
 import {
   memberListLabel,
@@ -18,6 +19,7 @@ import { useI18n } from "../../hooks/useI18n";
 import { getTeamRolePresets } from "../../lib/i18n";
 import type { I18nKey } from "../../lib/i18n/keys";
 import { usePermissions } from "../../hooks/usePermissions";
+import { DEFAULT_TEACHER_INVITE_SCOPE, isTeacherScopeConfigured } from "../../lib/teacherScope";
 import type { MemberMeta, MemberRole, TeacherScope } from "../../types/organization";
 
 type MemberPreset = "admin" | "reception" | "teacher" | "accountant";
@@ -212,14 +214,14 @@ export default function TeamSettingsPage() {
   const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [profileMember, setProfileMember] = useState<TeamMemberRow | null>(null);
-  const [inviteScope, setInviteScope] = useState<TeacherScope | null>(null);
+  const [inviteScope, setInviteScope] = useState<TeacherScope | null>(DEFAULT_TEACHER_INVITE_SCOPE);
   const [inviteMetaOverride, setInviteMetaOverride] = useState<MemberMeta | null>(null);
   const [reinviteSourceId, setReinviteSourceId] = useState<string | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<TeamMemberRow | null>(null);
   const inviteFormRef = useRef<HTMLFormElement>(null);
 
   const clearReinvitePreset = () => {
-    setInviteScope(null);
+    setInviteScope(DEFAULT_TEACHER_INVITE_SCOPE);
     setInviteMetaOverride(null);
     setReinviteSourceId(null);
   };
@@ -228,7 +230,14 @@ export default function TeamSettingsPage() {
     e.preventDefault();
     if (!email.trim() || !firstName.trim() || !lastName.trim()) return;
     const { role, meta } = presetToRoleMeta(invitePreset);
-    const scope = inviteScope ?? undefined;
+    const scope =
+      role === "teacher"
+        ? inviteScope ?? DEFAULT_TEACHER_INVITE_SCOPE
+        : inviteScope ?? undefined;
+    if (role === "teacher" && scope && !isTeacherScopeConfigured(scope)) {
+      showToast(t("team.scope.required"), "error");
+      return;
+    }
     const mergedMeta = inviteMetaOverride ?? meta;
     try {
       const result = await invite.mutateAsync({
@@ -263,7 +272,11 @@ export default function TeamSettingsPage() {
     setFirstName(member.first_name ?? "");
     setLastName(member.last_name ?? "");
     setEmail("");
-    setInviteScope(member.scope);
+    setInviteScope(
+      member.role === "teacher" && isTeacherScopeConfigured(member.scope)
+        ? member.scope
+        : DEFAULT_TEACHER_INVITE_SCOPE
+    );
     setInviteMetaOverride(meta);
     setReinviteSourceId(member.id);
     setLastInviteUrl(null);
@@ -368,8 +381,12 @@ export default function TeamSettingsPage() {
             label={t("team.inviteRole")}
             value={invitePreset}
             onChange={(e) => {
-              setInvitePreset(e.target.value as MemberPreset);
+              const nextPreset = e.target.value as MemberPreset;
+              setInvitePreset(nextPreset);
               clearReinvitePreset();
+              if (nextPreset === "teacher") {
+                setInviteScope(DEFAULT_TEACHER_INVITE_SCOPE);
+              }
             }}
           >
             {invitePresets.filter((p) => canAssignPreset(p.value)).map((p) => (
@@ -401,6 +418,9 @@ export default function TeamSettingsPage() {
             />
           </label>
         </div>
+        {invitePreset === "teacher" && inviteScope && (
+          <TeacherScopeFields value={inviteScope} onChange={setInviteScope} />
+        )}
         <div className="space-y-1.5">
           <p className="text-[11px] text-slate-500">
             {reinviteSourceId ? t("team.reinviteHint") : t("team.inviteLinkHint")}

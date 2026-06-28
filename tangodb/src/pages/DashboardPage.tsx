@@ -150,11 +150,14 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
 function DashboardNoAccess() {
   const { t } = useI18n();
+  const { role } = usePermissions();
 
   return (
     <div className="panel-page-stack">
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs py-20 text-center">
-        <p className="text-sm text-slate-500">{t("dashboard.noAccess")}</p>
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs py-20 text-center px-6">
+        <p className="text-sm text-slate-500">
+          {role === "teacher" ? t("dashboard.noAccessTeacher") : t("dashboard.noAccess")}
+        </p>
       </div>
     </div>
   );

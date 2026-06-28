@@ -10,7 +10,10 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { useI18n } from "../../hooks/useI18n";
 import { useSettings } from "../useSettings";
 import { resolveMutationError } from "../../lib/resolveMutationError";
+import TeacherScopeFields from "./TeacherScopeFields";
+import { isTeacherScopeConfigured, normalizeTeacherScope } from "../../lib/teacherScope";
 import type { PayrollPayMode } from "../../types/payroll";
+import type { TeacherScope } from "../../types/organization";
 
 interface MemberProfileModalProps {
   member: TeamMemberRow | null;
@@ -105,6 +108,8 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
   const [personalRatePercent, setPersonalRatePercent] = useState("");
   const [singleVisitRatePercent, setSingleVisitRatePercent] = useState("");
   const [initialPayrollKey, setInitialPayrollKey] = useState("");
+  const [scope, setScope] = useState<TeacherScope>(normalizeTeacherScope(null));
+  const [initialScopeKey, setInitialScopeKey] = useState("");
 
   const activeRate = useMemo(() => {
     if (!member) return null;
@@ -128,6 +133,9 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
     setPersonalRatePercent(nextPersonalRate);
     setSingleVisitRatePercent(nextSingleVisitRate);
     setInitialPayrollKey([nextPayMode, nextFixedAmount, nextGroupRate, nextPersonalRate, nextSingleVisitRate].join("|"));
+    const nextScope = normalizeTeacherScope(member.scope);
+    setScope(nextScope);
+    setInitialScopeKey(JSON.stringify(nextScope));
     setDirty(false);
   }, [member, activeRate]);
 
@@ -147,6 +155,12 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
 
   const handleSave = async () => {
     if (!member) return;
+    const scopeKey = JSON.stringify(scope);
+    const scopeChanged = member.role === "teacher" && canEdit && scopeKey !== initialScopeKey;
+    if (scopeChanged && !isTeacherScopeConfigured(scope)) {
+      showToast(t("team.scope.required"), "error");
+      return;
+    }
     try {
       await updateMember.mutateAsync({
         memberId: member.id,
@@ -157,6 +171,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
         phone: form.phone,
         telegram: form.telegram,
         profileNotes: form.profileNotes,
+        ...(scopeChanged ? { scope } : {}),
       });
 
       if (canManageRate && canEdit && payrollKey !== initialPayrollKey) {
@@ -204,8 +219,11 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
   const showRateField = !!member && canManageRate && canEdit;
   const isSaving = updateMember.isPending || upsertRate.isPending;
   const payrollKey = [payMode, fixedAmount, groupRatePercent, personalRatePercent, singleVisitRatePercent].join("|");
+  const scopeKey = JSON.stringify(scope);
   const isDirty =
-    dirty || (showRateField && payrollKey !== initialPayrollKey);
+    dirty ||
+    (showRateField && payrollKey !== initialPayrollKey) ||
+    (member?.role === "teacher" && canEdit && scopeKey !== initialScopeKey);
 
   const subtitle = member ? memberDisplayName(member) : null;
 
@@ -299,6 +317,17 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                   <p className={`${readOnlyCls} whitespace-pre-wrap`}>{form.profileNotes || "—"}</p>
                 )}
               </label>
+
+              {member.role === "teacher" && (
+                <TeacherScopeFields
+                  value={scope}
+                  onChange={(next) => {
+                    setScope(next);
+                    setDirty(true);
+                  }}
+                  disabled={!canEdit}
+                />
+              )}
 
               {showRateField && (
                 <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">

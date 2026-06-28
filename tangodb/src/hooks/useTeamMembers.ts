@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { t, type I18nKey } from "../lib/i18n";
 import type { MemberRole, MemberMeta, TeacherScope } from "../types/organization";
+import { normalizeTeacherScope } from "../lib/teacherScope";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export interface TeamMemberRow {
@@ -45,7 +46,7 @@ export function useTeamMembers() {
         id: row.id as string,
         user_id: row.user_id as string,
         role: row.role as MemberRole,
-        scope: row.scope as TeacherScope,
+        scope: normalizeTeacherScope(row.scope),
         meta: (row.meta as MemberMeta) ?? {},
         display_name: (row.display_name as string | null) ?? null,
         first_name: (row.first_name as string | null) ?? null,

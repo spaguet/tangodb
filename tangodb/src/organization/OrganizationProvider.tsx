@@ -16,6 +16,7 @@ import {
 } from "../lib/authClaims";
 import { supabase } from "../lib/supabase";
 import { normalizeOrgModules } from "../lib/orgModules";
+import { normalizeTeacherScope } from "../lib/teacherScope";
 import { resetUIStore } from "../store/ui";
 import type {
   MemberRole,
@@ -80,7 +81,7 @@ function mapMembership(row: Record<string, unknown>): OrganizationMember {
     organization_id: row.organization_id as string,
     user_id: row.user_id as string,
     role: row.role as MemberRole,
-    scope: row.scope as TeacherScope,
+    scope: normalizeTeacherScope(row.scope),
     meta: mapMemberMeta(row.meta),
     display_name: (row.display_name as string | null) ?? null,
     is_active: row.is_active as boolean,

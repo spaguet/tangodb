@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { acceptInvite, completeInvite, previewInvite } from "../lib/edgeFunctions";
 import { useI18n } from "../hooks/useI18n";
 import { supabase } from "../lib/supabase";
+import { membershipsQueryKey } from "../organization/OrganizationProvider";
 import {
   AuthButton,
   AuthError,
@@ -27,6 +29,7 @@ export function consumePendingInviteToken(): string | null {
 export default function AcceptInvitePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { session, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const tokenFromUrl = searchParams.get("token") ?? "";
@@ -42,6 +45,14 @@ export default function AcceptInvitePage() {
   const [activeToken, setActiveToken] = useState("");
   const previewStartedRef = useRef(false);
   const acceptStartedRef = useRef(false);
+
+  const finishInviteSuccess = async () => {
+    await supabase.auth.refreshSession();
+    await queryClient.invalidateQueries({ queryKey: membershipsQueryKey });
+    setStatus("success");
+    setMessage(t("auth.acceptInviteSuccess"));
+    setTimeout(() => navigate("/", { replace: true }), 1500);
+  };
 
   useEffect(() => {
     if (tokenFromUrl) {
@@ -95,10 +106,7 @@ export default function AcceptInvitePage() {
       try {
         await acceptInvite(token);
         if (cancelled) return;
-        await supabase.auth.refreshSession();
-        setStatus("success");
-        setMessage(t("auth.acceptInviteSuccess"));
-        setTimeout(() => navigate("/", { replace: true }), 1500);
+        await finishInviteSuccess();
       } catch (err) {
         if (cancelled) return;
         setStatus("error");
@@ -135,11 +143,8 @@ export default function AcceptInvitePage() {
         refresh_token: result.refresh_token,
       });
       if (sessionError) throw sessionError;
-      await supabase.auth.refreshSession();
       sessionStorage.removeItem(PENDING_INVITE_KEY);
-      setStatus("success");
-      setMessage(t("auth.acceptInviteSuccess"));
-      setTimeout(() => navigate("/", { replace: true }), 1500);
+      await finishInviteSuccess();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : t("auth.acceptInviteError"));
     } finally {

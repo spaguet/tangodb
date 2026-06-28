@@ -398,6 +398,8 @@ export const RU: Record<I18nKey, string> = {
   "dashboard.tab.operational": "Операционный",
   "dashboard.tab.financial": "Финансовый",
   "dashboard.noAccess": "Нет доступа к обзору для вашей роли.",
+  "dashboard.noAccessTeacher":
+    "Доступ к CRM не настроен. Попросите владельца или директора открыть «Настройки → Команда» и задать область доступа преподавателя.",
   "dashboard.loading": "Загрузка обзора...",
 
   // finance
@@ -417,6 +419,17 @@ export const RU: Record<I18nKey, string> = {
   "team.inviteRole": "Роль",
   "team.sendInvite": "Сгенерировать приглашение",
   "team.inviteLinkHint": "После генерации скопируйте ссылку и отправьте её новому участнику команды",
+  "team.scope.title": "Область доступа преподавателя",
+  "team.scope.hint": "Без выбранных направлений или локаций преподаватель не сможет работать в CRM.",
+  "team.scope.allDisciplines": "Все направления",
+  "team.scope.allLocations": "Все локации",
+  "team.scope.disciplines": "Направления",
+  "team.scope.locations": "Локации",
+  "team.scope.allClients": "Видеть всех клиентов организации",
+  "team.scope.noDisciplines": "Сначала добавьте направления в настройках CRM.",
+  "team.scope.noLocations": "Сначала добавьте локации в настройках CRM.",
+  "team.scope.emptyWarning": "Выберите хотя бы одно направление, локацию или флаг «Все направления/локации».",
+  "team.scope.required": "Укажите область доступа преподавателя перед отправкой приглашения.",
   "team.pendingInvites": "Ожидающие приглашения",
   "team.revoke": "Отозвать",
   "team.deactivate": "Деактивировать",

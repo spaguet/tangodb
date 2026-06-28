@@ -606,6 +606,10 @@ export function findFirstEnabledAccessiblePanelPath(
   modules: OrgModules,
   options?: PermissionOptions
 ): string | null {
+  if (canAccessPayrollRoute(role, modules, options) && isTeacherPayrollOnly(role, options)) {
+    return "/finance/payroll";
+  }
+
   for (const { panel, path } of PANEL_FALLBACK_PATHS) {
     const moduleKey = moduleKeyFromPanel(panel);
     if (moduleKey && !isModuleEnabled(modules, moduleKey)) continue;

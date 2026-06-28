@@ -401,6 +401,8 @@ export const EN: Record<I18nKey, string> = {
   "dashboard.tab.operational": "Operational",
   "dashboard.tab.financial": "Financial",
   "dashboard.noAccess": "You do not have access to the dashboard for your role.",
+  "dashboard.noAccessTeacher":
+    "CRM access is not configured yet. Ask the owner or director to open Settings → Team and set the teacher scope.",
   "dashboard.loading": "Loading dashboard...",
 
   // finance
@@ -420,6 +422,17 @@ export const EN: Record<I18nKey, string> = {
   "team.inviteRole": "Role",
   "team.sendInvite": "Generate invite",
   "team.inviteLinkHint": "After generating, copy the link and send it to the new team member",
+  "team.scope.title": "Teacher access scope",
+  "team.scope.hint": "Without disciplines or locations selected, the teacher cannot use the CRM.",
+  "team.scope.allDisciplines": "All disciplines",
+  "team.scope.allLocations": "All locations",
+  "team.scope.disciplines": "Disciplines",
+  "team.scope.locations": "Locations",
+  "team.scope.allClients": "View all organization clients",
+  "team.scope.noDisciplines": "Add disciplines in CRM settings first.",
+  "team.scope.noLocations": "Add locations in CRM settings first.",
+  "team.scope.emptyWarning": "Select at least one discipline, location, or enable All disciplines/locations.",
+  "team.scope.required": "Set the teacher access scope before sending the invite.",
   "team.pendingInvites": "Pending invites",
   "team.revoke": "Revoke",
   "team.deactivate": "Deactivate",
