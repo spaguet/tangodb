@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-06-28 — Прямой INSERT в payments при продаже абонемента
+
+- **Ошибка:** Toast «new row violates row-level security policy for table "payments"» при продаже абонемента преподавателем; абонемент создавался.
+- **Причина:** `useRecordSubscriptionPayment` вызывал прямой INSERT для всех ролей кроме `teacher`; при рассинхроне JWT/роли или старом bundle снова шёл client-side INSERT без INSERT policy на `payments`.
+- **Как избежать:** Оплату абонемента всегда записывать через SECURITY DEFINER RPC `record_subscription_payment`; не дублировать INSERT в клиенте по роли.
+
 ### 2026-06-28 — Tenant trigger + teacher RLS на payments
 
 - **Ошибка:** При продаже абонемента преподавателем toast «subscription_id does not belong to organization», хотя абонемент создавался успешно.
