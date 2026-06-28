@@ -117,6 +117,8 @@ export function useRecordPayment() {
 }
 
 export function useRecordSubscriptionPayment() {
+  const queryClient = useQueryClient();
+  const { role } = useOrganization();
   const recordPayment = useRecordPayment();
 
   return useMutation({
@@ -128,6 +130,24 @@ export function useRecordSubscriptionPayment() {
       amount: number;
       method: PaymentMethod;
     }) => {
+      if (role === "teacher") {
+        const { data, error } = await supabase.rpc("record_subscription_payment", {
+          p_subscription_id: input.subscriptionId,
+          p_amount: input.amount,
+          p_method: input.method,
+        });
+
+        if (error) return { success: false as const, error: error.message };
+        const result = data as { success?: boolean; error?: string } | null;
+        if (!result?.success) {
+          return {
+            success: false as const,
+            error: result?.error ?? "subscriptions.error.paymentFailed",
+          };
+        }
+        return { success: true as const };
+      }
+
       return recordPayment.mutateAsync({
         clientId: input.clientId,
         clientDisplay: formatClientName(input.clientLastName, input.clientFirstName),
@@ -135,6 +155,11 @@ export function useRecordSubscriptionPayment() {
         method: input.method,
         subscriptionId: input.subscriptionId,
       });
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
+      }
     },
   });
 }
