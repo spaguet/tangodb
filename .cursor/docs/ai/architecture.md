@@ -9,6 +9,12 @@
 - `tangodb/` — основное приложение (React + Vite, TanStack Query, Zustand, Supabase)
 - `tangodb-dev-console/` — админ-консоль (React + Vite, Supabase)
 
+## Platform payment config
+
+- `platform_payment_methods.config` — единый публично читаемый JSON-конфиг ручных способов оплаты для страницы лицензии CRM.
+- Dev Console (`/payment-methods`) обновляет конфиг через Edge Function `dev-console-payment-methods` с developer-доступом.
+- Загруженные QR оплаты хранятся в конфиге как небольшие `data:image/...` строки; CRM только отображает загруженные изображения и не генерирует QR на клиенте.
+
 ## Слои (tangodb/)
 
 - `src/hooks/` — запросы к данным (TanStack Query + Supabase)

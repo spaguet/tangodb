@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
-import QRCode from "react-qr-code";
-import { Copy, Check } from "lucide-react";
-import { buildCryptoQrValue, type CryptoPaymentMethod } from "../../lib/paymentConfig";
+import { useState } from "react";
+import { Check, ChevronDown, Copy } from "lucide-react";
+import type { CryptoPaymentMethod } from "../../lib/paymentConfig";
 import { useI18n } from "../../hooks/useI18n";
 
 interface CryptoPaymentCardsProps {
@@ -11,21 +10,26 @@ interface CryptoPaymentCardsProps {
 function CryptoCard({ method }: { method: CryptoPaymentMethod }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
-  const qrValue = useMemo(() => buildCryptoQrValue(method), [method]);
 
   const copyAddress = async () => {
     await navigator.clipboard.writeText(method.address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+  const amountLabel = [method.amount, method.currency].filter(Boolean).join(" ");
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div>
+    <details className="group rounded-lg border border-slate-200 bg-white">
+      <summary className="flex items-start justify-between gap-3 px-3 py-3 cursor-pointer list-none">
+        <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900">{method.coin}</p>
-          {method.network && <p className="text-xs text-slate-500">{method.network}</p>}
+          <p className="text-xs text-slate-500 truncate">
+            {[method.network, amountLabel].filter(Boolean).join(" · ")}
+          </p>
         </div>
+        <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="px-3 pb-3 pt-1 space-y-3 border-t border-slate-100">
         <button
           type="button"
           onClick={() => void copyAddress()}
@@ -34,16 +38,31 @@ function CryptoCard({ method }: { method: CryptoPaymentMethod }) {
           {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
           {copied ? t("common.copied") : t("license.payment.crypto.address")}
         </button>
-      </div>
-      <div className="flex flex-col sm:flex-row gap-3 items-center">
-        <div className="rounded-lg border border-slate-100 bg-white p-2 shrink-0">
-          <QRCode value={qrValue} size={112} />
-        </div>
+        {amountLabel && (
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-slate-400">
+              {t("license.payment.field.amount")}
+            </p>
+            <p className="text-sm text-slate-800">{amountLabel}</p>
+          </div>
+        )}
         <code className="flex-1 text-[11px] leading-relaxed break-all text-slate-700 bg-slate-50 border border-slate-100 rounded-lg px-2 py-2">
           {method.address}
         </code>
+        {method.qrImageUrl && (
+          <div className="space-y-1">
+            <p className="text-[10px] uppercase tracking-wider text-slate-400">
+              {t("license.payment.field.qr")}
+            </p>
+            <img
+              src={method.qrImageUrl}
+              alt={t("license.payment.field.qr")}
+              className="w-36 h-36 rounded-lg border border-slate-100 bg-white object-contain p-2"
+            />
+          </div>
+        )}
       </div>
-    </div>
+    </details>
   );
 }
 

@@ -101,7 +101,12 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const { connectionState } = useOnlineStatus();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: prices = [], isLoading, isError, error } = usePrices();
-  const { locations } = useAccessibleLocations();
+  const {
+    locations,
+    isLoading: locationsLoading,
+    isError: locationsError,
+    error: locationsErr,
+  } = useAccessibleLocations();
   const { data: disciplines = [] } = useDisciplines();
   const { settings } = useSettings();
   const modules = settings?.modules;
@@ -449,8 +454,29 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     />
   );
 
-  if (isLoading) return <LoadingState label={t("prices.loading")} />;
-  if (isError) return <QueryErrorState error={error} />;
+  if (isLoading || locationsLoading) return <LoadingState label={t("prices.loading")} />;
+  if (isError || locationsError) return <QueryErrorState error={error ?? locationsErr} />;
+  if (locations.length === 0) {
+    return (
+      <div id="panel-prices" className="panel-page-stack">
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+          <div className="panel-form-header">
+            <div className="panel-form-header-icon">
+              <Coins className="w-5 h-5 text-indigo-600" />
+            </div>
+            <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("prices.pageTitle")}</h2>
+            <p className="text-slate-400 text-[11px] leading-snug">
+              {t("prices.pageSubtitle")}
+            </p>
+          </div>
+          <div className="text-center py-20 text-slate-400 space-y-3">
+            <Ticket className="w-8 h-8 mx-auto text-slate-300" />
+            <p className="text-sm">{t("common.addLocationsInSettings")}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const renderPriceRow = (item: { priceObj: Price }) => {
     const p = item.priceObj;

@@ -4,6 +4,7 @@ import { useSchedule } from "../../hooks/useSchedule";
 import { usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { useTeamMembers } from "../../hooks/useTeamMembers";
 import { useI18n } from "../../hooks/useI18n";
+import { useAccessibleLocations } from "../../hooks/useLocations";
 import PersonalLessonSaleForm from "./PersonalLessonSaleForm";
 
 interface PersonalLessonSalePanelProps {
@@ -15,6 +16,7 @@ export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePan
   const scheduleQuery = useSchedule();
   const personalLessonsQuery = usePersonalLessons();
   const teamQuery = useTeamMembers();
+  const { locations } = useAccessibleLocations();
 
   const teacherOptions = useMemo(
     () =>
@@ -71,16 +73,23 @@ export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePan
         </div>
       </div>
 
-      <PersonalLessonSaleForm
-        mode="standalone"
-        teacherOptions={teacherOptions}
-        scheduleSlots={scheduleSlots}
-        personalLessons={personalLessons}
-        toast={toast}
-        onSuccess={() => {
-          toast(t("personal.sell.success"), "success");
-        }}
-      />
+      {locations.length === 0 ? (
+        <div className="text-center py-20 text-slate-400 space-y-3">
+          <Ticket className="w-8 h-8 mx-auto text-slate-300" />
+          <p className="text-sm">{t("common.addLocationsInSettings")}</p>
+        </div>
+      ) : (
+        <PersonalLessonSaleForm
+          mode="standalone"
+          teacherOptions={teacherOptions}
+          scheduleSlots={scheduleSlots}
+          personalLessons={personalLessons}
+          toast={toast}
+          onSuccess={() => {
+            toast(t("personal.sell.success"), "success");
+          }}
+        />
+      )}
     </div>
   );
 }

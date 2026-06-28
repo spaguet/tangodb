@@ -11,14 +11,23 @@ interface DeveloperContactsProps {
   contacts: DeveloperContactsConfig | null | undefined;
 }
 
+const DEFAULT_DEVELOPER_CONTACTS: DeveloperContactsConfig = {
+  email: "omowdance@gmail.com",
+  telegramUrl: "https://t.me/omow_second",
+  whatsappUrl: "",
+};
+
 export default function DeveloperContacts({ contacts }: DeveloperContactsProps) {
   const { t } = useI18n();
 
-  if (!contacts) return null;
+  const resolvedContacts = {
+    ...DEFAULT_DEVELOPER_CONTACTS,
+    ...(contacts ?? {}),
+  };
 
-  const mailto = isSafeMailto(contacts.email);
-  const telegram = isSafeTelegramUrl(contacts.telegramUrl);
-  const whatsapp = isSafeWhatsappUrl(contacts.whatsappUrl);
+  const mailto = isSafeMailto(resolvedContacts.email);
+  const telegram = isSafeTelegramUrl(resolvedContacts.telegramUrl);
+  const whatsapp = isSafeWhatsappUrl(resolvedContacts.whatsappUrl);
 
   if (!mailto && !telegram && !whatsapp) return null;
 

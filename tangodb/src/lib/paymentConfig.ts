@@ -3,6 +3,9 @@ export interface CryptoPaymentMethod {
   network: string;
   address: string;
   uriTemplate?: string;
+  amount?: string;
+  currency?: string;
+  qrImageUrl?: string;
 }
 
 export interface BankTransferConfig {
@@ -12,6 +15,9 @@ export interface BankTransferConfig {
   swiftOrBic?: string;
   cardLast4?: string;
   note: string;
+  amount?: string;
+  currency?: string;
+  qrImageUrl?: string;
 }
 
 export interface MirPaymentConfig {
@@ -19,6 +25,19 @@ export interface MirPaymentConfig {
   phoneOrCard: string;
   bankName?: string;
   note: string;
+  amount?: string;
+  currency?: string;
+  qrImageUrl?: string;
+}
+
+export interface VietnameseBankTransferConfig {
+  beneficiary: string;
+  bankName?: string;
+  accountNumber: string;
+  note: string;
+  amount?: string;
+  currency?: string;
+  qrImageUrl?: string;
 }
 
 export interface DeveloperContactsConfig {
@@ -30,6 +49,7 @@ export interface DeveloperContactsConfig {
 export interface ManualPaymentConfig {
   crypto?: CryptoPaymentMethod[];
   bankTransfer?: BankTransferConfig | null;
+  vietnameseBankTransfer?: VietnameseBankTransferConfig | null;
   mir?: MirPaymentConfig | null;
   contacts?: DeveloperContactsConfig | null;
 }
@@ -48,6 +68,9 @@ export function parseManualPaymentConfig(raw: unknown): ManualPaymentConfig {
           network: String(row.network ?? "").trim(),
           address: String(row.address ?? "").trim(),
           uriTemplate: row.uriTemplate ? String(row.uriTemplate).trim() : undefined,
+          amount: row.amount ? String(row.amount).trim() : undefined,
+          currency: row.currency ? String(row.currency).trim() : undefined,
+          qrImageUrl: row.qrImageUrl ? String(row.qrImageUrl).trim() : undefined,
         }))
         .filter((row) => row.coin && row.address)
     : undefined;
@@ -62,6 +85,13 @@ export function parseManualPaymentConfig(raw: unknown): ManualPaymentConfig {
       ? normalizeMir(value.mir as Record<string, unknown>)
       : null;
 
+  const vietnameseBankTransfer =
+    value.vietnameseBankTransfer &&
+    typeof value.vietnameseBankTransfer === "object" &&
+    !Array.isArray(value.vietnameseBankTransfer)
+      ? normalizeVietnameseBankTransfer(value.vietnameseBankTransfer as Record<string, unknown>)
+      : null;
+
   const contacts =
     value.contacts && typeof value.contacts === "object" && !Array.isArray(value.contacts)
       ? normalizeContacts(value.contacts as Record<string, unknown>)
@@ -70,6 +100,10 @@ export function parseManualPaymentConfig(raw: unknown): ManualPaymentConfig {
   return {
     crypto: crypto?.length ? crypto : undefined,
     bankTransfer: bankTransfer?.beneficiary || bankTransfer?.ibanOrAccount ? bankTransfer : null,
+    vietnameseBankTransfer:
+      vietnameseBankTransfer?.beneficiary || vietnameseBankTransfer?.accountNumber
+        ? vietnameseBankTransfer
+        : null,
     mir: mir?.recipient || mir?.phoneOrCard ? mir : null,
     contacts,
   };
@@ -83,6 +117,9 @@ function normalizeBankTransfer(row: Record<string, unknown>): BankTransferConfig
     swiftOrBic: row.swiftOrBic ? String(row.swiftOrBic).trim() : undefined,
     cardLast4: row.cardLast4 ? String(row.cardLast4).trim() : undefined,
     note: String(row.note ?? "").trim(),
+    amount: row.amount ? String(row.amount).trim() : undefined,
+    currency: row.currency ? String(row.currency).trim() : undefined,
+    qrImageUrl: row.qrImageUrl ? String(row.qrImageUrl).trim() : undefined,
   };
 }
 
@@ -92,6 +129,21 @@ function normalizeMir(row: Record<string, unknown>): MirPaymentConfig {
     phoneOrCard: String(row.phoneOrCard ?? "").trim(),
     bankName: row.bankName ? String(row.bankName).trim() : undefined,
     note: String(row.note ?? "").trim(),
+    amount: row.amount ? String(row.amount).trim() : undefined,
+    currency: row.currency ? String(row.currency).trim() : undefined,
+    qrImageUrl: row.qrImageUrl ? String(row.qrImageUrl).trim() : undefined,
+  };
+}
+
+function normalizeVietnameseBankTransfer(row: Record<string, unknown>): VietnameseBankTransferConfig {
+  return {
+    beneficiary: String(row.beneficiary ?? "").trim(),
+    bankName: row.bankName ? String(row.bankName).trim() : undefined,
+    accountNumber: String(row.accountNumber ?? "").trim(),
+    note: String(row.note ?? "").trim(),
+    amount: row.amount ? String(row.amount).trim() : undefined,
+    currency: row.currency ? String(row.currency).trim() : undefined,
+    qrImageUrl: row.qrImageUrl ? String(row.qrImageUrl).trim() : undefined,
   };
 }
 
@@ -108,6 +160,8 @@ export function hasManualPaymentContent(config: ManualPaymentConfig): boolean {
     config.crypto?.length ||
     config.bankTransfer?.beneficiary ||
     config.bankTransfer?.ibanOrAccount ||
+    config.vietnameseBankTransfer?.beneficiary ||
+    config.vietnameseBankTransfer?.accountNumber ||
     config.mir?.recipient ||
     config.mir?.phoneOrCard ||
     config.contacts?.email ||

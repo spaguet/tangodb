@@ -86,6 +86,18 @@ const AUDIT_FIELD_LABEL_KEYS: Record<string, I18nKey> = {
   currency_code: "team.auditField.currencyCode",
   currency_display: "team.auditField.currencyDisplay",
   modules: "team.auditField.modules",
+  branding_name: "team.auditField.brandingName",
+  pair_cycle_enabled: "team.auditField.pairCycleEnabled",
+};
+
+const AUDIT_MODULE_LABEL_KEYS: Record<string, I18nKey> = {
+  group_subscriptions: "settings.org.module.groupSubscriptions",
+  personal_lessons: "settings.org.module.personalLessons",
+  finance_basic: "settings.org.module.financeBasic",
+  pair_subscriptions: "settings.org.module.pairSubscriptions",
+  trio_lessons: "settings.org.module.trioLessons",
+  multi_discipline: "settings.org.module.multiDiscipline",
+  locations: "settings.org.module.locations",
 };
 
 const HIDDEN_AUDIT_FIELDS = new Set([
@@ -112,6 +124,25 @@ function auditValueLabel(value: unknown, translate: ReturnType<typeof useI18n>["
   return JSON.stringify(value);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function auditModuleLabel(key: string, translate: ReturnType<typeof useI18n>["t"]): string {
+  const labelKey = AUDIT_MODULE_LABEL_KEYS[key];
+  return labelKey ? translate(labelKey) : key;
+}
+
+function auditModulesInsertLabel(value: unknown, translate: ReturnType<typeof useI18n>["t"]): string {
+  if (!isRecord(value)) return auditValueLabel(value, translate);
+
+  const enabled = Object.entries(value)
+    .filter(([, enabled]) => enabled === true)
+    .map(([key]) => auditModuleLabel(key, translate));
+
+  return enabled.length > 0 ? enabled.join(", ") : "—";
+}
+
 function auditChangedFields(row: {
   operation: string;
   old_data: Record<string, unknown> | null;
@@ -131,6 +162,27 @@ function auditChangedFields(row: {
 
     const labelKey = AUDIT_FIELD_LABEL_KEYS[key];
     const label = labelKey ? translate(labelKey) : key;
+    if (key === "modules") {
+      if (row.operation === "INSERT") {
+        details.push(`${label}: ${auditModulesInsertLabel(newValue, translate)}`);
+      } else if (row.operation === "DELETE") {
+        details.push(`${label}: ${auditModulesInsertLabel(oldValue, translate)}`);
+      } else if (isRecord(oldValue) && isRecord(newValue)) {
+        const moduleKeys = new Set([...Object.keys(oldValue), ...Object.keys(newValue)]);
+        for (const moduleKey of moduleKeys) {
+          if (JSON.stringify(oldValue[moduleKey]) === JSON.stringify(newValue[moduleKey])) continue;
+          details.push(
+            `${label}: ${auditModuleLabel(moduleKey, translate)}: ${auditValueLabel(
+              oldValue[moduleKey],
+              translate
+            )} → ${auditValueLabel(newValue[moduleKey], translate)}`
+          );
+        }
+      } else {
+        details.push(`${label}: ${auditValueLabel(oldValue, translate)} → ${auditValueLabel(newValue, translate)}`);
+      }
+      continue;
+    }
     if (row.operation === "INSERT") {
       details.push(`${label}: ${auditValueLabel(newValue, translate)}`);
     } else if (row.operation === "DELETE") {

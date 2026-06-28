@@ -5,7 +5,7 @@ interface FieldProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  type?: "text" | "email" | "url";
+  type?: "text" | "email" | "url" | "number";
   multiline?: boolean;
 }
 

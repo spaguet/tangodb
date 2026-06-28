@@ -2,8 +2,11 @@ import LoadingState from "../ui/LoadingState";
 import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
 import { useI18n } from "../../hooks/useI18n";
 import CryptoPaymentCards from "./CryptoPaymentCards";
-import DeveloperContacts from "./DeveloperContacts";
-import { BankTransferSection, MirPaymentSection } from "./ManualPaymentSections";
+import {
+  BankTransferSection,
+  MirPaymentSection,
+  VietnameseBankTransferSection,
+} from "./ManualPaymentSections";
 import PurchaseActivationInstructions from "./PurchaseActivationInstructions";
 
 export default function ManualPurchasePanel() {
@@ -32,8 +35,8 @@ export default function ManualPurchasePanel() {
 
       {!!config.crypto?.length && <CryptoPaymentCards methods={config.crypto} />}
       <BankTransferSection config={config.bankTransfer} />
+      <VietnameseBankTransferSection config={config.vietnameseBankTransfer} />
       <MirPaymentSection config={config.mir} />
-      <DeveloperContacts contacts={config.contacts} />
     </div>
   );
 }

@@ -116,6 +116,12 @@ export default function SubscriptionsPanel({
   const recordSubscriptionPayment = useRecordSubscriptionPayment();
   const { canAccessPanel } = usePermissions();
   const { settings } = useSettings();
+  const {
+    locations,
+    isLoading: locationsLoading,
+    isError: locationsError,
+    error: locationsErr,
+  } = useAccessibleLocations();
 
   const isLoading =
     activeClientsLoading ||
@@ -126,7 +132,8 @@ export default function SubscriptionsPanel({
     scheduleGroupsLoading ||
     pricesLoading ||
     attendanceLoading ||
-    personalLessonsLoading;
+    personalLessonsLoading ||
+    locationsLoading;
   const isError =
     activeClientsError ||
     directoryClientsError ||
@@ -136,7 +143,8 @@ export default function SubscriptionsPanel({
     scheduleGroupsError ||
     pricesError ||
     attendanceError ||
-    personalLessonsError;
+    personalLessonsError ||
+    locationsError;
   const error =
     activeClientsErr ??
     directoryClientsErr ??
@@ -146,7 +154,8 @@ export default function SubscriptionsPanel({
     scheduleGroupsErr ??
     pricesErr ??
     attendanceErr ??
-    personalLessonsErr;
+    personalLessonsErr ??
+    locationsErr;
   const [activeTab, setActiveTab] = useState<"sell" | "active" | "history">(initialTab);
 
   useEffect(() => {
@@ -160,8 +169,6 @@ export default function SubscriptionsPanel({
       tab === "sell" ? "/subscriptions/sell" : tab === "history" ? "/subscriptions/history" : "/subscriptions";
     navigate(path);
   };
-
-  const { locations } = useAccessibleLocations();
 
   const [search, setSearch] = useState("");
   const [activeLocationFilter, setActiveLocationFilter] = useState("");
@@ -1117,6 +1124,12 @@ export default function SubscriptionsPanel({
             </div>
           </div>
 
+          {locations.length === 0 ? (
+            <div className="text-center py-20 text-slate-400 space-y-3">
+              <Ticket className="w-8 h-8 mx-auto text-slate-300" />
+              <p className="text-sm">{t("common.addLocationsInSettings")}</p>
+            </div>
+          ) : (
           <div className="panel-form-stack panel-form-stack-wide-md panel-form-stack-compact">
             <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer panel-form-full-row-md">
               <input
@@ -1314,6 +1327,7 @@ export default function SubscriptionsPanel({
                 : t("subscriptions.sell.submit")}
             </button>
           </div>
+          )}
         </div>
       )}
 

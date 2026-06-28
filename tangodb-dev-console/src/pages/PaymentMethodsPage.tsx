@@ -10,6 +10,66 @@ import {
 } from "../lib/paymentConfig";
 import { loadPaymentConfig, savePaymentConfig, supabaseEnvError } from "../lib/supabase";
 
+const MAX_QR_IMAGE_BYTES = 250 * 1024;
+
+function QrImageUpload({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [error, setError] = useState("");
+
+  const handleFile = (file: File | null) => {
+    setError("");
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Загрузите изображение QR.");
+      return;
+    }
+    if (file.size > MAX_QR_IMAGE_BYTES) {
+      setError("QR слишком большой. Максимум 250 KB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      onChange(typeof reader.result === "string" ? reader.result : "");
+    };
+    reader.onerror = () => setError("Не удалось прочитать файл.");
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block space-y-1">
+        <span className="text-xs text-slate-500 uppercase">QR изображение</span>
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+          className="w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-100 hover:file:bg-slate-700"
+        />
+      </label>
+      {value && (
+        <div className="flex items-center gap-3">
+          <img src={value} alt="QR preview" className="h-20 w-20 rounded-lg border border-slate-800 bg-white object-contain p-1" />
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="inline-flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Удалить QR
+          </button>
+        </div>
+      )}
+      {error && <p className="text-xs text-rose-400">{error}</p>}
+    </div>
+  );
+}
+
 export default function PaymentMethodsPage() {
   const [form, setForm] = useState<PaymentConfigFormState>(emptyPaymentConfigForm);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
@@ -67,7 +127,7 @@ export default function PaymentMethodsPage() {
       <div>
         <h2 className="text-2xl font-bold text-white">Payment methods</h2>
         <p className="text-xs text-slate-500 mt-1">
-          Публичные реквизиты для страницы покупки в CRM. QR-коды генерируются на клиенте из адресов.
+          Публичные реквизиты для страницы покупки в CRM. QR хранится как небольшое изображение в конфиге.
         </p>
         {updatedAt && (
           <p className="text-xs text-slate-600 mt-2">Обновлено: {new Date(updatedAt).toLocaleString("ru-RU")}</p>
@@ -132,6 +192,22 @@ export default function PaymentMethodsPage() {
                     onChange={(uriTemplate) => updateCrypto(index, { uriTemplate })}
                     placeholder="ton://transfer/… или bitcoin:…"
                   />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field
+                      label="Сумма к оплате"
+                      type="number"
+                      value={row.amount}
+                      onChange={(amount) => updateCrypto(index, { amount })}
+                      placeholder="100"
+                    />
+                    <Field
+                      label="Валюта"
+                      value={row.currency}
+                      onChange={(currency) => updateCrypto(index, { currency })}
+                      placeholder="USD, USDT, VND"
+                    />
+                  </div>
+                  <QrImageUpload value={row.qrImageUrl} onChange={(qrImageUrl) => updateCrypto(index, { qrImageUrl })} />
                 </div>
               ))}
               <button
@@ -188,6 +264,23 @@ export default function PaymentMethodsPage() {
                 }
                 placeholder="1234"
               />
+              <Field
+                label="Сумма к оплате"
+                type="number"
+                value={form.bankTransfer.amount}
+                onChange={(amount) =>
+                  setForm((prev) => ({ ...prev, bankTransfer: { ...prev.bankTransfer, amount } }))
+                }
+                placeholder="100"
+              />
+              <Field
+                label="Валюта"
+                value={form.bankTransfer.currency}
+                onChange={(currency) =>
+                  setForm((prev) => ({ ...prev, bankTransfer: { ...prev.bankTransfer, currency } }))
+                }
+                placeholder="USD"
+              />
             </div>
             <Field
               label="Комментарий к переводу"
@@ -195,6 +288,91 @@ export default function PaymentMethodsPage() {
               onChange={(note) => setForm((prev) => ({ ...prev, bankTransfer: { ...prev.bankTransfer, note } }))}
               multiline
               placeholder="Укажите email регистрации в CRM"
+            />
+            <QrImageUpload
+              value={form.bankTransfer.qrImageUrl}
+              onChange={(qrImageUrl) =>
+                setForm((prev) => ({ ...prev, bankTransfer: { ...prev.bankTransfer, qrImageUrl } }))
+              }
+            />
+          </Section>
+
+          <Section title="Перевод на вьетнамский счёт">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field
+                label="Получатель"
+                value={form.vietnameseBankTransfer.beneficiary}
+                onChange={(beneficiary) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, beneficiary },
+                  }))
+                }
+              />
+              <Field
+                label="Банк"
+                value={form.vietnameseBankTransfer.bankName}
+                onChange={(bankName) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, bankName },
+                  }))
+                }
+              />
+              <Field
+                label="Счёт"
+                value={form.vietnameseBankTransfer.accountNumber}
+                onChange={(accountNumber) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, accountNumber },
+                  }))
+                }
+              />
+              <Field
+                label="Сумма к оплате"
+                type="number"
+                value={form.vietnameseBankTransfer.amount}
+                onChange={(amount) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, amount },
+                  }))
+                }
+                placeholder="2500000"
+              />
+              <Field
+                label="Валюта"
+                value={form.vietnameseBankTransfer.currency}
+                onChange={(currency) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, currency },
+                  }))
+                }
+                placeholder="VND"
+              />
+            </div>
+            <Field
+              label="Комментарий"
+              value={form.vietnameseBankTransfer.note}
+              onChange={(note) =>
+                setForm((prev) => ({
+                  ...prev,
+                  vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, note },
+                }))
+              }
+              multiline
+              placeholder="Комментарий: email из CRM"
+            />
+            <QrImageUpload
+              value={form.vietnameseBankTransfer.qrImageUrl}
+              onChange={(qrImageUrl) =>
+                setForm((prev) => ({
+                  ...prev,
+                  vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, qrImageUrl },
+                }))
+              }
             />
           </Section>
 
@@ -215,6 +393,19 @@ export default function PaymentMethodsPage() {
                 value={form.mir.bankName}
                 onChange={(bankName) => setForm((prev) => ({ ...prev, mir: { ...prev.mir, bankName } }))}
               />
+              <Field
+                label="Сумма к оплате"
+                type="number"
+                value={form.mir.amount}
+                onChange={(amount) => setForm((prev) => ({ ...prev, mir: { ...prev.mir, amount } }))}
+                placeholder="10000"
+              />
+              <Field
+                label="Валюта"
+                value={form.mir.currency}
+                onChange={(currency) => setForm((prev) => ({ ...prev, mir: { ...prev.mir, currency } }))}
+                placeholder="RUB"
+              />
             </div>
             <Field
               label="Комментарий"
@@ -222,6 +413,10 @@ export default function PaymentMethodsPage() {
               onChange={(note) => setForm((prev) => ({ ...prev, mir: { ...prev.mir, note } }))}
               multiline
               placeholder="Комментарий: email из CRM"
+            />
+            <QrImageUpload
+              value={form.mir.qrImageUrl}
+              onChange={(qrImageUrl) => setForm((prev) => ({ ...prev, mir: { ...prev.mir, qrImageUrl } }))}
             />
           </Section>
 

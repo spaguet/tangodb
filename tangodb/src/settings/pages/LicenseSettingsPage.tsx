@@ -234,7 +234,7 @@ export default function LicenseSettingsPage() {
           </p>
         )}
 
-        {!showManualPurchase && <DeveloperContacts contacts={paymentConfig.contacts} />}
+        <DeveloperContacts contacts={paymentConfig.contacts} />
 
         <div className="border-t border-slate-100 pt-4 space-y-2">
           <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">

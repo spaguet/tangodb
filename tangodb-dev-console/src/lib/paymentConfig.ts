@@ -3,6 +3,9 @@ export interface CryptoPaymentMethod {
   network: string;
   address: string;
   uriTemplate: string;
+  amount: string;
+  currency: string;
+  qrImageUrl: string;
 }
 
 export interface BankTransferConfig {
@@ -12,6 +15,9 @@ export interface BankTransferConfig {
   swiftOrBic: string;
   cardLast4: string;
   note: string;
+  amount: string;
+  currency: string;
+  qrImageUrl: string;
 }
 
 export interface MirPaymentConfig {
@@ -19,6 +25,19 @@ export interface MirPaymentConfig {
   phoneOrCard: string;
   bankName: string;
   note: string;
+  amount: string;
+  currency: string;
+  qrImageUrl: string;
+}
+
+export interface VietnameseBankTransferConfig {
+  beneficiary: string;
+  bankName: string;
+  accountNumber: string;
+  note: string;
+  amount: string;
+  currency: string;
+  qrImageUrl: string;
 }
 
 export interface DeveloperContactsConfig {
@@ -30,6 +49,7 @@ export interface DeveloperContactsConfig {
 export interface PaymentConfigFormState {
   crypto: CryptoPaymentMethod[];
   bankTransfer: BankTransferConfig;
+  vietnameseBankTransfer: VietnameseBankTransferConfig;
   mir: MirPaymentConfig;
   contacts: DeveloperContactsConfig;
 }
@@ -40,8 +60,12 @@ export type ManualPaymentConfigPayload = {
     network: string;
     address: string;
     uriTemplate?: string;
+    amount?: string;
+    currency?: string;
+    qrImageUrl?: string;
   }>;
   bankTransfer?: Partial<BankTransferConfig> | null;
+  vietnameseBankTransfer?: Partial<VietnameseBankTransferConfig> | null;
   mir?: Partial<MirPaymentConfig> | null;
   contacts?: Partial<DeveloperContactsConfig> | null;
 };
@@ -51,6 +75,9 @@ export const emptyCryptoRow = (): CryptoPaymentMethod => ({
   network: "",
   address: "",
   uriTemplate: "",
+  amount: "",
+  currency: "",
+  qrImageUrl: "",
 });
 
 export const emptyPaymentConfigForm = (): PaymentConfigFormState => ({
@@ -62,12 +89,27 @@ export const emptyPaymentConfigForm = (): PaymentConfigFormState => ({
     swiftOrBic: "",
     cardLast4: "",
     note: "",
+    amount: "",
+    currency: "",
+    qrImageUrl: "",
+  },
+  vietnameseBankTransfer: {
+    beneficiary: "",
+    bankName: "",
+    accountNumber: "",
+    note: "",
+    amount: "",
+    currency: "",
+    qrImageUrl: "",
   },
   mir: {
     recipient: "",
     phoneOrCard: "",
     bankName: "",
     note: "",
+    amount: "",
+    currency: "",
+    qrImageUrl: "",
   },
   contacts: {
     email: "",
@@ -87,6 +129,9 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
       network: trim(row.network),
       address: trim(row.address),
       uriTemplate: trim(row.uriTemplate) || undefined,
+      amount: trim(row.amount) || undefined,
+      currency: trim(row.currency) || undefined,
+      qrImageUrl: trim(row.qrImageUrl) || undefined,
     }))
     .filter((row) => row.coin && row.address);
 
@@ -97,6 +142,19 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
     swiftOrBic: trim(form.bankTransfer.swiftOrBic) || undefined,
     cardLast4: trim(form.bankTransfer.cardLast4) || undefined,
     note: trim(form.bankTransfer.note),
+    amount: trim(form.bankTransfer.amount) || undefined,
+    currency: trim(form.bankTransfer.currency) || undefined,
+    qrImageUrl: trim(form.bankTransfer.qrImageUrl) || undefined,
+  };
+
+  const vietnameseBankTransfer = {
+    beneficiary: trim(form.vietnameseBankTransfer.beneficiary),
+    bankName: trim(form.vietnameseBankTransfer.bankName) || undefined,
+    accountNumber: trim(form.vietnameseBankTransfer.accountNumber),
+    note: trim(form.vietnameseBankTransfer.note),
+    amount: trim(form.vietnameseBankTransfer.amount) || undefined,
+    currency: trim(form.vietnameseBankTransfer.currency) || undefined,
+    qrImageUrl: trim(form.vietnameseBankTransfer.qrImageUrl) || undefined,
   };
 
   const mir = {
@@ -104,6 +162,9 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
     phoneOrCard: trim(form.mir.phoneOrCard),
     bankName: trim(form.mir.bankName) || undefined,
     note: trim(form.mir.note),
+    amount: trim(form.mir.amount) || undefined,
+    currency: trim(form.mir.currency) || undefined,
+    qrImageUrl: trim(form.mir.qrImageUrl) || undefined,
   };
 
   const contacts = {
@@ -116,6 +177,9 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
 
   if (crypto.length) payload.crypto = crypto;
   if (bankTransfer.beneficiary || bankTransfer.ibanOrAccount) payload.bankTransfer = bankTransfer;
+  if (vietnameseBankTransfer.beneficiary || vietnameseBankTransfer.accountNumber) {
+    payload.vietnameseBankTransfer = vietnameseBankTransfer;
+  }
   if (mir.recipient || mir.phoneOrCard) payload.mir = mir;
   if (contacts.email || contacts.telegramUrl || contacts.whatsappUrl) payload.contacts = contacts;
 
@@ -136,6 +200,9 @@ export function configToFormState(raw: unknown): PaymentConfigFormState {
         network: String(row.network ?? ""),
         address: String(row.address ?? ""),
         uriTemplate: String(row.uriTemplate ?? ""),
+        amount: String(row.amount ?? ""),
+        currency: String(row.currency ?? ""),
+        qrImageUrl: String(row.qrImageUrl ?? ""),
       }));
   }
 
@@ -148,6 +215,26 @@ export function configToFormState(raw: unknown): PaymentConfigFormState {
       swiftOrBic: String(bank.swiftOrBic ?? ""),
       cardLast4: String(bank.cardLast4 ?? ""),
       note: String(bank.note ?? ""),
+      amount: String(bank.amount ?? ""),
+      currency: String(bank.currency ?? ""),
+      qrImageUrl: String(bank.qrImageUrl ?? ""),
+    };
+  }
+
+  if (
+    value.vietnameseBankTransfer &&
+    typeof value.vietnameseBankTransfer === "object" &&
+    !Array.isArray(value.vietnameseBankTransfer)
+  ) {
+    const bank = value.vietnameseBankTransfer as Record<string, unknown>;
+    form.vietnameseBankTransfer = {
+      beneficiary: String(bank.beneficiary ?? ""),
+      bankName: String(bank.bankName ?? ""),
+      accountNumber: String(bank.accountNumber ?? ""),
+      note: String(bank.note ?? ""),
+      amount: String(bank.amount ?? ""),
+      currency: String(bank.currency ?? ""),
+      qrImageUrl: String(bank.qrImageUrl ?? ""),
     };
   }
 
@@ -158,6 +245,9 @@ export function configToFormState(raw: unknown): PaymentConfigFormState {
       phoneOrCard: String(mir.phoneOrCard ?? ""),
       bankName: String(mir.bankName ?? ""),
       note: String(mir.note ?? ""),
+      amount: String(mir.amount ?? ""),
+      currency: String(mir.currency ?? ""),
+      qrImageUrl: String(mir.qrImageUrl ?? ""),
     };
   }
 

@@ -100,6 +100,7 @@ Deno.serve(async (req) => {
     metadata: {
       has_crypto: Array.isArray(config.crypto) ? config.crypto.length : 0,
       has_bank: Boolean(config.bankTransfer),
+      has_vietnamese_bank: Boolean(config.vietnameseBankTransfer),
       has_mir: Boolean(config.mir),
       has_contacts: Boolean(config.contacts),
     },

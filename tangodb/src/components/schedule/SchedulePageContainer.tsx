@@ -372,6 +372,7 @@ export default function SchedulePageContainer() {
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs text-center py-20 text-slate-400 space-y-3">
           <CalendarDays className="w-8 h-8 mx-auto text-slate-300" />
           <p className="text-sm">{t("schedule.empty")}</p>
+          <p className="text-sm">{t("common.addLocationsInSettings")}</p>
         </div>
       ) : (
         <div className="space-y-4">
