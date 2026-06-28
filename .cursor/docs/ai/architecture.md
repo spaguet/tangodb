@@ -14,6 +14,8 @@
 - `platform_payment_methods.config` — единый публично читаемый JSON-конфиг ручных способов оплаты для страницы лицензии CRM.
 - Dev Console (`/payment-methods`) обновляет конфиг через Edge Function `dev-console-payment-methods` с developer-доступом.
 - Загруженные QR оплаты хранятся в конфиге как небольшие `data:image/...` строки; CRM только отображает загруженные изображения и не генерирует QR на клиенте.
+- `platform_purchase_requests` — входящие заявки из CRM после самостоятельной оплаты. CRM создаёт заявку через Edge Function `submit-purchase-request`; функция отправляет email разработчику при настроенном Resend и сохраняет заявку для Dev Console.
+- Dev Console (`/inbox`) читает заявки через `dev-console-purchase-inbox`; после ручной проверки оплаты developer активирует lifetime-доступ организации, создаётся consumed lifetime key и обновляется `organization_licenses`.
 
 ## Слои (tangodb/)
 

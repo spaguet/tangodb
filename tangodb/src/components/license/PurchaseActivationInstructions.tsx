@@ -1,4 +1,4 @@
-import { ListOrdered } from "lucide-react";
+import { ListOrdered, MessageCircle } from "lucide-react";
 import { getPurchaseActivationSteps } from "../../lib/paymentConfig";
 import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
 import { useI18n } from "../../hooks/useI18n";
@@ -13,6 +13,15 @@ export default function PurchaseActivationInstructions() {
     <div className="space-y-3">
       <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-3 space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+          <MessageCircle className="w-3.5 h-3.5" />
+          {t("license.purchase.developerKeyTitle")}
+        </p>
+        <p className="text-xs text-slate-600 leading-relaxed">{t("license.purchase.developerKeyIntro")}</p>
+        <DeveloperContacts contacts={config.contacts} embedded />
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
           <ListOrdered className="w-3.5 h-3.5" />
           {t("license.purchase.instructionsTitle")}
         </p>
@@ -21,15 +30,6 @@ export default function PurchaseActivationInstructions() {
             <li key={step}>{step}</li>
           ))}
         </ol>
-      </div>
-
-      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-          <ListOrdered className="w-3.5 h-3.5" />
-          {t("license.purchase.developerKeyTitle")}
-        </p>
-        <p className="text-xs text-slate-600 leading-relaxed">{t("license.purchase.developerKeyIntro")}</p>
-        <DeveloperContacts contacts={config.contacts} embedded />
       </div>
     </div>
   );

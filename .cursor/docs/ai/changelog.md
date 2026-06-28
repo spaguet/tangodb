@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-28 — License purchase inbox: добавлена заявка самостоятельной оплаты из CRM (`submit-purchase-request` + `platform_purchase_requests`), Dev Console `/inbox` с активацией lifetime-доступа после проверки оплаты, обновлены инструкции сценариев покупки и кнопки поддержки в верхней панели CRM.
 2026-06-28 — License purchase: клик по QR открывает popup с увеличенным изображением и кнопкой «Скачать QR» (`QrImagePreview` для crypto/bank/МИР/vietnamese).
 2026-06-28 — Auth: на `/login` отключён вход через Telegram (код закомментирован); остался email/password с чекбоксом «Запомнить меня» (localStorage vs sessionStorage через `setAuthRememberMe` в `supabase.ts`).
 2026-06-28 — fix: orphan cleanup — `self_service_demo_challenges` не имеет `user_id`, удаление по `owner_email_hash`.

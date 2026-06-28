@@ -12,6 +12,7 @@ import UsersPage from "./pages/UsersPage";
 import MigrationsPage from "./pages/MigrationsPage";
 import BillingPage from "./pages/BillingPage";
 import ErrorsPage from "./pages/ErrorsPage";
+import PurchaseInboxPage from "./pages/PurchaseInboxPage";
 import Layout from "./components/Layout";
 import type { Session } from "@supabase/supabase-js";
 
@@ -51,6 +52,7 @@ function App() {
       <Routes>
         <Route element={<Layout onSignOut={() => supabase.auth.signOut()} />}>
           <Route index element={<DashboardPage />} />
+          <Route path="inbox" element={<PurchaseInboxPage />} />
           <Route path="keys" element={<KeysPage />} />
           <Route path="payment-methods" element={<PaymentMethodsPage />} />
           <Route path="orgs" element={<OrgsPage />} />

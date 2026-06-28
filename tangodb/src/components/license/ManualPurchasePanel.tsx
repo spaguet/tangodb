@@ -8,6 +8,7 @@ import {
   VietnameseBankTransferSection,
 } from "./ManualPaymentSections";
 import PurchaseActivationInstructions from "./PurchaseActivationInstructions";
+import PurchaseRequestPanel from "./PurchaseRequestPanel";
 
 export default function ManualPurchasePanel() {
   const { t } = useI18n();
@@ -20,6 +21,7 @@ export default function ManualPurchasePanel() {
   return (
     <div className="space-y-4 border-t border-slate-100 pt-4">
       <PurchaseActivationInstructions />
+      <PurchaseRequestPanel contacts={config.contacts} />
 
       {isError && (
         <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">

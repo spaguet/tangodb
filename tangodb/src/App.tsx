@@ -73,6 +73,8 @@ import DemoBrandBadge from "./components/demo/DemoBrandBadge";
 import LocaleDocumentSync from "./components/LocaleDocumentSync";
 import DemoPurchaseCta from "./components/demo/DemoPurchaseCta";
 import { useDemoLicenseUi } from "./hooks/useDemoLicenseUi";
+import { usePlatformPaymentConfig } from "./hooks/usePlatformPaymentConfig";
+import DeveloperContacts from "./components/license/DeveloperContacts";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -169,6 +171,7 @@ function AppLayout() {
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
   const { settings } = useOrganization();
   const { showPurchaseCta } = useDemoLicenseUi();
+  const { config: paymentConfig } = usePlatformPaymentConfig(true);
   const orgModules = normalizeOrgModules(settings?.modules);
   const permissionOptions = permissionOptionsFromSettings(settings, scope, {
     restrictedAdmin: membership?.meta?.restricted_admin ?? false,
@@ -351,6 +354,12 @@ function AppLayout() {
             </div>
             <div className="flex items-center gap-2">
               <OrgSwitcher />
+              <div className="hidden lg:flex items-center gap-2">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                  {t("nav.supportLabel")}
+                </span>
+                <DeveloperContacts contacts={paymentConfig.contacts} embedded />
+              </div>
               <button
                 onClick={() => signOut()}
                 className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
