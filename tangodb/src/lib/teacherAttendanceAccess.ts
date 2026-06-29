@@ -21,8 +21,7 @@ export function canViewGroupAttendanceLesson(
   if (role === "admin") return true;
   if (role !== "teacher" || !memberId) return false;
   if (!lesson.scheduleGroupId) return false;
-  if (!hasScheduleGroupAccess(scope, lesson.scheduleGroupId)) return false;
-  return lesson.teacherMemberId === memberId;
+  return hasScheduleGroupAccess(scope, lesson.scheduleGroupId);
 }
 
 export function canViewPersonalAttendanceLesson(

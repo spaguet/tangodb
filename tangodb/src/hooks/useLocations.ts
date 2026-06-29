@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { usePermissions } from "./usePermissions";
+import { useScheduleGroups } from "./useScheduleGroups";
 import type { MemberRole, TeacherScope } from "../types/organization";
 
 export interface Location {
@@ -24,12 +25,26 @@ const mapLocation = (row: Record<string, unknown>): Location => ({
 export function filterAccessibleLocations(
   locations: Location[],
   role: MemberRole,
-  scope: TeacherScope
+  scope: TeacherScope,
+  extraLocationIds: string[] = []
 ): Location[] {
   if (role !== "teacher") return locations;
   if (scope.all_locations) return locations;
-  if (scope.location_ids.length === 0) return [];
-  return locations.filter((l) => scope.location_ids.includes(l.id));
+
+  const allowedIds = new Set([...scope.location_ids, ...extraLocationIds]);
+  if (allowedIds.size === 0) return [];
+  return locations.filter((l) => allowedIds.has(l.id));
+}
+
+export function locationIdsFromScheduleGroupScope(
+  scope: TeacherScope,
+  groups: Array<{ id: string; locationId: string | null }>
+): string[] {
+  if (scope.all_groups || scope.schedule_group_ids.length === 0) return [];
+  const groupIds = new Set(scope.schedule_group_ids);
+  return groups
+    .filter((group) => groupIds.has(group.id) && group.locationId)
+    .map((group) => group.locationId as string);
 }
 
 export function useLocations() {
@@ -49,11 +64,17 @@ export function useLocations() {
 
 export function useAccessibleLocations() {
   const query = useLocations();
+  const scheduleGroupsQuery = useScheduleGroups();
   const { role, scope } = usePermissions();
 
+  const groupScopeLocationIds = useMemo(
+    () => locationIdsFromScheduleGroupScope(scope, scheduleGroupsQuery.data ?? []),
+    [scope, scheduleGroupsQuery.data]
+  );
+
   const locations = useMemo(
-    () => filterAccessibleLocations(query.data ?? [], role, scope),
-    [query.data, role, scope]
+    () => filterAccessibleLocations(query.data ?? [], role, scope, groupScopeLocationIds),
+    [query.data, role, scope, groupScopeLocationIds]
   );
 
   return { ...query, locations };

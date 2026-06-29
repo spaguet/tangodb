@@ -17,6 +17,11 @@ import {
   canAddPersonalFromGrid,
   canOfferGroupLessonAdd,
 } from "../src/lib/scheduleLessonAccess.ts";
+import { canViewGroupAttendanceLesson } from "../src/lib/teacherAttendanceAccess.ts";
+import {
+  filterAccessibleLocations,
+  locationIdsFromScheduleGroupScope,
+} from "../src/hooks/useLocations.ts";
 
 const ROLES = ["owner", "director", "admin", "teacher", "accountant"];
 const ALL_PANELS = [
@@ -91,6 +96,48 @@ assert(can("teacher", "personal_lessons.sell", {
 }), "teacher personal sell when org flag on");
 assert(!can("teacher", "personal_lessons.sell", optsFor("teacher")), "teacher no personal sell default");
 assert(can("teacher", "attendance.write", optsFor("teacher")), "teacher attendance");
+assert(!can("teacher", "subscriptions.sell", optsFor("teacher")), "teacher no sub sell default");
+
+const scopedGroupTeacher = {
+  discipline_ids: [],
+  location_ids: [],
+  schedule_group_ids: ["group-1"],
+  all_disciplines: false,
+  all_locations: true,
+  all_groups: false,
+  can_view_all_clients: false,
+};
+assert(
+  canViewGroupAttendanceLesson("teacher", "teacher-member-1", scopedGroupTeacher, {
+    scheduleGroupId: "group-1",
+    teacherMemberId: "other-teacher",
+  }),
+  "teacher sees group lesson when schedule group is in scope (not only when assigned)"
+);
+assert(
+  !canViewGroupAttendanceLesson("teacher", "teacher-member-1", scopedGroupTeacher, {
+    scheduleGroupId: "group-2",
+    teacherMemberId: "teacher-member-1",
+  }),
+  "teacher cannot see group outside scope"
+);
+assert(
+  filterAccessibleLocations(
+    [{ id: "loc-1", name: "A", address: "" }],
+    "teacher",
+    { ...scopedGroupTeacher, all_locations: false, location_ids: [] },
+    ["loc-1"]
+  ).length === 1,
+  "teacher locations include schedule group locations"
+);
+assert(
+  locationIdsFromScheduleGroupScope(scopedGroupTeacher, [
+    { id: "group-1", locationId: "loc-1" },
+    { id: "group-2", locationId: "loc-2" },
+  ]).join(",") === "loc-1",
+  "locationIdsFromScheduleGroupScope maps scoped groups"
+);
+
 assert(!can("teacher", "subscriptions.sell", optsFor("teacher")), "teacher no sub sell default");
 assert(can("teacher", "prices.read", optsFor("teacher")), "teacher prices.read with scope (for sales)");
 assert(!can("teacher", "prices.read", { scope: emptyTeacherScope }), "empty teacher no prices.read");
