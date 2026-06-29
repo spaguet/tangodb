@@ -107,6 +107,8 @@ function mapSettings(row: Record<string, unknown>): OrganizationSettings {
     low_balance_threshold: row.low_balance_threshold as number,
     teachers_can_manage_disciplines: row.teachers_can_manage_disciplines as boolean,
     teachers_can_sell_subscriptions: (row.teachers_can_sell_subscriptions as boolean) ?? false,
+    teachers_can_sell_personal_lessons: (row.teachers_can_sell_personal_lessons as boolean) ?? false,
+    directors_can_mark_attendance: (row.directors_can_mark_attendance as boolean) ?? true,
     teachers_can_edit_clients: (row.teachers_can_edit_clients as boolean) ?? false,
     teachers_can_export: (row.teachers_can_export as boolean) ?? false,
     teachers_can_view_full_schedule: (row.teachers_can_view_full_schedule as boolean) ?? true,

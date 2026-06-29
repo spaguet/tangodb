@@ -10,8 +10,10 @@ import {
 export const EMPTY_TEACHER_SCOPE: TeacherScope = {
   discipline_ids: [],
   location_ids: [],
+  schedule_group_ids: [],
   all_disciplines: false,
   all_locations: false,
+  all_groups: false,
   can_view_all_clients: false,
 };
 
@@ -88,6 +90,8 @@ export interface PermissionOptions {
   modules?: OrgModules;
   teachersCanManageDisciplines?: boolean;
   teachersCanSellSubscriptions?: boolean;
+  teachersCanSellPersonalLessons?: boolean;
+  directorsCanMarkAttendance?: boolean;
   teachersCanEditClients?: boolean;
   teachersCanExport?: boolean;
   teachersCanViewFullSchedule?: boolean;
@@ -174,8 +178,10 @@ export function teacherHasAnyScopeAccess(scope: TeacherScope): boolean {
   return (
     scope.all_disciplines ||
     scope.all_locations ||
+    scope.all_groups ||
     scope.discipline_ids.length > 0 ||
-    scope.location_ids.length > 0
+    scope.location_ids.length > 0 ||
+    scope.schedule_group_ids.length > 0
   );
 }
 
@@ -247,6 +253,23 @@ function teachersCanSellSubscriptions(options?: PermissionOptions): boolean {
   return options?.teachersCanSellSubscriptions ?? false;
 }
 
+function teachersCanSellPersonalLessons(options?: PermissionOptions): boolean {
+  return options?.teachersCanSellPersonalLessons ?? false;
+}
+
+function directorsCanMarkAttendance(options?: PermissionOptions): boolean {
+  return options?.directorsCanMarkAttendance ?? true;
+}
+
+function canAccessAttendanceJournal(role: MemberRole, options?: PermissionOptions): boolean {
+  if (canReceptionWrite(role, options)) return true;
+  if (role === "owner") return true;
+  if (role === "director") return directorsCanMarkAttendance(options);
+  if (role === "admin") return isFullOperationalAdmin(role, options);
+  if (role === "teacher") return teacherHasAnyScopeAccess(options?.scope ?? EMPTY_TEACHER_SCOPE);
+  return false;
+}
+
 function personalLessonsModuleEnabled(options?: PermissionOptions): boolean {
   return isModuleEnabled(options?.modules ?? DEFAULT_ORG_MODULES, "personal_lessons");
 }
@@ -255,6 +278,8 @@ export function permissionOptionsFromSettings(
   settings: {
     teachers_can_manage_disciplines?: boolean;
     teachers_can_sell_subscriptions?: boolean;
+    teachers_can_sell_personal_lessons?: boolean;
+    directors_can_mark_attendance?: boolean;
     teachers_can_edit_clients?: boolean;
     teachers_can_export?: boolean;
     teachers_can_view_full_schedule?: boolean;
@@ -272,6 +297,8 @@ export function permissionOptionsFromSettings(
     scope,
     teachersCanManageDisciplines: settings?.teachers_can_manage_disciplines ?? false,
     teachersCanSellSubscriptions: settings?.teachers_can_sell_subscriptions ?? false,
+    teachersCanSellPersonalLessons: settings?.teachers_can_sell_personal_lessons ?? false,
+    directorsCanMarkAttendance: settings?.directors_can_mark_attendance ?? true,
     teachersCanEditClients: settings?.teachers_can_edit_clients ?? false,
     teachersCanExport: settings?.teachers_can_export ?? false,
     teachersCanViewFullSchedule: settings?.teachers_can_view_full_schedule ?? true,
@@ -388,7 +415,7 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
     case "attendance.read":
     case "attendance.write":
       if (canReceptionWrite(role, options)) return true;
-      return canReadScopedCrm(role, scope, context, options);
+      return canAccessAttendanceJournal(role, options);
 
     case "schedule.read":
       if (isFullOperationalAdmin(role, options)) return true;
@@ -415,8 +442,13 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       }
       return false;
     case "personal_lessons.write":
+      if (!personalLessonsModuleEnabled(options)) return false;
+      return canWriteScopedCrm(role, scope, context, options);
     case "personal_lessons.sell":
       if (!personalLessonsModuleEnabled(options)) return false;
+      if (role === "teacher") {
+        return teachersCanSellPersonalLessons(options) && teacherMatchesContext(scope, context);
+      }
       return canWriteScopedCrm(role, scope, context, options);
 
     case "prices.read":
@@ -668,8 +700,10 @@ export function assertReceptionPermissions(): void {
   const teacherScope: TeacherScope = {
     discipline_ids: ["d1"],
     location_ids: [],
+    schedule_group_ids: [],
     all_disciplines: false,
     all_locations: false,
+    all_groups: false,
     can_view_all_clients: false,
   };
   const teacherOpts: PermissionOptions = { scope: teacherScope };
@@ -717,8 +751,10 @@ export function assertReceptionPermissions(): void {
   const emptyTeacherScope: TeacherScope = {
     discipline_ids: [],
     location_ids: [],
+    schedule_group_ids: [],
     all_disciplines: false,
     all_locations: false,
+    all_groups: false,
     can_view_all_clients: false,
   };
   const emptyTeacherOpts: PermissionOptions = { scope: emptyTeacherScope };
@@ -768,8 +804,10 @@ export function assertPayrollPermissions(): void {
   const teacherScope: TeacherScope = {
     discipline_ids: ["d1"],
     location_ids: [],
+    schedule_group_ids: [],
     all_disciplines: false,
     all_locations: false,
+    all_groups: false,
     can_view_all_clients: false,
   };
   const teacherOpts: PermissionOptions = { scope: teacherScope };

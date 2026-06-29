@@ -234,6 +234,7 @@ export default function SubscriptionsPanel({
   // Date activation - defaults to today
   const [activationDate, setActivationDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [paymentMethodComment, setPaymentMethodComment] = useState("");
 
   useEffect(() => {
     if (groupTariffs.length > 0 && selectedTariffId === "") {
@@ -333,6 +334,11 @@ export default function SubscriptionsPanel({
       return;
     }
 
+    if (paymentMethod === "other" && !paymentMethodComment.trim()) {
+      toast(t("subscriptions.sell.paymentCommentRequired"), "error");
+      return;
+    }
+
     const { type, pairMonth, billingModel } = deriveSubscriptionTypeFromTariff(selectedTariff);
 
     const payload = {
@@ -365,6 +371,7 @@ export default function SubscriptionsPanel({
         clientLastName: c1?.lastName ?? "",
         amount,
         method: paymentMethod,
+        methodComment: paymentMethod === "other" ? paymentMethodComment.trim() : undefined,
       });
       if (!paymentRes.success) {
         toast(resolveMutationError(paymentRes.error, "subscriptions.error.paymentFailed", t), "error");
@@ -378,6 +385,7 @@ export default function SubscriptionsPanel({
     setClient2Query("");
     setClient2Id("");
     setSelectedGroupIds([]);
+    setPaymentMethodComment("");
   };
 
   const handleConfirmFinish = async () => {
@@ -1288,7 +1296,11 @@ export default function SubscriptionsPanel({
               <AppSelect
                 label={t("subscriptions.sell.paymentMethod")}
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                onChange={(e) => {
+                  const next = e.target.value as PaymentMethod;
+                  setPaymentMethod(next);
+                  if (next !== "other") setPaymentMethodComment("");
+                }}
               >
                 {PAYMENT_METHODS.map((method) => (
                   <option key={method} value={method}>
@@ -1296,6 +1308,20 @@ export default function SubscriptionsPanel({
                   </option>
                 ))}
               </AppSelect>
+
+              {paymentMethod === "other" && (
+                <div className="field-stack sm:col-span-2">
+                  <label className={labelCls}>{t("subscriptions.sell.paymentCommentLabel")}</label>
+                  <textarea
+                    value={paymentMethodComment}
+                    onChange={(e) => setPaymentMethodComment(e.target.value)}
+                    required
+                    rows={2}
+                    placeholder={t("subscriptions.sell.paymentCommentPlaceholder")}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none"
+                  />
+                </div>
+              )}
 
               <div className="field-stack">
                 <span className={labelCls}>{t("subscriptions.sell.totalDue")}</span>

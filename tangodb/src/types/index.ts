@@ -185,6 +185,7 @@ export interface Payment {
   clientDisplay: string;
   amount: number;
   method: PaymentMethod;
+  methodComment?: string | null;
   subscriptionId: string | null;
   personalLessonId: string | null;
   singleVisitId: string | null;

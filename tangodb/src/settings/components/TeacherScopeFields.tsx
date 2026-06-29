@@ -1,10 +1,13 @@
+import { useMemo } from "react";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useLocations } from "../../hooks/useLocations";
+import { useScheduleGroups } from "../../hooks/useScheduleGroups";
 import { useI18n } from "../../hooks/useI18n";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules } from "../../lib/orgModules";
 import { isTeacherScopeConfigured } from "../../lib/teacherScope";
 import type { TeacherScope } from "../../types/organization";
+import GroupCheckboxDropdown from "../../components/ui/GroupCheckboxDropdown";
 
 const labelCls =
   "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
@@ -21,24 +24,40 @@ export default function TeacherScopeFields({ value, onChange, disabled = false }
   const modules = normalizeOrgModules(settings?.modules);
   const disciplinesQuery = useDisciplines();
   const locationsQuery = useLocations();
+  const scheduleGroupsQuery = useScheduleGroups();
 
   const patch = (partial: Partial<TeacherScope>) => {
     onChange({ ...value, ...partial });
   };
 
-  const toggleDiscipline = (id: string) => {
-    const next = value.discipline_ids.includes(id)
-      ? value.discipline_ids.filter((item) => item !== id)
-      : [...value.discipline_ids, id];
-    patch({ discipline_ids: next });
-  };
+  const locationNameById = useMemo(
+    () =>
+      Object.fromEntries((locationsQuery.data ?? []).map((location) => [location.id, location.name])),
+    [locationsQuery.data]
+  );
 
-  const toggleLocation = (id: string) => {
-    const next = value.location_ids.includes(id)
-      ? value.location_ids.filter((item) => item !== id)
-      : [...value.location_ids, id];
-    patch({ location_ids: next });
-  };
+  const groupOptions = useMemo(
+    () =>
+      (scheduleGroupsQuery.data ?? []).map((group) => {
+        const locationPrefix = group.locationId
+          ? `${locationNameById[group.locationId] ?? t("team.scope.unknownLocation")} · `
+          : "";
+        return {
+          key: group.id,
+          label: `${locationPrefix}${group.name.trim() || t("team.scope.defaultGroup")}`,
+        };
+      }),
+    [scheduleGroupsQuery.data, locationNameById, t]
+  );
+
+  const disciplineOptions = useMemo(
+    () =>
+      (disciplinesQuery.data ?? []).map((discipline) => ({
+        key: discipline.id,
+        label: discipline.name,
+      })),
+    [disciplinesQuery.data]
+  );
 
   return (
     <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
@@ -47,52 +66,53 @@ export default function TeacherScopeFields({ value, onChange, disabled = false }
         <p className="text-[11px] text-slate-500 mt-0.5">{t("team.scope.hint")}</p>
       </div>
 
-      <label className="flex items-start gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={value.all_disciplines}
-          disabled={disabled}
-          onChange={(e) => patch({ all_disciplines: e.target.checked })}
-          className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-        />
-        <span className="text-sm text-slate-700">{t("team.scope.allDisciplines")}</span>
-      </label>
+      <div className="space-y-2">
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={value.all_groups}
+            disabled={disabled}
+            onChange={(e) => patch({ all_groups: e.target.checked })}
+            className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <span className="text-sm text-slate-700">{t("team.scope.allGroups")}</span>
+        </label>
 
-      {!value.all_disciplines && (
-        <div className="space-y-1.5 pl-1">
-          <span className={labelCls}>{t("team.scope.disciplines")}</span>
-          {disciplinesQuery.isLoading ? (
-            <p className="text-xs text-slate-400">{t("common.loading.default")}</p>
-          ) : (disciplinesQuery.data ?? []).length === 0 ? (
-            <p className="text-xs text-slate-400">{t("team.scope.noDisciplines")}</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {(disciplinesQuery.data ?? []).map((discipline) => {
-                const checked = value.discipline_ids.includes(discipline.id);
-                return (
-                  <label
-                    key={discipline.id}
-                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs cursor-pointer ${
-                      checked
-                        ? "border-indigo-200 bg-indigo-50 text-indigo-800"
-                        : "border-slate-200 bg-white text-slate-600"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={disabled}
-                      onChange={() => toggleDiscipline(discipline.id)}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    {discipline.name}
-                  </label>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+        {!value.all_groups && (
+          <GroupCheckboxDropdown
+            label={t("team.scope.groupsAccess")}
+            options={groupOptions}
+            selectedKeys={value.schedule_group_ids}
+            onChange={(schedule_group_ids) => patch({ schedule_group_ids })}
+            disabled={disabled}
+            emptyMessage={t("team.scope.noGroups")}
+          />
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={value.all_disciplines}
+            disabled={disabled}
+            onChange={(e) => patch({ all_disciplines: e.target.checked })}
+            className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <span className="text-sm text-slate-700">{t("team.scope.allSalesDisciplines")}</span>
+        </label>
+
+        {!value.all_disciplines && (
+          <GroupCheckboxDropdown
+            label={t("team.scope.salesDisciplinesAccess")}
+            options={disciplineOptions}
+            selectedKeys={value.discipline_ids}
+            onChange={(discipline_ids) => patch({ discipline_ids })}
+            disabled={disabled}
+            emptyMessage={t("team.scope.noDisciplines")}
+          />
+        )}
+      </div>
 
       {modules.locations && (
         <>
@@ -131,7 +151,12 @@ export default function TeacherScopeFields({ value, onChange, disabled = false }
                           type="checkbox"
                           checked={checked}
                           disabled={disabled}
-                          onChange={() => toggleLocation(location.id)}
+                          onChange={() => {
+                            const next = checked
+                              ? value.location_ids.filter((id) => id !== location.id)
+                              : [...value.location_ids, location.id];
+                            patch({ location_ids: next });
+                          }}
                           className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                         />
                         {location.name}

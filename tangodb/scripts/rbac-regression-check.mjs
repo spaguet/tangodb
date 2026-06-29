@@ -36,8 +36,10 @@ const ALL_PANELS = [
 const teacherScope = {
   discipline_ids: ["d1"],
   location_ids: [],
+  schedule_group_ids: [],
   all_disciplines: true,
   all_locations: false,
+  all_groups: true,
   can_view_all_clients: true,
 };
 
@@ -78,8 +80,17 @@ assert(!can("admin", "dashboard.export", optsFor("admin")), "admin no export by 
 assert(can("admin", "prices.read", optsFor("admin")), "admin prices.read");
 assert(!can("admin", "disciplines.write", optsFor("admin")), "admin no disciplines.write (RBAC-6)");
 assert(can("admin", "disciplines.read", optsFor("admin")), "admin disciplines.read (RBAC-6)");
+assert(can("director", "attendance.write", optsFor("director")), "director attendance default");
+assert(!can("director", "attendance.write", {
+  ...optsFor("director"),
+  directorsCanMarkAttendance: false,
+}), "director no attendance when flag off");
+assert(can("teacher", "personal_lessons.sell", {
+  ...optsFor("teacher"),
+  teachersCanSellPersonalLessons: true,
+}), "teacher personal sell when org flag on");
+assert(!can("teacher", "personal_lessons.sell", optsFor("teacher")), "teacher no personal sell default");
 assert(can("teacher", "attendance.write", optsFor("teacher")), "teacher attendance");
-assert(can("teacher", "personal_lessons.sell", optsFor("teacher")), "teacher personal sell");
 assert(!can("teacher", "subscriptions.sell", optsFor("teacher")), "teacher no sub sell default");
 assert(can("teacher", "prices.read", optsFor("teacher")), "teacher prices.read with scope (for sales)");
 assert(!can("teacher", "prices.read", { scope: emptyTeacherScope }), "empty teacher no prices.read");

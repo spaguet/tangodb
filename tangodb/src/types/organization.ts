@@ -28,8 +28,10 @@ export type OrgPreset = "dance_school" | "solo_teacher" | "sport_section" | "gym
 export interface TeacherScope {
   discipline_ids: string[];
   location_ids: string[];
+  schedule_group_ids: string[];
   all_disciplines: boolean;
   all_locations: boolean;
+  all_groups: boolean;
   can_view_all_clients: boolean;
 }
 
@@ -96,6 +98,8 @@ export interface OrganizationSettings {
   low_balance_threshold: number;
   teachers_can_manage_disciplines: boolean;
   teachers_can_sell_subscriptions: boolean;
+  teachers_can_sell_personal_lessons: boolean;
+  directors_can_mark_attendance: boolean;
   teachers_can_edit_clients: boolean;
   teachers_can_export: boolean;
   teachers_can_view_full_schedule: boolean;
@@ -114,8 +118,10 @@ export interface OrganizationSettings {
 export const EMPTY_TEACHER_SCOPE: TeacherScope = {
   discipline_ids: [],
   location_ids: [],
+  schedule_group_ids: [],
   all_disciplines: false,
   all_locations: false,
+  all_groups: false,
   can_view_all_clients: false,
 };
 

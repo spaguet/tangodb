@@ -32,6 +32,11 @@ import {
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
+import { useOrganization } from "../organization/OrganizationProvider";
+import {
+  canViewGroupAttendanceLesson,
+  canViewPersonalAttendanceLesson,
+} from "../lib/teacherAttendanceAccess";
 import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { PAYMENT_METHOD_KEYS } from "../hooks/usePayments";
 import { useSettings } from "../settings/SettingsProvider";
@@ -130,6 +135,7 @@ type DayLessonEntry =
       disciplineId?: string | null;
       locationId?: string | null;
       scheduleGroupId?: string | null;
+      teacherMemberId?: string | null;
     }
   | { kind: "personal"; key: string; start: string; lesson: PersonalLesson; label: string };
 
@@ -271,9 +277,60 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     [locationPersonalLessons, selectedDate]
   );
 
+  const { can, isReadOnly } = usePermissions();
+  const { role, memberId, scope, settings: orgSettings } = useOrganization();
+  const attendanceAccessOptions = useMemo(
+    () => ({ directorsCanMarkAttendance: orgSettings?.directors_can_mark_attendance ?? true }),
+    [orgSettings?.directors_can_mark_attendance]
+  );
+
+  const accessibleGroupLessonsForDay = useMemo(
+    () =>
+      groupLessonsForDay.filter((slot) =>
+        canViewGroupAttendanceLesson(
+          role,
+          memberId,
+          scope,
+          { scheduleGroupId: slot.scheduleGroupId, teacherMemberId: slot.teacherMemberId },
+          attendanceAccessOptions
+        )
+      ),
+    [groupLessonsForDay, role, memberId, scope, attendanceAccessOptions]
+  );
+
+  const accessiblePersonalForDay = useMemo(
+    () =>
+      personalForDay.filter((lesson) =>
+        canViewPersonalAttendanceLesson(role, memberId, lesson, attendanceAccessOptions)
+      ),
+    [personalForDay, role, memberId, attendanceAccessOptions]
+  );
+
+  const accessibleMonthGroupDates = useMemo(
+    () =>
+      monthScheduleDates.filter((slot) =>
+        canViewGroupAttendanceLesson(
+          role,
+          memberId,
+          scope,
+          { scheduleGroupId: slot.scheduleGroupId, teacherMemberId: slot.teacherMemberId },
+          attendanceAccessOptions
+        )
+      ),
+    [monthScheduleDates, role, memberId, scope, attendanceAccessOptions]
+  );
+
+  const accessibleLocationPersonalLessons = useMemo(
+    () =>
+      locationPersonalLessons.filter((lesson) =>
+        canViewPersonalAttendanceLesson(role, memberId, lesson, attendanceAccessOptions)
+      ),
+    [locationPersonalLessons, role, memberId, attendanceAccessOptions]
+  );
+
   const dayScheduleEntries = useMemo((): DayLessonEntry[] => {
     const entries: DayLessonEntry[] = [
-      ...groupLessonsForDay
+      ...accessibleGroupLessonsForDay
         .filter((slot) => slot.scheduleGroupId)
         .map((slot) => ({
         kind: "group" as const,
@@ -285,11 +342,12 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         disciplineId: slot.disciplineId ?? null,
         locationId: slot.locationId ?? null,
         scheduleGroupId: slot.scheduleGroupId ?? null,
+        teacherMemberId: slot.teacherMemberId ?? null,
         label: slot.groupName
           ? `${slot.groupName} · ${slot.time} – ${slot.timeEnd}`
           : t("attendance.groupLessonTime", { time: slot.time, timeEnd: slot.timeEnd }),
       })),
-      ...personalForDay.map((lesson) => ({
+      ...accessiblePersonalForDay.map((lesson) => ({
         kind: "personal" as const,
         start: lesson.timeStart,
         key: `p-${lesson.id}`,
@@ -298,7 +356,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       })),
     ];
     return entries.sort((a, b) => a.start.localeCompare(b.start));
-  }, [groupLessonsForDay, personalForDay, t]);
+  }, [accessibleGroupLessonsForDay, accessiblePersonalForDay, t]);
 
   const subsOptions = useMemo(() => {
     if (!selectedLesson) return undefined;
@@ -326,7 +384,6 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const markAttendance = useMarkAttendance();
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
   const recordSingleVisit = useRecordSingleVisit();
-  const { can, isReadOnly } = usePermissions();
   const { freezePolicy } = useSettings();
   const isLoading =
     locationsLoading ||
@@ -352,6 +409,27 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     clientsQuery.error ??
     singleVisitsQuery.error;
   const canMarkAttendance = isDateMarkable(selectedDate) && can("attendance.write");
+  const canMarkSelectedLesson = useMemo(() => {
+    if (!canMarkAttendance || !selectedLesson) return canMarkAttendance;
+    if (selectedLesson.kind === "group") {
+      return canViewGroupAttendanceLesson(
+        role,
+        memberId,
+        scope,
+        {
+          scheduleGroupId: selectedLesson.scheduleGroupId,
+          teacherMemberId: selectedLesson.teacherMemberId,
+        },
+        attendanceAccessOptions
+      );
+    }
+    return canViewPersonalAttendanceLesson(
+      role,
+      memberId,
+      selectedLesson.lesson,
+      attendanceAccessOptions
+    );
+  }, [canMarkAttendance, selectedLesson, role, memberId, scope, attendanceAccessOptions]);
 
   const calendarCells = useMemo(() => {
     const [year, month] = selectedMonth.split("-").map(Number);
@@ -361,9 +439,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     const daysInMonth = new Date(year, month, 0).getDate();
     const startOffset = (jsDayToIsoDow(firstDay.getDay()) + 6) % 7;
 
-    const groupDates = new Set(monthScheduleDates.map((d) => d.date));
+    const groupDates = new Set(accessibleMonthGroupDates.map((d) => d.date));
     const personalDates = new Set(
-      locationPersonalLessons.filter((l) => l.date.startsWith(selectedMonth)).map((l) => l.date)
+      accessibleLocationPersonalLessons.filter((l) => l.date.startsWith(selectedMonth)).map((l) => l.date)
     );
 
     const cells: Array<{
@@ -393,7 +471,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     }
 
     return cells;
-  }, [selectedMonth, monthScheduleDates, locationPersonalLessons]);
+  }, [selectedMonth, accessibleMonthGroupDates, accessibleLocationPersonalLessons]);
 
   const handleMonthNav = (delta: number) => {
     const nextMonth = shiftMonth(selectedMonth, delta);
@@ -415,7 +493,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
-    if (!canMarkAttendance) {
+    if (!canMarkSelectedLesson) {
       toast(t("attendance.error.pastOnly"), "error");
       return;
     }
@@ -463,7 +541,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
-    if (!canMarkAttendance) {
+    if (!canMarkSelectedLesson) {
       toast(t("attendance.error.pastOnly"), "error");
       return;
     }
@@ -597,7 +675,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <button
             type="button"
             onClick={() => handleMark(st.subId, "present", st)}
-            disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
+            disabled={connectionState !== "online" || !canMarkSelectedLesson || markAttendance.isPending}
             title={
               connectionTitle ??
               (isMonthly ? t("common.present") : t("attendance.titlePresentDeduct"))
@@ -615,7 +693,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <button
             type="button"
             onClick={() => handleMark(st.subId, "absent", st)}
-            disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
+            disabled={connectionState !== "online" || !canMarkSelectedLesson || markAttendance.isPending}
             title={
               connectionTitle ??
               (isMonthly ? t("common.absent") : t("attendance.titleAbsentDeduct"))
@@ -634,7 +712,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             <button
               type="button"
               onClick={() => handleMark(st.subId, "freeze", st)}
-              disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending || freezeLocked}
+              disabled={connectionState !== "online" || !canMarkSelectedLesson || markAttendance.isPending || freezeLocked}
               title={
                 connectionTitle ??
                 (freezeLocked
@@ -658,7 +736,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             <button
               type="button"
               onClick={() => handleMark(st.subId, "excused", st)}
-            disabled={connectionState !== "online" || !canMarkAttendance || markAttendance.isPending}
+            disabled={connectionState !== "online" || !canMarkSelectedLesson || markAttendance.isPending}
             title={connectionTitle ?? t("attendance.titleExcusedNoDeduct")}
             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "excused"
@@ -1144,7 +1222,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       )}
                     </div>
 
-                    {!canMarkAttendance ? (
+                    {!canMarkSelectedLesson ? (
                       <p className="text-[11px] text-amber-600 font-sans">
                         {t("attendance.error.pastOnly")}
                       </p>
@@ -1228,7 +1306,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 ) : (
                   <div>
                     {renderSingleVisitPanel()}
-                    {!canMarkAttendance && (
+                    {!canMarkSelectedLesson && (
                       <p className="text-[11px] text-amber-600 font-sans mb-3">
                         {t("attendance.error.pastOnly")}
                       </p>

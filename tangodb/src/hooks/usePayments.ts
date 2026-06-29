@@ -14,7 +14,7 @@ import { financialDebtorsQueryKey } from "./useFinancialDebtors";
 export const paymentsQueryKey = ["payments"] as const;
 
 const PAYMENTS_SELECT =
-  "id, client_id, client_display, amount, method, subscription_id, personal_lesson_id, single_visit_id, created_at";
+  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, single_visit_id, created_at";
 
 const mapPayment = (row: Record<string, unknown>): Payment => ({
   id: row.id as string,
@@ -22,6 +22,7 @@ const mapPayment = (row: Record<string, unknown>): Payment => ({
   clientDisplay: (row.client_display as string) || "",
   amount: Number(row.amount) || 0,
   method: (row.method as PaymentMethod) || "cash",
+  methodComment: row.method_comment != null ? String(row.method_comment) : null,
   subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
   personalLessonId: row.personal_lesson_id != null ? (row.personal_lesson_id as string) : null,
   singleVisitId: row.single_visit_id != null ? (row.single_visit_id as string) : null,
@@ -127,11 +128,13 @@ export function useRecordSubscriptionPayment() {
       clientLastName: string;
       amount: number;
       method: PaymentMethod;
+      methodComment?: string;
     }) => {
       const { data, error } = await supabase.rpc("record_subscription_payment", {
         p_subscription_id: input.subscriptionId,
         p_amount: input.amount,
         p_method: input.method,
+        p_method_comment: input.methodComment ?? null,
       });
 
       if (error) return { success: false as const, error: error.message };

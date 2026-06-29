@@ -39,6 +39,8 @@ const MODULE_GROUP_LABEL_KEYS: Record<OrgModuleGroupId, I18nKey> = {
 const ROLE_OVERRIDE_KEYS: {
   key:
     | "teachers_can_sell_subscriptions"
+    | "teachers_can_sell_personal_lessons"
+    | "directors_can_mark_attendance"
     | "teachers_can_edit_clients"
     | "teachers_can_export"
     | "teachers_can_view_full_schedule"
@@ -52,6 +54,8 @@ const ROLE_OVERRIDE_KEYS: {
   hintKey?: I18nKey;
 }[] = [
   { key: "teachers_can_sell_subscriptions", labelKey: "settings.org.role.teachersSellSubs" },
+  { key: "teachers_can_sell_personal_lessons", labelKey: "settings.org.role.teachersSellPersonal" },
+  { key: "directors_can_mark_attendance", labelKey: "settings.org.role.directorsMarkAttendance", hintKey: "common.defaultOn" },
   { key: "teachers_can_edit_clients", labelKey: "settings.org.role.teachersEditClients" },
   { key: "teachers_can_export", labelKey: "settings.org.role.teachersExport" },
   { key: "teachers_can_record_single_visits", labelKey: "settings.org.role.teachersRecordSingleVisits" },
@@ -102,6 +106,8 @@ export default function OrganizationSettingsPage() {
   const [modules, setModules] = useState<OrgModules>(PRESET_MODULES.dance_school);
   const [teachersCanManageDisciplines, setTeachersCanManageDisciplines] = useState(false);
   const [teachersCanSellSubscriptions, setTeachersCanSellSubscriptions] = useState(false);
+  const [teachersCanSellPersonalLessons, setTeachersCanSellPersonalLessons] = useState(false);
+  const [directorsCanMarkAttendance, setDirectorsCanMarkAttendance] = useState(true);
   const [teachersCanEditClients, setTeachersCanEditClients] = useState(false);
   const [teachersCanExport, setTeachersCanExport] = useState(false);
   const [teachersCanViewFullSchedule, setTeachersCanViewFullSchedule] = useState(true);
@@ -120,6 +126,8 @@ export default function OrganizationSettingsPage() {
     setModules(settings.modules);
     setTeachersCanManageDisciplines(settings.teachers_can_manage_disciplines);
     setTeachersCanSellSubscriptions(settings.teachers_can_sell_subscriptions);
+    setTeachersCanSellPersonalLessons(settings.teachers_can_sell_personal_lessons);
+    setDirectorsCanMarkAttendance(settings.directors_can_mark_attendance);
     setTeachersCanEditClients(settings.teachers_can_edit_clients);
     setTeachersCanExport(settings.teachers_can_export);
     setTeachersCanViewFullSchedule(settings.teachers_can_view_full_schedule);
@@ -156,6 +164,8 @@ export default function OrganizationSettingsPage() {
       modules,
       teachers_can_manage_disciplines: teachersCanManageDisciplines,
       teachers_can_sell_subscriptions: teachersCanSellSubscriptions,
+      teachers_can_sell_personal_lessons: teachersCanSellPersonalLessons,
+      directors_can_mark_attendance: directorsCanMarkAttendance,
       teachers_can_edit_clients: teachersCanEditClients,
       teachers_can_export: teachersCanExport,
       teachers_can_view_full_schedule: teachersCanViewFullSchedule,
@@ -246,6 +256,8 @@ export default function OrganizationSettingsPage() {
             {ROLE_OVERRIDE_KEYS.map(({ key, labelKey, hintKey }) => {
               const checkedMap = {
                 teachers_can_sell_subscriptions: teachersCanSellSubscriptions,
+                teachers_can_sell_personal_lessons: teachersCanSellPersonalLessons,
+                directors_can_mark_attendance: directorsCanMarkAttendance,
                 teachers_can_edit_clients: teachersCanEditClients,
                 teachers_can_export: teachersCanExport,
                 teachers_can_view_full_schedule: teachersCanViewFullSchedule,
@@ -258,6 +270,8 @@ export default function OrganizationSettingsPage() {
               } as const;
               const setters = {
                 teachers_can_sell_subscriptions: setTeachersCanSellSubscriptions,
+                teachers_can_sell_personal_lessons: setTeachersCanSellPersonalLessons,
+                directors_can_mark_attendance: setDirectorsCanMarkAttendance,
                 teachers_can_edit_clients: setTeachersCanEditClients,
                 teachers_can_export: setTeachersCanExport,
                 teachers_can_view_full_schedule: setTeachersCanViewFullSchedule,

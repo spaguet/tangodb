@@ -310,7 +310,7 @@ function AppLayout() {
         </aside>
 
         {/* Mobile bottom tab bar: most frequent daily actions */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-1 shadow-md pb-[env(safe-area-inset-bottom)]">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-0.5 shadow-md pb-[env(safe-area-inset-bottom)]">
           {mobileTabs.filter((item) => {
             if (item.moduleKey && !orgModules[item.moduleKey]) return false;
             return canAccessPanel(panelIdFromPath(item.path));
@@ -324,15 +324,15 @@ function AppLayout() {
               <button
                 key={`${item.path}-${item.line1}`}
                 onClick={() => go(item)}
-                className={`flex flex-col items-center justify-center gap-1 px-1 py-0 min-w-0 flex-1 cursor-pointer transition-colors ${
+                className={`flex flex-col items-center justify-center gap-0.5 px-0.5 py-0 min-w-0 flex-1 cursor-pointer transition-colors ${
                   active ? "text-indigo-600" : "text-slate-400"
                 }`}
               >
-                <Icon className="w-5 h-5 shrink-0" />
-                <span className="text-[10px] font-semibold uppercase tracking-wide leading-none text-center">
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="text-[9px] font-semibold uppercase tracking-wide leading-none text-center">
                   {item.line1}
                 </span>
-                <span className="text-[10px] font-semibold uppercase tracking-wide leading-none text-center">
+                <span className="text-[9px] font-semibold uppercase tracking-wide leading-none text-center">
                   {item.line2}
                 </span>
               </button>
@@ -340,7 +340,7 @@ function AppLayout() {
           })}
         </div>
 
-        <main className="flex-1 flex flex-col min-h-screen pb-16 md:pb-0 font-sans">
+        <main className="flex-1 flex flex-col min-h-screen pb-14 md:pb-0 font-sans">
           <header className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between z-20 shadow-xs">
             <div className="flex items-center gap-3">
               <button
@@ -438,7 +438,7 @@ function AppLayout() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="fixed bottom-20 md:bottom-8 right-4 left-4 md:left-auto max-w-sm md:w-96 bg-white border border-slate-200 text-slate-800 text-xs font-normal rounded-xl px-4 py-3 shadow-lg z-[60] flex items-center gap-3"
+              className="fixed bottom-[3.75rem] md:bottom-8 right-4 left-4 md:left-auto max-w-sm md:w-96 bg-white border border-slate-200 text-slate-800 text-xs font-normal rounded-xl px-4 py-3 shadow-lg z-[60] flex items-center gap-3"
               role="status"
             >
               <ToastIcon className={`w-4.5 h-4.5 shrink-0 ${TOAST_STYLES[toast.type].accent}`} />

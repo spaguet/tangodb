@@ -8,7 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
-2026-06-29 — fix: «Журнал изменений» в «Команда» всегда виден — секция не скрывается при пустом дне; кнопка «Полный журнал» открывает выбор дня (`AuditLogSection`, `TeamSettingsPage`).
+2026-06-29 — UX/RBAC: комментарий к способу оплаты «Другое» при продаже абонемента (обязательное поле, `payments.method_comment`, RPC); компактная мобильная нижняя панель; «Соло» → «Один человек» в i18n; настройки CRM `teachers_can_sell_personal_lessons`, `directors_can_mark_attendance`; scope преподавателя — «Доступ к группам» / «Доступ к продажам дисциплин»; журнал посещений фильтруется по назначенному преподавателю и scope групп; migration `20260810000001`.
 2026-06-29 — Dev tooling: правило `.cursor/rules/codegraph.mdc` (`alwaysApply`) — агент автоматически использует `codegraph_explore` вместо grep/read для indexed-кода.
 2026-06-29 — Dev tooling: установлен CodeGraph MCP для Cursor (`.cursor/mcp.json`), проиндексирован репозиторий (`.codegraph/`, в `.gitignore`).
 2026-06-28 — UX: журнал изменений — записи за текущий день, человекочитаемые scope/продажи/удаления, popup с выбором дня; «Трио-уроки» → «Персональные уроки до троих человек»; сокращены шаги сценария 2 покупки лицензии (`AuditLogSection`, `auditLogFormat`, `useOrgAuditLog`, i18n, `paymentConfig`).

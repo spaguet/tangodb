@@ -103,10 +103,14 @@ function clientsFromData(data: Record<string, unknown> | null, ctx: AuditFormatC
 function formatScopeLine(scope: unknown, translate: TranslateFn): string {
   const normalized = normalizeTeacherScope(scope);
   const parts: string[] = [
-    `${translate("team.scope.allDisciplines")}: ${normalized.all_disciplines ? translate("common.yes") : translate("common.no")}`,
+    `${translate("team.scope.allGroups")}: ${normalized.all_groups ? translate("common.yes") : translate("common.no")}`,
+    `${translate("team.scope.allSalesDisciplines")}: ${normalized.all_disciplines ? translate("common.yes") : translate("common.no")}`,
     `${translate("team.scope.allLocations")}: ${normalized.all_locations ? translate("common.yes") : translate("common.no")}`,
     `${translate("team.scope.allClients")}: ${normalized.can_view_all_clients ? translate("common.yes") : translate("common.no")}`,
   ];
+  if (!normalized.all_groups && normalized.schedule_group_ids.length > 0) {
+    parts.push(translate("team.auditScope.selectedGroups", { count: normalized.schedule_group_ids.length }));
+  }
   if (!normalized.all_disciplines && normalized.discipline_ids.length > 0) {
     parts.push(
       translate("team.auditScope.selectedDisciplines", { count: normalized.discipline_ids.length })
