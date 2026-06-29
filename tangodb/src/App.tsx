@@ -329,10 +329,10 @@ function AppLayout() {
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                <span className="text-[9px] font-semibold uppercase tracking-wide leading-none text-center">
+                <span className="text-[8px] font-semibold uppercase tracking-wide leading-none text-center">
                   {item.line1}
                 </span>
-                <span className="text-[9px] font-semibold uppercase tracking-wide leading-none text-center">
+                <span className="text-[8px] font-semibold uppercase tracking-wide leading-none text-center">
                   {item.line2}
                 </span>
               </button>

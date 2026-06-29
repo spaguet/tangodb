@@ -211,9 +211,6 @@ export default function PersonalLessonSaleForm({
     isTeacher,
     memberId,
     accessibleLocations,
-    disciplineId,
-    locationId,
-    teacherMemberId,
   ]);
 
   useEffect(() => {
