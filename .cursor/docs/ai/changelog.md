@@ -8,6 +8,9 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-29 — fix: «Журнал изменений» в «Команда» всегда виден — секция не скрывается при пустом дне; кнопка «Полный журнал» открывает выбор дня (`AuditLogSection`, `TeamSettingsPage`).
+2026-06-29 — Dev tooling: правило `.cursor/rules/codegraph.mdc` (`alwaysApply`) — агент автоматически использует `codegraph_explore` вместо grep/read для indexed-кода.
+2026-06-29 — Dev tooling: установлен CodeGraph MCP для Cursor (`.cursor/mcp.json`), проиндексирован репозиторий (`.codegraph/`, в `.gitignore`).
 2026-06-28 — UX: журнал изменений — записи за текущий день, человекочитаемые scope/продажи/удаления, popup с выбором дня; «Трио-уроки» → «Персональные уроки до троих человек»; сокращены шаги сценария 2 покупки лицензии (`AuditLogSection`, `auditLogFormat`, `useOrgAuditLog`, i18n, `paymentConfig`).
 2026-06-28 — fix: при выключенном модуле «Персональные уроки» скрыты тарифы персональных/пакетов, % по персональным в карточке члена команды, строки payroll; `can(personal_lessons.*)` учитывает `settings.modules` (`PricesPanel`, `MemberProfileModal`, `FinancePayrollPage`, `permissions`, `usePermissions`).
 2026-06-28 — UX: мобильное расписание — sticky колонка времени слева и sticky заголовки дня/даты сверху при прокрутке таблицы; компактные заголовки на маленьких экранах (`WeeklyScheduleGrid`, `DayColumn`, `LocationScheduleSection`).

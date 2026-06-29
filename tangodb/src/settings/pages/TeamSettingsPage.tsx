@@ -483,7 +483,7 @@ export default function TeamSettingsPage() {
         onCancel={() => setDeactivateTarget(null)}
       />
 
-      {canInvite && <AuditLogSection />}
+      <AuditLogSection />
     </div>
   );
 }

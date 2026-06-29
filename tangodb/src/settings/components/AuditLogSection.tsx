@@ -118,16 +118,13 @@ export default function AuditLogSection() {
     return { translate: t, memberNameByUserId, clientNameById };
   }, [members, clients, t, locale]);
 
-  if (todayLoading) return null;
-  if (todayRows.length === 0) return null;
-
   return (
     <>
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
             <ClipboardList className="w-4 h-4 text-indigo-500" />
-            {t("team.auditToday")}
+            {t("team.audit")}
           </h3>
           <button
             type="button"
@@ -137,13 +134,22 @@ export default function AuditLogSection() {
             {t("team.auditViewAll")}
           </button>
         </div>
-        <AuditLogList
-          rows={todayRows}
-          ctx={ctx}
-          formatDateTime={formatDateTime}
-          locale={locale}
-          emptyLabel={t("team.auditEmpty")}
-        />
+        {todayLoading ? (
+          <p className="text-xs text-slate-400 py-2">{t("common.loading.default")}</p>
+        ) : (
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              {t("team.auditToday")}
+            </p>
+            <AuditLogList
+              rows={todayRows}
+              ctx={ctx}
+              formatDateTime={formatDateTime}
+              locale={locale}
+              emptyLabel={t("team.auditEmpty")}
+            />
+          </>
+        )}
       </div>
 
       <AnimatePresence>
