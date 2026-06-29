@@ -307,31 +307,47 @@ export default function PayPersonalLessonModal({
               {bookingPaymentMode === "single" && (
                 <>
                   {lessonTariffs.length > 0 && (
-                    <AppSelect
-                      label={t("common.tariffPerLesson")}
-                      value={selectedLessonTariffId}
-                      onChange={(e) => {
-                        const id = e.target.value;
-                        if (id) applyLessonTariff(id);
-                      }}
-                    >
-                      {lessonTariffs.map((tariff) => (
-                        <option key={tariff.id} value={tariff.id!}>
-                          {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
-                        </option>
-                      ))}
-                    </AppSelect>
+                    <div className="flex flex-nowrap items-end gap-3 w-full">
+                      <div className="min-w-0 flex-1">
+                        <AppSelect
+                          label={t("common.tariffPerLesson")}
+                          value={selectedLessonTariffId}
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            if (id) applyLessonTariff(id);
+                          }}
+                        >
+                          {lessonTariffs.map((tariff) => (
+                            <option key={tariff.id} value={tariff.id!}>
+                              {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
+                            </option>
+                          ))}
+                        </AppSelect>
+                      </div>
+                      <div className="field-stack w-[7.5rem] shrink-0">
+                        <label className={labelCls}>{t("common.cost")}</label>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          value={customPrice}
+                          onChange={(e) => setCustomPrice(e.target.value)}
+                          className={`${fieldCls} font-semibold`}
+                        />
+                      </div>
+                    </div>
                   )}
-                  <div className="field-stack">
-                    <label className={labelCls}>{t("common.cost")}</label>
-                    <input
-                      type="number"
-                      placeholder="0"
-                      value={customPrice}
-                      onChange={(e) => setCustomPrice(e.target.value)}
-                      className={`${fieldCls} font-semibold`}
-                    />
-                  </div>
+                  {lessonTariffs.length === 0 && (
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("common.cost")}</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={customPrice}
+                        onChange={(e) => setCustomPrice(e.target.value)}
+                        className={`${fieldCls} font-semibold`}
+                      />
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={handlePaySingle}

@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import {
   aggregatePaymentStats,
+  aggregatePaymentsByDay,
   aggregatePaymentsByMonth,
   buildClassTeacherMap,
+  buildDaySeries,
   buildMonthSeries,
   buildRevenueSplit,
   buildTopClientsByRevenue,
@@ -29,12 +31,14 @@ import {
   formatMomPercent,
   formatOccupancyPercent,
   paymentsInMonth,
+  revenueTrendMonthCount,
   shiftMonth,
   sumDebtorAmounts,
   type MonthlyRevenuePoint,
   type RevenueRankEntry,
   type RevenueSplitKey,
   type RevenueSplitSegment,
+  type RevenueTrendPeriod,
 } from "../lib/financeReports";
 import {
   currentYearMonth,
@@ -56,6 +60,7 @@ import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import { useSingleVisits } from "../hooks/useSingleVisits";
+import AppSelect from "./ui/AppSelect";
 
 const SPLIT_COLORS: Record<RevenueSplitKey, string> = {
   subscription: "bg-indigo-500",
@@ -70,44 +75,124 @@ function formatShortMonth(yearMonth: string, locale: string | null): string {
   return new Intl.DateTimeFormat(locale ?? "ru-RU", { month: "short" }).format(new Date(y, m - 1, 1));
 }
 
+function formatDayLabel(isoDay: string): string {
+  const day = Number(isoDay.split("-")[2]);
+  return Number.isFinite(day) ? String(day) : isoDay;
+}
+
+function formatTrendPointLabel(
+  key: string,
+  period: RevenueTrendPeriod,
+  locale: string | null
+): string {
+  if (period === "month") return formatDayLabel(key);
+  return formatShortMonth(key, locale);
+}
+
+function shouldShowTrendLabel(index: number, total: number): boolean {
+  if (total <= 12) return true;
+  if (total <= 31) return index % 5 === 0 || index === total - 1;
+  const step = Math.ceil(total / 12);
+  return index % step === 0 || index === total - 1;
+}
+
+function estimateYAxisWidth(maxLabel: string, avgLabel: string): number {
+  const longest = Math.max(maxLabel.length, avgLabel.length, 1);
+  return Math.max(40, Math.min(88, longest * 6.5 + 10));
+}
+
 function RevenueTrendChart({
   points,
   locale,
+  period,
 }: {
   points: MonthlyRevenuePoint[];
   locale: string | null;
+  period: RevenueTrendPeriod;
 }) {
   const maxTotal = Math.max(...points.map((point) => point.total), 1);
-  const width = 320;
-  const height = 88;
-  const padX = 8;
+  const avgTotal =
+    points.length > 0 ? points.reduce((sum, point) => sum + point.total, 0) / points.length : 0;
+
+  const maxLabel = formatCurrency(maxTotal);
+  const avgLabel = formatCurrency(Math.round(avgTotal));
+  const padLeft = estimateYAxisWidth(maxLabel, avgLabel);
+  const padRight = 8;
   const padY = 8;
-  const chartW = width - padX * 2;
+  const width = 320;
+  const height = 96;
+  const chartW = width - padLeft - padRight;
   const chartH = height - padY * 2;
+  const chartBottom = padY + chartH;
 
   const coords = points.map((point, index) => {
-    const x = padX + (index / Math.max(points.length - 1, 1)) * chartW;
+    const x = padLeft + (index / Math.max(points.length - 1, 1)) * chartW;
     const y = padY + chartH - (point.total / maxTotal) * chartH;
     return { ...point, x, y };
   });
 
+  const maxY = padY;
+  const avgY = padY + chartH - (avgTotal / maxTotal) * chartH;
+
   const linePath = coords.map((point) => `${point.x},${point.y}`).join(" ");
   const areaPath = [
-    `M ${coords[0]?.x ?? padX} ${padY + chartH}`,
+    `M ${coords[0]?.x ?? padLeft} ${chartBottom}`,
     ...coords.map((point) => `L ${point.x} ${point.y}`),
-    `L ${coords[coords.length - 1]?.x ?? padX + chartW} ${padY + chartH}`,
+    `L ${coords[coords.length - 1]?.x ?? padLeft + chartW} ${chartBottom}`,
     "Z",
   ].join(" ");
 
+  const labelAreaLeftPct = (padLeft / width) * 100;
+  const labelAreaWidthPct = (chartW / width) * 100;
+
   return (
-    <div className="space-y-2">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-24" role="img" aria-hidden>
+    <div className="space-y-1">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-[6.5rem]" role="img" aria-hidden>
         <defs>
           <linearGradient id="revenueTrendFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="rgb(99 102 241)" stopOpacity="0.25" />
             <stop offset="100%" stopColor="rgb(99 102 241)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
+
+        <line
+          x1={padLeft}
+          y1={maxY}
+          x2={width - padRight}
+          y2={maxY}
+          stroke="rgb(203 213 225)"
+          strokeWidth="1"
+          strokeDasharray="3 3"
+        />
+        <line
+          x1={padLeft}
+          y1={avgY}
+          x2={width - padRight}
+          y2={avgY}
+          stroke="rgb(203 213 225)"
+          strokeWidth="1"
+          strokeDasharray="3 3"
+        />
+
+        <text
+          x={padLeft - 4}
+          y={maxY + 3}
+          textAnchor="end"
+          className="fill-slate-400"
+          fontSize="8"
+        >
+          {maxLabel}
+        </text>
+        <text
+          x={padLeft - 4}
+          y={avgY + 3}
+          textAnchor="end"
+          className="fill-slate-400"
+          fontSize="8"
+        >
+          {avgLabel}
+        </text>
+
         <path d={areaPath} fill="url(#revenueTrendFill)" />
         <polyline
           fill="none"
@@ -127,13 +212,29 @@ function RevenueTrendChart({
           />
         ))}
       </svg>
-      <div className="grid grid-cols-6 gap-1">
-        {coords.map((point) => (
-          <div key={point.month} className="text-center min-w-0">
-            <p className="text-[9px] text-slate-400 truncate">{formatShortMonth(point.month, locale)}</p>
-            <p className="text-[10px] font-semibold text-slate-700 truncate">{formatCurrency(point.total)}</p>
-          </div>
-        ))}
+
+      <div
+        className="relative h-9"
+        style={{ marginLeft: `${labelAreaLeftPct}%`, width: `${labelAreaWidthPct}%` }}
+      >
+        {coords.map((point, index) => {
+          if (!shouldShowTrendLabel(index, coords.length)) return null;
+          const leftPct = coords.length <= 1 ? 0 : (index / (coords.length - 1)) * 100;
+          return (
+            <div
+              key={point.month}
+              className="absolute top-0 -translate-x-1/2 text-center min-w-0 max-w-[3rem]"
+              style={{ left: `${leftPct}%` }}
+            >
+              <p className="text-[9px] text-slate-400 truncate">
+                {formatTrendPointLabel(point.month, period, locale)}
+              </p>
+              <p className="text-[10px] font-semibold text-slate-700 truncate">
+                {formatCurrency(point.total)}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -239,9 +340,11 @@ export default function FinancialDashboard() {
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const canWritePayroll = can("payroll.write");
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
+  const [trendPeriod, setTrendPeriod] = useState<RevenueTrendPeriod>("6months");
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
 
-  const paymentsQuery = usePaymentsTrend(statsMonth);
+  const trendFetchMonths = revenueTrendMonthCount(trendPeriod);
+  const paymentsQuery = usePaymentsTrend(statsMonth, trendFetchMonths);
   const expensesQuery = useExpensesForMonth(statsMonth);
   const payrollQuery = useTeacherSettlements(statsMonth);
   const recalculatePayroll = useRecalculateTeacherSettlement();
@@ -266,11 +369,29 @@ export default function FinancialDashboard() {
     teamQuery.isLoading ||
     singleVisitsQuery.isLoading;
 
-  const monthSeries = useMemo(() => buildMonthSeries(statsMonth), [statsMonth]);
-  const trendPoints = useMemo(
-    () => aggregatePaymentsByMonth(paymentsQuery.data ?? [], monthSeries),
-    [paymentsQuery.data, monthSeries]
-  );
+  const monthSeries = useMemo(() => {
+    if (trendPeriod === "month") return buildDaySeries(statsMonth);
+    return buildMonthSeries(statsMonth, trendFetchMonths);
+  }, [statsMonth, trendPeriod, trendFetchMonths]);
+
+  const trendPoints = useMemo(() => {
+    const payments = paymentsQuery.data ?? [];
+    if (trendPeriod === "month") {
+      return aggregatePaymentsByDay(payments, monthSeries);
+    }
+    return aggregatePaymentsByMonth(payments, monthSeries);
+  }, [paymentsQuery.data, monthSeries, trendPeriod]);
+
+  const trendNeedsWideChart = useMemo(() => {
+    const maxTotal = Math.max(...trendPoints.map((point) => point.total), 1);
+    const avgTotal =
+      trendPoints.length > 0
+        ? trendPoints.reduce((sum, point) => sum + point.total, 0) / trendPoints.length
+        : 0;
+    const maxLabel = formatCurrency(maxTotal);
+    const avgLabel = formatCurrency(Math.round(avgTotal));
+    return estimateYAxisWidth(maxLabel, avgLabel) > 48;
+  }, [trendPoints]);
 
   const stats = useMemo(() => {
     const monthPayments = paymentsInMonth(paymentsQuery.data ?? [], statsMonth);
@@ -521,15 +642,33 @@ export default function FinancialDashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
-          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
-            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
-              {t("dashboard.revenueTrend")}
-            </p>
+        <div
+          className={`grid grid-cols-1 gap-3 pt-1 border-t border-slate-100 ${
+            trendNeedsWideChart ? "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : "lg:grid-cols-2"
+          }`}
+        >
+          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
+                {t("dashboard.revenueTrend")}
+              </p>
+              <div className="w-[7.5rem] shrink-0">
+                <AppSelect
+                  value={trendPeriod}
+                  onChange={(e) => setTrendPeriod(e.target.value as RevenueTrendPeriod)}
+                  className="h-8 text-[11px] py-0"
+                  aria-label={t("dashboard.revenueTrendPeriodLabel")}
+                >
+                  <option value="month">{t("dashboard.revenueTrendPeriod.month")}</option>
+                  <option value="6months">{t("dashboard.revenueTrendPeriod.6months")}</option>
+                  <option value="year">{t("dashboard.revenueTrendPeriod.year")}</option>
+                </AppSelect>
+              </div>
+            </div>
             {paymentsQuery.isLoading ? (
               <p className="text-xs text-slate-500 py-8 text-center">{t("dashboard.loading")}</p>
             ) : (
-              <RevenueTrendChart points={trendPoints} locale={locale} />
+              <RevenueTrendChart points={trendPoints} locale={locale} period={trendPeriod} />
             )}
           </div>
           <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">

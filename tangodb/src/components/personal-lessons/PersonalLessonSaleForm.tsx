@@ -846,22 +846,24 @@ export default function PersonalLessonSaleForm({
         {bookingPaymentMode === "single" && (
           <>
             {lessonTariffs.length > 0 && (
-              <div className="grid grid-cols-[2fr_1fr] gap-3">
-                <AppSelect
-                  label={t("common.tariffPerLesson")}
-                  value={selectedLessonTariffId}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    if (id) applyLessonTariff(id);
-                  }}
-                >
-                  {lessonTariffs.map((tariff) => (
-                    <option key={tariff.id} value={tariff.id!}>
-                      {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
-                    </option>
-                  ))}
-                </AppSelect>
-                <div className="field-stack">
+              <div className="flex flex-nowrap items-end gap-3 w-full">
+                <div className="min-w-0 flex-1">
+                  <AppSelect
+                    label={t("common.tariffPerLesson")}
+                    value={selectedLessonTariffId}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      if (id) applyLessonTariff(id);
+                    }}
+                  >
+                    {lessonTariffs.map((tariff) => (
+                      <option key={tariff.id} value={tariff.id!}>
+                        {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
+                      </option>
+                    ))}
+                  </AppSelect>
+                </div>
+                <div className="field-stack w-[7.5rem] shrink-0">
                   <label className={labelCls}>{t("common.lessonCost")}</label>
                   <input
                     type="number"

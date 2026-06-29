@@ -123,6 +123,51 @@ export function buildMonthSeries(endMonth: string, monthCount = FINANCIAL_TREND_
   return months;
 }
 
+export function buildDaySeries(yearMonth: string): string[] {
+  const { dateFrom, dateTo } = monthDateRange(yearMonth);
+  const days: string[] = [];
+  const cursor = new Date(`${dateFrom}T12:00:00`);
+  const end = new Date(`${dateTo}T12:00:00`);
+  while (cursor <= end) {
+    const y = cursor.getFullYear();
+    const m = String(cursor.getMonth() + 1).padStart(2, "0");
+    const d = String(cursor.getDate()).padStart(2, "0");
+    days.push(`${y}-${m}-${d}`);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
+}
+
+export function paymentsOnDay(payments: Payment[], day: string): Payment[] {
+  const from = `${day}T00:00:00`;
+  const to = `${day}T23:59:59`;
+  return payments.filter((payment) => payment.createdAt >= from && payment.createdAt <= to);
+}
+
+export function aggregatePaymentsByDay(
+  payments: Payment[],
+  days: string[]
+): MonthlyRevenuePoint[] {
+  return days.map((day) => {
+    const stats = aggregatePaymentStats(paymentsOnDay(payments, day));
+    return {
+      month: day,
+      total: stats.total,
+      subscriptionTotal: stats.subscriptionTotal,
+      personalTotal: stats.personalTotal,
+      singleVisitTotal: stats.singleVisitTotal,
+    };
+  });
+}
+
+export type RevenueTrendPeriod = "month" | "6months" | "year";
+
+export function revenueTrendMonthCount(period: RevenueTrendPeriod): number {
+  if (period === "year") return 12;
+  if (period === "6months") return FINANCIAL_TREND_MONTH_COUNT;
+  return 1;
+}
+
 export function paymentsInMonth(payments: Payment[], yearMonth: string): Payment[] {
   const { dateFrom, dateTo } = monthDateRange(yearMonth);
   const from = `${dateFrom}T00:00:00`;
