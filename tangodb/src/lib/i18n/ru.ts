@@ -1192,7 +1192,7 @@ export const RU: Record<I18nKey, string> = {
   "settings.org.module.locations": "Локации / залы",
   "settings.org.role.teachersSellSubs": "Преподаватели могут продавать групповые абонементы",
   "settings.org.role.teachersSellPersonal": "Преподаватели могут продавать персональные уроки и пакеты персональных уроков",
-  "settings.org.role.directorsMarkAttendance": "Директор может отмечать и просматривать журнал посещений",
+  "settings.org.role.directorsMarkAttendance": "Руководитель может отмечать и просматривать журнал посещений",
   "settings.org.role.teachersEditClients": "Преподаватели могут редактировать карточки учеников",
   "settings.org.role.teachersExport": "Преподаватели могут экспортировать данные (в своём scope)",
   "settings.org.role.teachersViewSchedule": "Преподаватели видят всё расписание (read-only, без контактов учеников)",

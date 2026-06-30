@@ -192,6 +192,7 @@ export function getWeekStartOptions(t: TranslateFn) {
 
 export function getTeamRolePresets(t: TranslateFn) {
   return [
+    { value: "director" as const, label: t("team.role.director") },
     { value: "admin" as const, label: t("team.role.admin") },
     { value: "reception" as const, label: t("team.role.reception") },
     { value: "teacher" as const, label: t("team.role.teacher") },

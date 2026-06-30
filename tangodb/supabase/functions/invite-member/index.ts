@@ -14,7 +14,7 @@ import { createUserClient, logEvent } from "../_shared/supabase.ts";
 const RATE_LIMIT = 10;
 const RATE_WINDOW_MS = 15 * 60_000;
 
-const ASSIGNABLE_ROLES = new Set(["admin", "teacher", "accountant"]);
+const ASSIGNABLE_ROLES = new Set(["director", "admin", "teacher", "accountant"]);
 
 async function sendInviteEmail(
   email: string,

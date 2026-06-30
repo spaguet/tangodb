@@ -21,9 +21,9 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { DEFAULT_TEACHER_INVITE_SCOPE, isTeacherScopeConfigured } from "../../lib/teacherScope";
 import type { MemberMeta, MemberRole, TeacherScope } from "../../types/organization";
 
-type MemberPreset = "admin" | "reception" | "teacher" | "accountant";
+type MemberPreset = "director" | "admin" | "reception" | "teacher" | "accountant";
 
-const EDITABLE_PRESETS: MemberPreset[] = ["admin", "reception", "teacher", "accountant"];
+const EDITABLE_PRESETS: MemberPreset[] = ["director", "admin", "reception", "teacher", "accountant"];
 
 const labelCls = "text-[10px] font-semibold uppercase tracking-wider text-slate-400 block";
 
@@ -43,6 +43,7 @@ function presetToRoleMeta(preset: MemberPreset): { role: MemberRole; meta: Membe
 function memberPreset(member: TeamMemberRow): MemberPreset {
   if (member.role === "admin" && member.meta?.restricted_admin) return "reception";
   if (member.role === "admin") return "admin";
+  if (member.role === "director") return "director";
   return member.role as MemberPreset;
 }
 
@@ -137,7 +138,8 @@ export default function TeamSettingsPage() {
     const { role, meta } = presetToRoleMeta(preset);
     if (!can("team.manage")) return;
     if (currentRole !== "owner" && currentRole !== "director") return;
-    if (role === "owner" || role === "director") return;
+    if (role === "owner") return;
+    if (role === "director" && currentRole !== "owner") return;
     setInvitePreset(preset);
     setFirstName(member.first_name ?? "");
     setLastName(member.last_name ?? "");
@@ -186,7 +188,10 @@ export default function TeamSettingsPage() {
   const canAssignPreset = (preset: MemberPreset): boolean => {
     const { role } = presetToRoleMeta(preset);
     if (!can("team.manage")) return false;
-    if (currentRole === "owner" || currentRole === "director") {
+    if (currentRole === "owner") {
+      return role !== "owner";
+    }
+    if (currentRole === "director") {
       return role !== "owner" && role !== "director";
     }
     return false;
@@ -197,7 +202,7 @@ export default function TeamSettingsPage() {
 
   const canManageMember = (memberRole: MemberRole): boolean => {
     if (memberRole === "owner") return currentRole === "owner";
-    if (memberRole === "director") return currentRole === "owner" || currentRole === "director";
+    if (memberRole === "director") return currentRole === "owner";
     return canAssignPreset("admin") || currentRole === "owner" || currentRole === "director";
   };
 

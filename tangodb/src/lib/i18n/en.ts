@@ -1194,7 +1194,7 @@ export const EN: Record<I18nKey, string> = {
   "settings.org.module.locations": "Locations / venues",
   "settings.org.role.teachersSellSubs": "Teachers can sell group subscriptions",
   "settings.org.role.teachersSellPersonal": "Teachers can sell private lessons and private lesson packages",
-  "settings.org.role.directorsMarkAttendance": "Director can mark and view the attendance journal",
+  "settings.org.role.directorsMarkAttendance": "Manager can mark and view the attendance journal",
   "settings.org.role.teachersEditClients": "Teachers can edit student profiles",
   "settings.org.role.teachersExport": "Teachers can export data (within their scope)",
   "settings.org.role.teachersViewSchedule": "Teachers see full schedule (read-only, no student contacts)",
