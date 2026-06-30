@@ -8,6 +8,10 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-30 — tangodb-landing: деплой на Cloudflare Pages (`tangodb-landing.pages.dev`), GitHub Actions `.github/workflows/deploy-landing.yml`.
+2026-06-30 — tangodb-landing: в шапке убрана ссылка на features, «Демо» → «Как это выглядит» (`Header.tsx`, `ru.ts`, `en.ts`).
+2026-06-30 — tangodb-landing: уменьшен верхний отступ hero вдвое (`Hero.tsx`).
+2026-06-30 — tangodb-landing: промо-изображение `vert_add.png` в hero справа от заголовка «Вся студия — в одном месте» (`Hero.tsx`, `public/vert_add.png`).
 2026-06-30 — fix: «Обзор и статистика» — вкладка «Финансовый» обновляет KPI при каждом открытии (refetch запросов при монтировании `FinancialDashboard`).
 2026-06-30 — RBAC/Команда: не более одного руководителя (`director`) на организацию — проверка в RPC и UI; migration `20260813000002`.
 2026-06-30 — RBAC/Команда: роль «Руководитель» (`director`) в выпадающих списках приглашения и смены роли; только owner может назначать; migration `20260813000001`, edge `invite-member`.
