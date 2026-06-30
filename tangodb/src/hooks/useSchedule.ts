@@ -242,6 +242,78 @@ export function useAddGroupSchedule() {
   });
 }
 
+function mapScheduleMutationError(error: { code?: string; message: string }): string {
+  if (error.code === "23505") return "schedule.error.duplicateSlot";
+  if (error.message.includes("schedule_slot_overlap")) return "schedule.error.groupOverlap";
+  return error.message;
+}
+
+async function findActiveSuccessorSlotId(
+  organizationId: string,
+  editDate: string,
+  dayOfWeek: number,
+  locationId: string | null
+): Promise<string | null> {
+  const newValidFrom = addDays(editDate, 1);
+  let query = supabase
+    .from(scheduleTable)
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("day_of_week", dayOfWeek)
+    .eq("valid_from", newValidFrom)
+    .is("valid_to", null);
+
+  if (locationId) {
+    query = query.eq("location_id", locationId);
+  } else {
+    query = query.is("location_id", null);
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data?.id != null ? String(data.id) : null;
+}
+
+export function useUpdateGroupScheduleMetadata() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      slotIds,
+      groupName,
+      disciplineId,
+      teacherMemberId,
+    }: {
+      slotIds: string[];
+      groupName: string;
+      disciplineId: string;
+      teacherMemberId: string | null;
+    }) => {
+      if (slotIds.length === 0) {
+        return { success: false as const, error: "schedule.error.slotNotFound" };
+      }
+
+      const { error } = await supabase
+        .from(scheduleTable)
+        .update({
+          group_name: groupName.trim(),
+          discipline_id: disciplineId,
+          teacher_member_id: teacherMemberId,
+        })
+        .in("id", slotIds)
+        .is("valid_to", null);
+
+      if (error) {
+        return { success: false as const, error: mapScheduleMutationError(error) };
+      }
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidateScheduleQueries(queryClient);
+    },
+  });
+}
+
 export function useEditGroupSchedule() {
   const queryClient = useQueryClient();
   const { organizationId } = useOrgQueryScope();
@@ -272,6 +344,95 @@ export function useEditGroupSchedule() {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
+      const trimmedGroup = groupName.trim();
+      const newValidFrom = addDays(editDate, 1);
+      const versionPayload = {
+        day_of_week: dayOfWeek,
+        time: normalizeTime(time),
+        time_end: normalizeTime(timeEnd),
+        group_name: trimmedGroup,
+        discipline_id: disciplineId,
+        location_id: locationId,
+        teacher_member_id: teacherMemberId,
+      };
+
+      const { data: existing, error: fetchError } = await supabase
+        .from(scheduleTable)
+        .select("valid_to")
+        .eq("id", slotId)
+        .maybeSingle();
+
+      if (fetchError) {
+        return { success: false as const, error: fetchError.message };
+      }
+      if (!existing) {
+        return { success: false as const, error: "schedule.error.slotNotFound" };
+      }
+
+      const existingValidTo =
+        existing.valid_to != null ? String(existing.valid_to).slice(0, 10) : null;
+
+      if (existingValidTo != null) {
+        const successorId = await findActiveSuccessorSlotId(
+          organizationId,
+          editDate,
+          dayOfWeek,
+          locationId
+        );
+
+        if (successorId) {
+          const { error: updateError } = await supabase
+            .from(scheduleTable)
+            .update(versionPayload)
+            .eq("id", successorId);
+
+          if (updateError) {
+            return { success: false as const, error: mapScheduleMutationError(updateError) };
+          }
+          return { success: true as const };
+        }
+
+        const { error: insertError } = await supabase.from(scheduleTable).insert({
+          organization_id: organizationId,
+          ...versionPayload,
+          valid_from: newValidFrom,
+        });
+
+        if (insertError) {
+          return { success: false as const, error: mapScheduleMutationError(insertError) };
+        }
+        return { success: true as const };
+      }
+
+      const successorId = await findActiveSuccessorSlotId(
+        organizationId,
+        editDate,
+        dayOfWeek,
+        locationId
+      );
+
+      if (successorId) {
+        const { error: closeError } = await supabase
+          .from(scheduleTable)
+          .update({ valid_to: editDate })
+          .eq("id", slotId)
+          .is("valid_to", null);
+
+        if (closeError) {
+          return { success: false as const, error: closeError.message };
+        }
+
+        const { error: updateError } = await supabase
+          .from(scheduleTable)
+          .update(versionPayload)
+          .eq("id", successorId);
+
+        if (updateError) {
+          return { success: false as const, error: mapScheduleMutationError(updateError) };
+        }
+        return { success: true as const };
+      }
+
       const { error: closeError } = await supabase
         .from(scheduleTable)
         .update({ valid_to: editDate })
@@ -281,16 +442,9 @@ export function useEditGroupSchedule() {
         return { success: false as const, error: closeError.message };
       }
 
-      const newValidFrom = addDays(editDate, 1);
       const { error: insertError } = await supabase.from(scheduleTable).insert({
         organization_id: organizationId,
-        day_of_week: dayOfWeek,
-        time: normalizeTime(time),
-        time_end: normalizeTime(timeEnd),
-        group_name: groupName.trim(),
-        discipline_id: disciplineId,
-        location_id: locationId,
-        teacher_member_id: teacherMemberId,
+        ...versionPayload,
         valid_from: newValidFrom,
       });
 
@@ -301,19 +455,10 @@ export function useEditGroupSchedule() {
           .eq("id", slotId);
 
         if (rollbackError) {
-          return {
-            success: false as const,
-            error: `Не удалось сохранить изменения; слот мог остаться закрытым: ${rollbackError.message}`,
-          };
+          return { success: false as const, error: mapScheduleMutationError(insertError) };
         }
 
-        if (insertError.code === "23505") {
-          return { success: false as const, error: "schedule.error.duplicateSlot" };
-        }
-        if (insertError.message.includes("schedule_slot_overlap")) {
-          return { success: false as const, error: "schedule.error.groupOverlap" };
-        }
-        return { success: false as const, error: insertError.message };
+        return { success: false as const, error: mapScheduleMutationError(insertError) };
       }
 
       return { success: true as const };

@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Info, MapPin, Trash2, User, X } from "lucide-react";
-import { useAddGroupSchedule, useDeleteScheduleSlot, useEditGroupSchedule } from "../../hooks/useSchedule";
+import {
+  useAddGroupSchedule,
+  useDeleteScheduleSlot,
+  useEditGroupSchedule,
+  useUpdateGroupScheduleMetadata,
+} from "../../hooks/useSchedule";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
@@ -13,12 +18,13 @@ import {
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
 import { findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
+import { pickGroupSlotsForEdit } from "../../lib/scheduleSlotEdit";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { addDays, getWeekRange, isPastDate, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
-import type { Discipline, DisplayLesson } from "../../types";
+import type { Discipline, DisplayLesson, ScheduleSlot } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import DisciplineSelect from "../ui/DisciplineSelect";
 import LocationSelect from "../ui/LocationSelect";
@@ -33,17 +39,7 @@ interface EditLessonPopupProps {
   personalListEdit?: boolean;
   disciplines: Discipline[];
   teacherOptions: TeamMemberRow[];
-  scheduleSlots: Array<{
-    id?: string;
-    dayOfWeek: number;
-    time: string;
-    timeEnd: string;
-    disciplineId?: string | null;
-    groupName?: string;
-    locationId?: string | null;
-    validFrom?: string;
-    validTo?: string | null;
-  }>;
+  scheduleSlots: ScheduleSlot[];
   personalLessons: Array<{
     id: string;
     date: string;
@@ -124,6 +120,7 @@ export default function EditLessonPopup({
   const { role, can } = usePermissions();
   const { connectionState } = useOnlineStatus();
   const editGroupSchedule = useEditGroupSchedule();
+  const updateGroupScheduleMetadata = useUpdateGroupScheduleMetadata();
   const addGroupSchedule = useAddGroupSchedule();
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const updatePersonalLesson = useUpdatePersonalLesson();
@@ -150,34 +147,7 @@ export default function EditLessonPopup({
       setTimeStart(lesson.timeStart);
       setTimeEnd(lesson.timeEnd);
 
-      const siblingSlots = scheduleSlots.filter((slot) => {
-        if ((slot.locationId ?? null) !== lesson.locationId) return false;
-        if ((slot.disciplineId ?? null) !== lesson.disciplineId) return false;
-        if ((slot.groupName ?? "").trim() !== (lesson.groupName ?? "").trim()) return false;
-        const validFrom = slot.validFrom ?? "2000-01-01";
-        if (validFrom > lesson.date) return false;
-        if (slot.validTo != null && slot.validTo < lesson.date) return false;
-        return true;
-      });
-
-      const rows =
-        siblingSlots.length > 0
-          ? siblingSlots.map((slot) => ({
-              key: slot.id ?? `${slot.dayOfWeek}-${slot.time}`,
-              id: slot.id,
-              dayOfWeek: slot.dayOfWeek,
-              timeStart: slot.time,
-              timeEnd: slot.timeEnd,
-            }))
-          : [
-              {
-                key: lesson.slotId,
-                id: lesson.slotId,
-                dayOfWeek: lesson.dayOfWeek,
-                timeStart: lesson.timeStart,
-                timeEnd: lesson.timeEnd,
-              },
-            ];
+      const rows = pickGroupSlotsForEdit(lesson, scheduleSlots);
 
       setGroupSlotRows(rows);
       setOriginalGroupSlots(rows.map((row) => ({ ...row })));
@@ -350,6 +320,41 @@ export default function EditLessonPopup({
 
     const currentIds = new Set(groupSlotRows.map((row) => row.id).filter(Boolean));
     const removedSlots = originalGroupSlots.filter((row) => row.id && !currentIds.has(row.id));
+    const newRows = groupSlotRows.filter((row) => !row.id);
+
+    const anySlotStructureChanged =
+      newRows.length > 0 ||
+      removedSlots.length > 0 ||
+      groupSlotRows.some((row) => {
+        if (!row.id) return true;
+        const original = originalGroupSlots.find((item) => item.id === row.id);
+        return (
+          !original ||
+          original.dayOfWeek !== row.dayOfWeek ||
+          original.timeStart !== row.timeStart ||
+          original.timeEnd !== row.timeEnd
+        );
+      });
+
+    if (metadataChanged && !anySlotStructureChanged) {
+      const slotIds = groupSlotRows.map((row) => row.id).filter((id): id is string => Boolean(id));
+      const res = await updateGroupScheduleMetadata.mutateAsync({
+        slotIds,
+        groupName: trimmedGroup,
+        disciplineId,
+        teacherMemberId,
+      });
+
+      if (!res.success) {
+        toast(res.error ?? t("schedule.error.updateFailed"), "error");
+        return;
+      }
+
+      toast(t("schedule.success.groupUpdated"), "success");
+      onSuccess();
+      onClose();
+      return;
+    }
 
     for (const row of groupSlotRows) {
       if (!row.id) continue;
@@ -389,7 +394,6 @@ export default function EditLessonPopup({
       }
     }
 
-    const newRows = groupSlotRows.filter((row) => !row.id);
     if (newRows.length > 0) {
       const res = await addGroupSchedule.mutateAsync({
         groupName: trimmedGroup,
@@ -509,6 +513,7 @@ export default function EditLessonPopup({
 
   const savePending =
     editGroupSchedule.isPending ||
+    updateGroupScheduleMetadata.isPending ||
     addGroupSchedule.isPending ||
     deleteScheduleSlot.isPending ||
     updatePersonalLesson.isPending;
