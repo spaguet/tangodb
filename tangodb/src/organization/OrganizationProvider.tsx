@@ -103,7 +103,7 @@ function mapSettings(row: Record<string, unknown>): OrganizationSettings {
     modules: normalizeOrgModules(row.modules as Partial<OrganizationSettings["modules"]>),
     freeze_max_count: row.freeze_max_count as number,
     freeze_min_lessons: row.freeze_min_lessons as number,
-    freeze_deducts_lesson: row.freeze_deducts_lesson as boolean,
+    freeze_enabled: (row.freeze_enabled as boolean) ?? true,
     low_balance_threshold: row.low_balance_threshold as number,
     teachers_can_manage_disciplines: row.teachers_can_manage_disciplines as boolean,
     teachers_can_sell_subscriptions: (row.teachers_can_sell_subscriptions as boolean) ?? false,

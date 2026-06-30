@@ -647,7 +647,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
     const tariffLabel = getSubscriptionTariffLabel(st, prices);
     const connectionTitle = translateConnectionBlockReason(connectionState, t);
-    const showFreeze = showExtendedMarks && !isMonthly;
+    const showFreeze = showExtendedMarks && !isMonthly && freezePolicy.freezeEnabled;
     const showExcused = showExtendedMarks && !isMonthly;
 
     return (
@@ -1311,7 +1311,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                         {t("attendance.error.pastOnly")}
                       </p>
                     )}
-                    <AttendanceMarkLegend showFreeze={selectedLesson?.kind === "group"} t={t} />
+                    <AttendanceMarkLegend
+                      showFreeze={selectedLesson?.kind === "group" && freezePolicy.freezeEnabled}
+                      t={t}
+                    />
                     <p className="text-[10px] font-sans bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums">
                       {modalSubs.length}{" "}
                       {plural(modalSubs.length, [

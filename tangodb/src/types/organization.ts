@@ -94,7 +94,7 @@ export interface OrganizationSettings {
   modules: OrgModules;
   freeze_max_count: number;
   freeze_min_lessons: number;
-  freeze_deducts_lesson: boolean;
+  freeze_enabled: boolean;
   low_balance_threshold: number;
   teachers_can_manage_disciplines: boolean;
   teachers_can_sell_subscriptions: boolean;

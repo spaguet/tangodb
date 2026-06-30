@@ -108,12 +108,12 @@ BEGIN
     (v_member_b, v_org_b, v_user_b, 'owner', 'Owner B', '{}')
   ON CONFLICT (organization_id, user_id) DO NOTHING;
 
-  INSERT INTO organization_settings (organization_id, freeze_max_count, freeze_min_lessons, freeze_deducts_lesson)
+  INSERT INTO organization_settings (organization_id, freeze_max_count, freeze_min_lessons, freeze_enabled)
   VALUES (v_org, 2, 4, true), (v_org_b, 1, 8, true)
   ON CONFLICT (organization_id) DO UPDATE
     SET freeze_max_count = EXCLUDED.freeze_max_count,
         freeze_min_lessons = EXCLUDED.freeze_min_lessons,
-        freeze_deducts_lesson = EXCLUDED.freeze_deducts_lesson;
+        freeze_enabled = EXCLUDED.freeze_enabled;
 
   INSERT INTO user_active_organizations (user_id, organization_id, member_id)
   VALUES

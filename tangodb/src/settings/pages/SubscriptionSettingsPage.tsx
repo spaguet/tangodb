@@ -9,18 +9,18 @@ import { resolveMutationError } from "../../lib/resolveMutationError";
 export default function SubscriptionSettingsPage() {
   const { t } = useI18n();
   const toast = useToast();
-  const { settings, isLoading, updateSettings, isUpdating, freezePolicy } = useSettings();
+  const { settings, isLoading, updateSettings, isUpdating } = useSettings();
 
+  const [freezeEnabled, setFreezeEnabled] = useState(true);
   const [freezeMaxCount, setFreezeMaxCount] = useState(1);
   const [freezeMinLessons, setFreezeMinLessons] = useState(8);
-  const [freezeDeductsLesson, setFreezeDeductsLesson] = useState(true);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (!settings) return;
+    setFreezeEnabled(settings.freeze_enabled);
     setFreezeMaxCount(settings.freeze_max_count);
     setFreezeMinLessons(settings.freeze_min_lessons);
-    setFreezeDeductsLesson(settings.freeze_deducts_lesson);
     setDirty(false);
   }, [settings]);
 
@@ -28,9 +28,9 @@ export default function SubscriptionSettingsPage() {
 
   const handleSave = async () => {
     const res = await updateSettings({
+      freeze_enabled: freezeEnabled,
       freeze_max_count: freezeMaxCount,
       freeze_min_lessons: freezeMinLessons,
-      freeze_deducts_lesson: freezeDeductsLesson,
     });
     if (!res.success) {
       toast(resolveMutationError(res.error, "settings.saveError", t), "error");
@@ -40,9 +40,12 @@ export default function SubscriptionSettingsPage() {
     }
   };
 
-  const policyDeducts = freezePolicy.freezeDeductsLesson
-    ? t("settings.subscriptions.policyDeducts")
-    : t("settings.subscriptions.policyNoDeduct");
+  const policySummary = freezeEnabled
+    ? t("settings.subscriptions.policySummary", {
+        max: freezeMaxCount,
+        min: freezeMinLessons,
+      })
+    : t("settings.subscriptions.policyDisabled");
 
   return (
     <div className="panel-card-stack max-w-xl">
@@ -52,57 +55,65 @@ export default function SubscriptionSettingsPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4 font-sans">
-        <div className="field-stack">
-          <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
-            {t("settings.subscriptions.freezeMax")}
-          </label>
-          <input
-            type="number"
-            min={0}
-            value={freezeMaxCount}
-            onChange={(e) => {
-              setFreezeMaxCount(Number(e.target.value));
-              setDirty(true);
-            }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm"
-          />
-        </div>
-
-        <div className="field-stack">
-          <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
-            {t("settings.subscriptions.freezeMin")}
-          </label>
-          <input
-            type="number"
-            min={0}
-            value={freezeMinLessons}
-            onChange={(e) => {
-              setFreezeMinLessons(Number(e.target.value));
-              setDirty(true);
-            }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm"
-          />
-        </div>
-
-        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
           <input
             type="checkbox"
-            checked={freezeDeductsLesson}
+            checked={freezeEnabled}
             onChange={(e) => {
-              setFreezeDeductsLesson(e.target.checked);
+              setFreezeEnabled(e.target.checked);
               setDirty(true);
             }}
-            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
           />
-          {t("settings.subscriptions.freezeDeducts")}
+          <span>
+            <span className="font-medium">{t("settings.subscriptions.freezeEnabled")}</span>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              {t("settings.subscriptions.freezeEnabledDescription")}
+            </p>
+          </span>
         </label>
 
+        <div
+          className={`space-y-4 transition-opacity ${freezeEnabled ? "" : "opacity-45 pointer-events-none"}`}
+          aria-disabled={!freezeEnabled}
+        >
+          <div className="field-stack">
+            <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
+              {t("settings.subscriptions.freezeMax")}
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={freezeMaxCount}
+              disabled={!freezeEnabled}
+              onChange={(e) => {
+                setFreezeMaxCount(Number(e.target.value));
+                setDirty(true);
+              }}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm disabled:cursor-not-allowed"
+            />
+          </div>
+
+          <div className="field-stack">
+            <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
+              {t("settings.subscriptions.freezeMin")}
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={freezeMinLessons}
+              disabled={!freezeEnabled}
+              onChange={(e) => {
+                setFreezeMinLessons(Number(e.target.value));
+                setDirty(true);
+              }}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm disabled:cursor-not-allowed"
+            />
+          </div>
+        </div>
+
         <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2 leading-relaxed">
-          {t("settings.subscriptions.policySummary", {
-            max: freezePolicy.freezeMaxCount,
-            min: freezePolicy.freezeMinLessons,
-            deducts: policyDeducts,
-          })}
+          {policySummary}
         </p>
 
         <RequirePermission action="settings.manage" mode="hide">

@@ -1,28 +1,28 @@
 import type { OrganizationSettings } from "../types/organization";
 
 export interface FreezePolicy {
+  freezeEnabled: boolean;
   freezeMaxCount: number;
   freezeMinLessons: number;
-  freezeDeductsLesson: boolean;
 }
 
 export const DEFAULT_FREEZE_POLICY: FreezePolicy = {
+  freezeEnabled: true,
   freezeMaxCount: 1,
   freezeMinLessons: 8,
-  freezeDeductsLesson: true,
 };
 
 export function freezePolicyFromSettings(
   settings: Pick<
     OrganizationSettings,
-    "freeze_max_count" | "freeze_min_lessons" | "freeze_deducts_lesson"
+    "freeze_enabled" | "freeze_max_count" | "freeze_min_lessons"
   > | null | undefined
 ): FreezePolicy {
   if (!settings) return DEFAULT_FREEZE_POLICY;
   return {
+    freezeEnabled: settings.freeze_enabled,
     freezeMaxCount: settings.freeze_max_count,
     freezeMinLessons: settings.freeze_min_lessons,
-    freezeDeductsLesson: settings.freeze_deducts_lesson,
   };
 }
 
@@ -38,6 +38,7 @@ export function canApplyFreeze(
   freezeUsed: number,
   policy: FreezePolicy = DEFAULT_FREEZE_POLICY
 ): boolean {
+  if (!policy.freezeEnabled) return false;
   return subscriptionMeetsFreezeMinLessons(lessonsTotal, policy) && freezeUsed < policy.freezeMaxCount;
 }
 
