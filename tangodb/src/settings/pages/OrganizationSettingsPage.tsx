@@ -191,7 +191,9 @@ export default function OrganizationSettingsPage() {
       <div>
         <h2 className="text-base font-semibold text-slate-900">{t("settings.org.title")}</h2>
         <p className="text-xs text-slate-500 mt-1">
-          {t("settings.org.subtitle", { name: organization?.name ?? "—" })}
+          {t("settings.org.subtitle", {
+            name: settings.branding_name?.trim() || organization?.name || "—",
+          })}
         </p>
       </div>
 
