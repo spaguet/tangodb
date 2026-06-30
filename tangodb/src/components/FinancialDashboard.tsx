@@ -422,6 +422,23 @@ export default function FinancialDashboard() {
     teamQuery.isLoading ||
     singleVisitsQuery.isLoading;
 
+  useEffect(() => {
+    const queries = [
+      paymentsQuery,
+      expensesQuery,
+      payrollQuery,
+      debtorsQuery,
+      clientsQuery,
+      attendanceQuery,
+      scheduleQuery,
+      subscriptionGroupsQuery,
+      teamQuery,
+      singleVisitsQuery,
+      ...(personalLessonsEnabled ? [personalLessonsQuery] : []),
+    ];
+    void Promise.all(queries.map((query) => query.refetch()));
+  }, []);
+
   const monthSeries = useMemo(() => {
     if (trendPeriod === "month") return buildDaySeries(statsMonth);
     return buildMonthSeries(statsMonth, trendFetchMonths);
