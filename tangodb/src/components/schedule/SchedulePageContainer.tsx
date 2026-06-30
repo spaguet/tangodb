@@ -365,7 +365,7 @@ export default function SchedulePageContainer() {
 
   return (
     <div className="panel-page-stack">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white/95 backdrop-blur-[2px] py-1">
         <div className="flex items-center gap-2">
           <CalendarDays className="w-5 h-5 text-indigo-500 shrink-0" />
           <h2 className="text-base font-semibold text-slate-800 tracking-tight">{t("schedule.title")}</h2>

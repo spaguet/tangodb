@@ -48,11 +48,11 @@ export default function WeeklyScheduleGrid({
   }, [rangeStartMin, rangeEndMin]);
 
   return (
-    <div className="overflow-auto max-h-[70dvh] sm:max-h-none sm:overflow-x-auto sm:overflow-y-visible [-webkit-overflow-scrolling:touch]">
+    <div className="isolate overflow-auto max-h-[70dvh] sm:max-h-none sm:overflow-x-auto sm:overflow-y-auto [-webkit-overflow-scrolling:touch]">
       <div className="flex min-w-[640px]">
-        <div className="sticky left-0 z-20 w-10 sm:w-12 shrink-0 border-r border-slate-100 bg-white shadow-[2px_0_4px_-2px_rgba(15,23,42,0.08)]">
+        <div className="sticky left-0 z-[1] w-10 sm:w-12 shrink-0 border-r border-slate-100 bg-white shadow-[2px_0_4px_-2px_rgba(15,23,42,0.08)]">
           <div
-            className="sticky top-0 z-30 h-9 sm:h-11 border-b border-slate-100 bg-slate-50/95 backdrop-blur-[2px]"
+            className="sticky top-0 z-[2] h-9 sm:h-11 border-b border-slate-100 bg-slate-50/95 backdrop-blur-[2px]"
             aria-hidden
           />
           <div className="relative" style={{ height: gridHeight }}>
