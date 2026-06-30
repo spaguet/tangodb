@@ -1164,6 +1164,7 @@ export const RU: Record<I18nKey, string> = {
   "memberProfile.payMode.fixed": "Фиксированная оплата",
   "memberProfile.payMode.fixedPlusPercent": "Фиксированная оплата + проценты",
   "team.deactivateFutureLessons": "Нельзя деактивировать: у преподавателя есть будущие занятия в расписании",
+  "team.directorSlotTaken": "В организации уже есть руководитель. Сначала смените роль или деактивируйте текущего руководителя.",
   "dashboard.teacher.quickPayroll": "Мои выплаты",
   "settings.org.title": "Организация",
   "settings.org.subtitle": "{{name}} · пресет и модули CRM.",

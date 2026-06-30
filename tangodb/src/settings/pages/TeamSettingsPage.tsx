@@ -91,6 +91,25 @@ export default function TeamSettingsPage() {
   const [deactivateTarget, setDeactivateTarget] = useState<TeamMemberRow | null>(null);
   const inviteFormRef = useRef<HTMLFormElement>(null);
 
+  const activeMembers = members.filter((m) => m.is_active);
+  const inactiveMembers = members.filter((m) => !m.is_active);
+
+  const directorSlotTaken = (excludeMemberId?: string): boolean => {
+    const hasActiveDirector = activeMembers.some(
+      (m) => m.role === "director" && m.id !== excludeMemberId
+    );
+    const hasPendingDirectorInvite = invites.some((inv) => inv.role === "director");
+    return hasActiveDirector || hasPendingDirectorInvite;
+  };
+
+  const showDirectorSlotError = (message: string) => {
+    if (message.includes("director_slot_taken")) {
+      showToast(t("team.directorSlotTaken"), "error");
+      return true;
+    }
+    return false;
+  };
+
   const clearReinvitePreset = () => {
     setInviteScope(DEFAULT_TEACHER_INVITE_SCOPE);
     setInviteMetaOverride(null);
@@ -129,7 +148,10 @@ export default function TeamSettingsPage() {
         result.email_sent ? "success" : "info"
       );
     } catch (err) {
-      showToast(err instanceof Error ? err.message : t("team.inviteError"), "error");
+      const message = err instanceof Error ? err.message : "";
+      if (!showDirectorSlotError(message)) {
+        showToast(message || t("team.inviteError"), "error");
+      }
     }
   };
 
@@ -174,8 +196,6 @@ export default function TeamSettingsPage() {
   if (isLoading) return <LoadingState label={t("settings.team.loading")} />;
   if (isError) return <QueryErrorState error={error} />;
 
-  const activeMembers = members.filter((m) => m.is_active);
-  const inactiveMembers = members.filter((m) => !m.is_active);
   const canShowRecoveryGuide = currentRole === "owner" || currentRole === "director";
 
   const copyInviteUrl = async () => {
@@ -185,9 +205,10 @@ export default function TeamSettingsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const canAssignPreset = (preset: MemberPreset): boolean => {
+  const canAssignPreset = (preset: MemberPreset, forMemberId?: string): boolean => {
     const { role } = presetToRoleMeta(preset);
     if (!can("team.manage")) return false;
+    if (role === "director" && directorSlotTaken(forMemberId)) return false;
     if (currentRole === "owner") {
       return role !== "owner";
     }
@@ -398,16 +419,23 @@ export default function TeamSettingsPage() {
                   <>
                     <AppSelect
                       value={preset}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const next = presetToRoleMeta(e.target.value as MemberPreset);
-                        updateMember.mutate({
-                          memberId: member.id,
-                          role: next.role,
-                          meta: next.meta,
-                        });
+                        try {
+                          await updateMember.mutateAsync({
+                            memberId: member.id,
+                            role: next.role,
+                            meta: next.meta,
+                          });
+                        } catch (err) {
+                          const message = err instanceof Error ? err.message : "";
+                          if (!showDirectorSlotError(message)) {
+                            showToast(message || t("team.inviteError"), "error");
+                          }
+                        }
                       }}
                     >
-                      {EDITABLE_PRESETS.filter((p) => canAssignPreset(p) || p === preset).map(
+                      {EDITABLE_PRESETS.filter((p) => canAssignPreset(p, member.id) || p === preset).map(
                         (p) => (
                           <option key={p} value={p}>
                             {invitePresets.find((item) => item.value === p)?.label ??

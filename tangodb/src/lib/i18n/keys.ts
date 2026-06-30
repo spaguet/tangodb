@@ -1112,6 +1112,7 @@ export type I18nKey =
   | "memberProfile.payMode.fixed"
   | "memberProfile.payMode.fixedPlusPercent"
   | "team.deactivateFutureLessons"
+  | "team.directorSlotTaken"
   | "dashboard.teacher.quickPayroll"
   | "settings.org.title"
   | "settings.org.subtitle"
