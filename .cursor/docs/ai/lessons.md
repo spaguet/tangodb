@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-06-30 — Dev Console «Purge failed» при удалении demo org
+
+- **Ошибка:** Dev Console показывал «Purge failed» при удалении demo org (например «Test studio»).
+- **Причина:** S5 purge делает `DELETE FROM organizations` (CASCADE). Audit-триггеры на дочерних таблицах пытались `INSERT INTO audit_log` с `organization_id`, пока строка org уже удалялась → нарушение FK `audit_log_organization_id_fkey`.
+- **Как избежать:** Перед org DELETE отключать `audit_%` триггеры (как в `reset_for_test_run.sql`), затем включать обратно. Альтернатива — не логировать DELETE в audit при отсутствующей org, но отключение триггеров проще и предсказуемее для полного purge.
+
 ### 2026-06-30 — Повторное сохранение группового урока и schedule_slot_overlap
 
 - **Ошибка:** После «Сохранить» в редактировании группового урока изменения не видны; при повторной попытке — «Не удалось сохранить изменения; слот мог остаться закрытым: schedule_slot_overlap».
