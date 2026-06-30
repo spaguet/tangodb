@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-06-30 — tangodb: favicon вкладки браузера — логотип TDB (`public/favicon.svg`, `index.html`).
 2026-06-30 — fix: Dev Console purge org — `_purge_demo_organization_core` отключает `audit_%` триггеры перед `DELETE FROM organizations` (FK `audit_log_organization_id_fkey` при CASCADE); migration `20260814000001`.
 2026-06-30 — tangodb-landing: деплой на Cloudflare Pages (`tangodb-landing.pages.dev`), GitHub Actions `.github/workflows/deploy-landing.yml`.
 2026-06-30 — tangodb-landing: в шапке убрана ссылка на features, «Демо» → «Как это выглядит» (`Header.tsx`, `ru.ts`, `en.ts`).
