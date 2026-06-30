@@ -99,7 +99,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
             </p>
           </div>
         ) : (
-          <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+          <div className="space-y-1.5">
             {disciplines.map((d) => (
               <div
                 key={d.id}

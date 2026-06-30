@@ -29,7 +29,7 @@ export function pickBestSlotForDay(
   const daySlots = slots.filter((slot) => slot.id && slot.dayOfWeek === dayOfWeek);
   if (daySlots.length === 0) return undefined;
 
-  const successorFrom = addDays(editDate, 1);
+  const successorFrom = editDate;
 
   const activeSuccessor = daySlots.find(
     (slot) => isActiveSlot(slot) && slot.validFrom === successorFrom
@@ -67,10 +67,10 @@ function relatedGroupSlots(lesson: GroupDisplayLesson, scheduleSlots: ScheduleSl
 /** Rows for the group-lesson edit form: one editable slot per weekday, active versions preferred. */
 export function pickGroupSlotsForEdit(
   lesson: GroupDisplayLesson,
-  scheduleSlots: ScheduleSlot[]
+  scheduleSlots: ScheduleSlot[],
+  editDate: string = lesson.date
 ): GroupSlotEditRow[] {
   const related = relatedGroupSlots(lesson, scheduleSlots);
-  const editDate = lesson.date;
 
   const dayOfWeeks = new Set<number>([lesson.dayOfWeek]);
   for (const slot of related) {

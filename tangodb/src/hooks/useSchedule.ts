@@ -254,7 +254,7 @@ async function findActiveSuccessorSlotId(
   dayOfWeek: number,
   locationId: string | null
 ): Promise<string | null> {
-  const newValidFrom = addDays(editDate, 1);
+  const newValidFrom = editDate;
   let query = supabase
     .from(scheduleTable)
     .select("id")
@@ -345,7 +345,7 @@ export function useEditGroupSchedule() {
       }
 
       const trimmedGroup = groupName.trim();
-      const newValidFrom = addDays(editDate, 1);
+      const newValidFrom = editDate;
       const versionPayload = {
         day_of_week: dayOfWeek,
         time: normalizeTime(time),
@@ -412,14 +412,9 @@ export function useEditGroupSchedule() {
       );
 
       if (successorId) {
-        const { error: closeError } = await supabase
-          .from(scheduleTable)
-          .update({ valid_to: editDate })
-          .eq("id", slotId)
-          .is("valid_to", null);
-
-        if (closeError) {
-          return { success: false as const, error: closeError.message };
+        const closeResult = await closeScheduleSlotByDate(slotId, editDate);
+        if (closeResult.success === false) {
+          return { success: false as const, error: closeResult.error };
         }
 
         const { error: updateError } = await supabase
@@ -433,13 +428,9 @@ export function useEditGroupSchedule() {
         return { success: true as const };
       }
 
-      const { error: closeError } = await supabase
-        .from(scheduleTable)
-        .update({ valid_to: editDate })
-        .eq("id", slotId);
-
-      if (closeError) {
-        return { success: false as const, error: closeError.message };
+      const closeResult = await closeScheduleSlotByDate(slotId, editDate);
+      if (closeResult.success === false) {
+        return { success: false as const, error: closeResult.error };
       }
 
       const { error: insertError } = await supabase.from(scheduleTable).insert({

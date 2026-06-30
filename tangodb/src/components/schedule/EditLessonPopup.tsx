@@ -147,7 +147,7 @@ export default function EditLessonPopup({
       setTimeStart(lesson.timeStart);
       setTimeEnd(lesson.timeEnd);
 
-      const rows = pickGroupSlotsForEdit(lesson, scheduleSlots);
+      const rows = pickGroupSlotsForEdit(lesson, scheduleSlots, todayISO);
 
       setGroupSlotRows(rows);
       setOriginalGroupSlots(rows.map((row) => ({ ...row })));
@@ -205,7 +205,7 @@ export default function EditLessonPopup({
         continue;
       }
 
-      const conflictDate = dateForDayOfWeekInWeek(lesson.date, row.dayOfWeek);
+      const conflictDate = dateForDayOfWeekInWeek(todayISO, row.dayOfWeek);
       const external = findScheduleConflict(
         {
           date: conflictDate,
@@ -225,7 +225,7 @@ export default function EditLessonPopup({
     }
 
     return conflicts;
-  }, [lesson, groupSlotRows, personalLessons, scheduleSlots, t, locale]);
+  }, [lesson, groupSlotRows, personalLessons, scheduleSlots, t, locale, todayISO]);
 
   const hasGroupSlotConflicts = groupSlotConflicts.size > 0;
 
@@ -369,7 +369,7 @@ export default function EditLessonPopup({
 
       const res = await editGroupSchedule.mutateAsync({
         slotId: row.id,
-        editDate: lesson.date,
+        editDate: todayISO,
         dayOfWeek: row.dayOfWeek,
         time: row.timeStart,
         timeEnd: row.timeEnd,
@@ -387,7 +387,7 @@ export default function EditLessonPopup({
 
     for (const row of removedSlots) {
       if (!row.id) continue;
-      const res = await deleteScheduleSlot.mutateAsync({ id: row.id, editDate: lesson.date });
+      const res = await deleteScheduleSlot.mutateAsync({ id: row.id, editDate: todayISO });
       if (!res.success) {
         toast(res.error ?? t("schedule.error.deleteScheduleFailed"), "error");
         return;
@@ -504,7 +504,7 @@ export default function EditLessonPopup({
 
   const groupVersionNote =
     lesson?.kind === "group"
-      ? t("schedule.hint.newVersionFrom", { date: formatDate(addDays(lesson.date, 1)) })
+      ? t("schedule.hint.newVersionFrom", { date: formatDate(todayISO) })
       : null;
 
   const personalEditNote = personalListEdit
