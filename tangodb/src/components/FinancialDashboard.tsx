@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import {
@@ -96,10 +96,10 @@ function shouldShowTrendLabel(index: number, total: number): boolean {
   return index % step === 0 || index === total - 1;
 }
 
-function estimateYAxisWidth(maxLabel: string, avgLabel: string): number {
-  const longest = Math.max(maxLabel.length, avgLabel.length, 1);
-  return Math.max(40, Math.min(88, longest * 6.5 + 10));
-}
+/** Горизонтальный отступ графика — совпадает с px-3 у карточек метрик («Расходы за месяц» и др.) */
+const TREND_CHART_PAD_X = 12;
+const TREND_CHART_PLOT_TOP = 8;
+const TREND_CHART_LABEL_ROW = 28;
 
 function RevenueTrendChart({
   points,
@@ -110,64 +110,87 @@ function RevenueTrendChart({
   locale: string | null;
   period: RevenueTrendPeriod;
 }) {
+  const gradientId = useId();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      setContainerWidth(w);
+    });
+    ro.observe(el);
+    setContainerWidth(el.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
+
   const maxTotal = Math.max(...points.map((point) => point.total), 1);
   const avgTotal =
     points.length > 0 ? points.reduce((sum, point) => sum + point.total, 0) / points.length : 0;
 
   const maxLabel = formatCurrency(maxTotal);
   const avgLabel = formatCurrency(Math.round(avgTotal));
-  const padLeft = estimateYAxisWidth(maxLabel, avgLabel);
-  const padRight = 8;
-  const padY = 8;
-  const width = 320;
-  const height = 96;
-  const chartW = width - padLeft - padRight;
-  const chartH = height - padY * 2;
-  const chartBottom = padY + chartH;
+
+  const width = Math.max(containerWidth, 1);
+  const plotLeft = TREND_CHART_PAD_X;
+  const plotRight = width - TREND_CHART_PAD_X;
+  const plotW = Math.max(plotRight - plotLeft, 1);
+  const plotHeight = 88;
+  const chartBottom = TREND_CHART_PLOT_TOP + plotHeight;
+  const svgHeight = chartBottom + TREND_CHART_LABEL_ROW;
 
   const coords = points.map((point, index) => {
-    const x = padLeft + (index / Math.max(points.length - 1, 1)) * chartW;
-    const y = padY + chartH - (point.total / maxTotal) * chartH;
+    const x =
+      plotLeft + (points.length <= 1 ? 0 : index / (points.length - 1)) * plotW;
+    const y = TREND_CHART_PLOT_TOP + plotHeight - (point.total / maxTotal) * plotHeight;
     return { ...point, x, y };
   });
 
-  const maxY = padY;
-  const avgY = padY + chartH - (avgTotal / maxTotal) * chartH;
+  const maxY = TREND_CHART_PLOT_TOP;
+  const avgY = TREND_CHART_PLOT_TOP + plotHeight - (avgTotal / maxTotal) * plotHeight;
 
   const linePath = coords.map((point) => `${point.x},${point.y}`).join(" ");
   const areaPath = [
-    `M ${coords[0]?.x ?? padLeft} ${chartBottom}`,
+    `M ${coords[0]?.x ?? plotLeft} ${chartBottom}`,
     ...coords.map((point) => `L ${point.x} ${point.y}`),
-    `L ${coords[coords.length - 1]?.x ?? padLeft + chartW} ${chartBottom}`,
+    `L ${coords[coords.length - 1]?.x ?? plotRight} ${chartBottom}`,
     "Z",
   ].join(" ");
 
-  const labelAreaLeftPct = (padLeft / width) * 100;
-  const labelAreaWidthPct = (chartW / width) * 100;
+  const hovered = hoveredIndex !== null ? coords[hoveredIndex] : null;
 
   return (
-    <div className="space-y-1">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-[6.5rem]" role="img" aria-hidden>
+    <div ref={containerRef} className="relative w-full">
+      <svg
+        width={width}
+        height={svgHeight}
+        className="block w-full"
+        role="img"
+        aria-label="Revenue trend"
+      >
         <defs>
-          <linearGradient id="revenueTrendFill" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="rgb(99 102 241)" stopOpacity="0.25" />
             <stop offset="100%" stopColor="rgb(99 102 241)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
         <line
-          x1={padLeft}
+          x1={plotLeft}
           y1={maxY}
-          x2={width - padRight}
+          x2={plotRight}
           y2={maxY}
           stroke="rgb(203 213 225)"
           strokeWidth="1"
           strokeDasharray="3 3"
         />
         <line
-          x1={padLeft}
+          x1={plotLeft}
           y1={avgY}
-          x2={width - padRight}
+          x2={plotRight}
           y2={avgY}
           stroke="rgb(203 213 225)"
           strokeWidth="1"
@@ -175,7 +198,7 @@ function RevenueTrendChart({
         />
 
         <text
-          x={padLeft - 4}
+          x={plotLeft - 4}
           y={maxY + 3}
           textAnchor="end"
           className="fill-slate-400"
@@ -184,7 +207,7 @@ function RevenueTrendChart({
           {maxLabel}
         </text>
         <text
-          x={padLeft - 4}
+          x={plotLeft - 4}
           y={avgY + 3}
           textAnchor="end"
           className="fill-slate-400"
@@ -193,7 +216,7 @@ function RevenueTrendChart({
           {avgLabel}
         </text>
 
-        <path d={areaPath} fill="url(#revenueTrendFill)" />
+        <path d={areaPath} fill={`url(#${gradientId})`} />
         <polyline
           fill="none"
           stroke="rgb(79 70 229)"
@@ -202,40 +225,70 @@ function RevenueTrendChart({
           strokeLinecap="round"
           points={linePath}
         />
-        {coords.map((point) => (
-          <circle
-            key={point.month}
-            cx={point.x}
-            cy={point.y}
-            r={point.total > 0 ? 3 : 2}
-            fill={point.total > 0 ? "rgb(79 70 229)" : "rgb(203 213 225)"}
-          />
-        ))}
-      </svg>
 
-      <div
-        className="relative h-9"
-        style={{ marginLeft: `${labelAreaLeftPct}%`, width: `${labelAreaWidthPct}%` }}
-      >
         {coords.map((point, index) => {
-          if (!shouldShowTrendLabel(index, coords.length)) return null;
-          const leftPct = coords.length <= 1 ? 0 : (index / (coords.length - 1)) * 100;
+          const prevX = index === 0 ? plotLeft : (coords[index - 1].x + point.x) / 2;
+          const nextX =
+            index === coords.length - 1 ? plotRight : (point.x + coords[index + 1].x) / 2;
+          const isHovered = hoveredIndex === index;
           return (
-            <div
-              key={point.month}
-              className="absolute top-0 -translate-x-1/2 text-center min-w-0 max-w-[3rem]"
-              style={{ left: `${leftPct}%` }}
-            >
-              <p className="text-[9px] text-slate-400 truncate">
-                {formatTrendPointLabel(point.month, period, locale)}
-              </p>
-              <p className="text-[10px] font-semibold text-slate-700 truncate">
-                {formatCurrency(point.total)}
-              </p>
-            </div>
+            <g key={point.month}>
+              <rect
+                x={prevX}
+                y={0}
+                width={Math.max(nextX - prevX, 1)}
+                height={chartBottom}
+                fill="transparent"
+                className="cursor-crosshair"
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              />
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={isHovered ? 5 : point.total > 0 ? 3 : 2}
+                fill={point.total > 0 ? "rgb(79 70 229)" : "rgb(203 213 225)"}
+                stroke={isHovered ? "white" : "none"}
+                strokeWidth={isHovered ? 2 : 0}
+                pointerEvents="none"
+              />
+            </g>
           );
         })}
-      </div>
+
+        {coords.map((point, index) => {
+          if (!shouldShowTrendLabel(index, coords.length)) return null;
+          return (
+            <text
+              key={`label-${point.month}`}
+              x={point.x}
+              y={chartBottom + 14}
+              textAnchor="middle"
+              className="fill-slate-400"
+              fontSize="9"
+            >
+              {formatTrendPointLabel(point.month, period, locale)}
+            </text>
+          );
+        })}
+      </svg>
+
+      {hovered && (
+        <div
+          className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm"
+          style={{
+            left: (hovered.x / width) * 100 + "%",
+            top: Math.max(hovered.y - 44, 0),
+          }}
+        >
+          <p className="text-[10px] text-slate-500 whitespace-nowrap">
+            {formatTrendPointLabel(hovered.month, period, locale)}
+          </p>
+          <p className="text-xs font-semibold text-slate-800 whitespace-nowrap">
+            {formatCurrency(hovered.total)}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -381,17 +434,6 @@ export default function FinancialDashboard() {
     }
     return aggregatePaymentsByMonth(payments, monthSeries);
   }, [paymentsQuery.data, monthSeries, trendPeriod]);
-
-  const trendNeedsWideChart = useMemo(() => {
-    const maxTotal = Math.max(...trendPoints.map((point) => point.total), 1);
-    const avgTotal =
-      trendPoints.length > 0
-        ? trendPoints.reduce((sum, point) => sum + point.total, 0) / trendPoints.length
-        : 0;
-    const maxLabel = formatCurrency(maxTotal);
-    const avgLabel = formatCurrency(Math.round(avgTotal));
-    return estimateYAxisWidth(maxLabel, avgLabel) > 48;
-  }, [trendPoints]);
 
   const stats = useMemo(() => {
     const monthPayments = paymentsInMonth(paymentsQuery.data ?? [], statsMonth);
@@ -642,11 +684,7 @@ export default function FinancialDashboard() {
           </div>
         )}
 
-        <div
-          className={`grid grid-cols-1 gap-3 pt-1 border-t border-slate-100 ${
-            trendNeedsWideChart ? "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : "lg:grid-cols-2"
-          }`}
-        >
+        <div className="grid grid-cols-1 gap-3 pt-1 border-t border-slate-100 lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
           <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
