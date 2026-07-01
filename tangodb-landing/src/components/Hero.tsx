@@ -37,11 +37,11 @@ export function Hero({ t }: Props) {
             </div>
           </div>
 
-          <div className="flex justify-center lg:justify-end">
+          <div className="flex justify-center lg:justify-end animate-fade-in">
             <img
-              src="/vert_girl.png"
+              src="/vert_add.png"
               alt={t("hero.imageAlt")}
-              className="w-full max-w-[280px] sm:max-w-xs lg:max-w-[320px] xl:max-w-sm"
+              className="w-full max-w-[280px] sm:max-w-xs lg:max-w-[320px] xl:max-w-sm rounded-2xl shadow-lg shadow-indigo-100/80"
               width={400}
               height={600}
               loading="eager"
