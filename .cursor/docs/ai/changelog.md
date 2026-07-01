@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-01 — tangodb-landing: убраны все эффекты hero-изображения — CSS (`rounded-2xl`, `animate-fade-in`) и вшитая тень/ореол в `vert_girl.png` (обработка PNG + `Hero.tsx`).
 2026-07-01 — tangodb-landing: убраны тени под hero-изображением (`Hero.tsx`).
 2026-07-01 — tangodb-landing: hero-изображение заменено на `vert_girl.png` (`Hero.tsx`, `public/vert_girl.png`).
 2026-07-01 — tangodb-dev-console: force purge licensed org (Tenants), подпись выдающего при выдаче lifetime key, обязательный email получателя; migration `20260815000001`, edge `issuerSignature.ts`, `DEV_CONSOLE_ISSUER_SIGNATURE` secret.
