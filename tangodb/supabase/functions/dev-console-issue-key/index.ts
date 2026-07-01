@@ -2,6 +2,7 @@ import {
   generateAccessKey,
   hashAccessKey,
 } from "../_shared/accessKey.ts";
+import { validateIssuerSignature } from "../_shared/issuerSignature.ts";
 import { isDeveloper } from "../_shared/devAuth.ts";
 import {
   getClientIp,
@@ -43,16 +44,21 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "developer_access_required" }, 403, req);
   }
 
-  let body: { email?: string; invoice_ref?: string; note?: string };
+  let body: { email?: string; invoice_ref?: string; note?: string; issuer_signature?: string };
   try {
     body = await req.json();
   } catch {
     return jsonResponse({ error: "Invalid JSON" }, 400, req);
   }
 
+  const signatureResult = await validateIssuerSignature(body.issuer_signature ?? "");
+  if (!signatureResult.ok) {
+    return jsonResponse({ error: signatureResult.error }, 403, req);
+  }
+
   const email = normalizeEmail(body.email ?? "");
   if (!isValidEmail(email)) {
-    return jsonResponse({ error: "Invalid email" }, 400, req);
+    return jsonResponse({ error: "recipient_email_required" }, 400, req);
   }
 
   const admin = createServiceClient();
@@ -80,6 +86,7 @@ Deno.serve(async (req) => {
       status: "pending",
       crm_version_id: version.id,
       email,
+      issuer_signature_hash: signatureResult.hash,
       created_by: userData.user.id,
     })
     .select("id")

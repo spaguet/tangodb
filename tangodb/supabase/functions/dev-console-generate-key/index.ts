@@ -6,8 +6,11 @@ import { isDeveloper } from "../_shared/devAuth.ts";
 import {
   getClientIp,
   handleOptions,
+  isValidEmail,
   jsonResponse,
+  normalizeEmail,
 } from "../_shared/http.ts";
+import { validateIssuerSignature } from "../_shared/issuerSignature.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
@@ -41,11 +44,21 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "developer_access_required" }, 403, req);
   }
 
-  let body: { note?: string; email?: string };
+  let body: { note?: string; email?: string; issuer_signature?: string };
   try {
     body = await req.json();
   } catch {
-    body = {};
+    return jsonResponse({ error: "Invalid JSON" }, 400, req);
+  }
+
+  const signatureResult = await validateIssuerSignature(body.issuer_signature ?? "");
+  if (!signatureResult.ok) {
+    return jsonResponse({ error: signatureResult.error }, 403, req);
+  }
+
+  const email = normalizeEmail(body.email ?? "");
+  if (!isValidEmail(email)) {
+    return jsonResponse({ error: "recipient_email_required" }, 400, req);
   }
 
   const admin = createServiceClient();
@@ -72,7 +85,8 @@ Deno.serve(async (req) => {
       key_type: "lifetime",
       status: "pending",
       crm_version_id: version.id,
-      email: body.email?.trim() || null,
+      email,
+      issuer_signature_hash: signatureResult.hash,
       created_by: userData.user.id,
     })
     .select("id")
@@ -91,7 +105,7 @@ Deno.serve(async (req) => {
     metadata: {
       key_type: "lifetime",
       note: body.note?.slice(0, 200) ?? null,
-      recipient_email: body.email ? body.email.split("@")[1] : null,
+      recipient_domain: email.split("@")[1] ?? null,
     },
   });
 

@@ -7,6 +7,7 @@ export default function KeysPage() {
   const [note, setNote] = useState("");
   const [email, setEmail] = useState("");
   const [invoiceRef, setInvoiceRef] = useState("");
+  const [issuerSignature, setIssuerSignature] = useState("");
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,10 +20,15 @@ export default function KeysPage() {
     setGeneratedKey(null);
     try {
       const fn = mode === "generate" ? "dev-console-generate-key" : "dev-console-issue-key";
+      const payload = {
+        note: note || undefined,
+        email: email.trim(),
+        issuer_signature: issuerSignature,
+      };
       const body =
         mode === "generate"
-          ? { note: note || undefined, email: email || undefined }
-          : { email, invoice_ref: invoiceRef || undefined, note: note || undefined };
+          ? payload
+          : { ...payload, invoice_ref: invoiceRef || undefined };
       const result = await invokeDevFunction<{ key: string }>(fn, body);
       setGeneratedKey(result.key);
     } catch (e) {
@@ -46,14 +52,18 @@ export default function KeysPage() {
       ? error === "origin_not_allowed"
         ? "Добавьте https://tangodb-dev-console.vercel.app в ALLOWED_ORIGINS (Supabase Secrets)."
         : "Выйдите и войдите снова (albertkoall@gmail.com). Supabase Auth → Users → app_metadata: platform_role=developer. Или проверьте DEV_CONSOLE_ALLOWLIST."
-      : null;
+      : error === "invalid_issuer_signature" || error === "issuer_signature_required"
+        ? "Неверная подпись выдающего. Проверьте DEV_CONSOLE_ISSUER_SIGNATURE в Supabase Secrets."
+        : error === "issuer_signature_not_configured"
+          ? "Задайте секрет DEV_CONSOLE_ISSUER_SIGNATURE в Supabase (Edge Functions → Secrets)."
+          : null;
 
   return (
     <div className="max-w-lg space-y-6">
       <h2 className="text-2xl font-bold text-white">Lifetime keys</h2>
       <p className="text-xs text-slate-500">
-        Ключ показывается здесь один раз — на email не отправляется. Скопируйте и передайте клиенту или
-        вставьте на странице активации CRM. Реквизиты оплаты — в{" "}
+        Ключ привязан к email получателя и активируется только этим аккаунтом. Подпись выдающего обязательна.
+        Скопируйте ключ и передайте клиенту. Реквизиты оплаты — в{" "}
         <Link to="/payment-methods" className="text-indigo-400 hover:text-indigo-300 underline">
           Payment methods
         </Link>
@@ -82,39 +92,36 @@ export default function KeysPage() {
       </div>
 
       <div className="space-y-3 bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <label className="block space-y-1">
+          <span className="text-xs text-slate-500 uppercase">Recipient email *</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+          />
+        </label>
         {mode === "payment" && (
-          <>
-            <label className="block space-y-1">
-              <span className="text-xs text-slate-500 uppercase">Customer email *</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs text-slate-500 uppercase">Invoice ref</span>
-              <input
-                value={invoiceRef}
-                onChange={(e) => setInvoiceRef(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
-              />
-            </label>
-          </>
-        )}
-        {mode === "generate" && (
           <label className="block space-y-1">
-            <span className="text-xs text-slate-500 uppercase">Recipient email (optional)</span>
+            <span className="text-xs text-slate-500 uppercase">Invoice ref</span>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={invoiceRef}
+              onChange={(e) => setInvoiceRef(e.target.value)}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
             />
           </label>
         )}
+        <label className="block space-y-1">
+          <span className="text-xs text-slate-500 uppercase">Подпись выдающего *</span>
+          <input
+            type="password"
+            value={issuerSignature}
+            onChange={(e) => setIssuerSignature(e.target.value)}
+            autoComplete="off"
+            className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+          />
+        </label>
         <label className="block space-y-1">
           <span className="text-xs text-slate-500 uppercase">Note</span>
           <input
@@ -126,7 +133,7 @@ export default function KeysPage() {
         <button
           type="button"
           onClick={run}
-          disabled={loading || (mode === "payment" && !email.trim())}
+          disabled={loading || !email.trim() || !issuerSignature.trim()}
           className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
         >
           {loading ? "…" : mode === "generate" ? "Generate lifetime key" : "Issue key after payment"}

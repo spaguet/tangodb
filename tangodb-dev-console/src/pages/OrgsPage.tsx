@@ -90,6 +90,8 @@ export default function OrgsPage() {
   const [issuedKey, setIssuedKey] = useState<string | null>(null);
   const [purgeNameConfirm, setPurgeNameConfirm] = useState("");
   const [purgeReason, setPurgeReason] = useState("");
+  const [purgeForceLicensed, setPurgeForceLicensed] = useState(false);
+  const [issueKeySignature, setIssueKeySignature] = useState("");
   const [copied, setCopied] = useState(false);
   const [transferEmail, setTransferEmail] = useState("");
   const [transferReason, setTransferReason] = useState("");
@@ -125,6 +127,8 @@ export default function OrgsPage() {
     setIssuedKey(null);
     setPurgeNameConfirm("");
     setPurgeReason("");
+    setPurgeForceLicensed(false);
+    setIssueKeySignature("");
     setCopied(false);
     setTransferEmail("");
     setTransferReason("");
@@ -138,6 +142,7 @@ export default function OrgsPage() {
     setModalError("");
     setTempPassword(null);
     setIssuedKey(null);
+    setIssueKeySignature("");
     setTransferEmail("");
     setTransferReason("");
     setTransferVerification(EMPTY_TRANSFER_VERIFICATION);
@@ -169,10 +174,19 @@ export default function OrgsPage() {
       const result = await invokeDevFunction<{ key: string }>("dev-console-issue-key", {
         email: activeTenant.owner_email,
         note: `org:${activeTenant.id}`,
+        issuer_signature: issueKeySignature,
       });
       setIssuedKey(result.key);
     } catch (e) {
-      setModalError(e instanceof Error ? e.message : "Issue failed");
+      const raw = e instanceof Error ? e.message : "Issue failed";
+      const map: Record<string, string> = {
+        invalid_issuer_signature: "Неверная подпись выдающего.",
+        issuer_signature_required: "Введите подпись выдающего.",
+        issuer_signature_not_configured:
+          "Секрет DEV_CONSOLE_ISSUER_SIGNATURE не настроен в Supabase.",
+        recipient_email_required: "Email получателя обязателен.",
+      };
+      setModalError(map[raw] ?? raw);
     } finally {
       setModalLoading(false);
     }
@@ -219,10 +233,12 @@ export default function OrgsPage() {
     setModalLoading(true);
     setModalError("");
     try {
+      const needsForce = isLicensedTenant(activeTenant);
       await invokeDevFunction("dev-console-purge-org", {
         organization_id: activeTenant.id,
         org_name_confirm: purgeNameConfirm,
         reason: purgeReason || undefined,
+        force_licensed: needsForce ? purgeForceLicensed : undefined,
       });
       closeModal();
       await search();
@@ -253,8 +269,10 @@ export default function OrgsPage() {
     return "bg-slate-800 text-slate-300";
   };
 
-  const canPurge = (t: TenantRow) =>
-    t.status !== "purged" && t.status !== "licensed" && t.license_badge !== "Lifetime";
+  const isLicensedTenant = (t: TenantRow) =>
+    t.status === "licensed" || t.license_badge === "Lifetime";
+
+  const canPurge = (t: TenantRow) => t.status !== "purged";
 
   return (
     <div className="space-y-4 max-w-[1400px]">
@@ -646,8 +664,28 @@ export default function OrgsPage() {
               <>
                 <h3 className="text-lg font-semibold text-white">Lifetime key</h3>
                 <p className="text-sm text-slate-400">
-                  Email: {activeTenant.owner_email}
+                  Ключ будет привязан к email owner и активируется только этим аккаунтом.
                 </p>
+                <label className="block space-y-1">
+                  <span className="text-xs text-slate-500">Email получателя</span>
+                  <input
+                    type="email"
+                    value={activeTenant.owner_email ?? ""}
+                    readOnly
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-300"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-xs text-slate-500">Подпись выдающего</span>
+                  <input
+                    type="password"
+                    value={issueKeySignature}
+                    onChange={(e) => setIssueKeySignature(e.target.value)}
+                    placeholder="Ваша секретная подпись"
+                    autoComplete="off"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+                  />
+                </label>
                 {!issuedKey ? (
                   <>
                     {modalError && <p className="text-sm text-rose-400">{modalError}</p>}
@@ -658,7 +696,7 @@ export default function OrgsPage() {
                       <button
                         type="button"
                         onClick={() => void issueKey()}
-                        disabled={modalLoading}
+                        disabled={modalLoading || !issueKeySignature.trim()}
                         className="px-4 py-2 bg-indigo-600 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
                       >
                         {modalLoading ? "…" : "Выдать ключ"}
@@ -686,7 +724,9 @@ export default function OrgsPage() {
               <>
                 <h3 className="text-lg font-semibold text-rose-300">Удалить базу</h3>
                 <p className="text-sm text-slate-400">
-                  Необратимо для demo org. Licensed org заблокированы.
+                  {isLicensedTenant(activeTenant)
+                    ? "Licensed / Lifetime org — необратимое удаление. Требуется подтверждение и причина."
+                    : "Необратимое удаление demo org и всех данных."}
                 </p>
                 <label className="block space-y-1">
                   <span className="text-xs text-slate-500">Подтвердите название org</span>
@@ -698,13 +738,28 @@ export default function OrgsPage() {
                   />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-xs text-slate-500">Причина (optional)</span>
+                  <span className="text-xs text-slate-500">
+                    Причина{isLicensedTenant(activeTenant) ? " *" : " (optional)"}
+                  </span>
                   <input
                     value={purgeReason}
                     onChange={(e) => setPurgeReason(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
                   />
                 </label>
+                {isLicensedTenant(activeTenant) && (
+                  <label className="flex items-start gap-2 text-xs text-amber-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={purgeForceLicensed}
+                      onChange={(e) => setPurgeForceLicensed(e.target.checked)}
+                      className="mt-0.5 rounded"
+                    />
+                    <span>
+                      Подтверждаю принудительное удаление licensed org (тест, мошенничество, украденный ключ)
+                    </span>
+                  </label>
+                )}
                 {modalError && <p className="text-sm text-rose-400">{modalError}</p>}
                 <div className="flex gap-2 justify-end">
                   <button type="button" onClick={closeModal} className="px-3 py-2 text-sm text-slate-400 cursor-pointer">
@@ -713,7 +768,12 @@ export default function OrgsPage() {
                   <button
                     type="button"
                     onClick={() => void purgeOrg()}
-                    disabled={modalLoading || purgeNameConfirm !== activeTenant.name}
+                    disabled={
+                      modalLoading ||
+                      purgeNameConfirm !== activeTenant.name ||
+                      (isLicensedTenant(activeTenant) &&
+                        (!purgeForceLicensed || !purgeReason.trim()))
+                    }
                     className="px-4 py-2 bg-rose-700 hover:bg-rose-600 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
                   >
                     {modalLoading ? "…" : "Удалить навсегда"}
