@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-01 — tangodb-landing: убраны тени под hero-изображением (`Hero.tsx`).
 2026-07-01 — tangodb-landing: hero-изображение заменено на `vert_girl.png` (`Hero.tsx`, `public/vert_girl.png`).
 2026-07-01 — tangodb-dev-console: force purge licensed org (Tenants), подпись выдающего при выдаче lifetime key, обязательный email получателя; migration `20260815000001`, edge `issuerSignature.ts`, `DEV_CONSOLE_ISSUER_SIGNATURE` secret.
 2026-06-30 — tangodb: favicon вкладки браузера — логотип TDB (`public/favicon.svg`, `index.html`).

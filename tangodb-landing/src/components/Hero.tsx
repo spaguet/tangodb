@@ -41,7 +41,7 @@ export function Hero({ t }: Props) {
             <img
               src="/vert_girl.png"
               alt={t("hero.imageAlt")}
-              className="w-full max-w-[280px] sm:max-w-xs lg:max-w-[320px] xl:max-w-sm rounded-2xl shadow-lg shadow-indigo-100/80"
+              className="w-full max-w-[280px] sm:max-w-xs lg:max-w-[320px] xl:max-w-sm rounded-2xl"
               width={400}
               height={600}
               loading="eager"
