@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-01 — tangodb-landing: hero-изображение заменено на `vert_girl.png` (`Hero.tsx`, `public/vert_girl.png`).
 2026-07-01 — tangodb-dev-console: force purge licensed org (Tenants), подпись выдающего при выдаче lifetime key, обязательный email получателя; migration `20260815000001`, edge `issuerSignature.ts`, `DEV_CONSOLE_ISSUER_SIGNATURE` secret.
 2026-06-30 — tangodb: favicon вкладки браузера — логотип TDB (`public/favicon.svg`, `index.html`).
 2026-06-30 — fix: Dev Console purge org — `_purge_demo_organization_core` отключает `audit_%` триггеры перед `DELETE FROM organizations` (FK `audit_log_organization_id_fkey` при CASCADE); migration `20260814000001`.
