@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-02 — tangodb: platform developer bypass для self-service demo — `is_platform_developer_email`, обход `demo_owner_retention`/Turnstile/captcha для `platform_role=developer` (migration `20260816000001`, edge functions).
 2026-07-02 — tangodb: fix self-service demo routing — вход и CRM без membership ведут на `/auth/verify-email` для автосоздания 30-дневного демо; `/activate-key` только после исчерпания демо-квоты email (`LoginPage`, `routeGuards`).
 2026-07-02 — tangodb: после исчерпания бесплатного демо — редирект на `/activate-key` вместо бессмысленного retry на verify-email; вход без org ведёт на активацию ключа (`VerifyEmailPage`, `LoginPage`, `routeGuards`, `ActivateKeyPage`, i18n).
 2026-07-02 — tangodb: captcha на странице подтверждения email — если challenge истёк или отсутствует, показывается Turnstile вместо ошибки «вернитесь на Регистрацию»; challenge списывается только после pre-flight проверок (`VerifyEmailPage.tsx`, `authErrors.ts`, i18n, migration `20260815000002_self_service_challenge_consume_order.sql`).

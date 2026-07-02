@@ -10,6 +10,7 @@ import {
 import { ownerEmailHash } from "../_shared/emailHash.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
+import { isDeveloper } from "../_shared/devAuth.ts";
 
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 15 * 60_000;
@@ -149,6 +150,7 @@ Deno.serve(async (req) => {
 
   logEvent("self_service_demo_created", {
     email_domain: email.includes("@") ? email.split("@")[1] : null,
+    platform_developer: isDeveloper(user, authHeader),
   });
 
   return jsonResponse(
