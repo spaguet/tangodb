@@ -98,12 +98,8 @@ export function OrgWorkspaceRoute() {
     if (isSyntheticTelegramEmail(session.user.email)) {
       return <Navigate to="/activate-key" replace />;
     }
-    const emailConfirmed = Boolean(session.user.email_confirmed_at);
-    const hasEmail = Boolean(session.user.email?.trim());
-    if (emailConfirmed && hasEmail) {
-      return <Navigate to="/activate-key" replace />;
-    }
-    return <Navigate to="/activate-key" replace />;
+    // Email users without an org: create self-service demo first; activate-key only after demo quota is used.
+    return <Navigate to="/auth/verify-email" replace />;
   }
 
   if (!organizationId) {
