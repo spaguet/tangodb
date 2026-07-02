@@ -114,7 +114,7 @@ export default function LoginPage() {
     try {
       const nextSession = await signInWithEmail(email.trim(), password, rememberMe);
       if (nextSession.user.email_confirmed_at && !getOrganizationIdFromSession(nextSession)) {
-        navigate("/auth/verify-email", { replace: true });
+        navigate("/activate-key", { replace: true });
         return;
       }
       goAfterLogin();

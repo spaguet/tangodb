@@ -101,7 +101,7 @@ export function OrgWorkspaceRoute() {
     const emailConfirmed = Boolean(session.user.email_confirmed_at);
     const hasEmail = Boolean(session.user.email?.trim());
     if (emailConfirmed && hasEmail) {
-      return <Navigate to="/auth/verify-email" replace />;
+      return <Navigate to="/activate-key" replace />;
     }
     return <Navigate to="/activate-key" replace />;
   }

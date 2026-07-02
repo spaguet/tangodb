@@ -133,6 +133,8 @@ export const RU: Record<I18nKey, string> = {
   "auth.activateKey.subtitle": "Активация ключа",
   "auth.activateKey.intro":
     "После входа нужно активировать ключ — так создаётся ваша организация в CRM.",
+  "auth.activateKey.demoUsedHint":
+    "Бесплатное демо для этого email уже было использовано. Активируйте демо-ключ или lifetime-ключ ниже — либо зарегистрируйтесь с другим email.",
   "auth.activateKey.demoKeyHint": "Демо-ключ — email аккаунта должен совпадать с email заявки.",
   "auth.activateKey.lifetimeKeyHint": "Lifetime-ключ — пожизненный доступ (из письма после покупки).",
   "auth.activateKey.purchaseHint": "Покупка полной версии — реквизиты и инструкция на странице покупки.",

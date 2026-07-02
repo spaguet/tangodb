@@ -124,6 +124,7 @@ export type I18nKey =
   | "auth.passwordMismatch"
   | "auth.activateKey.subtitle"
   | "auth.activateKey.intro"
+  | "auth.activateKey.demoUsedHint"
   | "auth.activateKey.demoKeyHint"
   | "auth.activateKey.lifetimeKeyHint"
   | "auth.activateKey.purchaseHint"

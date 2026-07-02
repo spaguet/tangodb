@@ -3,8 +3,14 @@ import { t, getGuestLocale } from "../lib/i18n";
 export const REGISTRATION_CAPTCHA_REQUIRED =
   "Complete registration captcha on the sign-up page first";
 
+export const DEMO_ALREADY_USED_EMAIL = "Demo already used for this email";
+
 export function isRegistrationCaptchaRequired(err: unknown): boolean {
   return err instanceof Error && err.message === REGISTRATION_CAPTCHA_REQUIRED;
+}
+
+export function isDemoAlreadyUsedError(err: unknown): boolean {
+  return err instanceof Error && err.message === DEMO_ALREADY_USED_EMAIL;
 }
 
 export function parseAuthError(err: unknown, locale?: string): string {
@@ -21,7 +27,7 @@ export function parseAuthError(err: unknown, locale?: string): string {
   if (message === "User already registered") {
     return t(loc, "auth.error.userAlreadyRegistered");
   }
-  if (message === "Demo already used for this email") {
+  if (message === DEMO_ALREADY_USED_EMAIL) {
     return t(loc, "auth.error.demoUsedEmail");
   }
   if (message === "Captcha verification failed") {

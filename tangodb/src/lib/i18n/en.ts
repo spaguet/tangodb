@@ -133,6 +133,8 @@ export const EN: Record<I18nKey, string> = {
   "auth.activateKey.subtitle": "Activate access key",
   "auth.activateKey.intro":
     "After signing in, activate your key — this is how your organization is created in the CRM.",
+  "auth.activateKey.demoUsedHint":
+    "The free demo for this email has already been used. Activate a demo or lifetime key below, or sign up with a different email.",
   "auth.activateKey.demoKeyHint": "Demo key — the account email must match the request email.",
   "auth.activateKey.lifetimeKeyHint": "Lifetime key — lifetime access (from the purchase email).",
   "auth.activateKey.purchaseHint": "Buy the full version — payment details and instructions are on the purchase page.",

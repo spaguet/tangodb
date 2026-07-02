@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { KeyRound, ShoppingBag } from "lucide-react";
 import { DEMO_PURCHASE_PATH } from "../lib/demoLicense";
 import { supabase } from "../lib/supabase";
@@ -41,6 +41,10 @@ function activationErrorFromBody(body: { error?: string; debug?: string } | null
 export default function ActivateKeyPage() {
   const { t } = useGuestI18n();
   const navigate = useNavigate();
+  const location = useLocation();
+  const demoUsedRedirect = Boolean(
+    (location.state as { demoUsed?: boolean } | null)?.demoUsed
+  );
   const { signOut } = useAuth();
   const { memberships, organizationId, refreshOrganization } = useOrganization();
   const [key, setKey] = useState("");
@@ -99,6 +103,12 @@ export default function ActivateKeyPage() {
 
   return (
     <AuthLayout title="TangoDB" subtitle={t("auth.activateKey.subtitle")}>
+      {demoUsedRedirect && (
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+          {t("auth.activateKey.demoUsedHint")}
+        </p>
+      )}
+
       <div className="space-y-3 text-sm text-slate-600">
         <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
           <KeyRound className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />

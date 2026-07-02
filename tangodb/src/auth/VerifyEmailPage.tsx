@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
-import { isRegistrationCaptchaRequired, parseAuthError } from "./authErrors";
+import { isDemoAlreadyUsedError, isRegistrationCaptchaRequired, parseAuthError } from "./authErrors";
 import RecoveryCodeModal from "./RecoveryCodeModal";
 import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import { useOrganization } from "../organization/OrganizationProvider";
@@ -74,6 +74,10 @@ export default function VerifyEmailPage() {
         navigate(result.alreadyHasOrg ? "/" : "/onboarding", { replace: true });
       } catch (err) {
         attemptRef.current = false;
+        if (isDemoAlreadyUsedError(err)) {
+          navigate("/activate-key", { replace: true, state: { demoUsed: true } });
+          return;
+        }
         if (isRegistrationCaptchaRequired(err)) {
           setNeedsCaptcha(true);
           setError(null);

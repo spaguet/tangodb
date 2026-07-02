@@ -8,6 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-02 — tangodb: после исчерпания бесплатного демо — редирект на `/activate-key` вместо бессмысленного retry на verify-email; вход без org ведёт на активацию ключа (`VerifyEmailPage`, `LoginPage`, `routeGuards`, `ActivateKeyPage`, i18n).
 2026-07-02 — tangodb: captcha на странице подтверждения email — если challenge истёк или отсутствует, показывается Turnstile вместо ошибки «вернитесь на Регистрацию»; challenge списывается только после pre-flight проверок (`VerifyEmailPage.tsx`, `authErrors.ts`, i18n, migration `20260815000002_self_service_challenge_consume_order.sql`).
 2026-07-02 — tangodb-landing: правки копирайта и UI — H1 hero на 4 строки, новый текст demoHint, «Личные уроки» выключены в «Сеть школ», иконки вместо превью во «Всё внутри CRM» (`Hero.tsx`, `ru.ts`, `en.ts`, `ModularitySection.tsx`, `CrmCapabilities.tsx`; удалён `CrmPanelThumbnail.tsx`).
 2026-07-02 — tangodb-landing: производительность изображений — hero через `<picture>` (AVIF/WebP srcset + JPG fallback), preload LCP, aspect-ratio против CLS; og-image.jpg для шеринга; display-sized ассеты в `public/` (`Hero.tsx`, `config.ts`, `index.html`, `CrmMobilePlaceholder.tsx`; промт 16 аудита).
