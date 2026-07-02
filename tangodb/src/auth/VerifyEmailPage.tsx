@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
-import { parseAuthError } from "./authErrors";
+import { isRegistrationCaptchaRequired, parseAuthError } from "./authErrors";
 import RecoveryCodeModal from "./RecoveryCodeModal";
+import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useSelfServiceDemo } from "../hooks/useSelfServiceDemo";
 import { useGuestI18n } from "../hooks/useI18n";
@@ -15,7 +16,7 @@ export default function VerifyEmailPage() {
   const { t, locale } = useGuestI18n();
   const { session, loading: authLoading } = useAuth();
   const { memberships, membershipsLoading, refreshOrganization } = useOrganization();
-  const { createDemoOrganization } = useSelfServiceDemo();
+  const { verifyRegistrationChallenge, createDemoOrganization } = useSelfServiceDemo();
   const navigate = useNavigate();
   const location = useLocation();
   const attemptRef = useRef(false);
@@ -28,33 +29,73 @@ export default function VerifyEmailPage() {
   const [phase, setPhase] = useState<VerifyPhase>(initialRecoveryCode ? "recovery" : "idle");
   const [recoveryCode, setRecoveryCode] = useState<string | null>(initialRecoveryCode);
   const [error, setError] = useState<string | null>(null);
+  const [needsCaptcha, setNeedsCaptcha] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
-  const attemptCreateDemo = useCallback(async () => {
-    if (attemptRef.current) return;
+  const attemptCreateDemo = useCallback(
+    async (opts?: { withCaptcha?: boolean }) => {
+      if (attemptRef.current) return;
 
-    attemptRef.current = true;
-    setError(null);
-    setPhase("creating");
+      attemptRef.current = true;
+      setError(null);
+      setPhase("creating");
 
-    try {
-      const result = await createDemoOrganization();
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) throw refreshError;
-      await refreshOrganization();
+      try {
+        const email = session?.user.email?.trim().toLowerCase();
+        if (opts?.withCaptcha) {
+          if (!email) {
+            throw new Error("Email required");
+          }
+          if (!turnstileToken) {
+            setError(
+              isTurnstileConfigured()
+                ? t("auth.register.captchaRequired")
+                : t("auth.register.captchaUnavailable")
+            );
+            setPhase("idle");
+            attemptRef.current = false;
+            return;
+          }
+          await verifyRegistrationChallenge(email, turnstileToken);
+        }
 
-      if (result.recoveryCode) {
-        setRecoveryCode(result.recoveryCode);
-        setPhase("recovery");
-        return;
+        const result = await createDemoOrganization();
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) throw refreshError;
+        await refreshOrganization();
+
+        if (result.recoveryCode) {
+          setRecoveryCode(result.recoveryCode);
+          setPhase("recovery");
+          return;
+        }
+
+        navigate(result.alreadyHasOrg ? "/" : "/onboarding", { replace: true });
+      } catch (err) {
+        attemptRef.current = false;
+        if (isRegistrationCaptchaRequired(err)) {
+          setNeedsCaptcha(true);
+          setError(null);
+        } else {
+          setError(parseAuthError(err, locale));
+        }
+        setTurnstileResetKey((k) => k + 1);
+        setTurnstileToken(null);
+        setPhase("idle");
       }
-
-      navigate(result.alreadyHasOrg ? "/" : "/onboarding", { replace: true });
-    } catch (err) {
-      attemptRef.current = false;
-      setError(parseAuthError(err, locale));
-      setPhase("idle");
-    }
-  }, [createDemoOrganization, locale, navigate, refreshOrganization]);
+    },
+    [
+      createDemoOrganization,
+      locale,
+      navigate,
+      refreshOrganization,
+      session?.user.email,
+      t,
+      turnstileToken,
+      verifyRegistrationChallenge,
+    ]
+  );
 
   useEffect(() => {
     if (authLoading || membershipsLoading) {
@@ -77,7 +118,7 @@ export default function VerifyEmailPage() {
       return;
     }
 
-    if (recoveryCode || attemptRef.current) return;
+    if (recoveryCode || attemptRef.current || needsCaptcha) return;
 
     void attemptCreateDemo();
   }, [
@@ -86,7 +127,9 @@ export default function VerifyEmailPage() {
     session,
     memberships.length,
     recoveryCode,
+    needsCaptcha,
     attemptCreateDemo,
+    navigate,
   ]);
 
   const continueAfterRecovery = () => {
@@ -131,6 +174,23 @@ export default function VerifyEmailPage() {
             <AuthLink to="/login">{t("auth.verifyEmail.signInOtherAccount")}</AuthLink>
           </p>
         </>
+      ) : needsCaptcha ? (
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">{t("auth.verifyEmail.captchaHint")}</p>
+          <TurnstileWidget
+            resetKey={turnstileResetKey}
+            onToken={setTurnstileToken}
+            onError={() => setTurnstileToken(null)}
+          />
+          <AuthButton
+            type="button"
+            loading={false}
+            disabled={isTurnstileConfigured() && !turnstileToken}
+            onClick={() => void attemptCreateDemo({ withCaptcha: true })}
+          >
+            {t("auth.verifyEmail.createDemo")}
+          </AuthButton>
+        </div>
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-slate-500">{t("auth.verifyEmail.confirmedFallbackHint")}</p>

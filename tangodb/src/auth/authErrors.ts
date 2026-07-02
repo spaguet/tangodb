@@ -1,5 +1,12 @@
 import { t, getGuestLocale } from "../lib/i18n";
 
+export const REGISTRATION_CAPTCHA_REQUIRED =
+  "Complete registration captcha on the sign-up page first";
+
+export function isRegistrationCaptchaRequired(err: unknown): boolean {
+  return err instanceof Error && err.message === REGISTRATION_CAPTCHA_REQUIRED;
+}
+
 export function parseAuthError(err: unknown, locale?: string): string {
   const loc = locale ?? getGuestLocale();
   if (!(err instanceof Error)) return t(loc, "auth.error.generic");
@@ -20,7 +27,7 @@ export function parseAuthError(err: unknown, locale?: string): string {
   if (message === "Captcha verification failed") {
     return t(loc, "auth.error.captchaFailed");
   }
-  if (message === "Complete registration captcha on the sign-up page first") {
+  if (message === REGISTRATION_CAPTCHA_REQUIRED) {
     return t(loc, "auth.error.completeRegistrationCaptcha");
   }
   if (message === "Demo already used for this telegram account") {

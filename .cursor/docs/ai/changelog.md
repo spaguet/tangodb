@@ -8,6 +8,23 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-02 — tangodb: captcha на странице подтверждения email — если challenge истёк или отсутствует, показывается Turnstile вместо ошибки «вернитесь на Регистрацию»; challenge списывается только после pre-flight проверок (`VerifyEmailPage.tsx`, `authErrors.ts`, i18n, migration `20260815000002_self_service_challenge_consume_order.sql`).
+2026-07-02 — tangodb-landing: правки копирайта и UI — H1 hero на 4 строки, новый текст demoHint, «Личные уроки» выключены в «Сеть школ», иконки вместо превью во «Всё внутри CRM» (`Hero.tsx`, `ru.ts`, `en.ts`, `ModularitySection.tsx`, `CrmCapabilities.tsx`; удалён `CrmPanelThumbnail.tsx`).
+2026-07-02 — tangodb-landing: производительность изображений — hero через `<picture>` (AVIF/WebP srcset + JPG fallback), preload LCP, aspect-ratio против CLS; og-image.jpg для шеринга; display-sized ассеты в `public/` (`Hero.tsx`, `config.ts`, `index.html`, `CrmMobilePlaceholder.tsx`; промт 16 аудита).
+2026-07-02 — tangodb-landing: иконки и мини-превью — разные цвета иконок в Features (4 карточки), мини-превью реальных панелей демо в CrmCapabilities, компактные dashed-иконки для остальных разделов (`Features.tsx`, `CrmCapabilities.tsx`, `CrmPanelThumbnail.tsx`, `App.tsx`; промт 15 аудита).
+2026-07-02 — tangodb-landing: визуальный ритм страницы — чередование фонов секций (белый / slate-50 / тёмный), порядок Demo → CRM → Platform, тёмный footer (`App.tsx`, `Features.tsx`, `DemoSection.tsx`, `CrmCapabilities.tsx`, `PlatformSection.tsx`, `PricingSection.tsx`, `FaqSection.tsx`, `Footer.tsx`; промт 13 аудита).
+2026-07-02 — tangodb-landing: секция «Компьютер и смартфон» — десктопный превью из демо UI, placeholder для мобильного скриншота, блок поддержки с тёплым фоном и Telegram (`PlatformSection.tsx`, `CrmDesktopPreview.tsx`, `CrmMobilePlaceholder.tsx`, `App.tsx`, `ru.ts`, `en.ts`; промт 12 аудита).
+2026-07-02 — tangodb-landing: SEO — meta description в i18n, синхронизация title/lang/OG/Twitter при смене локали, canonical, robots.txt, sitemap.xml (`pageMeta.ts`, `useI18n.ts`, `index.html`, `config.ts`, `ru.ts`, `en.ts`; промт 11 аудита).
+2026-07-02 — tangodb-landing: footer — навигация по якорям, кликабельные контакты, юридическая строка, CTA на демо вместо «Войти» (`Footer.tsx`, `ru.ts`, `en.ts`; промт 10 аудита).
+2026-07-02 — tangodb-landing: FAQ перед footer — 5 вопросов с accordion (`Accordion.tsx`, `FaqSection.tsx`, `App.tsx`, `ru.ts`, `en.ts`; промт 9 аудита).
+2026-07-02 — tangodb-landing: блок «Стоимость» перед footer — 3 типа студии без цифр, CTA в Telegram (`PricingSection.tsx`, `App.tsx`, `ru.ts`, `en.ts`; промт 8 аудита).
+2026-07-02 — tangodb-landing: секция модульности и ролей — 3 типа студии с чек-листом модулей, deep-link в демо (`#demo/settings/organization`, `#demo/team`; `ModularitySection.tsx`, `demoDeepLink.ts`, `CrmDemoApp.tsx`, `SettingsPanel.tsx`, `App.tsx`, `ru.ts`, `en.ts`; промт 7 аудита).
+2026-07-02 — tangodb-landing: разведены Features и CrmCapabilities — 4 карточки выгод (результат), компактный справочник разделов CRM после демо (`Features.tsx`, `CrmCapabilities.tsx`, `App.tsx`, `DemoSection.tsx`, `ru.ts`, `en.ts`; промт 6 аудита).
+2026-07-02 — tangodb-landing: блок доверия после hero — 3 колонки (преподаватель, живое демо, поддержка), ссылки на `#demo` и Telegram (`TrustSection.tsx`, `App.tsx`, `ru.ts`, `en.ts`; промт 5 аудита).
+2026-07-02 — tangodb-landing: секция демо — приглашение к действию, новые заголовки, баннер view-only, подсказка «Финансы/Настройки» (`DemoSection.tsx`, `ru.ts`, `en.ts`, `crm/strings.ts`; промт 4 аудита).
+2026-07-02 — tangodb-landing: hero — бейдж-ссылка на `#demo` с анонсом живой демо-CRM под CTA (`Hero.tsx`, `ru.ts`, `en.ts`; промт 3 аудита).
+2026-07-02 — tangodb-landing: hero — H1, подзаголовок, primary CTA на `#demo`, secondary Telegram, микро-доказательство; «Войти» только в header (`Hero.tsx`, `ru.ts`, `en.ts`; промт 2 аудита).
+2026-07-02 — tangodb-landing: hero-изображение заменено на `new_girl.png`, alt RU/EN, eager + fetchPriority high (`Hero.tsx`, `public/new_girl.png`; промт 1 аудита).
 2026-07-01 — tangodb-landing: убраны все эффекты hero-изображения — CSS (`rounded-2xl`, `animate-fade-in`) и вшитая тень/ореол в `vert_girl.png` (обработка PNG + `Hero.tsx`).
 2026-07-01 — tangodb-landing: убраны тени под hero-изображением (`Hero.tsx`).
 2026-07-01 — tangodb-landing: hero-изображение заменено на `vert_girl.png` (`Hero.tsx`, `public/vert_girl.png`).

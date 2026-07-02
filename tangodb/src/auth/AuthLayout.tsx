@@ -117,12 +117,14 @@ export function AuthField({
 export function AuthButton({
   children,
   loading,
+  disabled,
   type = "submit",
   variant = "primary",
   onClick,
 }: {
   children: React.ReactNode;
   loading?: boolean;
+  disabled?: boolean;
   type?: "button" | "submit";
   variant?: "primary" | "secondary";
   onClick?: () => void;
@@ -135,7 +137,7 @@ export function AuthButton({
       : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50";
 
   return (
-    <button type={type} onClick={onClick} disabled={loading} className={`${base} ${styles}`}>
+    <button type={type} onClick={onClick} disabled={loading || disabled} className={`${base} ${styles}`}>
       {loading && (
         <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
       )}

@@ -114,6 +114,9 @@ export const RU: Record<I18nKey, string> = {
   "auth.verifyEmail.signInOtherAccount": "Войти с другим аккаунтом",
   "auth.verifyEmail.confirmedFallbackHint":
     "Email подтверждён. Если демо-CRM не создалась автоматически, нажмите кнопку ниже — мы повторим создание.",
+  "auth.verifyEmail.captchaHint":
+    "Email подтверждён. Пройдите проверку captcha ниже, чтобы создать демо-CRM.",
+  "auth.verifyEmail.createDemo": "Создать демо-CRM",
   "auth.verifyEmail.retryCreate": "Повторить создание демо-CRM",
   "auth.acceptInvite": "Принять приглашение",
   "auth.acceptInviteHint": "Войдите с email, указанным в приглашении",
@@ -159,7 +162,7 @@ export const RU: Record<I18nKey, string> = {
     "Демо для этого email уже использовалось. Активируйте лицензионный ключ или обратитесь в поддержку.",
   "auth.error.captchaFailed": "Не удалось пройти проверку captcha. Попробуйте ещё раз.",
   "auth.error.completeRegistrationCaptcha":
-    "Сначала завершите регистрацию на странице «Регистрация» (captcha действует 24 часа).",
+    "Нужна проверка captcha. Пройдите её ниже и создайте демо-CRM.",
   "auth.error.demoUsedTelegram":
     "Демо для этого Telegram уже использовалось. Активируйте лицензионный ключ или обратитесь в поддержку.",
   "auth.loading.checkingSession": "Проверяем сессию...",

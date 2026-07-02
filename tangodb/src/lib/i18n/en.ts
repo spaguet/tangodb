@@ -114,6 +114,9 @@ export const EN: Record<I18nKey, string> = {
   "auth.verifyEmail.signInOtherAccount": "Sign in with another account",
   "auth.verifyEmail.confirmedFallbackHint":
     "Email confirmed. If the demo CRM was not created automatically, use the button below and we will retry creation.",
+  "auth.verifyEmail.captchaHint":
+    "Email confirmed. Complete the captcha below to create your demo CRM.",
+  "auth.verifyEmail.createDemo": "Create demo CRM",
   "auth.verifyEmail.retryCreate": "Retry demo CRM creation",
   "auth.acceptInvite": "Accept invitation",
   "auth.acceptInviteHint": "Sign in with the email from the invitation",
@@ -159,7 +162,7 @@ export const EN: Record<I18nKey, string> = {
     "A demo for this email has already been used. Activate a license key or contact support.",
   "auth.error.captchaFailed": "Captcha verification failed. Please try again.",
   "auth.error.completeRegistrationCaptcha":
-    "Complete registration on the sign-up page first (captcha remains valid for 24 hours).",
+    "Captcha verification is required. Complete it below to create your demo CRM.",
   "auth.error.demoUsedTelegram":
     "A demo for this Telegram account has already been used. Activate a license key or contact support.",
   "auth.loading.checkingSession": "Checking session...",
