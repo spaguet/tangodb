@@ -36,6 +36,16 @@ jobs:
           npm ci
           npm run build
 
+      - name: Verify Cloudflare API token
+        run: |
+          response=$(curl -sS "https://api.cloudflare.com/client/v4/user/tokens/verify" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+          if [ "$(echo "$response" | jq -r '.success')" != "true" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is invalid or expired. Create a new token: Account → Cloudflare Pages → Edit, scoped to account 7629e83b82917f3be3175c6f4bf3fed4. Update with: gh secret set CLOUDFLARE_API_TOKEN"
+            echo "$response"
+            exit 1
+          fi
+
       - name: Deploy to Cloudflare Pages
         working-directory: tangodb-landing
         run: npx wrangler pages deploy dist --project-name=tangodb-landing --branch=main
