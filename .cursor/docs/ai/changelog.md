@@ -8,6 +8,10 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-03 — dev-console Tenants: колонка UUID с копированием; поиск по email без @, UUID org и owner через organization_members (`OrgsPage.tsx`, `dev-console-list-tenants`).
+
+2026-07-03 — tangodb: конвертер legacy Excel → `tangodb_export.json` для `import-org.mjs` (`scripts/xlsx-to-export.py`, `data/import/albertkoall/`); маппинг `MonthsPaid`→`PairMonth`, нормализация ID/дат.
+
 2026-07-02 — tangodb-landing: мобильный скриншот CRM в секции Platform; демо-CRM приведена к оболочке prod (нижние табы, sidebar/header, drawer), строки и финансовый дашборд синхронизированы с tangodb, данные в ₽ (`crm-mobile-overview.png`, `CrmMobilePlaceholder.tsx`, `CrmDemoApp.tsx`, `DashboardPanel.tsx`, `crm/strings.ts`, `crm/data.ts`). — `is_platform_developer_email`, обход `demo_owner_retention`/Turnstile/captcha для `platform_role=developer` (migration `20260816000001`, edge functions).
 2026-07-02 — tangodb: fix self-service demo routing — вход и CRM без membership ведут на `/auth/verify-email` для автосоздания 30-дневного демо; `/activate-key` только после исчерпания демо-квоты email (`LoginPage`, `routeGuards`).
 2026-07-02 — tangodb: после исчерпания бесплатного демо — редирект на `/activate-key` вместо бессмысленного retry на verify-email; вход без org ведёт на активацию ключа (`VerifyEmailPage`, `LoginPage`, `routeGuards`, `ActivateKeyPage`, i18n).

@@ -93,6 +93,8 @@ export default function OrgsPage() {
   const [purgeForceLicensed, setPurgeForceLicensed] = useState(false);
   const [issueKeySignature, setIssueKeySignature] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copiedUuid, setCopiedUuid] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
   const [transferEmail, setTransferEmail] = useState("");
   const [transferReason, setTransferReason] = useState("");
   const [transferVerification, setTransferVerification] = useState<TransferVerification>(
@@ -112,6 +114,7 @@ export default function OrgsPage() {
         limit: 50,
       });
       setTenants(result.tenants ?? []);
+      setSearched(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Search failed");
     } finally {
@@ -256,10 +259,15 @@ export default function OrgsPage() {
     }
   };
 
-  const copyText = async (text: string) => {
+  const copyText = async (text: string, kind: "generic" | "uuid" = "generic") => {
     await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (kind === "uuid") {
+      setCopiedUuid(text);
+      setTimeout(() => setCopiedUuid(null), 2000);
+    } else {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const badgeColor = (badge: string) => {
@@ -287,7 +295,7 @@ export default function OrgsPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Email, name, slug или payment_ref"
+          placeholder="Email, UUID, name, slug или payment_ref"
           className="flex-1 min-w-[220px] px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm"
           onKeyDown={(e) => e.key === "Enter" && void search()}
         />
@@ -334,9 +342,10 @@ export default function OrgsPage() {
       {error && <p className="text-sm text-rose-400">{error}</p>}
 
       <div className="border border-slate-800 rounded-xl overflow-x-auto">
-        <table className="w-full text-sm min-w-[1100px]">
+        <table className="w-full text-sm min-w-[1280px]">
           <thead className="bg-slate-900 text-slate-500 text-left">
             <tr>
+              <th className="px-3 py-2 font-medium">UUID</th>
               <th className="px-3 py-2 font-medium">CRM</th>
               <th className="px-3 py-2 font-medium">Owner</th>
               <th className="px-3 py-2 font-medium">License</th>
@@ -351,6 +360,28 @@ export default function OrgsPage() {
           <tbody>
             {tenants.map((t) => (
               <tr key={t.id} className="border-t border-slate-800 align-top">
+                <td className="px-3 py-2">
+                  <div className="flex items-start gap-1 max-w-[220px]">
+                    <code
+                      className="text-[11px] font-mono text-slate-400 break-all leading-snug"
+                      title={t.id}
+                    >
+                      {t.id}
+                    </code>
+                    <button
+                      type="button"
+                      title="Скопировать UUID"
+                      onClick={() => void copyText(t.id, "uuid")}
+                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 shrink-0 cursor-pointer"
+                    >
+                      {copiedUuid === t.id ? (
+                        <Check className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </button>
+                  </div>
+                </td>
                 <td className="px-3 py-2">
                   <p className="text-slate-200 font-medium">{t.name}</p>
                   <p className="text-xs text-slate-500">{t.crm_version_code ?? "—"}</p>
@@ -445,8 +476,10 @@ export default function OrgsPage() {
             ))}
             {tenants.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
-                  Нажмите Search для загрузки tenant org
+                <td colSpan={10} className="px-4 py-8 text-center text-slate-500">
+                  {searched
+                    ? "Ничего не найдено. Проверьте email (можно без @), UUID org или снимите фильтр статуса."
+                    : "Нажмите Search для загрузки tenant org"}
                 </td>
               </tr>
             )}

@@ -12,6 +12,7 @@
     "import:org:dry-run": "node scripts/import-org.mjs --dry-run",
     "import:org": "node scripts/import-org.mjs --apply",
     "import:org:validate-fixture": "node scripts/import-org.mjs --dry-run --org-id 00000000-0000-4000-8000-000000000001 --input scripts/fixtures/minimal-export.json --slug fixture-test",
+    "import:xlsx": "py scripts/xlsx-to-export.py",
     "test:db": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_tenant_rls_test.sql",
     "test:db:keys": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_access_key_test.sql",
     "test:db:business": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_business_schema_test.sql",
@@ -21,6 +22,7 @@
     "test:db:schedule-overlap": "psql \"%DATABASE_URL%\" -f supabase/tests/schedule_overlap_test.sql",
     "test:db:personal-stage1": "psql \"%DATABASE_URL%\" -f supabase/tests/personal_lessons_stage1_test.sql",
     "test:rbac": "node scripts/rbac-regression-check.mjs",
+    "db:reset-test": "node scripts/reset-for-test-run.mjs",
     "db:push": "supabase db push",
     "db:link": "supabase link"
   },

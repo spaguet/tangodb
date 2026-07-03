@@ -14,6 +14,14 @@ import { createServiceClient, createUserClient, logEvent } from "../_shared/supa
 const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 15 * 60_000;
 const PAYMENT_REF_RE = /^[A-Z0-9]{6,10}$/;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isEmailLikeSearch(term: string): boolean {
+  if (term.includes("@")) return true;
+  if (term.length < 3) return false;
+  return /^[a-zA-Z0-9._+-]+$/.test(term);
+}
 
 type OrgRow = {
   id: string;
@@ -79,8 +87,12 @@ Deno.serve(async (req) => {
 
   const admin = createServiceClient();
 
+  const isUuidQuery = UUID_RE.test(q);
+
   let ownerUserIds: string[] | null = null;
-  if (q.includes("@")) {
+  let orgIdsFromOwnerMembers: string[] | null = null;
+
+  if (!isUuidQuery && isEmailLikeSearch(q)) {
     const { data: ids, error: emailError } = await admin.rpc("dev_console_user_ids_by_email", {
       p_query: q,
     });
@@ -92,6 +104,22 @@ Deno.serve(async (req) => {
     if (ownerUserIds.length === 0) {
       return jsonResponse({ ok: true, tenants: [] }, 200, req);
     }
+
+    const { data: memberRows, error: memberError } = await admin
+      .from("organization_members")
+      .select("organization_id")
+      .in("user_id", ownerUserIds)
+      .eq("role", "owner")
+      .eq("is_active", true);
+
+    if (memberError) {
+      logEvent("dev_console_tenants_member_error", { code: memberError.code ?? "unknown" });
+      return jsonResponse({ error: "Search failed" }, 500, req);
+    }
+
+    orgIdsFromOwnerMembers = [
+      ...new Set((memberRows ?? []).map((r: { organization_id: string }) => r.organization_id)),
+    ];
   }
 
   let query = admin
@@ -103,9 +131,16 @@ Deno.serve(async (req) => {
     .limit(limit);
 
   if (status) query = query.eq("status", status);
-  if (ownerUserIds) query = query.in("owner_user_id", ownerUserIds);
 
-  if (q && !q.includes("@")) {
+  if (isUuidQuery) {
+    query = query.eq("id", q);
+  } else if (ownerUserIds && ownerUserIds.length > 0) {
+    const orParts = [`owner_user_id.in.(${ownerUserIds.join(",")})`];
+    if (orgIdsFromOwnerMembers && orgIdsFromOwnerMembers.length > 0) {
+      orParts.push(`id.in.(${orgIdsFromOwnerMembers.join(",")})`);
+    }
+    query = query.or(orParts.join(","));
+  } else if (q) {
     const ref = q.toUpperCase();
     if (PAYMENT_REF_RE.test(ref)) {
       query = query.eq("payment_ref", ref);
