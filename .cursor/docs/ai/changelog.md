@@ -8,6 +8,10 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-03 — tangodb-landing: копирайт RU — «уважительный пропуск» вместо «заморозка», «Версия для ПК» вместо «Десктопная CRM», «Большой экран» вместо «Широкий layout» (`ru.ts`).
+
+2026-07-03 — tangodb: сняты partial unique indexes на prices (type+lessons+location+discipline) — несколько тарифов с одной привязкой, разными названием/ценой; fix duplicate key при редактировании абонемента (migration `20260817000001`).
+
 2026-07-03 — tangodb: post-import — локация Miami studio, price_id/discipline на абонементах, subscription_groups и payments из legacy (`import-postprocess.mjs`, `fix-import-postprocess.mjs`, `--default-location-name` в import-org); fix org `8da4b806-…` (43 payments).
 
 2026-07-03 — tangodb: legacy import в org `8da4b806-…` (Omow dance) — clients/prices/schedule/subscriptions/attendance/personal; fix import-org (group_name, classes, schedule_group_id, personal times).
