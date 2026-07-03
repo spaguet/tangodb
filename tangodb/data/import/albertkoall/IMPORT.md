@@ -62,7 +62,7 @@ npm run import:org:dry-run -- --org-id <ORG_UUID> --input data/import/albertkoal
 3. Запись:
 
 ```bash
-npm run import:org -- --org-id <ORG_UUID> --input data/import/albertkoall/tangodb_export.json --slug albertkoall --default-discipline "Танго"
+npm run import:org -- --org-id <ORG_UUID> --input data/import/albertkoall/tangodb_export.json --slug albertkoall --default-discipline "Танго" --default-location-name "Miami studio"
 ```
 
 ## Принятые решения

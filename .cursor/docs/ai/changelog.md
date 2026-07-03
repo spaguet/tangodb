@@ -8,6 +8,10 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-03 — tangodb: post-import — локация Miami studio, price_id/discipline на абонементах, subscription_groups и payments из legacy (`import-postprocess.mjs`, `fix-import-postprocess.mjs`, `--default-location-name` в import-org); fix org `8da4b806-…` (43 payments).
+
+2026-07-03 — tangodb: legacy import в org `8da4b806-…` (Omow dance) — clients/prices/schedule/subscriptions/attendance/personal; fix import-org (group_name, classes, schedule_group_id, personal times).
+
 2026-07-03 — dev-console Tenants: колонка UUID с копированием; поиск по email без @, UUID org и owner через organization_members (`OrgsPage.tsx`, `dev-console-list-tenants`).
 
 2026-07-03 — tangodb: конвертер legacy Excel → `tangodb_export.json` для `import-org.mjs` (`scripts/xlsx-to-export.py`, `data/import/albertkoall/`); маппинг `MonthsPaid`→`PairMonth`, нормализация ID/дат.

@@ -58,6 +58,8 @@ export function parseArgs(argv) {
     resumeFrom: null,
     format: null,
     defaultDiscipline: null,
+    defaultLocationName: null,
+    defaultLocationId: null,
   };
 
   for (let i = 2; i < argv.length; i++) {
@@ -70,6 +72,8 @@ export function parseArgs(argv) {
     else if (a === '--resume-from') args.resumeFrom = argv[++i];
     else if (a === '--format') args.format = argv[++i];
     else if (a === '--default-discipline') args.defaultDiscipline = argv[++i];
+    else if (a === '--default-location-name') args.defaultLocationName = argv[++i];
+    else if (a === '--default-location-id') args.defaultLocationId = argv[++i];
     else if (a === '--help' || a === '-h') args.help = true;
     else throw new Error(`Unknown argument: ${a}`);
   }
@@ -85,6 +89,8 @@ Options:
   --resume-from STEP       Skip steps before STEP (clients, prices, subscriptions, ...)
   --format legacy-gas|v2-json   Force format (auto-detect by default)
   --default-discipline NAME     Create default discipline for legacy schedule (optional)
+  --default-location-name NAME  Attach imported rows to existing location (postprocess)
+  --default-location-id UUID    Attach imported rows to existing location by id
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY`);
 }

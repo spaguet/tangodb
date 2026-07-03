@@ -27,6 +27,7 @@ import {
 } from './lib/import-common.mjs';
 import { IdMappingStore } from './lib/import-mapping.mjs';
 import { validateExport } from './lib/import-validate.mjs';
+import { resolveLegacyPriceKey, runImportPostprocess } from './lib/import-postprocess.mjs';
 
 function buildLegacyClients(data, orgId, mapping) {
   const clientById = new Map();
@@ -70,7 +71,7 @@ function buildLegacyClients(data, orgId, mapping) {
   return [...clientById.values()];
 }
 
-function buildLegacyPrices(data, orgId, mapping) {
+function buildLegacyPrices(data, orgId, mapping, defaultLocationId) {
   return (data.prices ?? [])
     .filter((p) => p.Type)
     .map((p) => {
@@ -85,11 +86,15 @@ function buildLegacyPrices(data, orgId, mapping) {
         lessons,
         price: parseFloat(p.Price) || 0,
         category,
+        ...(defaultLocationId ? { location_id: defaultLocationId } : {}),
       };
     });
 }
 
-function buildLegacySchedule(data, orgId, mapping, defaultDisciplineId) {
+const LEGACY_DEFAULT_GROUP_NAME = 'Группа';
+
+function buildLegacySchedule(data, orgId, mapping, defaultDisciplineId, defaultLocationId) {
+  const defaultClassId = mapping.getUuid('classes', '__default__');
   return (data.schedule ?? []).map((s) => {
     const dow = parseInt(s.DayOfWeek, 10);
     const time = s.Time;
@@ -101,11 +106,24 @@ function buildLegacySchedule(data, orgId, mapping, defaultDisciplineId) {
       time,
       time_end: '21:00',
       discipline_id: defaultDisciplineId,
+      group_name: LEGACY_DEFAULT_GROUP_NAME,
+      ...(defaultLocationId ? { location_id: defaultLocationId } : {}),
+      ...(defaultClassId ? { class_id: defaultClassId } : {}),
     };
   });
 }
 
-function buildLegacySubscriptions(data, orgId, mapping) {
+function legacySubscriptionPriceId(s, mapping) {
+  const key = resolveLegacyPriceKey({
+    type: s.Type,
+    lessons_total: parseInt(s.LessonsTotal, 10),
+    pair_month: s.PairMonth != null && s.PairMonth !== '' ? String(s.PairMonth) : '',
+  });
+  if (!key) return null;
+  return mapping.getUuid('prices', `${key.type}|${key.lessons}`);
+}
+
+function buildLegacySubscriptions(data, orgId, mapping, defaultDisciplineId) {
   return (data.subscriptions ?? []).map((s) => {
     const oldId = String(s.ID);
     const type = s.Type;
@@ -115,6 +133,8 @@ function buildLegacySubscriptions(data, orgId, mapping) {
           ? String(s.PairMonth)
           : ''
         : '';
+
+    const priceId = legacySubscriptionPriceId(s, mapping);
 
     return {
       id: mapping.mapOrCreate('subscriptions', oldId),
@@ -130,34 +150,54 @@ function buildLegacySubscriptions(data, orgId, mapping) {
       status: s.Status,
       pair_month: pairMonth,
       category: 'group',
+      ...(priceId ? { price_id: priceId } : {}),
+      ...(defaultDisciplineId ? { discipline_id: defaultDisciplineId } : {}),
     };
   });
 }
 
 function buildLegacyAttendance(data, orgId, mapping) {
+  const scheduleGroupId = mapping.getUuid('classes', '__default__');
   return (data.attendance ?? []).map((a) => ({
     organization_id: orgId,
     date: formatDate(a.Date),
     subscription_id: mapping.mapOrCreate('subscriptions', String(a.SubscriptionID)),
+    schedule_group_id: scheduleGroupId,
     client_display: a.ClientDisplay,
     attendance_status: a.AttendanceStatus,
   }));
 }
 
-function buildLegacyPersonalLessons(data, orgId, mapping) {
-  return (data.personalLessons ?? []).map((l) => ({
-    id: mapping.mapOrCreate('personal_lessons', String(l.ID)),
-    organization_id: orgId,
-    type: l.Type,
-    client_id1: l.Client1 || l.ClientID1 ? mapping.mapOrCreate('clients', String(l.Client1 || l.ClientID1)) : null,
-    client_id2: l.Client2 || l.ClientID2 ? mapping.mapOrCreate('clients', String(l.Client2 || l.ClientID2)) : null,
-    client_id3: l.Client3 || l.ClientID3 ? mapping.mapOrCreate('clients', String(l.Client3 || l.ClientID3)) : null,
-    date: formatDate(l.Date),
-    time_start: '14:00',
-    time_end: '15:00',
-    price: parseFloat(l.Price) || 0,
-    paid: l.Paid || 'no',
-  }));
+function legacyPersonalLessonTimes(_dateKey, slotIndex) {
+  const startMinutes = 8 * 60 + slotIndex * 60;
+  const endMinutes = startMinutes + 45;
+  const fmt = (total) =>
+    `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  return { time_start: fmt(startMinutes), time_end: fmt(endMinutes) };
+}
+
+function buildLegacyPersonalLessons(data, orgId, mapping, defaultLocationId) {
+  const slotByDate = new Map();
+  return (data.personalLessons ?? []).map((l) => {
+    const date = formatDate(l.Date);
+    const slot = slotByDate.get(date) ?? 0;
+    slotByDate.set(date, slot + 1);
+    const { time_start, time_end } = legacyPersonalLessonTimes(date, slot);
+    return {
+      id: mapping.mapOrCreate('personal_lessons', String(l.ID)),
+      organization_id: orgId,
+      type: l.Type,
+      client_id1: l.Client1 || l.ClientID1 ? mapping.mapOrCreate('clients', String(l.Client1 || l.ClientID1)) : null,
+      client_id2: l.Client2 || l.ClientID2 ? mapping.mapOrCreate('clients', String(l.Client2 || l.ClientID2)) : null,
+      client_id3: l.Client3 || l.ClientID3 ? mapping.mapOrCreate('clients', String(l.Client3 || l.ClientID3)) : null,
+      date,
+      time_start,
+      time_end,
+      price: parseFloat(l.Price) || 0,
+      paid: l.Paid || 'no',
+      ...(defaultLocationId ? { location_id: defaultLocationId } : {}),
+    };
+  });
 }
 
 function buildV2Disciplines(data, orgId, mapping) {
@@ -299,15 +339,16 @@ async function main() {
 
   const orgId = args.orgId;
   let defaultDisciplineId = null;
+  let defaultLocationId = args.defaultLocationId ?? null;
 
   const plan = {};
 
   if (format === 'legacy-gas') {
     plan.clients = () => buildLegacyClients(data, orgId, mapping);
-    plan.prices = () => buildLegacyPrices(data, orgId, mapping);
-    plan.subscriptions = () => buildLegacySubscriptions(data, orgId, mapping);
+    plan.prices = () => buildLegacyPrices(data, orgId, mapping, defaultLocationId);
+    plan.subscriptions = () => buildLegacySubscriptions(data, orgId, mapping, defaultDisciplineId);
     plan.attendance = () => buildLegacyAttendance(data, orgId, mapping);
-    plan.personal_lessons = () => buildLegacyPersonalLessons(data, orgId, mapping);
+    plan.personal_lessons = () => buildLegacyPersonalLessons(data, orgId, mapping, defaultLocationId);
 
     if (args.defaultDiscipline && (data.schedule ?? []).length) {
       plan.disciplines = () => {
@@ -322,7 +363,20 @@ async function main() {
           },
         ];
       };
-      plan.schedule_slots = () => buildLegacySchedule(data, orgId, mapping, defaultDisciplineId);
+      plan.classes = () => {
+        const disciplineId = mapping.getUuid('disciplines', '__default__') ?? defaultDisciplineId;
+        return [
+          {
+            id: mapping.mapOrCreate('classes', '__default__'),
+            organization_id: orgId,
+            name: LEGACY_DEFAULT_GROUP_NAME,
+            discipline_id: disciplineId,
+            ...(defaultLocationId ? { default_location_id: defaultLocationId } : {}),
+          },
+        ];
+      };
+      plan.schedule_slots = () =>
+        buildLegacySchedule(data, orgId, mapping, defaultDisciplineId, defaultLocationId);
     } else {
       plan.schedule_slots = () => buildLegacySchedule(data, orgId, mapping, null);
     }
@@ -431,6 +485,16 @@ async function main() {
     process.exit(1);
   }
 
+  if (args.defaultLocationName || args.defaultLocationId) {
+    const { resolveLocation } = await import('./lib/import-postprocess.mjs');
+    const loc = await resolveLocation(supabase, orgId, {
+      locationId: args.defaultLocationId,
+      locationName: args.defaultLocationName,
+    });
+    defaultLocationId = loc.id;
+    console.log(`\nDefault location: ${loc.name} (${loc.id})`);
+  }
+
   console.log('\nApplying...');
 
   const tableForStep = {
@@ -474,6 +538,15 @@ async function main() {
   }
 
   mapping.save();
+
+  if (args.defaultLocationName || args.defaultLocationId) {
+    console.log('\nPostprocess (location, subscription groups, payments)...');
+    const postStats = await runImportPostprocess(supabase, orgId, {
+      locationId: defaultLocationId,
+      dryRun: false,
+    });
+    console.log('Postprocess:', JSON.stringify(postStats, null, 2));
+  }
 
   const dbCounts = await countOrgRows(supabase, orgId);
   console.log('\nApply complete.');
