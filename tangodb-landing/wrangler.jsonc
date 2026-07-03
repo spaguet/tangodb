@@ -2,6 +2,5 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "tangodb-landing",
   "compatibility_date": "2026-07-03",
-  "account_id": "7629e83b82917f3be3175c6f4bf3fed4",
   "pages_build_output_dir": "dist"
 }

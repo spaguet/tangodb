@@ -8,7 +8,7 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
-2026-07-03 — tangodb-landing: fix CI deploy — pinned wrangler 4, `wrangler.jsonc` с `account_id`, прямой `wrangler pages deploy` вместо wrangler-action v3 (auth 10000).
+2026-07-03 — tangodb-landing: fix CI deploy — pinned wrangler 4, `CLOUDFLARE_ACCOUNT_ID` в env, прямой `wrangler pages deploy` вместо wrangler-action v3.
 
 2026-07-03 — tangodb-landing: секция Platform — новый копирайт RU/EN, мобильный превью из живого UI вместо скриншота (`CrmMobilePreview.tsx`, `PlatformSection.tsx`, `ru.ts`, `en.ts`; удалён `CrmMobilePlaceholder.tsx`).
 

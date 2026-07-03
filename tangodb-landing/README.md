@@ -36,7 +36,7 @@ Repository secrets (Settings → Secrets and variables → Actions):
 | `CLOUDFLARE_API_TOKEN` | API token with **Account → Cloudflare Pages → Edit** (scoped to this account) |
 | `CLOUDFLARE_ACCOUNT_ID` | `7629e83b82917f3be3175c6f4bf3fed4` |
 
-Wrangler is pinned in `package.json`; `wrangler.jsonc` sets `account_id` so CI does not need User Details Read on the token.
+Wrangler is pinned in `package.json`; set `CLOUDFLARE_ACCOUNT_ID` in GitHub secrets so CI does not need User Details Read on the token.
 
 Manual deploy (after `npm run build`):
 
