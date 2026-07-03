@@ -50,12 +50,12 @@ export const en = {
     "TangoDB adapts to how you work: full sidebar and tables on a large screen, compact navigation and touch-friendly controls on mobile.",
   "platform.desktop": "Desktop CRM",
   "platform.desktopDesc":
-    "Wide layout with sidebar, filters, schedule grid and financial reports — for reception and studio managers at a computer.",
-  "platform.mobile": "Mobile CRM",
+    "Large CRM screen for those who prefer classic administration with a cup of coffee.",
+  "platform.mobile": "Smartphone version",
   "platform.mobileDesc":
-    "Bottom navigation, attendance journal and quick actions on the go — for teachers and admins at the studio.",
+    "Vertical CRM screen for moments when you can't sit down. Full functionality adapted for smartphone screens.",
   "platform.mobilePlaceholder": "Mobile CRM view — add real screenshot",
-  "platform.mobilePreviewAlt": "TangoDB mobile interface: financial overview and bottom navigation",
+  "platform.mobilePreviewAlt": "TangoDB smartphone interface: overview and bottom navigation",
   "platform.desktopPreviewAlt": "TangoDB desktop interface: sidebar and Studio Ritmo overview panel",
   "platform.supportTitle": "Human support",
   "platform.supportDesc":

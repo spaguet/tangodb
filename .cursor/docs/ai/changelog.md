@@ -8,6 +8,8 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-03 — tangodb-landing: секция Platform — новый копирайт RU/EN, мобильный превью из живого UI вместо скриншота (`CrmMobilePreview.tsx`, `PlatformSection.tsx`, `ru.ts`, `en.ts`; удалён `CrmMobilePlaceholder.tsx`).
+
 2026-07-03 — tangodb-landing: копирайт RU — «уважительный пропуск» вместо «заморозка», «Версия для ПК» вместо «Десктопная CRM», «Большой экран» вместо «Широкий layout» (`ru.ts`).
 
 2026-07-03 — tangodb: сняты partial unique indexes на prices (type+lessons+location+discipline) — несколько тарифов с одной привязкой, разными названием/ценой; fix duplicate key при редактировании абонемента (migration `20260817000001`).

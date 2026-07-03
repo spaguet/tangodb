@@ -2,7 +2,7 @@ import { ArrowRight, MessageCircle } from "lucide-react";
 import type { Locale } from "../i18n";
 import { CONTACTS } from "../config";
 import { CrmDesktopPreview } from "./CrmDesktopPreview";
-import { CrmMobilePlaceholder } from "./CrmMobilePlaceholder";
+import { CrmMobilePreview } from "./CrmMobilePreview";
 
 type Props = {
   locale: Locale;
@@ -26,7 +26,7 @@ export function PlatformSection({ locale, t }: Props) {
           </div>
 
           <div className="space-y-3">
-            <CrmMobilePlaceholder alt={t("platform.mobilePreviewAlt")} />
+            <CrmMobilePreview locale={locale} alt={t("platform.mobilePreviewAlt")} />
             <div>
               <p className="text-sm font-semibold text-slate-800">{t("platform.mobile")}</p>
               <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{t("platform.mobileDesc")}</p>
