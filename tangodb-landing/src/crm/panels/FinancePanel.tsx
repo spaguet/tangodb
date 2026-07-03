@@ -6,7 +6,7 @@ import {
   debtors,
   expenses,
   financialStats,
-  formatEuro,
+  formatMoney,
   paymentJournal,
   payrollRows,
 } from "../data";
@@ -18,6 +18,7 @@ type Props = { locale: Locale };
 
 export function FinancePanel({ locale }: Props) {
   const p = panelStrings(locale);
+  const money = (n: number) => formatMoney(n, locale);
   const [tab, setTab] = useState<Tab>("payments");
 
   const nav = [
@@ -61,7 +62,7 @@ export function FinancePanel({ locale }: Props) {
               </div>
               <p className="text-xs text-slate-500 hidden sm:block">{row.source}</p>
               <p className="text-xs text-slate-500 hidden sm:block">{row.method}</p>
-              <p className="text-sm font-semibold text-indigo-700 text-right">{formatEuro(row.amount)}</p>
+              <p className="text-sm font-semibold text-indigo-700 text-right">{money(row.amount)}</p>
             </div>
           ))}
         </div>
@@ -79,20 +80,20 @@ export function FinancePanel({ locale }: Props) {
           <div className="p-4 grid grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100 col-span-2 lg:col-span-1">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{p.revenueTotal}</p>
-              <p className="text-lg font-semibold text-slate-900 mt-0.5">{formatEuro(financialStats.revenue)}</p>
+              <p className="text-lg font-semibold text-slate-900 mt-0.5">{money(financialStats.revenue)}</p>
               <p className="text-[10px] text-slate-500 mt-0.5">{paymentJournal.length} {p.paymentsCount}</p>
             </div>
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{locale === "ru" ? "Абонементы" : "Subscriptions"}</p>
-              <p className="text-lg font-semibold text-indigo-700 mt-0.5">{formatEuro(financialStats.subscriptions)}</p>
+              <p className="text-lg font-semibold text-indigo-700 mt-0.5">{money(financialStats.subscriptions)}</p>
             </div>
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{locale === "ru" ? "Персональные" : "Private"}</p>
-              <p className="text-lg font-semibold text-indigo-700 mt-0.5">{formatEuro(financialStats.personal)}</p>
+              <p className="text-lg font-semibold text-indigo-700 mt-0.5">{money(financialStats.personal)}</p>
             </div>
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{locale === "ru" ? "Разовые" : "Drop-in"}</p>
-              <p className="text-lg font-semibold text-indigo-700 mt-0.5">{formatEuro(financialStats.singleVisits)}</p>
+              <p className="text-lg font-semibold text-indigo-700 mt-0.5">{money(financialStats.singleVisits)}</p>
             </div>
           </div>
         </div>
@@ -105,7 +106,7 @@ export function FinancePanel({ locale }: Props) {
               <AlertCircle className="w-4 h-4 text-rose-600" />
               <h2 className="font-sans text-sm font-semibold text-slate-800">{p.debtorsTitle}</h2>
             </div>
-            <span className="text-sm font-semibold text-rose-700">{p.debtorsToPay}: {formatEuro(115)}</span>
+            <span className="text-sm font-semibold text-rose-700">{p.debtorsToPay}: {money(115)}</span>
           </div>
           <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400">
             <span>{p.client}</span>
@@ -121,7 +122,7 @@ export function FinancePanel({ locale }: Props) {
               <p className="text-sm font-semibold text-slate-800 truncate">{d.client}</p>
               <p className="text-xs text-slate-500 hidden sm:block">{d.contact}</p>
               <p className="text-xs text-slate-500 hidden sm:block">{d.detail}</p>
-              <p className="text-sm font-semibold text-right text-rose-700">{d.amount > 0 ? formatEuro(d.amount) : "—"}</p>
+              <p className="text-sm font-semibold text-right text-rose-700">{d.amount > 0 ? money(d.amount) : "—"}</p>
             </div>
           ))}
         </div>
@@ -143,7 +144,7 @@ export function FinancePanel({ locale }: Props) {
                 <p className="text-[10px] text-slate-400">{e.date}</p>
               </div>
               <p className="text-xs text-slate-500 hidden sm:block">{e.category}</p>
-              <p className="text-sm font-semibold text-rose-700 text-right">{formatEuro(e.amount)}</p>
+              <p className="text-sm font-semibold text-rose-700 text-right">{money(e.amount)}</p>
             </div>
           ))}
         </div>
@@ -171,10 +172,10 @@ export function FinancePanel({ locale }: Props) {
                 <p className="text-sm font-semibold text-slate-800">{row.name}</p>
                 <p className="text-[10px] text-slate-400">{row.role}</p>
               </div>
-              <p className="text-sm text-slate-700">{formatEuro(row.accrued)}</p>
-              <p className="text-sm text-slate-700">{formatEuro(row.paid)}</p>
+              <p className="text-sm text-slate-700">{money(row.accrued)}</p>
+              <p className="text-sm text-slate-700">{money(row.paid)}</p>
               <p className={`text-sm font-semibold text-right ${row.balance > 0 ? "text-amber-700" : "text-slate-500"}`}>
-                {formatEuro(row.balance)}
+                {money(row.balance)}
               </p>
             </div>
           ))}

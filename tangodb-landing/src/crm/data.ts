@@ -1,22 +1,32 @@
-export const formatEuro = (n: number) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+import type { Locale } from "../i18n";
+
+export function formatMoney(n: number, locale: Locale = "ru") {
+  return new Intl.NumberFormat(locale === "ru" ? "ru-RU" : "en-US", {
+    style: "currency",
+    currency: locale === "ru" ? "RUB" : "EUR",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
+/** @deprecated use formatMoney */
+export const formatEuro = formatMoney;
 
 export const STUDIO_NAME = "Studio Ritmo";
-export const STUDIO_LOCATION = "Hall A";
+export const STUDIO_LOCATION = "Зал A";
 
 export const financialStats = {
-  revenue: 12480,
-  mom: 12,
-  paymentCount: 38,
-  subscriptions: 8200,
-  personal: 2890,
-  singleVisits: 1390,
-  receivables: 1150,
-  receivablesSubs: 1,
-  receivablesPersonal: 2,
-  expenses: 3200,
-  payroll: 4100,
-  profit: 5180,
+  revenue: 123_324,
+  mom: null as number | null,
+  paymentCount: 31,
+  subscriptions: 8_500,
+  personal: 114_524,
+  singleVisits: 300,
+  receivables: 0,
+  receivablesSubs: 0,
+  receivablesPersonal: 0,
+  expenses: 0,
+  payroll: 12_132,
+  profit: 111_192,
   newClients: 7,
   occupancy: 87,
   occupancyPresent: 142,
@@ -24,9 +34,9 @@ export const financialStats = {
 } as const;
 
 export const paymentByMethod = [
-  { method: "Card", amount: 6420 },
-  { method: "Cash", amount: 3180 },
-  { method: "Transfer", amount: 2880 },
+  { methodRu: "Карта", methodEn: "Card", amount: 4_000 },
+  { methodRu: "Наличные", methodEn: "Cash", amount: 0 },
+  { methodRu: "Перевод", methodEn: "Transfer", amount: 0 },
 ] as const;
 
 export const revenueSplit = [

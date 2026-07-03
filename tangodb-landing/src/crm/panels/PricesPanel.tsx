@@ -1,6 +1,6 @@
 import { Coins } from "lucide-react";
 import type { Locale } from "../../i18n";
-import { formatEuro, priceTariffs } from "../data";
+import { formatMoney, priceTariffs } from "../data";
 import { panelStrings } from "../panelStrings";
 
 type Props = { locale: Locale };
@@ -10,23 +10,25 @@ function PriceCard({
   desc,
   price,
   meta,
+  formatPrice,
 }: {
   title: string;
   desc: string;
   price: number;
   meta: string;
+  formatPrice: (n: number) => string;
 }) {
   return (
     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between gap-4 h-full demo-field-disabled">
       <div className="min-w-0 flex-1 space-y-1">
         <h4 className="font-semibold text-slate-800 text-sm leading-snug">{title}</h4>
         <p className="text-[11px] text-slate-400 font-sans tracking-tight">
-          {desc} · {formatEuro(price)}
+          {desc} · {formatPrice(price)}
         </p>
         <p className="text-[10px] text-slate-400 font-sans mt-1">{meta}</p>
       </div>
       <div className="flex items-center justify-end">
-        <span className="text-sm font-semibold text-slate-700">{formatEuro(price)}</span>
+        <span className="text-sm font-semibold text-slate-700">{formatPrice(price)}</span>
       </div>
     </div>
   );
@@ -35,9 +37,11 @@ function PriceCard({
 function TariffSection({
   title,
   items,
+  formatPrice,
 }: {
   title: string;
   items: readonly { title: string; desc: string; price: number; meta: string }[];
+  formatPrice: (n: number) => string;
 }) {
   return (
     <section className="panel-card-stack">
@@ -46,7 +50,7 @@ function TariffSection({
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {items.map((item) => (
-          <PriceCard key={item.title} {...item} />
+          <PriceCard key={item.title} {...item} formatPrice={formatPrice} />
         ))}
       </div>
     </section>
@@ -55,6 +59,7 @@ function TariffSection({
 
 export function PricesPanel({ locale }: Props) {
   const p = panelStrings(locale);
+  const money = (n: number) => formatMoney(n, locale);
 
   return (
     <div id="panel-prices" className="panel-page-stack">
@@ -68,10 +73,10 @@ export function PricesPanel({ locale }: Props) {
         </div>
 
         <div className="space-y-6 pt-2">
-          <TariffSection title={p.sectionGroup} items={priceTariffs.group} />
-          <TariffSection title={p.sectionPrivate} items={priceTariffs.privateLesson} />
-          <TariffSection title={p.sectionPackage} items={priceTariffs.privatePackage} />
-          <TariffSection title={p.sectionSingle} items={priceTariffs.singleVisit} />
+          <TariffSection title={p.sectionGroup} items={priceTariffs.group} formatPrice={money} />
+          <TariffSection title={p.sectionPrivate} items={priceTariffs.privateLesson} formatPrice={money} />
+          <TariffSection title={p.sectionPackage} items={priceTariffs.privatePackage} formatPrice={money} />
+          <TariffSection title={p.sectionSingle} items={priceTariffs.singleVisit} formatPrice={money} />
         </div>
       </div>
     </div>

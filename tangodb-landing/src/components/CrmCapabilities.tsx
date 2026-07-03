@@ -1,61 +1,78 @@
+import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
   ClipboardCheck,
   CreditCard,
+  Landmark,
   LayoutDashboard,
-  SlidersHorizontal,
+  Settings2,
   Tags,
-  TrendingUp,
   User,
-  UserCog,
   Users,
+  UsersRound,
 } from "lucide-react";
 
 type Props = {
   t: (key: import("../i18n").I18nKey) => string;
 };
 
-const items = [
-  { titleKey: "crmCaps.overview" as const, descKey: "crmCaps.overviewDesc" as const, icon: LayoutDashboard },
-  { titleKey: "crmCaps.clients" as const, descKey: "crmCaps.clientsDesc" as const, icon: Users },
-  { titleKey: "crmCaps.subscriptions" as const, descKey: "crmCaps.subscriptionsDesc" as const, icon: CreditCard },
-  { titleKey: "crmCaps.schedule" as const, descKey: "crmCaps.scheduleDesc" as const, icon: Calendar },
-  { titleKey: "crmCaps.attendance" as const, descKey: "crmCaps.attendanceDesc" as const, icon: ClipboardCheck },
-  { titleKey: "crmCaps.personal" as const, descKey: "crmCaps.personalDesc" as const, icon: User },
-  { titleKey: "crmCaps.finance" as const, descKey: "crmCaps.financeDesc" as const, icon: TrendingUp },
-  { titleKey: "crmCaps.prices" as const, descKey: "crmCaps.pricesDesc" as const, icon: Tags },
-  { titleKey: "crmCaps.team" as const, descKey: "crmCaps.teamDesc" as const, icon: UserCog },
+type CapabilityItem = {
+  titleKey: import("../i18n").I18nKey;
+  descKey: import("../i18n").I18nKey;
+  icon: LucideIcon;
+};
+
+const capabilityItems: CapabilityItem[] = [
+  { titleKey: "crmCaps.overview", descKey: "crmCaps.overviewDesc", icon: LayoutDashboard },
+  { titleKey: "crmCaps.clients", descKey: "crmCaps.clientsDesc", icon: Users },
+  { titleKey: "crmCaps.finance", descKey: "crmCaps.financeDesc", icon: Landmark },
+  { titleKey: "crmCaps.schedule", descKey: "crmCaps.scheduleDesc", icon: Calendar },
+  { titleKey: "crmCaps.team", descKey: "crmCaps.teamDesc", icon: UsersRound },
+  { titleKey: "crmCaps.subscriptions", descKey: "crmCaps.subscriptionsDesc", icon: CreditCard },
+  { titleKey: "crmCaps.attendance", descKey: "crmCaps.attendanceDesc", icon: ClipboardCheck },
+  { titleKey: "crmCaps.personal", descKey: "crmCaps.personalDesc", icon: User },
+  { titleKey: "crmCaps.prices", descKey: "crmCaps.pricesDesc", icon: Tags },
 ];
+
+function CapabilityIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <div className="flex h-11 w-[52px] shrink-0 items-center justify-center rounded-md border border-slate-200 bg-indigo-50/80">
+      <Icon className="h-4 w-4 text-indigo-600" strokeWidth={1.75} aria-hidden="true" />
+    </div>
+  );
+}
 
 export function CrmCapabilities({ t }: Props) {
   return (
-    <div className="mt-12 border-t border-slate-200/80 pt-12">
-      <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">{t("crmCaps.title")}</h3>
-      <p className="mt-3 max-w-2xl text-slate-600 leading-relaxed">{t("crmCaps.subtitle")}</p>
+    <section id="crm-sections" className="bg-slate-50">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+        <div className="max-w-2xl">
+          <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("crmCaps.title")}</h2>
+          <p className="mt-3 text-slate-600 leading-relaxed">{t("crmCaps.subtitle")}</p>
+        </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map(({ titleKey, descKey, icon: Icon }) => (
-          <div key={titleKey} className="demo-card p-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-              <Icon className="w-5 h-5" />
+        <div className="mt-8 overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <div className="grid sm:grid-cols-2 sm:gap-px sm:bg-slate-100">
+            {capabilityItems.map(({ titleKey, descKey, icon }) => (
+              <div key={titleKey} className="flex gap-3 bg-white px-3 py-3 sm:px-4">
+                <CapabilityIcon icon={icon} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-800">{t(titleKey)}</p>
+                  <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{t(descKey)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3 border-t border-slate-100 bg-slate-50/80 px-3 py-3 sm:px-4">
+            <CapabilityIcon icon={Settings2} />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-800">{t("crmCaps.customizeTitle")}</p>
+              <p className="mt-0.5 text-xs text-slate-600 leading-relaxed">{t("crmCaps.customizeDesc")}</p>
             </div>
-            <p className="mt-3 text-sm font-semibold text-slate-800">{t(titleKey)}</p>
-            <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">{t(descKey)}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-6 demo-card p-5 border-indigo-100 bg-indigo-50/40">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-indigo-600 border border-indigo-100">
-            <SlidersHorizontal className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-800">{t("crmCaps.customizeTitle")}</p>
-            <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">{t("crmCaps.customizeDesc")}</p>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

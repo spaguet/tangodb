@@ -7,19 +7,24 @@ import {
   Settings,
   Ticket,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Locale } from "../../i18n";
+import type { SettingsSection } from "../../lib/demoDeepLink";
 import { disciplines, locations, settingsGeneral, STUDIO_NAME } from "../data";
 import { panelStrings } from "../panelStrings";
 import { fieldCls, labelCls } from "../styles";
 
-type Section = "general" | "organization" | "subscriptions" | "disciplines" | "locations" | "data" | "license";
+type Section = SettingsSection;
 
-type Props = { locale: Locale };
+type Props = { locale: Locale; initialSection?: Section };
 
-export function SettingsPanel({ locale }: Props) {
+export function SettingsPanel({ locale, initialSection }: Props) {
   const p = panelStrings(locale);
-  const [section, setSection] = useState<Section>("general");
+  const [section, setSection] = useState<Section>(initialSection ?? "general");
+
+  useEffect(() => {
+    if (initialSection) setSection(initialSection);
+  }, [initialSection]);
 
   const nav = [
     { id: "general" as const, label: p.settingsGeneral, icon: Settings },

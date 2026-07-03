@@ -1,5 +1,5 @@
 import { ArrowRight, Sparkles } from "lucide-react";
-import { CRM_LOGIN_URL } from "../config";
+import { CONTACTS, HERO_IMAGE } from "../config";
 
 type Props = {
   t: (key: import("../i18n").I18nKey) => string;
@@ -21,32 +21,60 @@ export function Hero({ t }: Props) {
             </span>
 
             <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-              {t("hero.title")}
+              {t("hero.titleLine1")}
+              <br />
+              {t("hero.titleLine2")}
+              <br />
+              {t("hero.titleLine3")}
+              <br />
+              {t("hero.titleLine4")}
             </h1>
 
             <p className="mt-5 text-lg text-slate-600 leading-relaxed max-w-xl">{t("hero.subtitle")}</p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href={CRM_LOGIN_URL} className="btn-primary">
+              <a href="#demo" className="btn-cta">
                 {t("hero.cta")}
                 <ArrowRight className="w-4 h-4" />
               </a>
-              <a href="#demo" className="btn-ghost">
-                {t("hero.ctaDemo")}
+              <a
+                href={CONTACTS.telegramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-ghost"
+              >
+                {t("hero.ctaTelegram")}
               </a>
             </div>
+
+            <a
+              href="#demo"
+              className="mt-3 inline-block max-w-xl rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-1.5 text-sm leading-snug text-indigo-700 transition-colors hover:bg-indigo-50 hover:text-indigo-800"
+            >
+              {t("hero.demoHint")}
+            </a>
+
+            <p className="mt-3 text-sm text-slate-500 max-w-xl">{t("hero.proof")}</p>
           </div>
 
-          <div className="flex justify-center lg:justify-end animate-fade-in">
-            <img
-              src="/vert_add.png"
-              alt={t("hero.imageAlt")}
-              className="w-full max-w-[280px] sm:max-w-xs lg:max-w-[320px] xl:max-w-sm rounded-2xl shadow-lg shadow-indigo-100/80"
-              width={400}
-              height={600}
-              loading="eager"
-              decoding="async"
-            />
+          <div
+            className="flex w-full max-w-[260px] animate-fade-in justify-center max-h-[min(55vh,480px)] sm:max-w-[300px] sm:max-h-none lg:max-w-[360px] lg:justify-end xl:max-w-[400px]"
+            style={{ aspectRatio: `${HERO_IMAGE.width} / ${HERO_IMAGE.height}` }}
+          >
+            <picture className="block h-full w-full">
+              <source type="image/avif" srcSet={HERO_IMAGE.srcSet.avif} sizes={HERO_IMAGE.sizes} />
+              <source type="image/webp" srcSet={HERO_IMAGE.srcSet.webp} sizes={HERO_IMAGE.sizes} />
+              <img
+                src={HERO_IMAGE.fallbackSrc}
+                alt={t("hero.imageAlt")}
+                className="h-full w-full rounded-2xl object-contain shadow-lg shadow-indigo-100/80"
+                width={HERO_IMAGE.width}
+                height={HERO_IMAGE.height}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+              />
+            </picture>
           </div>
         </div>
       </div>

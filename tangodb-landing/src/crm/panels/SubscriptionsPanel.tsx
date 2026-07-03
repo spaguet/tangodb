@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Locale } from "../../i18n";
-import { formatEuro, sellForm, subscriptionGroups, subscriptionHistory } from "../data";
+import { formatMoney, sellForm, subscriptionGroups, subscriptionHistory } from "../data";
 import PageTabs, { pageTabPanelCls } from "../PageTabs";
 import { crmStrings } from "../strings";
 import { fieldCls, labelCls } from "../styles";
@@ -23,6 +23,7 @@ type Props = { locale: Locale; initialTab?: "active" | "sell" | "history" };
 
 export function SubscriptionsPanel({ locale, initialTab = "active" }: Props) {
   const s = crmStrings(locale);
+  const money = (n: number) => formatMoney(n, locale);
   const [tab, setTab] = useState(initialTab);
   const [expandedDisciplines, setExpandedDisciplines] = useState<Set<string>>(
     () => new Set(subscriptionGroups.map((g) => g.discipline))
@@ -236,7 +237,7 @@ export function SubscriptionsPanel({ locale, initialTab = "active" }: Props) {
               <label className={labelCls}>{s.subs.tariffLabel}</label>
               <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2.5 flex justify-between text-sm">
                 <span className="font-medium text-indigo-800">{sellForm.tariff}</span>
-                <span className="font-semibold text-indigo-700">{formatEuro(sellForm.price)}</span>
+                <span className="font-semibold text-indigo-700">{money(sellForm.price)}</span>
               </div>
             </div>
 
@@ -263,7 +264,7 @@ export function SubscriptionsPanel({ locale, initialTab = "active" }: Props) {
             <div className="field-stack">
               <label className={labelCls}>{s.subs.payment}</label>
               <div className={fieldCls + " bg-slate-50"}>
-                {sellForm.payment} · {formatEuro(sellForm.price)}
+                {sellForm.payment} · {money(sellForm.price)}
               </div>
             </div>
 

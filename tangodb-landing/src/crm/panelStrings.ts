@@ -103,12 +103,12 @@ const en = {
 
 const ru: Record<keyof typeof en, string> = {
   financeNav: "Финансы",
-  financePayments: "Журнал оплат",
+  financePayments: "Платежи",
   financeRevenue: "Выручка",
   financeDebtors: "Дебиторы",
   financeExpenses: "Расходы",
-  financePayroll: "Зарплата",
-  paymentsTitle: "Журнал оплат",
+  financePayroll: "Зарплаты",
+  paymentsTitle: "Журнал платежей",
   search: "Поиск клиента...",
   revenueTitle: "Отчёт по выручке",
   revenueTotal: "Итого",

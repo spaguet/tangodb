@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# TODO: update Sitemap URL when a custom domain replaces tangodb-landing.pages.dev
+Sitemap: https://tangodb-landing.pages.dev/sitemap.xml

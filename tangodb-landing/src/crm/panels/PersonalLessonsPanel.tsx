@@ -1,7 +1,7 @@
 import { BadgePlus, ChevronLeft, ChevronRight, FolderClosed, Search, Sparkles, Ticket } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Locale } from "../../i18n";
-import { formatEuro, personalLessons, personalSellForm, type DemoPersonalLesson } from "../data";
+import { formatMoney, personalLessons, personalSellForm, type DemoPersonalLesson } from "../data";
 import PageTabs, { pageTabPanelCls } from "../PageTabs";
 import { crmStrings } from "../strings";
 import { panelStrings } from "../panelStrings";
@@ -48,6 +48,7 @@ function AttendanceBadge({ lesson, locale }: { lesson: DemoPersonalLesson; local
 
 export function PersonalLessonsPanel({ locale, initialTab = "view" }: Props) {
   const s = crmStrings(locale);
+  const money = (n: number) => formatMoney(n, locale);
   const ps = panelStrings(locale);
   const [tab, setTab] = useState(initialTab);
   useEffect(() => setTab(initialTab), [initialTab]);
@@ -203,7 +204,7 @@ export function PersonalLessonsPanel({ locale, initialTab = "view" }: Props) {
                             <td className="py-2.5 px-3">
                               <PaymentBadge lesson={lesson} locale={locale} />
                             </td>
-                            <td className="py-2.5 px-3 font-semibold text-slate-800">{formatEuro(lesson.price)}</td>
+                            <td className="py-2.5 px-3 font-semibold text-slate-800">{money(lesson.price)}</td>
                             <td className="py-2.5 px-3">
                               <AttendanceBadge lesson={lesson} locale={locale} />
                             </td>
@@ -241,7 +242,7 @@ export function PersonalLessonsPanel({ locale, initialTab = "view" }: Props) {
                 [ps.date, personalSellForm.date],
                 [ps.time, `${personalSellForm.timeStart} – ${personalSellForm.timeEnd}`],
                 [ps.tariff, personalSellForm.tariff],
-                [ps.payment, `${personalSellForm.payment} · ${formatEuro(personalSellForm.price)}`],
+                [ps.payment, `${personalSellForm.payment} · ${money(personalSellForm.price)}`],
               ] as const
             ).map(([label, value]) => (
               <div key={label} className="field-stack">
