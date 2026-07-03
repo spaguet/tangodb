@@ -27,8 +27,28 @@ Output: `dist/`
 
 ## Deploy to Cloudflare Pages (free)
 
+GitHub Actions workflow `.github/workflows/deploy-landing.yml` deploys on push to `main` when `tangodb-landing/**` changes.
+
+Repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|--------|--------|
+| `CLOUDFLARE_API_TOKEN` | API token with **Account → Cloudflare Pages → Edit** (scoped to this account) |
+| `CLOUDFLARE_ACCOUNT_ID` | `7629e83b82917f3be3175c6f4bf3fed4` |
+
+Wrangler is pinned in `package.json`; `wrangler.jsonc` sets `account_id` so CI does not need User Details Read on the token.
+
+Manual deploy (after `npm run build`):
+
+```bash
+cd tangodb-landing
+npx wrangler pages deploy dist --project-name=tangodb-landing --branch=main
+```
+
+### First-time setup (Cloudflare Dashboard)
+
 1. Push this folder to your GitHub repo (monorepo root: `tangodb-landing/`).
-2. [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
+2. [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → **Create** → **Pages** → **Connect to Git** (optional; CI deploy uses Wrangler API).
 3. Select the TangoDB repository.
 4. Build settings:
 
@@ -37,7 +57,7 @@ Output: `dist/`
    | Root directory | `tangodb-landing` |
    | Build command | `npm run build` |
    | Build output directory | `dist` |
-   | Node.js version | 20 (or latest LTS) |
+   | Node.js version | 22 (or latest LTS) |
 
 5. Deploy. You will get a URL like `https://tangodb-landing.pages.dev`.
 
