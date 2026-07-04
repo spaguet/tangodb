@@ -1,6 +1,7 @@
 import { ArrowRight, MessageCircle } from "lucide-react";
 import type { Locale } from "../i18n";
-import { CONTACTS } from "../config";
+import { getTelegramSetupUrl } from "../config";
+import { LANDING_EVENTS, onLandingCtaClick } from "../lib/landingAnalytics";
 import { CrmDesktopPreview } from "./CrmDesktopPreview";
 import { CrmMobilePreview } from "./CrmMobilePreview";
 
@@ -39,13 +40,14 @@ export function PlatformSection({ locale, t }: Props) {
             <p className="text-lg font-semibold text-slate-900">{t("platform.supportTitle")}</p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">{t("platform.supportDesc")}</p>
             <a
-              href={CONTACTS.telegramUrl}
+              href={getTelegramSetupUrl(locale)}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-5 inline-flex items-center gap-2 rounded-xl border border-amber-200/80 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:border-amber-300 hover:bg-amber-50/50"
+              onClick={onLandingCtaClick(LANDING_EVENTS.CTA_TELEGRAM, locale)}
             >
               <MessageCircle className="h-4 w-4 text-amber-700" aria-hidden="true" />
-              {t("hero.ctaTelegram")}
+              {t("cta.getInstructions")}
               <ArrowRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </a>
             <p className="mt-3 text-xs text-amber-900/70">{t("platform.supportHint")}</p>

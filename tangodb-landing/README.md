@@ -67,7 +67,29 @@ SPA routing is handled by `public/_redirects` (`/* /index.html 200`).
 
 In Pages → **Custom domains** → add your domain when ready.
 
+## Landing analytics (Dev Console)
+
+Backend for click/pageview tracking (prompt 6):
+
+| Artifact | Location |
+|----------|----------|
+| Migration `landing_events` | `tangodb/supabase/migrations/20260818000001_landing_events.sql` |
+| Edge Function | `tangodb/supabase/functions/landing-track-event` |
+
+Deploy (when ready, not part of Pages CI):
+
+```bash
+cd tangodb
+supabase db push
+supabase functions deploy landing-track-event
+```
+
+Дополните **существующий** Supabase secret `ALLOWED_ORIGINS` (тот же, что для CRM и Dev Console): добавьте `https://tangodb-landing.pages.dev` и `http://localhost:5173` (и custom domain, когда подключите). После изменения — redeploy Edge Functions.
+
+Client tracker (`src/lib/landingAnalytics.ts`) and env `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` — prompt 7.
+
 ## Links
 
-- CRM sign-in: https://tangodb.vercel.app/auth/login
+- CRM sign-in: https://tangodb.vercel.app/login
+- CRM registration: https://tangodb.vercel.app/register
 - Contact: omowdance@gmail.com · [@omow_second](https://t.me/omow_second)

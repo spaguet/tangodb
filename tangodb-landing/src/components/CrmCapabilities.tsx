@@ -11,8 +11,11 @@ import {
   Users,
   UsersRound,
 } from "lucide-react";
+import type { Locale } from "../i18n";
+import { CtaBlock } from "./CtaBlock";
 
 type Props = {
+  locale: Locale;
   t: (key: import("../i18n").I18nKey) => string;
 };
 
@@ -34,44 +37,35 @@ const capabilityItems: CapabilityItem[] = [
   { titleKey: "crmCaps.prices", descKey: "crmCaps.pricesDesc", icon: Tags },
 ];
 
-function CapabilityIcon({ icon: Icon }: { icon: LucideIcon }) {
+export function CrmCapabilities({ locale, t }: Props) {
   return (
-    <div className="flex h-11 w-[52px] shrink-0 items-center justify-center rounded-md border border-slate-200 bg-indigo-50/80">
-      <Icon className="h-4 w-4 text-indigo-600" strokeWidth={1.75} aria-hidden="true" />
-    </div>
-  );
-}
+    <section id="crm-sections" className="border-t border-slate-200/80 bg-white">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
+        <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">{t("crmCaps.title")}</h2>
+        <p className="mt-2 text-sm text-slate-500">{t("crmCaps.subtitle")}</p>
 
-export function CrmCapabilities({ t }: Props) {
-  return (
-    <section id="crm-sections" className="bg-slate-50">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="max-w-2xl">
-          <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("crmCaps.title")}</h2>
-          <p className="mt-3 text-slate-600 leading-relaxed">{t("crmCaps.subtitle")}</p>
-        </div>
-
-        <div className="mt-8 overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="grid sm:grid-cols-2 sm:gap-px sm:bg-slate-100">
-            {capabilityItems.map(({ titleKey, descKey, icon }) => (
-              <div key={titleKey} className="flex gap-3 bg-white px-3 py-3 sm:px-4">
-                <CapabilityIcon icon={icon} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-800">{t(titleKey)}</p>
-                  <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{t(descKey)}</p>
-                </div>
+        <dl className="mt-6 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+          {capabilityItems.map(({ titleKey, descKey, icon: Icon }) => (
+            <div key={titleKey} className="flex gap-2.5">
+              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" strokeWidth={1.75} aria-hidden="true" />
+              <div className="min-w-0">
+                <dt className="text-sm font-medium text-slate-800">{t(titleKey)}</dt>
+                <dd className="text-xs text-slate-500 leading-snug">{t(descKey)}</dd>
               </div>
-            ))}
-          </div>
-
-          <div className="flex gap-3 border-t border-slate-100 bg-slate-50/80 px-3 py-3 sm:px-4">
-            <CapabilityIcon icon={Settings2} />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-800">{t("crmCaps.customizeTitle")}</p>
-              <p className="mt-0.5 text-xs text-slate-600 leading-relaxed">{t("crmCaps.customizeDesc")}</p>
             </div>
-          </div>
-        </div>
+          ))}
+        </dl>
+
+        <p className="mt-6 flex gap-2.5 border-t border-slate-100 pt-5 text-sm text-slate-600">
+          <Settings2 className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" strokeWidth={1.75} aria-hidden="true" />
+          <span>
+            <span className="font-medium text-slate-800">{t("crmCaps.customizeTitle")}</span>
+            {" — "}
+            {t("crmCaps.customizeDesc")}
+          </span>
+        </p>
+
+        <CtaBlock locale={locale} t={t} className="mt-8" />
       </div>
     </section>
   );

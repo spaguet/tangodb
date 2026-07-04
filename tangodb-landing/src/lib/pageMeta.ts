@@ -16,9 +16,16 @@ type PageMetaInput = {
   description: string;
   imageUrl: string;
   pageUrl: string;
+  locale: "en" | "ru";
 };
 
-export function syncPageMeta({ title, description, imageUrl, pageUrl }: PageMetaInput) {
+function ogLocaleTags(locale: "en" | "ru") {
+  const primary = locale === "ru" ? "ru_RU" : "en_US";
+  const alternate = locale === "ru" ? "en_US" : "ru_RU";
+  return { primary, alternate };
+}
+
+export function syncPageMeta({ title, description, imageUrl, pageUrl, locale }: PageMetaInput) {
   document.title = title;
 
   ensureMeta(
@@ -73,4 +80,34 @@ export function syncPageMeta({ title, description, imageUrl, pageUrl }: PageMeta
       content,
     );
   }
+
+  const { primary, alternate } = ogLocaleTags(locale);
+
+  ensureMeta(
+    'meta[property="og:locale"]',
+    () => {
+      const meta = document.createElement("meta");
+      meta.setAttribute("property", "og:locale");
+      return meta;
+    },
+    primary,
+  );
+
+  ensureMeta(
+    'meta[property="og:locale:alternate"]',
+    () => {
+      const meta = document.createElement("meta");
+      meta.setAttribute("property", "og:locale:alternate");
+      return meta;
+    },
+    alternate,
+  );
+
+  let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    document.head.appendChild(canonical);
+  }
+  canonical.href = pageUrl;
 }

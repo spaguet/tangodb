@@ -404,6 +404,9 @@ verify_jwt = false
 [functions.create-self-service-demo-org]
 verify_jwt = true
 
+[functions.landing-track-event]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

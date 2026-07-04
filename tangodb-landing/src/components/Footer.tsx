@@ -1,19 +1,23 @@
-import { Mail, Send } from "lucide-react";
-import { CONTACTS } from "../config";
+import { ArrowRight, Mail, Send } from "lucide-react";
+import { CONTACTS, CRM_REGISTER_URL, PRIVACY_PATH, getTelegramSetupUrl } from "../config";
+import type { Locale } from "../i18n";
+import { LANDING_EVENTS, onLandingCtaClick } from "../lib/landingAnalytics";
 
 type Props = {
+  locale: Locale;
   t: (key: import("../i18n").I18nKey) => string;
 };
 
 const NAV_LINKS = [
   { key: "footer.nav.features" as const, href: "#features" },
+  { key: "footer.nav.audience" as const, href: "#audience" },
+  { key: "footer.nav.pricing" as const, href: "#pricing" },
   { key: "footer.nav.demo" as const, href: "#demo" },
   { key: "footer.nav.crmSections" as const, href: "#crm-sections" },
-  { key: "footer.nav.pricing" as const, href: "#pricing" },
   { key: "footer.nav.faq" as const, href: "#faq" },
 ];
 
-export function Footer({ t }: Props) {
+export function Footer({ locale, t }: Props) {
   return (
     <footer className="border-t border-slate-800 bg-slate-900 text-slate-300">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
@@ -23,10 +27,12 @@ export function Footer({ t }: Props) {
             <p className="mt-2 max-w-xs text-sm text-slate-400">{t("footer.tagline")}</p>
             <p className="mt-3 max-w-xs text-sm text-slate-400">{t("footer.byTeacher")}</p>
             <a
-              href="#demo"
-              className="mt-4 inline-block text-sm font-semibold text-indigo-400 transition-colors hover:text-indigo-300"
+              href={CRM_REGISTER_URL}
+              className="btn-cta mt-5 text-sm"
+              onClick={onLandingCtaClick(LANDING_EVENTS.CTA_REGISTER, locale)}
             >
-              {t("footer.ctaDemo")} →
+              {t("cta.startFree")}
+              <ArrowRight className="h-4 w-4" />
             </a>
           </div>
 
@@ -40,6 +46,9 @@ export function Footer({ t }: Props) {
                   <a
                     href={href}
                     className="text-sm text-slate-400 transition-colors hover:text-indigo-400"
+                    {...(href === "#demo"
+                      ? { onClick: onLandingCtaClick(LANDING_EVENTS.CTA_DEMO, locale) }
+                      : {})}
                   >
                     {t(key)}
                   </a>
@@ -56,12 +65,13 @@ export function Footer({ t }: Props) {
               {t("footer.supportHint")}
             </p>
             <a
-              href={CONTACTS.telegramUrl}
+              href={getTelegramSetupUrl(locale)}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 inline-block text-sm font-semibold text-indigo-400 transition-colors hover:text-indigo-300"
+              onClick={onLandingCtaClick(LANDING_EVENTS.CTA_TELEGRAM, locale)}
             >
-              {t("hero.ctaTelegram")} →
+              {t("cta.getInstructions")} →
             </a>
           </div>
 
@@ -85,6 +95,7 @@ export function Footer({ t }: Props) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-indigo-400"
+                  onClick={onLandingCtaClick(LANDING_EVENTS.CTA_TELEGRAM, locale)}
                 >
                   <Send className="h-4 w-4 text-indigo-400" />
                   {CONTACTS.telegramHandle}
@@ -98,8 +109,8 @@ export function Footer({ t }: Props) {
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span>© 2026 TangoDB</span>
             <span aria-hidden="true">·</span>
-            {/* TODO: replace href with real privacy policy page when available */}
-            <a href="#" className="transition-colors hover:text-indigo-400">
+            {/* Privacy policy page */}
+            <a href={PRIVACY_PATH} className="transition-colors hover:text-indigo-400">
               {t("footer.privacy")}
             </a>
             <span aria-hidden="true">·</span>

@@ -1,7 +1,8 @@
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import { CRM_LOGIN_URL } from "../config";
+import { CRM_LOGIN_URL, CRM_REGISTER_URL } from "../config";
 import type { Locale } from "../i18n";
+import { LANDING_EVENTS, onLandingCtaClick } from "../lib/landingAnalytics";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { TdbLogo } from "./TdbLogo";
 
@@ -23,12 +24,27 @@ export function Header({ locale, onLocaleChange, t }: Props) {
         </a>
 
         <nav className="hidden items-center gap-6 md:flex">
-          <a href="#demo" className="text-sm text-slate-600 hover:text-indigo-600 transition-colors">
+          <a
+            href="#demo"
+            className="text-sm text-slate-600 hover:text-indigo-600 transition-colors"
+            onClick={onLandingCtaClick(LANDING_EVENTS.CTA_DEMO, locale)}
+          >
             {t("nav.demo")}
           </a>
           <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
-          <a href={CRM_LOGIN_URL} className="btn-primary text-sm py-2 px-4">
+          <a
+            href={CRM_LOGIN_URL}
+            className="text-sm text-slate-600 hover:text-indigo-600 transition-colors"
+            onClick={onLandingCtaClick(LANDING_EVENTS.CTA_LOGIN, locale)}
+          >
             {t("nav.login")}
+          </a>
+          <a
+            href={CRM_REGISTER_URL}
+            className="btn-primary text-sm py-2 px-4"
+            onClick={onLandingCtaClick(LANDING_EVENTS.CTA_REGISTER, locale)}
+          >
+            {t("cta.startFree")}
           </a>
         </nav>
 
@@ -44,13 +60,34 @@ export function Header({ locale, onLocaleChange, t }: Props) {
 
       {open && (
         <div className="md:hidden border-t border-slate-100 px-4 py-4 space-y-3 animate-fade-in">
-          <a href="#demo" className="block text-sm text-slate-700" onClick={() => setOpen(false)}>
+          <a
+            href={CRM_REGISTER_URL}
+            className="btn-primary w-full"
+            onClick={onLandingCtaClick(LANDING_EVENTS.CTA_REGISTER, locale)}
+          >
+            {t("cta.startFree")}
+          </a>
+          <a
+            href={CRM_LOGIN_URL}
+            className="block text-sm text-slate-700"
+            onClick={() => {
+              onLandingCtaClick(LANDING_EVENTS.CTA_LOGIN, locale)();
+              setOpen(false);
+            }}
+          >
+            {t("nav.login")}
+          </a>
+          <a
+            href="#demo"
+            className="block text-sm text-slate-700"
+            onClick={() => {
+              onLandingCtaClick(LANDING_EVENTS.CTA_DEMO, locale)();
+              setOpen(false);
+            }}
+          >
             {t("nav.demo")}
           </a>
           <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
-          <a href={CRM_LOGIN_URL} className="btn-primary w-full">
-            {t("nav.login")}
-          </a>
         </div>
       )}
     </header>

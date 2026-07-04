@@ -1,5 +1,6 @@
 import { ArrowRight, Check, Minus } from "lucide-react";
 import { demoDeepLinkHref } from "../lib/demoDeepLink";
+import { LANDING_EVENTS, onLandingCtaClick } from "../lib/landingAnalytics";
 
 type Props = {
   t: (key: import("../i18n").I18nKey) => string;
@@ -96,6 +97,7 @@ export function ModularitySection({ t }: Props) {
           <a
             href={demoDeepLinkHref({ panel: "settings", settingsSection: "organization" })}
             className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
+            onClick={onLandingCtaClick(LANDING_EVENTS.CTA_DEMO)}
           >
             {t("modularity.cta.settings")}
             <ArrowRight className="h-4 w-4" />
@@ -103,6 +105,7 @@ export function ModularitySection({ t }: Props) {
           <a
             href={demoDeepLinkHref({ panel: "team" })}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-600 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800"
+            onClick={onLandingCtaClick(LANDING_EVENTS.CTA_DEMO)}
           >
             {t("modularity.cta.team")}
             <ArrowRight className="h-4 w-4" />
