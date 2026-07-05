@@ -5,13 +5,13 @@ export const en = {
   "nav.login": "Sign in",
   "nav.register": "Start free",
   "nav.demo": "See it in action",
-  "cta.startFree": "Start free for 30 days",
+  "cta.startFree": "Start free",
   "cta.getInstructions": "Get setup instructions",
-  "cta.startFreeHint": "Email confirmation in ~2 min, no card required",
-  "hero.badge": "70% off lifetime access until Aug 31, 2026",
-  "hero.title": "CRM for dance studios without spreadsheet chaos",
+  "cta.startFreeHint": "",
+  "hero.badge": "Your 70% discount on lifetime access",
+  "hero.title": "CRM for dance studios and teachers",
   "hero.subtitle":
-    "Schedule, passes, attendance, finance and team roles in one CRM. Start free for 30 days: confirm your email, no card required.",
+    "Schedule, passes, attendance, finance and team roles in one CRM. Start free.",
   "hero.demoHint": "See the demo first",
   "hero.imageAlt": "TangoDB desktop CRM interface: sidebar and Studio Ritmo overview panel",
   "trust.trial.title": "30 days free",
@@ -19,10 +19,10 @@ export const en = {
     "Self-service signup: confirm your email, no card required. Full CRM for 30 days.",
   "trust.teacher.title": "Built by a teacher",
   "trust.teacher.text":
-    "A CRM built for my own studio by a tango teacher who runs group and private classes. Message us on Telegram to ask how it works.",
+    "A CRM built for my own studio by a real teacher who runs group and private classes. Message us on Telegram or email to ask how it works.",
   "trust.setup.title": "Setup help",
   "trust.setup.text":
-    "Setup instructions on Telegram before and after signup — a real person replies, not a bot.",
+    "Setup instructions on Telegram and email before and after signup — a real person replies, not a bot.",
   "features.title": "What gets easier in the first week",
   "features.visibility": "See who came and who owes",
   "features.financeScreen": "Studio finances on one screen",
@@ -36,7 +36,7 @@ export const en = {
   "modularity.title": "Only what your studio needs",
   "modularity.subtitle":
     "Enable the modules you need and hide the rest. Teachers see their schedule, admins manage payments and owners keep the full picture.",
-  "modularity.solo.title": "Solo teacher",
+  "modularity.solo.title": "Teacher",
   "modularity.studio.title": "Studio",
   "modularity.network.title": "School network",
   "modularity.modules.clients": "Clients",
@@ -65,7 +65,7 @@ export const en = {
   "platform.supportHint": "You can also email us — we read every message.",
   "demo.title": "Explore the CRM in detail",
   "demo.subtitle":
-    "The landing demo is view-only. After signup you get the full CRM for 30 days: finance, schedule, clients, module settings and team roles.",
+    "The landing demo is an example only. After signup you get the full CRM: finance, schedule, clients, module settings and team roles.",
   "demo.actionHint": "Try opening “Finance” or “Settings”",
   "demo.badge": "Demo",
   "demo.readOnly": "View only",
@@ -101,48 +101,50 @@ export const en = {
   "crmCaps.customizeDesc": "enable the sections and roles you need — from solo teacher to full team",
   "pricing.title": "Start free, decide after 30 days",
   "pricing.subtitle":
-    "Full access first, no payment upfront. Early birds is a lifetime discount — not a replacement for the trial.",
-  "pricing.step.register": "Sign up at tangodb.vercel.app — email and captcha, no card required.",
-  "pricing.step.email": "Confirm your email — usually takes about two minutes.",
-  "pricing.step.trial": "30 days of full CRM: schedule, passes, finance and team.",
-  "pricing.step.decide": "After the trial — choose a license or lifetime access on terms that fit you.",
+    "Full access first, no payment upfront. Early birds — 70% off lifetime access for those who buy before August 31.",
+  "pricing.step.register": "Step one: sign up — enter your email and password",
+  "pricing.step.email": "Step two: sign in to your CRM. Your database is created automatically.",
+  "pricing.step.trial":
+    "Step three: configure the CRM for your needs — lesson types, team, pricing, schedule and more.",
+  "pricing.step.decide":
+    "Step four: use your 70% discount on lifetime CRM access — pay any way that suits you.",
   "pricing.earlyBird.title": "Early birds: 70% off lifetime access",
   "pricing.earlyBird.text":
-    "For early users until August 31, 2026 — a discount on lifetime access. It adds to the free 30 days, it does not replace the trial.",
-  "pricing.afterTrial.title": "What happens after 30 days",
+    "For early users until August 31, 2026 — a discount on lifetime access. Lifetime access costs one monthly studio pass.",
+  "pricing.afterTrial.title": "No monthly subscription",
   "pricing.afterTrial.text":
-    "No automatic charges — no card at signup. After 30 days of full access the CRM becomes view-only for another 30 days; you can export your data. Then choose a license or lifetime access. What lifetime includes and any limits — we clarify on Telegram before you pay.",
-  "pricing.note": "Email confirmation, no card. Lifetime terms — in Telegram before payment.",
+    "No automatic charges — no card at signup. Full license and lifetime access.",
+  "pricing.note": "",
   "faq.title": "FAQ",
   "faq.q1": "Do I need to install an app?",
   "faq.a1": "No. TangoDB works in the browser on desktop and mobile.",
   "faq.q2": "Who owns the studio data?",
   "faq.a2":
-    "You do. On request, clients, attendance and finance history can be exported.",
+    "You do. You can export clients, attendance and finance history from the CRM.",
   "faq.q3": "Does it work for solo teachers?",
   "faq.a3":
     "Yes. You can enable only the modules you need, such as clients, private lessons and payments.",
-  "faq.q4": "How is the landing demo different from the trial?",
+  "faq.q4": "How is the landing demo different from CRM demo mode?",
   "faq.a4":
-    "The demo on this page is view-only: browse sections, but you can't run your studio. After signup you get the full CRM for 30 days: finance, module settings, team and your own data.",
+    "The demo on this page is an example only — some features are not shown. After signup you get the full CRM: finance, module settings, team and your own data.",
   "faq.qCard": "Do I need a credit card?",
   "faq.aCard":
     "No. Sign up with email and captcha only. There are no automatic charges — you decide after the 30-day trial.",
-  "faq.q5": "How does the 30-day trial work?",
+  "faq.q5": "How does the 30-day demo mode work?",
   "faq.a5":
-    "Register, confirm your email (about two minutes), and get the full CRM for 30 days: schedule, passes, finance and team — not the view-only demo on this page.",
+    "Register and get the full CRM: schedule, passes, finance and team — not the view-only demo on this page.",
   "faq.q6": "What happens after 30 days?",
   "faq.a6":
-    "Full access ends, but your data stays for another 30 days in view-only mode with export. No card is charged. Then you choose a license or lifetime access — or data is removed if you do nothing.",
+    "Full access ends and all data is automatically deleted from the server. Then — purchase a license and lifetime access.",
   "faq.q7": "What does lifetime access mean?",
   "faq.a7":
-    "A one-time purchase for ongoing use of the CRM version you licensed, with free updates within that version. Scope and limits — we clarify on Telegram before payment.",
+    "A one-time purchase for ongoing use of the CRM version you licensed, with free updates within that version.",
   "faq.q8": "What is the early birds offer?",
   "faq.a8":
     "70% off lifetime access for early users until August 31, 2026. It adds to the free 30-day trial — it does not replace it.",
   "faq.q9": "Can I try without signing up?",
   "faq.a9":
-    "Yes — scroll to “Explore the CRM in detail”: view-only demo there. To run your studio, start the 30-day trial — email signup, no card.",
+    "Yes — scroll to “Explore the CRM in detail”: view-only demo there. To run your studio — just register.",
   "faq.q10": "How does support work?",
   "faq.a10": "Telegram and email. A real person replies, not a bot.",
   "footer.tagline": "Clients, classes, money and team — one workspace.",
@@ -175,7 +177,7 @@ export const en = {
   "privacy.analytics.text":
     "To understand whether the page works for visitors, we send anonymous events to our server. We do not store IP addresses in the database. Events may include:",
   "privacy.analytics.eventPageview": "Page view",
-  "privacy.analytics.eventRegister": "Click on “Start free for 30 days” (register)",
+  "privacy.analytics.eventRegister": "Click on “Start free” (register)",
   "privacy.analytics.eventDemo": "Click on demo links",
   "privacy.analytics.eventTelegram": "Click on Telegram / setup help",
   "privacy.analytics.eventLogin": "Click on “Sign in”",
@@ -188,7 +190,7 @@ export const en = {
     "We use localStorage for your language choice and anonymous visitor ID, and sessionStorage for session ID and one-time analytics flags. You can clear them in your browser settings.",
   "privacy.crm.title": "CRM registration and trial",
   "privacy.crm.text":
-    "When you click “Start free for 30 days” you go to tangodb.vercel.app/register. Signup requires email confirmation; no credit card is required for the 30-day trial. Data you enter in the CRM is governed by separate product terms and is owned by your studio.",
+    "When you click “Start free” you go to tangodb.vercel.app/register. Data you enter in the CRM is governed by separate product terms and is owned by your studio.",
   "privacy.contact.title": "Contact",
   "privacy.contact.text": "Questions about this policy — email us at",
 } as const;

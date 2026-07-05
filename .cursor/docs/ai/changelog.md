@@ -8,6 +8,8 @@
 YYYY-MM-DD — краткое описание (причина / контекст)
 ```
 
+2026-07-05 — tangodb-landing: синхронизирован EN-копирайт с RU — CTA «Start free», hero/pricing/FAQ, убраны подсказки про email и карту (`en.ts`).
+
 2026-07-04 — tangodb-landing: обновлён RU-копирайт — CTA «Начать бесплатно», новые формулировки hero/pricing/FAQ, убраны подсказки про email и карту (`ru.ts`, `Hero.tsx`, `PricingSection.tsx`).
 
 2026-07-03 — tangodb-landing: fix CI deploy — pinned wrangler 4, `CLOUDFLARE_ACCOUNT_ID` в env, прямой `wrangler pages deploy` вместо wrangler-action v3.
