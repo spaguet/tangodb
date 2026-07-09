@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-09 — tangodb-landing: Cloudflare Web Analytics beacon в `index.html` (token site `tangodb-landing.pages.dev`).
+
 2026-07-05 — Auth: полностью удалён вход через Telegram — убран auto-login в `AuthProvider` (Mini App bootstrap), `signInWithTelegram`, `TelegramRecoveryGate`, edge function `telegram-auth` и `_shared/telegramVerify.ts`; закомментированный UI на `/login` очищен. Контакты клиентов/команды и экспорт в Telegram Mini App без изменений.
 
 ## Формат
