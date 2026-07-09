@@ -35,7 +35,7 @@ export function PlatformSection({ locale, t }: Props) {
           </div>
         </div>
 
-        <div className="mt-10 rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-50/60 p-6 sm:p-8">
+        <div className="mt-10 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-indigo-50/60 p-6 sm:p-8">
           <div className="max-w-2xl">
             <p className="text-lg font-semibold text-slate-900">{t("platform.supportTitle")}</p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">{t("platform.supportDesc")}</p>
@@ -43,14 +43,14 @@ export function PlatformSection({ locale, t }: Props) {
               href={getTelegramSetupUrl(locale)}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 inline-flex items-center gap-2 rounded-xl border border-amber-200/80 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:border-amber-300 hover:bg-amber-50/50"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl border border-indigo-200/80 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:border-indigo-300 hover:bg-indigo-50/50"
               onClick={onLandingCtaClick(LANDING_EVENTS.CTA_TELEGRAM, locale)}
             >
-              <MessageCircle className="h-4 w-4 text-amber-700" aria-hidden="true" />
+              <MessageCircle className="h-4 w-4 text-indigo-600" aria-hidden="true" />
               {t("cta.getInstructions")}
               <ArrowRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </a>
-            <p className="mt-3 text-xs text-amber-900/70">{t("platform.supportHint")}</p>
+            <p className="mt-3 text-xs text-indigo-700/70">{t("platform.supportHint")}</p>
           </div>
         </div>
       </div>

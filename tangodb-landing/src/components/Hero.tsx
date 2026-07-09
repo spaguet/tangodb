@@ -19,7 +19,7 @@ export function Hero({ locale, t }: Props) {
       <div className="mx-auto max-w-6xl px-4 pt-8 pb-10 sm:px-6 sm:pt-12 sm:pb-12 lg:pt-14 lg:pb-14">
         <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:gap-12 xl:grid-cols-[minmax(0,1fr)_32rem]">
           <div className="max-w-2xl animate-slide-up">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
               <BadgePercent className="w-3.5 h-3.5" aria-hidden="true" />
               {t("hero.badge")}
             </span>

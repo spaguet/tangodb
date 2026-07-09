@@ -11,26 +11,26 @@ const items = [
   {
     key: "features.visibility" as const,
     icon: Users,
-    iconBg: "bg-violet-50",
-    iconColor: "text-violet-600",
+    iconBg: "bg-indigo-50",
+    iconColor: "text-indigo-600",
   },
   {
     key: "features.autoPass" as const,
     icon: ClipboardCheck,
-    iconBg: "bg-sky-50",
-    iconColor: "text-sky-600",
+    iconBg: "bg-indigo-50",
+    iconColor: "text-indigo-600",
   },
   {
     key: "features.financeScreen" as const,
     icon: TrendingUp,
-    iconBg: "bg-emerald-50",
-    iconColor: "text-emerald-600",
+    iconBg: "bg-indigo-50",
+    iconColor: "text-indigo-700",
   },
   {
     key: "features.separatePrivate" as const,
     icon: User,
-    iconBg: "bg-amber-50",
-    iconColor: "text-amber-700",
+    iconBg: "bg-indigo-50",
+    iconColor: "text-indigo-700",
   },
 ];
 
