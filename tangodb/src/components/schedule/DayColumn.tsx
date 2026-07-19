@@ -15,6 +15,7 @@ interface DayColumnProps {
   dateISO: string;
   dayOfWeek: number;
   dayNumber: number;
+  isToday?: boolean;
   lessons: DisplayLesson[];
   rangeStartMin: number;
   rangeEndMin: number;
@@ -35,6 +36,7 @@ export default function DayColumn({
   dateISO,
   dayOfWeek,
   dayNumber,
+  isToday = false,
   lessons,
   rangeStartMin,
   rangeEndMin,
@@ -74,7 +76,11 @@ export default function DayColumn({
 
   return (
     <div className="flex-1 min-w-0 border-l border-slate-100 first:border-l-0">
-      <div className="sticky top-0 z-[1] flex h-9 sm:h-11 flex-col items-center justify-center border-b border-slate-100 px-0.5 sm:px-1 bg-slate-50/95 backdrop-blur-[2px] shadow-[0_2px_4px_-2px_rgba(15,23,42,0.08)]">
+      <div
+        className={`sticky top-0 z-[1] flex h-9 sm:h-11 flex-col items-center justify-center border-b border-slate-100 px-0.5 sm:px-1 backdrop-blur-[2px] shadow-[0_2px_4px_-2px_rgba(15,23,42,0.08)] ${
+          isToday ? "bg-slate-200/70" : "bg-slate-50/95"
+        }`}
+      >
         <div className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-400 leading-none">
           {dowShort(dayOfWeek, locale)}
         </div>
@@ -83,7 +89,10 @@ export default function DayColumn({
         </div>
       </div>
 
-      <div className="relative bg-white" style={{ height: gridHeight }}>
+      <div
+        className={`relative ${isToday ? "bg-slate-100/80" : "bg-white"}`}
+        style={{ height: gridHeight }}
+      >
         {Array.from({ length: rowCount }, (_, i) => (
           <div
             key={i}

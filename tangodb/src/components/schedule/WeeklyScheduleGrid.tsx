@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { computeDisplayRange } from "../../lib/scheduleWeek";
+import { computeDisplayRange, toISODateLocal } from "../../lib/scheduleWeek";
 import type { DisplayLesson } from "../../types";
 import {
   gridHeightPx,
@@ -33,6 +33,7 @@ export default function WeeklyScheduleGrid({
   );
 
   const dayColumns = useMemo(() => buildDayColumns(weekStart, lessons), [weekStart, lessons]);
+  const todayISO = useMemo(() => toISODateLocal(new Date()), []);
   const gridHeight = gridHeightPx(rangeStartMin, rangeEndMin);
   const rowCount = (rangeEndMin - rangeStartMin) / SLOT_MINUTES;
 
@@ -82,6 +83,7 @@ export default function WeeklyScheduleGrid({
               dateISO={col.dateISO}
               dayOfWeek={col.dayOfWeek}
               dayNumber={col.dayNumber}
+              isToday={col.dateISO === todayISO}
               lessons={col.lessons}
               rangeStartMin={rangeStartMin}
               rangeEndMin={rangeEndMin}

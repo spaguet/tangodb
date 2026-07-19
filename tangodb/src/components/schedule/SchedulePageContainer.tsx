@@ -337,10 +337,10 @@ export default function SchedulePageContainer() {
   const personalPrefill = addFlow?.mode === "personal" ? addFlow.prefill : null;
 
   const isLoading =
-    scheduleQuery.isLoading ||
     locationsQuery.isLoading ||
     disciplinesQuery.isLoading ||
-    teamQuery.isLoading;
+    teamQuery.isLoading ||
+    (scheduleQuery.isLoading && scheduleQuery.data === undefined);
 
   const isError =
     scheduleQuery.isError ||

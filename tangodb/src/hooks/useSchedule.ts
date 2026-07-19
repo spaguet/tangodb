@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import {
   addDays,
@@ -107,6 +107,7 @@ export function useScheduleForWeek(
       return (data ?? []).map(mapScheduleSlot);
     },
     staleTime: 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 
   const data = useMemo((): ScheduleForWeekData | undefined => {
