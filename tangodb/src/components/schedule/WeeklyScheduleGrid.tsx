@@ -57,21 +57,21 @@ export default function WeeklyScheduleGrid({
             aria-hidden
           />
           <div className="relative" style={{ height: gridHeight }}>
-            {timeLabels.map(({ top, label }) => (
-              <div
-                key={label}
-                className="absolute right-0.5 sm:right-1 text-[9px] sm:text-[10px] font-semibold text-slate-400 tabular-nums -translate-y-1/2"
-                style={{ top }}
-              >
-                {label}
-              </div>
-            ))}
             {Array.from({ length: rowCount }, (_, i) => (
               <div
                 key={i}
                 className="absolute left-0 right-0 border-b border-slate-50"
                 style={{ top: i * ROW_HEIGHT_PX, height: ROW_HEIGHT_PX }}
               />
+            ))}
+            {timeLabels.map(({ top, label }) => (
+              <div
+                key={label}
+                className="absolute right-0.5 sm:right-1 z-[1] bg-white pl-0.5 text-[9px] sm:text-[10px] font-semibold text-slate-400 tabular-nums leading-none -translate-y-full"
+                style={{ top }}
+              >
+                {label}
+              </div>
             ))}
           </div>
         </div>
