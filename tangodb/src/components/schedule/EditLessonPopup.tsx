@@ -6,6 +6,7 @@ import {
   useDeleteScheduleSlot,
   useEditGroupSchedule,
   useUpdateGroupScheduleMetadata,
+  useUpdateGroupScheduleValidity,
 } from "../../hooks/useSchedule";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -19,8 +20,13 @@ import {
 } from "../../hooks/useOnlineStatus";
 import { findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
 import { pickGroupSlotsForEdit } from "../../lib/scheduleSlotEdit";
+import {
+  computeSlotValidTo,
+  inferGroupRepeatConfig,
+  type GroupRepeatConfig,
+} from "../../lib/groupLessonRepeat";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
-import { addDays, getWeekRange, isPastDate, toISODateLocal } from "../../lib/scheduleWeek";
+import { addDays, getWeekRange, isPastDate, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
@@ -30,6 +36,7 @@ import DisciplineSelect from "../ui/DisciplineSelect";
 import LocationSelect from "../ui/LocationSelect";
 import RequirePermission from "../RequirePermission";
 import TimeSelect from "../ui/TimeSelect";
+import GroupLessonRepeatFields from "./GroupLessonRepeatFields";
 
 interface EditLessonPopupProps {
   lesson: DisplayLesson | null;
@@ -121,6 +128,7 @@ export default function EditLessonPopup({
   const { connectionState } = useOnlineStatus();
   const editGroupSchedule = useEditGroupSchedule();
   const updateGroupScheduleMetadata = useUpdateGroupScheduleMetadata();
+  const updateGroupScheduleValidity = useUpdateGroupScheduleValidity();
   const addGroupSchedule = useAddGroupSchedule();
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const updatePersonalLesson = useUpdatePersonalLesson();
@@ -137,6 +145,12 @@ export default function EditLessonPopup({
   const [locationId, setLocationId] = useState("");
   const [groupSlotRows, setGroupSlotRows] = useState<GroupSlotRow[]>([]);
   const [originalGroupSlots, setOriginalGroupSlots] = useState<GroupSlotRow[]>([]);
+  const [repeatConfig, setRepeatConfig] = useState<GroupRepeatConfig>(() =>
+    inferGroupRepeatConfig(toISODateLocal(new Date()), toISODateLocal(new Date()))
+  );
+  const [originalRepeatConfig, setOriginalRepeatConfig] = useState<GroupRepeatConfig>(() =>
+    inferGroupRepeatConfig(toISODateLocal(new Date()), toISODateLocal(new Date()))
+  );
 
   useEffect(() => {
     if (!lesson) return;
@@ -151,6 +165,13 @@ export default function EditLessonPopup({
 
       setGroupSlotRows(rows);
       setOriginalGroupSlots(rows.map((row) => ({ ...row })));
+
+      const primarySlot = scheduleSlots.find((slot) => slot.id === lesson.slotId);
+      const validFrom = primarySlot?.validFrom ?? lesson.date;
+      const validTo = primarySlot?.validTo ?? lesson.validTo ?? lesson.date;
+      const inferred = inferGroupRepeatConfig(validFrom, validTo);
+      setRepeatConfig(inferred);
+      setOriginalRepeatConfig(inferred);
     } else {
       setPersonalDate(lesson.date);
       setLocationId(lesson.locationId ?? "");
@@ -313,6 +334,17 @@ export default function EditLessonPopup({
       return;
     }
 
+    if (repeatConfig.repeatWeekly && repeatConfig.endMode === "weeks" && repeatConfig.weekCount < 1) {
+      toast(t("personal.error.weekCount"), "error");
+      return;
+    }
+
+    const repeatChanged =
+      repeatConfig.repeatWeekly !== originalRepeatConfig.repeatWeekly ||
+      repeatConfig.endMode !== originalRepeatConfig.endMode ||
+      repeatConfig.weekCount !== originalRepeatConfig.weekCount ||
+      repeatConfig.endDate !== originalRepeatConfig.endDate;
+
     const metadataChanged =
       trimmedGroup !== (lesson.groupName?.trim() ?? "") ||
       disciplineId !== (lesson.disciplineId ?? "") ||
@@ -336,7 +368,7 @@ export default function EditLessonPopup({
         );
       });
 
-    if (metadataChanged && !anySlotStructureChanged) {
+    if (metadataChanged && !anySlotStructureChanged && !repeatChanged) {
       const slotIds = groupSlotRows.map((row) => row.id).filter((id): id is string => Boolean(id));
       const res = await updateGroupScheduleMetadata.mutateAsync({
         slotIds,
@@ -348,6 +380,66 @@ export default function EditLessonPopup({
       if (!res.success) {
         toast(res.error ?? t("schedule.error.updateFailed"), "error");
         return;
+      }
+
+      toast(t("schedule.success.groupUpdated"), "success");
+      onSuccess();
+      onClose();
+      return;
+    }
+
+    if (!anySlotStructureChanged && repeatChanged && !metadataChanged) {
+      const slotIds = groupSlotRows.map((row) => row.id).filter((id): id is string => Boolean(id));
+      const updates = slotIds.map((slotId) => {
+        const slot = scheduleSlots.find((item) => item.id === slotId);
+        const validFrom = slot?.validFrom ?? lesson.date;
+        return {
+          slotId,
+          validTo: computeSlotValidTo(validFrom, repeatConfig),
+        };
+      });
+
+      for (const update of updates) {
+        const res = await updateGroupScheduleValidity.mutateAsync({
+          slotIds: [update.slotId],
+          validTo: update.validTo,
+        });
+        if (!res.success) {
+          toast(res.error ?? t("schedule.error.updateFailed"), "error");
+          return;
+        }
+      }
+
+      toast(t("schedule.success.groupUpdated"), "success");
+      onSuccess();
+      onClose();
+      return;
+    }
+
+    if (metadataChanged && !anySlotStructureChanged && repeatChanged) {
+      const slotIds = groupSlotRows.map((row) => row.id).filter((id): id is string => Boolean(id));
+      const metaRes = await updateGroupScheduleMetadata.mutateAsync({
+        slotIds,
+        groupName: trimmedGroup,
+        disciplineId,
+        teacherMemberId,
+      });
+      if (!metaRes.success) {
+        toast(metaRes.error ?? t("schedule.error.updateFailed"), "error");
+        return;
+      }
+
+      for (const slotId of slotIds) {
+        const slot = scheduleSlots.find((item) => item.id === slotId);
+        const validFrom = slot?.validFrom ?? lesson.date;
+        const res = await updateGroupScheduleValidity.mutateAsync({
+          slotIds: [slotId],
+          validTo: computeSlotValidTo(validFrom, repeatConfig),
+        });
+        if (!res.success) {
+          toast(res.error ?? t("schedule.error.updateFailed"), "error");
+          return;
+        }
       }
 
       toast(t("schedule.success.groupUpdated"), "success");
@@ -400,16 +492,37 @@ export default function EditLessonPopup({
         disciplineId,
         locationId: lesson.locationId,
         teacherMemberId,
-        days: newRows.map((row) => ({
-          dayOfWeek: row.dayOfWeek,
-          time: row.timeStart,
-          timeEnd: row.timeEnd,
-        })),
+        days: newRows.map((row) => {
+          const validFrom = nextOccurrenceOnOrAfter(lesson.date, row.dayOfWeek);
+          return {
+            dayOfWeek: row.dayOfWeek,
+            time: row.timeStart,
+            timeEnd: row.timeEnd,
+            validFrom,
+            validTo: computeSlotValidTo(validFrom, repeatConfig),
+          };
+        }),
       });
 
       if (!res.success) {
         toast(res.error ?? t("schedule.error.addScheduleFailed"), "error");
         return;
+      }
+    }
+
+    if (repeatChanged) {
+      const slotIds = groupSlotRows.map((row) => row.id).filter((id): id is string => Boolean(id));
+      for (const slotId of slotIds) {
+        const slot = scheduleSlots.find((item) => item.id === slotId);
+        const validFrom = slot?.validFrom ?? lesson.date;
+        const res = await updateGroupScheduleValidity.mutateAsync({
+          slotIds: [slotId],
+          validTo: computeSlotValidTo(validFrom, repeatConfig),
+        });
+        if (!res.success) {
+          toast(res.error ?? t("schedule.error.updateFailed"), "error");
+          return;
+        }
       }
     }
 
@@ -514,6 +627,7 @@ export default function EditLessonPopup({
   const savePending =
     editGroupSchedule.isPending ||
     updateGroupScheduleMetadata.isPending ||
+    updateGroupScheduleValidity.isPending ||
     addGroupSchedule.isPending ||
     deleteScheduleSlot.isPending ||
     updatePersonalLesson.isPending;
@@ -692,6 +806,12 @@ export default function EditLessonPopup({
                         {t("common.addDay")}
                       </button>
                     </div>
+
+                    <GroupLessonRepeatFields
+                      config={repeatConfig}
+                      onChange={(patch) => setRepeatConfig((prev) => ({ ...prev, ...patch }))}
+                      minEndDate={lesson.date}
+                    />
 
                     {groupVersionNote && (
                       <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">

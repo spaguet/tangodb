@@ -35,6 +35,8 @@ export interface ScheduleDayInput {
   dayOfWeek: number;
   time: string;
   timeEnd: string;
+  validFrom?: string;
+  validTo?: string | null;
 }
 
 export interface GroupScheduleSlotInput {
@@ -212,17 +214,22 @@ export function useAddGroupSchedule() {
       }
 
       const today = toISODateLocal(new Date());
-      const rows = days.map((day) => ({
-        organization_id: organizationId,
-        day_of_week: day.dayOfWeek,
-        time: normalizeTime(day.time),
-        time_end: normalizeTime(day.timeEnd),
-        discipline_id: disciplineId,
-        group_name: trimmedGroup,
-        location_id: locationId,
-        teacher_member_id: teacherMemberId,
-        valid_from: nextOccurrenceOnOrAfter(today, day.dayOfWeek),
-      }));
+      const rows = days.map((day) => {
+        const validFrom = day.validFrom ?? nextOccurrenceOnOrAfter(today, day.dayOfWeek);
+        const validTo = day.validTo !== undefined ? day.validTo : null;
+        return {
+          organization_id: organizationId,
+          day_of_week: day.dayOfWeek,
+          time: normalizeTime(day.time),
+          time_end: normalizeTime(day.timeEnd),
+          discipline_id: disciplineId,
+          group_name: trimmedGroup,
+          location_id: locationId,
+          teacher_member_id: teacherMemberId,
+          valid_from: validFrom,
+          valid_to: validTo,
+        };
+      });
 
       const { error } = await supabase.from(scheduleTable).insert(rows);
       if (error) {
@@ -452,6 +459,150 @@ export function useEditGroupSchedule() {
         return { success: false as const, error: mapScheduleMutationError(insertError) };
       }
 
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidateScheduleQueries(queryClient);
+    },
+  });
+}
+
+export function useUpdateGroupScheduleValidity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      slotIds,
+      validTo,
+    }: {
+      slotIds: string[];
+      validTo: string | null;
+    }) => {
+      if (slotIds.length === 0) {
+        return { success: false as const, error: "schedule.error.slotNotFound" };
+      }
+
+      const { error } = await supabase
+        .from(scheduleTable)
+        .update({ valid_to: validTo })
+        .in("id", slotIds);
+
+      if (error) {
+        return { success: false as const, error: mapScheduleMutationError(error) };
+      }
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidateScheduleQueries(queryClient);
+    },
+  });
+}
+
+/** Cancel one weekly occurrence by splitting/closing the schedule slot version. */
+async function cancelGroupLessonOccurrenceByDate(
+  slotId: string,
+  cancelDate: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: slot, error: fetchError } = await supabase
+    .from(scheduleTable)
+    .select(
+      "organization_id, day_of_week, time, time_end, discipline_id, group_name, location_id, teacher_member_id, valid_from, valid_to"
+    )
+    .eq("id", slotId)
+    .maybeSingle();
+
+  if (fetchError) return { success: false as const, error: fetchError.message };
+  if (!slot) return { success: false as const, error: "schedule.error.slotNotFound" };
+
+  const validFrom = String(slot.valid_from ?? "2000-01-01").slice(0, 10);
+  const validTo = slot.valid_to != null ? String(slot.valid_to).slice(0, 10) : null;
+
+  if (cancelDate < validFrom) {
+    return { success: false as const, error: "schedule.error.cancelDateInvalid" };
+  }
+  if (validTo != null && cancelDate > validTo) {
+    return { success: false as const, error: "schedule.error.cancelDateInvalid" };
+  }
+
+  if (validTo != null && validFrom === validTo) {
+    const { error } = await supabase.from(scheduleTable).delete().eq("id", slotId);
+    if (error) return { success: false as const, error: error.message };
+    return { success: true as const };
+  }
+
+  if (cancelDate === validFrom) {
+    const newFrom = addDays(cancelDate, 7);
+    if (validTo != null && newFrom > validTo) {
+      const { error } = await supabase.from(scheduleTable).delete().eq("id", slotId);
+      if (error) return { success: false as const, error: error.message };
+      return { success: true as const };
+    }
+
+    const { error } = await supabase
+      .from(scheduleTable)
+      .update({ valid_from: newFrom })
+      .eq("id", slotId);
+    if (error) return { success: false as const, error: error.message };
+    return { success: true as const };
+  }
+
+  if (validTo != null && cancelDate === validTo) {
+    const newTo = addDays(cancelDate, -7);
+    if (newTo < validFrom) {
+      const { error } = await supabase.from(scheduleTable).delete().eq("id", slotId);
+      if (error) return { success: false as const, error: error.message };
+      return { success: true as const };
+    }
+
+    const { error } = await supabase
+      .from(scheduleTable)
+      .update({ valid_to: newTo })
+      .eq("id", slotId);
+    if (error) return { success: false as const, error: error.message };
+    return { success: true as const };
+  }
+
+  const closeTo = addDays(cancelDate, -7);
+  if (closeTo >= validFrom) {
+    const { error: closeError } = await supabase
+      .from(scheduleTable)
+      .update({ valid_to: closeTo })
+      .eq("id", slotId);
+    if (closeError) return { success: false as const, error: closeError.message };
+  } else {
+    const { error: deleteError } = await supabase.from(scheduleTable).delete().eq("id", slotId);
+    if (deleteError) return { success: false as const, error: deleteError.message };
+  }
+
+  const resumeFrom = addDays(cancelDate, 7);
+  if (validTo == null || resumeFrom <= validTo) {
+    const { error: insertError } = await supabase.from(scheduleTable).insert({
+      organization_id: slot.organization_id,
+      day_of_week: slot.day_of_week,
+      time: slot.time,
+      time_end: slot.time_end,
+      discipline_id: slot.discipline_id,
+      group_name: slot.group_name,
+      location_id: slot.location_id,
+      teacher_member_id: slot.teacher_member_id,
+      valid_from: resumeFrom,
+      valid_to: validTo,
+    });
+    if (insertError) {
+      return { success: false as const, error: mapScheduleMutationError(insertError) };
+    }
+  }
+
+  return { success: true as const };
+}
+
+export function useCancelGroupLessonOccurrence() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ slotId, cancelDate }: { slotId: string; cancelDate: string }) => {
+      const result = await cancelGroupLessonOccurrenceByDate(slotId, cancelDate);
+      if (result.success === false) return { success: false as const, error: result.error };
       return { success: true as const };
     },
     onSuccess: (result) => {

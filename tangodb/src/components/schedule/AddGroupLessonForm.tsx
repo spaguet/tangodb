@@ -7,6 +7,7 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { findScheduleConflict } from "../../lib/scheduleConflicts";
+import { computeSlotValidTo, defaultGroupRepeatConfig, type GroupRepeatConfig } from "../../lib/groupLessonRepeat";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { dowFullEntries, timesOverlap } from "../../lib/utils";
@@ -15,6 +16,7 @@ import type { Discipline } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import DisciplineSelect from "../ui/DisciplineSelect";
 import TimeSelect from "../ui/TimeSelect";
+import GroupLessonRepeatFields from "./GroupLessonRepeatFields";
 import type { ScheduleCellPrefill } from "./AddLessonTypePopup";
 
 interface AddGroupLessonFormProps {
@@ -97,10 +99,12 @@ export default function AddGroupLessonForm({
   const [disciplineId, setDisciplineId] = useState<string>("");
   const [teacherMemberId, setTeacherMemberId] = useState("");
   const [groupSlotRows, setGroupSlotRows] = useState<GroupSlotRow[]>([]);
+  const [repeatConfig, setRepeatConfig] = useState<GroupRepeatConfig>(() => defaultGroupRepeatConfig());
 
   useEffect(() => {
     if (!prefill) return;
     setGroupName("");
+    setRepeatConfig(defaultGroupRepeatConfig());
     setGroupSlotRows([
       makeGroupSlotRow(prefill.dayOfWeek, prefill.timeStart, computeAutoTimeEnd(prefill.timeStart, [])),
     ]);
@@ -227,16 +231,29 @@ export default function AddGroupLessonForm({
       return;
     }
 
+    if (repeatConfig.repeatWeekly && repeatConfig.endMode === "weeks" && repeatConfig.weekCount < 1) {
+      toast(t("personal.error.weekCount"), "error");
+      return;
+    }
+
+    const baseDate = prefill.date;
+
     const res = await addGroupSchedule.mutateAsync({
       groupName: trimmedGroup,
       disciplineId,
       locationId: prefill.locationId,
       teacherMemberId,
-      days: groupSlotRows.map((row) => ({
-        dayOfWeek: row.dayOfWeek,
-        time: row.timeStart,
-        timeEnd: row.timeEnd,
-      })),
+      days: groupSlotRows.map((row) => {
+        const validFrom = nextOccurrenceOnOrAfter(baseDate, row.dayOfWeek);
+        const validTo = computeSlotValidTo(validFrom, repeatConfig);
+        return {
+          dayOfWeek: row.dayOfWeek,
+          time: row.timeStart,
+          timeEnd: row.timeEnd,
+          validFrom,
+          validTo,
+        };
+      }),
     });
 
     if (!res.success) {
@@ -397,6 +414,12 @@ export default function AddGroupLessonForm({
                   {t("schedule.form.addDayTime")}
                 </button>
               </div>
+
+              <GroupLessonRepeatFields
+                config={repeatConfig}
+                onChange={(patch) => setRepeatConfig((prev) => ({ ...prev, ...patch }))}
+                minEndDate={prefill.date}
+              />
 
               <div className="flex items-center gap-2 pt-1">
                 <button
