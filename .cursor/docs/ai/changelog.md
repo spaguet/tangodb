@@ -219,6 +219,7 @@ YYYY-MM-DD — краткое описание (причина / контекс�
 2026-06-19 — PricesPanel: секции тарифов вертикально (групповые → персональные → пакеты), карточки внутри секции — горизонтальная сетка.
 2026-06-19 — Создание кастомных тарифов: organization_id в insert + миграция (DEFAULT auth_organization_id, CHECK tariff_*).
 2026-06-19 — Унификация акцентных цветов: violet и emerald заменены на indigo по всему tangodb/; design_system.md зафиксирован как правило проекта.
+2026-07-19 — Групповые уроки (новое/редактирование): `DisciplineSelect` с `alwaysShow` — поле «Дисциплина» видно даже при одной дисциплине или выключенном модуле multi_discipline.
 2026-06-19 — Типографика nav/logo: text-[8px]/text-[9px] заменены на text-[10px]/text-[11px] для читаемости и соответствия design system.
 2026-06-19 — Аудит design system: CsvExportModal rounded-xl, ClientAutocomplete dropdown z-50, иконки stat-карточек Dashboard w-5 h-5.
 2026-06-19 — Empty state: PricesPanel, DisciplinesPanel и AttendancePanel приведены к эталону (py-20, иконка w-8, text-sm).

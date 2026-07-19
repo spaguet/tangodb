@@ -722,6 +722,7 @@ export default function EditLessonPopup({
                       value={disciplineId}
                       onChange={setDisciplineId}
                       toast={toast}
+                      alwaysShow
                     />
 
                     <AppSelect

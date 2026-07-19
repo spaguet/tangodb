@@ -331,6 +331,7 @@ export default function AddGroupLessonForm({
                 value={disciplineId}
                 onChange={setDisciplineId}
                 toast={toast}
+                alwaysShow
               />
 
               <AppSelect

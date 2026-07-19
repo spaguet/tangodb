@@ -19,6 +19,8 @@ interface DisciplineSelectProps {
   /** Include empty "all disciplines" option (for filters). */
   allowAll?: boolean;
   allOptionLabel?: string;
+  /** Always show picker in lesson forms even with a single discipline or multi_discipline off. */
+  alwaysShow?: boolean;
 }
 
 export default function DisciplineSelect({
@@ -30,11 +32,14 @@ export default function DisciplineSelect({
   required = true,
   allowAll = false,
   allOptionLabel,
+  alwaysShow = false,
 }: DisciplineSelectProps) {
   const { t } = useI18n();
   const { settings } = useOrganization();
   const modules = normalizeOrgModules(settings?.modules);
-  const show = shouldShowDisciplinePicker(modules, disciplines.length);
+  const show = alwaysShow
+    ? disciplines.length > 0
+    : shouldShowDisciplinePicker(modules, disciplines.length);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const { can } = usePermissions();
   const canAddDiscipline = can("disciplines.write");
@@ -44,10 +49,10 @@ export default function DisciplineSelect({
     if (disciplines.length === 0) return;
     const defaultId = disciplines[0].id;
     if (allowAll) return;
-    if (!value || (!show && value !== defaultId)) {
+    if (!value || (!alwaysShow && !show && value !== defaultId)) {
       onChange(defaultId);
     }
-  }, [show, disciplines, value, onChange, allowAll]);
+  }, [show, alwaysShow, disciplines, value, onChange, allowAll]);
 
   if (!show) return null;
 
