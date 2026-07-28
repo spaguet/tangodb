@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, X, XCircle } from "lucide-react";
+import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, X, XCircle, ArrowRightLeft } from "lucide-react";
 import { useCancelGroupLessonOccurrence, useDeleteScheduleSlot } from "../../hooks/useSchedule";
 import { useDeletePersonalLesson, usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -20,12 +20,16 @@ import type { DisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import RequirePermission from "../RequirePermission";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
+import MoveGroupLessonDialog from "./MoveGroupLessonDialog";
+import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
 
 interface LessonInfoPopupProps {
   lesson: DisplayLesson | null;
   locationName?: string;
   disciplineName?: string;
   teacherName?: string;
+  scheduleSlots?: ScheduleSlotRef[];
+  personalLessons?: PersonalLessonRef[];
   onClose: () => void;
   onEdit?: (lesson: DisplayLesson) => void;
   onSuccess?: () => void;
@@ -57,6 +61,8 @@ export default function LessonInfoPopup({
   locationName,
   disciplineName,
   teacherName,
+  scheduleSlots = [],
+  personalLessons = [],
   onClose,
   onEdit,
   onSuccess,
@@ -71,6 +77,7 @@ export default function LessonInfoPopup({
   const deletePersonalLesson = useDeletePersonalLesson();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [cancelOneConfirmOpen, setCancelOneConfirmOpen] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
   const personalLessonsQuery = usePersonalLessons({
     enabled: lesson?.kind === "personal",
@@ -112,6 +119,16 @@ export default function LessonInfoPopup({
     lesson?.kind === "group" &&
     canEdit &&
     isRecurringGroupSlot(lesson.validFrom, lesson.validTo);
+
+  const canMoveOneOccurrence = canCancelOneOccurrence;
+
+  const movedFromLabel =
+    lesson?.kind === "group" && lesson.movedFromDate
+      ? t("schedule.lessonInfo.movedFrom", {
+          date: formatDate(lesson.movedFromDate),
+          time: lesson.movedFromTime ?? lesson.timeStart,
+        })
+      : null;
 
   const canPay =
     lesson?.kind === "personal" &&
@@ -287,6 +304,12 @@ export default function LessonInfoPopup({
                   </div>
                 )}
 
+                {movedFromLabel && (
+                  <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-indigo-800">
+                    {movedFromLabel}
+                  </div>
+                )}
+
                 {lesson.kind === "personal" && canShowPaidStatus(role) && (
                   <div className="flex items-start gap-2.5">
                     <Clock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
@@ -324,6 +347,19 @@ export default function LessonInfoPopup({
                   >
                     <XCircle className="w-3.5 h-3.5" />
                     {t("schedule.lessonInfo.cancelOne")}
+                  </button>
+                </RequirePermission>
+              ) : null}
+
+              {canMoveOneOccurrence ? (
+                <RequirePermission action="schedule.write" context={permissionContext}>
+                  <button
+                    type="button"
+                    onClick={() => setMoveDialogOpen(true)}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5" />
+                    {t("schedule.lessonInfo.moveOne")}
                   </button>
                 </RequirePermission>
               ) : null}
@@ -444,6 +480,22 @@ export default function LessonInfoPopup({
         onSuccess={() => {
           setPayTarget(null);
           onPaymentSuccess?.();
+          onClose();
+        }}
+      />
+
+      <MoveGroupLessonDialog
+        lesson={moveDialogOpen && lesson?.kind === "group" ? lesson : null}
+        locationName={locationName}
+        disciplineName={disciplineName}
+        teacherName={teacherName}
+        scheduleSlots={scheduleSlots}
+        personalLessons={personalLessons}
+        toast={toast}
+        onClose={() => setMoveDialogOpen(false)}
+        onSuccess={() => {
+          setMoveDialogOpen(false);
+          onSuccess?.();
           onClose();
         }}
       />

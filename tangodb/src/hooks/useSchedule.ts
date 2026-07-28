@@ -27,6 +27,9 @@ const mapScheduleSlot = (row: Record<string, unknown>): ScheduleSlot => ({
   teacherMemberId: row.teacher_member_id != null ? String(row.teacher_member_id) : null,
   validFrom: String(row.valid_from ?? "2000-01-01").slice(0, 10),
   validTo: row.valid_to != null ? String(row.valid_to).slice(0, 10) : null,
+  movedFromSlotId: row.moved_from_slot_id != null ? String(row.moved_from_slot_id) : null,
+  movedFromDate: row.moved_from_date != null ? String(row.moved_from_date).slice(0, 10) : null,
+  movedFromTime: row.moved_from_time != null ? normalizeTime(String(row.moved_from_time)) : null,
 });
 
 const scheduleTable = "schedule_slots" as const;
@@ -605,6 +608,49 @@ export function useCancelGroupLessonOccurrence() {
       const result = await cancelGroupLessonOccurrenceByDate(slotId, cancelDate);
       if (result.success === false) return { success: false as const, error: result.error };
       return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidateScheduleQueries(queryClient);
+    },
+  });
+}
+
+export function useMoveGroupLessonOccurrence() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      slotId,
+      sourceDate,
+      targetDate,
+      targetTimeStart,
+      targetTimeEnd,
+    }: {
+      slotId: string;
+      sourceDate: string;
+      targetDate: string;
+      targetTimeStart: string;
+      targetTimeEnd: string;
+    }) => {
+      const { data, error } = await supabase.rpc("move_group_lesson_occurrence", {
+        p_slot_id: slotId,
+        p_source_date: sourceDate,
+        p_target_date: targetDate,
+        p_target_time_start: normalizeTime(targetTimeStart),
+        p_target_time_end: normalizeTime(targetTimeEnd),
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as { success?: boolean; error?: string; new_slot_id?: string } | null;
+      if (!result?.success) {
+        return {
+          success: false as const,
+          error: result?.error ?? "schedule.error.moveFailed",
+        };
+      }
+
+      return { success: true as const, newSlotId: result.new_slot_id ?? null };
     },
     onSuccess: (result) => {
       if (result.success) invalidateScheduleQueries(queryClient);

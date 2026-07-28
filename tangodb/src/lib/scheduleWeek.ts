@@ -105,6 +105,9 @@ export function expandSlotsToWeek(
         scheduleGroupId: slot.scheduleGroupId ?? null,
         locationId: slot.locationId ?? null,
         teacherMemberId: slot.teacherMemberId ?? null,
+        movedFromSlotId: slot.movedFromSlotId ?? null,
+        movedFromDate: slot.movedFromDate ?? null,
+        movedFromTime: slot.movedFromTime ?? null,
       });
     }
   }

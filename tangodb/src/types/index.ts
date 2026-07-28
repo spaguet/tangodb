@@ -56,6 +56,9 @@ export interface ScheduleSlot {
   teacherMemberId?: string | null;
   validFrom: string;
   validTo: string | null;
+  movedFromSlotId?: string | null;
+  movedFromDate?: string | null;
+  movedFromTime?: string | null;
 }
 
 export interface GroupDisplayLesson {
@@ -72,6 +75,9 @@ export interface GroupDisplayLesson {
   scheduleGroupId: string | null;
   locationId: string | null;
   teacherMemberId: string | null;
+  movedFromSlotId?: string | null;
+  movedFromDate?: string | null;
+  movedFromTime?: string | null;
 }
 
 export interface PersonalDisplayLesson {

@@ -21,6 +21,7 @@
     "test:db:migration": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_version_migration_test.sql",
     "test:db:subscription": "psql \"%DATABASE_URL%\" -f supabase/tests/v2_subscription_test.sql",
     "test:db:schedule-overlap": "psql \"%DATABASE_URL%\" -f supabase/tests/schedule_overlap_test.sql",
+    "test:db:move-lesson": "psql \"%DATABASE_URL%\" -f supabase/tests/move_group_lesson_occurrence_test.sql",
     "test:db:personal-stage1": "psql \"%DATABASE_URL%\" -f supabase/tests/personal_lessons_stage1_test.sql",
     "test:rbac": "node scripts/rbac-regression-check.mjs",
     "db:reset-test": "node scripts/reset-for-test-run.mjs",

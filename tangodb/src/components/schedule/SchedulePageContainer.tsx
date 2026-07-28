@@ -430,6 +430,8 @@ export default function SchedulePageContainer() {
         locationName={selectedLessonMeta?.locationName}
         disciplineName={selectedLessonMeta?.disciplineName}
         teacherName={selectedLessonMeta?.teacherName}
+        scheduleSlots={scheduleSlots}
+        personalLessons={personalLessonRefs}
         onClose={() => setSelectedLesson(null)}
         onSuccess={handleScheduleRefresh}
         onPaymentSuccess={handleScheduleRefresh}
