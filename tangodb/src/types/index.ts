@@ -155,6 +155,8 @@ export interface Price {
   disciplineId?: string | null;
   teacherMemberIds?: string[];
   billingModel?: BillingModel;
+  freezeMaxCount?: number | null;
+  freezeMinLessons?: number | null;
 }
 
 export interface SubscriptionGroupLink {
@@ -180,6 +182,21 @@ export interface Subscription {
   billingModel: BillingModel;
   expiresAt?: string | null;
   groups?: SubscriptionGroupLink[];
+}
+
+export type SubscriptionFreezePeriodStatus = "active" | "cancelled";
+
+export interface SubscriptionFreezePeriod {
+  id: string;
+  subscriptionId: string;
+  startDate: string;
+  endDate: string;
+  reason?: string | null;
+  status: SubscriptionFreezePeriodStatus;
+  calendarDays: number;
+  expiresDaysAdded: number;
+  createdAt: string;
+  cancelledAt?: string | null;
 }
 
 export interface AttendanceRecord {

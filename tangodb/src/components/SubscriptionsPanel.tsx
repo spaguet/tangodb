@@ -29,7 +29,7 @@ import {
   translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
-import { usePermissions } from "../hooks/usePermissions";
+import { usePermissions, useCan } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
 import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionDaysLeft, getSubscriptionTariffLabel, isMonthlyUnlimitedSubscription, isMonthlyUnlimitedTariff, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitle } from "../lib/utils";
 import { filterActiveSubscriptions, filterHistorySubscriptions, ALL_LOCATIONS_KEY } from "../lib/subscriptionFilters";
@@ -53,6 +53,9 @@ import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
 import QueryErrorState from "./ui/QueryErrorState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import RequirePermission from "./RequirePermission";
+import SubscriptionFreezeDialog from "./subscriptions/SubscriptionFreezeDialog";
+import SubscriptionFreezeHistory from "./subscriptions/SubscriptionFreezeHistory";
+import { canApplyFreeze, resolveFreezePolicyForSubscription } from "../lib/freezePolicy";
 import type { ToastType } from "../App";
 import type { Client, Discipline, Price, Subscription } from "../types";
 import type { I18nKey } from "../lib/i18n/keys";
@@ -118,7 +121,8 @@ export default function SubscriptionsPanel({
   const finishSubscription = useFinishSubscription();
   const recordSubscriptionPayment = useRecordSubscriptionPayment();
   const { canAccessPanel } = usePermissions();
-  const { settings } = useSettings();
+  const canManageFreeze = useCan("subscriptions.write") || useCan("attendance.write");
+  const { settings, freezePolicy } = useSettings();
   const { role, memberId } = useOrganization();
   const {
     locations,
@@ -230,6 +234,7 @@ export default function SubscriptionsPanel({
 
   // Early-finish confirmation target
   const [finishTarget, setFinishTarget] = useState<{ id: string; name: string } | null>(null);
+  const [freezeTarget, setFreezeTarget] = useState<Subscription | null>(null);
 
   // Date activation - defaults to today
   const [activationDate, setActivationDate] = useState("");
@@ -707,6 +712,14 @@ export default function SubscriptionsPanel({
 
                 const tariffLabel = getSubscriptionTariffLabel(sub, prices);
                 const linkedGroupNames = getSubscriptionGroupDisplayNames(sub.id, groupsBySubId, groupNameById);
+                const priceRow = sub.priceId ? prices.find((p) => p.id === sub.priceId) : undefined;
+                const subFreezePolicy = resolveFreezePolicyForSubscription(freezePolicy, priceRow);
+                const canFreezeSubscription =
+                  sub.category === "group" &&
+                  sub.status === "active" &&
+                  subFreezePolicy.freezeEnabled &&
+                  canManageFreeze &&
+                  canApplyFreeze(sub.lessonsTotal, sub.freezeUsed, subFreezePolicy, sub.billingModel);
 
                 const isExpanded = expandedSubId === sub.id;
                 const attendanceStats = attendanceStatsBySubId[sub.id] ?? { visits: 0, absences: 0 };
@@ -825,8 +838,8 @@ export default function SubscriptionsPanel({
                               })}
                             </p>
 
-                            {sub.lessonsTotal === 8 && !isMonthly ? (
-                              sub.freezeUsed > 0 ? (
+                            {subFreezePolicy.freezeEnabled && sub.category === "group" && !isMonthly ? (
+                              sub.freezeUsed >= subFreezePolicy.freezeMaxCount ? (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
                                   <Snowflake className="w-3 h-3" /> {t("subscriptions.card.freezeUsed")}
                                 </span>
@@ -835,6 +848,10 @@ export default function SubscriptionsPanel({
                                   <Snowflake className="w-3 h-3" /> {t("subscriptions.card.freezeAvailable")}
                                 </span>
                               )
+                            ) : subFreezePolicy.freezeEnabled && isMonthly ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
+                                <Snowflake className="w-3 h-3" /> {t("subscriptions.card.freezeAvailableMonthly")}
+                              </span>
                             ) : null}
                           </div>
 
@@ -890,7 +907,15 @@ export default function SubscriptionsPanel({
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-1 text-xs">
+                        {isExpanded ? (
+                          <SubscriptionFreezeHistory
+                            subscriptionId={sub.id}
+                            canManage={canManageFreeze}
+                            toast={toast}
+                          />
+                        ) : null}
+
+                        <div className="flex items-center justify-between pt-1 text-xs flex-wrap gap-2">
                           {isMonthly ? (
                             <span className="text-slate-400">{t("subscriptions.card.expiresAt", { date: sub.expiresAt || "—" })}</span>
                           ) : isAlarm ? (
@@ -899,17 +924,31 @@ export default function SubscriptionsPanel({
                             <span className="text-slate-400">{t("subscriptions.card.balanceOk")}</span>
                           )}
 
-                          <RequirePermission action="subscriptions.write">
-                          <button
-                            type="button"
-                            onClick={() => setFinishTarget({ id: sub.id, name: clientNameStr })}
-                            disabled={connectionState !== "online"}
-                            title={translateConnectionBlockReason(connectionState, t)}
-                            className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
-                          >
-                            {t("subscriptions.confirm.finishConfirm")}
-                          </button>
-                          </RequirePermission>
+                          <div className="flex items-center gap-3">
+                            {canManageFreeze && canFreezeSubscription ? (
+                              <button
+                                type="button"
+                                onClick={() => setFreezeTarget(sub)}
+                                disabled={connectionState !== "online"}
+                                title={translateConnectionBlockReason(connectionState, t)}
+                                className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                              >
+                                <Snowflake className="w-3 h-3" />
+                                {t("freeze.action.openDialog")}
+                              </button>
+                            ) : null}
+                            <RequirePermission action="subscriptions.write">
+                              <button
+                                type="button"
+                                onClick={() => setFinishTarget({ id: sub.id, name: clientNameStr })}
+                                disabled={connectionState !== "online"}
+                                title={translateConnectionBlockReason(connectionState, t)}
+                                className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                              >
+                                {t("subscriptions.confirm.finishConfirm")}
+                              </button>
+                            </RequirePermission>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1378,6 +1417,19 @@ export default function SubscriptionsPanel({
         pending={finishSubscription.isPending}
         onConfirm={handleConfirmFinish}
         onCancel={() => setFinishTarget(null)}
+      />
+
+      <SubscriptionFreezeDialog
+        subscription={freezeTarget}
+        orgFreezePolicy={freezePolicy}
+        priceFreezeOverride={
+          freezeTarget?.priceId
+            ? prices.find((p) => p.id === freezeTarget.priceId) ?? null
+            : null
+        }
+        toast={toast}
+        onClose={() => setFreezeTarget(null)}
+        onSuccess={() => setFreezeTarget(null)}
       />
     </div>
   );

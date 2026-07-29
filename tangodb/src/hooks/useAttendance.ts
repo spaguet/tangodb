@@ -164,7 +164,7 @@ export function computeSubsForDate(
         expiresAt: s.expiresAt ?? null,
         daysLeft: isMonthly ? getSubscriptionDaysLeft(s.expiresAt, dateStr) : undefined,
         currentStatus: (existing?.attendanceStatus ?? null) as SubForDate["currentStatus"],
-        canFreeze: !isMonthly && canApplyFreeze(s.lessonsTotal, s.freezeUsed, freezePolicy),
+        canFreeze: canApplyFreeze(s.lessonsTotal, s.freezeUsed, freezePolicy, s.billingModel),
         priceId: s.priceId,
         category: s.category,
       };
@@ -422,7 +422,7 @@ export function useMarkAttendance() {
         : computeAttendanceDeltas(oldStatus, status);
 
       if (!isMonthly) {
-        if (status === "freeze" && !canApplyFreeze(sub.lessonsTotal, sub.freezeUsed, freezePolicy)) {
+        if (status === "freeze" && !canApplyFreeze(sub.lessonsTotal, sub.freezeUsed, freezePolicy, sub.billingModel)) {
           return { previousAttendanceEntries, previousSubscriptions };
         }
         if (status === "freeze" && wouldExceedFreezeLimit(sub.freezeUsed, freezeDelta, freezePolicy)) {

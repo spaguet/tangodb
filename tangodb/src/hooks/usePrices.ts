@@ -25,6 +25,8 @@ const mapPrice = (row: Record<string, unknown>): Price => {
     disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
     teacherMemberIds,
     billingModel: (row.billing_model as Price["billingModel"]) || "lesson_count",
+    freezeMaxCount: row.freeze_max_count != null ? Number(row.freeze_max_count) : null,
+    freezeMinLessons: row.freeze_min_lessons != null ? Number(row.freeze_min_lessons) : null,
   };
 };
 
