@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-29 — tangodb: замена партнёра в парном абонементе (CRM сценарий 7) — таблица `subscription_member_changes`, RPC `replace_subscription_partner`, диалог «Заменить партнёра» в карточке активного pair/pair_hm абонемента, история состава, эффективный состав на дату для посещаемости и вместимости группы.
+
 2026-07-29 — tangodb: вместимость групп и лист ожидания (CRM сценарий 6) — `classes.max_capacity`, RPC `create_group_subscription` / `get_groups_capacity_snapshot` / waitlist / override audit, блокировка продажи при переполнении, owner-director override с причиной, очередь и уведомление об освобождении места после `finish_subscription`.
 
 2026-07-29 — tangodb: заморозка группового абонемента на диапазон дат (CRM сценарий 5) — таблица `subscription_freeze_periods`, RPC `apply_subscription_freeze_period` / `cancel_subscription_freeze_period`, переопределение политики на тарифе, продление `expires_at` для monthly_unlimited, диалог и история в карточке абонемента, `mark_attendance` учитывает активный период.

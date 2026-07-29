@@ -1,5 +1,6 @@
-import type { Client, Price, Subscription, SubscriptionGroupLink } from "../types";
+import type { Client, Price, Subscription, SubscriptionGroupLink, SubscriptionMemberChange } from "../types";
 import { subscriptionMatchesScheduleGroup } from "./scheduleGroups";
+import { clientIsSubscriptionMemberAtDate } from "./subscriptionMembers";
 import {
   getSubscriptionDaysLeft,
   isDateInYear,
@@ -21,8 +22,28 @@ export function getSubscriptionLocationId(
   return priceMap[sub.priceId]?.locationId ?? null;
 }
 
-export function subscriptionMatchesClient(sub: Subscription, clientId: string): boolean {
-  return sub.clientId1 === clientId || sub.clientId2 === clientId || sub.clientId3 === clientId;
+export function subscriptionMatchesClient(
+  sub: Subscription,
+  clientId: string,
+  memberChanges: SubscriptionMemberChange[] = []
+): boolean {
+  if (sub.clientId1 === clientId || sub.clientId2 === clientId || sub.clientId3 === clientId) {
+    return true;
+  }
+  return memberChanges.some(
+    (c) =>
+      c.subscriptionId === sub.id &&
+      (c.outgoingClientId === clientId || c.incomingClientId === clientId)
+  );
+}
+
+export function subscriptionMatchesClientAtDate(
+  sub: Subscription,
+  clientId: string,
+  memberChanges: SubscriptionMemberChange[],
+  asOfDate: string
+): boolean {
+  return clientIsSubscriptionMemberAtDate(sub, clientId, memberChanges, asOfDate);
 }
 
 export function isEndedSubscription(
@@ -94,15 +115,17 @@ export function filterHistorySubscriptions(
     month: string;
     year: number;
     priceMap: Record<string, Price>;
+    memberChanges?: SubscriptionMemberChange[];
   }
 ): Subscription[] {
+  const memberChanges = opts.memberChanges ?? [];
   const hasFilter = Boolean(opts.disciplineId || opts.locationId || opts.clientId);
   if (!hasFilter) return [];
 
   let pool = subs;
 
   if (opts.clientId) {
-    pool = pool.filter((s) => subscriptionMatchesClient(s, opts.clientId));
+    pool = pool.filter((s) => subscriptionMatchesClient(s, opts.clientId, memberChanges));
     pool = pool.filter((s) => isDateInYear(s.activationDate, opts.year));
   } else {
     pool = pool.filter((s) => isEndedSubscription(s));

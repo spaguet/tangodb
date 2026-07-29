@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History } from "lucide-react";
+import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History, RefreshCw } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
@@ -64,6 +64,10 @@ import QueryErrorState from "./ui/QueryErrorState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import RequirePermission from "./RequirePermission";
 import SubscriptionFreezeDialog from "./subscriptions/SubscriptionFreezeDialog";
+import ReplaceSubscriptionPartnerDialog from "./subscriptions/ReplaceSubscriptionPartnerDialog";
+import SubscriptionMemberChangeHistory from "./subscriptions/SubscriptionMemberChangeHistory";
+import { isPairGroupSubscription } from "../lib/subscriptionMembers";
+import { useClientSubscriptionMemberChanges } from "../hooks/useSubscriptionMemberChanges";
 import SubscriptionFreezeHistory from "./subscriptions/SubscriptionFreezeHistory";
 import { canApplyFreeze, resolveFreezePolicyForSubscription } from "../lib/freezePolicy";
 import type { ToastType } from "../App";
@@ -132,6 +136,7 @@ export default function SubscriptionsPanel({
   const recordSubscriptionPayment = useRecordSubscriptionPayment();
   const { canAccessPanel } = usePermissions();
   const canManageFreeze = useCan("subscriptions.write") || useCan("attendance.write");
+  const canReplacePartner = useCan("subscriptions.write");
   const { settings, freezePolicy } = useSettings();
   const { role, memberId } = useOrganization();
   const {
@@ -245,6 +250,7 @@ export default function SubscriptionsPanel({
   // Early-finish confirmation target
   const [finishTarget, setFinishTarget] = useState<{ id: string; name: string } | null>(null);
   const [freezeTarget, setFreezeTarget] = useState<Subscription | null>(null);
+  const [partnerReplaceTarget, setPartnerReplaceTarget] = useState<Subscription | null>(null);
 
   // Date activation - defaults to today
   const [activationDate, setActivationDate] = useState("");
@@ -611,6 +617,9 @@ export default function SubscriptionsPanel({
     ]
   );
 
+  const clientMemberChangesQuery = useClientSubscriptionMemberChanges(historyClientId || undefined);
+  const historyMemberChanges = clientMemberChangesQuery.data ?? [];
+
   const historyRecords = useMemo(
     () =>
       filterHistorySubscriptions(subscriptions, {
@@ -620,6 +629,7 @@ export default function SubscriptionsPanel({
         month: historyMonth,
         year: historyYear,
         priceMap,
+        memberChanges: historyMemberChanges,
       }),
     [
       subscriptions,
@@ -629,6 +639,7 @@ export default function SubscriptionsPanel({
       historyMonth,
       historyYear,
       priceMap,
+      historyMemberChanges,
     ]
   );
 
@@ -863,6 +874,11 @@ export default function SubscriptionsPanel({
                   canManageFreeze &&
                   canApplyFreeze(sub.lessonsTotal, sub.freezeUsed, subFreezePolicy, sub.billingModel);
 
+                const canReplacePartnerSubscription =
+                  canReplacePartner &&
+                  sub.status === "active" &&
+                  isPairGroupSubscription(sub);
+
                 const isExpanded = expandedSubId === sub.id;
                 const attendanceStats = attendanceStatsBySubId[sub.id] ?? { visits: 0, absences: 0 };
 
@@ -1057,6 +1073,13 @@ export default function SubscriptionsPanel({
                           />
                         ) : null}
 
+                        {isExpanded ? (
+                          <SubscriptionMemberChangeHistory
+                            subscriptionId={sub.id}
+                            clientMap={clientMap}
+                          />
+                        ) : null}
+
                         <div className="flex items-center justify-between pt-1 text-xs flex-wrap gap-2">
                           {isMonthly ? (
                             <span className="text-slate-400">{t("subscriptions.card.expiresAt", { date: sub.expiresAt || "—" })}</span>
@@ -1067,6 +1090,18 @@ export default function SubscriptionsPanel({
                           )}
 
                           <div className="flex items-center gap-3">
+                            {canReplacePartnerSubscription ? (
+                              <button
+                                type="button"
+                                onClick={() => setPartnerReplaceTarget(sub)}
+                                disabled={connectionState !== "online"}
+                                title={translateConnectionBlockReason(connectionState, t)}
+                                className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                {t("subscriptions.partnerReplace.action")}
+                              </button>
+                            ) : null}
                             {canManageFreeze && canFreezeSubscription ? (
                               <button
                                 type="button"
@@ -1625,6 +1660,16 @@ export default function SubscriptionsPanel({
         toast={toast}
         onClose={() => setFreezeTarget(null)}
         onSuccess={() => setFreezeTarget(null)}
+      />
+
+      <ReplaceSubscriptionPartnerDialog
+        subscription={partnerReplaceTarget}
+        clients={activeClients}
+        groupNameById={groupNameById}
+        groupsBySubId={groupsBySubId}
+        toast={toast}
+        onClose={() => setPartnerReplaceTarget(null)}
+        onSuccess={() => setPartnerReplaceTarget(null)}
       />
     </div>
   );

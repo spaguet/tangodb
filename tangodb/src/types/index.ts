@@ -215,6 +215,21 @@ export interface Subscription {
 
 export type SubscriptionFreezePeriodStatus = "active" | "cancelled";
 
+export type SubscriptionMemberChangeStatus = "scheduled" | "applied" | "cancelled";
+
+export interface SubscriptionMemberChange {
+  id: string;
+  subscriptionId: string;
+  memberSlot: number;
+  outgoingClientId: string;
+  incomingClientId: string;
+  effectiveDate: string;
+  status: SubscriptionMemberChangeStatus;
+  reason?: string | null;
+  createdAt: string;
+  appliedAt?: string | null;
+}
+
 export interface SubscriptionFreezePeriod {
   id: string;
   subscriptionId: string;
