@@ -97,15 +97,28 @@ export default function CreateCalendarEventDialog({
   const previewEnabled = step === "preview" && sessions.length > 0;
   const previewQuery = useCalendarEventConflictsPreview(sessions, previewEnabled);
 
+  const eventConflicts = useMemo(
+    () => (previewQuery.data?.success ? previewQuery.data.conflicts.filter((c) => c.kind === "event") : []),
+    [previewQuery.data]
+  );
+
+  const cancellableConflicts = useMemo(
+    () => (previewQuery.data?.success ? previewQuery.data.conflicts.filter((c) => c.kind !== "event") : []),
+    [previewQuery.data]
+  );
+
   useEffect(() => {
     if (!previewQuery.data?.success) return;
-    setSelectedConflictKeys(new Set(previewQuery.data.conflicts.map(conflictKey)));
-  }, [previewQuery.data]);
+    setSelectedConflictKeys(new Set(cancellableConflicts.map(conflictKey)));
+  }, [previewQuery.data, cancellableConflicts]);
 
   const conflictLabel = useCallback(
     (conflict: CalendarEventConflict) => {
       const dateLabel = formatDate(conflict.occurrenceDate);
       const timeLabel = `${conflict.timeStart}–${conflict.timeEnd}`;
+      if (conflict.kind === "event") {
+        return [dateLabel, timeLabel, conflict.title].filter(Boolean).join(" · ");
+      }
       if (conflict.kind === "group") {
         const group = conflict.groupName || t("common.groupLesson");
         const teacher = conflict.teacherMemberId
@@ -127,8 +140,8 @@ export default function CreateCalendarEventDialog({
 
   const unresolvedCount = useMemo(() => {
     if (!previewQuery.data?.success) return 0;
-    return previewQuery.data.conflicts.filter((c) => !selectedConflictKeys.has(conflictKey(c))).length;
-  }, [previewQuery.data, selectedConflictKeys]);
+    return cancellableConflicts.filter((c) => !selectedConflictKeys.has(conflictKey(c))).length;
+  }, [previewQuery.data, cancellableConflicts, selectedConflictKeys]);
 
   const handleGoPreview = () => {
     if (!title.trim()) {
@@ -151,7 +164,12 @@ export default function CreateCalendarEventDialog({
   const handleSubmit = async () => {
     if (!previewQuery.data?.success) return;
 
-    const conflicts = previewQuery.data.conflicts;
+    if (eventConflicts.length > 0) {
+      toast(t("schedule.event.eventConflictBlocked"), "error");
+      return;
+    }
+
+    const conflicts = cancellableConflicts;
     if (conflicts.some((c) => !selectedConflictKeys.has(conflictKey(c)))) {
       toast(t("schedule.event.unresolvedConflicts"), "error");
       return;
@@ -441,13 +459,26 @@ export default function CreateCalendarEventDialog({
                     </p>
                   ) : (
                     <>
-                      {(previewQuery.data?.conflicts.length ?? 0) === 0 ? (
+                      {eventConflicts.length > 0 ? (
+                        <ul className="space-y-2">
+                          {eventConflicts.map((conflict) => (
+                            <li
+                              key={conflictKey(conflict)}
+                              className="p-2 rounded-lg border border-rose-200 bg-rose-50 text-sm text-rose-800"
+                            >
+                              {conflictLabel(conflict)}
+                            </li>
+                          ))}
+                          <p className="text-sm text-rose-700">{t("schedule.event.eventConflictBlocked")}</p>
+                        </ul>
+                      ) : null}
+                      {cancellableConflicts.length === 0 && eventConflicts.length === 0 ? (
                         <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
                           {t("schedule.event.noConflicts")}
                         </p>
-                      ) : (
+                      ) : cancellableConflicts.length > 0 ? (
                         <ul className="space-y-2 max-h-64 overflow-y-auto">
-                          {previewQuery.data?.conflicts.map((conflict) => {
+                          {cancellableConflicts.map((conflict) => {
                             const key = conflictKey(conflict);
                             const checked = selectedConflictKeys.has(key);
                             return (
@@ -477,7 +508,7 @@ export default function CreateCalendarEventDialog({
                             );
                           })}
                         </ul>
-                      )}
+                      ) : null}
                       {unresolvedCount > 0 ? (
                         <p className="text-sm text-amber-700">{t("schedule.event.unresolvedHint", { count: unresolvedCount })}</p>
                       ) : null}
@@ -522,6 +553,7 @@ export default function CreateCalendarEventDialog({
                     createMutation.isPending ||
                     previewQuery.isLoading ||
                     previewQuery.isError ||
+                    eventConflicts.length > 0 ||
                     unresolvedCount > 0 ||
                     (previewQuery.data != null && !previewQuery.data.success)
                   }

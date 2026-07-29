@@ -459,7 +459,9 @@ export default function SchedulePageContainer() {
 
       <EventInfoPopup
         lesson={selectedEvent}
-        locationName={selectedEvent ? resolveLocationName(selectedEvent) : undefined}
+        locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
+        disciplineMap={disciplineMap}
+        teamMap={teamMap}
         toast={toast}
         onClose={() => setSelectedEvent(null)}
         onSuccess={handleScheduleRefresh}

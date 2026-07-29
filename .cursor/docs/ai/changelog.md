@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-29 — tangodb: мероприятия — редактирование сессий (`update_calendar_event_with_cancellations`), preview конфликтов с учётом других мероприятий и exclude event id; список всех сессий в попапе.
+
 2026-07-29 — tangodb: мероприятия — редактирование (`update_calendar_event`) и дозапись оплаты (`record_calendar_event_payment`) после создания; UI в попапе мероприятия.
 
 2026-07-29 — tangodb: мероприятия/мастер-классы — `calendar_events`, `calendar_event_sessions`, `other_income`, RPC `preview_calendar_event_conflicts` и `create_calendar_event_with_cancellations`, мягкая отмена `personal_lessons` (`cancelled_at`), блок violet в расписании, диалог создания с preview конфликтов, учёт прочего дохода в «Выручке».

@@ -4,14 +4,18 @@ import { CalendarPlus, Coins, Edit, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
+import { useCalendarEventSessions } from "../../hooks/useCalendarEvents";
 import { formatCurrency } from "../../lib/utils";
 import type { EventDisplayLesson } from "../../types";
 import EditCalendarEventDialog from "./EditCalendarEventDialog";
 import RecordCalendarEventPaymentModal from "./RecordCalendarEventPaymentModal";
+import type { LocationOption } from "./CreateCalendarEventDialog";
 
 interface EventInfoPopupProps {
   lesson: EventDisplayLesson | null;
-  locationName?: string;
+  locations: LocationOption[];
+  disciplineMap: Map<string, string>;
+  teamMap: Map<string, string>;
   toast: (msg: string, type?: "success" | "error" | "info") => void;
   onClose: () => void;
   onSuccess: () => void;
@@ -21,7 +25,9 @@ const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider 
 
 export default function EventInfoPopup({
   lesson,
-  locationName,
+  locations,
+  disciplineMap,
+  teamMap,
   toast,
   onClose,
   onSuccess,
@@ -35,10 +41,14 @@ export default function EventInfoPopup({
     can("schedule.write") &&
     (role === "owner" || role === "director" || role === "admin");
 
+  const sessionsQuery = useCalendarEventSessions(lesson?.eventId ?? null, !!lesson);
+
   const [editOpen, setEditOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
 
   if (!lesson) return null;
+
+  const locationNameById = new Map(locations.map((l) => [l.id, l.name]));
 
   const typeLabel =
     lesson.eventType === "open_lesson"
@@ -95,23 +105,33 @@ export default function EventInfoPopup({
               </button>
             </div>
 
-            <div className="p-4 space-y-3 text-sm">
+            <div className="p-4 space-y-3 text-sm max-h-[70dvh] overflow-y-auto">
               <div>
                 <span className={labelCls}>{t("schedule.event.typeLabel")}</span>
                 <p className="text-slate-800">{typeLabel}</p>
               </div>
               <div>
-                <span className={labelCls}>{t("schedule.form.currentDate")}</span>
-                <p className="text-slate-800">
-                  {formatDate(lesson.date)} · {lesson.timeStart}–{lesson.timeEnd}
-                </p>
+                <span className={labelCls}>{t("schedule.event.sessionsLabel")}</span>
+                {sessionsQuery.isLoading ? (
+                  <p className="text-slate-400">{t("common.loading.default")}</p>
+                ) : (
+                  <ul className="space-y-1.5 mt-1">
+                    {(sessionsQuery.data ?? []).map((session) => {
+                      const locName = locationNameById.get(session.locationId);
+                      const isCurrent = session.sessionId === lesson.sessionId;
+                      return (
+                        <li
+                          key={session.sessionId ?? `${session.date}-${session.timeStart}`}
+                          className={`text-slate-800 ${isCurrent ? "font-semibold text-violet-800" : ""}`}
+                        >
+                          {formatDate(session.date)} · {session.timeStart}–{session.timeEnd}
+                          {locName ? ` · ${locName}` : ""}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
-              {locationName ? (
-                <div>
-                  <span className={labelCls}>{t("schedule.form.location")}</span>
-                  <p className="text-slate-800">{locationName}</p>
-                </div>
-              ) : null}
               {lesson.guestTeacher ? (
                 <div>
                   <span className={labelCls}>{t("schedule.event.guestTeacherLabel")}</span>
@@ -199,6 +219,9 @@ export default function EventInfoPopup({
       <EditCalendarEventDialog
         lesson={lesson}
         open={editOpen}
+        locations={locations}
+        disciplineMap={disciplineMap}
+        teamMap={teamMap}
         toast={toast}
         onClose={() => setEditOpen(false)}
         onSuccess={handleSuccess}

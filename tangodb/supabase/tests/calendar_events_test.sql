@@ -180,6 +180,26 @@ BEGIN
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'Additional payment should succeed');
   PERFORM _test_assert((v_result ->> 'payment_status') = 'paid', 'Should be fully paid');
 
+  v_result := update_calendar_event_with_cancellations(
+    v_event_id,
+    jsonb_build_object(
+      'title', 'Guest Master Class (sessions updated)',
+      'event_type', 'master_class',
+      'sessions', jsonb_build_array(
+        jsonb_build_object(
+          'session_id', (SELECT id::text FROM calendar_event_sessions WHERE event_id = v_event_id LIMIT 1),
+          'date', v_fri::text,
+          'time_start', '13:00',
+          'time_end', '19:00',
+          'location_id', v_loc::text
+        )
+      ),
+      'group_cancellations', '[]'::jsonb,
+      'personal_cancellations', '[]'::jsonb
+    )
+  );
+  PERFORM _test_assert((v_result ->> 'success')::boolean, 'Update sessions without new conflicts should succeed');
+
   RAISE NOTICE 'All calendar_events tests passed.';
 END;
 $$;
