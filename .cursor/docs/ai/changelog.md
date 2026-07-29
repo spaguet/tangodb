@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-29 — tangodb: отчёт по проведённым групповым урокам (CRM сценарий 4) — поле `disciplines.category`, RPC `get_conducted_group_lessons_report`, блок на «Настройки → Данные» с preview и CSV `lessons_YYYY-MM-DD_YYYY-MM-DD.csv`; источник «проведено»: occurrence не отменён и время окончания прошло (TZ организации).
+
 2026-07-29 — tangodb: мероприятия — редактирование сессий (`update_calendar_event_with_cancellations`), preview конфликтов с учётом других мероприятий и exclude event id; список всех сессий в попапе.
 
 2026-07-29 — tangodb: мероприятия — редактирование (`update_calendar_event`) и дозапись оплаты (`record_calendar_event_payment`) после создания; UI в попапе мероприятия.

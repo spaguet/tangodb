@@ -9,6 +9,7 @@ const mapDiscipline = (row: Record<string, unknown>): Discipline => ({
   id: String(row.id),
   name: row.name as string,
   description: (row.description as string) || "",
+  category: (row.category as string | null) ?? null,
   createdAt: row.created_at as string | undefined,
 });
 
@@ -73,17 +74,23 @@ export function useUpdateDiscipline() {
       id,
       name,
       description,
+      category,
     }: {
       id: string;
       name: string;
       description: string;
+      category?: string | null;
     }) => {
       const trimmed = name.trim();
       if (!trimmed) return { success: false as const, error: "hooks.error.disciplineNameRequired" };
 
       const { error } = await supabase
         .from("disciplines")
-        .update({ name: trimmed, description: description.trim() })
+        .update({
+          name: trimmed,
+          description: description.trim(),
+          category: category?.trim() ? category.trim() : null,
+        })
         .eq("id", id);
 
       if (error) {

@@ -31,6 +31,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
   const [editing, setEditing] = useState<Discipline | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editCategory, setEditCategory] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Discipline | null>(null);
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
     setEditing(d);
     setEditName(d.name);
     setEditDescription(d.description);
+    setEditCategory(d.category ?? "");
   };
 
   const handleSaveEdit = async () => {
@@ -54,6 +56,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
       id: editing.id,
       name: editName,
       description: editDescription,
+      category: editCategory,
     });
     if (!res.success) {
       toast(resolveMutationError(res.error, "disciplines.error.saveFailed", t), "error");
@@ -112,6 +115,9 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                   ) : (
                     <p className="text-[11px] text-slate-300 italic mt-0.5">{t("disciplines.noDescription")}</p>
                   )}
+                  {d.category ? (
+                    <p className="text-[10px] text-indigo-600 mt-0.5 font-semibold">{d.category}</p>
+                  ) : null}
                 </div>
                 <RequirePermission action="disciplines.write" context={{ disciplineId: String(d.id) }}>
                 <div className="flex items-center gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -182,6 +188,16 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                     onChange={(e) => setEditDescription(e.target.value)}
                     rows={2}
                     className={descriptionFieldCls}
+                  />
+                </div>
+                <div className="field-stack">
+                  <label className={labelCls}>{t("disciplines.field.category")}</label>
+                  <input
+                    type="text"
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    placeholder={t("disciplines.placeholder.category")}
+                    className={inputCls}
                   />
                 </div>
               </div>

@@ -22,6 +22,7 @@ import { exportAllFinancialCsv } from "../../lib/exportFinancialCsv";
 import { monthDateRange } from "../../lib/financeReports";
 import { currentYearMonth, formatMonthTitle, shiftMonth } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
+import ConductedLessonsReportSection from "../components/ConductedLessonsReportSection";
 
 function shiftMonthLocal(yearMonth: string, delta: number): string {
   return shiftMonth(yearMonth, delta);
@@ -379,6 +380,7 @@ export default function DataExportPage() {
 
       {canFinancialExport && <FinancialExportSection />}
       {canDashboardExport && <OperationalExportSection />}
+      {canDashboardExport && <ConductedLessonsReportSection />}
     </div>
   );
 }

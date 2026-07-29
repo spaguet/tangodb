@@ -32,7 +32,27 @@ export interface Discipline {
   id: string;
   name: string;
   description: string;
+  category?: string | null;
   createdAt?: string;
+}
+
+export interface ConductedLessonReportRow {
+  occurrenceId: string;
+  slotId: string;
+  scheduleGroupId: string | null;
+  date: string;
+  dayOfWeek: number;
+  timeStart: string;
+  timeEnd: string;
+  disciplineCategory: string;
+  disciplineId: string;
+  disciplineName: string;
+  groupName: string;
+  teacherName: string;
+  locationName: string;
+  presentCount: number;
+  absentCount: number;
+  freezeCount: number;
 }
 
 export type BillingModel = "lesson_count" | "monthly_unlimited";
