@@ -1635,6 +1635,12 @@ export type I18nKey =
   | "notes.deleteAria"
   // client card
   | "clientCard.telegramNotSet"
+  | "clientCard.subscriptions.title"
+  | "clientCard.subscriptions.active"
+  | "clientCard.subscriptions.historical"
+  | "clientCard.subscriptions.period"
+  | "clientCard.subscriptions.present"
+  | "clientCard.subscriptions.lessonsLeft"
   // org switcher
   | "orgSwitcher.defaultName"
   | "orgSwitcher.closeMenu"

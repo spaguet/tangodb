@@ -60,6 +60,25 @@ export function useClientSubscriptionMemberChanges(clientId?: string) {
   });
 }
 
+export function useAllSubscriptionMemberChanges(options?: { enabled?: boolean }) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+
+  return useQuery({
+    queryKey: withOrgId([...subscriptionMemberChangesQueryKey, "all"]),
+    enabled: orgEnabled && (options?.enabled ?? true),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscription_member_changes")
+        .select("*")
+        .order("effective_date", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map((row) => mapMemberChange(row as Record<string, unknown>));
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useReplaceSubscriptionPartner() {
   const queryClient = useQueryClient();
 

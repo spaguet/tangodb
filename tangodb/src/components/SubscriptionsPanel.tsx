@@ -66,8 +66,8 @@ import RequirePermission from "./RequirePermission";
 import SubscriptionFreezeDialog from "./subscriptions/SubscriptionFreezeDialog";
 import ReplaceSubscriptionPartnerDialog from "./subscriptions/ReplaceSubscriptionPartnerDialog";
 import SubscriptionMemberChangeHistory from "./subscriptions/SubscriptionMemberChangeHistory";
-import { isPairGroupSubscription } from "../lib/subscriptionMembers";
-import { useClientSubscriptionMemberChanges } from "../hooks/useSubscriptionMemberChanges";
+import { isPairGroupSubscription, formatSubscriptionMembersAtDate, buildMemberChangesBySubId } from "../lib/subscriptionMembers";
+import { useAllSubscriptionMemberChanges, useClientSubscriptionMemberChanges } from "../hooks/useSubscriptionMemberChanges";
 import SubscriptionFreezeHistory from "./subscriptions/SubscriptionFreezeHistory";
 import { canApplyFreeze, resolveFreezePolicyForSubscription } from "../lib/freezePolicy";
 import type { ToastType } from "../App";
@@ -618,7 +618,12 @@ export default function SubscriptionsPanel({
   );
 
   const clientMemberChangesQuery = useClientSubscriptionMemberChanges(historyClientId || undefined);
+  const allMemberChangesQuery = useAllSubscriptionMemberChanges();
   const historyMemberChanges = clientMemberChangesQuery.data ?? [];
+  const memberChangesBySubId = useMemo(
+    () => buildMemberChangesBySubId(allMemberChangesQuery.data ?? []),
+    [allMemberChangesQuery.data]
+  );
 
   const historyRecords = useMemo(
     () =>
@@ -833,10 +838,14 @@ export default function SubscriptionsPanel({
                 const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
                 const c3 = sub.clientId3 ? clientMap[sub.clientId3] : null;
 
-                const clientNameStr = [c1, c2, c3]
-                  .filter(Boolean)
-                  .map((c) => `${c!.lastName || ""} ${c!.firstName || ""}`.trim())
-                  .join(" & ");
+                const subMemberChanges = memberChangesBySubId[sub.id] ?? [];
+                const clientNameStr =
+                  subMemberChanges.length > 0
+                    ? formatSubscriptionMembersAtDate(sub, subMemberChanges, clientMap, new Date().toISOString().slice(0, 10))
+                    : [c1, c2, c3]
+                        .filter(Boolean)
+                        .map((c) => `${c!.lastName || ""} ${c!.firstName || ""}`.trim())
+                        .join(" & ");
 
                 const isMonthly = isMonthlyUnlimitedSubscription(sub);
                 const daysLeft = isMonthly ? getSubscriptionDaysLeft(sub.expiresAt) : null;

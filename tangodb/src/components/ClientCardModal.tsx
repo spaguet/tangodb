@@ -6,6 +6,7 @@ import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } 
 import { useCan } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
 import ClientNotesPanel from "./ClientNotesPanel";
+import ClientSubscriptionParticipationPanel from "./clients/ClientSubscriptionParticipationPanel";
 
 interface ClientCardModalProps {
   client: Client | null;
@@ -158,6 +159,8 @@ export default function ClientCardModal({ client, onClose, toast }: ClientCardMo
                 </div>
               ) : null}
             </div>
+
+            <ClientSubscriptionParticipationPanel clientId={client.id} />
 
             {canReadNotes && <ClientNotesPanel clientId={client.id} toast={toast} />}
           </motion.div>

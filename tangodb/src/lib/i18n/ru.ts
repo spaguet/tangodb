@@ -1691,6 +1691,12 @@ export const RU: Record<I18nKey, string> = {
   "notes.deleteAria": "Удалить заметку",
 
   "clientCard.telegramNotSet": "Telegram не указан",
+  "clientCard.subscriptions.title": "Абонементы",
+  "clientCard.subscriptions.active": "Действующий",
+  "clientCard.subscriptions.historical": "История",
+  "clientCard.subscriptions.period": "{{from}} — {{to}}",
+  "clientCard.subscriptions.present": "настоящее время",
+  "clientCard.subscriptions.lessonsLeft": "Остаток: {{left}} из {{total}}",
 
   "orgSwitcher.defaultName": "Организация",
   "orgSwitcher.closeMenu": "Закрыть меню организаций",

@@ -18,12 +18,18 @@ import type {
   SubForDate,
   Subscription,
   SubscriptionGroupLink,
+  SubscriptionMemberChange,
 } from "../types";
 import { useClientDirectory } from "./useClients";
 import { useSchedule } from "./useSchedule";
 import { subscriptionsQueryKey, useSubscriptions } from "./useSubscriptions";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { useSettings } from "../settings/SettingsProvider";
+import {
+  buildMemberChangesBySubId,
+  resolveSubscriptionMemberNamesAtDate,
+} from "../lib/subscriptionMembers";
+import { useAllSubscriptionMemberChanges } from "./useSubscriptionMemberChanges";
 
 export const attendanceQueryKey = ["attendance"] as const;
 
@@ -115,6 +121,7 @@ export function computeSubsForDate(
     disciplineId?: string | null;
     scheduleGroupId?: string | null;
     groupsBySubId?: Record<string, SubscriptionGroupLink[]>;
+    memberChangesBySubId?: Record<string, SubscriptionMemberChange[]>;
   },
   freezePolicy: FreezePolicy = DEFAULT_FREEZE_POLICY
 ): SubForDate[] {
@@ -122,6 +129,7 @@ export function computeSubsForDate(
   const idFilter = options?.subscriptionIds ? new Set(options.subscriptionIds) : null;
   const disciplineFilter = options?.disciplineId ?? null;
   const scheduleGroupId = options?.scheduleGroupId ?? null;
+  const memberChangesBySubId = options?.memberChangesBySubId ?? {};
 
   return subscriptions
     .filter((s) => {
@@ -138,9 +146,13 @@ export function computeSubsForDate(
       return true;
     })
     .map((s) => {
-      const c1 = clientMap[s.clientId1];
-      const c2 = s.clientId2 ? clientMap[s.clientId2] : null;
-      const c3 = s.clientId3 ? clientMap[s.clientId3] : null;
+      const subChanges = memberChangesBySubId[s.id] ?? [];
+      const { client1, client2, client3 } = resolveSubscriptionMemberNamesAtDate(
+        s,
+        subChanges,
+        clientMap,
+        dateStr
+      );
       const existing = attendance.find(
         (a) =>
           a.date === dateStr &&
@@ -153,9 +165,9 @@ export function computeSubsForDate(
         subId: s.id,
         type: s.type,
         pairMonth: s.pairMonth,
-        client1: c1 ? formatClientName(c1.lastName, c1.firstName) : s.clientId1,
-        client2: c2 ? formatClientName(c2.lastName, c2.firstName) : "",
-        client3: c3 ? formatClientName(c3.lastName, c3.firstName) : "",
+        client1,
+        client2,
+        client3,
         lessonsLeft: s.lessonsLeft,
         lessonsTotal: s.lessonsTotal,
         freezeUsed: s.freezeUsed,
@@ -262,6 +274,7 @@ export type SubsForDateOptions = {
   disciplineId?: string | null;
   scheduleGroupId?: string | null;
   groupsBySubId?: Record<string, SubscriptionGroupLink[]>;
+  memberChangesBySubId?: Record<string, SubscriptionMemberChange[]>;
 };
 
 export function useSubsForDate(
@@ -272,7 +285,13 @@ export function useSubsForDate(
   const subscriptionsQuery = useSubscriptions();
   const clientsQuery = useClientDirectory();
   const attendanceQuery = useAttendanceRecords(yearMonth);
+  const memberChangesQuery = useAllSubscriptionMemberChanges();
   const { freezePolicy } = useSettings();
+
+  const memberChangesBySubId = useMemo(
+    () => buildMemberChangesBySubId(memberChangesQuery.data ?? []),
+    [memberChangesQuery.data]
+  );
 
   const optionsKey = `${options?.category ?? ""}|${options?.disciplineId ?? ""}|${options?.scheduleGroupId ?? ""}|${(options?.subscriptionIds ?? []).join(",")}`;
   const stableOptions = useMemo(
@@ -284,9 +303,10 @@ export function useSubsForDate(
             disciplineId: options.disciplineId,
             scheduleGroupId: options.scheduleGroupId,
             groupsBySubId: options.groupsBySubId,
+            memberChangesBySubId,
           }
         : undefined,
-    [optionsKey, options?.groupsBySubId]
+    [optionsKey, options?.groupsBySubId, memberChangesBySubId]
   );
 
   const getSubsForDate = useCallback(
@@ -296,10 +316,20 @@ export function useSubsForDate(
         subscriptionsQuery.data ?? [],
         clientsQuery.data ?? [],
         attendanceQuery.data ?? [],
-        opts ?? stableOptions,
+        {
+          ...(opts ?? stableOptions),
+          memberChangesBySubId: opts?.memberChangesBySubId ?? memberChangesBySubId,
+        },
         freezePolicy
       ),
-    [subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, stableOptions, freezePolicy]
+    [
+      subscriptionsQuery.data,
+      clientsQuery.data,
+      attendanceQuery.data,
+      stableOptions,
+      freezePolicy,
+      memberChangesBySubId,
+    ]
   );
 
   const subs = useMemo(
@@ -314,15 +344,34 @@ export function useSubsForDate(
             freezePolicy
           )
         : undefined,
-    [dateStr, subscriptionsQuery.data, clientsQuery.data, attendanceQuery.data, stableOptions, freezePolicy]
+    [
+      dateStr,
+      subscriptionsQuery.data,
+      clientsQuery.data,
+      attendanceQuery.data,
+      stableOptions,
+      freezePolicy,
+    ]
   );
 
   return {
     subs,
     getSubsForDate,
-    isLoading: subscriptionsQuery.isLoading || clientsQuery.isLoading || attendanceQuery.isLoading,
-    isError: subscriptionsQuery.isError || clientsQuery.isError || attendanceQuery.isError,
-    error: subscriptionsQuery.error ?? clientsQuery.error ?? attendanceQuery.error,
+    isLoading:
+      subscriptionsQuery.isLoading ||
+      clientsQuery.isLoading ||
+      attendanceQuery.isLoading ||
+      memberChangesQuery.isLoading,
+    isError:
+      subscriptionsQuery.isError ||
+      clientsQuery.isError ||
+      attendanceQuery.isError ||
+      memberChangesQuery.isError,
+    error:
+      subscriptionsQuery.error ??
+      clientsQuery.error ??
+      attendanceQuery.error ??
+      memberChangesQuery.error,
   };
 }
 

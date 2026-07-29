@@ -1693,6 +1693,12 @@ export const EN: Record<I18nKey, string> = {
   "notes.deleteAria": "Delete note",
 
   "clientCard.telegramNotSet": "Telegram not specified",
+  "clientCard.subscriptions.title": "Subscriptions",
+  "clientCard.subscriptions.active": "Active",
+  "clientCard.subscriptions.historical": "History",
+  "clientCard.subscriptions.period": "{{from}} — {{to}}",
+  "clientCard.subscriptions.present": "present",
+  "clientCard.subscriptions.lessonsLeft": "Remaining: {{left}} of {{total}}",
 
   "orgSwitcher.defaultName": "Organization",
   "orgSwitcher.closeMenu": "Close organization menu",
