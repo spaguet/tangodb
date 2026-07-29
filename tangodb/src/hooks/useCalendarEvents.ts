@@ -290,3 +290,103 @@ export function conflictKey(conflict: CalendarEventConflict): string {
   }
   return `personal:${conflict.lessonId}`;
 }
+
+export interface UpdateCalendarEventInput {
+  eventId: string;
+  title: string;
+  eventType: CalendarEventType;
+  comment?: string;
+  guestTeacher?: string;
+  organizer?: string;
+  plannedGuestCount?: number | null;
+  actualGuestCount?: number | null;
+  incomeAmount?: number;
+  paymentComment?: string;
+}
+
+export function useUpdateCalendarEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: UpdateCalendarEventInput) => {
+      const { data, error } = await supabase.rpc("update_calendar_event", {
+        p_event_id: input.eventId,
+        p_payload: {
+          title: input.title,
+          event_type: input.eventType,
+          comment: input.comment ?? null,
+          guest_teacher: input.guestTeacher ?? null,
+          organizer: input.organizer ?? null,
+          planned_guest_count: input.plannedGuestCount ?? null,
+          actual_guest_count: input.actualGuestCount ?? null,
+          income_amount: input.incomeAmount,
+          payment_comment: input.paymentComment ?? null,
+        },
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as { success?: boolean; error?: string } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "schedule.event.updateFailed" };
+      }
+
+      return { success: true as const };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: scheduleQueryKey, refetchType: "active" });
+      void queryClient.invalidateQueries({ queryKey: calendarEventsQueryKey, refetchType: "active" });
+    },
+  });
+}
+
+export interface RecordCalendarEventPaymentInput {
+  eventId: string;
+  amount: number;
+  method: PaymentMethod;
+  methodComment?: string;
+  idempotencyKey: string;
+}
+
+export function useRecordCalendarEventPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: RecordCalendarEventPaymentInput) => {
+      const { data, error } = await supabase.rpc("record_calendar_event_payment", {
+        p_event_id: input.eventId,
+        p_amount: input.amount,
+        p_method: input.method,
+        p_method_comment: input.methodComment ?? null,
+        p_idempotency_key: input.idempotencyKey,
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        paid_amount?: number;
+        payment_status?: CalendarEventPaymentStatus;
+        already_applied?: boolean;
+      } | null;
+
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "schedule.event.paymentFailed" };
+      }
+
+      return {
+        success: true as const,
+        paidAmount: result.paid_amount,
+        paymentStatus: result.payment_status,
+        alreadyApplied: result.already_applied ?? false,
+      };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: scheduleQueryKey, refetchType: "active" });
+      void queryClient.invalidateQueries({ queryKey: calendarEventsQueryKey, refetchType: "active" });
+      void queryClient.invalidateQueries({ queryKey: otherIncomeQueryKey, refetchType: "active" });
+      void queryClient.invalidateQueries({ queryKey: ["payments"], refetchType: "active" });
+    },
+  });
+}

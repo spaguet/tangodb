@@ -161,6 +161,25 @@ BEGIN
 
   PERFORM _test_assert((v_result ->> 'already_applied')::boolean, 'Idempotent retry should return already_applied');
 
+  v_result := update_calendar_event(
+    v_event_id,
+    jsonb_build_object(
+      'title', 'Guest Master Class (updated)',
+      'actual_guest_count', 42
+    )
+  );
+  PERFORM _test_assert((v_result ->> 'success')::boolean, 'Update event should succeed');
+
+  v_result := record_calendar_event_payment(
+    v_event_id,
+    10000,
+    'transfer',
+    'partial top-up',
+    'test-event-1:payment2'
+  );
+  PERFORM _test_assert((v_result ->> 'success')::boolean, 'Additional payment should succeed');
+  PERFORM _test_assert((v_result ->> 'payment_status') = 'paid', 'Should be fully paid');
+
   RAISE NOTICE 'All calendar_events tests passed.';
 END;
 $$;

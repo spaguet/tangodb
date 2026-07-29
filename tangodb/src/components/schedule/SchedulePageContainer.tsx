@@ -460,7 +460,9 @@ export default function SchedulePageContainer() {
       <EventInfoPopup
         lesson={selectedEvent}
         locationName={selectedEvent ? resolveLocationName(selectedEvent) : undefined}
+        toast={toast}
         onClose={() => setSelectedEvent(null)}
+        onSuccess={handleScheduleRefresh}
       />
 
       <CreateCalendarEventDialog
