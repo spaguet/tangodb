@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import { useScheduleForWeek } from "../../hooks/useSchedule";
+import { useScheduleForWeek, useSchedule } from "../../hooks/useSchedule";
 import { useClients } from "../../hooks/useClients";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { usePrices } from "../../hooks/usePrices";
@@ -30,6 +30,8 @@ import AddGroupLessonForm from "./AddGroupLessonForm";
 import AddPersonalLessonForm from "./AddPersonalLessonForm";
 import EditLessonPopup from "./EditLessonPopup";
 import ScheduleDebtorsBlock from "./ScheduleDebtorsBlock";
+import ScheduleUpcomingCancellationsBlock from "./ScheduleUpcomingCancellationsBlock";
+import TeacherVacationDialog from "./TeacherVacationDialog";
 import SellPackageModal from "../ui/SellPackageModal";
 
 const NO_LOCATION_KEY = "__no_location__";
@@ -51,10 +53,12 @@ export default function SchedulePageContainer() {
   const [editLesson, setEditLesson] = useState<DisplayLesson | null>(null);
   const [addFlow, setAddFlow] = useState<AddFlow>(null);
   const [sellPackageOpen, setSellPackageOpen] = useState(false);
+  const [teacherVacationOpen, setTeacherVacationOpen] = useState(false);
 
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
 
   const scheduleQuery = useScheduleForWeek(selectedWeekStart, weekEnd);
+  const allScheduleQuery = useSchedule({ enabled: teacherVacationOpen });
   const locationsQuery = useAccessibleLocations();
   const disciplinesQuery = useDisciplines();
   const teamQuery = useTeamMembers();
@@ -70,6 +74,7 @@ export default function SchedulePageContainer() {
     [isReadOnly, settings?.modules, settings?.teachers_can_sell_subscriptions]
   );
 
+  const canManageTeacherVacation = can("schedule.write");
   const canAddGroup = canOfferGroupLessonAdd(role, can, scheduleGridAddOptions);
   const canAddPersonal = canAddPersonalFromGrid(role, can, scheduleGridAddOptions);
   const canClickEmpty = canAddGroup || canAddPersonal;
@@ -376,6 +381,8 @@ export default function SchedulePageContainer() {
           teacherFilter={teacherFilter}
           onTeacherFilterChange={handleTeacherFilterChange}
           teacherFilterOptions={teacherFilterOptions}
+          canManageTeacherVacation={canManageTeacherVacation}
+          onTeacherVacationClick={() => setTeacherVacationOpen(true)}
         />
       </div>
 
@@ -416,6 +423,12 @@ export default function SchedulePageContainer() {
           )}
         </div>
       )}
+
+      <ScheduleUpcomingCancellationsBlock
+        disciplineMap={disciplineMap}
+        teamMap={teamMap}
+        locationMap={locationMap}
+      />
 
       <ScheduleDebtorsBlock
         disciplineMap={disciplineMap}
@@ -488,6 +501,18 @@ export default function SchedulePageContainer() {
         personalLessons={personalLessonRefs}
         toast={toast}
         onClose={closeAddFlow}
+        onSuccess={handleScheduleRefresh}
+      />
+
+      <TeacherVacationDialog
+        open={teacherVacationOpen}
+        initialTeacherMemberId={teacherFilter}
+        teacherOptions={teacherFilterOptions}
+        scheduleSlots={allScheduleQuery.data ?? scheduleSlots}
+        disciplineMap={disciplineMap}
+        locationMap={locationMap}
+        toast={toast}
+        onClose={() => setTeacherVacationOpen(false)}
         onSuccess={handleScheduleRefresh}
       />
 

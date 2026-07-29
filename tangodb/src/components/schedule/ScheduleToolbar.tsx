@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff } from "lucide-react";
 import { getWeekRange, formatWeekRangeLabel, toISODateLocal } from "../../lib/scheduleWeek";
 import { useI18n } from "../../hooks/useI18n";
 import AppSelect from "../ui/AppSelect";
@@ -16,6 +16,8 @@ interface ScheduleToolbarProps {
   teacherFilter: string;
   onTeacherFilterChange: (teacherId: string) => void;
   teacherFilterOptions: TeacherFilterOption[];
+  canManageTeacherVacation?: boolean;
+  onTeacherVacationClick?: () => void;
 }
 
 export default function ScheduleToolbar({
@@ -24,6 +26,8 @@ export default function ScheduleToolbar({
   teacherFilter,
   onTeacherFilterChange,
   teacherFilterOptions,
+  canManageTeacherVacation = false,
+  onTeacherVacationClick,
 }: ScheduleToolbarProps) {
   const { t, locale } = useI18n();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -127,6 +131,17 @@ export default function ScheduleToolbar({
           ))}
         </AppSelect>
       )}
+
+      {canManageTeacherVacation && onTeacherVacationClick ? (
+        <button
+          type="button"
+          onClick={onTeacherVacationClick}
+          className="inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-sans font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer"
+        >
+          <CalendarOff className="w-3.5 h-3.5" />
+          {t("schedule.vacation.action")}
+        </button>
+      ) : null}
     </div>
   );
 }

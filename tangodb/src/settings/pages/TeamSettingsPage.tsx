@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Mail, UserMinus, Users, Copy, Check, Edit, LifeBuoy, UserPlus } from "lucide-react";
+import { useRef, useState, useMemo } from "react";
+import { Mail, UserMinus, Users, Copy, Check, Edit, LifeBuoy, UserPlus, CalendarOff } from "lucide-react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import LoadingState from "../../components/ui/LoadingState";
@@ -18,6 +18,10 @@ import { useTeamInvites, useTeamMutations } from "../../hooks/useTeamInvites";
 import { useI18n } from "../../hooks/useI18n";
 import { getTeamRolePresets } from "../../lib/i18n";
 import { usePermissions } from "../../hooks/usePermissions";
+import { useSchedule } from "../../hooks/useSchedule";
+import { useDisciplines } from "../../hooks/useDisciplines";
+import { useAccessibleLocations } from "../../hooks/useLocations";
+import TeacherVacationDialog from "../../components/schedule/TeacherVacationDialog";
 import { DEFAULT_TEACHER_INVITE_SCOPE, isTeacherScopeConfigured } from "../../lib/teacherScope";
 import type { MemberMeta, MemberRole, TeacherScope } from "../../types/organization";
 
@@ -77,6 +81,11 @@ export default function TeamSettingsPage() {
   const { data: members = [], isLoading, isError, error } = useTeamMembers();
   const { data: invites = [], isLoading: invitesLoading } = useTeamInvites();
   const { invite, revokeInvite, updateMember } = useTeamMutations();
+  const disciplinesQuery = useDisciplines();
+  const locationsQuery = useAccessibleLocations();
+  const [teacherVacationOpen, setTeacherVacationOpen] = useState(false);
+  const [vacationTeacherId, setVacationTeacherId] = useState("");
+  const allScheduleQuery = useSchedule({ enabled: teacherVacationOpen });
 
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -92,6 +101,41 @@ export default function TeamSettingsPage() {
   const inviteFormRef = useRef<HTMLFormElement>(null);
 
   const activeMembers = members.filter((m) => m.is_active);
+
+  const teacherVacationOptions = useMemo(
+    () =>
+      activeMembers
+        .filter(
+          (member) =>
+            member.role === "teacher" ||
+            member.role === "owner" ||
+            member.role === "director" ||
+            member.role === "admin"
+        )
+        .map((member) => ({
+          id: member.id,
+          label: memberListLabel(member, locale),
+        })),
+    [activeMembers, locale]
+  );
+
+  const disciplineMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const discipline of disciplinesQuery.data ?? []) {
+      map.set(discipline.id, discipline.name);
+    }
+    return map;
+  }, [disciplinesQuery.data]);
+
+  const locationMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const location of locationsQuery.locations) {
+      map.set(location.id, location.name);
+    }
+    return map;
+  }, [locationsQuery.locations]);
+
+  const canManageTeacherVacation = can("schedule.write");
   const inactiveMembers = members.filter((m) => !m.is_active);
 
   const directorSlotTaken = (excludeMemberId?: string): boolean => {
@@ -373,14 +417,29 @@ export default function TeamSettingsPage() {
       )}
 
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
           <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
             <Users className="w-4 h-4 text-indigo-500" />
             {t("team.members")}
           </h3>
-          <span className="text-[10px] bg-slate-100 text-slate-500 font-sans px-2 py-0.5 rounded-full font-semibold">
-            {activeMembers.length}
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            {canManageTeacherVacation ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setVacationTeacherId("");
+                  setTeacherVacationOpen(true);
+                }}
+                className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg cursor-pointer"
+              >
+                <CalendarOff className="w-3.5 h-3.5" />
+                {t("schedule.vacation.action")}
+              </button>
+            ) : null}
+            <span className="text-[10px] bg-slate-100 text-slate-500 font-sans px-2 py-0.5 rounded-full font-semibold">
+              {activeMembers.length}
+            </span>
+          </div>
         </div>
 
         <div className="space-y-1.5">
@@ -404,6 +463,26 @@ export default function TeamSettingsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                {canManageTeacherVacation &&
+                (member.role === "teacher" ||
+                  member.role === "owner" ||
+                  member.role === "director" ||
+                  member.role === "admin") ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVacationTeacherId(member.id);
+                      setTeacherVacationOpen(true);
+                    }}
+                    className={iconBtnCls}
+                    title={t("schedule.vacation.action")}
+                    aria-label={t("schedule.vacation.actionFor", {
+                      name: memberListLabel(member, locale),
+                    })}
+                  >
+                    <CalendarOff className="w-4 h-4" />
+                  </button>
+                ) : null}
                 {canInvite && (
                   <button
                     type="button"
@@ -504,6 +583,18 @@ export default function TeamSettingsPage() {
         member={profileMember}
         canEdit={canEditMemberProfile}
         onClose={() => setProfileMember(null)}
+      />
+
+      <TeacherVacationDialog
+        open={teacherVacationOpen}
+        initialTeacherMemberId={vacationTeacherId}
+        teacherOptions={teacherVacationOptions}
+        scheduleSlots={allScheduleQuery.data ?? []}
+        disciplineMap={disciplineMap}
+        locationMap={locationMap}
+        toast={showToast}
+        onClose={() => setTeacherVacationOpen(false)}
+        onSuccess={() => setTeacherVacationOpen(false)}
       />
 
       <ConfirmDialog

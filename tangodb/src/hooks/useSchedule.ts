@@ -151,6 +151,7 @@ export function useScheduleForWeek(
 function invalidateScheduleQueries(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({ queryKey: scheduleQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: ["scheduleCancellations"], refetchType: "active" });
 }
 
 /** Закрыть слот с даты closingDate (не показывать с closingDate); при valid_from === closingDate — hard delete. */
@@ -502,104 +503,6 @@ export function useUpdateGroupScheduleValidity() {
   });
 }
 
-/** Cancel one weekly occurrence by splitting/closing the schedule slot version. */
-async function cancelGroupLessonOccurrenceByDate(
-  slotId: string,
-  cancelDate: string
-): Promise<{ success: true } | { success: false; error: string }> {
-  const { data: slot, error: fetchError } = await supabase
-    .from(scheduleTable)
-    .select(
-      "organization_id, day_of_week, time, time_end, discipline_id, group_name, location_id, teacher_member_id, valid_from, valid_to"
-    )
-    .eq("id", slotId)
-    .maybeSingle();
-
-  if (fetchError) return { success: false as const, error: fetchError.message };
-  if (!slot) return { success: false as const, error: "schedule.error.slotNotFound" };
-
-  const validFrom = String(slot.valid_from ?? "2000-01-01").slice(0, 10);
-  const validTo = slot.valid_to != null ? String(slot.valid_to).slice(0, 10) : null;
-
-  if (cancelDate < validFrom) {
-    return { success: false as const, error: "schedule.error.cancelDateInvalid" };
-  }
-  if (validTo != null && cancelDate > validTo) {
-    return { success: false as const, error: "schedule.error.cancelDateInvalid" };
-  }
-
-  if (validTo != null && validFrom === validTo) {
-    const { error } = await supabase.from(scheduleTable).delete().eq("id", slotId);
-    if (error) return { success: false as const, error: error.message };
-    return { success: true as const };
-  }
-
-  if (cancelDate === validFrom) {
-    const newFrom = addDays(cancelDate, 7);
-    if (validTo != null && newFrom > validTo) {
-      const { error } = await supabase.from(scheduleTable).delete().eq("id", slotId);
-      if (error) return { success: false as const, error: error.message };
-      return { success: true as const };
-    }
-
-    const { error } = await supabase
-      .from(scheduleTable)
-      .update({ valid_from: newFrom })
-      .eq("id", slotId);
-    if (error) return { success: false as const, error: error.message };
-    return { success: true as const };
-  }
-
-  if (validTo != null && cancelDate === validTo) {
-    const newTo = addDays(cancelDate, -7);
-    if (newTo < validFrom) {
-      const { error } = await supabase.from(scheduleTable).delete().eq("id", slotId);
-      if (error) return { success: false as const, error: error.message };
-      return { success: true as const };
-    }
-
-    const { error } = await supabase
-      .from(scheduleTable)
-      .update({ valid_to: newTo })
-      .eq("id", slotId);
-    if (error) return { success: false as const, error: error.message };
-    return { success: true as const };
-  }
-
-  const closeTo = addDays(cancelDate, -7);
-  if (closeTo >= validFrom) {
-    const { error: closeError } = await supabase
-      .from(scheduleTable)
-      .update({ valid_to: closeTo })
-      .eq("id", slotId);
-    if (closeError) return { success: false as const, error: closeError.message };
-  } else {
-    const { error: deleteError } = await supabase.from(scheduleTable).delete().eq("id", slotId);
-    if (deleteError) return { success: false as const, error: deleteError.message };
-  }
-
-  const resumeFrom = addDays(cancelDate, 7);
-  if (validTo == null || resumeFrom <= validTo) {
-    const { error: insertError } = await supabase.from(scheduleTable).insert({
-      organization_id: slot.organization_id,
-      day_of_week: slot.day_of_week,
-      time: slot.time,
-      time_end: slot.time_end,
-      discipline_id: slot.discipline_id,
-      group_name: slot.group_name,
-      location_id: slot.location_id,
-      teacher_member_id: slot.teacher_member_id,
-      valid_from: resumeFrom,
-      valid_to: validTo,
-    });
-    if (insertError) {
-      return { success: false as const, error: mapScheduleMutationError(insertError) };
-    }
-  }
-
-  return { success: true as const };
-}
-
 /** Cancel weekly occurrences via atomic server RPC. */
 async function cancelGroupLessonOccurrencesRpc(
   slotId: string,
@@ -664,6 +567,55 @@ export function useCancelGroupLessonOccurrences() {
         success: true as const,
         cancelledCount: result.cancelledCount,
         alreadyApplied: result.alreadyApplied ?? false,
+      };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidateScheduleQueries(queryClient);
+    },
+  });
+}
+
+export function useTeacherGroupVacation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      teacherMemberId,
+      startDate,
+      endDate,
+    }: {
+      teacherMemberId: string;
+      startDate: string;
+      endDate: string;
+    }) => {
+      const { data, error } = await supabase.rpc("cancel_teacher_group_vacation", {
+        p_teacher_member_id: teacherMemberId,
+        p_start_date: startDate,
+        p_end_date: endDate,
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        cancelled_count?: number;
+        series_count?: number;
+        already_applied?: boolean;
+      } | null;
+
+      if (!result?.success) {
+        return {
+          success: false as const,
+          error: result?.error ?? "schedule.error.vacationFailed",
+        };
+      }
+
+      return {
+        success: true as const,
+        cancelledCount: result.cancelled_count ?? 0,
+        seriesCount: result.series_count ?? 0,
+        alreadyApplied: result.already_applied ?? false,
       };
     },
     onSuccess: (result) => {
