@@ -21,6 +21,7 @@ export interface UsePersonalLessonsOptions {
   teacherMemberId?: string;
   clientId?: string;
   attendanceStatus?: "unmarked" | "present" | "absent" | "excused";
+  excludeCancelled?: boolean;
   enabled?: boolean;
 }
 
@@ -135,6 +136,7 @@ function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string,
     teacherMemberId: options.teacherMemberId ?? null,
     clientId: options.clientId ?? null,
     attendanceStatus: options.attendanceStatus ?? null,
+    excludeCancelled: options.excludeCancelled ?? null,
   };
 
   const hasFilter = Object.values(suffix).some((value) => value != null);
@@ -174,9 +176,14 @@ export function usePersonalLessons(options?: UsePersonalLessonsOptions) {
     queryKey: withOrgId([...personalLessonsQueryKey, keySuffix, { maskFinancial }]),
     enabled: queryEnabled,
     queryFn: async () => {
-      const table = maskFinancial ? "personal_lessons_teacher_v" : "personal_lessons";
+      const useBaseTable = resolved.excludeCancelled === true;
+      const table = useBaseTable ? "personal_lessons" : maskFinancial ? "personal_lessons_teacher_v" : "personal_lessons";
       const selectColumns = maskFinancial ? personalLessonsSelectTeacher : personalLessonsSelect;
       let query = supabase.from(table).select(selectColumns).order("date", { ascending: false });
+
+      if (resolved.excludeCancelled) {
+        query = query.is("cancelled_at", null);
+      }
 
       if (resolved.dateRange) {
         query = query

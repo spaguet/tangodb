@@ -127,7 +127,9 @@ export default function DayColumn({
             key={
               item.lesson.kind === "group"
                 ? `${item.lesson.slotId}-${item.lesson.date}`
-                : item.lesson.lessonId
+                : item.lesson.kind === "event"
+                  ? `${item.lesson.sessionId}-${item.lesson.date}`
+                  : item.lesson.lessonId
             }
             item={item}
             rangeStartMin={rangeStartMin}

@@ -8,7 +8,7 @@ type CanFn = (action: PermissionAction, context?: { disciplineId?: string | null
 
 function lessonContext(lesson: DisplayLesson) {
   return {
-    disciplineId: lesson.disciplineId,
+    disciplineId: lesson.kind === "event" ? null : lesson.disciplineId,
     locationId: lesson.locationId,
   };
 }

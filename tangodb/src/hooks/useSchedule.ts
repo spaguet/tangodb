@@ -8,10 +8,11 @@ import {
   normalizeTime,
   toISODateLocal,
 } from "../lib/scheduleWeek";
-import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot } from "../types";
+import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot, EventDisplayLesson } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { usePersonalLessons, personalLessonsQueryKey } from "./usePersonalLessons";
 import { usePersonalLessonsModuleEnabled } from "./useOrgModules";
+import { useCalendarEventsForWeek, calendarEventsQueryKey } from "./useCalendarEvents";
 
 export const scheduleQueryKey = ["schedule"] as const;
 
@@ -56,6 +57,7 @@ export interface ScheduleForWeekData {
   slots: ScheduleSlot[];
   groupLessons: GroupDisplayLesson[];
   personalLessons: PersonalDisplayLesson[];
+  eventLessons: EventDisplayLesson[];
   lessons: DisplayLesson[];
 }
 
@@ -93,7 +95,10 @@ export function useScheduleForWeek(
   const personalQuery = usePersonalLessons({
     dateRange: { start: weekStartISO, end: weekEndISO },
     enabled: queryEnabled && personalLessonsEnabled,
+    excludeCancelled: true,
   });
+
+  const eventsQuery = useCalendarEventsForWeek(weekStartISO, weekEndISO, queryEnabled);
 
   const scheduleQuery = useQuery({
     queryKey: withOrgId(["schedule", "week", weekStartISO]),
@@ -131,26 +136,33 @@ export function useScheduleForWeek(
       clientDisplay: lesson.clientDisplay,
     }));
 
+    const eventLessons = eventsQuery.data ?? [];
+
     return {
       slots,
       groupLessons,
       personalLessons,
-      lessons: [...groupLessons, ...personalLessons],
+      eventLessons,
+      lessons: [...groupLessons, ...personalLessons, ...eventLessons],
     };
-  }, [scheduleQuery.data, personalQuery.data, weekStart, weekEnd]);
+  }, [scheduleQuery.data, personalQuery.data, eventsQuery.data, weekStart, weekEnd]);
 
   return {
     ...scheduleQuery,
     data,
-    isLoading: scheduleQuery.isLoading || (personalLessonsEnabled && personalQuery.isLoading),
-    isError: scheduleQuery.isError || personalQuery.isError,
-    error: scheduleQuery.error ?? personalQuery.error,
+    isLoading:
+      scheduleQuery.isLoading ||
+      (personalLessonsEnabled && personalQuery.isLoading) ||
+      eventsQuery.isLoading,
+    isError: scheduleQuery.isError || personalQuery.isError || eventsQuery.isError,
+    error: scheduleQuery.error ?? personalQuery.error ?? eventsQuery.error,
   };
 }
 
 function invalidateScheduleQueries(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({ queryKey: scheduleQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: calendarEventsQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: ["scheduleCancellations"], refetchType: "active" });
 }
 

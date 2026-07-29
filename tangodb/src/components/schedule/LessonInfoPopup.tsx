@@ -16,7 +16,7 @@ import {
 } from "../../lib/scheduleLessonAccess";
 import { useI18n } from "../../hooks/useI18n";
 import { isRecurringGroupSlot } from "../../lib/groupLessonRepeat";
-import type { DisplayLesson } from "../../types";
+import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import RequirePermission from "../RequirePermission";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
@@ -25,14 +25,14 @@ import CancelGroupLessonDialog from "./CancelGroupLessonDialog";
 import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
 
 interface LessonInfoPopupProps {
-  lesson: DisplayLesson | null;
+  lesson: GroupDisplayLesson | PersonalDisplayLesson | null;
   locationName?: string;
   disciplineName?: string;
   teacherName?: string;
   scheduleSlots?: ScheduleSlotRef[];
   personalLessons?: PersonalLessonRef[];
   onClose: () => void;
-  onEdit?: (lesson: DisplayLesson) => void;
+  onEdit?: (lesson: GroupDisplayLesson | PersonalDisplayLesson) => void;
   onSuccess?: () => void;
   onPaymentSuccess?: () => void;
 }

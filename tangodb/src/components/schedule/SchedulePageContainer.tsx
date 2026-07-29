@@ -18,7 +18,7 @@ import {
   canOfferGroupLessonAdd,
 } from "../../lib/scheduleLessonAccess";
 import { getWeekRange, isPastDate } from "../../lib/scheduleWeek";
-import type { DisplayLesson } from "../../types";
+import type { DisplayLesson, EventDisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from "../../types";
 import LoadingState from "../ui/LoadingState";
 import AddLocationsInSettingsHint from "../ui/AddLocationsInSettingsHint";
 import QueryErrorState from "../ui/QueryErrorState";
@@ -32,6 +32,8 @@ import EditLessonPopup from "./EditLessonPopup";
 import ScheduleDebtorsBlock from "./ScheduleDebtorsBlock";
 import ScheduleUpcomingCancellationsBlock from "./ScheduleUpcomingCancellationsBlock";
 import TeacherVacationDialog from "./TeacherVacationDialog";
+import CreateCalendarEventDialog from "./CreateCalendarEventDialog";
+import EventInfoPopup from "./EventInfoPopup";
 import SellPackageModal from "../ui/SellPackageModal";
 
 const NO_LOCATION_KEY = "__no_location__";
@@ -49,11 +51,13 @@ export default function SchedulePageContainer() {
   const { role, can, isReadOnly } = usePermissions();
   const { settings, memberId } = useOrganization();
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => getWeekRange(new Date()).weekStart);
-  const [selectedLesson, setSelectedLesson] = useState<DisplayLesson | null>(null);
-  const [editLesson, setEditLesson] = useState<DisplayLesson | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<GroupDisplayLesson | PersonalDisplayLesson | null>(null);
+  const [editLesson, setEditLesson] = useState<GroupDisplayLesson | PersonalDisplayLesson | null>(null);
   const [addFlow, setAddFlow] = useState<AddFlow>(null);
   const [sellPackageOpen, setSellPackageOpen] = useState(false);
   const [teacherVacationOpen, setTeacherVacationOpen] = useState(false);
+  const [createEventOpen, setCreateEventOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventDisplayLesson | null>(null);
 
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
 
@@ -75,6 +79,8 @@ export default function SchedulePageContainer() {
   );
 
   const canManageTeacherVacation = can("schedule.write");
+  const canManageCalendarEvents =
+    can("schedule.write") && (role === "owner" || role === "director" || role === "admin");
   const canAddGroup = canOfferGroupLessonAdd(role, can, scheduleGridAddOptions);
   const canAddPersonal = canAddPersonalFromGrid(role, can, scheduleGridAddOptions);
   const canClickEmpty = canAddGroup || canAddPersonal;
@@ -198,7 +204,9 @@ export default function SchedulePageContainer() {
   const filteredLessons = useMemo(() => {
     const lessons = scheduleQuery.data?.lessons ?? [];
     if (!teacherFilter) return lessons;
-    return lessons.filter((l) => l.teacherMemberId === teacherFilter);
+    return lessons.filter(
+      (l) => l.kind !== "event" && l.teacherMemberId === teacherFilter
+    );
   }, [scheduleQuery.data?.lessons, teacherFilter]);
 
   const lessonsByLocation = useMemo(() => {
@@ -250,6 +258,9 @@ export default function SchedulePageContainer() {
             : undefined;
           parts.push(disciplineName ?? t("common.groupLesson"));
         }
+      } else if (lesson.kind === "event") {
+        parts.push(lesson.title);
+        if (lesson.guestTeacher) parts.push(lesson.guestTeacher);
       } else {
         const clientLabel = lesson.clientDisplay;
         parts.push(
@@ -263,7 +274,7 @@ export default function SchedulePageContainer() {
         }
       }
 
-      if (lesson.teacherMemberId) {
+      if (lesson.kind !== "event" && lesson.teacherMemberId) {
         const teacher = teamMap.get(lesson.teacherMemberId);
         if (teacher) parts.push(teacher);
       }
@@ -274,7 +285,13 @@ export default function SchedulePageContainer() {
   );
 
   const handleLessonClick = useCallback((lesson: DisplayLesson) => {
+    if (lesson.kind === "event") {
+      setSelectedEvent(lesson);
+      setSelectedLesson(null);
+      return;
+    }
     setSelectedLesson(lesson);
+    setSelectedEvent(null);
   }, []);
 
   const closeAddFlow = useCallback(() => setAddFlow(null), []);
@@ -383,6 +400,8 @@ export default function SchedulePageContainer() {
           teacherFilterOptions={teacherFilterOptions}
           canManageTeacherVacation={canManageTeacherVacation}
           onTeacherVacationClick={() => setTeacherVacationOpen(true)}
+          canManageCalendarEvents={canManageCalendarEvents}
+          onCreateEventClick={() => setCreateEventOpen(true)}
         />
       </div>
 
@@ -436,6 +455,22 @@ export default function SchedulePageContainer() {
         locationMap={locationMap}
         locationOrder={locationOrder}
         onPaymentSuccess={handleScheduleRefresh}
+      />
+
+      <EventInfoPopup
+        lesson={selectedEvent}
+        locationName={selectedEvent ? resolveLocationName(selectedEvent) : undefined}
+        onClose={() => setSelectedEvent(null)}
+      />
+
+      <CreateCalendarEventDialog
+        open={createEventOpen}
+        locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
+        disciplineMap={disciplineMap}
+        teamMap={teamMap}
+        toast={toast}
+        onClose={() => setCreateEventOpen(false)}
+        onSuccess={handleScheduleRefresh}
       />
 
       <LessonInfoPopup

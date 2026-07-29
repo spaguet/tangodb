@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import { usePayments, getPaymentMethodLabel } from "../hooks/usePayments";
+import { useOtherIncome } from "../hooks/useOtherIncome";
 import type { PaymentMethod } from "../types";
 import { useI18n } from "../hooks/useI18n";
 import {
@@ -17,14 +18,21 @@ export default function FinanceRevenuePage() {
   const [yearMonth, setYearMonth] = useState(currentYearMonth());
   const range = monthDateRange(yearMonth);
   const paymentsQuery = usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
+  const otherIncomeQuery = useOtherIncome({ dateFrom: range.dateFrom, dateTo: range.dateTo });
 
-  const stats = useMemo(
-    () => aggregatePaymentStats(paymentsQuery.data ?? []),
-    [paymentsQuery.data]
-  );
+  const stats = useMemo(() => {
+    const paymentStats = aggregatePaymentStats(paymentsQuery.data ?? []);
+    const otherFromTable = (otherIncomeQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
+    const otherTotal = paymentStats.otherTotal + otherFromTable;
+    return {
+      ...paymentStats,
+      otherTotal,
+      total: paymentStats.total + otherFromTable,
+    };
+  }, [paymentsQuery.data, otherIncomeQuery.data]);
 
-  if (paymentsQuery.isLoading) return <LoadingState label={t("finance.revenue.loading")} />;
-  if (paymentsQuery.isError) return <QueryErrorState error={paymentsQuery.error} />;
+  if (paymentsQuery.isLoading || otherIncomeQuery.isLoading) return <LoadingState label={t("finance.revenue.loading")} />;
+  if (paymentsQuery.isError || otherIncomeQuery.isError) return <QueryErrorState error={paymentsQuery.error ?? otherIncomeQuery.error} />;
 
   const isCurrentMonth = yearMonth === currentYearMonth();
 
@@ -93,7 +101,7 @@ export default function FinanceRevenuePage() {
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.other")}</p>
               <p className="text-lg font-semibold text-slate-800 mt-0.5">{formatCurrency(stats.otherTotal)}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">{t("common.inDevelopment")}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">{t("schedule.event.financeSection")}</p>
             </div>
           </div>
 

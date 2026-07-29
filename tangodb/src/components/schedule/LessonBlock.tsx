@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from "react";
 import type { DisplayLesson } from "../../types";
-import { GROUP_LESSON_COLOR, PERSONAL_LESSON_COLOR } from "../../lib/scheduleColors";
+import { GROUP_LESSON_COLOR, PERSONAL_LESSON_COLOR, EVENT_LESSON_COLOR } from "../../lib/scheduleColors";
 import { isPastDate } from "../../lib/scheduleWeek";
 import {
   lessonHeightPx,
@@ -22,7 +22,12 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
   const isPast = isPastDate(lesson.date);
   const hasDebt = lesson.kind === "personal" && lesson.paid === "no";
 
-  const colors = lesson.kind === "personal" ? PERSONAL_LESSON_COLOR : GROUP_LESSON_COLOR;
+  const colors =
+    lesson.kind === "event"
+      ? EVENT_LESSON_COLOR
+      : lesson.kind === "personal"
+        ? PERSONAL_LESSON_COLOR
+        : GROUP_LESSON_COLOR;
 
   const topPx = lessonTopPx(lesson.timeStart, rangeStartMin);
   const heightPx = lessonHeightPx(lesson.timeStart, lesson.timeEnd);

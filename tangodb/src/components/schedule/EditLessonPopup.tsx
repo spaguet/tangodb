@@ -30,7 +30,7 @@ import { addDays, getWeekRange, isPastDate, nextOccurrenceOnOrAfter, toISODateLo
 import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
-import type { Discipline, DisplayLesson, ScheduleSlot } from "../../types";
+import type { Discipline, DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import DisciplineSelect from "../ui/DisciplineSelect";
 import LocationSelect from "../ui/LocationSelect";
@@ -39,7 +39,7 @@ import TimeSelect from "../ui/TimeSelect";
 import GroupLessonRepeatFields from "./GroupLessonRepeatFields";
 
 interface EditLessonPopupProps {
-  lesson: DisplayLesson | null;
+  lesson: GroupDisplayLesson | PersonalDisplayLesson | null;
   locationName?: string;
   locations?: Array<{ id: string; name: string }>;
   /** List view: time, location, discipline, teacher only (no date change). */

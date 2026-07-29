@@ -490,11 +490,21 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 ---
 
+## Расписание — цвета блоков (`scheduleColors.ts`)
+
+| Тип | Tailwind | Назначение |
+|-----|----------|------------|
+| Групповой урок | `indigo-600` / `indigo-700` | Регулярные и разовые групповые занятия |
+| Персональный | `sky-400` / `sky-500` | Персональные уроки |
+| Мероприятие | `violet-600` / `violet-700` | Мастер-класс / открытый урок (`calendar_events`); **исключение** из общего запрета violet для отличия от уроков |
+
+---
+
 ## Changelog
 
 | Дата | Изменение |
 |------|-----------|
-| 2026-06-20 | RBAC-4/NAV-2: TeacherScopedDashboard — scoped home без CRM-агрегатов; таблица dashboard split обновлена (owner/director tabs, teacher scoped). |
+| 2026-07-29 | Блок мероприятия в сетке расписания — violet (`EVENT_LESSON_COLOR`). |
 | 2026-06-20 | RBAC R5: FinanceLayout (sub-nav как Settings), split Operational/Financial dashboard. |
 | 2026-06-19 | Унификация палитры: violet/emerald заменены на indigo; rose сохранён для ошибок. Документ заполнен. |
 | 2026-06-19 | Ревью: добавлены брейкпоинты, z-index, иконки, empty state, skeleton; пояснение семантики indigo; правила агента расширены. Z-index и брейкпоинты сверены с кодом. |

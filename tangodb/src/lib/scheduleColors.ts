@@ -11,3 +11,10 @@ export const PERSONAL_LESSON_COLOR = {
   border: "border-sky-500",
   text: "text-white",
 } as const;
+
+/** Calendar events (master class / open lesson) — фиолетовый (violet) */
+export const EVENT_LESSON_COLOR = {
+  bg: "bg-violet-600",
+  border: "border-violet-700",
+  text: "text-white",
+} as const;

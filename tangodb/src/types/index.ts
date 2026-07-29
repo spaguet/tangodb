@@ -93,7 +93,32 @@ export interface PersonalDisplayLesson {
   clientDisplay?: string;
 }
 
-export type DisplayLesson = GroupDisplayLesson | PersonalDisplayLesson;
+export type CalendarEventType = "master_class" | "open_lesson";
+
+export type CalendarEventPaymentStatus = "unpaid" | "partial" | "paid";
+
+export interface EventDisplayLesson {
+  kind: "event";
+  eventId: string;
+  sessionId: string;
+  date: string;
+  timeStart: string;
+  timeEnd: string;
+  locationId: string | null;
+  title: string;
+  eventType: CalendarEventType;
+  guestTeacher?: string | null;
+  organizer?: string | null;
+  comment?: string | null;
+  paymentStatus?: CalendarEventPaymentStatus;
+  incomeAmount?: number | null;
+  paidAmount?: number | null;
+  currency?: string;
+  plannedGuestCount?: number | null;
+  actualGuestCount?: number | null;
+}
+
+export type DisplayLesson = GroupDisplayLesson | PersonalDisplayLesson | EventDisplayLesson;
 
 export type PriceCategory = "group" | "private" | "single_visit";
 
@@ -195,6 +220,16 @@ export interface Payment {
   subscriptionId: string | null;
   personalLessonId: string | null;
   singleVisitId: string | null;
+  createdAt: string;
+}
+
+export interface OtherIncome {
+  id: string;
+  calendarEventId: string;
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  methodComment?: string | null;
   createdAt: string;
 }
 
