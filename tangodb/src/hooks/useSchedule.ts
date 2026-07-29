@@ -600,14 +600,71 @@ async function cancelGroupLessonOccurrenceByDate(
   return { success: true as const };
 }
 
+/** Cancel weekly occurrences via atomic server RPC. */
+async function cancelGroupLessonOccurrencesRpc(
+  slotId: string,
+  cancelDates: string[]
+): Promise<
+  | { success: true; cancelledCount: number; alreadyApplied?: boolean }
+  | { success: false; error: string }
+> {
+  const { data, error } = await supabase.rpc("cancel_group_lesson_occurrences", {
+    p_slot_id: slotId,
+    p_cancel_dates: cancelDates,
+  });
+
+  if (error) return { success: false as const, error: error.message };
+
+  const result = data as {
+    success?: boolean;
+    error?: string;
+    cancelled_count?: number;
+    already_applied?: boolean;
+  } | null;
+
+  if (!result?.success) {
+    return {
+      success: false as const,
+      error: result?.error ?? "schedule.error.cancelOneFailed",
+    };
+  }
+
+  return {
+    success: true as const,
+    cancelledCount: result.cancelled_count ?? cancelDates.length,
+    alreadyApplied: result.already_applied ?? false,
+  };
+}
+
 export function useCancelGroupLessonOccurrence() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ slotId, cancelDate }: { slotId: string; cancelDate: string }) => {
-      const result = await cancelGroupLessonOccurrenceByDate(slotId, cancelDate);
+      const result = await cancelGroupLessonOccurrencesRpc(slotId, [cancelDate]);
       if (result.success === false) return { success: false as const, error: result.error };
       return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidateScheduleQueries(queryClient);
+    },
+  });
+}
+
+export function useCancelGroupLessonOccurrences() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ slotId, cancelDates }: { slotId: string; cancelDates: string[] }) => {
+      const result = await cancelGroupLessonOccurrencesRpc(slotId, cancelDates);
+      if (result.success === false) {
+        return { success: false as const, error: result.error };
+      }
+      return {
+        success: true as const,
+        cancelledCount: result.cancelledCount,
+        alreadyApplied: result.alreadyApplied ?? false,
+      };
     },
     onSuccess: (result) => {
       if (result.success) invalidateScheduleQueries(queryClient);

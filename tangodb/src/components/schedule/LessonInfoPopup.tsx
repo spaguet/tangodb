@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, X, XCircle, ArrowRightLeft } from "lucide-react";
-import { useCancelGroupLessonOccurrence, useDeleteScheduleSlot } from "../../hooks/useSchedule";
+import { useDeleteScheduleSlot } from "../../hooks/useSchedule";
 import { useDeletePersonalLesson, usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -21,6 +21,7 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 import RequirePermission from "../RequirePermission";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
 import MoveGroupLessonDialog from "./MoveGroupLessonDialog";
+import CancelGroupLessonDialog from "./CancelGroupLessonDialog";
 import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
 
 interface LessonInfoPopupProps {
@@ -73,7 +74,6 @@ export default function LessonInfoPopup({
   const { memberId } = useOrganization();
   const { role, can, isReadOnly } = usePermissions();
   const deleteScheduleSlot = useDeleteScheduleSlot();
-  const cancelGroupLessonOccurrence = useCancelGroupLessonOccurrence();
   const deletePersonalLesson = useDeletePersonalLesson();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [cancelOneConfirmOpen, setCancelOneConfirmOpen] = useState(false);
@@ -180,26 +180,7 @@ export default function LessonInfoPopup({
     onClose();
   };
 
-  const handleCancelOneOccurrence = async () => {
-    if (!lesson || lesson.kind !== "group") return;
-
-    const res = await cancelGroupLessonOccurrence.mutateAsync({
-      slotId: lesson.slotId,
-      cancelDate: lesson.date,
-    });
-    if (!res.success) {
-      toast(res.error ?? t("schedule.error.cancelOneFailed"), "error");
-      return;
-    }
-
-    toast(t("schedule.success.oneLessonCancelled"), "success");
-    setCancelOneConfirmOpen(false);
-    onSuccess?.();
-    onClose();
-  };
-
   const deletePending = deleteScheduleSlot.isPending || deletePersonalLesson.isPending;
-  const cancelOnePending = cancelGroupLessonOccurrence.isPending;
 
   return (
     <>
@@ -446,31 +427,16 @@ export default function LessonInfoPopup({
         onCancel={() => setDeleteConfirmOpen(false)}
       />
 
-      <ConfirmDialog
-        open={cancelOneConfirmOpen && lesson !== null}
-        title={t("schedule.lessonInfo.cancelOneTitle")}
-        description={
-          lesson ? (
-            t("schedule.lessonInfo.cancelOneBody", {
-              label: lessonTitle(
-                lesson,
-                disciplineName,
-                clientLabel,
-                t,
-                t("schedule.lessonInfo.clientNotSpecified")
-              ),
-              date: formatDate(lesson.date),
-              timeStart: lesson.timeStart,
-              timeEnd: lesson.timeEnd,
-            })
-          ) : (
-            ""
-          )
-        }
-        confirmLabel={t("schedule.lessonInfo.cancelOneConfirm")}
-        pending={cancelOnePending}
-        onConfirm={handleCancelOneOccurrence}
-        onCancel={() => setCancelOneConfirmOpen(false)}
+      <CancelGroupLessonDialog
+        lesson={cancelOneConfirmOpen && lesson?.kind === "group" ? lesson : null}
+        disciplineName={disciplineName}
+        toast={toast}
+        onClose={() => setCancelOneConfirmOpen(false)}
+        onSuccess={() => {
+          setCancelOneConfirmOpen(false);
+          onSuccess?.();
+          onClose();
+        }}
       />
 
       <PayPersonalLessonModal
