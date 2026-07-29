@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-29 — tangodb: вместимость групп и лист ожидания (CRM сценарий 6) — `classes.max_capacity`, RPC `create_group_subscription` / `get_groups_capacity_snapshot` / waitlist / override audit, блокировка продажи при переполнении, owner-director override с причиной, очередь и уведомление об освобождении места после `finish_subscription`.
+
 2026-07-29 — tangodb: заморозка группового абонемента на диапазон дат (CRM сценарий 5) — таблица `subscription_freeze_periods`, RPC `apply_subscription_freeze_period` / `cancel_subscription_freeze_period`, переопределение политики на тарифе, продление `expires_at` для monthly_unlimited, диалог и история в карточке абонемента, `mark_attendance` учитывает активный период.
 
 2026-07-29 — tangodb: отчёт по проведённым групповым урокам (CRM сценарий 4) — поле `disciplines.category`, RPC `get_conducted_group_lessons_report`, блок на «Настройки → Данные» с preview и CSV `lessons_YYYY-MM-DD_YYYY-MM-DD.csv`; источник «проведено»: occurrence не отменён и время окончания прошло (TZ организации).

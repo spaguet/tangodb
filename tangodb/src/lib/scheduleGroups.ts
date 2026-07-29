@@ -1,4 +1,4 @@
-import type { ScheduleGroup, ScheduleSlot, SubscriptionGroupLink } from "../types";
+import type { GroupCapacitySnapshot, ScheduleGroup, ScheduleSlot, SubscriptionGroupLink } from "../types";
 
 export interface ScheduleGroupOption {
   id: string;
@@ -6,6 +6,10 @@ export interface ScheduleGroupOption {
   disciplineId: string;
   locationId: string | null;
   displayName: string;
+  maxCapacity: number | null;
+  occupied: number | null;
+  hasLimit: boolean;
+  isFull: boolean;
 }
 
 export function isActiveScheduleSlot(slot: ScheduleSlot): boolean {
@@ -18,12 +22,14 @@ export function mapScheduleGroup(row: Record<string, unknown>): ScheduleGroup {
     name: (row.name as string) ?? "",
     disciplineId: row.discipline_id as string,
     locationId: row.default_location_id != null ? String(row.default_location_id) : null,
+    maxCapacity: row.max_capacity != null ? Number(row.max_capacity) : null,
   };
 }
 
 export function listScheduleGroupOptions(
   groups: ScheduleGroup[],
-  filters?: { disciplineId?: string | null; locationId?: string | null }
+  filters?: { disciplineId?: string | null; locationId?: string | null },
+  capacityByGroupId?: Record<string, Pick<GroupCapacitySnapshot, "occupied" | "hasLimit" | "isFull">>
 ): ScheduleGroupOption[] {
   return groups
     .filter((group) => {
@@ -37,13 +43,20 @@ export function listScheduleGroupOptions(
       }
       return true;
     })
-    .map((group) => ({
-      id: group.id,
-      name: group.name,
-      disciplineId: group.disciplineId,
-      locationId: group.locationId,
-      displayName: group.name.trim() || "Группа",
-    }))
+    .map((group) => {
+      const capacity = capacityByGroupId?.[group.id];
+      return {
+        id: group.id,
+        name: group.name,
+        disciplineId: group.disciplineId,
+        locationId: group.locationId,
+        displayName: group.name.trim() || "Группа",
+        maxCapacity: group.maxCapacity,
+        occupied: capacity?.occupied ?? null,
+        hasLimit: group.maxCapacity != null,
+        isFull: capacity?.isFull ?? false,
+      };
+    })
     .sort((a, b) => a.displayName.localeCompare(b.displayName, "ru"));
 }
 

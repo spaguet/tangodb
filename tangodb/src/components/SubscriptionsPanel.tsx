@@ -34,6 +34,16 @@ import { useI18n } from "../hooks/useI18n";
 import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionDaysLeft, getSubscriptionTariffLabel, isMonthlyUnlimitedSubscription, isMonthlyUnlimitedTariff, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitle } from "../lib/utils";
 import { filterActiveSubscriptions, filterHistorySubscriptions, ALL_LOCATIONS_KEY } from "../lib/subscriptionFilters";
 import { buildGroupNameById, getSubscriptionGroupDisplayNames, listScheduleGroupOptions } from "../lib/scheduleGroups";
+import {
+  collectSubscriptionClientIds,
+  findCapacityConflict,
+  forecastGroupOccupancy,
+  formatGroupOccupancy,
+} from "../lib/groupCapacity";
+import { buildCapacityByGroupId, useGroupCapacitySnapshot } from "../hooks/useGroupCapacity";
+import { useAddGroupWaitlistEntry } from "../hooks/useGroupWaitlist";
+import GroupCapacityOverrideDialog from "./groups/GroupCapacityOverrideDialog";
+import GroupSpotNotificationBanner from "./groups/GroupSpotNotificationBanner";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules, normalizeOrgModules, shouldShowDisciplinePicker, shouldShowLocationPicker } from "../lib/orgModules";
 import { useSettings } from "../settings/SettingsProvider";
@@ -240,6 +250,10 @@ export default function SubscriptionsPanel({
   const [activationDate, setActivationDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [paymentMethodComment, setPaymentMethodComment] = useState("");
+  const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
+  const [pendingCheckout, setPendingCheckout] = useState(false);
+  const addWaitlistEntry = useAddGroupWaitlistEntry();
+  const canOverrideCapacity = role === "owner" || role === "director";
 
   useEffect(() => {
     if (groupTariffs.length > 0 && selectedTariffId === "") {
@@ -257,13 +271,65 @@ export default function SubscriptionsPanel({
     }
   }, [groupTariffs, selectedTariffId, disciplineId]);
 
+  const selectedTariff = groupTariffs.find((p) => p.id === selectedTariffId);
+  const needsSecondClient = selectedTariff ? tariffNeedsSecondClient(selectedTariff) : false;
+
+  const saleGroupIds = useMemo(
+    () => listScheduleGroupOptions(scheduleGroups, {
+      disciplineId: disciplineId || null,
+      locationId: localPriceList ? saleLocationId || null : null,
+    }).map((group) => group.id),
+    [scheduleGroups, disciplineId, localPriceList, saleLocationId]
+  );
+
+  const capacitySnapshotQuery = useGroupCapacitySnapshot(saleGroupIds, {
+    enabled: activeTab === "sell" && saleGroupIds.length > 0,
+  });
+  const capacityByGroupId = useMemo(
+    () => buildCapacityByGroupId(capacitySnapshotQuery.data ?? []),
+    [capacitySnapshotQuery.data]
+  );
+
+  const saleClientIds = useMemo(
+    () =>
+      collectSubscriptionClientIds({
+        clientId1: client1Id,
+        clientId2: needsSecondClient ? client2Id : "",
+      }),
+    [client1Id, client2Id, needsSecondClient]
+  );
+
   const saleGroupOptions = useMemo(
     () =>
-      listScheduleGroupOptions(scheduleGroups, {
-        disciplineId: disciplineId || null,
-        locationId: localPriceList ? saleLocationId || null : null,
-      }).map((group) => ({ key: group.id, label: group.displayName })),
-    [scheduleGroups, disciplineId, localPriceList, saleLocationId]
+      listScheduleGroupOptions(
+        scheduleGroups,
+        {
+          disciplineId: disciplineId || null,
+          locationId: localPriceList ? saleLocationId || null : null,
+        },
+        capacityByGroupId
+      ).map((group) => {
+        const occupancy = group.hasLimit
+          ? formatGroupOccupancy(
+              {
+                occupied: group.occupied ?? 0,
+                maxCapacity: group.maxCapacity,
+                hasLimit: group.hasLimit,
+              },
+              t
+            )
+          : null;
+        return {
+          key: group.id,
+          label: group.displayName,
+          hint: occupancy
+            ? group.isFull
+              ? `${occupancy} · ${t("groupCapacity.noSeats")}`
+              : occupancy
+            : undefined,
+        };
+      }),
+    [scheduleGroups, disciplineId, localPriceList, saleLocationId, capacityByGroupId, t]
   );
 
   const activeLocationGroupOptions = useMemo(
@@ -287,9 +353,6 @@ export default function SubscriptionsPanel({
     setActiveGroupFilter("");
   }, [activeLocationFilter, activeDisciplineFilter]);
 
-  const selectedTariff = groupTariffs.find((p) => p.id === selectedTariffId);
-  const needsSecondClient = selectedTariff ? tariffNeedsSecondClient(selectedTariff) : false;
-
   useEffect(() => {
     const today = new Date();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -297,7 +360,121 @@ export default function SubscriptionsPanel({
     setActivationDate(`${today.getFullYear()}-${mm}-${dd}`);
   }, []);
 
+  const selectedCapacitySnapshots = useMemo(
+    () => selectedGroupIds.map((id) => capacityByGroupId[id]).filter(Boolean),
+    [selectedGroupIds, capacityByGroupId]
+  );
+
+  const capacityConflict = useMemo(
+    () => (saleClientIds.length > 0 ? findCapacityConflict(selectedCapacitySnapshots, saleClientIds) : null),
+    [selectedCapacitySnapshots, saleClientIds]
+  );
+
+  const capacityPreviewLines = useMemo(
+    () =>
+      selectedGroupIds
+        .map((groupId) => {
+          const snapshot = capacityByGroupId[groupId];
+          const groupName = groupNameById[groupId] ?? t("common.groupLesson");
+          if (!snapshot?.hasLimit || snapshot.maxCapacity == null) {
+            return { groupId, groupName, text: t("groupCapacity.unlimited") };
+          }
+          const { occupiedAfter } = forecastGroupOccupancy(snapshot, saleClientIds);
+          return {
+            groupId,
+            groupName,
+            text: t("groupCapacity.previewLine", {
+              group: groupName,
+              after: occupiedAfter,
+              max: snapshot.maxCapacity,
+            }),
+          };
+        })
+        .filter(Boolean),
+    [selectedGroupIds, capacityByGroupId, groupNameById, saleClientIds, t]
+  );
+
   const getSubPrice = (): number => selectedTariff?.price ?? 0;
+
+  const submitSale = async (capacityOverrideReason?: string | null) => {
+    if (!selectedTariff?.id) return;
+
+    const { type, pairMonth, billingModel } = deriveSubscriptionTypeFromTariff(selectedTariff);
+
+    const payload = {
+      type,
+      clientId1: client1Id,
+      clientId2: needsSecondClient ? client2Id : "",
+      lessonsTotal: billingModel === "monthly_unlimited" ? 0 : selectedTariff.lessons,
+      activationDate,
+      pairMonth,
+      disciplineId,
+      priceId: selectedTariff.id,
+      category: "group" as const,
+      billingModel,
+      scheduleGroupIds: selectedGroupIds,
+      capacityOverrideReason: capacityOverrideReason ?? null,
+    };
+
+    const res = await addSubscription.mutateAsync(payload);
+    if (!res.success) {
+      if ("capacityConflict" in res && res.capacityConflict) {
+        toast(t("subscriptions.error.groupCapacityExceeded"), "error");
+        return;
+      }
+      toast(resolveMutationError(res.error, "subscriptions.error.sellFailed", t), "error");
+      return;
+    }
+
+    const amount = getSubPrice();
+    if (amount > 0 && res.id) {
+      const c1 = activeClients.find((c) => c.id === client1Id);
+      const paymentRes = await recordSubscriptionPayment.mutateAsync({
+        subscriptionId: res.id,
+        clientId: client1Id,
+        clientFirstName: c1?.firstName ?? "",
+        clientLastName: c1?.lastName ?? "",
+        amount,
+        method: paymentMethod,
+        methodComment: paymentMethod === "other" ? paymentMethodComment.trim() : undefined,
+      });
+      if (!paymentRes.success) {
+        toast(resolveMutationError(paymentRes.error, "subscriptions.error.paymentFailed", t), "error");
+        return;
+      }
+    }
+
+    toast(t("subscriptions.success.sold"), "success");
+    setClient1Query("");
+    setClient1Id("");
+    setClient2Query("");
+    setClient2Id("");
+    setSelectedGroupIds([]);
+    setPaymentMethodComment("");
+    setOverrideDialogOpen(false);
+    setPendingCheckout(false);
+  };
+
+  const handleAddToWaitlist = async () => {
+    if (!client1Id || selectedGroupIds.length === 0) {
+      toast(t("subscriptions.error.selectGroups"), "error");
+      return;
+    }
+    if (selectedGroupIds.length !== 1) {
+      toast(t("groupWaitlist.error.singleGroup"), "error");
+      return;
+    }
+
+    const res = await addWaitlistEntry.mutateAsync({
+      classId: selectedGroupIds[0]!,
+      clientId: client1Id,
+    });
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "groupWaitlist.error.addFailed", t), "error");
+      return;
+    }
+    toast(t("groupWaitlist.success.added"), "success");
+  };
 
   const handleCheckout = async () => {
     if (connectionState !== "online") {
@@ -344,53 +521,18 @@ export default function SubscriptionsPanel({
       return;
     }
 
-    const { type, pairMonth, billingModel } = deriveSubscriptionTypeFromTariff(selectedTariff);
-
-    const payload = {
-      type,
-      clientId1: client1Id,
-      clientId2: needsSecondClient ? client2Id : "",
-      lessonsTotal: billingModel === "monthly_unlimited" ? 0 : selectedTariff.lessons,
-      activationDate,
-      pairMonth,
-      disciplineId,
-      priceId: selectedTariff.id,
-      category: "group" as const,
-      billingModel,
-      scheduleGroupIds: selectedGroupIds,
-    };
-
-    const res = await addSubscription.mutateAsync(payload);
-    if (!res.success) {
-      toast(resolveMutationError(res.error, "subscriptions.error.sellFailed", t), "error");
+    if (capacityConflict) {
+      toast(t("subscriptions.error.groupCapacityExceeded"), "error");
       return;
     }
 
-    const amount = getSubPrice();
-    if (amount > 0 && res.id) {
-      const c1 = activeClients.find((c) => c.id === client1Id);
-      const paymentRes = await recordSubscriptionPayment.mutateAsync({
-        subscriptionId: res.id,
-        clientId: client1Id,
-        clientFirstName: c1?.firstName ?? "",
-        clientLastName: c1?.lastName ?? "",
-        amount,
-        method: paymentMethod,
-        methodComment: paymentMethod === "other" ? paymentMethodComment.trim() : undefined,
-      });
-      if (!paymentRes.success) {
-        toast(resolveMutationError(paymentRes.error, "subscriptions.error.paymentFailed", t), "error");
-        return;
-      }
-    }
+    await submitSale(null);
+  };
 
-    toast(t("subscriptions.success.sold"), "success");
-    setClient1Query("");
-    setClient1Id("");
-    setClient2Query("");
-    setClient2Id("");
-    setSelectedGroupIds([]);
-    setPaymentMethodComment("");
+  const handleConfirmOverride = async (reason: string) => {
+    setPendingCheckout(true);
+    await submitSale(reason);
+    setPendingCheckout(false);
   };
 
   const handleConfirmFinish = async () => {
@@ -1176,6 +1318,8 @@ export default function SubscriptionsPanel({
             </div>
           </div>
 
+          <GroupSpotNotificationBanner toast={toast} />
+
           {locations.length === 0 ? (
             <div className="text-center py-20 text-slate-400 space-y-3">
               <Ticket className="w-8 h-8 mx-auto text-slate-300" />
@@ -1279,6 +1423,44 @@ export default function SubscriptionsPanel({
                   : t("subscriptions.sell.selectDisciplineFirst")
               }
             />
+
+            {capacityPreviewLines.length > 0 && (
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2 space-y-1 panel-form-full-row-md">
+                <p className={labelCls}>{t("groupCapacity.previewTitle")}</p>
+                {capacityPreviewLines.map((line) => (
+                  <p key={line.groupId} className="text-xs text-slate-600">
+                    {line.text}
+                  </p>
+                ))}
+                <p className="text-[10px] text-slate-400 leading-relaxed">{t("groupCapacity.frozenKeepsSeat")}</p>
+              </div>
+            )}
+
+            {capacityConflict && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-3 space-y-2 panel-form-full-row-md">
+                <p className="text-sm text-amber-900 font-semibold">{t("subscriptions.error.groupCapacityExceeded")}</p>
+                <p className="text-xs text-amber-800 leading-relaxed">{t("groupWaitlist.suggestQueue")}</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleAddToWaitlist()}
+                    disabled={addWaitlistEntry.isPending || !client1Id}
+                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
+                  >
+                    {addWaitlistEntry.isPending ? t("common.saving") : t("groupWaitlist.addToQueue")}
+                  </button>
+                  {canOverrideCapacity && (
+                    <button
+                      type="button"
+                      onClick={() => setOverrideDialogOpen(true)}
+                      className="px-3 py-2 bg-white border border-amber-300 text-amber-800 text-xs font-semibold uppercase tracking-wider rounded-lg hover:bg-amber-100 cursor-pointer"
+                    >
+                      {t("groupCapacity.override.action")}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             <DatePickerField
               label={t("subscriptions.sell.activationDate")}
@@ -1391,7 +1573,8 @@ export default function SubscriptionsPanel({
               disabled={
                 connectionState !== "online" ||
                 addSubscription.isPending ||
-                recordSubscriptionPayment.isPending
+                recordSubscriptionPayment.isPending ||
+                Boolean(capacityConflict)
               }
               title={translateConnectionBlockReason(connectionState, t)}
               className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60 panel-form-full-row-md"
@@ -1417,6 +1600,18 @@ export default function SubscriptionsPanel({
         pending={finishSubscription.isPending}
         onConfirm={handleConfirmFinish}
         onCancel={() => setFinishTarget(null)}
+      />
+
+      <GroupCapacityOverrideDialog
+        open={overrideDialogOpen}
+        groupLabel={
+          capacityConflict
+            ? groupNameById[capacityConflict.classId] ?? t("common.groupLesson")
+            : undefined
+        }
+        pending={pendingCheckout || addSubscription.isPending || recordSubscriptionPayment.isPending}
+        onConfirm={(reason) => void handleConfirmOverride(reason)}
+        onCancel={() => setOverrideDialogOpen(false)}
       />
 
       <SubscriptionFreezeDialog

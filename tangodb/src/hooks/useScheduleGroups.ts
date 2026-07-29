@@ -16,7 +16,7 @@ export function useScheduleGroups(options?: { enabled?: boolean }) {
     queryFn: async (): Promise<ScheduleGroup[]> => {
       const { data, error } = await supabase
         .from("classes")
-        .select("id, name, discipline_id, default_location_id")
+        .select("id, name, discipline_id, default_location_id, max_capacity")
         .order("name");
       if (error) throw error;
       return (data ?? []).map((row) => mapScheduleGroup(row as Record<string, unknown>));

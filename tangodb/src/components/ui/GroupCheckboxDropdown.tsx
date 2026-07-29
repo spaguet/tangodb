@@ -6,6 +6,8 @@ import { selectFieldCls, selectLabelCls } from "./AppSelect";
 export interface GroupCheckboxOption {
   key: string;
   label: string;
+  hint?: string;
+  disabled?: boolean;
 }
 
 interface GroupCheckboxDropdownProps {
@@ -82,15 +84,21 @@ export default function GroupCheckboxDropdown({
             {options.map((option) => (
               <label
                 key={option.key}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 cursor-pointer text-sm text-slate-700"
+                className={`flex items-start gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 cursor-pointer text-sm text-slate-700 ${option.disabled ? "opacity-60 cursor-not-allowed" : ""}`}
               >
                 <input
                   type="checkbox"
                   checked={selectedKeys.includes(option.key)}
-                  onChange={() => toggleKey(option.key)}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  disabled={option.disabled}
+                  onChange={() => !option.disabled && toggleKey(option.key)}
+                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
                 />
-                <span className="truncate">{option.label}</span>
+                <span className="min-w-0">
+                  <span className="truncate block">{option.label}</span>
+                  {option.hint && (
+                    <span className="block text-[10px] text-slate-400 mt-0.5">{option.hint}</span>
+                  )}
+                </span>
               </label>
             ))}
           </div>

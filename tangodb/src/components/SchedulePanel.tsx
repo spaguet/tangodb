@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Clock, Trash2, CalendarRange, Edit, X } from "lucide-react";
+import { CalendarDays, Clock, Trash2, CalendarRange, Edit, X, Users } from "lucide-react";
 import {
   useAddGroupSchedule,
   useDeleteGroupSchedule,
@@ -27,6 +27,11 @@ import LocationSelect from "./ui/LocationSelect";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import { usePermissions } from "../hooks/usePermissions";
+import { useScheduleGroups } from "../hooks/useScheduleGroups";
+import { useUpdateClassMaxCapacity } from "../hooks/useGroupWaitlist";
+import { buildCapacityByGroupId, useGroupCapacitySnapshot } from "../hooks/useGroupCapacity";
+import { formatGroupOccupancy } from "../lib/groupCapacity";
+import GroupWaitlistPanel from "./groups/GroupWaitlistPanel";
 import { useI18n } from "../hooks/useI18n";
 import { translateMutationBlockedMessage, useOnlineStatus } from "../hooks/useOnlineStatus";
 import { resolveMutationError } from "../lib/resolveMutationError";
@@ -51,6 +56,7 @@ interface DayFormRow {
 
 interface ScheduleGroup {
   groupKey: string;
+  scheduleGroupId: string | null;
   groupName: string;
   disciplineId: string | null;
   locationId: string | null;
@@ -129,6 +135,9 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const deleteSlot = useDeleteScheduleSlot();
   const replaceGroupSchedule = useReplaceGroupSchedule();
   const deleteGroupSchedule = useDeleteGroupSchedule();
+  const updateClassMaxCapacity = useUpdateClassMaxCapacity();
+  const scheduleGroupsQuery = useScheduleGroups();
+  const { data: canonicalGroups = [] } = scheduleGroupsQuery;
   const { can, role: currentRole } = usePermissions();
   const canWriteSchedule = can("schedule.write");
   const canEditScheduleTeacher = currentRole === "owner" || currentRole === "director";
@@ -145,6 +154,8 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const [originalSlotIds, setOriginalSlotIds] = useState<string[]>([]);
   const [editLocationId, setEditLocationId] = useState<string>("");
   const [editTeacherMemberId, setEditTeacherMemberId] = useState<string>("");
+  const [editMaxCapacity, setEditMaxCapacity] = useState<string>("");
+  const [expandedWaitlistGroupId, setExpandedWaitlistGroupId] = useState<string | null>(null);
 
   useEffect(() => {
     if (disciplines.length > 0 && disciplineId === "") {
@@ -232,6 +243,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
 
         return {
           groupKey,
+          scheduleGroupId: first.scheduleGroupId ?? null,
           groupName,
           disciplineId,
           locationId: slotLocationId,
@@ -245,6 +257,23 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       })
       .sort((a, b) => a.locationLabel.localeCompare(b.locationLabel, locale) || a.displayName.localeCompare(b.displayName, locale));
   }, [schedule, disciplineMap, locationMap, teacherMap, t, locale]);
+
+  const groupCapacityIds = useMemo(
+    () =>
+      scheduleGroups
+        .map((group) => group.scheduleGroupId)
+        .filter((id): id is string => Boolean(id)),
+    [scheduleGroups]
+  );
+  const groupCapacityQuery = useGroupCapacitySnapshot(groupCapacityIds);
+  const capacityByGroupId = useMemo(
+    () => buildCapacityByGroupId(groupCapacityQuery.data ?? []),
+    [groupCapacityQuery.data]
+  );
+  const canonicalGroupById = useMemo(
+    () => Object.fromEntries(canonicalGroups.map((group) => [group.id, group])),
+    [canonicalGroups]
+  );
 
   const updateDayRow = (key: string, patch: Partial<DayFormRow>) => {
     setDayRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
@@ -336,6 +365,10 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     setEditingGroup(group);
     setEditLocationId(group.locationId ?? locations[0]?.id ?? "");
     setEditTeacherMemberId(group.teacherMemberId ?? teacherOptions[0]?.id ?? "");
+    const canonical = group.scheduleGroupId ? canonicalGroupById[group.scheduleGroupId] : undefined;
+    setEditMaxCapacity(
+      canonical?.maxCapacity != null ? String(canonical.maxCapacity) : ""
+    );
     setOriginalSlotIds(group.slots.map((s) => s.id!).filter(Boolean));
     setEditSlots(
       group.slots.map((s) => ({
@@ -440,6 +473,22 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     if (!res.success) {
       toast(resolveMutationError(res.error, "schedule.error.saveFailed", t), "error");
     } else {
+      if (editingGroup.scheduleGroupId) {
+        const trimmed = editMaxCapacity.trim();
+        const parsedCapacity = trimmed === "" ? null : Number(trimmed);
+        if (trimmed !== "" && (!Number.isInteger(parsedCapacity) || (parsedCapacity ?? 0) <= 0)) {
+          toast(t("groupCapacity.error.invalidCapacity"), "error");
+          return;
+        }
+        const capacityRes = await updateClassMaxCapacity.mutateAsync({
+          classId: editingGroup.scheduleGroupId,
+          maxCapacity: parsedCapacity,
+        });
+        if (!capacityRes.success) {
+          toast(resolveMutationError(capacityRes.error, "groupCapacity.error.updateFailed", t), "error");
+          return;
+        }
+      }
       toast(t("schedule.success.saved"), "success");
       setEditingGroup(null);
     }
@@ -626,9 +675,31 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                     <p className="text-[10px] text-slate-400 font-sans mt-0.5">
                       {group.locationLabel} · {group.teacherLabel}
                     </p>
+                    {group.scheduleGroupId && capacityByGroupId[group.scheduleGroupId]?.hasLimit && (
+                      <p className="text-[10px] text-indigo-600 font-semibold mt-1">
+                        {formatGroupOccupancy(capacityByGroupId[group.scheduleGroupId]!, t)}
+                        {capacityByGroupId[group.scheduleGroupId]?.isFull
+                          ? ` · ${t("groupCapacity.noSeats")}`
+                          : ""}
+                      </p>
+                    )}
                   </div>
                   {group.disciplineId != null && canWriteSchedule && (
                     <div className="flex items-center gap-1 shrink-0">
+                      {group.scheduleGroupId && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedWaitlistGroupId((prev) =>
+                              prev === group.scheduleGroupId ? null : group.scheduleGroupId
+                            )
+                          }
+                          className={iconBtnCls}
+                          title={t("groupWaitlist.title")}
+                        >
+                          <Users className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => startEditGroup(group)}
@@ -668,6 +739,14 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                     </div>
                   ))}
                 </div>
+
+                {group.scheduleGroupId && expandedWaitlistGroupId === group.scheduleGroupId && (
+                  <GroupWaitlistPanel
+                    classId={group.scheduleGroupId}
+                    canManage={canWriteSchedule}
+                    toast={toast}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -740,6 +819,24 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                     <p className="text-sm text-slate-700 px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg">
                       {editingGroup.teacherLabel}
                     </p>
+                  </div>
+                )}
+
+                {editingGroup.scheduleGroupId && (
+                  <div className="field-stack">
+                    <label className={labelCls} htmlFor="edit-group-capacity">
+                      {t("groupCapacity.maxCapacityLabel")}
+                    </label>
+                    <input
+                      id="edit-group-capacity"
+                      type="number"
+                      min={1}
+                      value={editMaxCapacity}
+                      onChange={(e) => setEditMaxCapacity(e.target.value)}
+                      placeholder={t("groupCapacity.maxCapacityPlaceholder")}
+                      className={fieldCls}
+                    />
+                    <p className="text-[10px] text-slate-400 leading-relaxed">{t("groupCapacity.maxCapacityHint")}</p>
                   </div>
                 )}
 

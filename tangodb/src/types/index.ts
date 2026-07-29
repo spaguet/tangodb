@@ -62,6 +62,35 @@ export interface ScheduleGroup {
   name: string;
   disciplineId: string;
   locationId: string | null;
+  maxCapacity: number | null;
+}
+
+export type GroupWaitlistStatus = "waiting" | "offered" | "enrolled" | "declined" | "cancelled";
+
+export interface GroupCapacitySnapshot {
+  classId: string;
+  maxCapacity: number | null;
+  occupied: number;
+  hasLimit: boolean;
+  isFull: boolean;
+}
+
+export interface GroupWaitlistEntry {
+  id: string;
+  classId: string;
+  clientId: string;
+  status: GroupWaitlistStatus;
+  comment: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupSpotNotification {
+  id: string;
+  classId: string;
+  waitlistEntryId: string;
+  clientId: string;
+  createdAt: string;
 }
 
 export interface ScheduleSlot {

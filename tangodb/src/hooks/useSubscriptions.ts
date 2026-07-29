@@ -12,6 +12,8 @@ import { isRestrictedReceptionAdmin } from "../lib/permissions";
 import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { subscriptionGroupsQueryKey } from "./useSubscriptionGroups";
+import { groupCapacityQueryKey } from "./useGroupCapacity";
+import { groupSpotNotificationsQueryKey, groupWaitlistQueryKey } from "./useGroupWaitlist";
 
 export const subscriptionsQueryKey = ["subscriptions"] as const;
 
@@ -126,6 +128,7 @@ export function useAddSubscription() {
       category?: "group" | "private";
       billingModel?: BillingModel;
       scheduleGroupIds?: string[];
+      capacityOverrideReason?: string | null;
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
@@ -137,6 +140,57 @@ export function useAddSubscription() {
       const subscriptionType = sub.type.trim();
       const pairMonth = normalizeSubscriptionPairMonth(subscriptionType, sub.pairMonth);
       const expiresAt = isMonthly ? computeMonthlyExpiresAt(sub.activationDate) : null;
+      const isGroupSale = (sub.scheduleGroupIds?.length ?? 0) > 0 || sub.category === "group";
+
+      if (isGroupSale && (sub.scheduleGroupIds?.length ?? 0) > 0) {
+        const { data, error } = await supabase.rpc("create_group_subscription", {
+          p_type: subscriptionType,
+          p_client_id1: sub.clientId1,
+          p_client_id2: sub.clientId2 || null,
+          p_client_id3: sub.clientId3 || null,
+          p_client_id4: sub.clientId4 || null,
+          p_lessons_total: isMonthly ? 0 : sub.lessonsTotal,
+          p_activation_date: sub.activationDate,
+          p_pair_month: pairMonth,
+          p_discipline_id: sub.disciplineId,
+          p_price_id: sub.priceId ?? null,
+          p_billing_model: billingModel,
+          p_schedule_group_ids: sub.scheduleGroupIds,
+          p_subscription_id: id,
+          p_capacity_override_reason: sub.capacityOverrideReason ?? null,
+          p_expires_at: expiresAt,
+        });
+
+        if (error) return { success: false as const, error: error.message };
+
+        const result = data as {
+          success?: boolean;
+          error?: string;
+          id?: string;
+          class_id?: string;
+          max_capacity?: number;
+          occupied?: number;
+          requested?: number;
+        } | null;
+
+        if (!result?.success) {
+          if (result?.error === "group_capacity_exceeded") {
+            return {
+              success: false as const,
+              error: "subscriptions.error.groupCapacityExceeded",
+              capacityConflict: {
+                classId: String(result.class_id ?? ""),
+                maxCapacity: Number(result.max_capacity ?? 0),
+                occupied: Number(result.occupied ?? 0),
+                requested: Number(result.requested ?? 0),
+              },
+            };
+          }
+          return { success: false as const, error: result?.error ?? "subscriptions.error.sellFailed" };
+        }
+
+        return { success: true as const, id: result.id ?? id };
+      }
 
       const { error } = await supabase.from("subscriptions").insert({
         id,
@@ -181,6 +235,9 @@ export function useAddSubscription() {
       if (result.success) {
         void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey });
         void queryClient.invalidateQueries({ queryKey: subscriptionGroupsQueryKey });
+        void queryClient.invalidateQueries({ queryKey: groupCapacityQueryKey });
+        void queryClient.invalidateQueries({ queryKey: groupWaitlistQueryKey });
+        void queryClient.invalidateQueries({ queryKey: groupSpotNotificationsQueryKey });
       }
     },
   });
@@ -204,7 +261,11 @@ export function useFinishSubscription() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey });
+      if (result.success) {
+        void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey });
+        void queryClient.invalidateQueries({ queryKey: groupCapacityQueryKey });
+        void queryClient.invalidateQueries({ queryKey: groupSpotNotificationsQueryKey });
+      }
     },
   });
 }
