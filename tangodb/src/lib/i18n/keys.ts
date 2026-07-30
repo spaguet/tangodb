@@ -1406,6 +1406,7 @@ export type I18nKey =
   | "schedule.event.sessionOverlap"
   | "schedule.rental.action"
   | "schedule.rental.title"
+  | "schedule.rental.subtitle"
   | "schedule.rental.blockTitle"
   | "schedule.rental.dateLabel"
   | "schedule.rental.renterLabel"

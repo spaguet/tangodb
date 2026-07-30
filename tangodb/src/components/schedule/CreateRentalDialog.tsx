@@ -74,6 +74,7 @@ export default function CreateRentalDialog({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [tariffId, setTariffId] = useState("");
   const [idempotencyKey, setIdempotencyKey] = useState("");
+  const [createRequested, setCreateRequested] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -93,6 +94,7 @@ export default function CreateRentalDialog({
     setPaymentMethod("cash");
     setTariffId("");
     setIdempotencyKey(crypto.randomUUID());
+    setCreateRequested(false);
   }, [open, prefill, defaultLocationId, preselectedRenterId]);
 
   const conflictsQuery = useRentalConflictsPreview(
@@ -154,8 +156,9 @@ export default function CreateRentalDialog({
     return true;
   }, [rentalDate, timeStart, timeEnd, locationId, renterId, toast, t]);
 
-  const handlePreview = () => {
+  const handleCreate = () => {
     if (!validateForm()) return;
+    setCreateRequested(true);
     setStep("preview");
   };
 
@@ -205,6 +208,18 @@ export default function CreateRentalDialog({
     onClose();
   };
 
+  useEffect(() => {
+    if (!createRequested || step !== "preview" || !conflictsQuery.data?.success) return;
+
+    if (conflictsQuery.data.conflicts.length > 0) {
+      setCreateRequested(false);
+      return;
+    }
+
+    setCreateRequested(false);
+    void handleSubmit();
+  }, [createRequested, step, conflictsQuery.data]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -224,12 +239,10 @@ export default function CreateRentalDialog({
           >
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600">
-                  {t("schedule.rental.action")}
-                </p>
                 <h3 className="text-base font-semibold tracking-tight text-slate-900">
                   {t("schedule.rental.title")}
                 </h3>
+                <p className="text-xs text-slate-500">{t("schedule.rental.subtitle")}</p>
               </div>
               <button type="button" onClick={onClose} disabled={createMutation.isPending} aria-label={t("common.close")} className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer">
                 <X className="w-5 h-5" />
@@ -334,22 +347,31 @@ export default function CreateRentalDialog({
                 </div>
                 {conflictsQuery.isLoading ? (
                   <p className="text-slate-400">{t("common.loading.default")}</p>
+                ) : conflictsQuery.data && !conflictsQuery.data.success ? (
+                  <p className="text-rose-600 text-xs">
+                    {resolveMutationError(conflictsQuery.data.error, "schedule.rental.previewFailed", t)}
+                  </p>
                 ) : conflictsQuery.data?.conflicts.length ? (
                   <p className="text-rose-600 text-xs">{t("schedule.rental.conflictBlocked")}</p>
                 ) : (
-                  <p className="text-emerald-700 text-xs">{t("schedule.rental.noConflicts")}</p>
+                  <p className="text-amber-700 text-xs">{t("schedule.rental.noConflicts")}</p>
                 )}
               </div>
             )}
 
             <div className="flex items-center gap-2 pt-2">
-              <button type="button" onClick={onClose} disabled={createMutation.isPending} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer">
-                {t("common.cancel")}
+              <button
+                type="button"
+                onClick={step === "preview" ? () => setStep("form") : onClose}
+                disabled={createMutation.isPending}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer"
+              >
+                {t(step === "preview" ? "common.back" : "common.cancel")}
               </button>
               {step === "form" ? (
-                <button type="button" onClick={handlePreview} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer">
+                <button type="button" onClick={handleCreate} disabled={createRequested} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60">
                   <Building2 className="w-3.5 h-3.5" />
-                  {t("schedule.rental.checkConflicts")}
+                  {t("schedule.rental.confirmCreate")}
                 </button>
               ) : (
                 <button type="button" onClick={() => void handleSubmit()} disabled={createMutation.isPending || !!conflictsQuery.data?.conflicts.length} className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60">
