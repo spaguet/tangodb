@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-30 — tangodb: UI «Арендаторы» — вкладки «Активные/Архив/Заблокированные» визуально соединены со списком через `pageTabPanelCls` (как в «Клиентах»). Расписание — верхняя панель в одной карточке: дата и календарь → преподаватель → мероприятие → аренда → отпуск.
+
 2026-07-30 — tangodb: страница «Арендаторы» — поле поиска выровнено по нижнему краю с селектами фильтров (`sm:items-end` в `RentersPanel`).
 
 2026-07-30 — tangodb: фронтенд долгосрочной аренды с тарифами (CRM сценарий 14) — типы RentalTariff/RentalSeries/RentalInvoice, хуки useRentalTariffs/useRentalSeries/useRentalInvoices, страница настроек `/settings/rental-tariffs`, диалоги CreateRentalSeriesDialog и расширения RentalInfoPopup/CreateRentalDialog/FinanceTab арендатора, маршрут и RBAC, i18n rentalTariffs.* / rentalSeries.* / rentalInvoices.*, интеграция серии в расписание, rentalSeriesId в useRentals.

@@ -25,7 +25,7 @@ import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
 import AppSelect, { fieldCls as inputCls } from "../ui/AppSelect";
 import LoadingState from "../ui/LoadingState";
-import PageTabs from "../ui/PageTabs";
+import PageTabs, { pageTabPanelCls } from "../ui/PageTabs";
 import QueryErrorState from "../ui/QueryErrorState";
 import RequirePermission from "../RequirePermission";
 import RenterDuplicateDialog from "./RenterDuplicateDialog";
@@ -215,10 +215,12 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
         </div>
       </RequirePermission>
 
-      <div className="lg:col-span-8 space-y-3">
+      <div className="lg:col-span-8 flex flex-col">
         <PageTabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as ListTab)} />
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-3">
+        <div
+          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack space-y-3 ${pageTabPanelCls(activeTab, "active")}`}
+        >
           <div className="flex flex-col sm:flex-row sm:items-end gap-2">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

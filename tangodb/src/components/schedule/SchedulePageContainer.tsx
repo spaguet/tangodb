@@ -449,24 +449,22 @@ export default function SchedulePageContainer() {
 
   return (
     <div className="panel-page-stack">
-      <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white/95 backdrop-blur-[2px] py-1">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="w-5 h-5 text-indigo-500 shrink-0" />
-          <h2 className="text-base font-semibold text-slate-800 tracking-tight">{t("schedule.title")}</h2>
+      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-[2px] py-1">
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
+          <ScheduleToolbar
+            weekStart={selectedWeekStart}
+            onWeekChange={setSelectedWeekStart}
+            teacherFilter={teacherFilter}
+            onTeacherFilterChange={handleTeacherFilterChange}
+            teacherFilterOptions={teacherFilterOptions}
+            canManageTeacherVacation={canManageTeacherVacation}
+            onTeacherVacationClick={() => setTeacherVacationOpen(true)}
+            canManageCalendarEvents={canManageCalendarEvents}
+            onCreateEventClick={() => setCreateEventOpen(true)}
+            canManageRentals={canManageRentals}
+            onCreateRentalClick={() => setCreateRentalOpen(true)}
+          />
         </div>
-        <ScheduleToolbar
-          weekStart={selectedWeekStart}
-          onWeekChange={setSelectedWeekStart}
-          teacherFilter={teacherFilter}
-          onTeacherFilterChange={handleTeacherFilterChange}
-          teacherFilterOptions={teacherFilterOptions}
-          canManageTeacherVacation={canManageTeacherVacation}
-          onTeacherVacationClick={() => setTeacherVacationOpen(true)}
-          canManageCalendarEvents={canManageCalendarEvents}
-          onCreateEventClick={() => setCreateEventOpen(true)}
-          canManageRentals={canManageRentals}
-          onCreateRentalClick={() => setCreateRentalOpen(true)}
-        />
       </div>
 
       {!hasLocations && noLocationLessons.length === 0 && !hasAnyLessons ? (

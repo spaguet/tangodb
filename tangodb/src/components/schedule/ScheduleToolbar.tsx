@@ -58,7 +58,7 @@ export default function ScheduleToolbar({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+    <div className="flex flex-wrap items-end gap-2 sm:gap-3">
       <div className="flex items-center gap-1">
         <button
           type="button"
@@ -90,38 +90,38 @@ export default function ScheduleToolbar({
         >
           <ChevronRight className="w-4 h-4" />
         </button>
-      </div>
 
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setPickerOpen((v) => !v)}
-          aria-label={t("common.aria.pickWeek")}
-          aria-expanded={pickerOpen}
-          className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-        >
-          <CalendarDays className="w-4 h-4" />
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setPickerOpen((v) => !v)}
+            aria-label={t("common.aria.pickWeek")}
+            aria-expanded={pickerOpen}
+            className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+          >
+            <CalendarDays className="w-4 h-4" />
+          </button>
 
-        {pickerOpen && (
-          <>
-            <button
-              type="button"
-              aria-label={t("common.aria.closeCalendar")}
-              className="fixed inset-0 z-40 cursor-default"
-              onClick={() => setPickerOpen(false)}
-            />
-            <WeekPickerPopover
-              selectedWeekStart={weekStart}
-              onSelect={(date) => {
-                const { weekStart: ws } = getWeekRange(date);
-                onWeekChange(ws);
-                setPickerOpen(false);
-              }}
-              onClose={() => setPickerOpen(false)}
-            />
-          </>
-        )}
+          {pickerOpen && (
+            <>
+              <button
+                type="button"
+                aria-label={t("common.aria.closeCalendar")}
+                className="fixed inset-0 z-40 cursor-default"
+                onClick={() => setPickerOpen(false)}
+              />
+              <WeekPickerPopover
+                selectedWeekStart={weekStart}
+                onSelect={(date) => {
+                  const { weekStart: ws } = getWeekRange(date);
+                  onWeekChange(ws);
+                  setPickerOpen(false);
+                }}
+                onClose={() => setPickerOpen(false)}
+              />
+            </>
+          )}
+        </div>
       </div>
 
       {teacherFilterOptions.length > 0 && (
