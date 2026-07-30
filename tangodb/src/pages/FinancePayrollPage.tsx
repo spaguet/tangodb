@@ -32,6 +32,7 @@ import {
   useTeacherPayRates,
   useTeacherSettlements,
 } from "../hooks/usePayroll";
+import TeacherSettlementDetailPanel from "../components/payroll/TeacherSettlementDetailPanel";
 import { PAYMENT_METHOD_KEYS } from "../hooks/usePayments";
 import {
   buildClassTeacherMap,
@@ -502,6 +503,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
 function TeacherOwnPayrollView() {
   const { t, locale, formatDate } = useI18n();
   const settlementsQuery = useOwnTeacherSettlements(12);
+  const [expandedSettlementId, setExpandedSettlementId] = useState<string | null>(null);
 
   if (settlementsQuery.isLoading) return <LoadingState label={t("finance.payroll.loading")} />;
   if (settlementsQuery.isError) return <QueryErrorState error={settlementsQuery.error} />;
@@ -522,6 +524,7 @@ function TeacherOwnPayrollView() {
           `${settlement.periodYear}-${String(settlement.periodMonth).padStart(2, "0")}`,
           locale
         );
+        const expanded = expandedSettlementId === settlement.id;
         return (
           <div
             key={settlement.id}
@@ -551,6 +554,15 @@ function TeacherOwnPayrollView() {
                 }),
               })}
             </p>
+            <button
+              type="button"
+              onClick={() => setExpandedSettlementId(expanded ? null : settlement.id)}
+              className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-600 hover:text-indigo-700 cursor-pointer"
+            >
+              {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              {expanded ? t("finance.payroll.detail.hide") : t("finance.payroll.detail.view")}
+            </button>
+            {expanded && <TeacherSettlementDetailPanel settlementId={settlement.id} />}
           </div>
         );
       })}

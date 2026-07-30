@@ -44,6 +44,41 @@ export interface SettlementPaymentInput {
   note?: string;
 }
 
+export type SettlementLineCategory = "fixed" | "group" | "personal" | "single_visit" | "adjustment";
+
+export interface TeacherSettlementLineItem {
+  id: string;
+  lineCategory: SettlementLineCategory;
+  sourceType: "rate" | "payment" | "adjustment";
+  sourceId: string | null;
+  lineDate: string | null;
+  timeStart: string | null;
+  timeEnd: string | null;
+  title: string | null;
+  disciplineName: string | null;
+  locationName: string | null;
+  monetaryBase: number;
+  payMode: PayrollPayMode | null;
+  fixedRateAmount: number;
+  percentRate: number;
+  accrualAmount: number;
+  includedInTotal: boolean;
+  exclusionReason: string | null;
+  sortAt: string;
+}
+
+export interface TeacherSettlementDetail {
+  settlement: TeacherSettlement;
+  lines: TeacherSettlementLineItem[];
+  excludedLines: TeacherSettlementLineItem[];
+  reconciliation: {
+    linesTotal: number;
+    amountAccrued: number;
+    matches: boolean;
+    computedAt: string;
+  };
+}
+
 export interface TeacherPayRateInput {
   memberId: string;
   payMode: PayrollPayMode;

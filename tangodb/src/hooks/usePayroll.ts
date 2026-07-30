@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { monthDateRange } from "../lib/financeReports";
+import { mapTeacherSettlementDetail } from "../lib/payrollSettlementDetail";
 import { supabase } from "../lib/supabase";
 import type {
   SettlementPaymentInput,
   TeacherPayRate,
   TeacherPayRateInput,
   TeacherSettlement,
+  TeacherSettlementDetail,
   TeacherSettlementPayment,
 } from "../types/payroll";
 import { useOrgQueryScope } from "./useOrgQueryScope";
@@ -187,6 +189,23 @@ export function useRecalculateTeacherSettlement() {
         void queryClient.invalidateQueries({ queryKey: withOrgId(payrollQueryKey) });
       }
     },
+  });
+}
+
+export function useTeacherSettlementDetail(settlementId: string | null) {
+  const { enabled, withOrgId } = useOrgQueryScope();
+
+  return useQuery({
+    queryKey: withOrgId([...payrollQueryKey, "settlement-detail", settlementId]),
+    enabled: enabled && !!settlementId,
+    queryFn: async (): Promise<TeacherSettlementDetail> => {
+      const { data, error } = await supabase.rpc("get_teacher_settlement_detail", {
+        p_settlement_id: settlementId!,
+      });
+      if (error) throw error;
+      return mapTeacherSettlementDetail(data);
+    },
+    staleTime: 30 * 1000,
   });
 }
 
