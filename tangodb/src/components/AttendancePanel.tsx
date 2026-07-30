@@ -71,6 +71,7 @@ import { useUIStore } from "../store/ui";
 import QueryErrorState from "./ui/QueryErrorState";
 import LoadingState from "./ui/LoadingState";
 import OfflineLimitedState from "./offline/OfflineLimitedState";
+import OfflineScopeNotice from "./offline/OfflineScopeNotice";
 import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
 import VirtualList from "./ui/VirtualList";
 import AppSelect from "./ui/AppSelect";
@@ -386,16 +387,18 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           ? `${slot.groupName} · ${slot.time} – ${slot.timeEnd}`
           : t("attendance.groupLessonTime", { time: slot.time, timeEnd: slot.timeEnd }),
       })),
-      ...accessiblePersonalForDay.map((lesson) => ({
-        kind: "personal" as const,
-        start: lesson.timeStart,
-        key: `p-${lesson.id}`,
-        lesson,
-        label: `${lesson.clientDisplay} · ${lesson.timeStart} – ${lesson.timeEnd}`,
-      })),
+      ...(isOfflineMode
+        ? []
+        : accessiblePersonalForDay.map((lesson) => ({
+            kind: "personal" as const,
+            start: lesson.timeStart,
+            key: `p-${lesson.id}`,
+            lesson,
+            label: `${lesson.clientDisplay} · ${lesson.timeStart} – ${lesson.timeEnd}`,
+          }))),
     ];
     return entries.sort((a, b) => a.start.localeCompare(b.start));
-  }, [accessibleGroupLessonsForDay, accessiblePersonalForDay, t]);
+  }, [accessibleGroupLessonsForDay, accessiblePersonalForDay, isOfflineMode, t]);
 
   const subsOptions = useMemo(() => {
     if (!selectedLesson) return undefined;
@@ -536,13 +539,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         date,
         day,
         hasGroup: groupDates.has(date),
-        hasPersonal: personalDates.has(date),
+        hasPersonal: !isOfflineMode && personalDates.has(date),
         isToday: date === today,
       });
     }
 
     return cells;
-  }, [selectedMonth, accessibleMonthGroupDates, accessibleLocationPersonalLessons]);
+  }, [selectedMonth, accessibleMonthGroupDates, accessibleLocationPersonalLessons, isOfflineMode]);
 
   const handleMonthNav = (delta: number) => {
     const nextMonth = shiftMonth(selectedMonth, delta);
@@ -788,6 +791,21 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       disciplineId: selectedGroupLesson.disciplineId ?? null,
       locationId: selectedGroupLesson.locationId ?? null,
     });
+
+  const handleSaveSingleVisitDraft = async () => {
+    if (!selectedGroupLesson) return;
+    const label = t("offline.draft.singleVisitReminder", {
+      lesson: selectedGroupLesson.label,
+      date: selectedDate,
+    });
+    const saved = await saveOfflinePaymentDraft({
+      kind: "single_visit",
+      reminderLabel: label,
+      targetRef: selectedGroupLesson.slotId ?? selectedGroupLesson.scheduleGroupId ?? "unknown",
+      dateStr: selectedDate,
+    });
+    toast(saved ? t("offline.draft.paymentSaved") : t("common.saveFailed"), saved ? "info" : "error");
+  };
 
   const handleRecordSingleVisit = async () => {
     if (!selectedGroupLesson?.slotId) {
@@ -1044,6 +1062,24 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const renderSingleVisitPanel = () => {
     if (!selectedGroupLesson) return null;
 
+    if (isOfflineMode && canRecordSingleVisit) {
+      return (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-2">
+          <p className="text-[11px] text-amber-800 font-sans leading-relaxed">
+            {t("offline.restrictions.singleVisit")}
+          </p>
+          <button
+            type="button"
+            onClick={() => void handleSaveSingleVisitDraft()}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 border border-amber-300 bg-white hover:bg-amber-50 text-amber-900 rounded-lg text-[11px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+          >
+            <Ticket className="w-3.5 h-3.5" />
+            {t("offline.draft.saveReminder")}
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50/70 p-3 space-y-3">
         {canRecordSingleVisit && (
@@ -1167,6 +1203,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           reason={snapshotMeta.isExpired ? "expired" : "missing"}
           windowStart={snapshotMeta.windowStart}
           windowEnd={snapshotMeta.windowEnd}
+          locations={snapshot?.locations}
         />
       </div>
     );
@@ -1275,6 +1312,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           ) : null}
         </div>
 
+        {isOfflineMode && snapshotMeta.hasSnapshot && !snapshotMeta.isExpired ? (
+          <OfflineScopeNotice />
+        ) : null}
+
         <div className="border border-slate-200 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between gap-2 px-3 py-2.5 bg-slate-50 border-b border-slate-200">
             <button
@@ -1351,7 +1392,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             <span className="inline-flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-indigo-500" /> {t("common.groupShort")}
             </span>
-            {personalLessonsEnabled ? (
+            {personalLessonsEnabled && !isOfflineMode ? (
               <span className="inline-flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-indigo-700" /> {t("common.personalShort")}
               </span>
@@ -1483,6 +1524,22 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       <p className="text-[11px] text-amber-600 font-sans">
                         {t("attendance.error.pastOnly")}
                       </p>
+                    ) : isOfflineMode ? (
+                      <div className="space-y-2">
+                        <p className="text-[11px] text-amber-700 font-sans leading-relaxed">
+                          {t("offline.restrictions.personalAttendance")}
+                        </p>
+                        {canPayActivePersonalLesson ? (
+                          <button
+                            type="button"
+                            onClick={() => void openPayPersonalLesson(activePersonalLesson)}
+                            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border bg-amber-100 border-amber-300 text-amber-900 cursor-pointer"
+                          >
+                            <Coins className="w-3.5 h-3.5" />
+                            {t("offline.draft.saveReminder")}
+                          </button>
+                        ) : null}
+                      </div>
                     ) : (
                       <>
                         <AttendanceMarkLegend showFreeze={false} t={t} />
@@ -1491,9 +1548,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             <button
                               type="button"
                               onClick={() => openPayPersonalLesson(activePersonalLesson)}
-                              disabled={connectionState !== "online"}
-                              title={translateConnectionBlockReason(connectionState, t)}
-                              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border bg-indigo-600 border-indigo-600 text-white shadow-xs cursor-pointer disabled:opacity-60"
+                              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border bg-indigo-600 border-indigo-600 text-white shadow-xs cursor-pointer"
                             >
                               <Coins className="w-3.5 h-3.5" />
                               {t("common.markPaid")}

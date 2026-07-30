@@ -30,6 +30,7 @@ import {
   translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
+import { useSaveOfflinePaymentDraft } from "../hooks/useOfflineShift";
 import { usePermissions, useCan } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
 import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionDaysLeft, getSubscriptionTariffLabel, isMonthlyUnlimitedSubscription, isMonthlyUnlimitedTariff, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitle } from "../lib/utils";
@@ -95,6 +96,7 @@ export default function SubscriptionsPanel({
   const { t, plural, locale } = useI18n();
   const navigate = useNavigate();
   const { connectionState } = useOnlineStatus();
+  const saveOfflinePaymentDraft = useSaveOfflinePaymentDraft();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
 
   const activeClientsQuery = useClients();
@@ -492,10 +494,6 @@ export default function SubscriptionsPanel({
   };
 
   const handleCheckout = async () => {
-    if (connectionState !== "online") {
-      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
-      return;
-    }
     if (!selectedTariff?.id) {
       toast(t("subscriptions.error.selectTariff"), "error");
       return;
@@ -528,6 +526,20 @@ export default function SubscriptionsPanel({
 
     if (selectedGroupIds.length === 0) {
       toast(t("subscriptions.error.selectGroups"), "error");
+      return;
+    }
+
+    if (connectionState !== "online") {
+      const saved = await saveOfflinePaymentDraft({
+        kind: "subscription",
+        reminderLabel: t("offline.draft.subscriptionReminder", {
+          client: client1Query,
+          tariff: getPriceLabel(selectedTariff, t),
+        }),
+        targetRef: selectedTariff.id,
+        dateStr: activationDate,
+      });
+      toast(saved ? t("offline.draft.paymentSaved") : t("common.saveFailed"), saved ? "info" : "error");
       return;
     }
 
@@ -1657,17 +1669,22 @@ export default function SubscriptionsPanel({
             <button
               onClick={handleCheckout}
               disabled={
-                connectionState !== "online" ||
                 addSubscription.isPending ||
                 recordSubscriptionPayment.isPending ||
-                Boolean(capacityConflict)
+                (connectionState === "online" && Boolean(capacityConflict))
               }
-              title={translateConnectionBlockReason(connectionState, t)}
+              title={
+                connectionState === "online"
+                  ? translateConnectionBlockReason(connectionState, t)
+                  : t("offline.draft.saveReminder")
+              }
               className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60 panel-form-full-row-md"
             >
               {addSubscription.isPending || recordSubscriptionPayment.isPending
                 ? t("subscriptions.sell.submitPending")
-                : t("subscriptions.sell.submit")}
+                : connectionState !== "online"
+                  ? t("offline.draft.saveReminder")
+                  : t("subscriptions.sell.submit")}
             </button>
           </div>
           )}

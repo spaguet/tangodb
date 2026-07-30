@@ -109,6 +109,7 @@ export default function OfflineBanner({
         {snapshotSyncedAt
           ? ` · ${t("offline.banner.snapshotAt", { time: formatSyncedAt(snapshotSyncedAt, locale) })}`
           : ` · ${t("offline.banner.noSnapshot")}`}
+        <span className="font-normal text-amber-700/90"> · {t("offline.restrictions.scopeHint")}</span>
       </span>
       <span className="flex items-center gap-3">
         {queueLabel ? <span>{queueLabel}</span> : null}

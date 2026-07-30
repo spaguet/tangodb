@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-30 — tangodb: явные ограничения офлайн-режима (CRM сценарий 11) — в журнале посещаемости скрыты personal-уроки, блок single-visit с черновиком-напоминанием, баннер `OfflineScopeNotice`, продажа абонемента/пакета офлайн сохраняет draft без финансового эффекта, `OfflineLimitedState` показывает локации снимка.
+
 2026-07-30 — tangodb: безопасный офлайн-режим вечерней смены (CRM сценарий 11) — IndexedDB-снимок расписания/абонементов (72 ч), очередь офлайн-отметок посещаемости с idempotency (`sync_offline_mark_attendance`), экран сверки после восстановления, черновики оплат без финансового эффекта, изоляция по user/org, cross-tab sync lock, `QueryErrorState` retry, расширенный `OfflineBanner`.
 
 2026-07-30 — tangodb: промпт 10 — idempotency на personal/single-visit платежах, undo посещаемости (30 с) + диалог коррекции с причиной, payroll по net_amount через payroll_refresh_settlement_lines.

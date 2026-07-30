@@ -1,16 +1,19 @@
-import { CloudOff, Clock } from "lucide-react";
+import { CloudOff, Clock, MapPin } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
+import type { SnapshotLocation } from "../../lib/offline/types";
 
 interface OfflineLimitedStateProps {
   reason: "missing" | "expired";
   windowStart?: string | null;
   windowEnd?: string | null;
+  locations?: SnapshotLocation[];
 }
 
 export default function OfflineLimitedState({
   reason,
   windowStart,
   windowEnd,
+  locations,
 }: OfflineLimitedStateProps) {
   const { t } = useI18n();
 
@@ -27,6 +30,15 @@ export default function OfflineLimitedState({
           ? t("offline.limited.expiredHint")
           : t("offline.limited.missingHint")}
       </p>
+      {locations && locations.length > 0 ? (
+        <div className="text-xs text-slate-500 max-w-md mx-auto space-y-1">
+          <p className="font-semibold uppercase tracking-wider flex items-center justify-center gap-1">
+            <MapPin className="w-3 h-3" />
+            {t("offline.limited.locationsTitle")}
+          </p>
+          <p>{locations.map((loc) => loc.name).join(", ")}</p>
+        </div>
+      ) : null}
       <div className="text-xs text-slate-500 space-y-1">
         <p className="font-semibold uppercase tracking-wider">{t("offline.limited.fallbackTitle")}</p>
         <p>{t("offline.limited.fallbackSteps")}</p>

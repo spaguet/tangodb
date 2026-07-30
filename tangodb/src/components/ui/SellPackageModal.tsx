@@ -14,7 +14,8 @@ import {
 } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
-import { translateMutationBlockedMessage, useOnlineStatus } from "../../hooks/useOnlineStatus";
+import { useOnlineStatus } from "../../hooks/useOnlineStatus";
+import { useSaveOfflinePaymentDraft } from "../../hooks/useOfflineShift";
 import {
   DEFAULT_ORG_MODULES,
   filterPrivatePackageTariffsByModules,
@@ -53,6 +54,7 @@ export default function SellPackageModal({
   const addSubscription = useAddSubscription();
   const { t } = useI18n();
   const { connectionState } = useOnlineStatus();
+  const saveOfflinePaymentDraft = useSaveOfflinePaymentDraft();
   const { settings } = useSettings();
 
   const [createTariffOpen, setCreateTariffOpen] = useState(false);
@@ -122,10 +124,6 @@ export default function SellPackageModal({
   }, [packageTariffs, selectedPackageTariffId]);
 
   const handleSell = async () => {
-    if (connectionState !== "online") {
-      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
-      return;
-    }
     if (!selectedPackageTariff?.id) {
       toast(t("subscriptions.error.selectTariff"), "error");
       return;
@@ -148,6 +146,20 @@ export default function SellPackageModal({
     }
     if (!subActivationDate) {
       toast(t("subscriptions.error.activationDate"), "error");
+      return;
+    }
+
+    if (connectionState !== "online") {
+      const saved = await saveOfflinePaymentDraft({
+        kind: "subscription",
+        reminderLabel: t("offline.draft.subscriptionReminder", {
+          client: subClient1Query,
+          tariff: getPriceLabel(selectedPackageTariff, t),
+        }),
+        targetRef: selectedPackageTariff.id,
+        dateStr: subActivationDate,
+      });
+      toast(saved ? t("offline.draft.paymentSaved") : t("common.saveFailed"), saved ? "info" : "error");
       return;
     }
 
@@ -340,10 +352,14 @@ export default function SellPackageModal({
               <button
                 type="button"
                 onClick={handleSell}
-                disabled={connectionState !== "online" || addSubscription.isPending || packageTariffs.length === 0}
+                disabled={addSubscription.isPending || packageTariffs.length === 0}
                 className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60 panel-form-full-row-md"
               >
-                {addSubscription.isPending ? t("subscriptions.package.submitPending") : t("subscriptions.package.submit")}
+                {addSubscription.isPending
+                  ? t("subscriptions.package.submitPending")
+                  : connectionState !== "online"
+                    ? t("offline.draft.saveReminder")
+                    : t("subscriptions.package.submit")}
               </button>
             </div>
           </motion.div>
