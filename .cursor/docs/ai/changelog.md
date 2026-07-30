@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-30 — tangodb: страница «Арендаторы» — поле поиска выровнено по нижнему краю с селектами фильтров (`sm:items-end` в `RentersPanel`).
+
 2026-07-30 — tangodb: фронтенд долгосрочной аренды с тарифами (CRM сценарий 14) — типы RentalTariff/RentalSeries/RentalInvoice, хуки useRentalTariffs/useRentalSeries/useRentalInvoices, страница настроек `/settings/rental-tariffs`, диалоги CreateRentalSeriesDialog и расширения RentalInfoPopup/CreateRentalDialog/FinanceTab арендатора, маршрут и RBAC, i18n rentalTariffs.* / rentalSeries.* / rentalInvoices.*, интеграция серии в расписание, rentalSeriesId в useRentals.
 
 2026-07-30 — tangodb: долгосрочная аренда с тарифами (CRM сценарий 14) — миграция `20260845000001_rental_series_tariffs.sql`: таблицы тарифов/серий/счетов/авансов/депозитов, серверный расчёт почасовых и фиксированных ставок с льготными правилами, RPC preview/create/update/cancel серии, инвойсы и финансовые операции, патч `create_rental` (tariff_id) и `get_rentals_for_schedule_week` (rental_series_id), RLS и grants.

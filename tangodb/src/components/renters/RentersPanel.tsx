@@ -219,7 +219,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
         <PageTabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as ListTab)} />
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-2">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
