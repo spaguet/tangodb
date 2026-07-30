@@ -2,7 +2,7 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
-2026-07-30 — tangodb: возвраты абонементов — частичный возврат без завершения (`create_subscription_refund`), pending/completed выплаты (`complete_subscription_refund`, `cancel_subscription_refund`), резервирование pending в доступном остатке, UI и финансовый блок ожидающих выплат.
+2026-07-30 — tangodb: безопасное исправление ошибок в оплате и посещаемости (CRM сценарий 10) — сторно платежей без DELETE, idempotency_key на record_subscription_payment, RPC storno_payment / correct_payment / void_personal_lesson_payment, append-only attendance_corrections, undo за 30 с, экран «Корректировки», чистый эффект в сводках.
 
 2026-07-30 — tangodb: досрочное завершение абонемента с возвратом (CRM сценарий 9) — таблица `subscription_refunds`, RPC `preview_subscription_refund` / `finish_subscription_with_refund`, диалог «Завершить с возвратом», формула `sale_price × lessons_left / lessons_total`, чистая выручка (поступления − возвраты) в дашборде и «Выручке», зарплатная корректировка по проценту преподавателя.
 

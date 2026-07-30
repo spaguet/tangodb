@@ -30,6 +30,7 @@
     "test:db:partner-replace": "psql \"%DATABASE_URL%\" -f supabase/tests/subscription_partner_replacement_test.sql",
     "test:db:payroll-detail": "psql \"%DATABASE_URL%\" -f supabase/tests/teacher_settlement_detail_test.sql",
     "test:db:subscription-refund": "psql \"%DATABASE_URL%\" -f supabase/tests/subscription_refund_finish_test.sql",
+    "test:db:payment-corrections": "psql \"%DATABASE_URL%\" -f supabase/tests/payment_attendance_corrections_test.sql",
     "test:db:personal-stage1": "psql \"%DATABASE_URL%\" -f supabase/tests/personal_lessons_stage1_test.sql",
     "test:rbac": "node scripts/rbac-regression-check.mjs",
     "db:reset-test": "node scripts/reset-for-test-run.mjs",

@@ -4,11 +4,13 @@ import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect from "../components/ui/AppSelect";
 import DatePickerField from "../components/ui/DatePickerField";
+import PaymentCorrectionDialog from "../components/finance/PaymentCorrectionDialog";
 import {
-  usePayments,
   getPaymentMethodLabel,
   paymentSourceLabel,
 } from "../hooks/usePayments";
+import { usePaymentsWithCorrections } from "../hooks/usePaymentCorrections";
+import { usePermissions } from "../hooks/usePermissions";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { useSchedule } from "../hooks/useSchedule";
@@ -16,8 +18,14 @@ import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useSingleVisits } from "../hooks/useSingleVisits";
 import { useI18n } from "../hooks/useI18n";
 import { buildClassTeacherMap, resolvePaymentTeacherId, type TeacherRevenueContext } from "../lib/financeReports";
+import {
+  aggregateEffectivePaymentTotal,
+  paymentEffectiveAmount,
+  paymentStatusLabelKey,
+  type PaymentWithCorrectionMeta,
+} from "../lib/paymentCorrection";
 import { formatCurrency } from "../lib/utils";
-import type { Payment, PaymentMethod } from "../types";
+import type { PaymentMethod } from "../types";
 
 type PaymentSourceFilter = "all" | "subscription" | "personal_lesson" | "single_visit";
 type PaymentMethodFilter = "all" | PaymentMethod;
@@ -28,13 +36,22 @@ function PaymentRow({
   payment,
   formatDateTime,
   translate,
+  canCorrect,
+  onCorrect,
 }: {
-  payment: Payment;
+  payment: PaymentWithCorrectionMeta;
   formatDateTime: ReturnType<typeof useI18n>["formatDateTime"];
   translate: ReturnType<typeof useI18n>["t"];
+  canCorrect: boolean;
+  onCorrect: (payment: PaymentWithCorrectionMeta) => void;
 }) {
+  const effective = paymentEffectiveAmount(payment);
+  const statusKey = payment.correctionStatus
+    ? paymentStatusLabelKey(payment.correctionStatus)
+    : null;
+
   return (
-    <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0">
+    <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-slate-800 truncate">{payment.clientDisplay || "—"}</p>
         <p className="text-[10px] text-slate-400 font-sans mt-0.5">
@@ -46,19 +63,36 @@ function PaymentRow({
             minute: "2-digit",
           })}
         </p>
+        {statusKey && payment.operationKind !== "storno" && (
+          <p className="text-[10px] text-slate-500 mt-0.5">{translate(statusKey as Parameters<typeof translate>[0])}</p>
+        )}
       </div>
       <p className="text-xs text-slate-500 font-sans hidden sm:block">{paymentSourceLabel(payment, translate)}</p>
       <p className="text-xs text-slate-500 font-sans hidden sm:block">
         {getPaymentMethodLabel(payment.method, translate)}
       </p>
-      <p className="text-sm font-sans font-semibold text-indigo-700 text-right whitespace-nowrap">
-        {formatCurrency(payment.amount)}
+      <p
+        className={`text-sm font-sans font-semibold text-right whitespace-nowrap ${
+          payment.operationKind === "storno" ? "text-rose-600" : "text-indigo-700"
+        }`}
+      >
+        {payment.operationKind === "storno" ? "−" : ""}
+        {formatCurrency(Math.abs(effective))}
       </p>
+      {canCorrect && payment.operationKind !== "storno" && payment.correctionStatus !== "voided" && payment.correctionStatus !== "replaced" && (
+        <button
+          type="button"
+          onClick={() => onCorrect(payment)}
+          className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+        >
+          {translate("corrections.payment.correctAction")}
+        </button>
+      )}
     </div>
   );
 }
 
-function matchesSourceFilter(payment: Payment, source: PaymentSourceFilter): boolean {
+function matchesSourceFilter(payment: PaymentWithCorrectionMeta, source: PaymentSourceFilter): boolean {
   if (source === "all") return true;
   if (source === "subscription") return payment.subscriptionId != null;
   if (source === "personal_lesson") return payment.personalLessonId != null;
@@ -67,18 +101,25 @@ function matchesSourceFilter(payment: Payment, source: PaymentSourceFilter): boo
 
 export default function FinancePaymentsPage() {
   const { t, locale, formatDateTime, plural } = useI18n();
+  const { can } = usePermissions();
+  const canCorrectPayments = can("finance.read");
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sourceFilter, setSourceFilter] = useState<PaymentSourceFilter>("all");
   const [methodFilter, setMethodFilter] = useState<PaymentMethodFilter>("all");
   const [teacherFilter, setTeacherFilter] = useState("all");
+  const [correctionTarget, setCorrectionTarget] = useState<PaymentWithCorrectionMeta | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
 
-  const paymentsFilter = useMemo(
-    () => (dateFrom || dateTo ? { dateFrom: dateFrom || undefined, dateTo: dateTo || undefined } : undefined),
-    [dateFrom, dateTo]
+  const toast = (msg: string, type: "success" | "error" | "info" = "success") => {
+    setToastMsg({ msg, type });
+    window.setTimeout(() => setToastMsg(null), 4000);
+  };
+
+  const paymentsQuery = usePaymentsWithCorrections(
+    dateFrom || dateTo ? { dateFrom: dateFrom || undefined, dateTo: dateTo || undefined } : undefined
   );
-  const paymentsQuery = usePayments(paymentsFilter);
   const teamQuery = useTeamMembers();
   const personalLessonsQuery = usePersonalLessons();
   const singleVisitsQuery = useSingleVisits();
@@ -154,7 +195,7 @@ export default function FinancePaymentsPage() {
   }
   if (paymentsQuery.isError) return <QueryErrorState error={paymentsQuery.error} />;
 
-  const total = filtered.reduce((sum, p) => sum + p.amount, 0);
+  const total = aggregateEffectivePaymentTotal(filtered);
   const hasAnyPayments = (paymentsQuery.data?.length ?? 0) > 0;
   const hasActiveFilters =
     Boolean(dateFrom || dateTo) ||
@@ -254,7 +295,14 @@ export default function FinancePaymentsPage() {
             </div>
             <div>
               {filtered.map((p) => (
-                <PaymentRow key={p.id} payment={p} formatDateTime={formatDateTime} translate={t} />
+                <PaymentRow
+                  key={p.id}
+                  payment={p}
+                  formatDateTime={formatDateTime}
+                  translate={t}
+                  canCorrect={canCorrectPayments}
+                  onCorrect={setCorrectionTarget}
+                />
               ))}
             </div>
             <div className="px-4 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/60">
@@ -272,6 +320,25 @@ export default function FinancePaymentsPage() {
           </>
         )}
       </div>
+      {toastMsg && (
+        <div
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[80] px-4 py-2 rounded-xl text-sm shadow-lg ${
+            toastMsg.type === "error"
+              ? "bg-rose-600 text-white"
+              : toastMsg.type === "info"
+                ? "bg-slate-700 text-white"
+                : "bg-emerald-600 text-white"
+          }`}
+        >
+          {toastMsg.msg}
+        </div>
+      )}
+      <PaymentCorrectionDialog
+        payment={correctionTarget}
+        open={correctionTarget != null}
+        onClose={() => setCorrectionTarget(null)}
+        toast={toast}
+      />
     </div>
   );
 }

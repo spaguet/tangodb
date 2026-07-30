@@ -129,23 +129,36 @@ export function useRecordSubscriptionPayment() {
       amount: number;
       method: PaymentMethod;
       methodComment?: string;
+      idempotencyKey?: string;
     }) => {
       const { data, error } = await supabase.rpc("record_subscription_payment", {
         p_subscription_id: input.subscriptionId,
         p_amount: input.amount,
         p_method: input.method,
         p_method_comment: input.methodComment ?? null,
+        p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
       });
 
       if (error) return { success: false as const, error: error.message };
-      const result = data as { success?: boolean; error?: string } | null;
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        payment_id?: string;
+        operation_number?: number;
+        already_applied?: boolean;
+      } | null;
       if (!result?.success) {
         return {
           success: false as const,
           error: result?.error ?? "subscriptions.error.paymentFailed",
         };
       }
-      return { success: true as const };
+      return {
+        success: true as const,
+        paymentId: result.payment_id,
+        operationNumber: result.operation_number,
+        alreadyApplied: result.already_applied ?? false,
+      };
     },
     onSuccess: (result) => {
       if (result.success) {
@@ -219,21 +232,22 @@ export function useVoidPersonalLessonPayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (lessonId: string) => {
-      const { error: deleteError } = await supabase
-        .from("payments")
-        .delete()
-        .eq("personal_lesson_id", lessonId);
+    mutationFn: async (input: string | { lessonId: string; reasonCode?: string; idempotencyKey?: string }) => {
+      const lessonId = typeof input === "string" ? input : input.lessonId;
+      const { data, error } = await supabase.rpc("void_personal_lesson_payment", {
+        p_lesson_id: lessonId,
+        p_reason_code: typeof input === "string" ? "duplicate" : input.reasonCode ?? "duplicate",
+        p_reason_comment: null,
+        p_idempotency_key:
+          typeof input === "string" ? crypto.randomUUID() : input.idempotencyKey ?? crypto.randomUUID(),
+      });
 
-      if (deleteError) return { success: false as const, error: deleteError.message };
-
-      const { error: updateError } = await supabase
-        .from("personal_lessons")
-        .update({ paid: "no" })
-        .eq("id", lessonId);
-
-      if (updateError) return { success: false as const, error: updateError.message };
-      return { success: true as const };
+      if (error) return { success: false as const, error: error.message };
+      const result = data as { success?: boolean; error?: string; already_void?: boolean } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "corrections.error.stornoFailed" };
+      }
+      return { success: true as const, alreadyVoid: result.already_void ?? false };
     },
     onSuccess: (result) => {
       if (result.success) {

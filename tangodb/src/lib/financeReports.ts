@@ -8,6 +8,7 @@ import type {
   SubscriptionGroupLink,
 } from "../types";
 import type { SubscriptionRefundRecord } from "../lib/subscriptionRefund";
+import { aggregateEffectivePaymentTotal, type PaymentWithCorrectionMeta } from "../lib/paymentCorrection";
 
 export function monthDateRange(yearMonth: string): { dateFrom: string; dateTo: string } {
   const [y, m] = yearMonth.split("-").map(Number);
@@ -101,7 +102,11 @@ export function combineRevenueStats(
   };
 }
 
-export function aggregatePaymentStats(payments: Payment[]): PaymentStats {
+export function aggregatePaymentStats(payments: Payment[]): PaymentStats;
+export function aggregatePaymentStats(payments: PaymentWithCorrectionMeta[]): PaymentStats;
+export function aggregatePaymentStats(
+  payments: Array<Payment | PaymentWithCorrectionMeta>
+): PaymentStats {
   const byMethod: Record<string, number> = {};
   let subscriptionTotal = 0;
   let personalTotal = 0;
@@ -109,16 +114,33 @@ export function aggregatePaymentStats(payments: Payment[]): PaymentStats {
   let otherTotal = 0;
 
   for (const payment of payments) {
-    byMethod[payment.method] = (byMethod[payment.method] ?? 0) + payment.amount;
-    if (payment.subscriptionId) subscriptionTotal += payment.amount;
-    else if (payment.personalLessonId) personalTotal += payment.amount;
-    else if (payment.singleVisitId) singleVisitTotal += payment.amount;
-    else otherTotal += payment.amount;
+    const effective =
+      "operationKind" in payment && payment.operationKind
+        ? payment.operationKind === "storno"
+          ? -payment.amount
+          : payment.amount
+        : payment.amount;
+    if (effective === 0) continue;
+
+    byMethod[payment.method] = (byMethod[payment.method] ?? 0) + effective;
+    if (payment.subscriptionId) subscriptionTotal += effective;
+    else if (payment.personalLessonId) personalTotal += effective;
+    else if (payment.singleVisitId) singleVisitTotal += effective;
+    else otherTotal += effective;
   }
 
+  const withMeta = payments as PaymentWithCorrectionMeta[];
+  const total =
+    withMeta.some((p) => p.operationKind != null)
+      ? aggregateEffectivePaymentTotal(withMeta)
+      : payments.reduce((sum, p) => sum + p.amount, 0);
+
   return {
-    total: payments.reduce((sum, p) => sum + p.amount, 0),
-    count: payments.length,
+    total,
+    count: payments.filter((p) => {
+      const meta = p as PaymentWithCorrectionMeta;
+      return meta.operationKind !== "storno";
+    }).length,
     subscriptionTotal,
     personalTotal,
     singleVisitTotal,
