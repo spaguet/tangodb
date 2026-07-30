@@ -38,19 +38,34 @@ export interface PaymentStats {
 export interface RevenueStats extends PaymentStats {
   grossTotal: number;
   refundsTotal: number;
+  pendingRefundsTotal: number;
   netTotal: number;
   refundCount: number;
+  pendingRefundCount: number;
 }
 
 export function aggregateRefundStats(refunds: SubscriptionRefundRecord[]): {
-  total: number;
-  count: number;
+  completedTotal: number;
+  completedCount: number;
+  pendingTotal: number;
+  pendingCount: number;
 } {
-  const completed = refunds.filter((r) => r.status === "completed");
-  return {
-    total: completed.reduce((sum, r) => sum + r.amount, 0),
-    count: completed.length,
-  };
+  let completedTotal = 0;
+  let completedCount = 0;
+  let pendingTotal = 0;
+  let pendingCount = 0;
+
+  for (const refund of refunds) {
+    if (refund.status === "completed") {
+      completedTotal += refund.amount;
+      completedCount += 1;
+    } else if (refund.status === "pending") {
+      pendingTotal += refund.amount;
+      pendingCount += 1;
+    }
+  }
+
+  return { completedTotal, completedCount, pendingTotal, pendingCount };
 }
 
 export function refundsInMonth(
@@ -73,14 +88,16 @@ export function combineRevenueStats(
   const paymentStats = aggregatePaymentStats(payments);
   const refundStats = aggregateRefundStats(refunds);
   const grossTotal = paymentStats.total;
-  const netTotal = grossTotal - refundStats.total;
+  const netTotal = grossTotal - refundStats.completedTotal;
 
   return {
     ...paymentStats,
     grossTotal,
-    refundsTotal: refundStats.total,
+    refundsTotal: refundStats.completedTotal,
+    pendingRefundsTotal: refundStats.pendingTotal,
     netTotal,
-    refundCount: refundStats.count,
+    refundCount: refundStats.completedCount,
+    pendingRefundCount: refundStats.pendingCount,
   };
 }
 

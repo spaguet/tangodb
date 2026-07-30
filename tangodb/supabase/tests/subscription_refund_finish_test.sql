@@ -31,6 +31,8 @@ DECLARE
   v_result jsonb;
   v_status text;
   v_refund_amount numeric;
+  v_refund_id uuid;
+  v_lessons_left int;
   v_idempotency uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 BEGIN
   SELECT id INTO v_version_id FROM crm_product_versions WHERE code = 'v2';
@@ -147,6 +149,51 @@ BEGIN
     (SELECT COUNT(*) FROM subscription_refunds WHERE subscription_id = v_sub) = 1,
     'idempotency should not create duplicate refund'
   );
+
+  -- Partial refund on a fresh subscription
+  v_sub := 'ffffffff-ffff-ffff-ffff-000000000602';
+  INSERT INTO subscriptions (
+    id, organization_id, type, client_id1, lessons_total, lessons_left,
+    activation_date, status, discipline_id, price_id, category, billing_model
+  )
+  VALUES (
+    v_sub, v_org, 'solo', v_client, 8, 6,
+    CURRENT_DATE - 10, 'active', v_disc, v_price, 'group', 'lesson_count'
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO payments (
+    id, organization_id, client_id, client_display, amount, method, subscription_id, created_at
+  )
+  VALUES (
+    'ffffffff-ffff-ffff-ffff-000000000802', v_org, v_client, 'Refund Ivan', 8000, 'cash', v_sub, now()
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+  v_result := create_subscription_refund(
+    v_sub::text,
+    v_client,
+    2000,
+    'cash',
+    'Частичный возврат',
+    'pending',
+    current_date,
+    'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid,
+    2
+  );
+  PERFORM _refund_test_assert((v_result ->> 'success')::boolean, 'partial pending refund should succeed');
+  PERFORM _refund_test_assert((v_result ->> 'lessonsDeducted')::int = 2, 'should deduct 2 lessons');
+
+  SELECT status, lessons_left INTO v_status, v_lessons_left
+  FROM subscriptions WHERE id = v_sub;
+  PERFORM _refund_test_assert(v_status = 'active', 'partial refund keeps subscription active');
+  PERFORM _refund_test_assert(v_lessons_left = 4, 'lessons_left should decrease by 2');
+
+  SELECT id INTO v_refund_id FROM subscription_refunds
+  WHERE subscription_id = v_sub AND status = 'pending' LIMIT 1;
+
+  v_result := complete_subscription_refund(v_refund_id, current_date);
+  PERFORM _refund_test_assert((v_result ->> 'success')::boolean, 'complete pending refund should succeed');
 END;
 $$;
 

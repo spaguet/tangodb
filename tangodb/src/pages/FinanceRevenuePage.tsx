@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp, Clock3 } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import { usePayments, getPaymentMethodLabel } from "../hooks/usePayments";
-import { useSubscriptionRefunds } from "../hooks/useSubscriptionRefunds";
+import {
+  useCompleteSubscriptionRefund,
+  useSubscriptionRefunds,
+} from "../hooks/useSubscriptionRefunds";
 import { useOtherIncome } from "../hooks/useOtherIncome";
 import type { PaymentMethod } from "../types";
 import { useI18n } from "../hooks/useI18n";
@@ -14,9 +17,13 @@ import {
   shiftMonth,
 } from "../lib/financeReports";
 import { currentYearMonth, formatCurrency, formatMonthTitle } from "../lib/utils";
+import { useToast } from "../App";
+import { resolveMutationError } from "../lib/resolveMutationError";
 
 export default function FinanceRevenuePage() {
-  const { t, locale, plural } = useI18n();
+  const { t, locale, plural, formatDate } = useI18n();
+  const toast = useToast();
+  const completeRefund = useCompleteSubscriptionRefund();
   const [yearMonth, setYearMonth] = useState(currentYearMonth());
   const range = monthDateRange(yearMonth);
   const paymentsQuery = usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
@@ -36,6 +43,23 @@ export default function FinanceRevenuePage() {
       total: paymentStats.netTotal + otherFromTable,
     };
   }, [paymentsQuery.data, refundsQuery.data, otherIncomeQuery.data, yearMonth]);
+
+  const pendingRefunds = useMemo(
+    () => (refundsQuery.data ?? []).filter((refund) => refund.status === "pending"),
+    [refundsQuery.data]
+  );
+
+  const pendingTotal = pendingRefunds.reduce((sum, refund) => sum + refund.amount, 0);
+
+  const handleCompletePending = async (refundId: string, amount: number) => {
+    if (!window.confirm(t("subscriptions.refund.completeConfirm", { amount: formatCurrency(amount) }))) return;
+    const res = await completeRefund.mutateAsync({ refundId });
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "subscriptions.refund.error.completeFailed", t), "error");
+      return;
+    }
+    toast(t("subscriptions.refund.completeSuccess", { amount: formatCurrency(res.amount) }), "success");
+  };
 
   if (paymentsQuery.isLoading || otherIncomeQuery.isLoading || refundsQuery.isLoading) {
     return <LoadingState label={t("finance.revenue.loading")} />;
@@ -108,6 +132,13 @@ export default function FinanceRevenuePage() {
               ) : null}
             </div>
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.pendingRefunds")}</p>
+              <p className="text-lg font-semibold text-amber-700 mt-0.5">{formatCurrency(pendingTotal)}</p>
+              {pendingRefunds.length > 0 ? (
+                <p className="text-[10px] text-slate-500 mt-0.5">{pendingRefunds.length}</p>
+              ) : null}
+            </div>
+            <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.subscriptions")}</p>
               <p className="text-lg font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.subscriptionTotal)}</p>
             </div>
@@ -153,6 +184,40 @@ export default function FinanceRevenuePage() {
           )}
         </div>
       </div>
+
+      {pendingRefunds.length > 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+            <Clock3 className="w-4 h-4 text-amber-600" />
+            <h3 className="font-sans text-sm font-semibold text-slate-800">{t("finance.revenue.pendingRefundsTitle")}</h3>
+          </div>
+          <ul className="divide-y divide-slate-100">
+            {pendingRefunds.map((refund) => (
+              <li key={refund.id} className="px-4 py-3 flex items-center justify-between gap-3 text-sm">
+                <div>
+                  <p className="font-semibold text-slate-800">{formatCurrency(refund.amount)}</p>
+                  <p className="text-xs text-slate-500">
+                    {formatDate(refund.operationDate)}
+                    {" · "}
+                    {t(`subscriptions.refund.kind.${refund.refundKind}`)}
+                    {" · "}
+                    {getPaymentMethodLabel(refund.method, t)}
+                  </p>
+                  {refund.reason ? <p className="text-xs text-slate-500 italic mt-0.5">{refund.reason}</p> : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCompletePending(refund.id, refund.amount)}
+                  disabled={completeRefund.isPending}
+                  className="shrink-0 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer disabled:opacity-50"
+                >
+                  {t("subscriptions.refund.completeAction")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -459,7 +459,13 @@ export default function FinancialDashboard() {
   const stats = useMemo(() => {
     const monthPayments = paymentsInMonth(paymentsQuery.data ?? [], statsMonth);
     const monthRefunds = refundsInMonth(refundsQuery.data ?? [], statsMonth);
-    return combineRevenueStats(monthPayments, monthRefunds);
+    const base = combineRevenueStats(monthPayments, monthRefunds);
+    const allPending = (refundsQuery.data ?? []).filter((refund) => refund.status === "pending");
+    return {
+      ...base,
+      pendingRefundsTotal: allPending.reduce((sum, refund) => sum + refund.amount, 0),
+      pendingRefundCount: allPending.length,
+    };
   }, [paymentsQuery.data, refundsQuery.data, statsMonth]);
 
   const expensesTotal = useMemo(
@@ -617,6 +623,11 @@ export default function FinancialDashboard() {
               <p className="text-[10px] text-slate-500 mt-0.5">
                 {t("finance.revenue.gross")}: {formatCurrency(stats.grossTotal)} · {t("finance.revenue.refunds")}: −
                 {formatCurrency(stats.refundsTotal)}
+              </p>
+            ) : null}
+            {stats.pendingRefundsTotal > 0 ? (
+              <p className="text-[10px] text-amber-700 mt-0.5">
+                {t("finance.revenue.pendingRefunds")}: {formatCurrency(stats.pendingRefundsTotal)}
               </p>
             ) : null}
             <div className="flex items-center gap-1 mt-0.5">

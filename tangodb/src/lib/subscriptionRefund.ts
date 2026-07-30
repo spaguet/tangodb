@@ -6,6 +6,7 @@ export interface SubscriptionRefundFormula {
   salePrice: number;
   receivedTotal: number;
   priorRefunds: number;
+  pendingRefunds?: number;
   availableAmount: number;
   recommendedAmount?: number;
   lessonsTotal?: number;
@@ -42,6 +43,8 @@ export interface SubscriptionRefundRecord {
   recommendedAmount?: number | null;
   method: "cash" | "transfer" | "card" | "other";
   status: "pending" | "completed" | "cancelled";
+  refundKind: "partial" | "finish";
+  lessonsDeducted: number;
   reason: string;
   operationDate: string;
   completedAt?: string | null;
@@ -55,6 +58,7 @@ export function mapRefundFormula(raw: Record<string, unknown>): SubscriptionRefu
     salePrice: Number(raw.salePrice) || 0,
     receivedTotal: Number(raw.receivedTotal) || 0,
     priorRefunds: Number(raw.priorRefunds) || 0,
+    pendingRefunds: raw.pendingRefunds != null ? Number(raw.pendingRefunds) : undefined,
     availableAmount: Number(raw.availableAmount) || 0,
     recommendedAmount:
       raw.recommendedAmount != null ? Number(raw.recommendedAmount) : undefined,
@@ -100,6 +104,8 @@ export function mapSubscriptionRefund(row: Record<string, unknown>): Subscriptio
       row.recommended_amount != null ? Number(row.recommended_amount) : null,
     method: (row.method as SubscriptionRefundRecord["method"]) || "cash",
     status: (row.status as SubscriptionRefundRecord["status"]) || "completed",
+    refundKind: (row.refund_kind as SubscriptionRefundRecord["refundKind"]) || "finish",
+    lessonsDeducted: Number(row.lessons_deducted) || 0,
     reason: String(row.reason ?? ""),
     operationDate: String(row.operation_date ?? "").slice(0, 10),
     completedAt: row.completed_at != null ? String(row.completed_at) : null,
@@ -119,6 +125,19 @@ export function previewRecommendedRefund(
   return Math.min(recommended, availableAmount);
 }
 
+export function computeLessonsFromRefundAmount(
+  amount: number,
+  perLessonPrice: number,
+  lessonsLeft: number
+): number {
+  if (perLessonPrice <= 0 || amount <= 0 || lessonsLeft <= 0) return 0;
+  return Math.min(lessonsLeft, Math.floor(amount / perLessonPrice));
+}
+
 export function isRefundAmountValid(amount: number, availableAmount: number): boolean {
   return amount >= 0 && amount <= availableAmount + 0.0001;
+}
+
+export function isPartialRefundAmountValid(amount: number, availableAmount: number): boolean {
+  return amount > 0 && amount <= availableAmount + 0.0001;
 }

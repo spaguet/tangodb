@@ -46,6 +46,7 @@ export default function FinishSubscriptionWithRefundDialog({
   const [amountInput, setAmountInput] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [reason, setReason] = useState("");
+  const [payoutStatus, setPayoutStatus] = useState<"completed" | "pending">("completed");
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const preview = previewQuery.data;
@@ -71,6 +72,7 @@ export default function FinishSubscriptionWithRefundDialog({
       setAmountInput(recommended > 0 ? String(recommended) : "");
     }
     setMethod("cash");
+    setPayoutStatus("completed");
   }, [subscription, preview, formula]);
 
   useEffect(() => {
@@ -107,6 +109,7 @@ export default function FinishSubscriptionWithRefundDialog({
       amount: parsedAmount,
       method,
       reason: reason.trim(),
+      status: payoutStatus,
       idempotencyKey,
     });
 
@@ -116,10 +119,15 @@ export default function FinishSubscriptionWithRefundDialog({
     }
 
     toast(
-      t("subscriptions.refund.success", {
-        amount: formatCurrency(res.amount),
-        id: res.refundId?.slice(0, 8) ?? "—",
-      }),
+      res.status === "pending"
+        ? t("subscriptions.refund.successPending", {
+            amount: formatCurrency(res.amount),
+            id: res.refundId?.slice(0, 8) ?? "—",
+          })
+        : t("subscriptions.refund.success", {
+            amount: formatCurrency(res.amount),
+            id: res.refundId?.slice(0, 8) ?? "—",
+          }),
       "success"
     );
     onSuccess();
@@ -198,6 +206,12 @@ export default function FinishSubscriptionWithRefundDialog({
                         <span className="text-slate-400">{t("subscriptions.refund.priorRefunds")}</span>
                         <p className="font-semibold text-slate-800">{formatCurrency(formula.priorRefunds)}</p>
                       </div>
+                      {(formula.pendingRefunds ?? 0) > 0 ? (
+                        <div>
+                          <span className="text-slate-400">{t("subscriptions.refund.pendingRefunds")}</span>
+                          <p className="font-semibold text-amber-700">{formatCurrency(formula.pendingRefunds ?? 0)}</p>
+                        </div>
+                      ) : null}
                       <div>
                         <span className="text-slate-400">{t("subscriptions.refund.available")}</span>
                         <p className="font-semibold text-emerald-700">{formatCurrency(formula.availableAmount)}</p>
@@ -270,6 +284,15 @@ export default function FinishSubscriptionWithRefundDialog({
                         {getPaymentMethodLabel(m, t)}
                       </option>
                     ))}
+                  </AppSelect>
+
+                  <AppSelect
+                    label={t("subscriptions.refund.payoutStatus")}
+                    value={payoutStatus}
+                    onChange={(e) => setPayoutStatus(e.target.value as "completed" | "pending")}
+                  >
+                    <option value="completed">{t("subscriptions.refund.payoutCompleted")}</option>
+                    <option value="pending">{t("subscriptions.refund.payoutPending")}</option>
                   </AppSelect>
 
                   <div>

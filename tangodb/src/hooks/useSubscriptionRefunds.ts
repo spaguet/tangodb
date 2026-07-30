@@ -115,15 +115,132 @@ export function useFinishSubscriptionWithRefund() {
         idempotentReplay: result.idempotentReplay === true,
       };
     },
-    onSuccess: (result) => {
-      if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey });
-        void queryClient.invalidateQueries({ queryKey: subscriptionRefundsQueryKey });
-        void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
-        void queryClient.invalidateQueries({ queryKey: payrollQueryKey });
-      }
-    },
+    onSuccess: invalidateRefundQueries(queryClient),
   });
+}
+
+export function useCreateSubscriptionRefund() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      subscriptionId: string;
+      recipientClientId: string;
+      amount: number;
+      method: PaymentMethod;
+      reason: string;
+      status?: "pending" | "completed";
+      operationDate?: string;
+      idempotencyKey?: string;
+      lessonsToDeduct?: number | null;
+    }) => {
+      const { data, error } = await supabase.rpc("create_subscription_refund", {
+        p_sub_id: input.subscriptionId,
+        p_recipient_client_id: input.recipientClientId,
+        p_amount: input.amount,
+        p_method: input.method,
+        p_reason: input.reason.trim(),
+        p_status: input.status ?? "completed",
+        p_operation_date: input.operationDate ?? null,
+        p_idempotency_key: input.idempotencyKey ?? null,
+        p_lessons_to_deduct: input.lessonsToDeduct ?? null,
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        refundId?: string;
+        amount?: number;
+        status?: string;
+        lessonsDeducted?: number;
+        idempotentReplay?: boolean;
+      } | null;
+
+      if (!result?.success) {
+        return {
+          success: false as const,
+          error: result?.error ?? "subscriptions.refund.error.partialFailed",
+        };
+      }
+
+      return {
+        success: true as const,
+        refundId: result.refundId,
+        amount: Number(result.amount) || 0,
+        status: result.status,
+        lessonsDeducted: Number(result.lessonsDeducted) || 0,
+        idempotentReplay: result.idempotentReplay === true,
+      };
+    },
+    onSuccess: invalidateRefundQueries(queryClient),
+  });
+}
+
+export function useCompleteSubscriptionRefund() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { refundId: string; operationDate?: string }) => {
+      const { data, error } = await supabase.rpc("complete_subscription_refund", {
+        p_refund_id: input.refundId,
+        p_operation_date: input.operationDate ?? null,
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as { success?: boolean; error?: string; refundId?: string; amount?: number } | null;
+      if (!result?.success) {
+        return {
+          success: false as const,
+          error: result?.error ?? "subscriptions.refund.error.completeFailed",
+        };
+      }
+
+      return {
+        success: true as const,
+        refundId: result.refundId,
+        amount: Number(result.amount) || 0,
+      };
+    },
+    onSuccess: invalidateRefundQueries(queryClient),
+  });
+}
+
+export function useCancelSubscriptionRefund() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { refundId: string; reason?: string }) => {
+      const { data, error } = await supabase.rpc("cancel_subscription_refund", {
+        p_refund_id: input.refundId,
+        p_reason: input.reason?.trim() || null,
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as { success?: boolean; error?: string; refundId?: string } | null;
+      if (!result?.success) {
+        return {
+          success: false as const,
+          error: result?.error ?? "subscriptions.refund.error.cancelFailed",
+        };
+      }
+
+      return { success: true as const, refundId: result.refundId };
+    },
+    onSuccess: invalidateRefundQueries(queryClient),
+  });
+}
+
+function invalidateRefundQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey });
+    void queryClient.invalidateQueries({ queryKey: subscriptionRefundsQueryKey });
+    void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
+    void queryClient.invalidateQueries({ queryKey: payrollQueryKey });
+  };
 }
 
 export type { SubscriptionRefundPreview, SubscriptionRefundRecord };
