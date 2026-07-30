@@ -34,6 +34,7 @@ import ScheduleUpcomingCancellationsBlock from "./ScheduleUpcomingCancellationsB
 import TeacherVacationDialog from "./TeacherVacationDialog";
 import CreateCalendarEventDialog from "./CreateCalendarEventDialog";
 import CreateRentalDialog from "./CreateRentalDialog";
+import CreateRentalSeriesDialog from "./CreateRentalSeriesDialog";
 import EventInfoPopup from "./EventInfoPopup";
 import RentalInfoPopup from "./RentalInfoPopup";
 import SellPackageModal from "../ui/SellPackageModal";
@@ -45,6 +46,7 @@ type AddFlow =
   | { mode: "group"; prefill: ScheduleCellPrefill }
   | { mode: "personal"; prefill: ScheduleCellPrefill }
   | { mode: "rental"; prefill: ScheduleCellPrefill }
+  | { mode: "rental-series"; prefill: ScheduleCellPrefill }
   | null;
 
 export default function SchedulePageContainer() {
@@ -416,6 +418,7 @@ export default function SchedulePageContainer() {
   const groupPrefill = addFlow?.mode === "group" ? addFlow.prefill : null;
   const personalPrefill = addFlow?.mode === "personal" ? addFlow.prefill : null;
   const rentalDialogPrefill = addFlow?.mode === "rental" ? addFlow.prefill : null;
+  const rentalSeriesDialogPrefill = addFlow?.mode === "rental-series" ? addFlow.prefill : null;
 
   const isLoading =
     locationsQuery.isLoading ||
@@ -560,6 +563,19 @@ export default function SchedulePageContainer() {
         onSuccess={handleScheduleRefresh}
       />
 
+      <CreateRentalSeriesDialog
+        open={!!rentalSeriesDialogPrefill}
+        prefill={rentalSeriesDialogPrefill}
+        preselectedRenterId={preselectedRenterId}
+        locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
+        toast={toast}
+        onClose={() => {
+          setPreselectedRenterId(null);
+          if (addFlow?.mode === "rental-series") closeAddFlow();
+        }}
+        onSuccess={handleScheduleRefresh}
+      />
+
       <LessonInfoPopup
         lesson={selectedLesson}
         locationName={selectedLessonMeta?.locationName}
@@ -607,6 +623,11 @@ export default function SchedulePageContainer() {
         onSelectRental={() => {
           if (addFlow?.mode === "type-select") {
             setAddFlow({ mode: "rental", prefill: addFlow.prefill });
+          }
+        }}
+        onSelectRentalSeries={() => {
+          if (addFlow?.mode === "type-select") {
+            setAddFlow({ mode: "rental-series", prefill: addFlow.prefill });
           }
         }}
       />

@@ -176,6 +176,7 @@ export interface RentalDisplayLesson {
   timeStart: string;
   timeEnd: string;
   locationId: string | null;
+  rentalSeriesId?: string | null;
   bookingStatus: "confirmed" | "cancelled";
   purpose?: string | null;
   renterName?: string | null;
@@ -183,6 +184,118 @@ export interface RentalDisplayLesson {
   fixedAmount?: number | null;
   paidAmount?: number | null;
   currency?: string;
+}
+
+export type RentalTariffType = "hourly" | "fixed";
+
+export type RentalTariffStatus = "active" | "archived";
+
+export interface RentalTariffRule {
+  id?: string;
+  priority: number;
+  daysOfWeek: number[];
+  timeStart: string;
+  timeEnd: string;
+  priceOverride: number;
+  validFrom?: string | null;
+  validTo?: string | null;
+}
+
+export interface RentalTariff {
+  id: string;
+  name: string;
+  tariffType: RentalTariffType;
+  locationId: string | null;
+  price: number | null;
+  currency: string | null;
+  minDurationMinutes: number;
+  roundingStepMinutes: number;
+  validFrom: string | null;
+  validTo: string | null;
+  status: RentalTariffStatus;
+  rulesCount: number;
+}
+
+export type RentalSeriesStatus = "active" | "cancelled" | "completed";
+
+export interface RentalSeriesPattern {
+  id?: string;
+  daysOfWeek: number[];
+  timeStart: string;
+  timeEnd: string;
+}
+
+export interface RentalSeries {
+  id: string;
+  renterId: string;
+  contractId: string | null;
+  locationId: string;
+  tariffId: string;
+  validFrom: string;
+  validTo: string;
+  status: RentalSeriesStatus;
+  purpose: string | null;
+}
+
+export interface RentalSeriesPreviewOccurrence {
+  occurrenceDate: string;
+  timeStart: string;
+  timeEnd: string;
+  patternId?: string | null;
+  locationId: string;
+  calculatedAmount: number | null;
+  currency: string | null;
+  tariffType: RentalTariffType | null;
+  pricingBreakdown: unknown | null;
+  conflicts: unknown[];
+  hasConflict: boolean;
+}
+
+export type RentalInvoiceStatus =
+  | "draft"
+  | "invoiced"
+  | "partially_paid"
+  | "paid"
+  | "overdue"
+  | "cancelled";
+
+export interface RentalInvoice {
+  id: string;
+  seriesId: string | null;
+  periodStart: string;
+  periodEnd: string;
+  dueDate: string;
+  status: RentalInvoiceStatus;
+  currency: string;
+  totalAmount: number;
+  paidAmount: number;
+  outstanding: number;
+}
+
+export interface RentalAdvance {
+  id: string;
+  amount: number;
+  allocatedAmount: number;
+  currency: string;
+  receivedAt: string;
+  notes: string | null;
+}
+
+export interface RentalDeposit {
+  id: string;
+  balance: number;
+  currency: string;
+  contractId: string | null;
+  updatedAt: string;
+}
+
+export interface RenterRentalFinanceExtended {
+  invoiceDebt: number;
+  uninvoicedRentalDebt: number;
+  totalDebt: number;
+  advanceBalance: number;
+  depositBalance: number;
+  overdueAmount: number;
 }
 
 export type DisplayLesson = GroupDisplayLesson | PersonalDisplayLesson | EventDisplayLesson | RentalDisplayLesson;

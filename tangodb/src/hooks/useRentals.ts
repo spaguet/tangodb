@@ -102,6 +102,7 @@ function mapScheduleRow(row: Record<string, unknown>): RentalDisplayLesson {
     timeStart: normalizeTime(String(row.time_start)),
     timeEnd: normalizeTime(String(row.time_end)),
     locationId: row.location_id != null ? String(row.location_id) : null,
+    rentalSeriesId: row.rental_series_id != null ? String(row.rental_series_id) : null,
     bookingStatus: (row.booking_status as "confirmed" | "cancelled") ?? "confirmed",
     purpose: row.purpose != null ? String(row.purpose) : null,
     renterName: row.renter_name != null ? String(row.renter_name) : null,
@@ -190,10 +191,14 @@ export interface RentalDetail {
   timeStart: string;
   timeEnd: string;
   locationId: string;
+  rentalSeriesId?: string | null;
   bookingStatus: "confirmed" | "cancelled";
   purpose?: string | null;
   internalComment?: string | null;
   fixedAmount?: number | null;
+  calculatedAmount?: number | null;
+  pricingBreakdown?: unknown | null;
+  tariffType?: string | null;
   currency?: string;
   paidAmount?: number | null;
   paymentStatus?: RentalPaymentStatus | null;
@@ -234,10 +239,14 @@ export function useRentalDetail(rentalId: string | null, enabled: boolean) {
         timeStart: normalizeTime(String(r.time_start)),
         timeEnd: normalizeTime(String(r.time_end)),
         locationId: String(r.location_id),
+        rentalSeriesId: r.rental_series_id != null ? String(r.rental_series_id) : null,
         bookingStatus: (r.booking_status as "confirmed" | "cancelled") ?? "confirmed",
         purpose: r.purpose != null ? String(r.purpose) : null,
         internalComment: r.internal_comment != null ? String(r.internal_comment) : null,
         fixedAmount: r.fixed_amount != null ? Number(r.fixed_amount) : null,
+        calculatedAmount: r.calculated_amount != null ? Number(r.calculated_amount) : null,
+        pricingBreakdown: r.pricing_breakdown ?? null,
+        tariffType: r.tariff_type != null ? String(r.tariff_type) : null,
         currency: r.currency != null ? String(r.currency) : "RUB",
         paidAmount: r.paid_amount != null ? Number(r.paid_amount) : null,
         paymentStatus: (r.payment_status as RentalPaymentStatus | null) ?? null,
@@ -273,6 +282,7 @@ export interface CreateRentalInput {
   timeEnd: string;
   locationId: string;
   renterId: string;
+  tariffId?: string | null;
   purpose?: string;
   internalComment?: string;
   fixedAmount?: number;
@@ -302,6 +312,7 @@ export function useCreateRental() {
           time_end: input.timeEnd,
           location_id: input.locationId,
           renter_id: input.renterId,
+          tariff_id: input.tariffId ?? null,
           purpose: input.purpose ?? null,
           internal_comment: input.internalComment ?? null,
           fixed_amount: input.fixedAmount ?? 0,

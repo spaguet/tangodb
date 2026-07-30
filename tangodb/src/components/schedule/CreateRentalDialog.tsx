@@ -8,6 +8,7 @@ import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useCreateRenter, useRenters } from "../../hooks/useRenters";
 import { useCreateRental, useRentalConflictsPreview } from "../../hooks/useRentals";
+import { useRentalTariffs } from "../../hooks/useRentalTariffs";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import type { PaymentMethod } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
@@ -54,6 +55,7 @@ export default function CreateRentalDialog({
   const createMutation = useCreateRental();
   const createRenterMutation = useCreateRenter();
   const rentersQuery = useRenters({ enabled: open, activeOnly: true });
+  const tariffsQuery = useRentalTariffs({ status: "active" }, open && canSeeFinance);
 
   const defaultLocationId = prefill?.locationId ?? locations[0]?.id ?? "";
 
@@ -70,6 +72,7 @@ export default function CreateRentalDialog({
   const [fixedAmount, setFixedAmount] = useState("");
   const [initialPayment, setInitialPayment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [tariffId, setTariffId] = useState("");
   const [idempotencyKey, setIdempotencyKey] = useState("");
 
   useEffect(() => {
@@ -88,6 +91,7 @@ export default function CreateRentalDialog({
     setFixedAmount("");
     setInitialPayment("");
     setPaymentMethod("cash");
+    setTariffId("");
     setIdempotencyKey(crypto.randomUUID());
   }, [open, prefill, defaultLocationId, preselectedRenterId]);
 
@@ -101,6 +105,16 @@ export default function CreateRentalDialog({
 
   const locationName = locations.find((l) => l.id === locationId)?.name ?? "";
   const renterLabel = rentersQuery.data?.find((r) => r.id === renterId)?.displayName ?? "";
+
+  const fixedTariffs = useMemo(
+    () =>
+      (tariffsQuery.data ?? []).filter(
+        (tariff) =>
+          tariff.tariffType === "fixed" &&
+          (!tariff.locationId || tariff.locationId === locationId)
+      ),
+    [tariffsQuery.data, locationId]
+  );
 
   const previewSummary = useMemo(() => {
     if (!rentalDate || !timeStart || !timeEnd) return "";
@@ -168,6 +182,7 @@ export default function CreateRentalDialog({
       timeEnd,
       locationId,
       renterId,
+      tariffId: tariffId || null,
       purpose: purpose.trim() || undefined,
       internalComment: internalComment.trim() || undefined,
       fixedAmount: amount,
@@ -277,6 +292,15 @@ export default function CreateRentalDialog({
                   <span className={labelCls}>{t("schedule.rental.purposeLabel")}</span>
                   <input className={fieldCls} value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder={t("schedule.rental.purposePlaceholder")} />
                 </div>
+
+                {canSeeFinance && fixedTariffs.length > 0 ? (
+                  <AppSelect label={t("rentalTariffs.fixedTariffLabel")} value={tariffId} onChange={(e) => setTariffId(e.target.value)}>
+                    <option value="">{t("rentalTariffs.noTariff")}</option>
+                    {fixedTariffs.map((tariff) => (
+                      <option key={tariff.id} value={tariff.id}>{tariff.name}</option>
+                    ))}
+                  </AppSelect>
+                ) : null}
 
                 {canSeeFinance ? (
                   <>

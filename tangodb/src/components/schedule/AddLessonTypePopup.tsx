@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Layers, User, Building2, X } from "lucide-react";
+import { Layers, User, Building2, CalendarRange, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 
 export interface ScheduleCellPrefill {
@@ -20,6 +20,7 @@ interface AddLessonTypePopupProps {
   onSelectGroup: () => void;
   onSelectPersonal: () => void;
   onSelectRental?: () => void;
+  onSelectRentalSeries?: () => void;
   onClose: () => void;
 }
 
@@ -31,6 +32,7 @@ export default function AddLessonTypePopup({
   onSelectGroup,
   onSelectPersonal,
   onSelectRental,
+  onSelectRentalSeries,
   onClose,
 }: AddLessonTypePopupProps) {
   const { t } = useI18n();
@@ -120,6 +122,20 @@ export default function AddLessonTypePopup({
                   <div>
                     <p className="text-sm font-semibold text-slate-800">{t("schedule.rental.action")}</p>
                     <p className="text-xs text-slate-500">{t("schedule.popup.rentalOnce")}</p>
+                  </div>
+                </button>
+              )}
+
+              {canOfferRental && onSelectRentalSeries && (
+                <button
+                  type="button"
+                  onClick={onSelectRentalSeries}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 transition-colors cursor-pointer text-left"
+                >
+                  <CalendarRange className="w-5 h-5 text-amber-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{t("rentalSeries.action")}</p>
+                    <p className="text-xs text-slate-500">{t("schedule.popup.rentalSeries")}</p>
                   </div>
                 </button>
               )}

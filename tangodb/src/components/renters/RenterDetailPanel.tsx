@@ -38,6 +38,7 @@ import {
   useUpsertRenterContact,
   useUpsertRenterContract,
 } from "../../hooks/useRenterCrm";
+import { useRenterRentalFinance, useRenterRentalInvoices } from "../../hooks/useRentalInvoices";
 import { translateMutationBlockedMessage } from "../../hooks/useOnlineStatus";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
@@ -208,7 +209,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
         ) : null}
 
         {activeTab === "finance" && canSeeFinance ? (
-          <FinanceTab finance={finance} rentals={rentalsQuery.data ?? []} locationMap={locationMap} t={t} formatDate={formatDate} />
+          <FinanceTab renterId={renterId} finance={finance} rentals={rentalsQuery.data ?? []} locationMap={locationMap} t={t} formatDate={formatDate} />
         ) : null}
 
         {activeTab === "contracts" ? (
@@ -549,20 +550,32 @@ function RentalsTab({
 }
 
 function FinanceTab({
+  renterId,
   finance,
   rentals,
   locationMap,
   t,
   formatDate,
 }: {
+  renterId: string;
   finance: RenterFinanceSummary | null;
   rentals: RenterRentalRow[];
   locationMap: Map<string, string>;
   t: (key: import("../../lib/i18n/keys").I18nKey) => string;
   formatDate: (d: string) => string;
 }) {
+  const rentalFinanceQuery = useRenterRentalFinance(renterId);
+  const invoicesQuery = useRenterRentalInvoices(renterId);
+
   if (!finance) return null;
+  const extended = rentalFinanceQuery.data;
   const withDebt = rentals.filter((r) => r.fixedAmount != null && r.paidAmount != null && r.fixedAmount > r.paidAmount);
+  const invoices = invoicesQuery.data ?? [];
+
+  const invoiceStatusLabel = (status: string) => {
+    const key = `rentalInvoices.status.${status}` as import("../../lib/i18n/keys").I18nKey;
+    return t(key);
+  };
 
   return (
     <div className="space-y-4">
@@ -570,8 +583,54 @@ function FinanceTab({
         <StatBox label={t("renters.detail.turnover")} value={formatCurrency(finance.fixedTotal)} />
         <StatBox label={t("renters.detail.paid")} value={formatCurrency(finance.paidTotal)} />
         <StatBox label={t("renters.detail.debt")} value={formatCurrency(finance.debtTotal)} highlight={finance.debtTotal > 0} />
-        <StatBox label="Overpaid" value={formatCurrency(finance.overpaidTotal)} />
+        <StatBox label={t("renters.detail.overpaid")} value={formatCurrency(finance.overpaidTotal)} />
       </div>
+
+      {extended ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <StatBox label={t("rentalInvoices.totalDebt")} value={formatCurrency(extended.totalDebt)} highlight={extended.totalDebt > 0} />
+          <StatBox label={t("rentalInvoices.advanceBalance")} value={formatCurrency(extended.advanceBalance)} />
+          <StatBox label={t("rentalInvoices.depositBalance")} value={formatCurrency(extended.depositBalance)} />
+          <StatBox label={t("rentalInvoices.invoiceDebt")} value={formatCurrency(extended.invoiceDebt)} />
+          <StatBox label={t("rentalInvoices.uninvoicedDebt")} value={formatCurrency(extended.uninvoicedRentalDebt)} />
+          <StatBox label={t("rentalInvoices.overdueAmount")} value={formatCurrency(extended.overdueAmount)} highlight={extended.overdueAmount > 0} />
+        </div>
+      ) : rentalFinanceQuery.isLoading ? (
+        <p className="text-xs text-slate-400">{t("common.loading.default")}</p>
+      ) : null}
+
+      {invoices.length > 0 ? (
+        <div>
+          <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("rentalInvoices.title")}</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-slate-400 uppercase tracking-wider">
+                  <th className="py-1 pr-2">{t("rentalInvoices.period")}</th>
+                  <th className="py-1 pr-2">{t("rentalInvoices.dueDate")}</th>
+                  <th className="py-1 pr-2">{t("rentalInvoices.statusLabel")}</th>
+                  <th className="py-1 pr-2 text-right">{t("rentalInvoices.total")}</th>
+                  <th className="py-1 text-right">{t("rentalInvoices.outstanding")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((inv) => (
+                  <tr key={inv.id} className="border-b border-slate-50">
+                    <td className="py-2 pr-2">{formatDate(inv.periodStart)} – {formatDate(inv.periodEnd)}</td>
+                    <td className="py-2 pr-2">{formatDate(inv.dueDate)}</td>
+                    <td className="py-2 pr-2">{invoiceStatusLabel(inv.status)}</td>
+                    <td className="py-2 pr-2 text-right">{formatCurrency(inv.totalAmount)}</td>
+                    <td className={`py-2 text-right font-semibold ${inv.outstanding > 0 ? "text-rose-600" : "text-slate-600"}`}>
+                      {formatCurrency(inv.outstanding)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
       {withDebt.length > 0 ? (
         <div>
           <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("renters.detail.debt")}</h4>

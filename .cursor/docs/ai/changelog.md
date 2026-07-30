@@ -2,6 +2,10 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-30 — tangodb: фронтенд долгосрочной аренды с тарифами (CRM сценарий 14) — типы RentalTariff/RentalSeries/RentalInvoice, хуки useRentalTariffs/useRentalSeries/useRentalInvoices, страница настроек `/settings/rental-tariffs`, диалоги CreateRentalSeriesDialog и расширения RentalInfoPopup/CreateRentalDialog/FinanceTab арендатора, маршрут и RBAC, i18n rentalTariffs.* / rentalSeries.* / rentalInvoices.*, интеграция серии в расписание, rentalSeriesId в useRentals.
+
+2026-07-30 — tangodb: долгосрочная аренда с тарифами (CRM сценарий 14) — миграция `20260845000001_rental_series_tariffs.sql`: таблицы тарифов/серий/счетов/авансов/депозитов, серверный расчёт почасовых и фиксированных ставок с льготными правилами, RPC preview/create/update/cancel серии, инвойсы и финансовые операции, патч `create_rental` (tariff_id) и `get_rentals_for_schedule_week` (rental_series_id), RLS и grants.
+
 2026-07-30 — tangodb: фронтенд CRM арендаторов (сценарий 13) — раздел `/renters`, типы и хуки `useRenterCrm`/`useRenters` (list_renters RPC, upsert, contacts/contracts/documents/communications), RBAC `renters.*`, панели списка и карточки с вкладками, диалог дублей, интеграция с CreateRentalDialog и audit log.
 
 2026-07-30 — tangodb: база арендаторов CRM (сценарий 13) — миграция `20260844000001_renters_crm.sql`: расширение `renters`, таблицы контактов/договоров/документов/коммуникаций, RPC list/detail/upsert/archive/duplicates, bucket `renter-documents`, RLS и audit, патч `create_rental`/`update_rental` для блокировки archived/blocked арендаторов.
