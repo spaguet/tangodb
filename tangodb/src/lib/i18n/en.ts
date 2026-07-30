@@ -470,6 +470,8 @@ export const EN: Record<I18nKey, string> = {
   "corrections.attendance.reason.other": "Other",
   "corrections.attendance.undo": "Undo",
   "corrections.attendance.undoSuccess": "Change undone",
+  "corrections.attendance.dialogTitle": "Correct attendance",
+  "corrections.attendance.undoHint": "Change for {client}. Undo?",
   "corrections.error.stornoFailed": "Reversal failed",
   "corrections.error.correctFailed": "Payment correction failed",
   "corrections.error.attendanceFailed": "Attendance correction failed",

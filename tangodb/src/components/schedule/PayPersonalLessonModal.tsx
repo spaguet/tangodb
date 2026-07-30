@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Clock, X } from "lucide-react";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
 import { useRecordPersonalLessonPayment } from "../../hooks/usePayments";
+import { usePaymentFormIdempotency, usePaymentSubmitState } from "../../hooks/usePaymentFormIdempotency";
+import { formatOperationNumber } from "../../lib/paymentCorrection";
 import { usePrices } from "../../hooks/usePrices";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
@@ -63,6 +65,8 @@ export default function PayPersonalLessonModal({
   const { data: disciplines = [] } = useDisciplines();
   const recordPersonalLessonPayment = useRecordPersonalLessonPayment();
   const updatePersonalLesson = useUpdatePersonalLesson();
+  const paymentIdempotencyKey = usePaymentFormIdempotency(lesson != null);
+  const paymentSubmit = usePaymentSubmitState();
 
   const [bookingPaymentMode, setBookingPaymentMode] = useState<"single" | "package" | null>(null);
   const [customPrice, setCustomPrice] = useState("");
@@ -150,7 +154,7 @@ export default function PayPersonalLessonModal({
       })
       .join(" & ");
 
-  const pending = recordPersonalLessonPayment.isPending || updatePersonalLesson.isPending;
+  const pending = recordPersonalLessonPayment.isPending || updatePersonalLesson.isPending || paymentSubmit.phase === "saving";
 
   const handlePaySingle = async () => {
     if (!lesson) return;
@@ -158,6 +162,7 @@ export default function PayPersonalLessonModal({
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
+    if (paymentSubmit.phase === "saved") return;
 
     const priceNum = parseFloat(customPrice);
     if (Number.isNaN(priceNum) || priceNum < 0) {
@@ -165,20 +170,33 @@ export default function PayPersonalLessonModal({
       return;
     }
 
+    paymentSubmit.begin();
     const paymentRes = await recordPersonalLessonPayment.mutateAsync({
       lessonId: lesson.lessonId,
       clientId: lesson.clientId1,
       clientDisplay: lesson.clientDisplay,
       amount: priceNum,
       method: "cash",
+      idempotencyKey: paymentIdempotencyKey || crypto.randomUUID(),
     });
 
     if (!paymentRes.success) {
+      paymentSubmit.reset();
       toast(paymentRes.error ?? t("common.paymentChargeFailed"), "error");
       return;
     }
 
-    toast(t("common.paymentRecorded"), "success");
+    paymentSubmit.complete(paymentRes.operationNumber);
+    if (paymentRes.alreadyApplied) {
+      toast(t("corrections.payment.alreadyApplied"), "info");
+    } else {
+      toast(
+        paymentRes.operationNumber
+          ? t("corrections.payment.saved", { op: formatOperationNumber(paymentRes.operationNumber) })
+          : t("common.paymentRecorded"),
+        "success"
+      );
+    }
     onSuccess();
     onClose();
   };
@@ -355,7 +373,13 @@ export default function PayPersonalLessonModal({
                     title={translateConnectionBlockReason(connectionState, t)}
                     className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
                   >
-                    {t("common.pay")}
+                    {paymentSubmit.phase === "saving"
+                      ? t("common.saving")
+                      : paymentSubmit.phase === "saved"
+                        ? t("corrections.payment.saved", {
+                            op: formatOperationNumber(paymentSubmit.operationNumber),
+                          })
+                        : t("common.pay")}
                   </button>
                 </>
               )}

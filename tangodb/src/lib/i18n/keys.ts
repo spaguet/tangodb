@@ -428,6 +428,8 @@ export type I18nKey =
   | "corrections.attendance.reason.other"
   | "corrections.attendance.undo"
   | "corrections.attendance.undoSuccess"
+  | "corrections.attendance.dialogTitle"
+  | "corrections.attendance.undoHint"
   | "corrections.error.stornoFailed"
   | "corrections.error.correctFailed"
   | "corrections.error.attendanceFailed"

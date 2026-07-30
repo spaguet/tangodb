@@ -23,6 +23,7 @@ import {
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useScheduleGroups } from "../hooks/useScheduleGroups";
 import { useRecordSubscriptionPayment, PAYMENT_METHODS, getPaymentMethodLabel } from "../hooks/usePayments";
+import { usePaymentFormIdempotency } from "../hooks/usePaymentFormIdempotency";
 import type { PaymentMethod } from "../types";
 import {
   translateConnectionBlockReason,
@@ -264,6 +265,7 @@ export default function SubscriptionsPanel({
   const [paymentMethodComment, setPaymentMethodComment] = useState("");
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [pendingCheckout, setPendingCheckout] = useState(false);
+  const sellPaymentIdempotencyKey = usePaymentFormIdempotency(activeTab === "sell");
   const addWaitlistEntry = useAddGroupWaitlistEntry();
   const canOverrideCapacity = role === "owner" || role === "director";
 
@@ -449,6 +451,7 @@ export default function SubscriptionsPanel({
         amount,
         method: paymentMethod,
         methodComment: paymentMethod === "other" ? paymentMethodComment.trim() : undefined,
+        idempotencyKey: sellPaymentIdempotencyKey || crypto.randomUUID(),
       });
       if (!paymentRes.success) {
         toast(resolveMutationError(paymentRes.error, "subscriptions.error.paymentFailed", t), "error");

@@ -132,6 +132,7 @@ export default function PersonalLessonSaleForm({
   const showLocationInForm = shouldShowLocationPicker(orgModules, accessibleLocations.length);
   const addPersonalLessons = useAddPersonalLessons();
   const recordPersonalLessonPayment = useRecordPersonalLessonPayment();
+  const [paymentIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const isTeacher = role === "teacher";
 
@@ -476,6 +477,7 @@ export default function PersonalLessonSaleForm({
           amount: priceNum,
           method: "cash",
           markPaid: false,
+          idempotencyKey: `${paymentIdempotencyKey}:${lessonId}`,
         });
         if (!paymentRes.success) {
           toast(paymentRes.error ?? t("common.bookedPaymentFailed"), "error");

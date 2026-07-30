@@ -85,6 +85,7 @@ export function useRecordSingleVisit() {
       clientId: string;
       priceId: string;
       method: PaymentMethod;
+      idempotencyKey?: string;
     }) => {
       const { data, error } = await supabase.rpc("record_single_visit", {
         p_visit_date: input.visitDate,
@@ -92,14 +93,28 @@ export function useRecordSingleVisit() {
         p_client_id: input.clientId,
         p_price_id: input.priceId,
         p_method: input.method,
+        p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
       });
 
       if (error) return { success: false as const, error: error.message };
-      const result = data as { success?: boolean; error?: string; visitId?: string } | null;
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        visitId?: string;
+        payment_id?: string;
+        operation_number?: number;
+        already_applied?: boolean;
+      } | null;
       if (!result?.success) {
         return { success: false as const, error: result?.error ?? "attendance.singleVisit.error.recordFailed" };
       }
-      return { success: true as const, visitId: result.visitId };
+      return {
+        success: true as const,
+        visitId: result.visitId,
+        paymentId: result.payment_id,
+        operationNumber: result.operation_number,
+        alreadyApplied: result.already_applied ?? false,
+      };
     },
     onSuccess: (result) => {
       if (result.success) {

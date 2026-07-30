@@ -170,8 +170,6 @@ export function useRecordSubscriptionPayment() {
 
 export function useRecordPersonalLessonPayment() {
   const queryClient = useQueryClient();
-  const { role } = useOrganization();
-  const recordPayment = useRecordPayment();
 
   return useMutation({
     mutationFn: async (input: {
@@ -181,42 +179,32 @@ export function useRecordPersonalLessonPayment() {
       amount: number;
       method: PaymentMethod;
       markPaid?: boolean;
+      idempotencyKey?: string;
     }) => {
-      if (role === "teacher") {
-        const { data, error } = await supabase.rpc("record_personal_lesson_payment", {
-          p_lesson_id: input.lessonId,
-          p_amount: input.amount,
-          p_method: input.method,
-        });
-
-        if (error) return { success: false as const, error: error.message };
-        const result = data as { success?: boolean; error?: string } | null;
-        if (!result?.success) {
-          return { success: false as const, error: result?.error ?? "subscriptions.error.paymentFailed" };
-        }
-        return { success: true as const };
-      }
-
-      const paymentResult = await recordPayment.mutateAsync({
-        clientId: input.clientId,
-        clientDisplay: input.clientDisplay,
-        amount: input.amount,
-        method: input.method,
-        personalLessonId: input.lessonId,
+      const { data, error } = await supabase.rpc("record_personal_lesson_payment", {
+        p_lesson_id: input.lessonId,
+        p_amount: input.amount,
+        p_method: input.method,
+        p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
       });
 
-      if (!paymentResult.success) return paymentResult;
-
-      if (input.markPaid !== false) {
-        const { error } = await supabase
-          .from("personal_lessons")
-          .update({ paid: "yes" })
-          .eq("id", input.lessonId);
-
-        if (error) return { success: false as const, error: error.message };
+      if (error) return { success: false as const, error: error.message };
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        payment_id?: string;
+        operation_number?: number;
+        already_applied?: boolean;
+      } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "subscriptions.error.paymentFailed" };
       }
-
-      return { success: true as const };
+      return {
+        success: true as const,
+        paymentId: result.payment_id,
+        operationNumber: result.operation_number,
+        alreadyApplied: result.already_applied ?? false,
+      };
     },
     onSuccess: (result) => {
       if (result.success) {

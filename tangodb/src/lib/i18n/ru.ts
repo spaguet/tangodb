@@ -467,6 +467,8 @@ export const RU: Record<I18nKey, string> = {
   "corrections.attendance.reason.other": "Другое",
   "corrections.attendance.undo": "Отменить",
   "corrections.attendance.undoSuccess": "Отметка отменена",
+  "corrections.attendance.dialogTitle": "Исправление посещаемости",
+  "corrections.attendance.undoHint": "Изменение для {client}. Отменить?",
   "corrections.error.stornoFailed": "Не удалось выполнить сторно",
   "corrections.error.correctFailed": "Не удалось исправить платёж",
   "corrections.error.attendanceFailed": "Не удалось исправить посещаемость",

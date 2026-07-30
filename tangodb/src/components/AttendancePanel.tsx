@@ -22,6 +22,13 @@ import {
   useScheduleDates,
   useSubsForDate,
 } from "../hooks/useAttendance";
+import { useUndoAttendanceCorrection } from "../hooks/usePaymentCorrections";
+import AttendanceCorrectionDialog, {
+  isWithinAttendanceUndoWindow,
+  type AttendanceCorrectionTarget,
+} from "./attendance/AttendanceCorrectionDialog";
+import { ATTENDANCE_UNDO_WINDOW_MS } from "../lib/paymentCorrection";
+import { usePaymentFormIdempotency } from "../hooks/usePaymentFormIdempotency";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
 import { useClientDirectory } from "../hooks/useClients";
@@ -384,6 +391,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const markAttendance = useMarkAttendance();
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
   const recordSingleVisit = useRecordSingleVisit();
+  const undoAttendance = useUndoAttendanceCorrection();
+  const singleVisitIdempotencyKey = usePaymentFormIdempotency(singleVisitOpen);
+  const [attendanceCorrectionTarget, setAttendanceCorrectionTarget] =
+    useState<AttendanceCorrectionTarget | null>(null);
+  const [pendingUndo, setPendingUndo] = useState<{
+    correctionId: string;
+    expiresAt: number;
+    clientDisplay: string;
+  } | null>(null);
+  const [lastAttendanceChangeAt, setLastAttendanceChangeAt] = useState<Record<string, number>>({});
   const { freezePolicy } = useSettings();
   const isLoading =
     locationsLoading ||
@@ -484,6 +501,17 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     setSelectedLesson(null);
   };
 
+  useEffect(() => {
+    if (!pendingUndo) return;
+    const ms = pendingUndo.expiresAt - Date.now();
+    if (ms <= 0) {
+      setPendingUndo(null);
+      return;
+    }
+    const timer = window.setTimeout(() => setPendingUndo(null), ms);
+    return () => window.clearTimeout(timer);
+  }, [pendingUndo]);
+
   const handleMark = async (
     subId: string,
     status: "present" | "absent" | "freeze" | "excused",
@@ -519,18 +547,81 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       return;
     }
 
+    const changeKey = `${subId}:${selectedDate}:${scheduleGroupId}`;
+    const oldStatus = student.currentStatus ?? null;
+
+    if (
+      oldStatus != null &&
+      oldStatus !== status &&
+      !isWithinAttendanceUndoWindow(lastAttendanceChangeAt[changeKey])
+    ) {
+      setAttendanceCorrectionTarget({
+        dateStr: selectedDate,
+        subId,
+        scheduleGroupId,
+        disciplineId,
+        clientDisplay: student.client1 + (student.client2 ? ` & ${student.client2}` : ""),
+        oldStatus,
+        newStatus: status,
+        lastChangedAt: lastAttendanceChangeAt[changeKey],
+      });
+      return;
+    }
+
     const res = await markAttendance.mutateAsync({
       dateStr: selectedDate,
       subId,
       status,
       disciplineId,
       scheduleGroupId,
+      oldStatus,
+      reasonCode: oldStatus != null && oldStatus !== status ? "misclick" : undefined,
     });
     if (!res.success) {
       toast(res.error || t("common.saveMarkFailed"), "error");
     } else {
+      setLastAttendanceChangeAt((prev) => ({ ...prev, [changeKey]: Date.now() }));
+      if (res.isCorrection && res.correctionId) {
+        setPendingUndo({
+          correctionId: res.correctionId,
+          expiresAt: Date.now() + ATTENDANCE_UNDO_WINDOW_MS,
+          clientDisplay: student.client1,
+        });
+      }
       toast(t("attendance.success.marked", { status: attendanceStatusLabel(status, t) }), "success");
     }
+  };
+
+  const handleAttendanceCorrectionSuccess = (result: {
+    correctionId?: string;
+    clientDisplay: string;
+  }) => {
+    if (!attendanceCorrectionTarget) return;
+    const { subId, scheduleGroupId, newStatus } = attendanceCorrectionTarget;
+    const changeKey = `${subId}:${selectedDate}:${scheduleGroupId}`;
+    setLastAttendanceChangeAt((prev) => ({ ...prev, [changeKey]: Date.now() }));
+    if (result.correctionId) {
+      setPendingUndo({
+        correctionId: result.correctionId,
+        expiresAt: Date.now() + ATTENDANCE_UNDO_WINDOW_MS,
+        clientDisplay: result.clientDisplay,
+      });
+    }
+    toast(
+      t("attendance.success.marked", { status: attendanceStatusLabel(newStatus, t) }),
+      "success"
+    );
+  };
+
+  const handleUndoAttendance = async () => {
+    if (!pendingUndo) return;
+    const res = await undoAttendance.mutateAsync({ correctionId: pendingUndo.correctionId });
+    if (!res.success) {
+      toast(res.error || t("corrections.error.undoFailed"), "error");
+      return;
+    }
+    setPendingUndo(null);
+    toast(t("corrections.attendance.undoSuccess"), "success");
   };
 
   const handleMarkPersonal = async (
@@ -618,13 +709,18 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       clientId: singleVisitClientId,
       priceId: singleVisitPriceId,
       method: singleVisitMethod,
+      idempotencyKey: singleVisitIdempotencyKey || crypto.randomUUID(),
     });
     if (!res.success) {
       toast(res.error || t("attendance.singleVisit.error.recordFailed"), "error");
       return;
     }
 
-    toast(t("attendance.singleVisit.success.recorded"), "success");
+    if (res.alreadyApplied) {
+      toast(t("corrections.payment.alreadyApplied"), "info");
+    } else {
+      toast(t("attendance.singleVisit.success.recorded"), "success");
+    }
     setSingleVisitOpen(false);
     setSingleVisitClientQuery("");
     setSingleVisitClientId("");
@@ -1364,6 +1460,28 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           setPayTarget(null);
           setSelectedLesson(null);
         }}
+      />
+
+      {pendingUndo && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800 text-white text-sm shadow-lg">
+          <span>{t("corrections.attendance.undoHint", { client: pendingUndo.clientDisplay })}</span>
+          <button
+            type="button"
+            onClick={() => void handleUndoAttendance()}
+            disabled={undoAttendance.isPending}
+            className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 font-semibold text-xs"
+          >
+            {t("corrections.attendance.undo")}
+          </button>
+        </div>
+      )}
+
+      <AttendanceCorrectionDialog
+        target={attendanceCorrectionTarget}
+        open={attendanceCorrectionTarget != null}
+        onClose={() => setAttendanceCorrectionTarget(null)}
+        onSuccess={handleAttendanceCorrectionSuccess}
+        toast={toast}
       />
     </div>
   );

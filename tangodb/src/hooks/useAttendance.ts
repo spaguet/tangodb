@@ -413,13 +413,59 @@ export function useMarkAttendance() {
       status,
       disciplineId,
       scheduleGroupId,
+      oldStatus,
+      reasonCode,
+      idempotencyKey,
     }: {
       dateStr: string;
       subId: string;
       status: "present" | "absent" | "freeze" | "excused";
       disciplineId?: string | null;
       scheduleGroupId: string;
+      oldStatus?: "present" | "absent" | "freeze" | "excused" | null;
+      reasonCode?: string;
+      idempotencyKey?: string;
     }) => {
+      const isCorrection = oldStatus != null && oldStatus !== status;
+
+      if (isCorrection) {
+        const { data, error } = await supabase.rpc("correct_attendance", {
+          p_date: dateStr,
+          p_sub_id: subId,
+          p_new_status: status,
+          p_schedule_group_id: scheduleGroupId,
+          p_reason_code: reasonCode ?? "misclick",
+          p_reason_comment: null,
+          p_discipline_id: disciplineId ?? null,
+          p_idempotency_key: idempotencyKey ?? crypto.randomUUID(),
+          p_expected_old_status: oldStatus,
+        });
+
+        if (error) return { success: false as const, error: error.message };
+
+        const result = data as {
+          success?: boolean;
+          error?: string;
+          newLessonsLeft?: number;
+          correction_id?: string;
+          operation_number?: number;
+          already_applied?: boolean;
+        } | null;
+
+        if (!result?.success) {
+          return { success: false as const, error: result?.error ?? "common.saveFailed" };
+        }
+
+        return {
+          success: true as const,
+          newLessonsLeft: result.newLessonsLeft,
+          correctionId: result.correction_id,
+          operationNumber: result.operation_number,
+          alreadyApplied: result.already_applied ?? false,
+          isCorrection: true as const,
+        };
+      }
+
       const { data, error } = await supabase.rpc("mark_attendance", {
         p_date: dateStr,
         p_sub_id: subId,
@@ -438,6 +484,7 @@ export function useMarkAttendance() {
       return {
         success: true as const,
         newLessonsLeft: result.newLessonsLeft,
+        isCorrection: false as const,
       };
     },
     onMutate: async ({ dateStr, subId, status, scheduleGroupId }) => {
