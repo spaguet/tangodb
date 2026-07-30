@@ -58,24 +58,24 @@ export default function ScheduleToolbar({
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-2 sm:gap-3">
+    <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
       <div className="flex items-center gap-1">
         <button
           type="button"
           onClick={() => shiftWeek(-1)}
           aria-label={t("common.aria.prevWeek")}
-          className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        <div className="flex flex-col items-center gap-0.5 min-w-[140px] sm:min-w-[200px] px-3 py-1">
+        <div className="flex flex-col items-center gap-0.5 min-w-[120px] sm:min-w-[180px]">
           <span className="text-sm font-semibold text-slate-800 text-center">{label}</span>
           {!isCurrentWeek && (
             <button
               type="button"
               onClick={goToCurrentWeek}
-              className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+              className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
             >
               {t("common.currentWeek")}
             </button>
@@ -86,7 +86,7 @@ export default function ScheduleToolbar({
           type="button"
           onClick={() => shiftWeek(1)}
           aria-label={t("common.aria.nextWeek")}
-          className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -97,7 +97,7 @@ export default function ScheduleToolbar({
             onClick={() => setPickerOpen((v) => !v)}
             aria-label={t("common.aria.pickWeek")}
             aria-expanded={pickerOpen}
-            className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
           >
             <CalendarDays className="w-4 h-4" />
           </button>

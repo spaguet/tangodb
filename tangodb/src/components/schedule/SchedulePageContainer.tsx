@@ -449,22 +449,23 @@ export default function SchedulePageContainer() {
 
   return (
     <div className="panel-page-stack">
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-[2px] py-1">
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
-          <ScheduleToolbar
-            weekStart={selectedWeekStart}
-            onWeekChange={setSelectedWeekStart}
-            teacherFilter={teacherFilter}
-            onTeacherFilterChange={handleTeacherFilterChange}
-            teacherFilterOptions={teacherFilterOptions}
-            canManageTeacherVacation={canManageTeacherVacation}
-            onTeacherVacationClick={() => setTeacherVacationOpen(true)}
-            canManageCalendarEvents={canManageCalendarEvents}
-            onCreateEventClick={() => setCreateEventOpen(true)}
-            canManageRentals={canManageRentals}
-            onCreateRentalClick={() => setCreateRentalOpen(true)}
-          />
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+        <div className="panel-card-stack">
+          <h2 className="text-base font-semibold tracking-tight text-slate-800">{t("schedule.title")}</h2>
         </div>
+        <ScheduleToolbar
+          weekStart={selectedWeekStart}
+          onWeekChange={setSelectedWeekStart}
+          teacherFilter={teacherFilter}
+          onTeacherFilterChange={handleTeacherFilterChange}
+          teacherFilterOptions={teacherFilterOptions}
+          canManageTeacherVacation={canManageTeacherVacation}
+          onTeacherVacationClick={() => setTeacherVacationOpen(true)}
+          canManageCalendarEvents={canManageCalendarEvents}
+          onCreateEventClick={() => setCreateEventOpen(true)}
+          canManageRentals={canManageRentals}
+          onCreateRentalClick={() => setCreateRentalOpen(true)}
+        />
       </div>
 
       {!hasLocations && noLocationLessons.length === 0 && !hasAnyLessons ? (
