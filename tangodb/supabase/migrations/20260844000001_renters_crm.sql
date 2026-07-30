@@ -35,10 +35,12 @@ ALTER TABLE renters
   FOREIGN KEY (organization_id, duplicate_create_by)
   REFERENCES organization_members (organization_id, id);
 
+ALTER TABLE renters DROP CONSTRAINT IF EXISTS renters_blocked_reason_required;
 ALTER TABLE renters
   ADD CONSTRAINT renters_blocked_reason_required
   CHECK (status <> 'blocked' OR NULLIF(trim(blocked_reason), '') IS NOT NULL);
 
+ALTER TABLE renters DROP CONSTRAINT IF EXISTS renters_archived_at_consistency;
 ALTER TABLE renters
   ADD CONSTRAINT renters_archived_at_consistency
   CHECK (
@@ -69,7 +71,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS renters_org_norm_tax_id_unique
 -- 2. Related tables
 -- =============================================================================
 
-CREATE TABLE renter_contacts (
+CREATE TABLE IF NOT EXISTS renter_contacts (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
   renter_id       UUID NOT NULL,
@@ -88,14 +90,14 @@ CREATE TABLE renter_contacts (
   CHECK (length(trim(full_name)) > 0)
 );
 
-CREATE UNIQUE INDEX renter_contacts_one_primary
+CREATE UNIQUE INDEX IF NOT EXISTS renter_contacts_one_primary
   ON renter_contacts (organization_id, renter_id)
   WHERE is_primary = true;
 
-CREATE INDEX idx_renter_contacts_org_renter
+CREATE INDEX IF NOT EXISTS idx_renter_contacts_org_renter
   ON renter_contacts (organization_id, renter_id);
 
-CREATE TABLE renter_contracts (
+CREATE TABLE IF NOT EXISTS renter_contracts (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id     UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
   renter_id           UUID NOT NULL,
@@ -122,10 +124,10 @@ CREATE TABLE renter_contracts (
   CHECK (valid_to IS NULL OR valid_from IS NULL OR valid_to >= valid_from)
 );
 
-CREATE INDEX idx_renter_contracts_org_renter
+CREATE INDEX IF NOT EXISTS idx_renter_contracts_org_renter
   ON renter_contracts (organization_id, renter_id, status);
 
-CREATE TABLE renter_contract_rental_links (
+CREATE TABLE IF NOT EXISTS renter_contract_rental_links (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
   contract_id     UUID NOT NULL,
@@ -139,10 +141,10 @@ CREATE TABLE renter_contract_rental_links (
     REFERENCES rentals (organization_id, id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_renter_contract_rental_links_rental
+CREATE INDEX IF NOT EXISTS idx_renter_contract_rental_links_rental
   ON renter_contract_rental_links (organization_id, rental_id);
 
-CREATE TABLE renter_documents (
+CREATE TABLE IF NOT EXISTS renter_documents (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
   renter_id       UUID NOT NULL,
@@ -170,14 +172,14 @@ CREATE TABLE renter_documents (
   CHECK (length(trim(storage_path)) > 0)
 );
 
-CREATE INDEX idx_renter_documents_org_renter
+CREATE INDEX IF NOT EXISTS idx_renter_documents_org_renter
   ON renter_documents (organization_id, renter_id, created_at DESC);
 
-CREATE INDEX idx_renter_documents_valid_until
+CREATE INDEX IF NOT EXISTS idx_renter_documents_valid_until
   ON renter_documents (organization_id, valid_until)
   WHERE valid_until IS NOT NULL;
 
-CREATE TABLE renter_communications (
+CREATE TABLE IF NOT EXISTS renter_communications (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id   UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
   renter_id         UUID NOT NULL,
@@ -201,10 +203,10 @@ CREATE TABLE renter_communications (
   CHECK (NULLIF(trim(body), '') IS NOT NULL OR NULLIF(trim(subject), '') IS NOT NULL)
 );
 
-CREATE INDEX idx_renter_communications_org_renter
+CREATE INDEX IF NOT EXISTS idx_renter_communications_org_renter
   ON renter_communications (organization_id, renter_id, occurred_at DESC);
 
-CREATE INDEX idx_renter_communications_next_action
+CREATE INDEX IF NOT EXISTS idx_renter_communications_next_action
   ON renter_communications (organization_id, next_action_at)
   WHERE next_action_at IS NOT NULL;
 
@@ -280,18 +282,22 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS renter_contacts_updated_at ON renter_contacts;
 CREATE TRIGGER renter_contacts_updated_at
   BEFORE UPDATE ON renter_contacts
   FOR EACH ROW EXECUTE FUNCTION set_renter_row_updated_at();
 
+DROP TRIGGER IF EXISTS renter_contracts_updated_at ON renter_contracts;
 CREATE TRIGGER renter_contracts_updated_at
   BEFORE UPDATE ON renter_contracts
   FOR EACH ROW EXECUTE FUNCTION set_renter_row_updated_at();
 
+DROP TRIGGER IF EXISTS renter_documents_updated_at ON renter_documents;
 CREATE TRIGGER renter_documents_updated_at
   BEFORE UPDATE ON renter_documents
   FOR EACH ROW EXECUTE FUNCTION set_renter_row_updated_at();
 
+DROP TRIGGER IF EXISTS renter_communications_updated_at ON renter_communications;
 CREATE TRIGGER renter_communications_updated_at
   BEFORE UPDATE ON renter_communications
   FOR EACH ROW EXECUTE FUNCTION set_renter_row_updated_at();
@@ -1935,6 +1941,16 @@ $$;
 -- =============================================================================
 
 DROP POLICY IF EXISTS renters_select ON renters;
+DROP POLICY IF EXISTS renter_contacts_select ON renter_contacts;
+DROP POLICY IF EXISTS renter_contacts_write ON renter_contacts;
+DROP POLICY IF EXISTS renter_contracts_select ON renter_contracts;
+DROP POLICY IF EXISTS renter_contracts_write ON renter_contracts;
+DROP POLICY IF EXISTS renter_contract_rental_links_select ON renter_contract_rental_links;
+DROP POLICY IF EXISTS renter_contract_rental_links_write ON renter_contract_rental_links;
+DROP POLICY IF EXISTS renter_documents_select ON renter_documents;
+DROP POLICY IF EXISTS renter_documents_write ON renter_documents;
+DROP POLICY IF EXISTS renter_communications_select ON renter_communications;
+DROP POLICY IF EXISTS renter_communications_write ON renter_communications;
 
 CREATE POLICY renters_select ON renters FOR SELECT TO authenticated
   USING (
@@ -2059,225 +2075,10 @@ USING (
 -- 9. Audit triggers
 -- =============================================================================
 
-CREATE TRIGGER audit_renters
-  AFTER INSERT OR UPDATE OR DELETE ON renters
-  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
-
-CREATE TRIGGER audit_renter_contacts
-  AFTER INSERT OR UPDATE OR DELETE ON renter_contacts
-  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
-
-CREATE TRIGGER audit_renter_contracts
-  AFTER INSERT OR UPDATE OR DELETE ON renter_contracts
-  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
-
-CREATE TRIGGER audit_renter_communications_insert
-  AFTER INSERT ON renter_communications
-  FOR EACH ROW EXECUTE FUNCTION audit_trigger_fn();
-
--- =============================================================================
--- 10. Grants
--- =============================================================================
-
-REVOKE ALL ON FUNCTION member_can_read_renter_directory() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION member_can_read_renter_directory() TO authenticated, service_role;
-
-REVOKE ALL ON FUNCTION member_can_read_renter_profile() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION member_can_read_renter_profile() TO authenticated, service_role;
-
-REVOKE ALL ON FUNCTION member_can_read_renter_documents() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION member_can_read_renter_documents() TO authenticated, service_role;
-
-REVOKE ALL ON FUNCTION member_can_read_renter_finance() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION member_can_read_renter_finance() TO authenticated, service_role;
-
-REVOKE ALL ON FUNCTION normalize_renter_phone(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION normalize_renter_phone(text) TO authenticated;
-
-REVOKE ALL ON FUNCTION normalize_renter_email(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION normalize_renter_email(text) TO authenticated;
-
-REVOKE ALL ON FUNCTION normalize_renter_tax_id(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION normalize_renter_tax_id(text) TO authenticated;
-
-REVOKE ALL ON FUNCTION list_renters(text, text, text, boolean, boolean) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION list_renters(text, text, text, boolean, boolean) TO authenticated;
-
-REVOKE ALL ON FUNCTION get_renter_detail(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION get_renter_detail(uuid) TO authenticated;
-
-REVOKE ALL ON FUNCTION check_renter_duplicates(jsonb) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION check_renter_duplicates(jsonb) TO authenticated;
-
-REVOKE ALL ON FUNCTION upsert_renter(jsonb) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION upsert_renter(jsonb) TO authenticated;
-
-REVOKE ALL ON FUNCTION archive_renter(uuid, boolean, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION archive_renter(uuid, boolean, text) TO authenticated;
-
-REVOKE ALL ON FUNCTION upsert_renter_contact(jsonb) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION upsert_renter_contact(jsonb) TO authenticated;
-
-REVOKE ALL ON FUNCTION delete_renter_contact(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION delete_renter_contact(uuid) TO authenticated;
-
-REVOKE ALL ON FUNCTION upsert_renter_contract(jsonb) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION upsert_renter_contract(jsonb) TO authenticated;
-
-REVOKE ALL ON FUNCTION prepare_renter_document_upload(uuid, text, text, bigint) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION prepare_renter_document_upload(uuid, text, text, bigint) TO authenticated;
-
-REVOKE ALL ON FUNCTION finalize_renter_document_upload(jsonb) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION finalize_renter_document_upload(jsonb) TO authenticated;
-
-REVOKE ALL ON FUNCTION get_renter_document_download_url(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION get_renter_document_download_url(uuid) TO authenticated;
-
-REVOKE ALL ON FUNCTION delete_renter_document(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION delete_renter_document(uuid) TO authenticated;
-
-REVOKE ALL ON FUNCTION create_renter_communication(jsonb) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION create_renter_communication(jsonb) TO authenticated;
-
-REVOKE ALL ON FUNCTION update_renter_communication(uuid, jsonb, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION update_renter_communication(uuid, jsonb, text) TO authenticated;
-
-REVOKE ALL ON FUNCTION delete_renter_communication(uuid, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION delete_renter_communication(uuid, text) TO authenticated;
-
-REVOKE ALL ON FUNCTION list_renter_rentals(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION list_renter_rentals(uuid) TO authenticated;
-
-COMMIT;
-
--- =============================================================================
--- 7. RLS
--- =============================================================================
-
-DROP POLICY IF EXISTS renters_select ON renters;
-
-CREATE POLICY renters_select ON renters FOR SELECT TO authenticated
-  USING (
-    organization_id = auth_organization_id()
-    AND business_row_readable()
-    AND member_can_read_renter_profile()
-  );
-
-CREATE POLICY renter_contacts_select ON renter_contacts FOR SELECT TO authenticated
-  USING (
-    organization_id = auth_organization_id()
-    AND business_row_readable()
-    AND member_can_read_renter_profile()
-  );
-
-CREATE POLICY renter_contacts_write ON renter_contacts FOR ALL TO authenticated
-  USING (organization_id = auth_organization_id() AND member_can_manage_rentals())
-  WITH CHECK (organization_id = auth_organization_id() AND member_can_manage_rentals());
-
-CREATE POLICY renter_contracts_select ON renter_contracts FOR SELECT TO authenticated
-  USING (
-    organization_id = auth_organization_id()
-    AND business_row_readable()
-    AND member_can_read_renter_profile()
-  );
-
-CREATE POLICY renter_contracts_write ON renter_contracts FOR ALL TO authenticated
-  USING (organization_id = auth_organization_id() AND member_can_manage_rentals())
-  WITH CHECK (organization_id = auth_organization_id() AND member_can_manage_rentals());
-
-CREATE POLICY renter_contract_rental_links_select ON renter_contract_rental_links FOR SELECT TO authenticated
-  USING (
-    organization_id = auth_organization_id()
-    AND business_row_readable()
-    AND member_can_read_renter_profile()
-  );
-
-CREATE POLICY renter_contract_rental_links_write ON renter_contract_rental_links FOR ALL TO authenticated
-  USING (organization_id = auth_organization_id() AND member_can_manage_rentals())
-  WITH CHECK (organization_id = auth_organization_id() AND member_can_manage_rentals());
-
-CREATE POLICY renter_documents_select ON renter_documents FOR SELECT TO authenticated
-  USING (
-    organization_id = auth_organization_id()
-    AND business_row_readable()
-    AND member_can_read_renter_documents()
-  );
-
-CREATE POLICY renter_documents_write ON renter_documents FOR ALL TO authenticated
-  USING (organization_id = auth_organization_id() AND member_can_read_renter_documents())
-  WITH CHECK (organization_id = auth_organization_id() AND member_can_read_renter_documents());
-
-CREATE POLICY renter_communications_select ON renter_communications FOR SELECT TO authenticated
-  USING (
-    organization_id = auth_organization_id()
-    AND business_row_readable()
-    AND member_can_read_renter_profile()
-  );
-
-CREATE POLICY renter_communications_write ON renter_communications FOR ALL TO authenticated
-  USING (organization_id = auth_organization_id() AND member_can_manage_rentals())
-  WITH CHECK (organization_id = auth_organization_id() AND member_can_manage_rentals());
-
-ALTER TABLE renter_contacts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE renter_contracts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE renter_contract_rental_links ENABLE ROW LEVEL SECURITY;
-ALTER TABLE renter_documents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE renter_communications ENABLE ROW LEVEL SECURITY;
-
--- =============================================================================
--- 8. Storage bucket
--- =============================================================================
-
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'renter-documents',
-  'renter-documents',
-  false,
-  10485760,
-  ARRAY[
-    'application/pdf',
-    'image/jpeg',
-    'image/png',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  ]
-)
-ON CONFLICT (id) DO UPDATE
-SET
-  public = EXCLUDED.public,
-  file_size_limit = EXCLUDED.file_size_limit,
-  allowed_mime_types = EXCLUDED.allowed_mime_types;
-
-DROP POLICY IF EXISTS renter_documents_storage_insert ON storage.objects;
-DROP POLICY IF EXISTS renter_documents_storage_select ON storage.objects;
-DROP POLICY IF EXISTS renter_documents_storage_delete ON storage.objects;
-
-CREATE POLICY renter_documents_storage_insert
-ON storage.objects FOR INSERT TO authenticated
-WITH CHECK (
-  bucket_id = 'renter-documents'
-  AND (storage.foldername(name))[1] = auth_organization_id()::text
-  AND member_can_read_renter_documents()
-);
-
-CREATE POLICY renter_documents_storage_select
-ON storage.objects FOR SELECT TO authenticated
-USING (
-  bucket_id = 'renter-documents'
-  AND (storage.foldername(name))[1] = auth_organization_id()::text
-  AND member_can_read_renter_documents()
-);
-
-CREATE POLICY renter_documents_storage_delete
-ON storage.objects FOR DELETE TO authenticated
-USING (
-  bucket_id = 'renter-documents'
-  AND (storage.foldername(name))[1] = auth_organization_id()::text
-  AND member_can_read_renter_documents()
-);
-
--- =============================================================================
--- 9. Audit triggers
--- =============================================================================
+DROP TRIGGER IF EXISTS audit_renters ON renters;
+DROP TRIGGER IF EXISTS audit_renter_contacts ON renter_contacts;
+DROP TRIGGER IF EXISTS audit_renter_contracts ON renter_contracts;
+DROP TRIGGER IF EXISTS audit_renter_communications_insert ON renter_communications;
 
 CREATE TRIGGER audit_renters
   AFTER INSERT OR UPDATE OR DELETE ON renters
