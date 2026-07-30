@@ -53,7 +53,7 @@ export default function SchedulePageContainer() {
   const { t } = useI18n();
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { role, can, isReadOnly } = usePermissions();
+  const { role, can, isReadOnly, canEditPastSchedule } = usePermissions();
   const { settings, memberId } = useOrganization();
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => getWeekRange(new Date()).weekStart);
   const [selectedLesson, setSelectedLesson] = useState<GroupDisplayLesson | PersonalDisplayLesson | null>(null);
@@ -360,7 +360,7 @@ export default function SchedulePageContainer() {
     (locationId: string, locationName: string, dateISO: string, dayOfWeek: number, timeStart: string) => {
       if (!canClickEmptyCell(role, can, scheduleGridAddOptions, { locationId })) return;
 
-      if (isPastDate(dateISO)) {
+      if (isPastDate(dateISO) && !canEditPastSchedule) {
         toast(t("schedule.error.pastAdd"), "error");
         return;
       }
@@ -385,7 +385,7 @@ export default function SchedulePageContainer() {
         setAddFlow({ mode: "rental", prefill });
       }
     },
-    [role, can, scheduleGridAddOptions, canAddGroup, canAddPersonal, canAddRental, toast, t]
+    [role, can, scheduleGridAddOptions, canAddGroup, canAddPersonal, canAddRental, canEditPastSchedule, toast, t]
   );
 
   const resolveLocationName = useCallback(

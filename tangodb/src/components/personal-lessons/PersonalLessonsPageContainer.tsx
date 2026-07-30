@@ -12,7 +12,7 @@ import { memberDisplayName, useTeamMembers } from "../../hooks/useTeamMembers";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useUIStore } from "../../store/ui";
-import { addDays, isPastDate } from "../../lib/scheduleWeek";
+import { addDays, isScheduleDateLockedForWrite } from "../../lib/scheduleWeek";
 import {
   translateConnectionBlockReason,
   translateMutationBlockedMessage,
@@ -64,7 +64,7 @@ export default function PersonalLessonsPageContainer({
   const { t } = useI18n();
   const navigate = useNavigate();
   const { memberId, role } = useOrganization();
-  const { can, canAccessPanel, isReadOnly } = usePermissions();
+  const { can, canAccessPanel, isReadOnly, canEditPastSchedule } = usePermissions();
   const { connectionState } = useOnlineStatus();
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
 
@@ -169,7 +169,7 @@ export default function PersonalLessonsPageContainer({
   const showPrice = role !== "teacher";
 
   const handleEdit = (lesson: PersonalLesson) => {
-    if (isPastDate(lesson.date)) {
+    if (isScheduleDateLockedForWrite(lesson.date, canEditPastSchedule)) {
       toast(t("personal.error.pastEdit"), "error");
       return;
     }
@@ -263,6 +263,7 @@ export default function PersonalLessonsPageContainer({
               role={role}
               memberId={memberId}
               isReadOnly={isReadOnly}
+              canEditPastSchedule={canEditPastSchedule}
               can={can}
               showPrice={showPrice}
               locationMap={locationMap}

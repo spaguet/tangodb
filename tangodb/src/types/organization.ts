@@ -38,6 +38,8 @@ export interface TeacherScope {
 /** R6: reception preset — admin role with restricted_admin flag in meta */
 export interface MemberMeta {
   restricted_admin?: boolean;
+  /** Explicit override: create/edit schedule entries on past dates */
+  can_edit_past_schedule?: boolean;
 }
 
 export interface MemberProfile {

@@ -72,7 +72,7 @@ export default function LessonInfoPopup({
   const { t, formatDate } = useI18n();
   const toast = useToast();
   const { memberId } = useOrganization();
-  const { role, can, isReadOnly } = usePermissions();
+  const { role, can, isReadOnly, canEditPastSchedule } = usePermissions();
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const deletePersonalLesson = useDeletePersonalLesson();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -110,8 +110,8 @@ export default function LessonInfoPopup({
   const canEdit =
     lesson &&
     (lesson.kind === "group"
-      ? canManageGroupLesson(role, lesson.date, isReadOnly)
-      : canWritePersonalLesson(role, memberId, lesson, can, isReadOnly));
+      ? canManageGroupLesson(role, lesson.date, isReadOnly, canEditPastSchedule)
+      : canWritePersonalLesson(role, memberId, lesson, can, isReadOnly, canEditPastSchedule));
 
   const canDelete = canEdit;
 

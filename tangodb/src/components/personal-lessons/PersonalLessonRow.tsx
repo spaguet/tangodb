@@ -6,7 +6,7 @@ import {
   canWritePersonalLesson,
   maskClientDisplay,
 } from "../../lib/scheduleLessonAccess";
-import { isPastDate, isPersonalLessonLockedForWrite, toISODateLocal } from "../../lib/scheduleWeek";
+import { isPersonalLessonLockedForWrite, toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import type { PersonalLesson } from "../../types";
@@ -22,6 +22,7 @@ interface PersonalLessonRowProps {
   role: MemberRole | null;
   memberId: string | null;
   isReadOnly: boolean;
+  canEditPastSchedule?: boolean;
   can: CanFn;
   showPrice: boolean;
   locationName?: string;
@@ -89,6 +90,7 @@ export default function PersonalLessonRow({
   role,
   memberId,
   isReadOnly,
+  canEditPastSchedule = false,
   can,
   showPrice,
   locationName,
@@ -115,11 +117,10 @@ export default function PersonalLessonRow({
 
   const canReadClients = canReadLessonClients(role, displayLesson, can);
   const clientLabel = maskClientDisplay(lesson.clientDisplay, canReadClients);
-  const isPast = isPastDate(lesson.date);
   const canWrite =
-    canWritePersonalLesson(role, memberId, displayLesson, can, isReadOnly) &&
-    !isPersonalLessonLockedForWrite(lesson.date);
-  const canDelete = canWrite && !isPast;
+    canWritePersonalLesson(role, memberId, displayLesson, can, isReadOnly, canEditPastSchedule) &&
+    !isPersonalLessonLockedForWrite(lesson.date, canEditPastSchedule);
+  const canDelete = canWrite;
   const canPay = canPayPersonalLesson(role, memberId, displayLesson, can, isReadOnly);
   const todayISO = toISODateLocal(new Date());
   const canMarkAttendance = lesson.date <= todayISO;

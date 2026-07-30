@@ -38,11 +38,14 @@ export function usePermissions() {
 
   const canPanel = (panel: PanelId) => canAccessPanel(role, panel, options);
 
+  const canEditPastSchedule = membership?.meta?.can_edit_past_schedule ?? false;
+
   return {
     role,
     scope,
     membership,
     isReadOnly,
+    canEditPastSchedule,
     can: canAction,
     canAccessPanel: canPanel,
   };

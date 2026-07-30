@@ -15,6 +15,7 @@ interface PersonalLessonsListProps {
   role: MemberRole | null;
   memberId: string | null;
   isReadOnly: boolean;
+  canEditPastSchedule?: boolean;
   can: CanFn;
   showPrice: boolean;
   locationMap: Map<string, string>;
@@ -31,6 +32,7 @@ export default function PersonalLessonsList({
   role,
   memberId,
   isReadOnly,
+  canEditPastSchedule = false,
   can,
   showPrice,
   locationMap,
@@ -119,6 +121,7 @@ export default function PersonalLessonsList({
                       role={role}
                       memberId={memberId}
                       isReadOnly={isReadOnly}
+                      canEditPastSchedule={canEditPastSchedule}
                       can={can}
                       showPrice={showPrice}
                       locationName={

@@ -26,7 +26,7 @@ import {
   type GroupRepeatConfig,
 } from "../../lib/groupLessonRepeat";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
-import { addDays, getWeekRange, isPastDate, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
+import { addDays, getWeekRange, isScheduleDateLockedForWrite, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
@@ -124,7 +124,7 @@ export default function EditLessonPopup({
   const { memberId, settings } = useOrganization();
   const orgModules = normalizeOrgModules(settings?.modules);
   const showLocationInForm = shouldShowLocationPicker(orgModules, locations?.length ?? 0);
-  const { role, can } = usePermissions();
+  const { role, can, canEditPastSchedule } = usePermissions();
   const { connectionState } = useOnlineStatus();
   const editGroupSchedule = useEditGroupSchedule();
   const updateGroupScheduleMetadata = useUpdateGroupScheduleMetadata();
@@ -311,7 +311,7 @@ export default function EditLessonPopup({
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
-    if (isPastDate(lesson.date)) {
+    if (isScheduleDateLockedForWrite(lesson.date, canEditPastSchedule)) {
       toast(t("schedule.error.pastEdit"), "error");
       return;
     }
@@ -537,7 +537,7 @@ export default function EditLessonPopup({
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
-    if (isPastDate(lesson.date)) {
+    if (isScheduleDateLockedForWrite(lesson.date, canEditPastSchedule)) {
       toast(t("schedule.error.pastEditLesson"), "error");
       return;
     }
@@ -547,7 +547,7 @@ export default function EditLessonPopup({
         toast(t("schedule.error.lessonDate"), "error");
         return;
       }
-      if (isPastDate(personalDate)) {
+      if (isScheduleDateLockedForWrite(personalDate, canEditPastSchedule)) {
         toast(t("schedule.error.moveToPast"), "error");
         return;
       }
@@ -631,7 +631,7 @@ export default function EditLessonPopup({
     addGroupSchedule.isPending ||
     deleteScheduleSlot.isPending ||
     updatePersonalLesson.isPending;
-  const readOnly = lesson ? isPastDate(lesson.date) : false;
+  const readOnly = lesson ? isScheduleDateLockedForWrite(lesson.date, canEditPastSchedule) : false;
 
   return (
     <AnimatePresence>

@@ -1,7 +1,7 @@
 import type { MemberRole, OrgModules } from "../types/organization";
 import type { DisplayLesson, PersonalDisplayLesson } from "../types";
 import { isModuleEnabled } from "./orgModules";
-import { isPastDate, isPersonalLessonLockedForWrite } from "./scheduleWeek";
+import { isPersonalLessonLockedForWrite, isScheduleDateLockedForWrite } from "./scheduleWeek";
 import type { PermissionAction } from "./permissions";
 
 type CanFn = (action: PermissionAction, context?: { disciplineId?: string | null; locationId?: string | null }) => boolean;
@@ -13,9 +13,14 @@ function lessonContext(lesson: DisplayLesson) {
   };
 }
 
-export function canManageGroupLesson(role: MemberRole | null, lessonDate: string, isReadOnly: boolean): boolean {
+export function canManageGroupLesson(
+  role: MemberRole | null,
+  lessonDate: string,
+  isReadOnly: boolean,
+  canEditPastSchedule = false
+): boolean {
   if (isReadOnly) return false;
-  if (isPastDate(lessonDate)) return false;
+  if (isScheduleDateLockedForWrite(lessonDate, canEditPastSchedule)) return false;
   return role === "owner" || role === "director";
 }
 
@@ -36,10 +41,11 @@ export function canWritePersonalLesson(
   memberId: string | null,
   lesson: PersonalDisplayLesson,
   can: CanFn,
-  isReadOnly: boolean
+  isReadOnly: boolean,
+  canEditPastSchedule = false
 ): boolean {
   if (isReadOnly) return false;
-  if (isPersonalLessonLockedForWrite(lesson.date)) return false;
+  if (isPersonalLessonLockedForWrite(lesson.date, canEditPastSchedule)) return false;
   if (!can("personal_lessons.write", lessonContext(lesson))) return false;
   if (role === "teacher") {
     return Boolean(memberId && lesson.teacherMemberId === memberId);

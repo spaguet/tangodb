@@ -359,12 +359,14 @@ export function useUpdatePersonalPaid() {
 
 export function useDeletePersonalLesson() {
   const queryClient = useQueryClient();
+  const { membership } = useOrganization();
+  const canEditPastSchedule = membership?.meta?.can_edit_past_schedule ?? false;
 
   return useMutation({
     mutationFn: async (input: DeletePersonalLessonInput) => {
       const { id, lessonDate } = resolveDeleteInput(input);
 
-      if (lessonDate && isPersonalLessonLockedForWrite(lessonDate)) {
+      if (lessonDate && isPersonalLessonLockedForWrite(lessonDate, canEditPastSchedule)) {
         return { success: false as const, error: "hooks.error.pastLessonDelete" };
       }
 
@@ -389,6 +391,8 @@ export function useDeletePersonalLesson() {
 
 export function useUpdatePersonalLesson() {
   const queryClient = useQueryClient();
+  const { membership } = useOrganization();
+  const canEditPastSchedule = membership?.meta?.can_edit_past_schedule ?? false;
 
   return useMutation({
     mutationFn: async ({
@@ -427,14 +431,14 @@ export function useUpdatePersonalLesson() {
       subscriptionId?: string | null;
     }) => {
       const currentDate = lessonDate;
-      if (currentDate && isPersonalLessonLockedForWrite(currentDate)) {
+      if (currentDate && isPersonalLessonLockedForWrite(currentDate, canEditPastSchedule)) {
         return {
           success: false as const,
           error: "hooks.error.pastLessonEdit",
         };
       }
 
-      if (date && isPersonalLessonLockedForWrite(date)) {
+      if (date && isPersonalLessonLockedForWrite(date, canEditPastSchedule)) {
         return { success: false as const, error: "schedule.error.moveToPast" };
       }
 

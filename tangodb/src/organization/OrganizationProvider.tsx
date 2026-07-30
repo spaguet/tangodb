@@ -60,6 +60,8 @@ function mapMemberMeta(raw: unknown): MemberMeta {
   return {
     restricted_admin:
       typeof meta.restricted_admin === "boolean" ? meta.restricted_admin : undefined,
+    can_edit_past_schedule:
+      typeof meta.can_edit_past_schedule === "boolean" ? meta.can_edit_past_schedule : undefined,
   };
 }
 

@@ -141,9 +141,21 @@ export function isPastDate(dateISO: string): boolean {
   return dateISO < toISODateLocal(new Date());
 }
 
-/** Personal lessons: edit/delete blocked only for past dates (today and future allowed). */
-export function isPersonalLessonLockedForWrite(dateISO: string): boolean {
+/** Schedule write lock for past dates; bypass when member has can_edit_past_schedule. */
+export function isScheduleDateLockedForWrite(
+  dateISO: string,
+  canEditPastSchedule = false
+): boolean {
+  if (canEditPastSchedule) return false;
   return isPastDate(dateISO);
+}
+
+/** Personal lessons: edit/delete blocked only for past dates (today and future allowed). */
+export function isPersonalLessonLockedForWrite(
+  dateISO: string,
+  canEditPastSchedule = false
+): boolean {
+  return isScheduleDateLockedForWrite(dateISO, canEditPastSchedule);
 }
 
 export function computeDisplayRange(
