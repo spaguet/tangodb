@@ -16,6 +16,7 @@ import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import type { CalendarEventPaymentStatus, CalendarEventType, PaymentMethod } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import DatePickerField from "../ui/DatePickerField";
+import TimeSelect from "../ui/TimeSelect";
 
 export interface LocationOption {
   id: string;
@@ -335,32 +336,24 @@ export default function CreateCalendarEventDialog({
                             )
                           }
                         />
-                        <div>
-                          <span className={labelCls}>{t("common.timeStart")}</span>
-                          <input
-                            type="time"
-                            className={fieldCls}
-                            value={session.timeStart}
-                            onChange={(e) =>
-                              setSessions((prev) =>
-                                prev.map((s, i) => (i === index ? { ...s, timeStart: e.target.value } : s))
-                              )
-                            }
-                          />
-                        </div>
-                        <div>
-                          <span className={labelCls}>{t("common.timeEnd")}</span>
-                          <input
-                            type="time"
-                            className={fieldCls}
-                            value={session.timeEnd}
-                            onChange={(e) =>
-                              setSessions((prev) =>
-                                prev.map((s, i) => (i === index ? { ...s, timeEnd: e.target.value } : s))
-                              )
-                            }
-                          />
-                        </div>
+                        <TimeSelect
+                          label={t("common.timeStart")}
+                          value={session.timeStart}
+                          onChange={(timeStart) =>
+                            setSessions((prev) =>
+                              prev.map((s, i) => (i === index ? { ...s, timeStart } : s))
+                            )
+                          }
+                        />
+                        <TimeSelect
+                          label={t("common.timeEnd")}
+                          value={session.timeEnd}
+                          onChange={(timeEnd) =>
+                            setSessions((prev) =>
+                              prev.map((s, i) => (i === index ? { ...s, timeEnd } : s))
+                            )
+                          }
+                        />
                         <div className="sm:col-span-4 grid sm:grid-cols-[1fr_auto] gap-2 items-end">
                           <AppSelect
                             label={t("schedule.form.location")}
