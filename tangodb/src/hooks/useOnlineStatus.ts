@@ -87,26 +87,38 @@ export function useOnlineStatus(): {
   isServerReachable: boolean;
   connectionState: ConnectionState;
   justReconnected: boolean;
+  justServerReconnected: boolean;
+  justConnectionRestored: boolean;
 } {
   const [isOnline, setIsOnline] = useState(
     () => (typeof navigator !== "undefined" ? navigator.onLine : true)
   );
   const [isServerReachable, setIsServerReachable] = useState(true);
   const [justReconnected, setJustReconnected] = useState(false);
+  const [justServerReconnected, setJustServerReconnected] = useState(false);
   const wasOfflineRef = useRef(false);
+  const wasServerUnreachableRef = useRef(false);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const serverReconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const consecutiveFailuresRef = useRef(0);
+
+  const pulseReconnectFlag = (
+    setter: (v: boolean) => void,
+    timerRef: { current: ReturnType<typeof setTimeout> | null }
+  ) => {
+    setter(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setter(false);
+    }, 3000);
+  };
 
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
       consecutiveFailuresRef.current = 0;
       if (wasOfflineRef.current) {
-        setJustReconnected(true);
-        if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = setTimeout(() => {
-          setJustReconnected(false);
-        }, 3000);
+        pulseReconnectFlag(setJustReconnected, reconnectTimerRef);
       }
       wasOfflineRef.current = false;
     };
@@ -128,6 +140,7 @@ export function useOnlineStatus(): {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (serverReconnectTimerRef.current) clearTimeout(serverReconnectTimerRef.current);
     };
   }, []);
 
@@ -142,11 +155,18 @@ export function useOnlineStatus(): {
 
       if (ok) {
         consecutiveFailuresRef.current = 0;
-        setIsServerReachable(true);
+        setIsServerReachable((prev) => {
+          if (!prev && wasServerUnreachableRef.current) {
+            pulseReconnectFlag(setJustServerReconnected, serverReconnectTimerRef);
+          }
+          return true;
+        });
+        wasServerUnreachableRef.current = false;
       } else {
         consecutiveFailuresRef.current += 1;
         if (consecutiveFailuresRef.current >= CONSECUTIVE_FAILURES_THRESHOLD) {
           setIsServerReachable(false);
+          wasServerUnreachableRef.current = true;
         }
       }
     };
@@ -166,5 +186,14 @@ export function useOnlineStatus(): {
       ? "online"
       : "server-unreachable";
 
-  return { isOnline, isServerReachable, connectionState, justReconnected };
+  const justConnectionRestored = justReconnected || justServerReconnected;
+
+  return {
+    isOnline,
+    isServerReachable,
+    connectionState,
+    justReconnected,
+    justServerReconnected,
+    justConnectionRestored,
+  };
 }

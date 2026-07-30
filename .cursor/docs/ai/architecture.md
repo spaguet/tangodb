@@ -73,4 +73,12 @@
 - **Хуки:** `useI18n()` (org locale), `useGuestI18n()` (auth flows); nav helpers: `getNavSections`, `getPanelTitle`, `getSettingsNav`, …
 - **Правило:** UI-строки только через `t()`; данные пользователя (имена, названия дисциплин) не переводятся; CSV export headers — RU (отдельный этап при необходимости).
 
+## Offline shift (CRM сценарий 11)
+
+- **Снимок:** IndexedDB `tangodb-offline` → store `snapshots`, ключ `${userId}:${organizationId}`; окно −3…+7 дней от «сегодня», TTL 72 ч; обновляется после успешной онлайн-загрузки в `AttendancePanel`.
+- **Очередь:** store `queues` — офлайн-отметки групповой посещаемости (`pending/syncing/applied/conflict/failed/cancelled`) и черновики оплат (напоминания без реквизитов).
+- **Синхронизация:** RPC `sync_offline_mark_attendance` + `operation_idempotency` scope `offline_mark_attendance`; экран `OfflineReconciliationDialog`; cross-tab lock (`navigator.locks` / localStorage fallback).
+- **UI:** `OfflineBanner` (режим офлайн, счётчики, ссылка на сверку), `OfflineLimitedState` (нет/просрочен снимок), `useOnlineStatus.justConnectionRestored`.
+- **Безопасность:** `useOfflineSecurityReset` очищает данные при logout / смене org / user.
+
 ## Записи

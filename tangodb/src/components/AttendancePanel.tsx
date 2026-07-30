@@ -70,6 +70,7 @@ import { useI18n } from "../hooks/useI18n";
 import { useUIStore } from "../store/ui";
 import QueryErrorState from "./ui/QueryErrorState";
 import LoadingState from "./ui/LoadingState";
+import OfflineLimitedState from "./offline/OfflineLimitedState";
 import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
 import VirtualList from "./ui/VirtualList";
 import AppSelect from "./ui/AppSelect";
@@ -77,6 +78,14 @@ import ClientAutocomplete from "./ui/ClientAutocomplete";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./schedule/PayPersonalLessonModal";
 import type { ToastType } from "../App";
 import type { PersonalLesson, SubForDate } from "../types";
+import { scheduleDatesFromSnapshot } from "../lib/offline/buildSnapshot";
+import { mergeSubsWithOfflineOps } from "../lib/offline/mergeSubs";
+import {
+  useCaptureShiftSnapshot,
+  useEnqueueOfflineAttendance,
+  useOfflineShiftMeta,
+  useSaveOfflinePaymentDraft,
+} from "../hooks/useOfflineShift";
 
 interface AttendancePanelProps {
   toast: (msg: string, type?: ToastType) => void;
@@ -178,6 +187,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const queryClient = useQueryClient();
   const { connectionState } = useOnlineStatus();
+  const { isOfflineMode, snapshot, queue, snapshotMeta } = useOfflineShiftMeta(connectionState);
+  const captureShiftSnapshot = useCaptureShiftSnapshot();
+  const enqueueOfflineMark = useEnqueueOfflineAttendance();
+  const saveOfflinePaymentDraft = useSaveOfflinePaymentDraft();
+  const offlineBlocked =
+    isOfflineMode && (!snapshotMeta.hasSnapshot || snapshotMeta.isExpired);
+  const canMarkOffline =
+    isOfflineMode && snapshotMeta.hasSnapshot && !snapshotMeta.isExpired;
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const selectedMonth = useUIStore((s) => s.selectedMonth);
   const setSelectedMonth = useUIStore((s) => s.setSelectedMonth);
@@ -197,6 +214,21 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     isError: scheduleError,
     error: scheduleErr,
   } = useScheduleDates(selectedLocationId ? selectedMonth : undefined, selectedLocationId);
+
+  const effectiveMonthScheduleDates = useMemo(() => {
+    if (!isOfflineMode || !snapshot) return monthScheduleDates;
+    return scheduleDatesFromSnapshot(snapshot, selectedLocationId, selectedMonth).map((e) => ({
+      date: e.date,
+      time: e.time,
+      timeEnd: e.timeEnd ?? e.time,
+      slotId: e.slotId,
+      disciplineId: e.disciplineId ?? null,
+      locationId: e.locationId ?? null,
+      scheduleGroupId: e.scheduleGroupId ?? null,
+      teacherMemberId: e.teacherMemberId ?? null,
+      groupName: e.label,
+    }));
+  }, [monthScheduleDates, isOfflineMode, snapshot, selectedLocationId, selectedMonth]);
   const {
     data: personalLessons = [],
     isLoading: personalLoading,
@@ -266,8 +298,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   }, [selectedLesson]);
 
   const groupLessonsForDay = useMemo(
-    () => monthScheduleDates.filter((item) => item.date === selectedDate),
-    [monthScheduleDates, selectedDate]
+    () => effectiveMonthScheduleDates.filter((item) => item.date === selectedDate),
+    [effectiveMonthScheduleDates, selectedDate]
   );
 
   const locationPersonalLessons = useMemo(
@@ -315,7 +347,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const accessibleMonthGroupDates = useMemo(
     () =>
-      monthScheduleDates.filter((slot) =>
+      effectiveMonthScheduleDates.filter((slot) =>
         canViewGroupAttendanceLesson(
           role,
           memberId,
@@ -324,7 +356,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           attendanceAccessOptions
         )
       ),
-    [monthScheduleDates, role, memberId, scope, attendanceAccessOptions]
+    [effectiveMonthScheduleDates, role, memberId, scope, attendanceAccessOptions]
   );
 
   const accessibleLocationPersonalLessons = useMemo(
@@ -382,11 +414,31 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     return { subscriptionIds: [] as string[] };
   }, [selectedLesson, groupsBySubId]);
 
-  const { subs: modalSubs = [], isLoading: subsLoading, isError: subsError, error: subsErr } = useSubsForDate(
-    selectedLesson ? selectedDate : undefined,
+  const { subs: modalSubs = [], isLoading: subsLoading, isError: subsError, error: subsErr, getSubsForDate } = useSubsForDate(
+    selectedLesson && !isOfflineMode ? selectedDate : undefined,
     subsOptions,
     selectedMonth
   );
+
+  const effectiveModalSubs = useMemo(() => {
+    if (!isOfflineMode || !snapshot || !selectedLesson || selectedLesson.kind !== "group") {
+      return modalSubs;
+    }
+    const scheduleGroupId = selectedLesson.scheduleGroupId;
+    if (!scheduleGroupId) return [];
+    const base = (snapshot.subsByDate[selectedDate] ?? []).filter((sub) =>
+      (groupsBySubId[sub.subId] ?? []).some((g) => g.scheduleGroupId === scheduleGroupId)
+    );
+    return mergeSubsWithOfflineOps(base, queue?.operations ?? [], selectedDate, scheduleGroupId);
+  }, [
+    isOfflineMode,
+    snapshot,
+    selectedLesson,
+    modalSubs,
+    selectedDate,
+    groupsBySubId,
+    queue?.operations,
+  ]);
 
   const markAttendance = useMarkAttendance();
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
@@ -403,21 +455,23 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const [lastAttendanceChangeAt, setLastAttendanceChangeAt] = useState<Record<string, number>>({});
   const { freezePolicy } = useSettings();
   const isLoading =
-    locationsLoading ||
-    (selectedLocationId != null &&
-      (scheduleLoading ||
-        (personalLessonsEnabled && personalLoading) ||
-        pricesLoading ||
-        clientsQuery.isLoading ||
-        singleVisitsQuery.isLoading));
+    !isOfflineMode &&
+    (locationsLoading ||
+      (selectedLocationId != null &&
+        (scheduleLoading ||
+          (personalLessonsEnabled && personalLoading) ||
+          pricesLoading ||
+          clientsQuery.isLoading ||
+          singleVisitsQuery.isLoading)));
   const isError =
-    locationsError ||
-    (selectedLocationId != null &&
-      (scheduleError ||
-        (personalLessonsEnabled && personalError) ||
-        pricesError ||
-        clientsQuery.isError ||
-        singleVisitsQuery.isError));
+    !isOfflineMode &&
+    (locationsError ||
+      (selectedLocationId != null &&
+        (scheduleError ||
+          (personalLessonsEnabled && personalError) ||
+          pricesError ||
+          clientsQuery.isError ||
+          singleVisitsQuery.isError)));
   const error =
     locationsErr ??
     scheduleErr ??
@@ -512,12 +566,44 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     return () => window.clearTimeout(timer);
   }, [pendingUndo]);
 
+  useEffect(() => {
+    if (isOfflineMode || offlineBlocked) return;
+    if (!selectedLocationId || locations.length === 0) return;
+    if (scheduleLoading || subsLoading) return;
+
+    void captureShiftSnapshot({
+      todayStr: todayDateStr(),
+      locations: locations.map((loc) => ({ id: loc.id, name: loc.name })),
+      scheduleDates: effectiveMonthScheduleDates.map((item) => ({
+        date: item.date,
+        time: item.time,
+        timeEnd: item.timeEnd,
+        slotId: item.slotId,
+        disciplineId: item.disciplineId ?? null,
+        locationId: item.locationId ?? null,
+        scheduleGroupId: item.scheduleGroupId ?? null,
+        teacherMemberId: item.teacherMemberId ?? null,
+      })),
+      getSubsForDate: (dateStr) => getSubsForDate(dateStr, { category: "group" }),
+    });
+  }, [
+    isOfflineMode,
+    offlineBlocked,
+    selectedLocationId,
+    locations,
+    scheduleLoading,
+    subsLoading,
+    effectiveMonthScheduleDates,
+    captureShiftSnapshot,
+    getSubsForDate,
+  ]);
+
   const handleMark = async (
     subId: string,
     status: "present" | "absent" | "freeze" | "excused",
-    student: SubForDate
+    student: SubForDate & { offlinePending?: boolean; projectedLessonsLeft?: number }
   ) => {
-    if (connectionState !== "online") {
+    if (connectionState !== "online" && !canMarkOffline) {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
@@ -553,7 +639,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     if (
       oldStatus != null &&
       oldStatus !== status &&
-      !isWithinAttendanceUndoWindow(lastAttendanceChangeAt[changeKey])
+      !isWithinAttendanceUndoWindow(lastAttendanceChangeAt[changeKey]) &&
+      connectionState === "online"
     ) {
       setAttendanceCorrectionTarget({
         dateStr: selectedDate,
@@ -565,6 +652,27 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         newStatus: status,
         lastChangedAt: lastAttendanceChangeAt[changeKey],
       });
+      return;
+    }
+
+    if (canMarkOffline) {
+      const res = await enqueueOfflineMark({
+        dateStr: selectedDate,
+        subId,
+        scheduleGroupId,
+        disciplineId,
+        expectedOldStatus: oldStatus,
+        newStatus: status,
+        snapshotLessonsLeft: student.lessonsLeft,
+        snapshotFreezeUsed: student.freezeUsed,
+        clientDisplay: student.client1 + (student.client2 ? ` & ${student.client2}` : ""),
+      });
+      if (!res.ok) {
+        toast(t("common.saveFailed"), "error");
+        return;
+      }
+      setLastAttendanceChangeAt((prev) => ({ ...prev, [changeKey]: Date.now() }));
+      toast(t("offline.mark.savedLocally"), "success");
       return;
     }
 
@@ -735,16 +843,24 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     toast(t("attendance.info.refreshed"), "info");
   };
 
-  const renderAttendanceRow = (st: SubForDate, showExtendedMarks: boolean) => {
+  const renderAttendanceRow = (
+    st: SubForDate & { offlinePending?: boolean; projectedLessonsLeft?: number },
+    showExtendedMarks: boolean
+  ) => {
     const isMonthly = isMonthlyUnlimitedSubscription(st);
     const daysLeft = isMonthly ? getSubscriptionDaysLeft(st.expiresAt, selectedDate) : null;
-    const hasLowCredits = isMonthly ? (daysLeft ?? 0) <= 2 : st.lessonsLeft <= 2;
+    const confirmedLessonsLeft = st.lessonsLeft;
+    const displayLessonsLeft =
+      st.offlinePending && st.projectedLessonsLeft != null ? st.projectedLessonsLeft : confirmedLessonsLeft;
+    const hasLowCredits = isMonthly ? (daysLeft ?? 0) <= 2 : displayLessonsLeft <= 2;
     const fullname = [st.client1, st.client2, st.client3].filter(Boolean).join(" & ");
     const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
     const tariffLabel = getSubscriptionTariffLabel(st, prices);
     const connectionTitle = translateConnectionBlockReason(connectionState, t);
     const showFreeze = showExtendedMarks && !isMonthly && freezePolicy.freezeEnabled;
     const showExcused = showExtendedMarks && !isMonthly;
+    const canMarkNow =
+      (connectionState === "online" || canMarkOffline) && canMarkSelectedLesson && !markAttendance.isPending;
 
     return (
       <div
@@ -760,8 +876,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               <strong className={`font-semibold ${hasLowCredits ? "text-rose-600" : "text-slate-700"}`}>
                 {isMonthly
                   ? `${daysLeft ?? 0} ${plural(daysLeft ?? 0, [t("common.day.one"), t("common.day.few"), t("common.day.many")])}`
-                  : `${st.lessonsLeft} ${t("common.of")} ${st.lessonsTotal}`}
+                  : `${displayLessonsLeft} ${t("common.of")} ${st.lessonsTotal}`}
               </strong>
+              {st.offlinePending && !isMonthly ? (
+                <span className="text-amber-700 font-semibold">
+                  · {t("offline.mark.notSynced")} ({t("offline.projectedBalance", {
+                    count: displayLessonsLeft,
+                    confirmed: confirmedLessonsLeft,
+                  })})
+                </span>
+              ) : null}
               <span>· {t("common.from")} {st.activationDate}</span>
             </div>
           </div>
@@ -771,7 +895,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <button
             type="button"
             onClick={() => handleMark(st.subId, "present", st)}
-            disabled={connectionState !== "online" || !canMarkSelectedLesson || markAttendance.isPending}
+            disabled={!canMarkNow}
             title={
               connectionTitle ??
               (isMonthly ? t("common.present") : t("attendance.titlePresentDeduct"))
@@ -789,7 +913,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <button
             type="button"
             onClick={() => handleMark(st.subId, "absent", st)}
-            disabled={connectionState !== "online" || !canMarkSelectedLesson || markAttendance.isPending}
+            disabled={!canMarkNow}
             title={
               connectionTitle ??
               (isMonthly ? t("common.absent") : t("attendance.titleAbsentDeduct"))
@@ -808,7 +932,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             <button
               type="button"
               onClick={() => handleMark(st.subId, "freeze", st)}
-              disabled={connectionState !== "online" || !canMarkSelectedLesson || markAttendance.isPending || freezeLocked}
+              disabled={!canMarkNow || freezeLocked}
               title={
                 connectionTitle ??
                 (freezeLocked
@@ -832,7 +956,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             <button
               type="button"
               onClick={() => handleMark(st.subId, "excused", st)}
-            disabled={connectionState !== "online" || !canMarkSelectedLesson || markAttendance.isPending}
+            disabled={!canMarkNow}
             title={connectionTitle ?? t("attendance.titleExcusedNoDeduct")}
             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "excused"
@@ -883,11 +1007,25 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     });
 
   const isSubsListView =
-    !!selectedLesson && !isPersonalAttendanceView && !subsError && !subsLoading && modalSubs.length > 0;
+    !!selectedLesson &&
+    !isPersonalAttendanceView &&
+    !subsError &&
+    !(subsLoading && !isOfflineMode) &&
+    effectiveModalSubs.length > 0;
 
-  const useVirtualSubsList = isSubsListView && modalSubs.length >= 20;
+  const useVirtualSubsList = isSubsListView && effectiveModalSubs.length >= 20;
 
-  const openPayPersonalLesson = (lesson: PersonalLesson) => {
+  const openPayPersonalLesson = async (lesson: PersonalLesson) => {
+    if (connectionState !== "online") {
+      const saved = await saveOfflinePaymentDraft({
+        kind: "personal_lesson",
+        reminderLabel: `${lesson.clientDisplay} · ${lesson.date} ${lesson.timeStart}`,
+        targetRef: lesson.id,
+        dateStr: lesson.date,
+      });
+      toast(saved ? t("offline.draft.paymentSaved") : t("common.saveFailed"), saved ? "info" : "error");
+      return;
+    }
     setPayTarget({
       lessonId: lesson.id,
       date: lesson.date,
@@ -1017,7 +1155,19 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   if (isError) {
     return (
       <div id="panel-attendance" className="panel-page-stack">
-        <QueryErrorState error={error} />
+        <QueryErrorState error={error} onRetry={handleRefresh} />
+      </div>
+    );
+  }
+
+  if (selectedLocationId && offlineBlocked) {
+    return (
+      <div id="panel-attendance" className="panel-page-stack">
+        <OfflineLimitedState
+          reason={snapshotMeta.isExpired ? "expired" : "missing"}
+          windowStart={snapshotMeta.windowStart}
+          windowEnd={snapshotMeta.windowEnd}
+        />
       </div>
     );
   }
@@ -1112,6 +1262,17 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <p className="w-full text-xs text-slate-400">
             {t("attendance.hint.selectDay")}
           </p>
+          {isOfflineMode && snapshotMeta.hasSnapshot && snapshotMeta.isStale ? (
+            <p className="text-xs text-amber-700 font-semibold">{t("offline.snapshot.stale")}</p>
+          ) : null}
+          {isOfflineMode && snapshotMeta.windowStart && snapshotMeta.windowEnd ? (
+            <p className="text-[11px] text-slate-400">
+              {t("offline.snapshot.window", {
+                start: snapshotMeta.windowStart,
+                end: snapshotMeta.windowEnd,
+              })}
+            </p>
+          ) : null}
         </div>
 
         <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -1385,13 +1546,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     )}
                   </div>
                 ) : subsError ? (
-                  <QueryErrorState error={subsErr} />
+                  <QueryErrorState error={subsErr} onRetry={handleRefresh} />
                 ) : subsLoading ? (
                   <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
                     <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
                     <p className="text-xs">{t("attendance.loadingSubscriptions")}</p>
                   </div>
-                ) : modalSubs.length === 0 ? (
+                ) : effectiveModalSubs.length === 0 ? (
                   <div>
                     {renderSingleVisitPanel()}
                     <div className="text-center py-20 text-slate-400 space-y-3">
@@ -1412,8 +1573,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       t={t}
                     />
                     <p className="text-[10px] font-sans bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums">
-                      {modalSubs.length}{" "}
-                      {plural(modalSubs.length, [
+                      {effectiveModalSubs.length}{" "}
+                      {plural(effectiveModalSubs.length, [
                         t("common.subscription.one"),
                         t("common.subscription.few"),
                         t("common.subscription.many"),
@@ -1421,7 +1582,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     </p>
                     {useVirtualSubsList ? (
                       <VirtualList
-                        items={modalSubs}
+                        items={effectiveModalSubs}
                         estimateSize={96}
                         maxHeight="min(60vh, 480px)"
                         getKey={(st) => st.subId}
@@ -1430,7 +1591,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                         }
                       />
                     ) : (
-                      modalSubs.map((st) =>
+                      effectiveModalSubs.map((st) =>
                         renderAttendanceRow(st, selectedLesson.kind === "group")
                       )
                     )}

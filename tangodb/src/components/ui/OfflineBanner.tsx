@@ -1,25 +1,98 @@
-import { CloudOff, WifiOff } from "lucide-react";
+import { CloudOff, WifiOff, ListChecks } from "lucide-react";
 import type { ConnectionState } from "../../hooks/useOnlineStatus";
 import { useI18n } from "../../hooks/useI18n";
 
 interface OfflineBannerProps {
   connectionState: ConnectionState;
+  pendingCount?: number;
+  conflictCount?: number;
+  snapshotSyncedAt?: string | null;
+  onOpenReconciliation?: () => void;
 }
 
-export default function OfflineBanner({ connectionState }: OfflineBannerProps) {
-  const { t } = useI18n();
+function formatSyncedAt(iso: string, locale: string): string {
+  try {
+    return new Date(iso).toLocaleString(locale === "ru" ? "ru-RU" : "en-US", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
 
-  if (connectionState === "online") return null;
+export default function OfflineBanner({
+  connectionState,
+  pendingCount = 0,
+  conflictCount = 0,
+  snapshotSyncedAt,
+  onOpenReconciliation,
+}: OfflineBannerProps) {
+  const { t, locale } = useI18n();
+
+  if (connectionState === "online" && pendingCount === 0 && conflictCount === 0) {
+    return null;
+  }
+
+  const queueLabel =
+    pendingCount + conflictCount > 0
+      ? t("offline.banner.queueCount", { count: pendingCount + conflictCount })
+      : null;
+
+  if (connectionState === "online" && (pendingCount > 0 || conflictCount > 0)) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className="bg-indigo-50 border-b border-indigo-200 text-indigo-900 text-xs font-semibold px-4 py-2 flex flex-wrap items-center justify-between gap-2"
+      >
+        <span className="flex items-center gap-2">
+          <ListChecks className="w-3.5 h-3.5 shrink-0" />
+          {t("offline.banner.pendingSync")}
+          {queueLabel ? ` · ${queueLabel}` : ""}
+          {conflictCount > 0 ? ` · ${t("offline.banner.conflicts", { count: conflictCount })}` : ""}
+        </span>
+        {onOpenReconciliation ? (
+          <button
+            type="button"
+            onClick={onOpenReconciliation}
+            className="text-indigo-700 underline underline-offset-2 cursor-pointer hover:text-indigo-900"
+          >
+            {t("offline.banner.openReconciliation")}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
 
   if (connectionState === "server-unreachable") {
     return (
       <div
         role="status"
         aria-live="polite"
-        className="bg-slate-100 border-b border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 flex items-center gap-2"
+        className="bg-slate-100 border-b border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 flex flex-wrap items-center justify-between gap-2"
       >
-        <CloudOff className="w-3.5 h-3.5 shrink-0" />
-        {t("common.offline.serverUnreachable")}
+        <span className="flex items-center gap-2">
+          <CloudOff className="w-3.5 h-3.5 shrink-0" />
+          {t("common.offline.serverUnreachable")}
+          {snapshotSyncedAt
+            ? ` · ${t("offline.banner.snapshotAt", { time: formatSyncedAt(snapshotSyncedAt, locale) })}`
+            : ""}
+        </span>
+        <span className="flex items-center gap-3">
+          {queueLabel ? <span>{queueLabel}</span> : null}
+          {onOpenReconciliation && (pendingCount > 0 || conflictCount > 0) ? (
+            <button
+              type="button"
+              onClick={onOpenReconciliation}
+              className="text-slate-800 underline underline-offset-2 cursor-pointer"
+            >
+              {t("offline.banner.openReconciliation")}
+            </button>
+          ) : null}
+        </span>
       </div>
     );
   }
@@ -28,10 +101,27 @@ export default function OfflineBanner({ connectionState }: OfflineBannerProps) {
     <div
       role="status"
       aria-live="polite"
-      className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs font-semibold px-4 py-2 flex items-center gap-2"
+      className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs font-semibold px-4 py-2 flex flex-wrap items-center justify-between gap-2"
     >
-      <WifiOff className="w-3.5 h-3.5 shrink-0" />
-      {t("common.offline.noInternet")}
+      <span className="flex items-center gap-2">
+        <WifiOff className="w-3.5 h-3.5 shrink-0" />
+        {t("offline.banner.modeOffline")}
+        {snapshotSyncedAt
+          ? ` · ${t("offline.banner.snapshotAt", { time: formatSyncedAt(snapshotSyncedAt, locale) })}`
+          : ` · ${t("offline.banner.noSnapshot")}`}
+      </span>
+      <span className="flex items-center gap-3">
+        {queueLabel ? <span>{queueLabel}</span> : null}
+        {onOpenReconciliation ? (
+          <button
+            type="button"
+            onClick={onOpenReconciliation}
+            className="text-amber-900 underline underline-offset-2 cursor-pointer"
+          >
+            {t("offline.banner.openReconciliation")}
+          </button>
+        ) : null}
+      </span>
     </div>
   );
 }

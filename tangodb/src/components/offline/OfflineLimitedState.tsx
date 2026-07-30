@@ -1,0 +1,42 @@
+import { CloudOff, Clock } from "lucide-react";
+import { useI18n } from "../../hooks/useI18n";
+
+interface OfflineLimitedStateProps {
+  reason: "missing" | "expired";
+  windowStart?: string | null;
+  windowEnd?: string | null;
+}
+
+export default function OfflineLimitedState({
+  reason,
+  windowStart,
+  windowEnd,
+}: OfflineLimitedStateProps) {
+  const { t } = useI18n();
+
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-6 text-center space-y-3">
+      <CloudOff className="w-10 h-10 mx-auto text-amber-700" />
+      <h3 className="font-semibold text-slate-800">
+        {reason === "expired"
+          ? t("offline.limited.expiredTitle")
+          : t("offline.limited.missingTitle")}
+      </h3>
+      <p className="text-sm text-slate-600 max-w-md mx-auto">
+        {reason === "expired"
+          ? t("offline.limited.expiredHint")
+          : t("offline.limited.missingHint")}
+      </p>
+      <div className="text-xs text-slate-500 space-y-1">
+        <p className="font-semibold uppercase tracking-wider">{t("offline.limited.fallbackTitle")}</p>
+        <p>{t("offline.limited.fallbackSteps")}</p>
+      </div>
+      {windowStart && windowEnd ? (
+        <p className="text-[11px] text-slate-400 flex items-center justify-center gap-1">
+          <Clock className="w-3 h-3" />
+          {t("offline.snapshot.window", { start: windowStart, end: windowEnd })}
+        </p>
+      ) : null}
+    </div>
+  );
+}

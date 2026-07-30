@@ -55,7 +55,17 @@ import FinancePage from "./pages/FinancePage";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import OfflineBanner from "./components/ui/OfflineBanner";
 import ReadOnlyBanner from "./components/ui/ReadOnlyBanner";
+import OfflineReconciliationDialog from "./components/offline/OfflineReconciliationDialog";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
+import {
+  useInvalidateAfterOfflineSync,
+  useOfflineReconciliation,
+  useOfflineSecurityReset,
+  useOfflineShiftLoader,
+  useOfflineShiftMeta,
+} from "./hooks/useOfflineShift";
+import { useOfflineStore } from "./store/offline";
+import { reportOfflineEvent } from "./lib/offline/monitoring";
 import { usePermissions } from "./hooks/usePermissions";
 import { useI18n } from "./hooks/useI18n";
 import {
@@ -180,7 +190,13 @@ function AppLayout() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: ToastType } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { connectionState, justReconnected } = useOnlineStatus();
+  const { connectionState, justConnectionRestored } = useOnlineStatus();
+  useOfflineShiftLoader();
+  useOfflineSecurityReset();
+  const { counts, snapshotMeta } = useOfflineShiftMeta(connectionState);
+  const reconciliationOpen = useOfflineStore((s) => s.reconciliationOpen);
+  const { openReconciliation, closeReconciliation } = useOfflineReconciliation();
+  const invalidateAfterOfflineSync = useInvalidateAfterOfflineSync();
 
   const showToast = useCallback((msg: string, type: ToastType = "info") => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -197,10 +213,14 @@ function AppLayout() {
   }, [panelTitle]);
 
   useEffect(() => {
-    if (justReconnected) {
-      showToast(t("nav.connectionRestored"), "success");
+    if (!justConnectionRestored) return;
+    showToast(t("nav.connectionRestored"), "success");
+    reportOfflineEvent("connection_restored");
+    const pendingTotal = counts.pending + counts.conflict + counts.failed;
+    if (pendingTotal > 0) {
+      void invalidateAfterOfflineSync().then(() => openReconciliation());
     }
-  }, [justReconnected, showToast, t]);
+  }, [justConnectionRestored, showToast, t, counts.pending, counts.conflict, counts.failed, invalidateAfterOfflineSync, openReconciliation]);
 
   useEffect(() => {
     if (!mobileDrawerOpen) return;
@@ -369,8 +389,20 @@ function AppLayout() {
             </div>
           </header>
 
-          <OfflineBanner connectionState={connectionState} />
+          <OfflineBanner
+            connectionState={connectionState}
+            pendingCount={counts.pending + counts.failed}
+            conflictCount={counts.conflict}
+            snapshotSyncedAt={snapshotMeta.syncedAt}
+            onOpenReconciliation={openReconciliation}
+          />
           <ReadOnlyBanner />
+
+          <OfflineReconciliationDialog
+            open={reconciliationOpen}
+            onClose={closeReconciliation}
+            onComplete={() => void invalidateAfterOfflineSync()}
+          />
 
           <section className="flex-1 p-4 sm:p-5 md:p-6 xl:p-8 max-w-7xl w-full mx-auto panel-page-stack overflow-y-auto">
             <ErrorBoundary>
