@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Layers, User, X } from "lucide-react";
+import { Layers, User, Building2, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 
 export interface ScheduleCellPrefill {
@@ -9,14 +9,17 @@ export interface ScheduleCellPrefill {
   date: string;
   dayOfWeek: number;
   timeStart: string;
+  timeEnd?: string;
 }
 
 interface AddLessonTypePopupProps {
   prefill: ScheduleCellPrefill | null;
   canOfferGroup: boolean;
   canOfferPersonal: boolean;
+  canOfferRental?: boolean;
   onSelectGroup: () => void;
   onSelectPersonal: () => void;
+  onSelectRental?: () => void;
   onClose: () => void;
 }
 
@@ -24,8 +27,10 @@ export default function AddLessonTypePopup({
   prefill,
   canOfferGroup,
   canOfferPersonal,
+  canOfferRental = false,
   onSelectGroup,
   onSelectPersonal,
+  onSelectRental,
   onClose,
 }: AddLessonTypePopupProps) {
   const { t } = useI18n();
@@ -101,6 +106,20 @@ export default function AddLessonTypePopup({
                   <div>
                     <p className="text-sm font-semibold text-slate-800">{t("common.personalLesson")}</p>
                     <p className="text-xs text-slate-500">{t("schedule.popup.personalOnce")}</p>
+                  </div>
+                </button>
+              )}
+
+              {canOfferRental && onSelectRental && (
+                <button
+                  type="button"
+                  onClick={onSelectRental}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 transition-colors cursor-pointer text-left"
+                >
+                  <Building2 className="w-5 h-5 text-amber-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{t("schedule.rental.action")}</p>
+                    <p className="text-xs text-slate-500">{t("schedule.popup.rentalOnce")}</p>
                   </div>
                 </button>
               )}

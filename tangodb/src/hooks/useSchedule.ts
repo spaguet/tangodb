@@ -8,11 +8,12 @@ import {
   normalizeTime,
   toISODateLocal,
 } from "../lib/scheduleWeek";
-import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot, EventDisplayLesson } from "../types";
+import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot, EventDisplayLesson, RentalDisplayLesson } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { usePersonalLessons, personalLessonsQueryKey } from "./usePersonalLessons";
 import { usePersonalLessonsModuleEnabled } from "./useOrgModules";
 import { useCalendarEventsForWeek, calendarEventsQueryKey } from "./useCalendarEvents";
+import { useRentalsForWeek, rentalsQueryKey } from "./useRentals";
 
 export const scheduleQueryKey = ["schedule"] as const;
 
@@ -58,6 +59,7 @@ export interface ScheduleForWeekData {
   groupLessons: GroupDisplayLesson[];
   personalLessons: PersonalDisplayLesson[];
   eventLessons: EventDisplayLesson[];
+  rentalLessons: RentalDisplayLesson[];
   lessons: DisplayLesson[];
 }
 
@@ -99,6 +101,7 @@ export function useScheduleForWeek(
   });
 
   const eventsQuery = useCalendarEventsForWeek(weekStartISO, weekEndISO, queryEnabled);
+  const rentalsQuery = useRentalsForWeek(weekStartISO, weekEndISO, queryEnabled);
 
   const scheduleQuery = useQuery({
     queryKey: withOrgId(["schedule", "week", weekStartISO]),
@@ -137,15 +140,17 @@ export function useScheduleForWeek(
     }));
 
     const eventLessons = eventsQuery.data ?? [];
+    const rentalLessons = rentalsQuery.data ?? [];
 
     return {
       slots,
       groupLessons,
       personalLessons,
       eventLessons,
-      lessons: [...groupLessons, ...personalLessons, ...eventLessons],
+      rentalLessons,
+      lessons: [...groupLessons, ...personalLessons, ...eventLessons, ...rentalLessons],
     };
-  }, [scheduleQuery.data, personalQuery.data, eventsQuery.data, weekStart, weekEnd]);
+  }, [scheduleQuery.data, personalQuery.data, eventsQuery.data, rentalsQuery.data, weekStart, weekEnd]);
 
   return {
     ...scheduleQuery,
@@ -153,9 +158,10 @@ export function useScheduleForWeek(
     isLoading:
       scheduleQuery.isLoading ||
       (personalLessonsEnabled && personalQuery.isLoading) ||
-      eventsQuery.isLoading,
-    isError: scheduleQuery.isError || personalQuery.isError || eventsQuery.isError,
-    error: scheduleQuery.error ?? personalQuery.error ?? eventsQuery.error,
+      eventsQuery.isLoading ||
+      rentalsQuery.isLoading,
+    isError: scheduleQuery.isError || personalQuery.isError || eventsQuery.isError || rentalsQuery.isError,
+    error: scheduleQuery.error ?? personalQuery.error ?? eventsQuery.error ?? rentalsQuery.error,
   };
 }
 

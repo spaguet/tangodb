@@ -12,6 +12,7 @@ import { useAttendanceRecords } from "../../hooks/useAttendance";
 import { usePayments } from "../../hooks/usePayments";
 import { useExpenses } from "../../hooks/useExpenses";
 import { useFinancialDebtors } from "../../hooks/useFinancialDebtors";
+import { useRentalPayments } from "../../hooks/useRentalPayments";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { canAccessDataExportSection, permissionOptionsFromSettings } from "../../lib/permissions";
 import { normalizeOrgModules } from "../../lib/orgModules";
@@ -218,10 +219,11 @@ function FinancialExportSection() {
   const paymentsQuery = usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
   const expensesQuery = useExpenses({ dateFrom: range.dateFrom, dateTo: range.dateTo });
   const debtorsQuery = useFinancialDebtors();
+  const rentalPaymentsQuery = useRentalPayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
 
-  const isLoading = paymentsQuery.isLoading || expensesQuery.isLoading || debtorsQuery.isLoading;
-  const isError = paymentsQuery.isError || expensesQuery.isError || debtorsQuery.isError;
-  const error = paymentsQuery.error ?? expensesQuery.error ?? debtorsQuery.error;
+  const isLoading = paymentsQuery.isLoading || expensesQuery.isLoading || debtorsQuery.isLoading || rentalPaymentsQuery.isLoading;
+  const isError = paymentsQuery.isError || expensesQuery.isError || debtorsQuery.isError || rentalPaymentsQuery.isError;
+  const error = paymentsQuery.error ?? expensesQuery.error ?? debtorsQuery.error ?? rentalPaymentsQuery.error;
 
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
 
@@ -246,6 +248,7 @@ function FinancialExportSection() {
     try {
       const result = await exportAllFinancialCsv({
         payments: paymentsQuery.data ?? [],
+        rentalPayments: rentalPaymentsQuery.data ?? [],
         expenses: expensesQuery.data ?? [],
         debtors: debtorsQuery.data ?? [],
         statsMonth,

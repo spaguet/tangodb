@@ -18,7 +18,7 @@ import {
   canOfferGroupLessonAdd,
 } from "../../lib/scheduleLessonAccess";
 import { getWeekRange, isPastDate } from "../../lib/scheduleWeek";
-import type { DisplayLesson, EventDisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from "../../types";
+import type { DisplayLesson, EventDisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, RentalDisplayLesson } from "../../types";
 import LoadingState from "../ui/LoadingState";
 import AddLocationsInSettingsHint from "../ui/AddLocationsInSettingsHint";
 import QueryErrorState from "../ui/QueryErrorState";
@@ -33,7 +33,9 @@ import ScheduleDebtorsBlock from "./ScheduleDebtorsBlock";
 import ScheduleUpcomingCancellationsBlock from "./ScheduleUpcomingCancellationsBlock";
 import TeacherVacationDialog from "./TeacherVacationDialog";
 import CreateCalendarEventDialog from "./CreateCalendarEventDialog";
+import CreateRentalDialog from "./CreateRentalDialog";
 import EventInfoPopup from "./EventInfoPopup";
+import RentalInfoPopup from "./RentalInfoPopup";
 import SellPackageModal from "../ui/SellPackageModal";
 
 const NO_LOCATION_KEY = "__no_location__";
@@ -42,6 +44,7 @@ type AddFlow =
   | { mode: "type-select"; prefill: ScheduleCellPrefill }
   | { mode: "group"; prefill: ScheduleCellPrefill }
   | { mode: "personal"; prefill: ScheduleCellPrefill }
+  | { mode: "rental"; prefill: ScheduleCellPrefill }
   | null;
 
 export default function SchedulePageContainer() {
@@ -57,7 +60,9 @@ export default function SchedulePageContainer() {
   const [sellPackageOpen, setSellPackageOpen] = useState(false);
   const [teacherVacationOpen, setTeacherVacationOpen] = useState(false);
   const [createEventOpen, setCreateEventOpen] = useState(false);
+  const [createRentalOpen, setCreateRentalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventDisplayLesson | null>(null);
+  const [selectedRental, setSelectedRental] = useState<RentalDisplayLesson | null>(null);
 
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
 
@@ -81,9 +86,11 @@ export default function SchedulePageContainer() {
   const canManageTeacherVacation = can("schedule.write");
   const canManageCalendarEvents =
     can("schedule.write") && (role === "owner" || role === "director" || role === "admin");
+  const canManageRentals = canManageCalendarEvents;
   const canAddGroup = canOfferGroupLessonAdd(role, can, scheduleGridAddOptions);
   const canAddPersonal = canAddPersonalFromGrid(role, can, scheduleGridAddOptions);
-  const canClickEmpty = canAddGroup || canAddPersonal;
+  const canAddRental = canManageRentals;
+  const canClickEmpty = canAddGroup || canAddPersonal || canAddRental;
 
   const teachersCanViewFullSchedule = settings?.teachers_can_view_full_schedule ?? true;
   const selfMemberId = memberId;
@@ -205,7 +212,7 @@ export default function SchedulePageContainer() {
     const lessons = scheduleQuery.data?.lessons ?? [];
     if (!teacherFilter) return lessons;
     return lessons.filter(
-      (l) => l.kind !== "event" && l.teacherMemberId === teacherFilter
+      (l) => l.kind === "event" || l.kind === "rental" || l.teacherMemberId === teacherFilter
     );
   }, [scheduleQuery.data?.lessons, teacherFilter]);
 
@@ -261,6 +268,26 @@ export default function SchedulePageContainer() {
       } else if (lesson.kind === "event") {
         parts.push(lesson.title);
         if (lesson.guestTeacher) parts.push(lesson.guestTeacher);
+      } else if (lesson.kind === "rental") {
+        if (lesson.bookingStatus === "cancelled") {
+          parts.push(t("schedule.rental.statusCancelled"));
+        } else if (lesson.renterName) {
+          parts.push(lesson.renterName);
+        } else {
+          parts.push(t("schedule.rental.blockTitle"));
+        }
+        if (lesson.purpose) parts.push(lesson.purpose);
+        if (lesson.paymentStatus && lesson.renterName) {
+          const statusKey =
+            lesson.paymentStatus === "paid"
+              ? "schedule.rental.paymentPaid"
+              : lesson.paymentStatus === "partial"
+                ? "schedule.rental.paymentPartial"
+                : lesson.paymentStatus === "overpaid"
+                  ? "schedule.rental.paymentOverpaid"
+                  : "schedule.rental.paymentUnpaid";
+          parts.push(t(statusKey));
+        }
       } else {
         const clientLabel = lesson.clientDisplay;
         parts.push(
@@ -274,7 +301,7 @@ export default function SchedulePageContainer() {
         }
       }
 
-      if (lesson.kind !== "event" && lesson.teacherMemberId) {
+      if (lesson.kind !== "event" && lesson.kind !== "rental" && lesson.teacherMemberId) {
         const teacher = teamMap.get(lesson.teacherMemberId);
         if (teacher) parts.push(teacher);
       }
@@ -288,10 +315,18 @@ export default function SchedulePageContainer() {
     if (lesson.kind === "event") {
       setSelectedEvent(lesson);
       setSelectedLesson(null);
+      setSelectedRental(null);
+      return;
+    }
+    if (lesson.kind === "rental") {
+      setSelectedRental(lesson);
+      setSelectedLesson(null);
+      setSelectedEvent(null);
       return;
     }
     setSelectedLesson(lesson);
     setSelectedEvent(null);
+    setSelectedRental(null);
   }, []);
 
   const closeAddFlow = useCallback(() => setAddFlow(null), []);
@@ -317,15 +352,19 @@ export default function SchedulePageContainer() {
         timeStart,
       };
 
-      if (canAddGroup && canAddPersonal) {
+      if (canAddGroup && canAddPersonal && canAddRental) {
+        setAddFlow({ mode: "type-select", prefill });
+      } else if (canAddGroup && canAddPersonal) {
         setAddFlow({ mode: "type-select", prefill });
       } else if (canAddGroup) {
         setAddFlow({ mode: "group", prefill });
       } else if (canAddPersonal) {
         setAddFlow({ mode: "personal", prefill });
+      } else if (canAddRental) {
+        setAddFlow({ mode: "rental", prefill });
       }
     },
-    [role, can, scheduleGridAddOptions, canAddGroup, canAddPersonal, toast, t]
+    [role, can, scheduleGridAddOptions, canAddGroup, canAddPersonal, canAddRental, toast, t]
   );
 
   const resolveLocationName = useCallback(
@@ -357,6 +396,7 @@ export default function SchedulePageContainer() {
   const typeSelectPrefill = addFlow?.mode === "type-select" ? addFlow.prefill : null;
   const groupPrefill = addFlow?.mode === "group" ? addFlow.prefill : null;
   const personalPrefill = addFlow?.mode === "personal" ? addFlow.prefill : null;
+  const rentalDialogPrefill = addFlow?.mode === "rental" ? addFlow.prefill : null;
 
   const isLoading =
     locationsQuery.isLoading ||
@@ -402,6 +442,8 @@ export default function SchedulePageContainer() {
           onTeacherVacationClick={() => setTeacherVacationOpen(true)}
           canManageCalendarEvents={canManageCalendarEvents}
           onCreateEventClick={() => setCreateEventOpen(true)}
+          canManageRentals={canManageRentals}
+          onCreateRentalClick={() => setCreateRentalOpen(true)}
         />
       </div>
 
@@ -467,6 +509,14 @@ export default function SchedulePageContainer() {
         onSuccess={handleScheduleRefresh}
       />
 
+      <RentalInfoPopup
+        lesson={selectedRental}
+        locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
+        toast={toast}
+        onClose={() => setSelectedRental(null)}
+        onSuccess={handleScheduleRefresh}
+      />
+
       <CreateCalendarEventDialog
         open={createEventOpen}
         locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
@@ -474,6 +524,18 @@ export default function SchedulePageContainer() {
         teamMap={teamMap}
         toast={toast}
         onClose={() => setCreateEventOpen(false)}
+        onSuccess={handleScheduleRefresh}
+      />
+
+      <CreateRentalDialog
+        open={createRentalOpen || !!rentalDialogPrefill}
+        prefill={rentalDialogPrefill}
+        locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
+        toast={toast}
+        onClose={() => {
+          setCreateRentalOpen(false);
+          if (addFlow?.mode === "rental") closeAddFlow();
+        }}
         onSuccess={handleScheduleRefresh}
       />
 
@@ -509,6 +571,7 @@ export default function SchedulePageContainer() {
         prefill={typeSelectPrefill}
         canOfferGroup={canAddGroup}
         canOfferPersonal={canAddPersonal}
+        canOfferRental={canAddRental}
         onClose={closeAddFlow}
         onSelectGroup={() => {
           if (addFlow?.mode === "type-select") {
@@ -518,6 +581,11 @@ export default function SchedulePageContainer() {
         onSelectPersonal={() => {
           if (addFlow?.mode === "type-select") {
             setAddFlow({ mode: "personal", prefill: addFlow.prefill });
+          }
+        }}
+        onSelectRental={() => {
+          if (addFlow?.mode === "type-select") {
+            setAddFlow({ mode: "rental", prefill: addFlow.prefill });
           }
         }}
       />

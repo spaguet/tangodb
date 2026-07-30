@@ -8,6 +8,7 @@ import {
   useSubscriptionRefunds,
 } from "../hooks/useSubscriptionRefunds";
 import { useOtherIncome } from "../hooks/useOtherIncome";
+import { useRentalPayments } from "../hooks/useRentalPayments";
 import type { PaymentMethod } from "../types";
 import { useI18n } from "../hooks/useI18n";
 import {
@@ -29,20 +30,23 @@ export default function FinanceRevenuePage() {
   const paymentsQuery = usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
   const refundsQuery = useSubscriptionRefunds();
   const otherIncomeQuery = useOtherIncome({ dateFrom: range.dateFrom, dateTo: range.dateTo });
+  const rentalPaymentsQuery = useRentalPayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
 
   const stats = useMemo(() => {
     const monthRefunds = refundsInMonth(refundsQuery.data ?? [], yearMonth);
     const paymentStats = combineRevenueStats(paymentsQuery.data ?? [], monthRefunds);
     const otherFromTable = (otherIncomeQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
+    const rentalTotal = (rentalPaymentsQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
     const otherTotal = paymentStats.otherTotal + otherFromTable;
     return {
       ...paymentStats,
       otherTotal,
-      grossTotal: paymentStats.grossTotal + otherFromTable,
-      netTotal: paymentStats.netTotal + otherFromTable,
-      total: paymentStats.netTotal + otherFromTable,
+      rentalTotal,
+      grossTotal: paymentStats.grossTotal + otherFromTable + rentalTotal,
+      netTotal: paymentStats.netTotal + otherFromTable + rentalTotal,
+      total: paymentStats.netTotal + otherFromTable + rentalTotal,
     };
-  }, [paymentsQuery.data, refundsQuery.data, otherIncomeQuery.data, yearMonth]);
+  }, [paymentsQuery.data, refundsQuery.data, otherIncomeQuery.data, rentalPaymentsQuery.data, yearMonth]);
 
   const pendingRefunds = useMemo(
     () => (refundsQuery.data ?? []).filter((refund) => refund.status === "pending"),
@@ -61,11 +65,11 @@ export default function FinanceRevenuePage() {
     toast(t("subscriptions.refund.completeSuccess", { amount: formatCurrency(res.amount) }), "success");
   };
 
-  if (paymentsQuery.isLoading || otherIncomeQuery.isLoading || refundsQuery.isLoading) {
+  if (paymentsQuery.isLoading || otherIncomeQuery.isLoading || rentalPaymentsQuery.isLoading || refundsQuery.isLoading) {
     return <LoadingState label={t("finance.revenue.loading")} />;
   }
-  if (paymentsQuery.isError || otherIncomeQuery.isError || refundsQuery.isError) {
-    return <QueryErrorState error={paymentsQuery.error ?? otherIncomeQuery.error ?? refundsQuery.error} />;
+  if (paymentsQuery.isError || otherIncomeQuery.isError || rentalPaymentsQuery.isError || refundsQuery.isError) {
+    return <QueryErrorState error={paymentsQuery.error ?? otherIncomeQuery.error ?? rentalPaymentsQuery.error ?? refundsQuery.error} />;
   }
 
   const isCurrentMonth = yearMonth === currentYearMonth();
@@ -154,6 +158,10 @@ export default function FinanceRevenuePage() {
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.other")}</p>
               <p className="text-lg font-semibold text-slate-800 mt-0.5">{formatCurrency(stats.otherTotal)}</p>
               <p className="text-[10px] text-slate-500 mt-0.5">{t("schedule.event.financeSection")}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.rental")}</p>
+              <p className="text-lg font-semibold text-amber-700 mt-0.5">{formatCurrency(stats.rentalTotal)}</p>
             </div>
           </div>
 

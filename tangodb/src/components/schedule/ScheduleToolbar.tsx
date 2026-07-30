@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, CalendarPlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, CalendarPlus, Building2 } from "lucide-react";
 import { getWeekRange, formatWeekRangeLabel, toISODateLocal } from "../../lib/scheduleWeek";
 import { useI18n } from "../../hooks/useI18n";
 import AppSelect from "../ui/AppSelect";
@@ -20,6 +20,8 @@ interface ScheduleToolbarProps {
   onTeacherVacationClick?: () => void;
   canManageCalendarEvents?: boolean;
   onCreateEventClick?: () => void;
+  canManageRentals?: boolean;
+  onCreateRentalClick?: () => void;
 }
 
 export default function ScheduleToolbar({
@@ -32,6 +34,8 @@ export default function ScheduleToolbar({
   onTeacherVacationClick,
   canManageCalendarEvents = false,
   onCreateEventClick,
+  canManageRentals = false,
+  onCreateRentalClick,
 }: ScheduleToolbarProps) {
   const { t, locale } = useI18n();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -144,6 +148,17 @@ export default function ScheduleToolbar({
         >
           <CalendarPlus className="w-3.5 h-3.5" />
           {t("schedule.event.action")}
+        </button>
+      ) : null}
+
+      {canManageRentals && onCreateRentalClick ? (
+        <button
+          type="button"
+          onClick={onCreateRentalClick}
+          className="inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-sans font-semibold uppercase tracking-wider text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer"
+        >
+          <Building2 className="w-3.5 h-3.5" />
+          {t("schedule.rental.action")}
         </button>
       ) : null}
 

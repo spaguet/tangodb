@@ -18,3 +18,10 @@ export const EVENT_LESSON_COLOR = {
   border: "border-violet-700",
   text: "text-white",
 } as const;
+
+/** Hall rentals — янтарный (amber) */
+export const RENTAL_LESSON_COLOR = {
+  bg: "bg-amber-600",
+  border: "border-amber-700",
+  text: "text-white",
+} as const;

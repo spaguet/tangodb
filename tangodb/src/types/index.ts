@@ -167,7 +167,25 @@ export interface EventDisplayLesson {
   actualGuestCount?: number | null;
 }
 
-export type DisplayLesson = GroupDisplayLesson | PersonalDisplayLesson | EventDisplayLesson;
+export type RentalPaymentStatus = "unpaid" | "partial" | "paid" | "overpaid";
+
+export interface RentalDisplayLesson {
+  kind: "rental";
+  rentalId: string;
+  date: string;
+  timeStart: string;
+  timeEnd: string;
+  locationId: string | null;
+  bookingStatus: "confirmed" | "cancelled";
+  purpose?: string | null;
+  renterName?: string | null;
+  paymentStatus?: RentalPaymentStatus | null;
+  fixedAmount?: number | null;
+  paidAmount?: number | null;
+  currency?: string;
+}
+
+export type DisplayLesson = GroupDisplayLesson | PersonalDisplayLesson | EventDisplayLesson | RentalDisplayLesson;
 
 export type PriceCategory = "group" | "private" | "single_visit";
 
@@ -312,6 +330,26 @@ export interface OtherIncome {
   method: PaymentMethod;
   methodComment?: string | null;
   createdAt: string;
+}
+
+export interface RentalPayment {
+  id: string;
+  rentalId: string;
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  methodComment?: string | null;
+  createdAt: string;
+  renterDisplay?: string;
+  locationId?: string | null;
+  rentalDate?: string;
+}
+
+export interface Renter {
+  id: string;
+  displayName: string;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
 }
 
 export interface ActiveSubscription {

@@ -1,4 +1,5 @@
 import type { Payment } from "../types";
+import type { RentalPayment } from "../types";
 import type { Expense } from "../types/expense";
 import type { DebtorEntry } from "./financeReports";
 import { exportCsvItems } from "./exportCsv";
@@ -24,6 +25,7 @@ function todayDateStr(): string {
 
 export interface FinancialExportParams {
   payments: Payment[];
+  rentalPayments?: RentalPayment[];
   expenses: Expense[];
   debtors: DebtorEntry[];
   statsMonth: string;
@@ -60,6 +62,30 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
     });
   } else {
     skipped.push(labels.skipPayments);
+  }
+
+  const rentalRows = (params.rentalPayments ?? []).map((p) => ({
+    renter: p.renterDisplay || "—",
+    date: labels.formatDateTime(p.createdAt),
+    source: t(locale, "finance.revenue.rental"),
+    rentalDate: p.rentalDate ? labels.formatDate(p.rentalDate) : "—",
+    method: labels.paymentMethod(p.method),
+    amount: p.amount,
+  }));
+
+  if (rentalRows.length > 0) {
+    items.push({
+      rows: rentalRows,
+      filename: `tangodb_rentals_${statsMonth}_${dateStr}.csv`,
+      columnLabels: {
+        renter: t(locale, "schedule.rental.renterLabel"),
+        date: labels.payments.date,
+        source: labels.payments.source,
+        rentalDate: t(locale, "schedule.rental.dateLabel"),
+        method: labels.payments.method,
+        amount: labels.payments.amount,
+      },
+    });
   }
 
   const expenseRows = params.expenses.map((e) => ({
