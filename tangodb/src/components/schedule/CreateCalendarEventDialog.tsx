@@ -75,6 +75,7 @@ export default function CreateCalendarEventDialog({
   const [paymentComment, setPaymentComment] = useState("");
   const [selectedConflictKeys, setSelectedConflictKeys] = useState<Set<string>>(new Set());
   const [idempotencyKey, setIdempotencyKey] = useState("");
+  const [createRequested, setCreateRequested] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -93,6 +94,7 @@ export default function CreateCalendarEventDialog({
     setPaymentComment("");
     setSelectedConflictKeys(new Set());
     setIdempotencyKey(crypto.randomUUID());
+    setCreateRequested(false);
   }, [open, defaultLocationId]);
 
   const previewEnabled = step === "preview" && sessions.length > 0;
@@ -144,7 +146,7 @@ export default function CreateCalendarEventDialog({
     return cancellableConflicts.filter((c) => !selectedConflictKeys.has(conflictKey(c))).length;
   }, [previewQuery.data, cancellableConflicts, selectedConflictKeys]);
 
-  const handleGoPreview = () => {
+  const handleCreate = () => {
     if (!title.trim()) {
       toast(t("schedule.event.titleRequired"), "error");
       return;
@@ -159,6 +161,7 @@ export default function CreateCalendarEventDialog({
         return;
       }
     }
+    setCreateRequested(true);
     setStep("preview");
   };
 
@@ -231,6 +234,24 @@ export default function CreateCalendarEventDialog({
     onClose();
   };
 
+  useEffect(() => {
+    if (!createRequested || step !== "preview" || !previewQuery.data?.success) return;
+
+    if (eventConflicts.length > 0 || cancellableConflicts.length > 0) {
+      setCreateRequested(false);
+      return;
+    }
+
+    setCreateRequested(false);
+    void handleSubmit();
+  }, [
+    createRequested,
+    step,
+    previewQuery.data,
+    eventConflicts.length,
+    cancellableConflicts.length,
+  ]);
+
   const confirmLabel = t("schedule.event.confirmCreate", {
     cancelCount: selectedConflictKeys.size,
   });
@@ -255,7 +276,10 @@ export default function CreateCalendarEventDialog({
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
               <div className="flex items-center gap-2 min-w-0">
                 <CalendarPlus className="w-4 h-4 text-violet-600 shrink-0" />
-                <h3 className="text-base font-semibold text-slate-900 truncate">{t("schedule.event.title")}</h3>
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold text-slate-900 truncate">{t("schedule.event.title")}</h3>
+                  <p className="text-xs text-slate-500 truncate">{t("schedule.event.subtitle")}</p>
+                </div>
               </div>
               <button
                 type="button"
@@ -271,18 +295,36 @@ export default function CreateCalendarEventDialog({
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {step === "form" ? (
                 <>
+                  <div className="space-y-1">
+                    <span className={labelCls}>{t("schedule.event.typeLabel")}</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["master_class", "open_lesson"] as CalendarEventType[]).map((type) => {
+                        const active = eventType === type;
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setEventType(type)}
+                            className={`px-3 py-2.5 rounded-lg border text-sm font-semibold transition-colors cursor-pointer ${
+                              active
+                                ? "border-violet-300 bg-violet-50 text-violet-700"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:bg-violet-50/50"
+                            }`}
+                          >
+                            {t(
+                              type === "master_class"
+                                ? "schedule.event.typeMasterClass"
+                                : "schedule.event.typeOpenLesson"
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <div>
                     <span className={labelCls}>{t("schedule.event.nameLabel")}</span>
                     <input className={fieldCls} value={title} onChange={(e) => setTitle(e.target.value)} />
                   </div>
-                  <AppSelect
-                    label={t("schedule.event.typeLabel")}
-                    value={eventType}
-                    onChange={(e) => setEventType(e.target.value as CalendarEventType)}
-                  >
-                    <option value="master_class">{t("schedule.event.typeMasterClass")}</option>
-                    <option value="open_lesson">{t("schedule.event.typeOpenLesson")}</option>
-                  </AppSelect>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <div>
                       <span className={labelCls}>{t("schedule.event.guestTeacherLabel")}</span>
@@ -466,7 +508,7 @@ export default function CreateCalendarEventDialog({
                         </ul>
                       ) : null}
                       {cancellableConflicts.length === 0 && eventConflicts.length === 0 ? (
-                        <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+                        <p className="text-sm text-violet-700 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2">
                           {t("schedule.event.noConflicts")}
                         </p>
                       ) : cancellableConflicts.length > 0 ? (
@@ -533,10 +575,17 @@ export default function CreateCalendarEventDialog({
               {step === "form" ? (
                 <button
                   type="button"
-                  onClick={handleGoPreview}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg cursor-pointer"
+                  onClick={handleCreate}
+                  disabled={createRequested}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-lg cursor-pointer"
                 >
-                  {t("schedule.event.checkConflicts")}
+                  {t("schedule.event.createType", {
+                    type: t(
+                      eventType === "master_class"
+                        ? "schedule.event.typeMasterClass"
+                        : "schedule.event.typeOpenLesson"
+                    ),
+                  })}
                 </button>
               ) : (
                 <button
