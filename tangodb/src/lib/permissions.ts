@@ -74,6 +74,8 @@ export type PermissionAction =
   | "payroll.rates.manage"
   | "payments.write"
   | "payments.read.operational"
+  | "refunds.write"
+  | "refunds.read"
   | "single_visits.record"
   | "settings.manage"
   | "team.manage"
@@ -366,6 +368,8 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
     case "expenses.write":
     case "payroll.read":
     case "payroll.write":
+    case "refunds.read":
+    case "refunds.write":
       return FINANCIAL_READ_ROLES.includes(role);
 
     case "payroll.read.own":

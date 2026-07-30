@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History, RefreshCw } from "lucide-react";
+import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History, RefreshCw, Banknote } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
@@ -65,6 +65,7 @@ import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import RequirePermission from "./RequirePermission";
 import SubscriptionFreezeDialog from "./subscriptions/SubscriptionFreezeDialog";
 import ReplaceSubscriptionPartnerDialog from "./subscriptions/ReplaceSubscriptionPartnerDialog";
+import FinishSubscriptionWithRefundDialog from "./subscriptions/FinishSubscriptionWithRefundDialog";
 import SubscriptionMemberChangeHistory from "./subscriptions/SubscriptionMemberChangeHistory";
 import { isPairGroupSubscription, formatSubscriptionMembersAtDate, buildMemberChangesBySubId } from "../lib/subscriptionMembers";
 import { useAllSubscriptionMemberChanges, useClientSubscriptionMemberChanges } from "../hooks/useSubscriptionMemberChanges";
@@ -137,6 +138,7 @@ export default function SubscriptionsPanel({
   const { canAccessPanel } = usePermissions();
   const canManageFreeze = useCan("subscriptions.write") || useCan("attendance.write");
   const canReplacePartner = useCan("subscriptions.write");
+  const canIssueRefund = useCan("refunds.write");
   const { settings, freezePolicy } = useSettings();
   const { role, memberId } = useOrganization();
   const {
@@ -249,6 +251,7 @@ export default function SubscriptionsPanel({
 
   // Early-finish confirmation target
   const [finishTarget, setFinishTarget] = useState<{ id: string; name: string } | null>(null);
+  const [refundTarget, setRefundTarget] = useState<Subscription | null>(null);
   const [freezeTarget, setFreezeTarget] = useState<Subscription | null>(null);
   const [partnerReplaceTarget, setPartnerReplaceTarget] = useState<Subscription | null>(null);
 
@@ -1123,6 +1126,18 @@ export default function SubscriptionsPanel({
                                 {t("freeze.action.openDialog")}
                               </button>
                             ) : null}
+                            {canIssueRefund ? (
+                              <button
+                                type="button"
+                                onClick={() => setRefundTarget(sub)}
+                                disabled={connectionState !== "online"}
+                                title={translateConnectionBlockReason(connectionState, t)}
+                                className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                              >
+                                <Banknote className="w-3 h-3" />
+                                {t("subscriptions.refund.action")}
+                              </button>
+                            ) : null}
                             <RequirePermission action="subscriptions.write">
                               <button
                                 type="button"
@@ -1679,6 +1694,13 @@ export default function SubscriptionsPanel({
         toast={toast}
         onClose={() => setPartnerReplaceTarget(null)}
         onSuccess={() => setPartnerReplaceTarget(null)}
+      />
+
+      <FinishSubscriptionWithRefundDialog
+        subscription={refundTarget}
+        toast={toast}
+        onClose={() => setRefundTarget(null)}
+        onSuccess={() => setRefundTarget(null)}
       />
     </div>
   );

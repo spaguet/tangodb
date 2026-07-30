@@ -7,6 +7,7 @@ import type {
   SingleVisit,
   SubscriptionGroupLink,
 } from "../types";
+import type { SubscriptionRefundRecord } from "../lib/subscriptionRefund";
 
 export function monthDateRange(yearMonth: string): { dateFrom: string; dateTo: string } {
   const [y, m] = yearMonth.split("-").map(Number);
@@ -32,6 +33,55 @@ export interface PaymentStats {
   singleVisitTotal: number;
   otherTotal: number;
   byMethod: Record<string, number>;
+}
+
+export interface RevenueStats extends PaymentStats {
+  grossTotal: number;
+  refundsTotal: number;
+  netTotal: number;
+  refundCount: number;
+}
+
+export function aggregateRefundStats(refunds: SubscriptionRefundRecord[]): {
+  total: number;
+  count: number;
+} {
+  const completed = refunds.filter((r) => r.status === "completed");
+  return {
+    total: completed.reduce((sum, r) => sum + r.amount, 0),
+    count: completed.length,
+  };
+}
+
+export function refundsInMonth(
+  refunds: SubscriptionRefundRecord[],
+  yearMonth: string
+): SubscriptionRefundRecord[] {
+  const { dateFrom, dateTo } = monthDateRange(yearMonth);
+  return refunds.filter(
+    (refund) =>
+      refund.status === "completed" &&
+      refund.operationDate >= dateFrom &&
+      refund.operationDate <= dateTo
+  );
+}
+
+export function combineRevenueStats(
+  payments: Payment[],
+  refunds: SubscriptionRefundRecord[]
+): RevenueStats {
+  const paymentStats = aggregatePaymentStats(payments);
+  const refundStats = aggregateRefundStats(refunds);
+  const grossTotal = paymentStats.total;
+  const netTotal = grossTotal - refundStats.total;
+
+  return {
+    ...paymentStats,
+    grossTotal,
+    refundsTotal: refundStats.total,
+    netTotal,
+    refundCount: refundStats.count,
+  };
 }
 
 export function aggregatePaymentStats(payments: Payment[]): PaymentStats {

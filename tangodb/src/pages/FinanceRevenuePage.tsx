@@ -3,12 +3,14 @@ import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import { usePayments, getPaymentMethodLabel } from "../hooks/usePayments";
+import { useSubscriptionRefunds } from "../hooks/useSubscriptionRefunds";
 import { useOtherIncome } from "../hooks/useOtherIncome";
 import type { PaymentMethod } from "../types";
 import { useI18n } from "../hooks/useI18n";
 import {
-  aggregatePaymentStats,
+  combineRevenueStats,
   monthDateRange,
+  refundsInMonth,
   shiftMonth,
 } from "../lib/financeReports";
 import { currentYearMonth, formatCurrency, formatMonthTitle } from "../lib/utils";
@@ -18,21 +20,29 @@ export default function FinanceRevenuePage() {
   const [yearMonth, setYearMonth] = useState(currentYearMonth());
   const range = monthDateRange(yearMonth);
   const paymentsQuery = usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
+  const refundsQuery = useSubscriptionRefunds();
   const otherIncomeQuery = useOtherIncome({ dateFrom: range.dateFrom, dateTo: range.dateTo });
 
   const stats = useMemo(() => {
-    const paymentStats = aggregatePaymentStats(paymentsQuery.data ?? []);
+    const monthRefunds = refundsInMonth(refundsQuery.data ?? [], yearMonth);
+    const paymentStats = combineRevenueStats(paymentsQuery.data ?? [], monthRefunds);
     const otherFromTable = (otherIncomeQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
     const otherTotal = paymentStats.otherTotal + otherFromTable;
     return {
       ...paymentStats,
       otherTotal,
-      total: paymentStats.total + otherFromTable,
+      grossTotal: paymentStats.grossTotal + otherFromTable,
+      netTotal: paymentStats.netTotal + otherFromTable,
+      total: paymentStats.netTotal + otherFromTable,
     };
-  }, [paymentsQuery.data, otherIncomeQuery.data]);
+  }, [paymentsQuery.data, refundsQuery.data, otherIncomeQuery.data, yearMonth]);
 
-  if (paymentsQuery.isLoading || otherIncomeQuery.isLoading) return <LoadingState label={t("finance.revenue.loading")} />;
-  if (paymentsQuery.isError || otherIncomeQuery.isError) return <QueryErrorState error={paymentsQuery.error ?? otherIncomeQuery.error} />;
+  if (paymentsQuery.isLoading || otherIncomeQuery.isLoading || refundsQuery.isLoading) {
+    return <LoadingState label={t("finance.revenue.loading")} />;
+  }
+  if (paymentsQuery.isError || otherIncomeQuery.isError || refundsQuery.isError) {
+    return <QueryErrorState error={paymentsQuery.error ?? otherIncomeQuery.error ?? refundsQuery.error} />;
+  }
 
   const isCurrentMonth = yearMonth === currentYearMonth();
 
@@ -77,14 +87,25 @@ export default function FinanceRevenuePage() {
         </div>
 
         <div className="p-4 space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
-              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.total")}</p>
-              <p className="text-lg font-semibold text-slate-900 mt-0.5">{formatCurrency(stats.total)}</p>
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.net")}</p>
+              <p className="text-lg font-semibold text-slate-900 mt-0.5">{formatCurrency(stats.netTotal)}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.gross")}</p>
+              <p className="text-lg font-semibold text-slate-800 mt-0.5">{formatCurrency(stats.grossTotal)}</p>
               <p className="text-[10px] text-slate-500 mt-0.5">
                 {stats.count}{" "}
                 {plural(stats.count, [t("common.payment.one"), t("common.payment.few"), t("common.payment.many")])}
               </p>
+            </div>
+            <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("finance.revenue.refunds")}</p>
+              <p className="text-lg font-semibold text-rose-700 mt-0.5">−{formatCurrency(stats.refundsTotal)}</p>
+              {stats.refundCount > 0 ? (
+                <p className="text-[10px] text-slate-500 mt-0.5">{stats.refundCount}</p>
+              ) : null}
             </div>
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.subscriptions")}</p>

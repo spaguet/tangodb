@@ -25,9 +25,11 @@ import {
   buildRevenueSplit,
   buildTopClientsByRevenue,
   buildTopTeachersByRevenue,
+  combineRevenueStats,
   computeMomChangePercent,
   computeOccupancyStats,
   countNewClientsInMonth,
+  refundsInMonth,
   formatMomPercent,
   formatOccupancyPercent,
   paymentsInMonth,
@@ -51,6 +53,7 @@ import { useClients } from "../hooks/useClients";
 import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { usePaymentsTrend, getPaymentMethodLabel } from "../hooks/usePayments";
+import { useSubscriptionRefunds } from "../hooks/useSubscriptionRefunds";
 import type { PaymentMethod } from "../types";
 import { sumExpenses, useExpensesForMonth } from "../hooks/useExpenses";
 import { usePermissions } from "../hooks/usePermissions";
@@ -398,6 +401,7 @@ export default function FinancialDashboard() {
 
   const trendFetchMonths = revenueTrendMonthCount(trendPeriod);
   const paymentsQuery = usePaymentsTrend(statsMonth, trendFetchMonths);
+  const refundsQuery = useSubscriptionRefunds();
   const expensesQuery = useExpensesForMonth(statsMonth);
   const payrollQuery = useTeacherSettlements(statsMonth);
   const recalculatePayroll = useRecalculateTeacherSettlement();
@@ -454,8 +458,9 @@ export default function FinancialDashboard() {
 
   const stats = useMemo(() => {
     const monthPayments = paymentsInMonth(paymentsQuery.data ?? [], statsMonth);
-    return aggregatePaymentStats(monthPayments);
-  }, [paymentsQuery.data, statsMonth]);
+    const monthRefunds = refundsInMonth(refundsQuery.data ?? [], statsMonth);
+    return combineRevenueStats(monthPayments, monthRefunds);
+  }, [paymentsQuery.data, refundsQuery.data, statsMonth]);
 
   const expensesTotal = useMemo(
     () => sumExpenses(expensesQuery.data ?? []),
@@ -472,14 +477,14 @@ export default function FinancialDashboard() {
     [payrollQuery.data]
   );
 
-  const profit = stats.total - expensesTotal - payrollAccrued;
+  const profit = stats.netTotal - expensesTotal - payrollAccrued;
 
   const momPercent = useMemo(() => {
     const previousMonth = shiftMonth(statsMonth, -1);
     const previousTotal =
       trendPoints.find((point) => point.month === previousMonth)?.total ?? 0;
-    return computeMomChangePercent(stats.total, previousTotal);
-  }, [stats.total, statsMonth, trendPoints]);
+    return computeMomChangePercent(stats.netTotal, previousTotal);
+  }, [stats.netTotal, statsMonth, trendPoints]);
 
   const revenueSplit = useMemo(() => {
     const segments = buildRevenueSplit(stats);
@@ -607,7 +612,13 @@ export default function FinancialDashboard() {
         <div className={`grid gap-3 ${personalLessonsEnabled ? "grid-cols-2 lg:grid-cols-5" : "grid-cols-2 lg:grid-cols-4"}`}>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.revenue")}</p>
-            <p className="text-xl font-semibold text-slate-900 mt-0.5">{formatCurrency(stats.total)}</p>
+            <p className="text-xl font-semibold text-slate-900 mt-0.5">{formatCurrency(stats.netTotal)}</p>
+            {stats.refundsTotal > 0 ? (
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                {t("finance.revenue.gross")}: {formatCurrency(stats.grossTotal)} · {t("finance.revenue.refunds")}: −
+                {formatCurrency(stats.refundsTotal)}
+              </p>
+            ) : null}
             <div className="flex items-center gap-1 mt-0.5">
               {momPositive && <ArrowUp className="w-3 h-3 text-emerald-600" />}
               {momNegative && <ArrowDown className="w-3 h-3 text-rose-600" />}
@@ -730,7 +741,7 @@ export default function FinancialDashboard() {
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
               {t("dashboard.revenueSplit")}
             </p>
-            {stats.total > 0 ? (
+            {stats.netTotal > 0 ? (
               <RevenueSplitChart segments={revenueSplit} labelForKey={splitLabel} />
             ) : (
               <p className="text-xs text-slate-500 py-8 text-center">{t("dashboard.noRevenueInMonth")}</p>
