@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-07-30 — mark_attendance: cannot cast type record to subscriptions
+
+- **Ошибка:** при отметке посещения в журнале — `cannot cast type record to subscriptions`.
+- **Причина:** в `mark_attendance` переменная `v_sub` была объявлена как `RECORD`, но передавалась в `resolve_subscription_freeze_policy(p_sub subscriptions)`, который требует тип строки таблицы `subscriptions`.
+- **Как избежать:** для RPC/функций с аргументом `table_name%ROWTYPE` или `table_name` всегда объявлять переменную как `subscriptions%ROWTYPE`, не `RECORD`.
+
 ### 2026-06-30 — Dev Console «Purge failed» при удалении demo org
 
 - **Ошибка:** Dev Console показывал «Purge failed» при удалении demo org (например «Test studio»).
