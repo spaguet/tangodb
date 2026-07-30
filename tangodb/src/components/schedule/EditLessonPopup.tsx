@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Info, MapPin, Trash2, User, X } from "lucide-react";
 import {
@@ -88,6 +88,18 @@ function makeGroupSlotRow(dayOfWeek = 1, timeStart = "19:00", timeEnd = "20:00")
   return { key: crypto.randomUUID(), dayOfWeek, timeStart, timeEnd };
 }
 
+function resolveTeacherMemberId(
+  lessonTeacherId: string | null | undefined,
+  teacherOptions: TeamMemberRow[],
+  selfMemberId?: string | null
+): string {
+  if (lessonTeacherId) return lessonTeacherId;
+  if (selfMemberId && teacherOptions.some((member) => member.id === selfMemberId)) {
+    return selfMemberId;
+  }
+  return teacherOptions[0]?.id ?? "";
+}
+
 function findInternalSlotConflict(
   rows: GroupSlotRow[],
   rowKey: string,
@@ -152,12 +164,33 @@ export default function EditLessonPopup({
     inferGroupRepeatConfig(toISODateLocal(new Date()), toISODateLocal(new Date()))
   );
 
+  const editLessonKey = useMemo(() => {
+    if (!lesson) return null;
+    return lesson.kind === "group"
+      ? `group:${lesson.slotId}:${lesson.date}`
+      : `personal:${lesson.lessonId}:${lesson.date}`;
+  }, [lesson]);
+
+  const initializedLessonKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!lesson) return;
+    if (!lesson || !editLessonKey) {
+      initializedLessonKeyRef.current = null;
+      return;
+    }
+    if (initializedLessonKeyRef.current === editLessonKey) return;
+    initializedLessonKeyRef.current = editLessonKey;
+
+    const initialTeacherMemberId = resolveTeacherMemberId(
+      lesson.teacherMemberId,
+      teacherOptions,
+      isTeacher ? memberId : null
+    );
+
     if (lesson.kind === "group") {
       setGroupName(lesson.groupName?.trim() ?? "");
       setDisciplineId(lesson.disciplineId ?? "");
-      setTeacherMemberId(lesson.teacherMemberId ?? "");
+      setTeacherMemberId(initialTeacherMemberId);
       setTimeStart(lesson.timeStart);
       setTimeEnd(lesson.timeEnd);
 
@@ -176,11 +209,19 @@ export default function EditLessonPopup({
       setPersonalDate(lesson.date);
       setLocationId(lesson.locationId ?? "");
       setDisciplineId(lesson.disciplineId ?? "");
-      setTeacherMemberId(lesson.teacherMemberId ?? "");
+      setTeacherMemberId(initialTeacherMemberId);
       setTimeStart(lesson.timeStart);
       setTimeEnd(lesson.timeEnd);
     }
-  }, [lesson, scheduleSlots]);
+  }, [editLessonKey, lesson, scheduleSlots, teacherOptions, memberId, isTeacher, todayISO]);
+
+  useEffect(() => {
+    if (!lesson) return;
+    setTeacherMemberId((current) => {
+      if (current) return current;
+      return resolveTeacherMemberId(lesson.teacherMemberId, teacherOptions, isTeacher ? memberId : null);
+    });
+  }, [lesson, teacherOptions, memberId, isTeacher]);
 
   const updateGroupSlotRow = (key: string, patch: Partial<GroupSlotRow>) => {
     setGroupSlotRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
@@ -329,7 +370,12 @@ export default function EditLessonPopup({
       toast(t("schedule.error.discipline"), "error");
       return;
     }
-    if (!teacherMemberId) {
+    const resolvedTeacherMemberId = resolveTeacherMemberId(
+      teacherMemberId || lesson.teacherMemberId,
+      teacherOptions,
+      isTeacher ? memberId : null
+    );
+    if (!resolvedTeacherMemberId) {
       toast(t("schedule.error.teacher"), "error");
       return;
     }
@@ -348,7 +394,7 @@ export default function EditLessonPopup({
     const metadataChanged =
       trimmedGroup !== (lesson.groupName?.trim() ?? "") ||
       disciplineId !== (lesson.disciplineId ?? "") ||
-      teacherMemberId !== (lesson.teacherMemberId ?? "");
+      resolvedTeacherMemberId !== (lesson.teacherMemberId ?? "");
 
     const currentIds = new Set(groupSlotRows.map((row) => row.id).filter(Boolean));
     const removedSlots = originalGroupSlots.filter((row) => row.id && !currentIds.has(row.id));
@@ -374,7 +420,7 @@ export default function EditLessonPopup({
         slotIds,
         groupName: trimmedGroup,
         disciplineId,
-        teacherMemberId,
+        teacherMemberId: resolvedTeacherMemberId,
       });
 
       if (!res.success) {
@@ -422,7 +468,7 @@ export default function EditLessonPopup({
         slotIds,
         groupName: trimmedGroup,
         disciplineId,
-        teacherMemberId,
+        teacherMemberId: resolvedTeacherMemberId,
       });
       if (!metaRes.success) {
         toast(metaRes.error ?? t("schedule.error.updateFailed"), "error");
@@ -468,7 +514,7 @@ export default function EditLessonPopup({
         groupName: trimmedGroup,
         disciplineId,
         locationId: lesson.locationId,
-        teacherMemberId,
+        teacherMemberId: resolvedTeacherMemberId,
       });
 
       if (!res.success) {
@@ -491,7 +537,7 @@ export default function EditLessonPopup({
         groupName: trimmedGroup,
         disciplineId,
         locationId: lesson.locationId,
-        teacherMemberId,
+        teacherMemberId: resolvedTeacherMemberId,
         days: newRows.map((row) => {
           const validFrom = nextOccurrenceOnOrAfter(lesson.date, row.dayOfWeek);
           return {
@@ -560,7 +606,12 @@ export default function EditLessonPopup({
       toast(t("common.selectDiscipline"), "error");
       return;
     }
-    if (!teacherMemberId) {
+    const resolvedTeacherMemberId = resolveTeacherMemberId(
+      teacherMemberId || lesson.teacherMemberId,
+      teacherOptions,
+      isTeacher ? memberId : null
+    );
+    if (!resolvedTeacherMemberId) {
       toast(t("common.selectTeacher"), "error");
       return;
     }
@@ -601,7 +652,7 @@ export default function EditLessonPopup({
       timeStart,
       timeEnd,
       disciplineId,
-      teacherMemberId,
+      teacherMemberId: resolvedTeacherMemberId,
       locationId: personalListEdit ? locationId : lesson.locationId,
     });
 
@@ -731,8 +782,11 @@ export default function EditLessonPopup({
                       onChange={(e) => setTeacherMemberId(e.target.value)}
                       required
                     >
+                      <option value="">{t("schedule.vacation.selectTeacher")}</option>
                       {teacherOptions.length === 0 ? (
-                        <option value="">{t("common.noTeachers")}</option>
+                        <option value="" disabled>
+                          {t("common.noTeachers")}
+                        </option>
                       ) : (
                         teacherOptions.map((member) => (
                           <option key={member.id} value={member.id}>
