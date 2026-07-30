@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Building2, Plus, X } from "lucide-react";
 import { resolveMutationError } from "../../lib/resolveMutationError";
@@ -21,6 +22,7 @@ export interface LocationOption {
 interface CreateRentalDialogProps {
   open: boolean;
   prefill?: ScheduleCellPrefill | null;
+  preselectedRenterId?: string | null;
   locations: LocationOption[];
   toast: (msg: string, type?: "success" | "error" | "info") => void;
   onClose: () => void;
@@ -40,6 +42,7 @@ function defaultTimeEnd(timeStart: string): string {
 export default function CreateRentalDialog({
   open,
   prefill,
+  preselectedRenterId,
   locations,
   toast,
   onClose,
@@ -50,7 +53,7 @@ export default function CreateRentalDialog({
   const canSeeFinance = can("finance.read");
   const createMutation = useCreateRental();
   const createRenterMutation = useCreateRenter();
-  const rentersQuery = useRenters({ enabled: open });
+  const rentersQuery = useRenters({ enabled: open, activeOnly: true });
 
   const defaultLocationId = prefill?.locationId ?? locations[0]?.id ?? "";
 
@@ -77,7 +80,7 @@ export default function CreateRentalDialog({
     setTimeStart(start);
     setTimeEnd(prefill?.timeEnd ?? defaultTimeEnd(start));
     setLocationId(prefill?.locationId ?? defaultLocationId);
-    setRenterId("");
+    setRenterId(preselectedRenterId ?? "");
     setNewRenterName("");
     setShowNewRenter(false);
     setPurpose("");
@@ -86,7 +89,7 @@ export default function CreateRentalDialog({
     setInitialPayment("");
     setPaymentMethod("cash");
     setIdempotencyKey(crypto.randomUUID());
-  }, [open, prefill, defaultLocationId]);
+  }, [open, prefill, defaultLocationId, preselectedRenterId]);
 
   const conflictsQuery = useRentalConflictsPreview(
     rentalDate,
@@ -249,6 +252,9 @@ export default function CreateRentalDialog({
                       <Plus className="w-3.5 h-3.5" />
                       {t("schedule.rental.addRenter")}
                     </button>
+                    <Link to="/renters" className="block text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                      {t("renters.manageLink")}
+                    </Link>
                   </div>
                 ) : (
                   <div className="space-y-2 rounded-lg border border-amber-100 bg-amber-50/50 p-3">

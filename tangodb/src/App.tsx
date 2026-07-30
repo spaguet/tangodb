@@ -46,6 +46,7 @@ import OrgSwitcher from "./organization/OrgSwitcher";
 import { useUIStore } from "./store/ui";
 import DashboardPage from "./pages/DashboardPage";
 import ClientsPage from "./pages/ClientsPage";
+import RentersPage from "./pages/RentersPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
 import SchedulePage from "./pages/SchedulePage";
 import PersonalLessonsPage from "./pages/PersonalLessonsPage";
@@ -554,6 +555,8 @@ export default function App() {
                 <Route element={<AppLayout />}>
                   <Route index element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
                   <Route path="clients" element={<ErrorBoundary><ClientsPage /></ErrorBoundary>} />
+                  <Route path="renters" element={<ErrorBoundary><RentersPage /></ErrorBoundary>} />
+                  <Route path="renters/:renterId" element={<ErrorBoundary><RentersPage /></ErrorBoundary>} />
                   <Route path="subscriptions" element={<ErrorBoundary><SubscriptionsPage initialTab="active" /></ErrorBoundary>} />
                   <Route path="subscriptions/sell" element={<ErrorBoundary><SubscriptionsPage initialTab="sell" /></ErrorBoundary>} />
                   <Route path="subscriptions/history" element={<ErrorBoundary><SubscriptionsPage initialTab="history" /></ErrorBoundary>} />

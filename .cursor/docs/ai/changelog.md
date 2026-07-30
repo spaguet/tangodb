@@ -2,6 +2,10 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-30 — tangodb: фронтенд CRM арендаторов (сценарий 13) — раздел `/renters`, типы и хуки `useRenterCrm`/`useRenters` (list_renters RPC, upsert, contacts/contracts/documents/communications), RBAC `renters.*`, панели списка и карточки с вкладками, диалог дублей, интеграция с CreateRentalDialog и audit log.
+
+2026-07-30 — tangodb: база арендаторов CRM (сценарий 13) — миграция `20260844000001_renters_crm.sql`: расширение `renters`, таблицы контактов/договоров/документов/коммуникаций, RPC list/detail/upsert/archive/duplicates, bucket `renter-documents`, RLS и audit, патч `create_rental`/`update_rental` для блокировки archived/blocked арендаторов.
+
 2026-07-30 — tangodb: разовая аренда зала без преподавателя (CRM сценарий 12) — таблицы `renters`, `rentals`, `rental_payments`, RPC create/update/cancel/payment с проверкой конфликтов и advisory lock, тип «Аренда» в расписании (янтарный блок), role-aware `get_rentals_for_schedule_week`, выручка и CSV-экспорт источника «Аренда».
 
 2026-07-30 — tangodb: явные ограничения офлайн-режима (CRM сценарий 11) — в журнале посещаемости скрыты personal-уроки, блок single-visit с черновиком-напоминанием, баннер `OfflineScopeNotice`, продажа абонемента/пакета офлайн сохраняет draft без финансового эффекта, `OfflineLimitedState` показывает локации снимка.

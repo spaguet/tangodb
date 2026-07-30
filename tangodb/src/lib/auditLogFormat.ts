@@ -242,6 +242,36 @@ export function formatAuditSummary(row: AuditLogRow, ctx: AuditFormatContext): s
       }
       break;
     }
+    case "renters": {
+      const name =
+        (typeof data?.display_name === "string" && data.display_name) ||
+        (typeof row.old_data?.display_name === "string" ? row.old_data.display_name : "—");
+      if (row.operation === "INSERT") {
+        return translate("renters.success.added") + `: ${name}`;
+      }
+      if (row.operation === "UPDATE" && data?.status === "archived") {
+        return translate("renters.success.archived") + `: ${name}`;
+      }
+      if (row.operation === "UPDATE") {
+        return translate("renters.success.updated") + `: ${name}`;
+      }
+      break;
+    }
+    case "renter_communications": {
+      const reason =
+        typeof data?._reason === "string"
+          ? data._reason
+          : typeof row.new_data?._reason === "string"
+            ? row.new_data._reason
+            : null;
+      if (row.operation === "UPDATE" && reason) {
+        return translate("renters.communication.editReason") + `: ${reason}`;
+      }
+      if (row.operation === "DELETE" && reason) {
+        return translate("renters.communication.deleteReason") + `: ${reason}`;
+      }
+      break;
+    }
     case "payments": {
       const client =
         (typeof data?.client_display === "string" && data.client_display) ||

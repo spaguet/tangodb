@@ -21,6 +21,7 @@ export type PanelId =
   | "dashboard"
   | "finance"
   | "clients"
+  | "renters"
   | "subscriptions"
   | "subscriptions_sell"
   | "schedule"
@@ -80,7 +81,16 @@ export type PermissionAction =
   | "settings.manage"
   | "team.manage"
   | "license.view"
-  | "license.activate";
+  | "license.activate"
+  | "renters.read"
+  | "renters.write"
+  | "renters.contacts.read"
+  | "renters.contacts.write"
+  | "renters.contracts.read"
+  | "renters.contracts.write"
+  | "renters.documents.read"
+  | "renters.documents.write"
+  | "renters.finance.read";
 
 export interface PermissionContext {
   disciplineId?: string | null;
@@ -131,6 +141,10 @@ const WRITE_ACTIONS = new Set<PermissionAction>([
   "settings.manage",
   "team.manage",
   "license.activate",
+  "renters.write",
+  "renters.contacts.write",
+  "renters.contracts.write",
+  "renters.documents.write",
 ]);
 
 function isOperationalAdmin(role: MemberRole): boolean {
@@ -494,6 +508,28 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
     case "license.activate":
       return role === "owner";
 
+    case "renters.read":
+      if (can(role, "schedule.write", options)) return true;
+      return FINANCIAL_READ_ROLES.includes(role);
+
+    case "renters.write":
+    case "renters.contacts.write":
+    case "renters.contracts.write":
+      return can(role, "schedule.write", options);
+
+    case "renters.contacts.read":
+    case "renters.contracts.read":
+      return can(role, "schedule.write", options);
+
+    case "renters.documents.read":
+    case "renters.documents.write":
+      if (STRATEGIC_ROLES.includes(role)) return true;
+      if (role === "admin" && !isRestrictedReceptionAdmin(role, options)) return true;
+      return false;
+
+    case "renters.finance.read":
+      return FINANCIAL_READ_ROLES.includes(role);
+
     default:
       return false;
   }
@@ -521,6 +557,8 @@ export function canAccessPanel(
       return can(role, "finance.read", options);
     case "clients":
       return can(role, "clients.read", options);
+    case "renters":
+      return can(role, "renters.read", options);
     case "subscriptions":
       return can(role, "subscriptions.read", options);
     case "subscriptions_sell":
@@ -595,6 +633,7 @@ export function canAccessSettingsSection(
 const PANEL_FALLBACK_PATHS: { panel: PanelId; path: string }[] = [
   { panel: "finance", path: "/finance" },
   { panel: "clients", path: "/clients" },
+  { panel: "renters", path: "/renters" },
   { panel: "subscriptions", path: "/subscriptions" },
   { panel: "subscriptions_sell", path: "/subscriptions/sell" },
   { panel: "schedule", path: "/schedule" },
@@ -686,6 +725,7 @@ export function panelIdFromPath(pathname: string): PanelId {
   if (pathname === "/") return "dashboard";
   if (pathname.startsWith("/finance")) return "finance";
   if (pathname === "/clients") return "clients";
+  if (pathname.startsWith("/renters")) return "renters";
   if (pathname === "/subscriptions/sell") return "subscriptions_sell";
   if (pathname.startsWith("/subscriptions")) return "subscriptions";
   if (pathname === "/schedule") return "schedule";

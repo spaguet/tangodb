@@ -61,6 +61,7 @@ export default function SchedulePageContainer() {
   const [teacherVacationOpen, setTeacherVacationOpen] = useState(false);
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [createRentalOpen, setCreateRentalOpen] = useState(false);
+  const [preselectedRenterId, setPreselectedRenterId] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventDisplayLesson | null>(null);
   const [selectedRental, setSelectedRental] = useState<RentalDisplayLesson | null>(null);
 
@@ -159,6 +160,24 @@ export default function SchedulePageContainer() {
       { replace: true }
     );
   }, [searchParams, setSearchParams, can]);
+
+  useEffect(() => {
+    if (searchParams.get("action") !== "createRental") return;
+    if (!canAddRental) return;
+
+    const renterId = searchParams.get("renterId");
+    setPreselectedRenterId(renterId);
+    setCreateRentalOpen(true);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("action");
+        next.delete("renterId");
+        return next;
+      },
+      { replace: true }
+    );
+  }, [searchParams, setSearchParams, canAddRental]);
 
   const handleTeacherFilterChange = useCallback(
     (teacherId: string) => {
@@ -530,10 +549,12 @@ export default function SchedulePageContainer() {
       <CreateRentalDialog
         open={createRentalOpen || !!rentalDialogPrefill}
         prefill={rentalDialogPrefill}
+        preselectedRenterId={preselectedRenterId}
         locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
         toast={toast}
         onClose={() => {
           setCreateRentalOpen(false);
+          setPreselectedRenterId(null);
           if (addFlow?.mode === "rental") closeAddFlow();
         }}
         onSuccess={handleScheduleRefresh}

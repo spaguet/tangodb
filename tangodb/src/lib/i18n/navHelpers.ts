@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Users,
+  Building2,
   Ticket,
   TicketPlus,
   Calendar,
@@ -57,6 +58,10 @@ export function getNavSections(t: TranslateFn): NavSection[] {
     {
       label: t("nav.section.clients"),
       items: [{ icon: Users, label: t("nav.item.clients"), path: "/clients" }],
+    },
+    {
+      label: t("nav.section.renters"),
+      items: [{ icon: Building2, label: t("nav.item.renters"), path: "/renters" }],
     },
     {
       label: t("nav.section.groupSubscriptions"),
@@ -125,6 +130,7 @@ export function getPanelTitle(pathname: string, subscriptionsTab: string, t: Tra
   if (pathname === "/") return t("nav.panel.dashboard");
   if (pathname.startsWith("/finance")) return t("nav.panel.finance");
   if (pathname === "/clients") return t("nav.panel.clients");
+  if (pathname.startsWith("/renters")) return t("nav.panel.renters");
   if (pathname.startsWith("/subscriptions")) {
     if (subscriptionsTab === "sell") return t("nav.panel.subscriptionsSell");
     if (subscriptionsTab === "history") return t("nav.panel.subscriptionsHistory");

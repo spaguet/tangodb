@@ -28,6 +28,10 @@ const AUDIT_TABLE_KEYS: Record<string, I18nKey> = {
   single_visits: "team.auditTable.singleVisits",
   expenses: "team.auditTable.expenses",
   client_notes: "team.auditTable.clientNotes",
+  renters: "team.auditTable.renters",
+  renter_contacts: "team.auditTable.renterContacts",
+  renter_contracts: "team.auditTable.renterContracts",
+  renter_communications: "team.auditTable.renterCommunications",
 };
 
 export function getDayBounds(date: Date): { start: string; end: string } {

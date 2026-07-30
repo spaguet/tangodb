@@ -345,11 +345,173 @@ export interface RentalPayment {
   rentalDate?: string;
 }
 
+export type RenterCounterpartyType = "individual" | "sole_proprietor" | "company";
+
+export type RenterStatus = "active" | "archived" | "blocked";
+
+export type RenterContractStatus = "draft" | "active" | "expired" | "terminated";
+
+export type RenterCommunicationType = "call" | "email" | "messenger" | "meeting" | "note";
+
 export interface Renter {
   id: string;
   displayName: string;
   contactPhone?: string | null;
   contactEmail?: string | null;
+}
+
+export interface RenterListItem {
+  id: string;
+  displayName: string;
+  counterpartyType: RenterCounterpartyType;
+  status: RenterStatus;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  primaryContactName: string | null;
+  nextRentalDate: string | null;
+  debtAmount: number | null;
+  hasExpiringDocument: boolean;
+  hasOverdueDebt: boolean;
+  hasNextActionDue: boolean;
+}
+
+export interface RenterDetailCore {
+  id: string;
+  displayName: string;
+  counterpartyType: RenterCounterpartyType | null;
+  status: RenterStatus;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  legalName: string | null;
+  taxId: string | null;
+  registrationNumber: string | null;
+  legalAddress: string | null;
+  actualAddress: string | null;
+  blockedReason: string | null;
+  internalNotes: string | null;
+  preferredLocationIds: string[] | null;
+  paymentDueDays: number | null;
+  notes: string | null;
+  archivedAt: string | null;
+  nextRentalDate: string | null;
+}
+
+export interface RenterContact {
+  id: string;
+  fullName: string;
+  roleTitle: string | null;
+  phone: string | null;
+  email: string | null;
+  telegram: string | null;
+  isPrimary: boolean;
+  notes: string | null;
+}
+
+export interface RenterContract {
+  id: string;
+  contractNumber: string | null;
+  title: string;
+  contractType: string | null;
+  signedAt: string | null;
+  validFrom: string | null;
+  validTo: string | null;
+  status: RenterContractStatus;
+  signatoryName: string | null;
+  locationIds: string[];
+  depositInfo: string | null;
+}
+
+export interface RenterDocument {
+  id: string;
+  contractId: string | null;
+  category: string | null;
+  displayName: string;
+  documentDate: string | null;
+  validUntil: string | null;
+  mimeType: string;
+  fileSize: number;
+  createdAt: string;
+}
+
+export interface RenterCommunication {
+  id: string;
+  commType: RenterCommunicationType;
+  occurredAt: string;
+  subject: string | null;
+  body: string | null;
+  contactId: string | null;
+  nextActionAt: string | null;
+  authorMemberId: string;
+  createdAt: string;
+}
+
+export interface RenterFinanceSummary {
+  fixedTotal: number;
+  paidTotal: number;
+  debtTotal: number;
+  overpaidTotal: number;
+}
+
+export interface RenterRentalCounts {
+  completed: number;
+  upcoming: number;
+  cancelled: number;
+}
+
+export interface RenterDetail {
+  renter: RenterDetailCore;
+  contacts: RenterContact[];
+  contracts: RenterContract[];
+  documents: RenterDocument[];
+  communications: RenterCommunication[];
+  finance: RenterFinanceSummary | null;
+  rentalCounts: RenterRentalCounts;
+}
+
+export interface RenterDuplicateMatch {
+  id: string;
+  displayName: string;
+  counterpartyType: RenterCounterpartyType;
+  status: RenterStatus;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  taxId: string | null;
+  matchFields: string[];
+}
+
+export interface RenterRentalRow {
+  id: string;
+  rentalDate: string;
+  timeStart: string;
+  timeEnd: string;
+  locationId: string;
+  purpose: string | null;
+  bookingStatus: "confirmed" | "cancelled";
+  fixedAmount: number | null;
+  currency: string | null;
+  paidAmount: number | null;
+  paymentStatus: string | null;
+  cancelledAt: string | null;
+}
+
+export interface RenterUpsertInput {
+  renterId?: string;
+  displayName: string;
+  counterpartyType?: RenterCounterpartyType;
+  status?: RenterStatus;
+  legalName?: string;
+  taxId?: string;
+  registrationNumber?: string;
+  legalAddress?: string;
+  actualAddress?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  notes?: string;
+  blockedReason?: string;
+  internalNotes?: string;
+  preferredLocationIds?: string[];
+  paymentDueDays?: number | null;
+  duplicateCreateReason?: string;
 }
 
 export interface ActiveSubscription {
