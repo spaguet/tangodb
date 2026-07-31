@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-31 — tangodb FinancialDashboard: при загрузке финансовых метрик показывается «Загрузка...» со спиннером вместо нулей (доход, абонементы, дебиторка, расходы, прибыль, occupancy и др.).
+
 2026-07-31 — tangodb dashboard: «Платежи за сегодня» показывают сторно (отмену) красным с минусом и подписью «Сторно», счётчик — только реальные оплаты; `usePayments` возвращает `operation_kind`.
 
 2026-07-31 — tangodb venue-cost polish: React Query cache для pre-payment ack; invalidate closures после close/reopen; FinanceExpensesPage не тянет venue costs без диапазона дат; dashboard показывает «—» для venue при ошибке RPC; LessonInfoPopup грузит personal lessons по месяцу.

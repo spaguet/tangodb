@@ -14,6 +14,7 @@ import {
   Users,
   GraduationCap,
   ClipboardCheck,
+  Loader2,
 } from "lucide-react";
 import {
   aggregatePaymentStats,
@@ -342,6 +343,29 @@ function RevenueSplitChart({
   );
 }
 
+function DashboardStatValue({
+  loading,
+  children,
+  className = "text-xl font-semibold mt-0.5",
+}: {
+  loading?: boolean;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const { t } = useI18n();
+
+  if (loading) {
+    return (
+      <p className={`${className} text-slate-400 flex items-center gap-1.5`}>
+        <Loader2 className="w-4 h-4 animate-spin shrink-0 text-indigo-400" aria-hidden />
+        <span>{t("common.loading.default")}</span>
+      </p>
+    );
+  }
+
+  return <p className={className}>{children}</p>;
+}
+
 function RevenueRankList({
   title,
   icon: Icon,
@@ -431,6 +455,23 @@ export default function FinancialDashboard() {
   const subscriptionGroupsQuery = useSubscriptionGroups();
   const teamQuery = useTeamMembers();
   const singleVisitsQuery = useSingleVisits({ yearMonth: statsMonth });
+
+  const financialStatsLoading =
+    paymentsQuery.isLoading ||
+    refundsQuery.isLoading ||
+    otherIncomeQuery.isLoading ||
+    rentalPaymentsQuery.isLoading;
+
+  const receivablesLoading = debtorsQuery.isLoading;
+
+  const expensesLoading =
+    expensesQuery.isLoading || (financeCostsQuery.isLoading && !financeCostsQuery.isError);
+
+  const profitLoading =
+    financialStatsLoading ||
+    expensesLoading ||
+    payrollQuery.isLoading ||
+    recalculatePayroll.isPending;
 
   const analyticsLoading =
     clientsQuery.isLoading ||
@@ -653,59 +694,75 @@ export default function FinancialDashboard() {
         <div className={`grid gap-3 ${personalLessonsEnabled ? "grid-cols-2 lg:grid-cols-5" : "grid-cols-2 lg:grid-cols-4"}`}>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.revenue")}</p>
-            <p className="text-xl font-semibold text-slate-900 mt-0.5">{formatCurrency(stats.netTotal)}</p>
-            {stats.refundsTotal > 0 ? (
+            <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-slate-900 mt-0.5">
+              {formatCurrency(stats.netTotal)}
+            </DashboardStatValue>
+            {!financialStatsLoading && stats.refundsTotal > 0 ? (
               <p className="text-[10px] text-slate-500 mt-0.5">
                 {t("finance.revenue.gross")}: {formatCurrency(stats.grossTotal)} · {t("finance.revenue.refunds")}: −
                 {formatCurrency(stats.refundsTotal)}
               </p>
             ) : null}
-            {stats.pendingRefundsTotal > 0 ? (
+            {!financialStatsLoading && stats.pendingRefundsTotal > 0 ? (
               <p className="text-[10px] text-amber-700 mt-0.5">
                 {t("finance.revenue.pendingRefunds")}: {formatCurrency(stats.pendingRefundsTotal)}
               </p>
             ) : null}
-            <div className="flex items-center gap-1 mt-0.5">
-              {momPositive && <ArrowUp className="w-3 h-3 text-emerald-600" />}
-              {momNegative && <ArrowDown className="w-3 h-3 text-rose-600" />}
-              <p
-                className={`text-[10px] font-semibold ${
-                  momPositive ? "text-emerald-600" : momNegative ? "text-rose-600" : "text-slate-500"
-                }`}
-              >
-                {momPercent === null ? t("dashboard.momUnavailable") : formatMomPercent(momPercent)}
-              </p>
-              {momPercent !== null && (
-                <span className="text-[10px] text-slate-400">{t("dashboard.momVsPrevious")}</span>
-              )}
-            </div>
-            <p className="text-[10px] text-slate-500 mt-0.5">
-              {stats.count}{" "}
-              {plural(stats.count, [t("common.payment.one"), t("common.payment.few"), t("common.payment.many")])}
-            </p>
+            {!financialStatsLoading ? (
+              <>
+                <div className="flex items-center gap-1 mt-0.5">
+                  {momPositive && <ArrowUp className="w-3 h-3 text-emerald-600" />}
+                  {momNegative && <ArrowDown className="w-3 h-3 text-rose-600" />}
+                  <p
+                    className={`text-[10px] font-semibold ${
+                      momPositive ? "text-emerald-600" : momNegative ? "text-rose-600" : "text-slate-500"
+                    }`}
+                  >
+                    {momPercent === null ? t("dashboard.momUnavailable") : formatMomPercent(momPercent)}
+                  </p>
+                  {momPercent !== null && (
+                    <span className="text-[10px] text-slate-400">{t("dashboard.momVsPrevious")}</span>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  {stats.count}{" "}
+                  {plural(stats.count, [t("common.payment.one"), t("common.payment.few"), t("common.payment.many")])}
+                </p>
+              </>
+            ) : null}
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.subscriptions")}</p>
-            <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.subscriptionTotal)}</p>
+            <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-indigo-700 mt-0.5">
+              {formatCurrency(stats.subscriptionTotal)}
+            </DashboardStatValue>
           </div>
           {personalLessonsEnabled ? (
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
               <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.personal")}</p>
-              <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.personalTotal)}</p>
+              <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-indigo-700 mt-0.5">
+                {formatCurrency(stats.personalTotal)}
+              </DashboardStatValue>
             </div>
           ) : null}
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.singleVisits")}</p>
-            <p className="text-xl font-semibold text-indigo-700 mt-0.5">{formatCurrency(stats.singleVisitTotal)}</p>
+            <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-indigo-700 mt-0.5">
+              {formatCurrency(stats.singleVisitTotal)}
+            </DashboardStatValue>
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.receivables")}</p>
-            <p className="text-xl font-semibold text-rose-700 mt-0.5">{formatCurrency(totalDebt)}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
-              {personalLessonsEnabled
-                ? t("dashboard.receivablesBreakdown", { subs: lowBalanceCount, personal: unpaidPersonalCount })
-                : t("dashboard.receivablesBreakdownSubsOnly", { subs: lowBalanceCount })}
-            </p>
+            <DashboardStatValue loading={receivablesLoading} className="text-xl font-semibold text-rose-700 mt-0.5">
+              {formatCurrency(totalDebt)}
+            </DashboardStatValue>
+            {!receivablesLoading ? (
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                {personalLessonsEnabled
+                  ? t("dashboard.receivablesBreakdown", { subs: lowBalanceCount, personal: unpaidPersonalCount })
+                  : t("dashboard.receivablesBreakdownSubsOnly", { subs: lowBalanceCount })}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -714,42 +771,44 @@ export default function FinancialDashboard() {
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
               {t("dashboard.expensesMonth")}
             </p>
-            <p className="text-xl font-semibold text-rose-700 mt-0.5">
-              {expensesQuery.isLoading || (financeCostsQuery.isLoading && !financeCostsUnavailable)
-                ? "…"
-                : formatCurrency(expensesTotal)}
-            </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
-              {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualExpensesTotal)}
-              {financeCostsUnavailable ? (
-                <> · {t("venueCosts.finance.venueTotal")}: —</>
-              ) : (
-                <> · {t("venueCosts.finance.venueTotal")}: {formatCurrency(venueCostsTotal)}</>
-              )}
-            </p>
+            <DashboardStatValue loading={expensesLoading} className="text-xl font-semibold text-rose-700 mt-0.5">
+              {formatCurrency(expensesTotal)}
+            </DashboardStatValue>
+            {!expensesLoading ? (
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualExpensesTotal)}
+                {financeCostsUnavailable ? (
+                  <> · {t("venueCosts.finance.venueTotal")}: —</>
+                ) : (
+                  <> · {t("venueCosts.finance.venueTotal")}: {formatCurrency(venueCostsTotal)}</>
+                )}
+              </p>
+            ) : null}
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
               {t("dashboard.payrollAccrued")}
             </p>
-            <p className="text-xl font-semibold text-amber-700 mt-0.5">
-              {payrollQuery.isLoading || recalculatePayroll.isPending ? "…" : formatCurrency(payrollAccrued)}
-            </p>
+            <DashboardStatValue
+              loading={payrollQuery.isLoading || recalculatePayroll.isPending}
+              className="text-xl font-semibold text-amber-700 mt-0.5"
+            >
+              {formatCurrency(payrollAccrued)}
+            </DashboardStatValue>
             <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.payrollAccruedHint")}</p>
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
               {t("dashboard.profit")}
             </p>
-            <p
+            <DashboardStatValue
+              loading={profitLoading}
               className={`text-xl font-semibold mt-0.5 ${
                 profit >= 0 ? "text-emerald-700" : "text-rose-700"
               }`}
             >
-              {expensesQuery.isLoading || financeCostsQuery.isLoading || payrollQuery.isLoading
-                ? "…"
-                : formatCurrency(profit)}
-            </p>
+              {formatCurrency(profit)}
+            </DashboardStatValue>
             <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.profitHint")}</p>
           </div>
         </div>
@@ -799,7 +858,12 @@ export default function FinancialDashboard() {
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
               {t("dashboard.revenueSplit")}
             </p>
-            {stats.netTotal > 0 ? (
+            {financialStatsLoading ? (
+              <p className="text-xs text-slate-500 py-8 text-center flex items-center justify-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" aria-hidden />
+                {t("common.loading.default")}
+              </p>
+            ) : stats.netTotal > 0 ? (
               <RevenueSplitChart segments={revenueSplit} labelForKey={splitLabel} />
             ) : (
               <p className="text-xs text-slate-500 py-8 text-center">{t("dashboard.noRevenueInMonth")}</p>
@@ -813,9 +877,9 @@ export default function FinancialDashboard() {
               <UserPlus className="w-3 h-3" />
               {t("dashboard.newClients")}
             </p>
-            <p className="text-xl font-semibold text-slate-900 mt-0.5">
-              {analyticsLoading ? "…" : newClientsCount}
-            </p>
+            <DashboardStatValue loading={analyticsLoading} className="text-xl font-semibold text-slate-900 mt-0.5">
+              {newClientsCount}
+            </DashboardStatValue>
             <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.newClientsInMonth")}</p>
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100 col-span-1 lg:col-span-1">
@@ -823,17 +887,19 @@ export default function FinancialDashboard() {
               <ClipboardCheck className="w-3 h-3" />
               {t("dashboard.occupancy")}
             </p>
-            <p className="text-xl font-semibold text-emerald-700 mt-0.5">
-              {analyticsLoading ? "…" : formatOccupancyPercent(occupancyStats.rate)}
-            </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
-              {occupancyStats.marked > 0
-                ? t("dashboard.occupancyDetail", {
-                    present: occupancyStats.present,
-                    absent: occupancyStats.absent,
-                  })
-                : t("dashboard.noOccupancyData")}
-            </p>
+            <DashboardStatValue loading={analyticsLoading} className="text-xl font-semibold text-emerald-700 mt-0.5">
+              {formatOccupancyPercent(occupancyStats.rate)}
+            </DashboardStatValue>
+            {!analyticsLoading ? (
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                {occupancyStats.marked > 0
+                  ? t("dashboard.occupancyDetail", {
+                      present: occupancyStats.present,
+                      absent: occupancyStats.absent,
+                    })
+                  : t("dashboard.noOccupancyData")}
+              </p>
+            ) : null}
           </div>
         </div>
 
