@@ -389,6 +389,38 @@ export function useDeletePersonalLesson() {
   });
 }
 
+export function useDeletePersonalLessonSeriesFromDate() {
+  const queryClient = useQueryClient();
+  const { membership } = useOrganization();
+  const canEditPastSchedule = membership?.meta?.can_edit_past_schedule ?? false;
+
+  return useMutation({
+    mutationFn: async (input: DeletePersonalLessonInput) => {
+      const { id, lessonDate } = resolveDeleteInput(input);
+
+      if (lessonDate && isPersonalLessonLockedForWrite(lessonDate, canEditPastSchedule)) {
+        return { success: false as const, error: "hooks.error.pastLessonDelete" };
+      }
+
+      const { data, error } = await supabase.rpc("delete_personal_lesson_series_from_date", {
+        p_lesson_id: id,
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as { success?: boolean; error?: string; deleted_count?: number } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "personal.error.deleteFailed" };
+      }
+
+      return { success: true as const, deletedCount: result.deleted_count ?? 0 };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, "active");
+    },
+  });
+}
+
 export function useUpdatePersonalLesson() {
   const queryClient = useQueryClient();
   const { membership } = useOrganization();

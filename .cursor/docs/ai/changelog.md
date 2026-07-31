@@ -2,6 +2,28 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-31 — tangodb: popup удаления персонального урока — кнопка «Удалить все уроки в будущем» для weekly-серии (RPC `delete_personal_lesson_series_from_date`, ConfirmDialog alternate action).
+
+2026-07-31 — tangodb: отменены payments за будущие calendar-уроки (961 урок с 2026-08-03, paid=no; цена тарифа сохранена).
+
+2026-07-31 — tangodb: удалены 77 personal_lessons Екатерина/Танго пт 14:30–15:30 с 2026-07-03 и 119 связанных payments.
+
+2026-07-31 — tangodb: fix ballroom trio tariff — 15 уроков переведены с «Индивидуальный Трио» на «Бальные Трио Дети» (600000).
+
+2026-07-31 — tangodb: calendar import payments — 1624 personal_lessons привязаны к тарифам и отмечены оплаченными (payments + price); script link-calendar-lesson-payments.mjs.
+
+2026-07-31 — tangodb: calendar import conflicts resolved — удалены слоты ср/чт «Группа» и ср «Танго» 20:00; импортированы 24 пропущенных индива; СФП Алиса 13/15.04 не дублировались; Ксения+Иван как pair.
+
+2026-07-31 — tangodb: calendar import apply — 1600 personal_lessons в org Omow dance (Miami studio); 26 пропущено (конфликт с групповым расписанием 20:00 и 2 дубля); `--skip-db-conflicts`, сопоставление дисциплин по имени с существующей «Танго».
+
+2026-07-31 — tangodb: calendar import — ручное разрешение 11 cross-client конфликтов (calendar_manual_resolutions.json), 0 нерешённых пересечений.
+
+2026-07-31 — tangodb: calendar import — сальса индив с Лизой под дисциплиной «Биомеханика танца»; авто-разрешение 7 пересечений (дубли одного клиента), 11 cross-client в calendar_conflicts.json.
+
+2026-07-31 — tangodb: calendar import — добавлены СФП, биомеханика, сальса; канонизация имён клиентов (Алиса Чакур/Кононова, Ева Петрова/Вильданова, Соломея, Соня, Настя→Анастасия).
+
+2026-07-31 — tangodb: импорт индивидуальных занятий из Google Calendar ICS (`scripts/ics-to-personal-lessons.mjs`, `scripts/import-calendar-lessons.mjs`, `data/import/albertkoall/calendar_personal_lessons.json`); бальные + танго с 2025-09-01.
+
 2026-07-31 — tangodb: fix preview_calendar_event_conflicts — восстановлена сигнатура `(jsonb, uuid)` после hall_rentals, исключены отменённые групповые занятия; popup создания мероприятия не показывает текст про конфликты при ошибке проверки.
 
 2026-07-31 — tangodb: popup «Отпуск преподавателя» — на мобильном кнопка «Отменить N занятий» с иконкой выровнена по центру (вертикальный футер, `shrink-0` у иконки).

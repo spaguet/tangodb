@@ -10,8 +10,11 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   pending?: boolean;
+  alternateConfirmLabel?: string;
+  alternatePending?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  onAlternateConfirm?: () => void;
 }
 
 export default function ConfirmDialog({
@@ -21,8 +24,11 @@ export default function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   pending = false,
+  alternateConfirmLabel,
+  alternatePending = false,
   onConfirm,
   onCancel,
+  onAlternateConfirm,
 }: ConfirmDialogProps) {
   const { t } = useI18n();
   const resolvedConfirmLabel = confirmLabel ?? t("common.confirm");
@@ -69,21 +75,32 @@ export default function ConfirmDialog({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-1">
-              <button
-                onClick={onCancel}
-                disabled={pending}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer disabled:opacity-60"
-              >
-                {resolvedCancelLabel}
-              </button>
-              <button
-                onClick={onConfirm}
-                disabled={pending}
-                className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors cursor-pointer disabled:opacity-60"
-              >
-                {pending ? "..." : resolvedConfirmLabel}
-              </button>
+            <div className="flex flex-col gap-2 pt-1">
+              {onAlternateConfirm && alternateConfirmLabel ? (
+                <button
+                  onClick={onAlternateConfirm}
+                  disabled={pending || alternatePending}
+                  className="w-full px-4 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  {alternatePending ? "..." : alternateConfirmLabel}
+                </button>
+              ) : null}
+              <div className="flex items-center justify-end gap-2.5">
+                <button
+                  onClick={onCancel}
+                  disabled={pending || alternatePending}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  {resolvedCancelLabel}
+                </button>
+                <button
+                  onClick={onConfirm}
+                  disabled={pending || alternatePending}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  {pending ? "..." : resolvedConfirmLabel}
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>

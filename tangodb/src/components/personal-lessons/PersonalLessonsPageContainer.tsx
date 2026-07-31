@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { BadgePlus, FolderClosed, Sparkles } from "lucide-react";
 import {
   useDeletePersonalLesson,
+  useDeletePersonalLessonSeriesFromDate,
   usePersonalLessons,
 } from "../../hooks/usePersonalLessons";
 import { useSchedule } from "../../hooks/useSchedule";
@@ -13,6 +14,7 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useUIStore } from "../../store/ui";
 import { addDays, isScheduleDateLockedForWrite } from "../../lib/scheduleWeek";
+import { personalLessonsInSeriesFromDate } from "../../lib/personalLessonSeries";
 import {
   translateConnectionBlockReason,
   translateMutationBlockedMessage,
@@ -76,6 +78,7 @@ export default function PersonalLessonsPageContainer({
   const [deleteTarget, setDeleteTarget] = useState<PersonalLesson | null>(null);
 
   const deletePersonalLesson = useDeletePersonalLesson();
+  const deletePersonalLessonSeries = useDeletePersonalLessonSeriesFromDate();
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -99,6 +102,18 @@ export default function PersonalLessonsPageContainer({
     dateRange: editWeekRange ?? undefined,
     enabled: Boolean(editWeekRange),
   });
+
+  const deleteSeriesLookupQuery = usePersonalLessons({
+    dateRange: deleteTarget
+      ? { start: deleteTarget.date, end: addDays(deleteTarget.date, 730) }
+      : undefined,
+    enabled: Boolean(deleteTarget),
+  });
+
+  const personalSeriesFromDate = useMemo(() => {
+    if (!deleteTarget || !deleteSeriesLookupQuery.data) return [];
+    return personalLessonsInSeriesFromDate(deleteTarget, deleteSeriesLookupQuery.data);
+  }, [deleteTarget, deleteSeriesLookupQuery.data]);
 
   const filteredLessons = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
@@ -207,6 +222,24 @@ export default function PersonalLessonsPageContainer({
       toast(res.error ?? t("personal.error.deleteFailed"), "error");
     } else {
       toast(t("personal.success.deleted"), "success");
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleConfirmDeleteSeries = async () => {
+    if (!deleteTarget) return;
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
+    const res = await deletePersonalLessonSeries.mutateAsync({
+      id: deleteTarget.id,
+      lessonDate: deleteTarget.date,
+    });
+    if (!res.success) {
+      toast(res.error ?? t("personal.error.deleteFailed"), "error");
+    } else {
+      toast(t("schedule.success.personalSeriesDeleted", { count: res.deletedCount }), "success");
       setDeleteTarget(null);
     }
   };
@@ -327,9 +360,20 @@ export default function PersonalLessonsPageContainer({
           ) : null
         }
         confirmLabel={t("common.delete")}
-        pending={deletePersonalLesson.isPending}
+        pending={deletePersonalLesson.isPending || deletePersonalLessonSeries.isPending}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
+        alternateConfirmLabel={
+          personalSeriesFromDate.length >= 2
+            ? t("schedule.lessonInfo.deletePersonalSeriesConfirm", {
+                count: personalSeriesFromDate.length,
+              })
+            : undefined
+        }
+        alternatePending={deletePersonalLessonSeries.isPending}
+        onAlternateConfirm={
+          personalSeriesFromDate.length >= 2 ? handleConfirmDeleteSeries : undefined
+        }
       />
     </div>
   );

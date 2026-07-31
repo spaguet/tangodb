@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, X, XCircle, ArrowRightLeft } from "lucide-react";
 import { useDeleteScheduleSlot } from "../../hooks/useSchedule";
-import { useDeletePersonalLesson, usePersonalLessons } from "../../hooks/usePersonalLessons";
+import { useDeletePersonalLesson, useDeletePersonalLessonSeriesFromDate, usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
@@ -16,6 +16,7 @@ import {
 } from "../../lib/scheduleLessonAccess";
 import { useI18n } from "../../hooks/useI18n";
 import { isRecurringGroupSlot } from "../../lib/groupLessonRepeat";
+import { personalLessonsInSeriesFromDate } from "../../lib/personalLessonSeries";
 import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import RequirePermission from "../RequirePermission";
@@ -75,6 +76,7 @@ export default function LessonInfoPopup({
   const { role, can, isReadOnly, canEditPastSchedule } = usePermissions();
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const deletePersonalLesson = useDeletePersonalLesson();
+  const deletePersonalLessonSeries = useDeletePersonalLessonSeriesFromDate();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [cancelOneConfirmOpen, setCancelOneConfirmOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
@@ -134,6 +136,18 @@ export default function LessonInfoPopup({
     lesson?.kind === "personal" &&
     canPayPersonalLesson(role, memberId, lesson, can, isReadOnly);
 
+  const fullPersonalLesson =
+    lesson?.kind === "personal"
+      ? personalLessonsQuery.data?.find((row) => row.id === lesson.lessonId)
+      : undefined;
+
+  const personalSeriesFromDate = useMemo(() => {
+    if (!fullPersonalLesson || !personalLessonsQuery.data) return [];
+    return personalLessonsInSeriesFromDate(fullPersonalLesson, personalLessonsQuery.data);
+  }, [fullPersonalLesson, personalLessonsQuery.data]);
+
+  const canDeletePersonalSeries = personalSeriesFromDate.length >= 2;
+
   const handleOpenPay = () => {
     if (lesson?.kind !== "personal") return;
     const fullLesson = personalLessonsQuery.data?.find((row) => row.id === lesson.lessonId);
@@ -180,7 +194,31 @@ export default function LessonInfoPopup({
     onClose();
   };
 
-  const deletePending = deleteScheduleSlot.isPending || deletePersonalLesson.isPending;
+  const handleDeletePersonalSeries = async () => {
+    if (!lesson || lesson.kind !== "personal") return;
+
+    const res = await deletePersonalLessonSeries.mutateAsync({
+      id: lesson.lessonId,
+      lessonDate: lesson.date,
+    });
+    if (!res.success) {
+      toast(res.error ?? t("schedule.error.deleteLessonFailed"), "error");
+      return;
+    }
+
+    toast(
+      t("schedule.success.personalSeriesDeleted", { count: res.deletedCount }),
+      "success"
+    );
+    setDeleteConfirmOpen(false);
+    onSuccess?.();
+    onClose();
+  };
+
+  const deletePending =
+    deleteScheduleSlot.isPending ||
+    deletePersonalLesson.isPending ||
+    deletePersonalLessonSeries.isPending;
 
   return (
     <>
@@ -425,6 +463,17 @@ export default function LessonInfoPopup({
         pending={deletePending}
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirmOpen(false)}
+        alternateConfirmLabel={
+          lesson?.kind === "personal" && canDeletePersonalSeries
+            ? t("schedule.lessonInfo.deletePersonalSeriesConfirm", {
+                count: personalSeriesFromDate.length,
+              })
+            : undefined
+        }
+        alternatePending={deletePersonalLessonSeries.isPending}
+        onAlternateConfirm={
+          lesson?.kind === "personal" && canDeletePersonalSeries ? handleDeletePersonalSeries : undefined
+        }
       />
 
       <CancelGroupLessonDialog
