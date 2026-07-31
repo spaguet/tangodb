@@ -121,6 +121,28 @@ export function formatOperationNumber(num: number | null | undefined): string {
   return `#${num}`;
 }
 
+/** Hide superseded originals — storno/replacement rows represent the correction event. */
+export function filterVisibleCorrectionPayments(
+  payments: CorrectionReportPaymentRow[]
+): CorrectionReportPaymentRow[] {
+  return payments.filter((row) => {
+    if (row.operationKind !== "payment" || row.replacesPaymentId) return true;
+    return row.relatedStatus !== "voided" && row.relatedStatus !== "replaced";
+  });
+}
+
+export function paymentCorrectionActionLabelKey(row: CorrectionReportPaymentRow): string {
+  if (row.operationKind === "storno") return "corrections.page.actionVoid";
+  if (row.replacesPaymentId) return "corrections.page.actionReplacement";
+  return "corrections.page.actionOriginal";
+}
+
+export function paymentCorrectionReasonLabelKey(code: string | null): string | null {
+  if (!code) return null;
+  const match = PAYMENT_CORRECTION_REASONS.find((reason) => reason.code === code);
+  return match?.labelKey ?? null;
+}
+
 function str(value: unknown): string | null {
   if (value == null || value === "") return null;
   return String(value);

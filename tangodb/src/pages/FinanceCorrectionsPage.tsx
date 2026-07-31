@@ -7,35 +7,161 @@ import { useCorrectionsReport } from "../hooks/usePaymentCorrections";
 import { useI18n } from "../hooks/useI18n";
 import { formatCurrency } from "../lib/utils";
 import { getPaymentMethodLabel } from "../hooks/usePayments";
-import { paymentStatusLabelKey } from "../lib/paymentCorrection";
+import {
+  filterVisibleCorrectionPayments,
+  formatOperationNumber,
+  paymentCorrectionActionLabelKey,
+  paymentCorrectionReasonLabelKey,
+  paymentStatusLabelKey,
+  type CorrectionReportPaymentRow,
+} from "../lib/paymentCorrection";
+
+function KindBadge({
+  kind,
+  operationNumber,
+  tone = "indigo",
+}: {
+  kind: string;
+  operationNumber: number | null;
+  tone?: "indigo" | "violet";
+}) {
+  const opLabel = formatOperationNumber(operationNumber);
+  const toneClass = tone === "violet" ? "text-violet-700" : "text-indigo-700";
+  return (
+    <p className={`text-xs font-semibold uppercase whitespace-nowrap ${toneClass}`}>
+      {kind}
+      {operationNumber != null && (
+        <span className="text-slate-500 font-normal normal-case ml-1">{opLabel}</span>
+      )}
+    </p>
+  );
+}
+
+function PaymentCorrectionRow({
+  row,
+  originalPayment,
+  t,
+  formatDateTime,
+}: {
+  row: CorrectionReportPaymentRow;
+  originalPayment: CorrectionReportPaymentRow | null;
+  t: ReturnType<typeof useI18n>["t"];
+  formatDateTime: ReturnType<typeof useI18n>["formatDateTime"];
+}) {
+  const actionKey = paymentCorrectionActionLabelKey(row);
+  const reasonKey = paymentCorrectionReasonLabelKey(row.reasonCode);
+  const isStorno = row.operationKind === "storno";
+  const contextDate = originalPayment?.createdAt;
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-2 px-4 py-3 border-b border-slate-100 last:border-b-0">
+      <div>
+        <KindBadge kind={t("corrections.page.kindPayment")} operationNumber={row.operationNumber} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-slate-800 truncate">{row.clientDisplay}</p>
+        <p className="text-xs text-slate-500 mt-0.5">
+          {t(actionKey as Parameters<typeof t>[0])} · {getPaymentMethodLabel(row.method, t)}
+          {!isStorno && (
+            <>
+              {" · "}
+              {t(paymentStatusLabelKey(row.relatedStatus) as Parameters<typeof t>[0])}
+            </>
+          )}
+        </p>
+        {isStorno && contextDate && (
+          <p className="text-xs text-slate-400 mt-0.5">
+            {t("corrections.page.stornoContext", {
+              date: formatDateTime(contextDate, {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            })}
+          </p>
+        )}
+        {row.replacesPaymentId && contextDate && (
+          <p className="text-xs text-slate-400 mt-0.5">
+            {t("corrections.page.replacementContext", {
+              date: formatDateTime(contextDate, {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            })}
+          </p>
+        )}
+        {reasonKey && (
+          <p className="text-xs text-slate-400 mt-0.5">
+            {t(reasonKey as Parameters<typeof t>[0])}
+            {row.reasonComment ? ` — ${row.reasonComment}` : ""}
+          </p>
+        )}
+        <p className="text-[10px] text-slate-400 mt-1">
+          {row.authorName ?? "—"} ·{" "}
+          {formatDateTime(row.createdAt, {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </p>
+      </div>
+      <p
+        className={`text-sm font-semibold text-right whitespace-nowrap ${
+          isStorno ? "text-rose-600" : "text-slate-800"
+        }`}
+      >
+        {isStorno ? "−" : ""}
+        {formatCurrency(row.amount)}
+      </p>
+    </div>
+  );
+}
 
 export default function FinanceCorrectionsPage() {
-  const { t, formatDateTime, formatDate } = useI18n();
+  const { t, formatDateTime, formatDate, plural } = useI18n();
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
 
   const reportQuery = useCorrectionsReport(dateFrom || undefined, dateTo || undefined);
 
+  const paymentById = useMemo(() => {
+    const map = new Map<string, CorrectionReportPaymentRow>();
+    for (const row of reportQuery.data?.payments ?? []) {
+      map.set(row.id, row);
+    }
+    return map;
+  }, [reportQuery.data?.payments]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!reportQuery.data) return { payments: [], attendance: [] };
-    if (!q) return reportQuery.data;
+    const visiblePayments = filterVisibleCorrectionPayments(reportQuery.data?.payments ?? []);
 
-    return {
-      payments: reportQuery.data.payments.filter(
-        (row) =>
-          row.clientDisplay.toLowerCase().includes(q) ||
-          String(row.operationNumber ?? "").includes(q) ||
-          (row.reasonCode ?? "").toLowerCase().includes(q)
-      ),
-      attendance: reportQuery.data.attendance.filter(
-        (row) =>
-          row.clientDisplay.toLowerCase().includes(q) ||
-          String(row.operationNumber ?? "").includes(q) ||
-          (row.reasonCode ?? "").toLowerCase().includes(q)
-      ),
-    };
+    if (!reportQuery.data) return { payments: [], attendance: [] };
+
+    const payments = !q
+      ? visiblePayments
+      : visiblePayments.filter(
+          (row) =>
+            row.clientDisplay.toLowerCase().includes(q) ||
+            String(row.operationNumber ?? "").includes(q) ||
+            (row.reasonCode ?? "").toLowerCase().includes(q)
+        );
+
+    const attendance = !q
+      ? reportQuery.data.attendance
+      : reportQuery.data.attendance.filter(
+          (row) =>
+            row.clientDisplay.toLowerCase().includes(q) ||
+            String(row.operationNumber ?? "").includes(q) ||
+            (row.reasonCode ?? "").toLowerCase().includes(q)
+        );
+
+    return { payments, attendance };
   }, [reportQuery.data, search]);
 
   if (reportQuery.isLoading) return <LoadingState />;
@@ -44,6 +170,11 @@ export default function FinanceCorrectionsPage() {
   }
 
   const totalRows = filtered.payments.length + filtered.attendance.length;
+  const countLabel = plural(totalRows, [
+    t("common.records.one", { count: totalRows }),
+    t("common.records.few", { count: totalRows }),
+    t("common.records.many", { count: totalRows }),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -72,7 +203,7 @@ export default function FinanceCorrectionsPage() {
         </div>
       </div>
 
-      <p className="text-xs text-slate-400">{t("corrections.page.count", { count: totalRows })}</p>
+      <p className="text-xs text-slate-400">{countLabel}</p>
 
       {totalRows === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
@@ -81,48 +212,19 @@ export default function FinanceCorrectionsPage() {
       ) : (
         <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white">
           {filtered.payments.map((row) => (
-            <div
+            <PaymentCorrectionRow
               key={`p-${row.id}`}
-              className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-2 px-4 py-3 border-b border-slate-100 last:border-b-0"
-            >
-              <div>
-                <p className="text-xs font-semibold text-indigo-700 uppercase">{t("corrections.page.kindPayment")}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  {row.operationNumber != null ? `#${row.operationNumber}` : "—"}
-                </p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-800 truncate">{row.clientDisplay}</p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {row.operationKind === "storno" ? t("corrections.page.storno") : t("corrections.page.correction")} ·{" "}
-                  {getPaymentMethodLabel(row.method, t)} ·{" "}
-                  {t(paymentStatusLabelKey(row.relatedStatus) as Parameters<typeof t>[0])}
-                </p>
-                {row.reasonCode && (
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {row.reasonCode}
-                    {row.reasonComment ? ` — ${row.reasonComment}` : ""}
-                  </p>
-                )}
-                <p className="text-[10px] text-slate-400 mt-1">
-                  {row.authorName ?? "—"} ·{" "}
-                  {formatDateTime(row.createdAt, {
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
-              <p
-                className={`text-sm font-semibold text-right whitespace-nowrap ${
-                  row.operationKind === "storno" ? "text-rose-600" : "text-slate-800"
-                }`}
-              >
-                {row.operationKind === "storno" ? "−" : ""}
-                {formatCurrency(row.amount)}
-              </p>
-            </div>
+              row={row}
+              originalPayment={
+                row.reversesPaymentId
+                  ? (paymentById.get(row.reversesPaymentId) ?? null)
+                  : row.replacesPaymentId
+                    ? (paymentById.get(row.replacesPaymentId) ?? null)
+                    : null
+              }
+              t={t}
+              formatDateTime={formatDateTime}
+            />
           ))}
 
           {filtered.attendance.map((row) => (
@@ -131,10 +233,11 @@ export default function FinanceCorrectionsPage() {
               className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-2 px-4 py-3 border-b border-slate-100 last:border-b-0"
             >
               <div>
-                <p className="text-xs font-semibold text-violet-700 uppercase">{t("corrections.page.kindAttendance")}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  {row.operationNumber != null ? `#${row.operationNumber}` : "—"}
-                </p>
+                <KindBadge
+                  kind={t("corrections.page.kindAttendance")}
+                  operationNumber={row.operationNumber}
+                  tone="violet"
+                />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-slate-800 truncate">{row.clientDisplay}</p>
