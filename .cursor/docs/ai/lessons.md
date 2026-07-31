@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-07-31 — Finance: Cannot read properties of undefined (reading 'toLocaleString')
+
+- **Ошибка:** раздел «Финансы» → «Коррекции» падал с `toLocaleString` на undefined.
+- **Причина:** RPC `get_corrections_report` возвращает snake_case (`created_at`), а UI читал camelCase (`createdAt`) и передавал undefined в `formatDateTime`.
+- **Как избежать:** маппить JSON из PostgREST/RPC в типы фронта; в `formatDateTimeLocale` / `formatCurrency` не вызывать Intl на null/undefined.
+
 ### 2026-07-31 — preview_calendar_event_conflicts: «Не удалось проверить конфликты»
 
 - **Ошибка:** при создании мероприятия popup показывал «В это время уже есть занятия…» и «Не удалось проверить конфликты», хотя слот свободен.

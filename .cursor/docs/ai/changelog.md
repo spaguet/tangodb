@@ -2,6 +2,10 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-31 — tangodb: fix Finance «Коррекции» — маппинг snake_case из RPC `get_corrections_report`; защита `formatCurrency` и `formatDateTimeLocale` от undefined.
+
+2026-07-31 — tangodb: удалены 836 personal_lessons с 2026-09-01 (org Omow dance); script `delete-personal-lessons-from-date.mjs`.
+
 2026-07-31 — tangodb: fix delete_personal_lesson — orphan journal payments before delete (invalid client_id / payments_source_check on FK SET NULL).
 
 2026-07-31 — tangodb: fix delete_personal_lesson — после полного сторно можно удалять урок (проверка net payment, не наличие строк payments).

@@ -120,3 +120,49 @@ export function formatOperationNumber(num: number | null | undefined): string {
   if (num == null) return "—";
   return `#${num}`;
 }
+
+function str(value: unknown): string | null {
+  if (value == null || value === "") return null;
+  return String(value);
+}
+
+/** RPC `get_corrections_report` returns snake_case via row_to_json. */
+export function mapCorrectionReportPaymentRow(
+  row: Record<string, unknown>
+): CorrectionReportPaymentRow {
+  return {
+    kind: "payment",
+    id: String(row.id),
+    operationNumber: row.operation_number != null ? Number(row.operation_number) : null,
+    operationKind: (row.operation_kind as PaymentOperationKind) ?? "payment",
+    amount: Number(row.amount) || 0,
+    method: (row.method as PaymentMethod) ?? "cash",
+    clientDisplay: String(row.client_display ?? ""),
+    reasonCode: str(row.reason_code),
+    reasonComment: str(row.reason_comment),
+    reversesPaymentId: str(row.reverses_payment_id),
+    replacesPaymentId: str(row.replaces_payment_id),
+    createdAt: String(row.created_at ?? ""),
+    authorName: str(row.author_name),
+    relatedStatus: (row.related_status as PaymentCorrectionStatus) ?? "active",
+  };
+}
+
+export function mapCorrectionReportAttendanceRow(
+  row: Record<string, unknown>
+): CorrectionReportAttendanceRow {
+  return {
+    kind: "attendance",
+    id: String(row.id),
+    operationNumber: row.operation_number != null ? Number(row.operation_number) : null,
+    clientDisplay: String(row.client_display ?? ""),
+    oldStatus: str(row.old_status),
+    newStatus: String(row.new_status ?? ""),
+    reasonCode: str(row.reason_code),
+    reasonComment: str(row.reason_comment),
+    isUndo: row.is_undo === true,
+    occurrenceDate: String(row.occurrence_date ?? "").slice(0, 10),
+    createdAt: String(row.created_at ?? ""),
+    authorName: str(row.author_name),
+  };
+}

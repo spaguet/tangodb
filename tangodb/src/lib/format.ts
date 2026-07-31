@@ -1,4 +1,5 @@
 import { getCurrencySymbolHint, getCurrencySymbolOverride } from "./currencies";
+import { resolveLocale } from "./i18n";
 import type { OrganizationSettings } from "../types/organization";
 
 export interface FormatOptions {
@@ -18,14 +19,18 @@ export function formatOptionsFromSettings(
 ): FormatOptions {
   if (!settings) return DEFAULT_FORMAT_OPTIONS;
   return {
-    locale: settings.locale,
-    currencyCode: settings.currency_code,
-    currencyDisplay: settings.currency_display,
+    locale: settings.locale ? resolveLocale(settings.locale) : DEFAULT_FORMAT_OPTIONS.locale,
+    currencyCode: settings.currency_code || DEFAULT_FORMAT_OPTIONS.currencyCode,
+    currencyDisplay: settings.currency_display ?? DEFAULT_FORMAT_OPTIONS.currencyDisplay,
   };
 }
 
 export function formatCurrency(amount: number, options: FormatOptions = DEFAULT_FORMAT_OPTIONS): string {
-  const { locale, currencyCode, currencyDisplay } = options;
+  const value = Number(amount);
+  const safeAmount = Number.isFinite(value) ? value : 0;
+  const locale = options.locale ? resolveLocale(options.locale) : DEFAULT_FORMAT_OPTIONS.locale;
+  const currencyCode = options.currencyCode || DEFAULT_FORMAT_OPTIONS.currencyCode;
+  const currencyDisplay = options.currencyDisplay ?? DEFAULT_FORMAT_OPTIONS.currencyDisplay;
 
   const formatter = new Intl.NumberFormat(locale, {
     style: "currency",
@@ -36,7 +41,7 @@ export function formatCurrency(amount: number, options: FormatOptions = DEFAULT_
 
   const symbolOverride = currencyDisplay === "symbol" ? getCurrencySymbolOverride(currencyCode) : null;
   return formatter
-    .formatToParts(amount)
+    .formatToParts(safeAmount)
     .map((part) => {
       if (part.type === "group") return " ";
       if (part.type === "currency" && symbolOverride) return symbolOverride;

@@ -77,20 +77,28 @@ export function pluralize(
   return forms[2];
 }
 
+function parseLocaleDate(iso: string | Date | null | undefined): Date | null {
+  if (iso == null || iso === "") return null;
+  const date = typeof iso === "string" ? new Date(iso) : iso;
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function formatDateLocale(
-  iso: string | Date,
+  iso: string | Date | null | undefined,
   locale: string | null | undefined,
   options?: Intl.DateTimeFormatOptions
 ): string {
-  const date = typeof iso === "string" ? new Date(iso) : iso;
+  const date = parseLocaleDate(iso);
+  if (!date) return "—";
   return date.toLocaleDateString(resolveLocale(locale), options);
 }
 
 export function formatDateTimeLocale(
-  iso: string | Date,
+  iso: string | Date | null | undefined,
   locale: string | null | undefined,
   options?: Intl.DateTimeFormatOptions
 ): string {
-  const date = typeof iso === "string" ? new Date(iso) : iso;
+  const date = parseLocaleDate(iso);
+  if (!date) return "—";
   return date.toLocaleString(resolveLocale(locale), options);
 }

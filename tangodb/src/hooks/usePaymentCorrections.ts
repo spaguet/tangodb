@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type {
-  AttendanceCorrectionRecord,
-  CorrectionReportAttendanceRow,
-  CorrectionReportPaymentRow,
-  PaymentCorrectionReasonCode,
-  PaymentWithCorrectionMeta,
+import {
+  mapCorrectionReportAttendanceRow,
+  mapCorrectionReportPaymentRow,
+  type AttendanceCorrectionRecord,
+  type CorrectionReportAttendanceRow,
+  type CorrectionReportPaymentRow,
+  type PaymentCorrectionReasonCode,
+  type PaymentWithCorrectionMeta,
 } from "../lib/paymentCorrection";
 import type { PaymentMethod } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
@@ -112,8 +114,12 @@ export function useCorrectionsReport(dateFrom?: string, dateTo?: string) {
       } | null;
       if (!result?.success) throw new Error(result?.error ?? "corrections.error.loadFailed");
       return {
-        payments: result.payments ?? [],
-        attendance: result.attendance ?? [],
+        payments: ((result.payments as unknown[]) ?? []).map((row) =>
+          mapCorrectionReportPaymentRow(row as Record<string, unknown>)
+        ),
+        attendance: ((result.attendance as unknown[]) ?? []).map((row) =>
+          mapCorrectionReportAttendanceRow(row as Record<string, unknown>)
+        ),
       };
     },
     staleTime: 30 * 1000,
