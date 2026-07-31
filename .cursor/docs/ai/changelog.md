@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-31 — tangodb: fix `_storno_payment_impl` — `v_member_id` → `p_member_id` (ошибка при аннулировании платежа).
+
 2026-07-31 — tangodb: popup удаления персонального урока — кнопка «Удалить все уроки в будущем» для weekly-серии (RPC `delete_personal_lesson_series_from_date`, ConfirmDialog alternate action).
 
 2026-07-31 — tangodb: отменены payments за будущие calendar-уроки (961 урок с 2026-08-03, paid=no; цена тарифа сохранена).
