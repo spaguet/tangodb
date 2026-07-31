@@ -232,7 +232,7 @@ export default function TeacherVacationDialog({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2">
               <button
                 type="button"
                 onClick={onClose}
@@ -250,10 +250,12 @@ export default function TeacherVacationDialog({
                   !endDate ||
                   previewDates.length === 0
                 }
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
               >
-                <CalendarOff className="w-3.5 h-3.5" />
-                {vacationMutation.isPending ? t("common.saving") : confirmLabel}
+                <CalendarOff className="w-3.5 h-3.5 shrink-0" />
+                <span className="text-center leading-snug">
+                  {vacationMutation.isPending ? t("common.saving") : confirmLabel}
+                </span>
               </button>
             </div>
           </motion.div>
