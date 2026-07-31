@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-31 — tangodb: fix delete_personal_lesson — orphan journal payments before delete (invalid client_id / payments_source_check on FK SET NULL).
+
 2026-07-31 — tangodb: fix delete_personal_lesson — после полного сторно можно удалять урок (проверка net payment, не наличие строк payments).
 
 2026-07-31 — tangodb: fix `_storno_payment_impl` — `v_member_id` → `p_member_id` (ошибка при аннулировании платежа).
