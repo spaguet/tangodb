@@ -19,8 +19,10 @@ import {
 } from "../lib/utils";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { shiftMonth } from "../lib/financeReports";
+import { paymentEffectiveAmount } from "../lib/paymentCorrection";
+import type { PaymentWithCorrectionMeta } from "../lib/paymentCorrection";
 import { useI18n } from "../hooks/useI18n";
-import type { Client, Payment, PersonalLesson, Subscription } from "../types";
+import type { Client, PersonalLesson, Subscription } from "../types";
 import { PAYMENT_METHODS, getPaymentMethodLabel, paymentSourceLabel } from "../hooks/usePayments";
 import { useAttendanceRecords } from "../hooks/useAttendance";
 import { useOrganization } from "../organization/OrganizationProvider";
@@ -30,7 +32,7 @@ interface OperationalDashboardProps {
   clients: Client[];
   subscriptions: Subscription[];
   personalLessons: PersonalLesson[];
-  todayPayments?: Payment[];
+  todayPayments?: PaymentWithCorrectionMeta[];
   showOperationalPayments?: boolean;
   onNavigate: (panel: string) => void;
 }
@@ -85,6 +87,11 @@ export default function OperationalDashboard({
     return { present, absent, freeze, total: present + absent + freeze };
   }, [attendanceQuery.data]);
 
+  const todayPaymentCount = useMemo(
+    () => todayPayments.filter((payment) => payment.operationKind !== "storno").length,
+    [todayPayments]
+  );
+
   return (
     <div id="panel-dashboard" className="panel-page-stack">
       <div className="space-y-3">
@@ -137,29 +144,46 @@ export default function OperationalDashboard({
               <h2 className="font-sans text-sm font-semibold tracking-tight">{t("dashboard.todayPayments")}</h2>
             </div>
             <span className="text-[10px] font-sans uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">
-              {todayPayments.length}
+              {todayPaymentCount}
             </span>
           </div>
           {todayPayments.length === 0 ? (
             <p className="text-slate-400 text-xs font-sans py-3 text-center">{t("dashboard.noPaymentsToday")}</p>
           ) : (
             <div className="space-y-1.5">
-              {todayPayments.slice(0, 8).map((payment) => (
+              {todayPayments.slice(0, 8).map((payment) => {
+                const isStorno = payment.operationKind === "storno";
+                const effective = paymentEffectiveAmount(payment);
+                const subtitle = isStorno
+                  ? `${t("corrections.page.storno")} · ${getPaymentMethodLabel(payment.method, t)}`
+                  : `${paymentSourceLabel(payment, t)} · ${getPaymentMethodLabel(payment.method, t)}`;
+
+                return (
                 <div
                   key={payment.id}
-                  className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 font-sans"
+                  className={`flex items-center justify-between p-2 rounded-lg border font-sans ${
+                    isStorno
+                      ? "bg-rose-50/60 border-rose-100"
+                      : "bg-slate-50 border-slate-100"
+                  }`}
                 >
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-slate-800 truncate">{payment.clientDisplay}</p>
-                    <p className="text-[10px] text-slate-400">
-                      {paymentSourceLabel(payment, t)} · {getPaymentMethodLabel(payment.method, t)}
+                    <p className={`text-[10px] ${isStorno ? "text-rose-600" : "text-slate-400"}`}>
+                      {subtitle}
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-indigo-700 shrink-0">
-                    {formatCurrency(payment.amount)}
+                  <span
+                    className={`text-xs font-semibold shrink-0 ${
+                      isStorno ? "text-rose-600" : "text-indigo-700"
+                    }`}
+                  >
+                    {isStorno ? "−" : ""}
+                    {formatCurrency(Math.abs(effective))}
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

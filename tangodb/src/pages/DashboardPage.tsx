@@ -19,7 +19,7 @@ import { useUIStore } from "../store/ui";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { getDashboardTabs } from "../lib/i18n";
 import { normalizeOrgModules } from "../lib/orgModules";
-import type { Client, Payment, PersonalLesson, Subscription } from "../types";
+import type { Client, PersonalLesson, Subscription } from "../types";
 import DemoDashboardBanner from "../components/demo/DemoDashboardBanner";
 import VenueRuleExpiryNotice from "../components/venue-costs/VenueRuleExpiryNotice";
 import { useVenueCostRuleStatus } from "../hooks/useVenueCosts";
@@ -285,7 +285,7 @@ function OperationalDashboardView({
       clients={(clientsQuery.data ?? []) as Client[]}
       subscriptions={(subscriptionsQuery.data ?? []) as Subscription[]}
       personalLessons={(personalLessonsQuery.data ?? []) as PersonalLesson[]}
-      todayPayments={(todayPaymentsQuery.data ?? []) as Payment[]}
+      todayPayments={todayPaymentsQuery.data ?? []}
       showOperationalPayments={showOperationalPayments}
       onNavigate={onNavigate}
     />
