@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-31 — tangodb venue-cost polish: React Query cache для pre-payment ack; invalidate closures после close/reopen; FinanceExpensesPage не тянет venue costs без диапазона дат; dashboard показывает «—» для venue при ошибке RPC; LessonInfoPopup грузит personal lessons по месяцу.
+
 2026-07-31 — tangodb venue-cost hardening: payment wrappers передают idempotency key во inner RPC; PersonalLessonSaleForm не пересоздаёт уроки при ack (pending payments); убран ungated close из PayPersonalLessonModal; batch closures в списке personal; gate close/settings; finance costs error state.
 
 2026-07-31 — tangodb UI venue-cost: reopen закрытых уроков (журнал / personal row / LessonInfoPopup) через `useActive*LessonClosure` + RPC; CSV расходов уже включает auto-начисления.

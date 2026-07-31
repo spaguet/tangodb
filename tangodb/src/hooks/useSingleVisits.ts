@@ -4,7 +4,11 @@ import type { PaymentMethod, SingleVisit } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { paymentsQueryKey } from "./usePayments";
 import { payrollQueryKey } from "./usePayroll";
-import { checkVenueRuleBeforePayment, venueRuleAckFailureFromRpc } from "./useVenueCosts";
+import {
+  checkVenueRuleBeforePayment,
+  venueCostStatusQueryKey,
+  venueRuleAckFailureFromRpc,
+} from "./useVenueCosts";
 
 export const singleVisitsQueryKey = ["single-visits"] as const;
 
@@ -78,6 +82,8 @@ export function useSingleVisits(filter?: SingleVisitsFilter) {
 
 export function useRecordSingleVisit() {
   const queryClient = useQueryClient();
+  const { withOrgId } = useOrgQueryScope();
+  const venueStatusQueryKey = withOrgId(venueCostStatusQueryKey);
 
   return useMutation({
     mutationFn: async (input: {
@@ -89,7 +95,10 @@ export function useRecordSingleVisit() {
       idempotencyKey?: string;
       venueRuleAcknowledged?: boolean;
     }) => {
-      const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false);
+      const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false, {
+        queryClient,
+        statusQueryKey: venueStatusQueryKey,
+      });
       if (venueGuard) return venueGuard;
       const { data, error } = await supabase.rpc("record_single_visit", {
         p_visit_date: input.visitDate,

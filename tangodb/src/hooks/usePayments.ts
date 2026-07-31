@@ -11,6 +11,7 @@ import { personalLessonsQueryKey } from "./usePersonalLessons";
 import { financialDebtorsQueryKey } from "./useFinancialDebtors";
 import {
   checkVenueRuleBeforePayment,
+  venueCostStatusQueryKey,
   venueRuleAckFailureFromRpc,
 } from "./useVenueCosts";
 
@@ -105,6 +106,8 @@ export function useRecordPayment() {
 
 export function useRecordSubscriptionPayment() {
   const queryClient = useQueryClient();
+  const { withOrgId } = useOrgQueryScope();
+  const venueStatusQueryKey = withOrgId(venueCostStatusQueryKey);
 
   return useMutation({
     mutationFn: async (input: {
@@ -118,7 +121,10 @@ export function useRecordSubscriptionPayment() {
       idempotencyKey?: string;
       venueRuleAcknowledged?: boolean;
     }) => {
-      const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false);
+      const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false, {
+        queryClient,
+        statusQueryKey: venueStatusQueryKey,
+      });
       if (venueGuard) return venueGuard;
       const { data, error } = await supabase.rpc("record_subscription_payment", {
         p_subscription_id: input.subscriptionId,
@@ -164,6 +170,8 @@ export function useRecordSubscriptionPayment() {
 
 export function useRecordPersonalLessonPayment() {
   const queryClient = useQueryClient();
+  const { withOrgId } = useOrgQueryScope();
+  const venueStatusQueryKey = withOrgId(venueCostStatusQueryKey);
 
   return useMutation({
     mutationFn: async (input: {
@@ -176,7 +184,10 @@ export function useRecordPersonalLessonPayment() {
       idempotencyKey?: string;
       venueRuleAcknowledged?: boolean;
     }) => {
-      const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false);
+      const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false, {
+        queryClient,
+        statusQueryKey: venueStatusQueryKey,
+      });
       if (venueGuard) return venueGuard;
       const { data, error } = await supabase.rpc("record_personal_lesson_payment", {
         p_lesson_id: input.lessonId,

@@ -499,6 +499,7 @@ export default function FinancialDashboard() {
     statsMonth,
   ]);
 
+  const financeCostsUnavailable = financeCostsQuery.isError;
   const expensesTotal = useMemo(() => {
     if (financeCostsQuery.data) return financeCostsQuery.data.total;
     return sumExpenses(expensesQuery.data ?? []);
@@ -714,11 +715,17 @@ export default function FinancialDashboard() {
               {t("dashboard.expensesMonth")}
             </p>
             <p className="text-xl font-semibold text-rose-700 mt-0.5">
-              {expensesQuery.isLoading || financeCostsQuery.isLoading ? "…" : formatCurrency(expensesTotal)}
+              {expensesQuery.isLoading || (financeCostsQuery.isLoading && !financeCostsUnavailable)
+                ? "…"
+                : formatCurrency(expensesTotal)}
             </p>
             <p className="text-[10px] text-slate-500 mt-0.5">
-              {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualExpensesTotal)} ·{" "}
-              {t("venueCosts.finance.venueTotal")}: {formatCurrency(venueCostsTotal)}
+              {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualExpensesTotal)}
+              {financeCostsUnavailable ? (
+                <> · {t("venueCosts.finance.venueTotal")}: —</>
+              ) : (
+                <> · {t("venueCosts.finance.venueTotal")}: {formatCurrency(venueCostsTotal)}</>
+              )}
             </p>
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">

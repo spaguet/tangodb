@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import {
   venueCostDraftToPayload,
@@ -134,10 +134,17 @@ export interface VenueRuleAckRequiredFailure {
 }
 
 export async function checkVenueRuleBeforePayment(
-  acknowledged: boolean
+  acknowledged: boolean,
+  cache?: { queryClient: QueryClient; statusQueryKey: readonly unknown[] }
 ): Promise<VenueRuleAckRequiredFailure | null> {
   if (acknowledged) return null;
-  const status = await fetchVenueCostRuleStatus();
+  const status = cache
+    ? await cache.queryClient.fetchQuery({
+        queryKey: cache.statusQueryKey,
+        queryFn: fetchVenueCostRuleStatus,
+        staleTime: 30_000,
+      })
+    : await fetchVenueCostRuleStatus();
   return status.acknowledgementRequired
     ? { success: false, error: "venue_rule_ack_required", errorCode: "venue_rule_ack_required", venueRuleStatus: status }
     : null;
@@ -186,6 +193,7 @@ function useInvalidateVenueCosts() {
   return () => {
     void queryClient.invalidateQueries({ queryKey: ["venue-costs"] });
     void queryClient.invalidateQueries({ queryKey: ["finance-costs"] });
+    void queryClient.invalidateQueries({ queryKey: lessonClosuresQueryKey });
   };
 }
 

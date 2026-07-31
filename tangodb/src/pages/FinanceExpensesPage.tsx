@@ -116,11 +116,7 @@ export default function FinanceExpensesPage() {
   );
 
   const expensesQuery = useExpenses(expensesFilter);
-  const financeCostsQuery = useFinanceCosts(
-    dateFrom || "2000-01-01",
-    dateTo || todayIso,
-    Boolean(dateFrom || dateTo || true)
-  );
+  const financeCostsQuery = useFinanceCosts(dateFrom, dateTo, Boolean(dateFrom && dateTo));
   const venueEntries = useMemo(
     () => (financeCostsQuery.data?.entries ?? []).filter((entry) => entry.sourceType === "venue_cost"),
     [financeCostsQuery.data]

@@ -89,6 +89,7 @@ export default function LessonInfoPopup({
   const [reopenReason, setReopenReason] = useState("");
   const personalLessonsQuery = usePersonalLessons({
     enabled: lesson?.kind === "personal",
+    yearMonth: lesson?.kind === "personal" ? lesson.date.slice(0, 7) : undefined,
   });
   const personalClosureQuery = useActivePersonalLessonClosure(
     lesson?.kind === "personal" ? lesson.lessonId : null,
