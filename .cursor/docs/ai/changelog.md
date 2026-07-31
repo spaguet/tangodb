@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-31 — tangodb: popup «Новая аренда зала» — переименованы поля «Фиксированная стоимость» → «Стоимость аренды», «Оплата при создании» → «Оплачено» (i18n ru/en).
+
 2026-07-30 — tangodb: fix mark_attendance — `v_sub subscriptions%ROWTYPE` вместо `RECORD` для вызова `resolve_subscription_freeze_policy` (ошибка «cannot cast type record to subscriptions» в журнале посещений).
 
 2026-07-30 — tangodb: редактирование группового занятия в расписании — исправлена ложная ошибка «Выберите преподавателя» при сохранении после смены группы (fallback teacherMemberId, форма не сбрасывается при refetch scheduleSlots).
