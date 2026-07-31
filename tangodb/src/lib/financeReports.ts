@@ -383,11 +383,23 @@ export function buildClassTeacherMap(slots: ScheduleSlot[]): Map<string, string>
   return map;
 }
 
+export function buildClassLocationMap(slots: ScheduleSlot[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const slot of slots) {
+    const groupId = slot.scheduleGroupId;
+    if (groupId && slot.locationId && !map.has(groupId)) {
+      map.set(groupId, slot.locationId);
+    }
+  }
+  return map;
+}
+
 export interface TeacherRevenueContext {
-  personalLessonById: Map<string, Pick<PersonalLesson, "teacherMemberId">>;
-  singleVisitById: Map<string, Pick<SingleVisit, "teacherMemberId">>;
+  personalLessonById: Map<string, Pick<PersonalLesson, "teacherMemberId" | "locationId">>;
+  singleVisitById: Map<string, Pick<SingleVisit, "teacherMemberId" | "locationId">>;
   groupsBySubId: Record<string, SubscriptionGroupLink[]>;
   classTeacherByGroupId: Map<string, string>;
+  classLocationByGroupId: Map<string, string>;
   teacherLabels: Map<string, string>;
 }
 
@@ -405,6 +417,28 @@ export function resolvePaymentTeacherId(
     for (const group of ctx.groupsBySubId[payment.subscriptionId] ?? []) {
       const teacherId = ctx.classTeacherByGroupId.get(group.scheduleGroupId);
       if (teacherId) return teacherId;
+    }
+  }
+  return null;
+}
+
+export function resolvePaymentLocationId(
+  payment: Payment,
+  ctx: Pick<
+    TeacherRevenueContext,
+    "personalLessonById" | "singleVisitById" | "groupsBySubId" | "classLocationByGroupId"
+  >
+): string | null {
+  if (payment.personalLessonId) {
+    return ctx.personalLessonById.get(payment.personalLessonId)?.locationId ?? null;
+  }
+  if (payment.singleVisitId) {
+    return ctx.singleVisitById.get(payment.singleVisitId)?.locationId ?? null;
+  }
+  if (payment.subscriptionId) {
+    for (const group of ctx.groupsBySubId[payment.subscriptionId] ?? []) {
+      const locationId = ctx.classLocationByGroupId.get(group.scheduleGroupId);
+      if (locationId) return locationId;
     }
   }
   return null;

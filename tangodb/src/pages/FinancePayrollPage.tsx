@@ -35,6 +35,7 @@ import {
 import TeacherSettlementDetailPanel from "../components/payroll/TeacherSettlementDetailPanel";
 import { PAYMENT_METHOD_KEYS } from "../hooks/usePayments";
 import {
+  buildClassLocationMap,
   buildClassTeacherMap,
   monthDateRange,
   paymentsInMonth,
@@ -359,6 +360,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
       singleVisitById,
       groupsBySubId: subscriptionGroupsQuery.groupsBySubId,
       classTeacherByGroupId: buildClassTeacherMap(scheduleQuery.data ?? []),
+      classLocationByGroupId: buildClassLocationMap(scheduleQuery.data ?? []),
       teacherLabels: memberNameById,
     };
   }, [

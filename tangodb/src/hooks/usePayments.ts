@@ -14,7 +14,7 @@ import { financialDebtorsQueryKey } from "./useFinancialDebtors";
 export const paymentsQueryKey = ["payments"] as const;
 
 const PAYMENTS_SELECT =
-  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, single_visit_id, created_at";
+  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, single_visit_id, created_by, created_at";
 
 const mapPayment = (row: Record<string, unknown>): Payment => ({
   id: row.id as string,
@@ -26,6 +26,7 @@ const mapPayment = (row: Record<string, unknown>): Payment => ({
   subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
   personalLessonId: row.personal_lesson_id != null ? (row.personal_lesson_id as string) : null,
   singleVisitId: row.single_visit_id != null ? (row.single_visit_id as string) : null,
+  createdBy: row.created_by != null ? (row.created_by as string) : null,
   createdAt: String(row.created_at ?? ""),
 });
 

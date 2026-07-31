@@ -432,6 +432,7 @@ export interface Payment {
   subscriptionId: string | null;
   personalLessonId: string | null;
   singleVisitId: string | null;
+  createdBy: string | null;
   createdAt: string;
 }
 

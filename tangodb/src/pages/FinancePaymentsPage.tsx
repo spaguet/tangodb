@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Landmark, Pencil, Search } from "lucide-react";
+import { ChevronDown, Landmark, Pencil, Search } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect from "../components/ui/AppSelect";
@@ -17,7 +17,8 @@ import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useSingleVisits } from "../hooks/useSingleVisits";
 import { useI18n } from "../hooks/useI18n";
-import { buildClassTeacherMap, resolvePaymentTeacherId, type TeacherRevenueContext } from "../lib/financeReports";
+import { useAccessibleLocations } from "../hooks/useLocations";
+import { buildClassLocationMap, buildClassTeacherMap, resolvePaymentLocationId, resolvePaymentTeacherId, type TeacherRevenueContext } from "../lib/financeReports";
 import {
   aggregateEffectivePaymentTotal,
   paymentEffectiveAmount,
@@ -32,63 +33,146 @@ type PaymentMethodFilter = "all" | PaymentMethod;
 
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "transfer", "card", "other"];
 
+function PaymentDetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">{label}</dt>
+      <dd className="text-xs text-slate-700 font-sans mt-0.5 break-words">{value}</dd>
+    </div>
+  );
+}
+
 function PaymentRow({
   payment,
   formatDateTime,
   translate,
   canCorrect,
   onCorrect,
+  teacherCtx,
+  locationNameById,
+  memberNameById,
+  expanded,
+  onToggle,
 }: {
   payment: PaymentWithCorrectionMeta;
   formatDateTime: ReturnType<typeof useI18n>["formatDateTime"];
   translate: ReturnType<typeof useI18n>["t"];
   canCorrect: boolean;
   onCorrect: (payment: PaymentWithCorrectionMeta) => void;
+  teacherCtx: TeacherRevenueContext;
+  locationNameById: Map<string, string>;
+  memberNameById: Map<string, string>;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const effective = paymentEffectiveAmount(payment);
   const statusKey = payment.correctionStatus
     ? paymentStatusLabelKey(payment.correctionStatus)
     : null;
+  const teacherId = resolvePaymentTeacherId(payment, teacherCtx);
+  const teacherName = teacherId ? teacherCtx.teacherLabels.get(teacherId) ?? "—" : "—";
+  const locationId = resolvePaymentLocationId(payment, teacherCtx);
+  const locationName = locationId ? locationNameById.get(locationId) ?? "—" : "—";
+  const acceptedBy = payment.createdBy
+    ? memberNameById.get(payment.createdBy) ?? translate("team.auditSystem")
+    : translate("team.auditSystem");
+  const acceptedAt = formatDateTime(payment.createdAt, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const sourceLabel = paymentSourceLabel(payment, translate);
+  const methodLabel = getPaymentMethodLabel(payment.method, translate);
+  const amountLabel = `${payment.operationKind === "storno" ? "−" : ""}${formatCurrency(Math.abs(effective))}`;
 
   return (
-    <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0">
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-slate-800 truncate">{payment.clientDisplay || "—"}</p>
-        <p className="text-[10px] text-slate-400 font-sans mt-0.5">
-          {formatDateTime(payment.createdAt, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </p>
-        {statusKey && payment.operationKind !== "storno" && (
-          <p className="text-[10px] text-slate-500 mt-0.5">{translate(statusKey as Parameters<typeof translate>[0])}</p>
-        )}
-      </div>
-      <p className="text-xs text-slate-500 font-sans hidden sm:block">{paymentSourceLabel(payment, translate)}</p>
-      <p className="text-xs text-slate-500 font-sans hidden sm:block">
-        {getPaymentMethodLabel(payment.method, translate)}
-      </p>
-      <p
-        className={`text-sm font-sans font-semibold text-right whitespace-nowrap ${
-          payment.operationKind === "storno" ? "text-rose-600" : "text-indigo-700"
-        }`}
-      >
-        {payment.operationKind === "storno" ? "−" : ""}
-        {formatCurrency(Math.abs(effective))}
-      </p>
-      {canCorrect && payment.operationKind !== "storno" && payment.correctionStatus !== "voided" && payment.correctionStatus !== "replaced" && (
+    <div className="border-b border-slate-100 last:border-b-0">
+      <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
         <button
           type="button"
-          onClick={() => onCorrect(payment)}
-          aria-label={translate("common.edit")}
-          title={translate("common.edit")}
-          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 bg-white cursor-pointer transition-colors"
+          onClick={onToggle}
+          className="min-w-0 text-left cursor-pointer"
+          aria-expanded={expanded}
         >
-          <Pencil className="w-3.5 h-3.5" />
+          <div className="flex items-start gap-2">
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+                expanded ? "rotate-180" : ""
+              }`}
+            />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-800 truncate">{payment.clientDisplay || "—"}</p>
+              <p className="text-[10px] text-slate-400 font-sans mt-0.5">{acceptedAt}</p>
+              {statusKey && payment.operationKind !== "storno" && (
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  {translate(statusKey as Parameters<typeof translate>[0])}
+                </p>
+              )}
+            </div>
+          </div>
         </button>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
+        >
+          {sourceLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
+        >
+          {methodLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer ${
+            payment.operationKind === "storno" ? "text-rose-600" : "text-indigo-700"
+          }`}
+        >
+          {amountLabel}
+        </button>
+        {canCorrect && payment.operationKind !== "storno" && payment.correctionStatus !== "voided" && payment.correctionStatus !== "replaced" && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCorrect(payment);
+            }}
+            aria-label={translate("common.edit")}
+            title={translate("common.edit")}
+            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 bg-white cursor-pointer transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+      {expanded && (
+        <div className="px-3 pb-3 pt-0 ml-5 sm:ml-6">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 p-3 rounded-lg bg-slate-50/80 border border-slate-100">
+            <PaymentDetailItem label={translate("common.clientDate")} value={`${payment.clientDisplay || "—"} · ${acceptedAt}`} />
+            <PaymentDetailItem label={translate("common.source")} value={sourceLabel} />
+            <PaymentDetailItem label={translate("common.method")} value={methodLabel} />
+            <PaymentDetailItem label={translate("common.amount")} value={amountLabel} />
+            <PaymentDetailItem label={translate("schedule.form.teacher")} value={teacherName} />
+            <PaymentDetailItem label={translate("schedule.form.location")} value={locationName} />
+            <PaymentDetailItem label={translate("finance.payments.acceptedBy")} value={acceptedBy} />
+            <PaymentDetailItem label={translate("finance.payments.acceptedAt")} value={acceptedAt} />
+            {statusKey && payment.operationKind !== "storno" && (
+              <PaymentDetailItem
+                label={translate("finance.payments.status")}
+                value={translate(statusKey as Parameters<typeof translate>[0])}
+              />
+            )}
+            {payment.methodComment && (
+              <PaymentDetailItem label={translate("finance.payments.methodComment")} value={payment.methodComment} />
+            )}
+          </dl>
+        </div>
       )}
     </div>
   );
@@ -112,6 +196,7 @@ export default function FinancePaymentsPage() {
   const [methodFilter, setMethodFilter] = useState<PaymentMethodFilter>("all");
   const [teacherFilter, setTeacherFilter] = useState("all");
   const [correctionTarget, setCorrectionTarget] = useState<PaymentWithCorrectionMeta | null>(null);
+  const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
 
   const toast = (msg: string, type: "success" | "error" | "info" = "success") => {
@@ -127,6 +212,20 @@ export default function FinancePaymentsPage() {
   const singleVisitsQuery = useSingleVisits();
   const scheduleQuery = useSchedule();
   const subscriptionGroupsQuery = useSubscriptionGroups();
+  const locationsQuery = useAccessibleLocations();
+
+  const memberNameById = useMemo(
+    () =>
+      new Map(
+        (teamQuery.data ?? []).map((member) => [member.id, memberListLabel(member, locale)])
+      ),
+    [teamQuery.data, locale]
+  );
+
+  const locationNameById = useMemo(
+    () => new Map(locationsQuery.locations.map((loc) => [loc.id, loc.name])),
+    [locationsQuery.locations]
+  );
 
   const teacherOptions = useMemo(
     () =>
@@ -138,9 +237,6 @@ export default function FinancePaymentsPage() {
   );
 
   const teacherCtx = useMemo((): TeacherRevenueContext => {
-    const memberNameById = new Map(
-      (teamQuery.data ?? []).map((member) => [member.id, memberListLabel(member, locale)])
-    );
     const personalLessonById = new Map(
       (personalLessonsQuery.data ?? []).map((lesson) => [lesson.id, lesson])
     );
@@ -152,15 +248,15 @@ export default function FinancePaymentsPage() {
       singleVisitById,
       groupsBySubId: subscriptionGroupsQuery.groupsBySubId,
       classTeacherByGroupId: buildClassTeacherMap(scheduleQuery.data ?? []),
+      classLocationByGroupId: buildClassLocationMap(scheduleQuery.data ?? []),
       teacherLabels: memberNameById,
     };
   }, [
-    teamQuery.data,
-    locale,
     personalLessonsQuery.data,
     singleVisitsQuery.data,
     subscriptionGroupsQuery.groupsBySubId,
     scheduleQuery.data,
+    memberNameById,
   ]);
 
   const filtered = useMemo(() => {
@@ -304,6 +400,11 @@ export default function FinancePaymentsPage() {
                   translate={t}
                   canCorrect={canCorrectPayments}
                   onCorrect={setCorrectionTarget}
+                  teacherCtx={teacherCtx}
+                  locationNameById={locationNameById}
+                  memberNameById={memberNameById}
+                  expanded={expandedPaymentId === p.id}
+                  onToggle={() => setExpandedPaymentId((prev) => (prev === p.id ? null : p.id))}
                 />
               ))}
             </div>

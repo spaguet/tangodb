@@ -20,7 +20,7 @@ import { subscriptionsQueryKey } from "./useSubscriptions";
 export const correctionsQueryKey = ["corrections"] as const;
 
 const PAYMENTS_CORRECTION_SELECT =
-  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, single_visit_id, created_at, operation_kind, reverses_payment_id, replaces_payment_id, correction_reason_code, correction_comment, operation_number";
+  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, single_visit_id, created_by, created_at, operation_kind, reverses_payment_id, replaces_payment_id, correction_reason_code, correction_comment, operation_number";
 
 function mapPaymentRow(row: Record<string, unknown>): PaymentWithCorrectionMeta {
   return {
@@ -33,6 +33,7 @@ function mapPaymentRow(row: Record<string, unknown>): PaymentWithCorrectionMeta 
     subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
     personalLessonId: row.personal_lesson_id != null ? (row.personal_lesson_id as string) : null,
     singleVisitId: row.single_visit_id != null ? (row.single_visit_id as string) : null,
+    createdBy: row.created_by != null ? (row.created_by as string) : null,
     createdAt: String(row.created_at ?? ""),
     operationKind: (row.operation_kind as PaymentWithCorrectionMeta["operationKind"]) ?? "payment",
     reversesPaymentId: row.reverses_payment_id != null ? (row.reverses_payment_id as string) : null,

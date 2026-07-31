@@ -19,6 +19,7 @@ import {
   aggregatePaymentStats,
   aggregatePaymentsByDay,
   aggregatePaymentsByMonth,
+  buildClassLocationMap,
   buildClassTeacherMap,
   buildDaySeries,
   buildMonthSeries,
@@ -539,6 +540,7 @@ export default function FinancialDashboard() {
       singleVisitById,
       groupsBySubId: subscriptionGroupsQuery.groupsBySubId,
       classTeacherByGroupId: buildClassTeacherMap(scheduleQuery.data ?? []),
+      classLocationByGroupId: buildClassLocationMap(scheduleQuery.data ?? []),
       teacherLabels,
     });
   }, [
