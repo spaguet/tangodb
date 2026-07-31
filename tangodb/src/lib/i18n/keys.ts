@@ -2329,6 +2329,8 @@ export type I18nKey =
   | "venueCosts.finance.manualTotal"
   | "venueCosts.finance.autoRow"
   | "venueCosts.finance.pendingUnpriced"
+  | "venueCosts.finance.createRules"
+  | "venueCosts.finance.manageRules"
   // ui fields
   | "ui.groupSelect.placeholder"
   | "ui.groupSelect.empty"

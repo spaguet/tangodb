@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Pencil, Plus, Receipt, Trash2, X } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
@@ -13,7 +14,8 @@ import {
   useExpenses,
   useUpdateExpense,
 } from "../hooks/useExpenses";
-import { useFinanceCosts } from "../hooks/useVenueCosts";
+import { useFinanceCosts, useVenueCostRuleStatus } from "../hooks/useVenueCosts";
+import VenueRuleExpiryNotice from "../components/venue-costs/VenueRuleExpiryNotice";
 import { usePermissions } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
 import { EXPENSE_CATEGORIES, expenseCategoryKey } from "../lib/expenseCategories";
@@ -93,8 +95,9 @@ function ExpenseRow({
 export default function FinanceExpensesPage() {
   const { t, formatDate, plural } = useI18n();
   const toast = useToast();
-  const { can } = usePermissions();
+  const { can, role } = usePermissions();
   const canWrite = can("expenses.write");
+  const canManageVenueRules = role === "owner" || role === "director";
 
   const todayIso = toISODateLocal(new Date());
 
@@ -117,6 +120,7 @@ export default function FinanceExpensesPage() {
 
   const expensesQuery = useExpenses(expensesFilter);
   const financeCostsQuery = useFinanceCosts(dateFrom, dateTo, Boolean(dateFrom && dateTo));
+  const venueStatusQuery = useVenueCostRuleStatus();
   const venueEntries = useMemo(
     () => (financeCostsQuery.data?.entries ?? []).filter((entry) => entry.sourceType === "venue_cost"),
     [financeCostsQuery.data]
@@ -192,14 +196,17 @@ export default function FinanceExpensesPage() {
     setDeleteTarget(null);
   };
 
-  if (expensesQuery.isLoading || financeCostsQuery.isLoading) {
+  if (expensesQuery.isLoading || financeCostsQuery.isLoading || venueStatusQuery.isLoading) {
     return <LoadingState label={t("finance.expenses.loading")} />;
   }
-  if (expensesQuery.isError || financeCostsQuery.isError) {
-    return <QueryErrorState error={expensesQuery.error ?? financeCostsQuery.error} />;
+  if (expensesQuery.isError || financeCostsQuery.isError || venueStatusQuery.isError) {
+    return <QueryErrorState error={expensesQuery.error ?? financeCostsQuery.error ?? venueStatusQuery.error} />;
   }
 
   const items = expensesQuery.data ?? [];
+  const venueStatus = venueStatusQuery.data;
+  const hasVenueRules = venueStatus?.status !== "not_configured";
+  const venueRulesLink = hasVenueRules ? "/settings/venue-costs" : "/settings/venue-costs?new=1";
   const manualTotal = items.reduce((sum, e) => sum + e.amount, 0);
   const venueTotal = financeCostsQuery.data?.venueTotal ?? 0;
   const combinedTotal = financeCostsQuery.data?.total ?? manualTotal + venueTotal;
@@ -302,18 +309,44 @@ export default function FinanceExpensesPage() {
         )}
       </div>
 
+      {venueStatus?.acknowledgementRequired && (
+        <VenueRuleExpiryNotice status={venueStatus} compact />
+      )}
+
       <div className="bg-white rounded-xl border border-amber-200/80 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-amber-100 flex items-center justify-between gap-3 bg-amber-50/40">
+        <div className="px-4 py-3 border-b border-amber-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-amber-50/40">
           <div>
             <h2 className="font-sans text-sm font-semibold text-slate-800">{t("venueCosts.finance.venueTotal")}</h2>
             <p className="text-[11px] text-slate-500 mt-0.5">{t("venueCosts.finance.autoRow")}</p>
           </div>
-          <p className="text-sm font-semibold text-amber-800">
-            {formatCurrency(venueTotal)}
-          </p>
+          <div className="flex items-center gap-3 shrink-0">
+            {canManageVenueRules && (
+              <Link
+                to={venueRulesLink}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {t(hasVenueRules ? "venueCosts.finance.manageRules" : "venueCosts.finance.createRules")}
+              </Link>
+            )}
+            <p className="text-sm font-semibold text-amber-800 whitespace-nowrap">
+              {formatCurrency(venueTotal)}
+            </p>
+          </div>
         </div>
         {venueEntries.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-slate-500">{t("venueCosts.empty")}</p>
+          <div className="px-4 py-8 text-center">
+            <p className="text-sm text-slate-500">{t("venueCosts.empty")}</p>
+            {canManageVenueRules && (
+              <Link
+                to={venueRulesLink}
+                className="inline-flex items-center gap-1.5 mt-4 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {t(hasVenueRules ? "venueCosts.finance.manageRules" : "venueCosts.finance.createRules")}
+              </Link>
+            )}
+          </div>
         ) : (
           <div>
             {venueEntries.map((entry) => (

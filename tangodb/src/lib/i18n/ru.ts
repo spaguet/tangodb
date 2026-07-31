@@ -2385,6 +2385,8 @@ export const RU: Record<I18nKey, string> = {
   "venueCosts.finance.manualTotal": "Ручные расходы",
   "venueCosts.finance.autoRow": "Автоначисление аренды",
   "venueCosts.finance.pendingUnpriced": "Ожидают оценки: {{count}}",
+  "venueCosts.finance.createRules": "Создать правила",
+  "venueCosts.finance.manageRules": "Управление правилами",
 
   "ui.groupSelect.placeholder": "Выберите группы...",
   "ui.groupSelect.empty": "Нет доступных групп",

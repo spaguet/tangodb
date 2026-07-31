@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, Check, Edit, Plus, Trash2 } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import { useDisciplines } from "../../hooks/useDisciplines";
@@ -71,6 +72,13 @@ export default function VenueCostsSettingsPage() {
   const saveDraft = useSaveVenueCostRuleDraft();
   const acceptVersion = useAcceptVenueCostRuleVersion();
   const [draft, setDraft] = useState<VenueCostRuleDraft | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("new") !== "1" || !canManage || draft) return;
+    setDraft(newDraft());
+    setSearchParams({}, { replace: true });
+  }, [searchParams, canManage, draft, setSearchParams]);
 
   const disciplines = disciplinesQuery.data ?? [];
   const locations = locationsQuery.data ?? [];

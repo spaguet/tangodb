@@ -2387,6 +2387,8 @@ export const EN: Record<I18nKey, string> = {
   "venueCosts.finance.manualTotal": "Manual expenses",
   "venueCosts.finance.autoRow": "Automatic venue accrual",
   "venueCosts.finance.pendingUnpriced": "Awaiting pricing: {{count}}",
+  "venueCosts.finance.createRules": "Create rules",
+  "venueCosts.finance.manageRules": "Manage rules",
 
   "ui.groupSelect.placeholder": "Select groups...",
   "ui.groupSelect.empty": "No groups available",
