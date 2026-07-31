@@ -483,7 +483,6 @@ export default function CreateCalendarEventDialog({
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-slate-600">{t("schedule.event.previewIntro")}</p>
                   {previewQuery.isLoading ? (
                     <p className="text-sm text-slate-400">{t("common.loading.default")}</p>
                   ) : previewQuery.isError ? (
@@ -494,6 +493,9 @@ export default function CreateCalendarEventDialog({
                     </p>
                   ) : (
                     <>
+                      {cancellableConflicts.length > 0 ? (
+                        <p className="text-sm text-slate-600">{t("schedule.event.previewIntro")}</p>
+                      ) : null}
                       {eventConflicts.length > 0 ? (
                         <ul className="space-y-2">
                           {eventConflicts.map((conflict) => (

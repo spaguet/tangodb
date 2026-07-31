@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-07-31 — preview_calendar_event_conflicts: «Не удалось проверить конфликты»
+
+- **Ошибка:** при создании мероприятия popup показывал «В это время уже есть занятия…» и «Не удалось проверить конфликты», хотя слот свободен.
+- **Причина:** миграция `hall_rentals` вернула RPC `preview_calendar_event_conflicts(jsonb)` с одним аргументом; клиент вызывает `(p_sessions, p_exclude_event_id)` — PostgREST не находит подходящую функцию. Текст про конфликты показывался до результата проверки.
+- **Как избежать:** при `CREATE OR REPLACE FUNCTION` не менять сигнатуру RPC, которую уже вызывает фронт; после добавления overload — `DROP` старых версий; UI preview — условный текст только при реальных конфликтах.
+
 ### 2026-07-30 — mark_attendance: cannot cast type record to subscriptions
 
 - **Ошибка:** при отметке посещения в журнале — `cannot cast type record to subscriptions`.
