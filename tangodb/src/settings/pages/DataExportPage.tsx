@@ -11,6 +11,7 @@ import { usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { useAttendanceRecords } from "../../hooks/useAttendance";
 import { usePayments } from "../../hooks/usePayments";
 import { useExpenses } from "../../hooks/useExpenses";
+import { useFinanceCosts } from "../../hooks/useVenueCosts";
 import { useFinancialDebtors } from "../../hooks/useFinancialDebtors";
 import { useRentalPayments } from "../../hooks/useRentalPayments";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -218,12 +219,28 @@ function FinancialExportSection() {
   const range = monthDateRange(statsMonth);
   const paymentsQuery = usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
   const expensesQuery = useExpenses({ dateFrom: range.dateFrom, dateTo: range.dateTo });
+  const financeCostsQuery = useFinanceCosts(range.dateFrom, range.dateTo);
   const debtorsQuery = useFinancialDebtors();
   const rentalPaymentsQuery = useRentalPayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
 
-  const isLoading = paymentsQuery.isLoading || expensesQuery.isLoading || debtorsQuery.isLoading || rentalPaymentsQuery.isLoading;
-  const isError = paymentsQuery.isError || expensesQuery.isError || debtorsQuery.isError || rentalPaymentsQuery.isError;
-  const error = paymentsQuery.error ?? expensesQuery.error ?? debtorsQuery.error ?? rentalPaymentsQuery.error;
+  const isLoading =
+    paymentsQuery.isLoading ||
+    expensesQuery.isLoading ||
+    financeCostsQuery.isLoading ||
+    debtorsQuery.isLoading ||
+    rentalPaymentsQuery.isLoading;
+  const isError =
+    paymentsQuery.isError ||
+    expensesQuery.isError ||
+    financeCostsQuery.isError ||
+    debtorsQuery.isError ||
+    rentalPaymentsQuery.isError;
+  const error =
+    paymentsQuery.error ??
+    expensesQuery.error ??
+    financeCostsQuery.error ??
+    debtorsQuery.error ??
+    rentalPaymentsQuery.error;
 
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
 
@@ -250,6 +267,7 @@ function FinancialExportSection() {
         payments: paymentsQuery.data ?? [],
         rentalPayments: rentalPaymentsQuery.data ?? [],
         expenses: expensesQuery.data ?? [],
+        venueCostEntries: financeCostsQuery.data?.entries ?? [],
         debtors: debtorsQuery.data ?? [],
         statsMonth,
         locale,

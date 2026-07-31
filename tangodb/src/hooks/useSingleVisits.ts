@@ -4,6 +4,7 @@ import type { PaymentMethod, SingleVisit } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { paymentsQueryKey } from "./usePayments";
 import { payrollQueryKey } from "./usePayroll";
+import { checkVenueRuleBeforePayment, venueRuleAckFailureFromRpc } from "./useVenueCosts";
 
 export const singleVisitsQueryKey = ["single-visits"] as const;
 
@@ -86,7 +87,10 @@ export function useRecordSingleVisit() {
       priceId: string;
       method: PaymentMethod;
       idempotencyKey?: string;
+      venueRuleAcknowledged?: boolean;
     }) => {
+      const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false);
+      if (venueGuard) return venueGuard;
       const { data, error } = await supabase.rpc("record_single_visit", {
         p_visit_date: input.visitDate,
         p_schedule_slot_id: input.scheduleSlotId,
@@ -94,6 +98,7 @@ export function useRecordSingleVisit() {
         p_price_id: input.priceId,
         p_method: input.method,
         p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
+        p_venue_rule_acknowledged: input.venueRuleAcknowledged ?? false,
       });
 
       if (error) return { success: false as const, error: error.message };
@@ -104,8 +109,12 @@ export function useRecordSingleVisit() {
         payment_id?: string;
         operation_number?: number;
         already_applied?: boolean;
+        error_code?: string;
+        venue_rule_status?: Record<string, unknown>;
       } | null;
       if (!result?.success) {
+        const ackFailure = venueRuleAckFailureFromRpc(result as Record<string, unknown> | null);
+        if (ackFailure) return ackFailure;
         return { success: false as const, error: result?.error ?? "attendance.singleVisit.error.recordFailed" };
       }
       return {

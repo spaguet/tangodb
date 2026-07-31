@@ -37,6 +37,7 @@ import {
   revenueTrendMonthCount,
   shiftMonth,
   sumDebtorAmounts,
+  monthDateRange,
   type MonthlyRevenuePoint,
   type RevenueRankEntry,
   type RevenueSplitKey,
@@ -57,6 +58,9 @@ import { usePaymentsTrend, getPaymentMethodLabel } from "../hooks/usePayments";
 import { useSubscriptionRefunds } from "../hooks/useSubscriptionRefunds";
 import type { PaymentMethod } from "../types";
 import { sumExpenses, useExpensesForMonth } from "../hooks/useExpenses";
+import { useFinanceCosts } from "../hooks/useVenueCosts";
+import { useOtherIncome } from "../hooks/useOtherIncome";
+import { useRentalPayments } from "../hooks/useRentalPayments";
 import { usePermissions } from "../hooks/usePermissions";
 import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { useRecalculateTeacherSettlement, useTeacherSettlements } from "../hooks/usePayroll";
@@ -404,6 +408,16 @@ export default function FinancialDashboard() {
   const paymentsQuery = usePaymentsTrend(statsMonth, trendFetchMonths);
   const refundsQuery = useSubscriptionRefunds();
   const expensesQuery = useExpensesForMonth(statsMonth);
+  const monthRange = useMemo(() => monthDateRange(statsMonth), [statsMonth]);
+  const financeCostsQuery = useFinanceCosts(monthRange.dateFrom, monthRange.dateTo);
+  const otherIncomeQuery = useOtherIncome({
+    dateFrom: monthRange.dateFrom,
+    dateTo: monthRange.dateTo,
+  });
+  const rentalPaymentsQuery = useRentalPayments({
+    dateFrom: monthRange.dateFrom,
+    dateTo: monthRange.dateTo,
+  });
   const payrollQuery = useTeacherSettlements(statsMonth);
   const recalculatePayroll = useRecalculateTeacherSettlement();
   const debtorsQuery = useFinancialDebtors();
@@ -431,6 +445,9 @@ export default function FinancialDashboard() {
     const queries = [
       paymentsQuery,
       expensesQuery,
+      financeCostsQuery,
+      otherIncomeQuery,
+      rentalPaymentsQuery,
       payrollQuery,
       debtorsQuery,
       clientsQuery,
@@ -461,18 +478,33 @@ export default function FinancialDashboard() {
     const monthPayments = paymentsInMonth(paymentsQuery.data ?? [], statsMonth);
     const monthRefunds = refundsInMonth(refundsQuery.data ?? [], statsMonth);
     const base = combineRevenueStats(monthPayments, monthRefunds);
+    const otherFromTable = (otherIncomeQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
+    const rentalTotal = (rentalPaymentsQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
     const allPending = (refundsQuery.data ?? []).filter((refund) => refund.status === "pending");
     return {
       ...base,
+      otherTotal: base.otherTotal + otherFromTable + rentalTotal,
+      grossTotal: base.grossTotal + otherFromTable + rentalTotal,
+      netTotal: base.netTotal + otherFromTable + rentalTotal,
+      total: base.total + otherFromTable + rentalTotal,
+      rentalTotal,
       pendingRefundsTotal: allPending.reduce((sum, refund) => sum + refund.amount, 0),
       pendingRefundCount: allPending.length,
     };
-  }, [paymentsQuery.data, refundsQuery.data, statsMonth]);
+  }, [
+    paymentsQuery.data,
+    refundsQuery.data,
+    otherIncomeQuery.data,
+    rentalPaymentsQuery.data,
+    statsMonth,
+  ]);
 
-  const expensesTotal = useMemo(
-    () => sumExpenses(expensesQuery.data ?? []),
-    [expensesQuery.data]
-  );
+  const expensesTotal = useMemo(() => {
+    if (financeCostsQuery.data) return financeCostsQuery.data.total;
+    return sumExpenses(expensesQuery.data ?? []);
+  }, [financeCostsQuery.data, expensesQuery.data]);
+  const venueCostsTotal = financeCostsQuery.data?.venueTotal ?? 0;
+  const manualExpensesTotal = financeCostsQuery.data?.manualTotal ?? sumExpenses(expensesQuery.data ?? []);
 
   useEffect(() => {
     if (!canWritePayroll) return;
@@ -682,7 +714,11 @@ export default function FinancialDashboard() {
               {t("dashboard.expensesMonth")}
             </p>
             <p className="text-xl font-semibold text-rose-700 mt-0.5">
-              {expensesQuery.isLoading ? "…" : formatCurrency(expensesTotal)}
+              {expensesQuery.isLoading || financeCostsQuery.isLoading ? "…" : formatCurrency(expensesTotal)}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualExpensesTotal)} ·{" "}
+              {t("venueCosts.finance.venueTotal")}: {formatCurrency(venueCostsTotal)}
             </p>
           </div>
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
@@ -703,7 +739,9 @@ export default function FinancialDashboard() {
                 profit >= 0 ? "text-emerald-700" : "text-rose-700"
               }`}
             >
-              {expensesQuery.isLoading || payrollQuery.isLoading ? "…" : formatCurrency(profit)}
+              {expensesQuery.isLoading || financeCostsQuery.isLoading || payrollQuery.isLoading
+                ? "…"
+                : formatCurrency(profit)}
             </p>
             <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.profitHint")}</p>
           </div>

@@ -55,6 +55,8 @@ import { resolveMutationError } from "../lib/resolveMutationError";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import AppSelect from "./ui/AppSelect";
 import ConfirmDialog from "./ui/ConfirmDialog";
+import VenueRulePaymentConfirmDialog from "./venue-costs/VenueRulePaymentConfirmDialog";
+import type { VenueCostRuleStatus } from "../hooks/useVenueCosts";
 import DatePickerField from "./ui/DatePickerField";
 import DisciplineSelect from "./ui/DisciplineSelect";
 import LocationSelect from "./ui/LocationSelect";
@@ -267,9 +269,30 @@ export default function SubscriptionsPanel({
   const [paymentMethodComment, setPaymentMethodComment] = useState("");
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [pendingCheckout, setPendingCheckout] = useState(false);
+  const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
+  const [pendingVenuePayment, setPendingVenuePayment] = useState<{
+    subscriptionId: string;
+    clientId: string;
+    clientFirstName: string;
+    clientLastName: string;
+    amount: number;
+  } | null>(null);
   const sellPaymentIdempotencyKey = usePaymentFormIdempotency(activeTab === "sell");
   const addWaitlistEntry = useAddGroupWaitlistEntry();
   const canOverrideCapacity = role === "owner" || role === "director";
+
+  const resetSellForm = () => {
+    setClient1Query("");
+    setClient1Id("");
+    setClient2Query("");
+    setClient2Id("");
+    setSelectedGroupIds([]);
+    setPaymentMethodComment("");
+    setOverrideDialogOpen(false);
+    setPendingCheckout(false);
+    setVenueConfirmStatus(null);
+    setPendingVenuePayment(null);
+  };
 
   useEffect(() => {
     if (groupTariffs.length > 0 && selectedTariffId === "") {
@@ -412,7 +435,10 @@ export default function SubscriptionsPanel({
 
   const getSubPrice = (): number => selectedTariff?.price ?? 0;
 
-  const submitSale = async (capacityOverrideReason?: string | null) => {
+  const submitSale = async (
+    capacityOverrideReason?: string | null,
+    venueRuleAcknowledged = false
+  ) => {
     if (!selectedTariff?.id) return;
 
     const { type, pairMonth, billingModel } = deriveSubscriptionTypeFromTariff(selectedTariff);
@@ -445,7 +471,7 @@ export default function SubscriptionsPanel({
     const amount = getSubPrice();
     if (amount > 0 && res.id) {
       const c1 = activeClients.find((c) => c.id === client1Id);
-      const paymentRes = await recordSubscriptionPayment.mutateAsync({
+      const paymentPayload = {
         subscriptionId: res.id,
         clientId: client1Id,
         clientFirstName: c1?.firstName ?? "",
@@ -454,22 +480,45 @@ export default function SubscriptionsPanel({
         method: paymentMethod,
         methodComment: paymentMethod === "other" ? paymentMethodComment.trim() : undefined,
         idempotencyKey: sellPaymentIdempotencyKey || crypto.randomUUID(),
-      });
+        venueRuleAcknowledged,
+      };
+      const paymentRes = await recordSubscriptionPayment.mutateAsync(paymentPayload);
       if (!paymentRes.success) {
+        if ("errorCode" in paymentRes && paymentRes.errorCode === "venue_rule_ack_required") {
+          setPendingVenuePayment({
+            subscriptionId: paymentPayload.subscriptionId,
+            clientId: paymentPayload.clientId,
+            clientFirstName: paymentPayload.clientFirstName,
+            clientLastName: paymentPayload.clientLastName,
+            amount: paymentPayload.amount,
+          });
+          setVenueConfirmStatus(paymentRes.venueRuleStatus);
+          return;
+        }
         toast(resolveMutationError(paymentRes.error, "subscriptions.error.paymentFailed", t), "error");
         return;
       }
     }
 
     toast(t("subscriptions.success.sold"), "success");
-    setClient1Query("");
-    setClient1Id("");
-    setClient2Query("");
-    setClient2Id("");
-    setSelectedGroupIds([]);
-    setPaymentMethodComment("");
-    setOverrideDialogOpen(false);
-    setPendingCheckout(false);
+    resetSellForm();
+  };
+
+  const confirmVenuePayment = async () => {
+    if (!pendingVenuePayment) return;
+    const paymentRes = await recordSubscriptionPayment.mutateAsync({
+      ...pendingVenuePayment,
+      method: paymentMethod,
+      methodComment: paymentMethod === "other" ? paymentMethodComment.trim() : undefined,
+      idempotencyKey: sellPaymentIdempotencyKey || crypto.randomUUID(),
+      venueRuleAcknowledged: true,
+    });
+    if (!paymentRes.success) {
+      toast(resolveMutationError(paymentRes.error, "subscriptions.error.paymentFailed", t), "error");
+      return;
+    }
+    toast(t("subscriptions.success.sold"), "success");
+    resetSellForm();
   };
 
   const handleAddToWaitlist = async () => {
@@ -1715,6 +1764,16 @@ export default function SubscriptionsPanel({
         pending={pendingCheckout || addSubscription.isPending || recordSubscriptionPayment.isPending}
         onConfirm={(reason) => void handleConfirmOverride(reason)}
         onCancel={() => setOverrideDialogOpen(false)}
+      />
+
+      <VenueRulePaymentConfirmDialog
+        status={venueConfirmStatus}
+        pending={recordSubscriptionPayment.isPending}
+        onConfirm={() => void confirmVenuePayment()}
+        onCancel={() => {
+          setVenueConfirmStatus(null);
+          setPendingVenuePayment(null);
+        }}
       />
 
       <SubscriptionFreezeDialog

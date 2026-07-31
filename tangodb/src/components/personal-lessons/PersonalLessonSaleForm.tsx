@@ -49,6 +49,8 @@ import LocationSelect from "../ui/LocationSelect";
 import SellPackageModal from "../ui/SellPackageModal";
 import TimeSelect from "../ui/TimeSelect";
 import type { ScheduleCellPrefill } from "../schedule/AddLessonTypePopup";
+import VenueRulePaymentConfirmDialog from "../venue-costs/VenueRulePaymentConfirmDialog";
+import { useVenueCostRuleStatus, type VenueCostRuleStatus } from "../../hooks/useVenueCosts";
 
 export type PersonalLessonSaleFormMode = "schedule-cell" | "standalone";
 
@@ -132,7 +134,15 @@ export default function PersonalLessonSaleForm({
   const showLocationInForm = shouldShowLocationPicker(orgModules, accessibleLocations.length);
   const addPersonalLessons = useAddPersonalLessons();
   const recordPersonalLessonPayment = useRecordPersonalLessonPayment();
+  const venueStatusQuery = useVenueCostRuleStatus();
   const [paymentIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
+  const [pendingVenuePayment, setPendingVenuePayment] = useState<{
+    lessonIds: string[];
+    clientId: string;
+    clientDisplay: string;
+    amount: number;
+  } | null>(null);
 
   const isTeacher = role === "teacher";
 
@@ -343,7 +353,14 @@ export default function PersonalLessonSaleForm({
     return slots;
   };
 
-  const handleBook = async (immediatePaid: boolean) => {
+  const handleBook = async (immediatePaid: boolean, venueRuleAcknowledged = false) => {
+    if (immediatePaid && !venueRuleAcknowledged) {
+      const currentStatus = (await venueStatusQuery.refetch()).data;
+      if (currentStatus?.acknowledgementRequired) {
+        setVenueConfirmStatus(currentStatus);
+        return;
+      }
+    }
     if (connectionState !== "online") {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
@@ -434,6 +451,8 @@ export default function PersonalLessonSaleForm({
       }
     }
 
+    const willRecordCashPayments =
+      immediatePaid && bookingPaymentMode !== "package" && priceNum > 0;
     const slotGroups = groupSlotsByTime(slots);
     const createdIds: string[] = [];
 
@@ -449,7 +468,8 @@ export default function PersonalLessonSaleForm({
         timeStart: group.timeStart,
         timeEnd: group.timeEnd,
         price: priceNum,
-        paid: immediatePaid,
+        // Keep unpaid until cash payments succeed — avoids "paid without payment" and ack-retry duplicates.
+        paid: willRecordCashPayments ? false : immediatePaid,
         disciplineId,
         locationId: effectiveLocationId,
         teacherMemberId,
@@ -463,7 +483,7 @@ export default function PersonalLessonSaleForm({
       if (res.ids) createdIds.push(...res.ids);
     }
 
-    if (immediatePaid && bookingPaymentMode !== "package" && priceNum > 0 && createdIds.length) {
+    if (willRecordCashPayments && createdIds.length) {
       const c1 = directoryClients.find((c) => c.id === bookingClients[0].id);
       const clientDisplay = c1
         ? formatClientName(c1.lastName, c1.firstName)
@@ -476,10 +496,21 @@ export default function PersonalLessonSaleForm({
           clientDisplay,
           amount: priceNum,
           method: "cash",
-          markPaid: false,
+          markPaid: true,
           idempotencyKey: `${paymentIdempotencyKey}:${lessonId}`,
+          venueRuleAcknowledged,
         });
         if (!paymentRes.success) {
+          if ("errorCode" in paymentRes && paymentRes.errorCode === "venue_rule_ack_required") {
+            setPendingVenuePayment({
+              lessonIds: createdIds,
+              clientId: bookingClients[0].id,
+              clientDisplay,
+              amount: priceNum,
+            });
+            setVenueConfirmStatus(paymentRes.venueRuleStatus);
+            return;
+          }
           toast(paymentRes.error ?? t("common.bookedPaymentFailed"), "error");
           onSuccess();
           onClose?.();
@@ -498,6 +529,38 @@ export default function PersonalLessonSaleForm({
           : t("personal.success.bookedUnpaid", { count: countLabel }),
       "success"
     );
+    onSuccess();
+    onClose?.();
+  };
+
+  const confirmVenuePayment = async () => {
+    if (!pendingVenuePayment) {
+      setVenueConfirmStatus(null);
+      void handleBook(true, true);
+      return;
+    }
+    const pending = pendingVenuePayment;
+    for (const lessonId of pending.lessonIds) {
+      const paymentRes = await recordPersonalLessonPayment.mutateAsync({
+        lessonId,
+        clientId: pending.clientId,
+        clientDisplay: pending.clientDisplay,
+        amount: pending.amount,
+        method: "cash",
+        markPaid: true,
+        idempotencyKey: `${paymentIdempotencyKey}:${lessonId}`,
+        venueRuleAcknowledged: true,
+      });
+      if (!paymentRes.success) {
+        toast(paymentRes.error ?? t("common.bookedPaymentFailed"), "error");
+        return;
+      }
+    }
+    setPendingVenuePayment(null);
+    setVenueConfirmStatus(null);
+    const countLabel =
+      pending.lessonIds.length > 1 ? t("personal.countSuffix", { count: pending.lessonIds.length }) : "";
+    toast(t("personal.success.bookedPaid", { count: countLabel }), "success");
     onSuccess();
     onClose?.();
   };
@@ -970,6 +1033,17 @@ export default function PersonalLessonSaleForm({
         disciplines={disciplines}
         prices={prices}
         stackLayer={isScheduleCell ? "above" : undefined}
+      />
+      <VenueRulePaymentConfirmDialog
+        status={venueConfirmStatus}
+        pending={addPersonalLessons.isPending || recordPersonalLessonPayment.isPending}
+        onConfirm={() => {
+          void confirmVenuePayment();
+        }}
+        onCancel={() => {
+          setVenueConfirmStatus(null);
+          setPendingVenuePayment(null);
+        }}
       />
     </>
   );

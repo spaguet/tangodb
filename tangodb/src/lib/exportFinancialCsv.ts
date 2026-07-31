@@ -1,6 +1,7 @@
 import type { Payment } from "../types";
 import type { RentalPayment } from "../types";
 import type { Expense } from "../types/expense";
+import type { FinanceCostEntry } from "../hooks/useVenueCosts";
 import type { DebtorEntry } from "./financeReports";
 import { exportCsvItems } from "./exportCsv";
 import type { CsvExportMethod, CsvManualSave } from "./exportCsv";
@@ -27,6 +28,8 @@ export interface FinancialExportParams {
   payments: Payment[];
   rentalPayments?: RentalPayment[];
   expenses: Expense[];
+  /** Automatic venue-cost accruals (read-only); merged into expenses CSV. */
+  venueCostEntries?: FinanceCostEntry[];
   debtors: DebtorEntry[];
   statsMonth: string;
   locale?: string | null;
@@ -88,18 +91,32 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
     });
   }
 
-  const expenseRows = params.expenses.map((e) => ({
+  const manualExpenseRows = params.expenses.map((e) => ({
     date: labels.formatDate(e.expenseDate),
     category: t(locale, expenseCategoryKey(e.category)),
     description: e.description || "—",
     amount: e.amount,
+    source: t(locale, "venueCosts.finance.manualTotal"),
   }));
+  const venueExpenseRows = (params.venueCostEntries ?? [])
+    .filter((entry) => entry.sourceType === "venue_cost")
+    .map((entry) => ({
+      date: labels.formatDate(entry.entryDate),
+      category: t(locale, "venueCosts.finance.venueTotal"),
+      description: entry.description || t(locale, "venueCosts.finance.autoRow"),
+      amount: entry.amount,
+      source: t(locale, "venueCosts.finance.autoRow"),
+    }));
+  const expenseRows = [...manualExpenseRows, ...venueExpenseRows];
 
   if (expenseRows.length > 0) {
     items.push({
       rows: expenseRows,
       filename: `tangodb_expenses_${statsMonth}_${dateStr}.csv`,
-      columnLabels: labels.expenses,
+      columnLabels: {
+        ...labels.expenses,
+        source: t(locale, "csv.column.source"),
+      },
     });
   } else {
     skipped.push(labels.skipExpenses);

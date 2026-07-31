@@ -26,6 +26,10 @@ import AppSelect, { fieldCls } from "../ui/AppSelect";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useI18n } from "../../hooks/useI18n";
 import SellPackageModal from "../ui/SellPackageModal";
+import VenueRulePaymentConfirmDialog from "../venue-costs/VenueRulePaymentConfirmDialog";
+import {
+  type VenueCostRuleStatus,
+} from "../../hooks/useVenueCosts";
 
 export interface PayPersonalLessonTarget {
   lessonId: string;
@@ -73,6 +77,7 @@ export default function PayPersonalLessonModal({
   const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<string | "">("");
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
   const [packageModalOpen, setPackageModalOpen] = useState(false);
+  const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
 
   const lessonTariffs = useMemo(
     () =>
@@ -156,7 +161,7 @@ export default function PayPersonalLessonModal({
 
   const pending = recordPersonalLessonPayment.isPending || updatePersonalLesson.isPending || paymentSubmit.phase === "saving";
 
-  const handlePaySingle = async () => {
+  const handlePaySingle = async (venueRuleAcknowledged = false) => {
     if (!lesson) return;
     if (connectionState !== "online") {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
@@ -178,15 +183,21 @@ export default function PayPersonalLessonModal({
       amount: priceNum,
       method: "cash",
       idempotencyKey: paymentIdempotencyKey || crypto.randomUUID(),
+      venueRuleAcknowledged,
     });
 
     if (!paymentRes.success) {
       paymentSubmit.reset();
+      if ("errorCode" in paymentRes && paymentRes.errorCode === "venue_rule_ack_required") {
+        setVenueConfirmStatus(paymentRes.venueRuleStatus);
+        return;
+      }
       toast(paymentRes.error ?? t("common.paymentChargeFailed"), "error");
       return;
     }
 
     paymentSubmit.complete(paymentRes.operationNumber);
+    setVenueConfirmStatus(null);
     if (paymentRes.alreadyApplied) {
       toast(t("corrections.payment.alreadyApplied"), "info");
     } else {
@@ -368,7 +379,7 @@ export default function PayPersonalLessonModal({
                   )}
                   <button
                     type="button"
-                    onClick={handlePaySingle}
+                    onClick={() => void handlePaySingle()}
                     disabled={connectionState !== "online" || pending}
                     title={translateConnectionBlockReason(connectionState, t)}
                     className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
@@ -447,6 +458,12 @@ export default function PayPersonalLessonModal({
         disciplines={disciplines}
         prices={prices}
         stackLayer="above"
+      />
+      <VenueRulePaymentConfirmDialog
+        status={venueConfirmStatus}
+        pending={recordPersonalLessonPayment.isPending}
+        onConfirm={() => void handlePaySingle(true)}
+        onCancel={() => setVenueConfirmStatus(null)}
       />
     </>
   );

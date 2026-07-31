@@ -6,6 +6,7 @@ import type { PersonalLesson } from "../../types";
 import type { MemberRole } from "../../types/organization";
 import type { PermissionAction } from "../../lib/permissions";
 import { useI18n } from "../../hooks/useI18n";
+import { useClosedPersonalLessonClosures } from "../../hooks/useVenueCosts";
 import PersonalLessonRow from "./PersonalLessonRow";
 
 type CanFn = (action: PermissionAction, context?: { disciplineId?: string | null; locationId?: string | null }) => boolean;
@@ -45,6 +46,9 @@ export default function PersonalLessonsList({
 }: PersonalLessonsListProps) {
   const { t, plural, formatDate } = useI18n();
   const todayISO = toISODateLocal(new Date());
+  const lessonIds = useMemo(() => lessons.map((lesson) => lesson.id), [lessons]);
+  const closuresQuery = useClosedPersonalLessonClosures(lessonIds, lessons.length > 0);
+  const closedByLessonId = closuresQuery.data;
 
   const groupedByDate = useMemo(() => {
     const groups = new Map<string, PersonalLesson[]>();
@@ -133,6 +137,7 @@ export default function PersonalLessonsList({
                       teacherName={
                         lesson.teacherMemberId ? teacherMap.get(lesson.teacherMemberId) : undefined
                       }
+                      closedClosure={closedByLessonId?.get(lesson.id) ?? null}
                       onEdit={onEdit}
                       onDelete={onDelete}
                       onPay={onPay}

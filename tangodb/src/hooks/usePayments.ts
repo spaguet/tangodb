@@ -6,10 +6,13 @@ import { FINANCIAL_TREND_MONTH_COUNT, monthTrendRange } from "../lib/financeRepo
 import { supabase } from "../lib/supabase";
 import { formatClientName } from "../lib/utils";
 import type { Payment, PaymentMethod } from "../types";
-import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { personalLessonsQueryKey } from "./usePersonalLessons";
 import { financialDebtorsQueryKey } from "./useFinancialDebtors";
+import {
+  checkVenueRuleBeforePayment,
+  venueRuleAckFailureFromRpc,
+} from "./useVenueCosts";
 
 export const paymentsQueryKey = ["payments"] as const;
 
@@ -76,13 +79,13 @@ export function usePaymentsTrend(endMonth: string, monthCount = FINANCIAL_TREND_
   return usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
 }
 
+/**
+ * @deprecated Direct INSERT into payments is blocked. Use canonical RPC hooks:
+ * `useRecordSubscriptionPayment`, `useRecordPersonalLessonPayment`, or `useRecordSingleVisit`.
+ */
 export function useRecordPayment() {
-  const queryClient = useQueryClient();
-  const { organizationId } = useOrgQueryScope();
-  const { memberId } = useOrganization();
-
   return useMutation({
-    mutationFn: async (input: {
+    mutationFn: async (_input: {
       clientId: string;
       clientDisplay: string;
       amount: number;
@@ -91,29 +94,11 @@ export function useRecordPayment() {
       personalLessonId?: string;
       singleVisitId?: string;
     }) => {
-      if (!organizationId) {
-        return { success: false as const, error: "onboarding.error.noOrgSelected" };
-      }
-
-      const { error } = await supabase.from("payments").insert({
-        organization_id: organizationId,
-        client_id: input.clientId,
-        client_display: input.clientDisplay,
-        amount: input.amount,
-        method: input.method,
-        subscription_id: input.subscriptionId ?? null,
-        personal_lesson_id: input.personalLessonId ?? null,
-        single_visit_id: input.singleVisitId ?? null,
-        created_by: memberId ?? null,
-      });
-
-      if (error) return { success: false as const, error: error.message };
-      return { success: true as const };
-    },
-    onSuccess: (result) => {
-      if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
-      }
+      return {
+        success: false as const,
+        error:
+          "Direct payment insert is deprecated. Use record_subscription_payment / record_personal_lesson_payment / record_single_visit RPC via hooks.",
+      };
     },
   });
 }
@@ -131,13 +116,17 @@ export function useRecordSubscriptionPayment() {
       method: PaymentMethod;
       methodComment?: string;
       idempotencyKey?: string;
+      venueRuleAcknowledged?: boolean;
     }) => {
+      const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false);
+      if (venueGuard) return venueGuard;
       const { data, error } = await supabase.rpc("record_subscription_payment", {
         p_subscription_id: input.subscriptionId,
         p_amount: input.amount,
         p_method: input.method,
         p_method_comment: input.methodComment ?? null,
         p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
+        p_venue_rule_acknowledged: input.venueRuleAcknowledged ?? false,
       });
 
       if (error) return { success: false as const, error: error.message };
@@ -147,8 +136,12 @@ export function useRecordSubscriptionPayment() {
         payment_id?: string;
         operation_number?: number;
         already_applied?: boolean;
+        error_code?: string;
+        venue_rule_status?: Record<string, unknown>;
       } | null;
       if (!result?.success) {
+        const ackFailure = venueRuleAckFailureFromRpc(result as Record<string, unknown> | null);
+        if (ackFailure) return ackFailure;
         return {
           success: false as const,
           error: result?.error ?? "subscriptions.error.paymentFailed",
@@ -181,12 +174,16 @@ export function useRecordPersonalLessonPayment() {
       method: PaymentMethod;
       markPaid?: boolean;
       idempotencyKey?: string;
+      venueRuleAcknowledged?: boolean;
     }) => {
+      const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false);
+      if (venueGuard) return venueGuard;
       const { data, error } = await supabase.rpc("record_personal_lesson_payment", {
         p_lesson_id: input.lessonId,
         p_amount: input.amount,
         p_method: input.method,
         p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
+        p_venue_rule_acknowledged: input.venueRuleAcknowledged ?? false,
       });
 
       if (error) return { success: false as const, error: error.message };
@@ -196,8 +193,12 @@ export function useRecordPersonalLessonPayment() {
         payment_id?: string;
         operation_number?: number;
         already_applied?: boolean;
+        error_code?: string;
+        venue_rule_status?: Record<string, unknown>;
       } | null;
       if (!result?.success) {
+        const ackFailure = venueRuleAckFailureFromRpc(result as Record<string, unknown> | null);
+        if (ackFailure) return ackFailure;
         return { success: false as const, error: result?.error ?? "subscriptions.error.paymentFailed" };
       }
       return {

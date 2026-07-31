@@ -38,6 +38,7 @@ export type SettingsSectionId =
   | "disciplines"
   | "locations"
   | "rental-tariffs"
+  | "venue-costs"
   | "data"
   | "team"
   | "license";
@@ -599,6 +600,7 @@ export function settingsSectionFromPath(pathname: string): SettingsSectionId | n
     "disciplines",
     "locations",
     "rental-tariffs",
+    "venue-costs",
     "data",
     "team",
     "license",
@@ -623,6 +625,8 @@ export function canAccessSettingsSection(
       return false;
     case "rental-tariffs":
       return can(role, "schedule.write", options) && can(role, "finance.read", options);
+    case "venue-costs":
+      return can(role, "finance.read", options);
     case "data":
       return can(role, "dashboard.export", options) || can(role, "finance.export", options);
     case "team":
@@ -666,6 +670,7 @@ const SETTINGS_SECTION_ORDER: SettingsSectionId[] = [
   "disciplines",
   "locations",
   "rental-tariffs",
+  "venue-costs",
   "data",
   "license",
 ];

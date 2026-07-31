@@ -2,6 +2,20 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-31 — tangodb venue-cost hardening: payment wrappers передают idempotency key во inner RPC; PersonalLessonSaleForm не пересоздаёт уроки при ack (pending payments); убран ungated close из PayPersonalLessonModal; batch closures в списке personal; gate close/settings; finance costs error state.
+
+2026-07-31 — tangodb UI venue-cost: reopen закрытых уроков (журнал / personal row / LessonInfoPopup) через `useActive*LessonClosure` + RPC; CSV расходов уже включает auto-начисления.
+
+2026-07-31 — tangodb finance venue-cost: CSV-экспорт расходов включает auto-начисления аренды; FinanceExpensesPage показывает единый total (manual + venue).
+
+2026-07-31 — tangodb UI venue-cost: настройки `/settings/venue-costs`, dashboard-баннер expiry, confirmation при оплатах (абонемент/персональные/разовые), закрытие урока в журнале и popup оплаты, `useFinanceCosts` в dashboard/expenses, i18n RU/EN.
+
+2026-07-31 — tangodb frontend venue-cost: i18n/settings/route/RBAC; Dashboard expiry notice; payment ack dialogs (subscriptions/single-visit/personal); close-lesson hooks+UI (AttendancePanel, LessonInfoPopup, PersonalLessonRow); `useFinanceCosts` + FinancialDashboard/FinanceExpensesPage venue totals; revenue includes rental/other_income; `useRecordPayment` soft-deprecated to RPC.
+
+2026-07-31 — tangodb backend venue-cost follow-up: статус gap не скрывается будущей принятой версией и включает pending count; правила поддерживают location+discipline precedence с tenant-reference validation; закрывать урок может операционный admin/assigned teacher без выдачи суммы; удаление personal lesson сохраняет closure snapshot/source id; payment wrappers совместимы с legacy idempotency fingerprints и не создают ack для ранее существующего payment.
+
+2026-07-31 — tangodb backend: добавлены версионируемые правила внутренних расходов на зал (`per_lesson` / `fixed_period` / `disabled`), явное закрытие и переоткрытие уроков с append-only начислениями, pending-unpriced/recalc, expiry acknowledgement для канонических payment RPC, единый отчёт расходов и SQL regression suite.
+
 2026-07-31 — tangodb: Finance «Платежи» — разворачиваемые строки с полной информацией: преподаватель, зал, кто и когда принял оплату; в запрос добавлен `created_by`.
 
 2026-07-31 — tangodb: Finance «Платежи» — кнопка исправления платежа: иконка редактирования вместо текста «Исправить», стиль icon-button как в расходах.

@@ -21,6 +21,8 @@ import { getDashboardTabs } from "../lib/i18n";
 import { normalizeOrgModules } from "../lib/orgModules";
 import type { Client, Payment, PersonalLesson, Subscription } from "../types";
 import DemoDashboardBanner from "../components/demo/DemoDashboardBanner";
+import VenueRuleExpiryNotice from "../components/venue-costs/VenueRuleExpiryNotice";
+import { useVenueCostRuleStatus } from "../hooks/useVenueCosts";
 
 type DashboardTab = "operational" | "financial";
 
@@ -147,9 +149,13 @@ export default function DashboardPage() {
 }
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
+  const venueStatusQuery = useVenueCostRuleStatus();
   return (
     <div className="panel-page-stack">
       <DemoDashboardBanner />
+      {venueStatusQuery.data?.acknowledgementRequired && (
+        <VenueRuleExpiryNotice status={venueStatusQuery.data} />
+      )}
       {children}
     </div>
   );

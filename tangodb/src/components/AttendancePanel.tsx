@@ -33,6 +33,13 @@ import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
 import { useClientDirectory } from "../hooks/useClients";
 import { singleVisitsQueryKey, useRecordSingleVisit, useSingleVisits } from "../hooks/useSingleVisits";
+import VenueRulePaymentConfirmDialog from "./venue-costs/VenueRulePaymentConfirmDialog";
+import {
+  useActiveGroupLessonClosure,
+  useCloseGroupLessonOccurrence,
+  useReopenLessonOccurrenceClosure,
+  type VenueCostRuleStatus,
+} from "../hooks/useVenueCosts";
 import {
   translateConnectionBlockReason,
   translateMutationBlockedMessage,
@@ -255,6 +262,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const [singleVisitClientId, setSingleVisitClientId] = useState("");
   const [singleVisitPriceId, setSingleVisitPriceId] = useState("");
   const [singleVisitMethod, setSingleVisitMethod] = useState<"cash" | "transfer" | "card" | "other">("cash");
+  const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
+  const [closeAttendeeCount, setCloseAttendeeCount] = useState("");
+  const [reopenReason, setReopenReason] = useState("");
+  const closeGroupLesson = useCloseGroupLessonOccurrence();
+  const reopenLessonClosure = useReopenLessonOccurrenceClosure();
 
   useEffect(() => {
     if (selectedLocationId != null || locations.length !== 1) return;
@@ -757,6 +769,19 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   };
 
   const selectedGroupLesson = selectedLesson?.kind === "group" ? selectedLesson : null;
+  const groupClosureQuery = useActiveGroupLessonClosure(
+    selectedGroupLesson?.slotId,
+    selectedGroupLesson ? selectedDate : null
+  );
+  const activeGroupClosure = groupClosureQuery.data ?? null;
+  const canCloseGroupOccurrence =
+    !isReadOnly &&
+    (can("attendance.write", {
+      disciplineId: selectedGroupLesson?.disciplineId ?? null,
+      locationId: selectedGroupLesson?.locationId ?? null,
+    }) ||
+      can("finance.read"));
+  const canReopenGroupClosure = can("finance.read");
   const singleVisitTariffs = useMemo(
     () =>
       selectedGroupLesson
@@ -807,7 +832,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     toast(saved ? t("offline.draft.paymentSaved") : t("common.saveFailed"), saved ? "info" : "error");
   };
 
-  const handleRecordSingleVisit = async () => {
+  const handleRecordSingleVisit = async (venueRuleAcknowledged = false) => {
     if (!selectedGroupLesson?.slotId) {
       toast(t("attendance.error.groupUnknown"), "error");
       return;
@@ -836,8 +861,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       priceId: singleVisitPriceId,
       method: singleVisitMethod,
       idempotencyKey: singleVisitIdempotencyKey || crypto.randomUUID(),
+      venueRuleAcknowledged,
     });
     if (!res.success) {
+      if ("errorCode" in res && res.errorCode === "venue_rule_ack_required") {
+        setVenueConfirmStatus(res.venueRuleStatus);
+        return;
+      }
       toast(res.error || t("attendance.singleVisit.error.recordFailed"), "error");
       return;
     }
@@ -847,11 +877,72 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     } else {
       toast(t("attendance.singleVisit.success.recorded"), "success");
     }
+    setVenueConfirmStatus(null);
     setSingleVisitOpen(false);
     setSingleVisitClientQuery("");
     setSingleVisitClientId("");
     setSingleVisitPriceId("");
     void queryClient.invalidateQueries({ queryKey: singleVisitsQueryKey });
+  };
+
+  const handleCloseGroupLesson = async () => {
+    if (!selectedGroupLesson?.slotId) {
+      toast(t("attendance.error.groupUnknown"), "error");
+      return;
+    }
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
+    const presentFromMarks =
+      effectiveModalSubs.filter((st) => st.currentStatus === "present").length + groupSingleVisits.length;
+    const presentCount =
+      closeAttendeeCount.trim() === "" ? presentFromMarks : Number(closeAttendeeCount);
+    if (!Number.isFinite(presentCount) || presentCount < 0) {
+      toast(t("venueCosts.closeLesson.error", { error: "invalid_attendees" }), "error");
+      return;
+    }
+    const res = await closeGroupLesson.mutateAsync({
+      scheduleSlotId: selectedGroupLesson.slotId,
+      occurrenceDate: selectedDate,
+      confirmedAttendeeCount: presentCount,
+    });
+    if (res.success === false) {
+      toast(t("venueCosts.closeLesson.error", { error: res.error }), "error");
+      return;
+    }
+    if (res.amount != null) {
+      toast(
+        `${t("venueCosts.closeLesson.success")} · ${t("venueCosts.closeLesson.amount", {
+          amount: formatCurrency(res.amount),
+        })}`,
+        "success"
+      );
+    } else {
+      toast(t("venueCosts.closeLesson.success"), "success");
+    }
+  };
+
+  const handleReopenGroupLesson = async () => {
+    if (!activeGroupClosure) return;
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
+    if (!reopenReason.trim()) {
+      toast(t("venueCosts.reopenLesson.error", { error: "reason_required" }), "error");
+      return;
+    }
+    const res = await reopenLessonClosure.mutateAsync({
+      closureId: activeGroupClosure.id,
+      reason: reopenReason.trim(),
+    });
+    if (!res.success) {
+      toast(t("venueCosts.reopenLesson.error", { error: res.error }), "error");
+      return;
+    }
+    setReopenReason("");
+    toast(t("venueCosts.reopenLesson.success"), "success");
   };
 
   const handleRefresh = () => {
@@ -1157,7 +1248,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
             <button
               type="button"
-              onClick={handleRecordSingleVisit}
+              onClick={() => void handleRecordSingleVisit()}
               disabled={
                 recordSingleVisit.isPending ||
                 connectionState !== "online" ||
@@ -1168,6 +1259,78 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             >
               {recordSingleVisit.isPending ? t("common.saving") : t("attendance.singleVisit.record")}
             </button>
+          </div>
+        )}
+
+        {selectedGroupLesson.slotId &&
+          connectionState === "online" &&
+          (canCloseGroupOccurrence || (Boolean(activeGroupClosure) && canReopenGroupClosure)) && (
+          <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-3 space-y-2">
+            <p className="text-[11px] font-semibold text-amber-900 uppercase tracking-wider">
+              {t("venueCosts.closeLesson")}
+            </p>
+            {activeGroupClosure ? (
+              <>
+                <p className="text-xs text-amber-900 font-semibold">{t("venueCosts.closeLesson.closed")}</p>
+                {activeGroupClosure.confirmedAttendeeCount != null && (
+                  <p className="text-[11px] text-slate-600">
+                    {t("venueCosts.closeLesson.attendeesConfirmed", {
+                      count: activeGroupClosure.confirmedAttendeeCount,
+                    })}
+                  </p>
+                )}
+                {canReopenGroupClosure && (
+                  <>
+                    <label className="block space-y-1">
+                      <span className="text-[10px] text-slate-500 font-sans uppercase tracking-wider">
+                        {t("venueCosts.reopenLesson.reason")}
+                      </span>
+                      <input
+                        type="text"
+                        value={reopenReason}
+                        onChange={(e) => setReopenReason(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-amber-400"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => void handleReopenGroupLesson()}
+                      disabled={reopenLessonClosure.isPending}
+                      className="w-full py-2 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
+                    >
+                      {reopenLessonClosure.isPending ? t("common.saving") : t("venueCosts.reopenLesson")}
+                    </button>
+                  </>
+                )}
+              </>
+            ) : canCloseGroupOccurrence ? (
+              <>
+                <label className="block space-y-1">
+                  <span className="text-[10px] text-slate-500 font-sans uppercase tracking-wider">
+                    {t("venueCosts.closeLesson.attendees")}
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={closeAttendeeCount}
+                    placeholder={String(
+                      effectiveModalSubs.filter((st) => st.currentStatus === "present").length +
+                        groupSingleVisits.length
+                    )}
+                    onChange={(e) => setCloseAttendeeCount(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-amber-400"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => void handleCloseGroupLesson()}
+                  disabled={closeGroupLesson.isPending}
+                  className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
+                >
+                  {closeGroupLesson.isPending ? t("common.saving") : t("venueCosts.closeLesson.confirm")}
+                </button>
+              </>
+            ) : null}
           </div>
         )}
 
@@ -1698,6 +1861,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         onClose={() => setAttendanceCorrectionTarget(null)}
         onSuccess={handleAttendanceCorrectionSuccess}
         toast={toast}
+      />
+
+      <VenueRulePaymentConfirmDialog
+        status={venueConfirmStatus}
+        pending={recordSingleVisit.isPending}
+        onConfirm={() => void handleRecordSingleVisit(true)}
+        onCancel={() => setVenueConfirmStatus(null)}
       />
     </div>
   );

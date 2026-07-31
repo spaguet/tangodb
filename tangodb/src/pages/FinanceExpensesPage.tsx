@@ -13,6 +13,7 @@ import {
   useExpenses,
   useUpdateExpense,
 } from "../hooks/useExpenses";
+import { useFinanceCosts } from "../hooks/useVenueCosts";
 import { usePermissions } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
 import { EXPENSE_CATEGORIES, expenseCategoryKey } from "../lib/expenseCategories";
@@ -115,6 +116,15 @@ export default function FinanceExpensesPage() {
   );
 
   const expensesQuery = useExpenses(expensesFilter);
+  const financeCostsQuery = useFinanceCosts(
+    dateFrom || "2000-01-01",
+    dateTo || todayIso,
+    Boolean(dateFrom || dateTo || true)
+  );
+  const venueEntries = useMemo(
+    () => (financeCostsQuery.data?.entries ?? []).filter((entry) => entry.sourceType === "venue_cost"),
+    [financeCostsQuery.data]
+  );
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
@@ -186,11 +196,17 @@ export default function FinanceExpensesPage() {
     setDeleteTarget(null);
   };
 
-  if (expensesQuery.isLoading) return <LoadingState label={t("finance.expenses.loading")} />;
-  if (expensesQuery.isError) return <QueryErrorState error={expensesQuery.error} />;
+  if (expensesQuery.isLoading || financeCostsQuery.isLoading) {
+    return <LoadingState label={t("finance.expenses.loading")} />;
+  }
+  if (expensesQuery.isError || financeCostsQuery.isError) {
+    return <QueryErrorState error={expensesQuery.error ?? financeCostsQuery.error} />;
+  }
 
   const items = expensesQuery.data ?? [];
-  const total = items.reduce((sum, e) => sum + e.amount, 0);
+  const manualTotal = items.reduce((sum, e) => sum + e.amount, 0);
+  const venueTotal = financeCostsQuery.data?.venueTotal ?? 0;
+  const combinedTotal = financeCostsQuery.data?.total ?? manualTotal + venueTotal;
   const hasActiveFilters = Boolean(dateFrom || dateTo || categoryFilter !== "all");
   const pending = createExpense.isPending || updateExpense.isPending;
 
@@ -283,11 +299,60 @@ export default function FinanceExpensesPage() {
                 ])}
               </span>
               <span className="text-sm font-sans font-semibold text-slate-800">
-                {t("finance.expenses.total", { amount: formatCurrency(total) })}
+                {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualTotal)}
               </span>
             </div>
           </>
         )}
+      </div>
+
+      <div className="bg-white rounded-xl border border-amber-200/80 shadow-xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-amber-100 flex items-center justify-between gap-3 bg-amber-50/40">
+          <div>
+            <h2 className="font-sans text-sm font-semibold text-slate-800">{t("venueCosts.finance.venueTotal")}</h2>
+            <p className="text-[11px] text-slate-500 mt-0.5">{t("venueCosts.finance.autoRow")}</p>
+          </div>
+          <p className="text-sm font-semibold text-amber-800">
+            {formatCurrency(venueTotal)}
+          </p>
+        </div>
+        {venueEntries.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-slate-500">{t("venueCosts.empty")}</p>
+        ) : (
+          <div>
+            {venueEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="grid grid-cols-[1fr_auto] gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 truncate">
+                    {entry.description || t("venueCosts.finance.autoRow")}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {formatDate(entry.entryDate, { day: "numeric", month: "short", year: "numeric" })}
+                  </p>
+                </div>
+                <p className="text-sm font-semibold text-rose-700 whitespace-nowrap">
+                  {formatCurrency(entry.amount)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs px-4 py-3 flex justify-between items-center">
+        <span className="text-xs text-slate-500 font-sans">{t("finance.expenses.title")}</span>
+        <div className="text-right">
+          <p className="text-sm font-sans font-semibold text-slate-800">
+            {t("finance.expenses.total", { amount: formatCurrency(combinedTotal) })}
+          </p>
+          <p className="text-[10px] text-slate-500 mt-0.5">
+            {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualTotal)} ·{" "}
+            {t("venueCosts.finance.venueTotal")}: {formatCurrency(venueTotal)}
+          </p>
+        </div>
       </div>
 
       <AnimatePresence>

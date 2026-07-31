@@ -1,4 +1,4 @@
-import { Coins, Edit, Trash2 } from "lucide-react";
+import { CheckCircle2, Coins, Edit, RotateCcw, Trash2 } from "lucide-react";
 import {
   canPayPersonalLesson,
   canReadLessonClients,
@@ -9,6 +9,11 @@ import {
 import { isPersonalLessonLockedForWrite, toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
+import {
+  useClosePersonalLessonOccurrence,
+  useReopenLessonOccurrenceClosure,
+  type LessonOccurrenceClosure,
+} from "../../hooks/useVenueCosts";
 import type { PersonalLesson } from "../../types";
 import type { MemberRole } from "../../types/organization";
 import type { PermissionAction } from "../../lib/permissions";
@@ -28,6 +33,7 @@ interface PersonalLessonRowProps {
   locationName?: string;
   disciplineName?: string;
   teacherName?: string;
+  closedClosure?: LessonOccurrenceClosure | null;
   onEdit: (lesson: PersonalLesson) => void;
   onDelete: (lesson: PersonalLesson) => void;
   onPay: (lesson: PersonalLesson) => void;
@@ -96,12 +102,27 @@ export default function PersonalLessonRow({
   locationName,
   disciplineName,
   teacherName,
+  closedClosure = null,
   onEdit,
   onDelete,
   onPay,
   toast,
 }: PersonalLessonRowProps) {
   const { t } = useI18n();
+  const closePersonalLesson = useClosePersonalLessonOccurrence();
+  const reopenLessonClosure = useReopenLessonOccurrenceClosure();
+  const todayISO = toISODateLocal(new Date());
+  const canMarkAttendance = lesson.date <= todayISO;
+  const canClose =
+    !isReadOnly &&
+    lesson.date <= todayISO &&
+    (can("personal_lessons.write", {
+      disciplineId: lesson.disciplineId,
+      locationId: lesson.locationId,
+    }) ||
+      can("finance.read"));
+  const canReopen = can("finance.read");
+  const activeClosure = closedClosure;
   const displayLesson = {
     kind: "personal" as const,
     lessonId: lesson.id,
@@ -122,8 +143,43 @@ export default function PersonalLessonRow({
     !isPersonalLessonLockedForWrite(lesson.date, canEditPastSchedule);
   const canDelete = canWrite;
   const canPay = canPayPersonalLesson(role, memberId, displayLesson, can, isReadOnly);
-  const todayISO = toISODateLocal(new Date());
-  const canMarkAttendance = lesson.date <= todayISO;
+
+  const handleClose = async () => {
+    const res = await closePersonalLesson.mutateAsync({ personalLessonId: lesson.id });
+    if (res.success === false) {
+      toast(t("venueCosts.closeLesson.error", { error: res.error }), "error");
+      return;
+    }
+    if (res.amount != null) {
+      toast(
+        `${t("venueCosts.closeLesson.success")} · ${t("venueCosts.closeLesson.amount", {
+          amount: formatCurrency(res.amount),
+        })}`,
+        "success"
+      );
+    } else {
+      toast(t("venueCosts.closeLesson.success"), "success");
+    }
+  };
+
+  const handleReopen = async () => {
+    if (!activeClosure) return;
+    const reason = window.prompt(t("venueCosts.reopenLesson.reason"));
+    if (reason == null) return;
+    if (!reason.trim()) {
+      toast(t("venueCosts.reopenLesson.error", { error: "reason_required" }), "error");
+      return;
+    }
+    const res = await reopenLessonClosure.mutateAsync({
+      closureId: activeClosure.id,
+      reason: reason.trim(),
+    });
+    if (!res.success) {
+      toast(t("venueCosts.reopenLesson.error", { error: res.error }), "error");
+      return;
+    }
+    toast(t("venueCosts.reopenLesson.success"), "success");
+  };
 
   return (
     <tr className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
@@ -165,6 +221,36 @@ export default function PersonalLessonRow({
             >
               <Coins className="w-3.5 h-3.5" />
             </button>
+          )}
+          {canClose && !activeClosure && (
+            <button
+              type="button"
+              onClick={() => void handleClose()}
+              disabled={closePersonalLesson.isPending}
+              title={t("venueCosts.closeLesson")}
+              className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-50 cursor-pointer transition-colors disabled:opacity-60"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {activeClosure && canReopen && (
+            <button
+              type="button"
+              onClick={() => void handleReopen()}
+              disabled={reopenLessonClosure.isPending}
+              title={t("venueCosts.reopenLesson")}
+              className="p-1.5 rounded-lg text-amber-800 hover:bg-amber-50 cursor-pointer transition-colors disabled:opacity-60"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {activeClosure && !canReopen && (
+            <span
+              title={t("venueCosts.closeLesson.closed")}
+              className="p-1.5 rounded-lg text-emerald-600"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </span>
           )}
           {canWrite && (
             <button

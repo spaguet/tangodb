@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, X, XCircle, ArrowRightLeft } from "lucide-react";
+import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, X, XCircle, ArrowRightLeft, CheckCircle2 } from "lucide-react";
 import { useDeleteScheduleSlot } from "../../hooks/useSchedule";
 import { useDeletePersonalLesson, useDeletePersonalLessonSeriesFromDate, usePersonalLessons } from "../../hooks/usePersonalLessons";
+import { useClosePersonalLessonOccurrence, useActivePersonalLessonClosure, useReopenLessonOccurrenceClosure } from "../../hooks/useVenueCosts";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
@@ -17,6 +18,8 @@ import {
 import { useI18n } from "../../hooks/useI18n";
 import { isRecurringGroupSlot } from "../../lib/groupLessonRepeat";
 import { personalLessonsInSeriesFromDate } from "../../lib/personalLessonSeries";
+import { toISODateLocal } from "../../lib/scheduleWeek";
+import { formatCurrency } from "../../lib/utils";
 import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import RequirePermission from "../RequirePermission";
@@ -77,13 +80,21 @@ export default function LessonInfoPopup({
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const deletePersonalLesson = useDeletePersonalLesson();
   const deletePersonalLessonSeries = useDeletePersonalLessonSeriesFromDate();
+  const closePersonalLesson = useClosePersonalLessonOccurrence();
+  const reopenLessonClosure = useReopenLessonOccurrenceClosure();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [cancelOneConfirmOpen, setCancelOneConfirmOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
+  const [reopenReason, setReopenReason] = useState("");
   const personalLessonsQuery = usePersonalLessons({
     enabled: lesson?.kind === "personal",
   });
+  const personalClosureQuery = useActivePersonalLessonClosure(
+    lesson?.kind === "personal" ? lesson.lessonId : null,
+    lesson?.kind === "personal"
+  );
+  const activePersonalClosure = personalClosureQuery.data ?? null;
 
   useEffect(() => {
     if (!lesson) return;
@@ -136,6 +147,16 @@ export default function LessonInfoPopup({
     lesson?.kind === "personal" &&
     canPayPersonalLesson(role, memberId, lesson, can, isReadOnly);
 
+  const canClosePersonal =
+    lesson?.kind === "personal" &&
+    !isReadOnly &&
+    lesson.date <= toISODateLocal(new Date()) &&
+    !activePersonalClosure &&
+    (can("personal_lessons.write", permissionContext) || can("finance.read"));
+
+  const canReopenPersonal =
+    lesson?.kind === "personal" && Boolean(activePersonalClosure) && can("finance.read");
+
   const fullPersonalLesson =
     lesson?.kind === "personal"
       ? personalLessonsQuery.data?.find((row) => row.id === lesson.lessonId)
@@ -168,6 +189,45 @@ export default function LessonInfoPopup({
       locationId: fullLesson.locationId ?? null,
       disciplineId: fullLesson.disciplineId ?? null,
     });
+  };
+
+  const handleClosePersonal = async () => {
+    if (lesson?.kind !== "personal") return;
+    const res = await closePersonalLesson.mutateAsync({ personalLessonId: lesson.lessonId });
+    if (res.success === false) {
+      toast(t("venueCosts.closeLesson.error", { error: res.error }), "error");
+      return;
+    }
+    if (res.amount != null) {
+      toast(
+        `${t("venueCosts.closeLesson.success")} · ${t("venueCosts.closeLesson.amount", {
+          amount: formatCurrency(res.amount),
+        })}`,
+        "success"
+      );
+    } else {
+      toast(t("venueCosts.closeLesson.success"), "success");
+    }
+    onSuccess?.();
+  };
+
+  const handleReopenPersonal = async () => {
+    if (!activePersonalClosure) return;
+    if (!reopenReason.trim()) {
+      toast(t("venueCosts.reopenLesson.error", { error: "reason_required" }), "error");
+      return;
+    }
+    const res = await reopenLessonClosure.mutateAsync({
+      closureId: activePersonalClosure.id,
+      reason: reopenReason.trim(),
+    });
+    if (!res.success) {
+      toast(t("venueCosts.reopenLesson.error", { error: res.error }), "error");
+      return;
+    }
+    setReopenReason("");
+    toast(t("venueCosts.reopenLesson.success"), "success");
+    onSuccess?.();
   };
 
   const handleDelete = async () => {
@@ -355,6 +415,47 @@ export default function LessonInfoPopup({
                   <Coins className="w-3.5 h-3.5" />
                   {t("common.pay")}
                 </button>
+              ) : null}
+
+              {canClosePersonal ? (
+                <button
+                  type="button"
+                  onClick={() => void handleClosePersonal()}
+                  disabled={closePersonalLesson.isPending}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {closePersonalLesson.isPending ? t("common.saving") : t("venueCosts.closeLesson")}
+                </button>
+              ) : null}
+
+              {activePersonalClosure ? (
+                <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-amber-900">{t("venueCosts.closeLesson.closed")}</p>
+                  {canReopenPersonal && (
+                    <>
+                      <label className="block space-y-1">
+                        <span className="text-[10px] text-slate-500 font-sans uppercase tracking-wider">
+                          {t("venueCosts.reopenLesson.reason")}
+                        </span>
+                        <input
+                          type="text"
+                          value={reopenReason}
+                          onChange={(e) => setReopenReason(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-amber-400"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => void handleReopenPersonal()}
+                        disabled={reopenLessonClosure.isPending}
+                        className="w-full py-2 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-[10px] font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
+                      >
+                        {reopenLessonClosure.isPending ? t("common.saving") : t("venueCosts.reopenLesson")}
+                      </button>
+                    </>
+                  )}
+                </div>
               ) : null}
 
               {canCancelOneOccurrence ? (

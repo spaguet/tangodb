@@ -39,6 +39,7 @@ import OrganizationSettingsPage from "./settings/pages/OrganizationSettingsPage"
 import SubscriptionSettingsPage from "./settings/pages/SubscriptionSettingsPage";
 import DisciplinesSettingsPage from "./settings/pages/DisciplinesSettingsPage";
 import RentalTariffsSettingsPage from "./settings/pages/RentalTariffsSettingsPage";
+import VenueCostsSettingsPage from "./settings/pages/VenueCostsSettingsPage";
 import LocationsSettingsPage from "./settings/pages/LocationsSettingsPage";
 import DataExportPage from "./settings/pages/DataExportPage";
 import TeamSettingsPage from "./settings/pages/TeamSettingsPage";
@@ -577,6 +578,7 @@ export default function App() {
                     <Route path="disciplines" element={<ErrorBoundary><DisciplinesSettingsPage /></ErrorBoundary>} />
                     <Route path="locations" element={<ErrorBoundary><LocationsSettingsPage /></ErrorBoundary>} />
                     <Route path="rental-tariffs" element={<ErrorBoundary><RentalTariffsSettingsPage /></ErrorBoundary>} />
+                    <Route path="venue-costs" element={<ErrorBoundary><VenueCostsSettingsPage /></ErrorBoundary>} />
                     <Route path="data" element={<ErrorBoundary><DataExportPage /></ErrorBoundary>} />
                     <Route path="license" element={<ErrorBoundary><LicenseSettingsPage /></ErrorBoundary>} />
                   </Route>
