@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-07-31 — tangodb: Finance «Платежи» — кнопка исправления платежа: иконка редактирования вместо текста «Исправить», стиль icon-button как в расходах.
+
 2026-07-31 — tangodb: fix Finance «Коррекции» — маппинг snake_case из RPC `get_corrections_report`; защита `formatCurrency` и `formatDateTimeLocale` от undefined.
 
 2026-07-31 — tangodb: удалены 836 personal_lessons с 2026-09-01 (org Omow dance); script `delete-personal-lessons-from-date.mjs`.

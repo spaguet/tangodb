@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Landmark, Search } from "lucide-react";
+import { Landmark, Pencil, Search } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect from "../components/ui/AppSelect";
@@ -83,9 +83,11 @@ function PaymentRow({
         <button
           type="button"
           onClick={() => onCorrect(payment)}
-          className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+          aria-label={translate("common.edit")}
+          title={translate("common.edit")}
+          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 bg-white cursor-pointer transition-colors"
         >
-          {translate("corrections.payment.correctAction")}
+          <Pencil className="w-3.5 h-3.5" />
         </button>
       )}
     </div>
