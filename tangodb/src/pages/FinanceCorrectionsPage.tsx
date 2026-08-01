@@ -3,6 +3,7 @@ import { History, Search } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import DatePickerField from "../components/ui/DatePickerField";
+import { searchFieldCls } from "../components/ui/AppSelect";
 import { useCorrectionsReport } from "../hooks/usePaymentCorrections";
 import { useI18n } from "../hooks/useI18n";
 import { formatCurrency } from "../lib/utils";
@@ -196,7 +197,7 @@ export default function FinanceCorrectionsPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-200 text-sm"
+              className={searchFieldCls}
               placeholder={t("corrections.page.searchPlaceholder")}
             />
           </div>

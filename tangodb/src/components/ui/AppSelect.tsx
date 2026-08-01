@@ -14,6 +14,9 @@ export const descriptionFieldCls =
 export const selectFieldCls =
   `${fieldCls} appearance-none cursor-pointer pr-10`;
 
+/** Search input with left icon at `left-3` (w-4 h-4). Same height as fieldCls. */
+export const searchFieldCls = `${fieldCls} pl-9 pr-3`;
+
 export const selectLabelCls =
   "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 

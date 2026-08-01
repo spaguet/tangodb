@@ -7,7 +7,7 @@ import { currentYearMonth, formatMonthTitle, shiftMonth } from "../../lib/utils"
 import type { Discipline } from "../../types";
 import { memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { useI18n } from "../../hooks/useI18n";
-import AppSelect from "../ui/AppSelect";
+import AppSelect, { searchFieldCls } from "../ui/AppSelect";
 import DatePickerField from "../ui/DatePickerField";
 import type {
   PersonalLessonFilterState,
@@ -243,13 +243,13 @@ export default function PersonalLessonFilters({
           <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block mb-1">
             {t("common.searchClient")}
           </label>
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-[calc(50%+6px)] -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder={t("common.searchByName")}
             value={filters.search}
             onChange={(e) => onChange({ search: e.target.value })}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg text-xs transition-all"
+            className={searchFieldCls}
           />
         </div>
       </div>

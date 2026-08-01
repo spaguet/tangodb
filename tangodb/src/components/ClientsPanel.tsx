@@ -29,7 +29,7 @@ import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import QueryErrorState from "./ui/QueryErrorState";
-import { fieldCls as inputCls } from "./ui/AppSelect";
+import { fieldCls as inputCls, searchFieldCls } from "./ui/AppSelect";
 import { btnAddCls, btnCancelCls } from "./ui/buttonStyles";
 import type { ToastType } from "../App";
 import type { Client } from "../types";
@@ -510,13 +510,13 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto font-sans">
               <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   placeholder={t("clients.search.placeholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className={`${inputCls} pl-10 text-xs`}
+                  className={searchFieldCls}
                 />
               </div>
             </div>

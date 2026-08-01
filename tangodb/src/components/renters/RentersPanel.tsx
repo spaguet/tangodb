@@ -23,7 +23,7 @@ import {
 import { translateConnectionBlockReason, translateMutationBlockedMessage } from "../../hooks/useOnlineStatus";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
-import AppSelect, { fieldCls as inputCls } from "../ui/AppSelect";
+import AppSelect, { fieldCls as inputCls, searchFieldCls } from "../ui/AppSelect";
 import { btnAddCls } from "../ui/buttonStyles";
 import LoadingState from "../ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "../ui/PageTabs";
@@ -226,7 +226,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
-                className={`${inputCls} pl-9`}
+                className={searchFieldCls}
                 placeholder={t("renters.searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

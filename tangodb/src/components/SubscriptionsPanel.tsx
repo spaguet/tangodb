@@ -53,7 +53,7 @@ import { useOrganization } from "../organization/OrganizationProvider";
 import { useUIStore } from "../store/ui";
 import { resolveMutationError } from "../lib/resolveMutationError";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
-import AppSelect from "./ui/AppSelect";
+import AppSelect, { searchFieldCls } from "./ui/AppSelect";
 import { btnAddCls } from "./ui/buttonStyles";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import VenueRulePaymentConfirmDialog from "./venue-costs/VenueRulePaymentConfirmDialog";
@@ -783,13 +783,13 @@ export default function SubscriptionsPanel({
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t("subscriptions.search.placeholder")}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg text-xs transition-all"
+                  className={searchFieldCls}
                 />
               </div>
             </div>

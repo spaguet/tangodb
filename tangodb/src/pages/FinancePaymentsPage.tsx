@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { ChevronDown, Landmark, Pencil, Search } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
-import AppSelect from "../components/ui/AppSelect";
+import AppSelect, { searchFieldCls } from "../components/ui/AppSelect";
 import DatePickerField from "../components/ui/DatePickerField";
 import PaymentCorrectionDialog from "../components/finance/PaymentCorrectionDialog";
 import {
@@ -317,7 +317,7 @@ export default function FinancePaymentsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("finance.payments.search")}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className={searchFieldCls}
             />
           </div>
         </div>

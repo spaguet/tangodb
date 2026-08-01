@@ -317,11 +317,13 @@ outline-none rounded-lg px-3 text-xs transition-all
 
 **Select:** `selectFieldCls` = `fieldCls` + `appearance-none cursor-pointer pr-10`.
 
+**Поиск (input с иконкой слева):** `searchFieldCls` = `fieldCls` + `pl-9 pr-3`; иконка `Search` — `absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4`. Не задавать `py-2` / `py-2.5` / `text-sm` вручную.
+
 **Описание (textarea):** `descriptionFieldCls` — без фиксированной `h-10`, `min-h-[4.5rem]`, `resize-none`.
 
 Метка: `selectLabelCls` из `AppSelect.tsx`.
 
-**Правило:** все `<select>` — через `AppSelect` или `selectFieldCls`; однострочные `<input>` и `DatePickerField` — через `fieldCls` (см. `.cursor/rules/dropdowns.mdc`).
+**Правило:** все `<select>` — через `AppSelect` или `selectFieldCls`; однострочные `<input>` и `DatePickerField` — через `fieldCls`; поля поиска с иконкой — через `searchFieldCls` (см. `.cursor/rules/dropdowns.mdc`).
 
 ### Карточки
 
