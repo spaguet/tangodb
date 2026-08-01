@@ -16,9 +16,9 @@ export const btnAddCls =
 export const btnAddSoftCls =
   `${btnBaseCls} text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100`;
 
-/** Открытие popup / страницы / окна — outline indigo, UPPERCASE. */
+/** Открытие popup / страницы / окна — outline indigo, регистр предложения (без uppercase). */
 export const btnOpenCls =
-  `${btnBaseCls} text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 uppercase tracking-wider`;
+  `${btnBaseCls} text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200`;
 
 /** Удаление и предупреждающие действия — rose, UPPERCASE. */
 export const btnDestructiveCls =

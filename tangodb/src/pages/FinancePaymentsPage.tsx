@@ -18,20 +18,71 @@ import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useSingleVisits } from "../hooks/useSingleVisits";
 import { useI18n } from "../hooks/useI18n";
 import { useAccessibleLocations } from "../hooks/useLocations";
-import { buildClassLocationMap, buildClassTeacherMap, resolvePaymentLocationId, resolvePaymentTeacherId, type TeacherRevenueContext } from "../lib/financeReports";
+import {
+  buildClassLocationMap,
+  buildClassTeacherMap,
+  resolvePaymentLocationId,
+  resolvePaymentTeacherId,
+  type TeacherRevenueContext,
+} from "../lib/financeReports";
 import {
   aggregateEffectivePaymentTotal,
+  paymentCorrectionReasonLabelKey,
   paymentEffectiveAmount,
   paymentStatusLabelKey,
   type PaymentWithCorrectionMeta,
 } from "../lib/paymentCorrection";
-import { formatCurrency } from "../lib/utils";
+import { formatCurrency, formatMonthTitle } from "../lib/utils";
 import type { PaymentMethod } from "../types";
 
 type PaymentSourceFilter = "all" | "subscription" | "personal_lesson" | "single_visit";
 type PaymentMethodFilter = "all" | PaymentMethod;
 
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "transfer", "card", "other"];
+
+interface MonthPaymentGroup {
+  yearMonth: string;
+  payments: PaymentWithCorrectionMeta[];
+  paymentCount: number;
+  paymentSum: number;
+  refundCount: number;
+  refundSum: number;
+}
+
+function paymentYearMonth(payment: PaymentWithCorrectionMeta): string {
+  const d = new Date(payment.createdAt);
+  if (Number.isNaN(d.getTime())) return "unknown";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function groupPaymentsByMonth(items: PaymentWithCorrectionMeta[]): MonthPaymentGroup[] {
+  const map = new Map<string, PaymentWithCorrectionMeta[]>();
+  for (const payment of items) {
+    const key = paymentYearMonth(payment);
+    const list = map.get(key) ?? [];
+    list.push(payment);
+    map.set(key, list);
+  }
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([yearMonth, payments]) => {
+      let paymentCount = 0;
+      let paymentSum = 0;
+      let refundCount = 0;
+      let refundSum = 0;
+      for (const payment of payments) {
+        if (payment.operationKind === "storno") {
+          refundCount += 1;
+          refundSum += payment.amount;
+        } else {
+          paymentCount += 1;
+          paymentSum += payment.amount;
+        }
+      }
+      return { yearMonth, payments, paymentCount, paymentSum, refundCount, refundSum };
+    });
+}
 
 function PaymentDetailItem({ label, value }: { label: string; value: string }) {
   return (
@@ -40,6 +91,21 @@ function PaymentDetailItem({ label, value }: { label: string; value: string }) {
       <dd className="text-xs text-slate-700 font-sans mt-0.5 break-words">{value}</dd>
     </div>
   );
+}
+
+function resolveDisplayPayment(
+  payment: PaymentWithCorrectionMeta,
+  paymentById: Map<string, PaymentWithCorrectionMeta>
+): PaymentWithCorrectionMeta {
+  if (payment.operationKind !== "storno" || !payment.reversesPaymentId) return payment;
+  const original = paymentById.get(payment.reversesPaymentId);
+  if (!original) return payment;
+  return {
+    ...payment,
+    subscriptionId: payment.subscriptionId ?? original.subscriptionId,
+    personalLessonId: payment.personalLessonId ?? original.personalLessonId,
+    singleVisitId: payment.singleVisitId ?? original.singleVisitId,
+  };
 }
 
 function PaymentRow({
@@ -65,10 +131,9 @@ function PaymentRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const isRefund = payment.operationKind === "storno";
   const effective = paymentEffectiveAmount(payment);
-  const statusKey = payment.correctionStatus
-    ? paymentStatusLabelKey(payment.correctionStatus)
-    : null;
+  const statusKey = payment.correctionStatus ? paymentStatusLabelKey(payment.correctionStatus) : null;
   const teacherId = resolvePaymentTeacherId(payment, teacherCtx);
   const teacherName = teacherId ? teacherCtx.teacherLabels.get(teacherId) ?? "—" : "—";
   const locationId = resolvePaymentLocationId(payment, teacherCtx);
@@ -85,7 +150,13 @@ function PaymentRow({
   });
   const sourceLabel = paymentSourceLabel(payment, translate);
   const methodLabel = getPaymentMethodLabel(payment.method, translate);
-  const amountLabel = `${payment.operationKind === "storno" ? "−" : ""}${formatCurrency(Math.abs(effective))}`;
+  const amountLabel = `${isRefund ? "−" : ""}${formatCurrency(Math.abs(effective))}`;
+  const reasonKey = paymentCorrectionReasonLabelKey(payment.correctionReasonCode ?? null);
+  const reasonParts = [
+    reasonKey ? translate(reasonKey as Parameters<typeof translate>[0]) : null,
+    payment.correctionComment?.trim() || null,
+  ].filter(Boolean);
+  const reasonLabel = reasonParts.length > 0 ? reasonParts.join(" · ") : "—";
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
@@ -105,11 +176,15 @@ function PaymentRow({
             <div className="min-w-0">
               <p className="text-sm font-semibold text-slate-800 truncate">{payment.clientDisplay || "—"}</p>
               <p className="text-[10px] text-slate-400 font-sans mt-0.5">{acceptedAt}</p>
-              {statusKey && payment.operationKind !== "storno" && (
+              {isRefund ? (
+                <p className="text-[10px] text-rose-600 mt-0.5 font-semibold">
+                  {translate("finance.payments.refundBadge")}
+                </p>
+              ) : statusKey ? (
                 <p className="text-[10px] text-slate-500 mt-0.5">
                   {translate(statusKey as Parameters<typeof translate>[0])}
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
         </button>
@@ -118,7 +193,7 @@ function PaymentRow({
           onClick={onToggle}
           className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
         >
-          {sourceLabel}
+          {isRefund ? translate("finance.payments.refundBadge") : sourceLabel}
         </button>
         <button
           type="button"
@@ -131,45 +206,77 @@ function PaymentRow({
           type="button"
           onClick={onToggle}
           className={`text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer ${
-            payment.operationKind === "storno" ? "text-rose-600" : "text-indigo-700"
+            isRefund ? "text-rose-600" : "text-indigo-700"
           }`}
         >
           {amountLabel}
         </button>
-        {canCorrect && payment.operationKind !== "storno" && payment.correctionStatus !== "voided" && payment.correctionStatus !== "replaced" && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCorrect(payment);
-            }}
-            aria-label={translate("common.edit")}
-            title={translate("common.edit")}
-            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 bg-white cursor-pointer transition-colors"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-        )}
+        {canCorrect &&
+          !isRefund &&
+          payment.correctionStatus !== "voided" &&
+          payment.correctionStatus !== "replaced" && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCorrect(payment);
+              }}
+              aria-label={translate("common.edit")}
+              title={translate("common.edit")}
+              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 bg-white cursor-pointer transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
       </div>
       {expanded && (
         <div className="px-3 pb-3 pt-0 ml-5 sm:ml-6">
           <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 p-3 rounded-lg bg-slate-50/80 border border-slate-100">
-            <PaymentDetailItem label={translate("common.clientDate")} value={`${payment.clientDisplay || "—"} · ${acceptedAt}`} />
-            <PaymentDetailItem label={translate("common.source")} value={sourceLabel} />
-            <PaymentDetailItem label={translate("common.method")} value={methodLabel} />
-            <PaymentDetailItem label={translate("common.amount")} value={amountLabel} />
-            <PaymentDetailItem label={translate("schedule.form.teacher")} value={teacherName} />
-            <PaymentDetailItem label={translate("schedule.form.location")} value={locationName} />
-            <PaymentDetailItem label={translate("finance.payments.acceptedBy")} value={acceptedBy} />
-            <PaymentDetailItem label={translate("finance.payments.acceptedAt")} value={acceptedAt} />
-            {statusKey && payment.operationKind !== "storno" && (
-              <PaymentDetailItem
-                label={translate("finance.payments.status")}
-                value={translate(statusKey as Parameters<typeof translate>[0])}
-              />
-            )}
-            {payment.methodComment && (
-              <PaymentDetailItem label={translate("finance.payments.methodComment")} value={payment.methodComment} />
+            {isRefund ? (
+              <>
+                <PaymentDetailItem
+                  label={translate("common.client")}
+                  value={payment.clientDisplay || "—"}
+                />
+                <PaymentDetailItem label={translate("finance.payments.refundDate")} value={acceptedAt} />
+                <PaymentDetailItem label={translate("finance.payments.refundBy")} value={acceptedBy} />
+                <PaymentDetailItem label={translate("finance.payments.refundMethod")} value={methodLabel} />
+                <PaymentDetailItem label={translate("finance.payments.refundAmount")} value={amountLabel} />
+                <PaymentDetailItem label={translate("finance.payments.refundReason")} value={reasonLabel} />
+                <PaymentDetailItem label={translate("common.source")} value={sourceLabel} />
+                {payment.methodComment ? (
+                  <PaymentDetailItem
+                    label={translate("finance.payments.methodComment")}
+                    value={payment.methodComment}
+                  />
+                ) : null}
+              </>
+            ) : (
+              <>
+                <PaymentDetailItem
+                  label={translate("common.clientDate")}
+                  value={`${payment.clientDisplay || "—"} · ${acceptedAt}`}
+                />
+                <PaymentDetailItem label={translate("common.source")} value={sourceLabel} />
+                <PaymentDetailItem label={translate("common.method")} value={methodLabel} />
+                <PaymentDetailItem label={translate("common.amount")} value={amountLabel} />
+                <PaymentDetailItem label={translate("schedule.form.teacher")} value={teacherName} />
+                <PaymentDetailItem label={translate("schedule.form.location")} value={locationName} />
+                <PaymentDetailItem label={translate("finance.payments.acceptedBy")} value={acceptedBy} />
+                <PaymentDetailItem label={translate("finance.payments.acceptedAt")} value={acceptedAt} />
+                {statusKey ? (
+                  <PaymentDetailItem
+                    label={translate("finance.payments.status")}
+                    value={translate(statusKey as Parameters<typeof translate>[0])}
+                  />
+                ) : null}
+                {payment.methodComment ? (
+                  <PaymentDetailItem
+                    label={translate("finance.payments.methodComment")}
+                    value={payment.methodComment}
+                  />
+                ) : null}
+              </>
             )}
           </dl>
         </div>
@@ -197,6 +304,7 @@ export default function FinancePaymentsPage() {
   const [teacherFilter, setTeacherFilter] = useState("all");
   const [correctionTarget, setCorrectionTarget] = useState<PaymentWithCorrectionMeta | null>(null);
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => new Set());
   const [toastMsg, setToastMsg] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
 
   const toast = (msg: string, type: "success" | "error" | "info" = "success") => {
@@ -216,9 +324,7 @@ export default function FinancePaymentsPage() {
 
   const memberNameById = useMemo(
     () =>
-      new Map(
-        (teamQuery.data ?? []).map((member) => [member.id, memberListLabel(member, locale)])
-      ),
+      new Map((teamQuery.data ?? []).map((member) => [member.id, memberListLabel(member, locale)])),
     [teamQuery.data, locale]
   );
 
@@ -240,9 +346,7 @@ export default function FinancePaymentsPage() {
     const personalLessonById = new Map(
       (personalLessonsQuery.data ?? []).map((lesson) => [lesson.id, lesson])
     );
-    const singleVisitById = new Map(
-      (singleVisitsQuery.data ?? []).map((visit) => [visit.id, visit])
-    );
+    const singleVisitById = new Map((singleVisitsQuery.data ?? []).map((visit) => [visit.id, visit]));
     return {
       personalLessonById,
       singleVisitById,
@@ -259,8 +363,18 @@ export default function FinancePaymentsPage() {
     memberNameById,
   ]);
 
+  const paymentById = useMemo(() => {
+    const map = new Map<string, PaymentWithCorrectionMeta>();
+    for (const payment of paymentsQuery.data ?? []) {
+      map.set(payment.id, payment);
+    }
+    return map;
+  }, [paymentsQuery.data]);
+
   const filtered = useMemo(() => {
-    let items = paymentsQuery.data ?? [];
+    let items = (paymentsQuery.data ?? []).map((payment) =>
+      resolveDisplayPayment(payment, paymentById)
+    );
 
     if (sourceFilter !== "all") {
       items = items.filter((p) => matchesSourceFilter(p, sourceFilter));
@@ -278,7 +392,18 @@ export default function FinancePaymentsPage() {
     }
 
     return items;
-  }, [paymentsQuery.data, sourceFilter, methodFilter, teacherFilter, teacherCtx, search]);
+  }, [paymentsQuery.data, paymentById, sourceFilter, methodFilter, teacherFilter, teacherCtx, search]);
+
+  const monthGroups = useMemo(() => groupPaymentsByMonth(filtered), [filtered]);
+
+  const toggleMonth = (yearMonth: string) => {
+    setExpandedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(yearMonth)) next.delete(yearMonth);
+      else next.add(yearMonth);
+      return next;
+    });
+  };
 
   const contextLoading =
     teacherFilter !== "all" &&
@@ -385,28 +510,89 @@ export default function FinancePaymentsPage() {
           </div>
         ) : (
           <>
-            <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
-              <span>{t("common.clientDate")}</span>
-              <span>{t("common.source")}</span>
-              <span>{t("common.method")}</span>
-              <span className="text-right">{t("common.amount")}</span>
-            </div>
             <div>
-              {filtered.map((p) => (
-                <PaymentRow
-                  key={p.id}
-                  payment={p}
-                  formatDateTime={formatDateTime}
-                  translate={t}
-                  canCorrect={canCorrectPayments}
-                  onCorrect={setCorrectionTarget}
-                  teacherCtx={teacherCtx}
-                  locationNameById={locationNameById}
-                  memberNameById={memberNameById}
-                  expanded={expandedPaymentId === p.id}
-                  onToggle={() => setExpandedPaymentId((prev) => (prev === p.id ? null : p.id))}
-                />
-              ))}
+              {monthGroups.map((group) => {
+                const open = expandedMonths.has(group.yearMonth);
+                const monthTitle =
+                  group.yearMonth === "unknown"
+                    ? "—"
+                    : formatMonthTitle(group.yearMonth, locale);
+                const paymentCountLabel = `${group.paymentCount} ${plural(group.paymentCount, [
+                  t("common.payment.one"),
+                  t("common.payment.few"),
+                  t("common.payment.many"),
+                ])}`;
+                const refundCountLabel = `${group.refundCount} ${plural(group.refundCount, [
+                  t("finance.payments.refund.one"),
+                  t("finance.payments.refund.few"),
+                  t("finance.payments.refund.many"),
+                ])}`;
+
+                return (
+                  <section key={group.yearMonth} className="border-b border-slate-100 last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleMonth(group.yearMonth)}
+                      aria-expanded={open}
+                      className="w-full flex items-start sm:items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer hover:bg-slate-50/80 transition-colors"
+                    >
+                      <div className="min-w-0 space-y-1">
+                        <p className="text-sm font-semibold text-slate-800">{monthTitle}</p>
+                        <p className="text-[11px] text-slate-500 font-sans">
+                          <span>
+                            {paymentCountLabel}
+                            {" · "}
+                            {formatCurrency(group.paymentSum)}
+                          </span>
+                          {group.refundCount > 0 ? (
+                            <span className="text-rose-600">
+                              {" · "}
+                              {refundCountLabel}
+                              {" · −"}
+                              {formatCurrency(group.refundSum)}
+                            </span>
+                          ) : null}
+                        </p>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+                          open ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {open ? (
+                      <div className="border-t border-slate-100">
+                        <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
+                          <span>{t("common.clientDate")}</span>
+                          <span>{t("common.source")}</span>
+                          <span>{t("common.method")}</span>
+                          <span className="text-right">{t("common.amount")}</span>
+                        </div>
+                        <div>
+                          {group.payments.map((p) => (
+                            <PaymentRow
+                              key={p.id}
+                              payment={p}
+                              formatDateTime={formatDateTime}
+                              translate={t}
+                              canCorrect={canCorrectPayments}
+                              onCorrect={setCorrectionTarget}
+                              teacherCtx={teacherCtx}
+                              locationNameById={locationNameById}
+                              memberNameById={memberNameById}
+                              expanded={expandedPaymentId === p.id}
+                              onToggle={() =>
+                                setExpandedPaymentId((prev) => (prev === p.id ? null : p.id))
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </section>
+                );
+              })}
             </div>
             <div className="px-4 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/60">
               <span className="text-xs text-slate-500 font-sans">

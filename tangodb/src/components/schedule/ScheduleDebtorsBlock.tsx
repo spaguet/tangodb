@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { motion } from "motion/react";
-import { AlertCircle, Clock, Coins } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { AlertCircle, ChevronDown, Clock, Coins } from "lucide-react";
 import { useScheduleDebtors } from "../../hooks/useScheduleDebtors";
 import { usePermissions } from "../../hooks/usePermissions";
 import { usePersonalLessonsModuleEnabled } from "../../hooks/useOrgModules";
@@ -162,6 +162,7 @@ export default function ScheduleDebtorsBlock({
   const debtorsQuery = useScheduleDebtors({ enabled: personalLessonsEnabled });
   const { data: debtors = [], showAmount, isLoading, isError, error } = debtorsQuery;
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const visibleDebtors = useMemo(() => {
     return debtors.map((entry) => {
@@ -256,7 +257,14 @@ export default function ScheduleDebtorsBlock({
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-xl border border-rose-200/80 shadow-xs overflow-hidden"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-b border-rose-100 bg-rose-50/60">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className={`w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 bg-rose-50/60 text-left cursor-pointer hover:bg-rose-50 transition-colors ${
+            expanded ? "border-b border-rose-100" : ""
+          }`}
+        >
           <div className="flex items-center gap-2 min-w-0">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <div className="min-w-0">
@@ -264,49 +272,69 @@ export default function ScheduleDebtorsBlock({
               <p className="text-[11px] text-slate-500">{subtitle}</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5 text-sm shrink-0 text-right">
-            <span className="font-semibold text-rose-600 tabular-nums">{countLabel}</span>
-            {showAmount ? (
-              <>
-                <span className="text-rose-400" aria-hidden="true">
-                  ·
-                </span>
-                <span className="font-semibold text-rose-600 tabular-nums">
-                  {formatCurrency(totalAmount)}
-                </span>
-              </>
-            ) : null}
+          <div className="flex items-center justify-end gap-2 shrink-0">
+            <div className="flex flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5 text-sm text-right">
+              <span className="font-semibold text-rose-600 tabular-nums">{countLabel}</span>
+              {showAmount ? (
+                <>
+                  <span className="text-rose-400" aria-hidden="true">
+                    ·
+                  </span>
+                  <span className="font-semibold text-rose-600 tabular-nums">
+                    {formatCurrency(totalAmount)}
+                  </span>
+                </>
+              ) : null}
+            </div>
+            <ChevronDown
+              className={`w-4 h-4 text-rose-400 shrink-0 transition-transform duration-200 ${
+                expanded ? "rotate-180" : ""
+              }`}
+            />
           </div>
-        </div>
+        </button>
 
-        <div className="divide-y divide-slate-100">
-          {debtorGroups.map((group) => (
-            <section key={group.key}>
-              <div className="px-4 py-2 bg-slate-50/80 border-b border-slate-100">
-                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  {group.label}
-                </h4>
-              </div>
-              <ul>
-                {group.items.map(({ entry, clientLabel, disciplineName, teacherName, canPay }) => (
-                  <DebtorRow
-                    key={entry.id}
-                    entry={entry}
-                    clientLabel={clientLabel}
-                    disciplineName={disciplineName}
-                    teacherName={teacherName}
-                    showAmount={showAmount}
-                    canPay={canPay}
-                    onPay={() => openPayModal(entry)}
-                    unpaidLabel={t("common.unpaidShort")}
-                    formatDate={formatDate}
-                    payLabel={t("common.pay")}
-                  />
+        <AnimatePresence initial={false}>
+          {expanded ? (
+            <motion.div
+              key="debtors-body"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="divide-y divide-slate-100">
+                {debtorGroups.map((group) => (
+                  <section key={group.key}>
+                    <div className="px-4 py-2 bg-slate-50/80 border-b border-slate-100">
+                      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        {group.label}
+                      </h4>
+                    </div>
+                    <ul>
+                      {group.items.map(({ entry, clientLabel, disciplineName, teacherName, canPay }) => (
+                        <DebtorRow
+                          key={entry.id}
+                          entry={entry}
+                          clientLabel={clientLabel}
+                          disciplineName={disciplineName}
+                          teacherName={teacherName}
+                          showAmount={showAmount}
+                          canPay={canPay}
+                          onPay={() => openPayModal(entry)}
+                          unpaidLabel={t("common.unpaidShort")}
+                          formatDate={formatDate}
+                          payLabel={t("common.pay")}
+                        />
+                      ))}
+                    </ul>
+                  </section>
                 ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </motion.section>
 
       <PayPersonalLessonModal

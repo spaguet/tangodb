@@ -243,17 +243,25 @@ function AppLayout() {
 
   const isItemActive = (item: NavItem) => {
     if (item.path === "/") return location.pathname === "/";
+    if (item.path === "/finance") return location.pathname.startsWith("/finance");
     if (item.path === "/settings/team") return location.pathname.startsWith("/settings/team");
     if (item.path === "/settings") {
       return location.pathname.startsWith("/settings") && !location.pathname.startsWith("/settings/team");
     }
     if (item.path.startsWith("/subscriptions")) {
+      // «История абонементов» keeps «Абонементы» highlighted in the sidebar
+      if (item.subTab === "active") {
+        return (
+          location.pathname.startsWith("/subscriptions") &&
+          (subscriptionsTab === "active" || subscriptionsTab === "history")
+        );
+      }
       return location.pathname.startsWith("/subscriptions") && subscriptionsTab === item.subTab;
     }
     if (item.path.startsWith("/personal")) {
       return location.pathname.startsWith("/personal") && personalTab === item.personalSubTab;
     }
-    return location.pathname === item.path;
+    return location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
   };
 
   const renderNav = (refreshKey?: unknown, closeDrawer?: () => void) => (

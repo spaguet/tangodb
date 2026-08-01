@@ -249,7 +249,7 @@ Focus outline (глобально в `index.css`):
 |-----|-------|------|----------------|-------|
 | Добавление / создание | `btnAddCls` | indigo filled | С заглавной буквы, **без** uppercase | «Добавить», «Создать правило», сохранить новую запись |
 | Добавление (мягкое) | `btnAddSoftCls` | indigo outline | С заглавной буквы | Вторичное создание в заголовке секции |
-| Открытие popup / страницы | `btnOpenCls` | indigo outline | **UPPERCASE** + tracking-wider | «Мероприятие», «Аренда», «Отпуск преподавателя», открыть диалог |
+| Открытие popup / страницы | `btnOpenCls` | indigo outline | С заглавной буквы, **без** uppercase | «Мероприятие», «Аренда», «Отпуск преподавателя», открыть диалог |
 | Удаление / предупреждение | `btnDestructiveCls` | rose filled | **UPPERCASE** | Удалить, аннулировать, опасное действие |
 | Обновить / отмена | `btnRefreshCls` / `btnCancelCls` | slate | **UPPERCASE** | «Обновить», «Отмена» |
 | Текстовая ссылка «+ Добавить» | `btnAddLinkCls` | indigo text | С заглавной буквы | Внутри форм и секций |
@@ -481,7 +481,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 1. **Акцентный цвет — только indigo.** Не добавлять violet/emerald/green/purple для UI-кнопок (violet — только блоки мероприятий в сетке).
 2. **Ошибки и долги — rose.** Не заменять rose на indigo.
-3. **Кнопки — через `buttonStyles.ts`.** Add — sentence case; open popup — uppercase; destructive/warning — rose + uppercase; refresh/cancel — slate + uppercase.
+3. **Кнопки — через `buttonStyles.ts`.** Add / open popup — sentence case; destructive/warning — rose + uppercase; refresh/cancel — slate + uppercase.
 4. **Не использовать amber для кнопок и акцентов.** Amber — только пассивные warning-баннеры.
 5. **Не дублировать стили полей** — `AppSelect`, `selectFieldCls`, `selectLabelCls`.
 6. **Не использовать inline-стили** (`style={{}}`), кроме grid columns в `PageTabs`.
@@ -529,7 +529,8 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 | Дата | Изменение |
 |------|-----------|
-| 2026-08-01 | Компактные контролы h-8 (32px): поля, select, кнопки — эталон Telegram в header; add/save без uppercase по всему CRM. |
+| 2026-08-01 | Компактные контролы h-8 (32px): поля, select, кнопки — эталон Telegram в header; add/save/open без uppercase по всему CRM. |
+| 2026-08-01 | `btnOpenCls` — sentence case (как add), без uppercase: Мероприятие / Аренда / Отпуск преподавателя. |
 | 2026-06-20 | RBAC R5: FinanceLayout (sub-nav как Settings), split Operational/Financial dashboard. |
 | 2026-06-19 | Унификация палитры: violet/emerald заменены на indigo; rose сохранён для ошибок. Документ заполнен. |
 | 2026-06-19 | Ревью: добавлены брейкпоинты, z-index, иконки, empty state, skeleton; пояснение семантики indigo; правила агента расширены. Z-index и брейкпоинты сверены с кодом. |
