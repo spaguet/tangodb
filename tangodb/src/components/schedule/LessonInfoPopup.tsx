@@ -22,7 +22,7 @@ import { toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
 import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
-import { btnAddCls, btnDestructiveCls, btnOpenCls } from "../ui/buttonStyles";
+import { btnAddCls, btnCancelCls, btnDestructiveCls, btnOpenCls } from "../ui/buttonStyles";
 import RequirePermission from "../RequirePermission";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
 import MoveGroupLessonDialog from "./MoveGroupLessonDialog";
@@ -492,7 +492,7 @@ export default function LessonInfoPopup({
                     <button
                       type="button"
                       onClick={() => onEdit?.(lesson)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                      className={`flex-1 ${btnAddCls}`}
                     >
                       <Edit className="w-3.5 h-3.5" />
                       {t("common.change")}
@@ -516,7 +516,7 @@ export default function LessonInfoPopup({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                  className={`flex-1 ${btnCancelCls}`}
                 >
                   {t("common.close")}
                 </button>

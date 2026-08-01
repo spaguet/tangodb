@@ -30,6 +30,7 @@ import LoadingState from "./ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "./ui/PageTabs";
 import QueryErrorState from "./ui/QueryErrorState";
 import { fieldCls as inputCls } from "./ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "./ui/buttonStyles";
 import type { ToastType } from "../App";
 import type { Client } from "../types";
 
@@ -481,7 +482,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
             type="submit"
             disabled={connectionState !== "online" || addClient.isPending}
             title={translateConnectionBlockReason(connectionState, t)}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+            className={`w-full ${btnAddCls}`}
           >
             {addClient.isPending ? t("clients.form.addPending") : t("clients.form.addSubmit")}
           </button>
@@ -865,7 +866,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                   onClick={handleSaveEdit}
                   disabled={connectionState !== "online" || updateClient.isPending}
                   title={translateConnectionBlockReason(connectionState, t)}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                  className={`flex-1 ${btnAddCls}`}
                 >
                   {updateClient.isPending ? t("clients.modal.savePending") : t("clients.modal.save")}
                 </button>

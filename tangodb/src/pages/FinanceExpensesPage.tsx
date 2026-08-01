@@ -5,7 +5,7 @@ import { Pencil, Plus, Receipt, Trash2, X } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect from "../components/ui/AppSelect";
-import { btnAddCls } from "../components/ui/buttonStyles";
+import { btnAddCls, btnCancelCls } from "../components/ui/buttonStyles";
 import DatePickerField from "../components/ui/DatePickerField";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { useToast } from "../App";
@@ -463,14 +463,14 @@ export default function FinanceExpensesPage() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={pending}
-                  className="flex-1 py-2.5 bg-indigo-600 text-white text-xs font-semibold uppercase rounded-lg cursor-pointer disabled:opacity-60"
+                  className={`flex-1 ${btnAddCls}`}
                 >
                   {t("common.save")}
                 </button>
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 py-2.5 bg-slate-100 text-slate-700 text-xs font-semibold uppercase rounded-lg cursor-pointer"
+                  className={`flex-1 ${btnCancelCls}`}
                 >
                   {t("common.cancel")}
                 </button>

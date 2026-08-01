@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Save, X } from "lucide-react";
 import { useToast } from "../../App";
 import AppSelect from "../../components/ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "../../components/ui/buttonStyles";
 import { memberDisplayName, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { useTeamMutations } from "../../hooks/useTeamInvites";
 import { activeRateByMember, useTeacherPayRates, useUpsertTeacherPayRate } from "../../hooks/usePayroll";
@@ -437,7 +438,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                   type="button"
                   onClick={handleSave}
                   disabled={!isDirty || isSaving}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                  className={`flex-1 ${btnAddCls}`}
                 >
                   <Save className="w-3.5 h-3.5" />
                   {isSaving ? t("common.saving") : t("common.save")}
@@ -446,7 +447,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
+                  className={`flex-1 ${btnAddCls}`}
                 >
                   {t("common.close")}
                 </button>
@@ -455,7 +456,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
+                  className={`flex-1 ${btnCancelCls}`}
                 >
                   {t("common.cancel")}
                 </button>

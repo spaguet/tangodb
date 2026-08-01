@@ -243,7 +243,7 @@ Focus outline (глобально в `index.css`):
 
 ### Кнопки
 
-**Общее правило:** высота всех кнопок = `h-10` (как `fieldCls` / `selectFieldCls`). Базовые классы — `tangodb/src/components/ui/buttonStyles.ts`.
+**Общее правило:** высота всех кнопок = `h-8` (как `fieldCls` / `selectFieldCls`, эталон — Telegram в header). Базовые классы — `tangodb/src/components/ui/buttonStyles.ts`.
 
 | Тип | Класс | Цвет | Регистр текста | Когда |
 |-----|-------|------|----------------|-------|
@@ -264,13 +264,13 @@ Focus outline (глобально в `index.css`):
 
 **Primary CTA (legacy, формы submit):**
 ```
-btnAddCls — indigo filled, sentence case, h-10
+btnAddCls — indigo filled, sentence case, h-8
 ```
 
 **Secondary / outline (legacy):**
 ```
 border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50
-rounded-lg text-xs font-semibold h-10
+rounded-lg text-xs font-semibold h-8
 ```
 
 **Accent secondary (продажа пакета, переключатели):**
@@ -308,10 +308,12 @@ text-slate-500 text-[11px] uppercase tracking-wider font-semibold h-10
 **Однострочные поля** (`fieldCls` — input, select, date picker, autocomplete):
 
 ```
-w-full h-10 box-border bg-slate-50 border border-slate-200
+w-full h-8 box-border bg-slate-50 border border-slate-200
 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100
-outline-none rounded-lg px-3.5 text-xs transition-all
+outline-none rounded-lg px-3 text-xs transition-all
 ```
+
+**Высота контролов:** `h-8` (32px), `px-3`, `text-xs` — эталон: кнопки Telegram/Email в header (`DeveloperContacts`: `px-3 py-2`). Экспорт: `controlHeightCls` в `AppSelect.tsx`.
 
 **Select:** `selectFieldCls` = `fieldCls` + `appearance-none cursor-pointer pr-10`.
 
@@ -483,7 +485,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 5. **Не дублировать стили полей** — `AppSelect`, `selectFieldCls`, `selectLabelCls`.
 6. **Не использовать inline-стили** (`style={{}}`), кроме grid columns в `PageTabs`.
 7. **Карточки панелей** — `rounded-xl`, не `rounded-2xl`.
-8. **Высота кнопок** — `h-10`, как у полей ввода.
+8. **Высота кнопок и полей** — `h-8` (`controlHeightCls`), как кнопка Telegram в header.
 9. **Метки полей** — всегда 10px, uppercase, slate-400.
 10. **Минимальный размер шрифта** — `text-[10px]`.
 11. **Z-index** — только из таблицы слоёв.
@@ -526,7 +528,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 | Дата | Изменение |
 |------|-----------|
-| 2026-08-01 | Кнопки: типы add/open/destructive/refresh в `buttonStyles.ts`; amber убран из UI-кнопок; аренда в сетке — slate. |
+| 2026-08-01 | Компактные контролы h-8 (32px): поля, select, кнопки — эталон Telegram в header; add/save без uppercase по всему CRM. |
 | 2026-06-20 | RBAC R5: FinanceLayout (sub-nav как Settings), split Operational/Financial dashboard. |
 | 2026-06-19 | Унификация палитры: violet/emerald заменены на indigo; rose сохранён для ошибок. Документ заполнен. |
 | 2026-06-19 | Ревью: добавлены брейкпоинты, z-index, иконки, empty state, skeleton; пояснение семантики indigo; правила агента расширены. Z-index и брейкпоинты сверены с кодом. |

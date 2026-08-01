@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
+import { btnAddCls } from "../../components/ui/buttonStyles";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
 import { useToast } from "../../App";
@@ -151,7 +152,7 @@ export default function GeneralSettingsPage() {
             type="button"
             onClick={handleSave}
             disabled={!dirty || isUpdating}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+            className={`w-full ${btnAddCls}`}
           >
             {isUpdating ? t("common.saving") : t("common.save")}
           </button>

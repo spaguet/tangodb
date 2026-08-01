@@ -11,6 +11,7 @@ import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
 import { descriptionFieldCls, fieldCls as inputCls } from "./ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "./ui/buttonStyles";
 import { useI18n } from "../hooks/useI18n";
 import { resolveMutationError } from "../lib/resolveMutationError";
 import type { ToastType } from "../App";
@@ -207,14 +208,14 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                   type="button"
                   onClick={handleSaveEdit}
                   disabled={updateDiscipline.isPending}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                  className={`flex-1 ${btnAddCls}`}
                 >
                   {updateDiscipline.isPending ? t("common.saving") : t("common.save")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
+                  className={`flex-1 ${btnCancelCls}`}
                 >
                   {t("common.cancel")}
                 </button>

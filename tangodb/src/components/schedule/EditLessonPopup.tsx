@@ -32,6 +32,7 @@ import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import type { Discipline, DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import DisciplineSelect from "../ui/DisciplineSelect";
 import LocationSelect from "../ui/LocationSelect";
 import RequirePermission from "../RequirePermission";
@@ -61,7 +62,7 @@ interface EditLessonPopupProps {
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 const readOnlyCls =
-  "flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700";
+  "flex items-center gap-2 h-8 px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700";
 
 const addDayBtnCls =
   "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
@@ -974,7 +975,7 @@ export default function EditLessonPopup({
                       (lesson.kind === "group" && hasGroupSlotConflicts)
                     }
                     title={translateConnectionBlockReason(connectionState, t)}
-                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                    className={`flex-1 ${btnAddCls}`}
                   >
                     {savePending ? t("common.savingChanges") : t("common.save")}
                   </button>
@@ -983,7 +984,7 @@ export default function EditLessonPopup({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                className={`flex-1 ${btnCancelCls}`}
               >
                 {readOnly ? t("common.close") : t("common.cancel")}
               </button>

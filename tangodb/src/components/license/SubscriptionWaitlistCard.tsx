@@ -68,7 +68,7 @@ export default function SubscriptionWaitlistCard({ disabled }: SubscriptionWaitl
           <span>{t("license.waitlist.stripeSoon")}</span>
         </p>
         <div className="grid grid-cols-2 gap-2 opacity-60 pointer-events-none select-none">
-          <div className="py-2.5 bg-indigo-600/70 text-white text-xs font-semibold uppercase tracking-wider rounded-lg text-center">
+          <div className="py-2.5 bg-indigo-600/70 text-white text-xs font-semibold rounded-lg text-center">
             {t("license.waitlist.month")}
           </div>
           <div className="py-2.5 bg-slate-800/70 text-white text-xs font-semibold uppercase tracking-wider rounded-lg text-center">

@@ -1256,7 +1256,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 !singleVisitClientId ||
                 !singleVisitPriceId
               }
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+              className={`w-full ${btnAddCls}`}
             >
               {recordSingleVisit.isPending ? t("common.saving") : t("attendance.singleVisit.record")}
             </button>

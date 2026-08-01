@@ -17,6 +17,7 @@ import type { ScheduleDebtorEntry } from "../../hooks/useScheduleDebtors";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
+import { btnAddCls } from "../ui/buttonStyles";
 
 const NO_LOCATION_KEY = "__no_location__";
 
@@ -135,7 +136,7 @@ function DebtorRow({
           <button
             type="button"
             onClick={onPay}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-sans font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+            className={btnAddCls}
           >
             <Coins className="w-3.5 h-3.5" />
             {payLabel}

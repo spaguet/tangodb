@@ -3,6 +3,7 @@ import { Download, ChevronLeft, ChevronRight } from "lucide-react";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import CsvExportModal from "../../components/ui/CsvExportModal";
+import { btnAddCls } from "../../components/ui/buttonStyles";
 import { useToast } from "../../App";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useClientDirectory } from "../../hooks/useClients";
@@ -188,7 +189,7 @@ function OperationalExportSection() {
             type="button"
             onClick={handleExportAll}
             disabled={exporting}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+            className={`w-full ${btnAddCls}`}
           >
             <Download className="w-4 h-4" />
             {exporting ? t("common.exporting") : t("settings.export.operationalButton")}
@@ -347,7 +348,7 @@ function FinancialExportSection() {
             type="button"
             onClick={handleExportAll}
             disabled={exporting}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+            className={`w-full ${btnAddCls}`}
           >
             <Download className="w-4 h-4" />
             {exporting ? t("common.exporting") : t("settings.export.financeButton")}

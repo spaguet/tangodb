@@ -10,6 +10,7 @@ import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { sumDebtorAmounts, formatDebtorDetail } from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "../components/schedule/PayPersonalLessonModal";
+import { btnAddCls } from "../components/ui/buttonStyles";
 
 export default function FinanceDebtorsPage() {
   const { t, plural, formatDate } = useI18n();
@@ -105,7 +106,7 @@ export default function FinanceDebtorsPage() {
                         <button
                           type="button"
                           onClick={() => openPersonalPayment(entry)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-sans font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                          className={btnAddCls}
                         >
                           <Coins className="w-3.5 h-3.5" />
                           {t("common.pay")}

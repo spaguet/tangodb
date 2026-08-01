@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Download } from "lucide-react";
 import DatePickerField from "../../components/ui/DatePickerField";
 import AppSelect from "../../components/ui/AppSelect";
+import { btnAddCls } from "../../components/ui/buttonStyles";
 import CsvExportModal from "../../components/ui/CsvExportModal";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
@@ -298,7 +299,7 @@ export default function ConductedLessonsReportSection() {
             type="button"
             onClick={handleExport}
             disabled={exporting || rows.length === 0 || selectedDisciplineIds.length === 0}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+            className={`w-full ${btnAddCls}`}
           >
             <Download className="w-4 h-4" />
             {exporting ? t("common.exporting") : t("settings.export.conductedLessons.exportButton")}

@@ -5,6 +5,7 @@ import type { Client, Subscription, SubscriptionGroupLink } from "../../types";
 import ClientAutocomplete from "../ui/ClientAutocomplete";
 import DatePickerField from "../ui/DatePickerField";
 import { fieldCls } from "../ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import { useI18n } from "../../hooks/useI18n";
 import { useReplaceSubscriptionPartner } from "../../hooks/useSubscriptionMemberChanges";
 import { resolveMutationError } from "../../lib/resolveMutationError";
@@ -263,7 +264,7 @@ export default function ReplaceSubscriptionPartnerDialog({
                 type="button"
                 onClick={() => void handleSubmit()}
                 disabled={replacePartner.isPending}
-                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-semibold uppercase rounded-lg cursor-pointer"
+                className={`flex-1 ${btnAddCls}`}
               >
                 {replacePartner.isPending
                   ? t("subscriptions.partnerReplace.submitPending")
@@ -273,7 +274,7 @@ export default function ReplaceSubscriptionPartnerDialog({
                 type="button"
                 onClick={onClose}
                 disabled={replacePartner.isPending}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase rounded-lg cursor-pointer"
+                className={`flex-1 ${btnCancelCls}`}
               >
                 {t("common.cancel")}
               </button>

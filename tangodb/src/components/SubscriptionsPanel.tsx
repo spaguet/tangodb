@@ -54,6 +54,7 @@ import { useUIStore } from "../store/ui";
 import { resolveMutationError } from "../lib/resolveMutationError";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import AppSelect from "./ui/AppSelect";
+import { btnAddCls } from "./ui/buttonStyles";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import VenueRulePaymentConfirmDialog from "./venue-costs/VenueRulePaymentConfirmDialog";
 import type { VenueCostRuleStatus } from "../hooks/useVenueCosts";
@@ -1592,7 +1593,7 @@ export default function SubscriptionsPanel({
                     type="button"
                     onClick={() => void handleAddToWaitlist()}
                     disabled={addWaitlistEntry.isPending || !client1Id}
-                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
+                    className={`${btnAddCls} disabled:opacity-60`}
                   >
                     {addWaitlistEntry.isPending ? t("common.saving") : t("groupWaitlist.addToQueue")}
                   </button>
@@ -1693,7 +1694,7 @@ export default function SubscriptionsPanel({
 
               <div className="field-stack">
                 <span className={labelCls}>{t("subscriptions.sell.totalDue")}</span>
-                <div className="flex items-center justify-between h-10 px-3 bg-indigo-50/60 rounded-lg border border-indigo-100">
+                <div className="flex items-center justify-between h-8 px-3 bg-indigo-50/60 rounded-lg border border-indigo-100">
                   <span className="text-lg font-sans font-semibold text-indigo-700">
                     {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "—"}
                   </span>
@@ -1727,7 +1728,7 @@ export default function SubscriptionsPanel({
                   ? translateConnectionBlockReason(connectionState, t)
                   : t("offline.draft.saveReminder")
               }
-              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60 panel-form-full-row-md"
+              className={`w-full ${btnAddCls} panel-form-full-row-md`}
             >
               {addSubscription.isPending || recordSubscriptionPayment.isPending
                 ? t("subscriptions.sell.submitPending")

@@ -14,6 +14,7 @@ import { dowFullEntries, timesOverlap } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import type { Discipline } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import DisciplineSelect from "../ui/DisciplineSelect";
 import TimeSelect from "../ui/TimeSelect";
 import GroupLessonRepeatFields from "./GroupLessonRepeatFields";
@@ -307,7 +308,7 @@ export default function AddGroupLessonForm({
               {showLocationInForm && (
               <div className="field-stack">
                 <label className={labelCls}>{t("schedule.form.location")}</label>
-                <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
+                <div className="flex items-center gap-2 h-8 px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
                   <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                   {prefill.locationName}
                 </div>
@@ -426,14 +427,14 @@ export default function AddGroupLessonForm({
                 <button
                   type="submit"
                   disabled={addGroupSchedule.isPending || groupSlotConflicts.size > 0}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                  className={`flex-1 ${btnAddCls}`}
                 >
                   {t("common.add")}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                  className={`flex-1 ${btnCancelCls}`}
                 >
                   {t("common.cancel")}
                 </button>

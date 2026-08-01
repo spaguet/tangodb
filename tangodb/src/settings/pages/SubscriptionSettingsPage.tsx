@@ -5,6 +5,7 @@ import { useToast } from "../../App";
 import { useSettings } from "../SettingsProvider";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
+import { btnAddCls } from "../../components/ui/buttonStyles";
 
 export default function SubscriptionSettingsPage() {
   const { t } = useI18n();
@@ -121,7 +122,7 @@ export default function SubscriptionSettingsPage() {
             type="button"
             onClick={handleSave}
             disabled={!dirty || isUpdating}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+            className={`w-full ${btnAddCls}`}
           >
             {isUpdating ? t("common.saving") : t("common.save")}
           </button>

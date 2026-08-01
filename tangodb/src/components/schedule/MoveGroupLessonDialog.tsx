@@ -9,6 +9,7 @@ import { toISODateLocal } from "../../lib/scheduleWeek";
 import { useI18n } from "../../hooks/useI18n";
 import type { GroupDisplayLesson } from "../../types";
 import { fieldCls } from "../ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import TimeSelect from "../ui/TimeSelect";
 
 interface MoveGroupLessonDialogProps {
@@ -281,7 +282,7 @@ export default function MoveGroupLessonDialog({
                 type="button"
                 onClick={onClose}
                 disabled={moveOccurrence.isPending}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className={`flex-1 ${btnCancelCls}`}
               >
                 {t("common.cancel")}
               </button>
@@ -289,7 +290,7 @@ export default function MoveGroupLessonDialog({
                 type="button"
                 onClick={() => void handleSubmit()}
                 disabled={moveOccurrence.isPending || Boolean(timeRangeError) || Boolean(clientConflictPreview)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className={`flex-1 ${btnAddCls}`}
               >
                 <ArrowRightLeft className="w-3.5 h-3.5" />
                 {moveOccurrence.isPending ? t("common.saving") : t("schedule.lessonInfo.moveOneConfirm")}

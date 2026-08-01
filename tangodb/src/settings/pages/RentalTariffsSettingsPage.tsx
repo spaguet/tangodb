@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Edit, Plus, X } from "lucide-react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
-import { btnAddSoftCls } from "../../components/ui/buttonStyles";
+import { btnAddCls, btnAddSoftCls, btnCancelCls } from "../../components/ui/buttonStyles";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import RequirePermission from "../../components/RequirePermission";
@@ -217,10 +217,10 @@ function TariffEditorModal({
           ) : null}
 
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} disabled={upsertMutation.isPending} className="flex-1 py-2.5 bg-slate-100 text-slate-700 text-xs font-semibold uppercase rounded-lg cursor-pointer">
+            <button type="button" onClick={onClose} disabled={upsertMutation.isPending} className={`flex-1 ${btnCancelCls}`}>
               {t("common.cancel")}
             </button>
-            <button type="button" onClick={() => void handleSave()} disabled={upsertMutation.isPending} className="flex-1 py-2.5 bg-indigo-600 text-white text-xs font-semibold uppercase rounded-lg cursor-pointer disabled:opacity-60">
+            <button type="button" onClick={() => void handleSave()} disabled={upsertMutation.isPending} className={`flex-1 ${btnAddCls}`}>
               {upsertMutation.isPending ? t("common.saving") : t("common.save")}
             </button>
           </div>

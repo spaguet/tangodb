@@ -1,12 +1,14 @@
+import { controlHeightCls } from "./AppSelect";
+
 /**
- * Shared button classes — heights match fieldCls (h-10).
+ * Shared button classes — heights match fieldCls (h-8).
  * See `.cursor/docs/ai/design_system.md` → «Кнопки».
  */
 
 export const btnBaseCls =
-  "inline-flex items-center justify-center gap-1.5 h-10 box-border px-3.5 rounded-lg text-xs font-semibold font-sans transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0";
+  `inline-flex items-center justify-center gap-1.5 ${controlHeightCls} box-border px-3 rounded-lg text-xs font-semibold font-sans transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0`;
 
-/** Добавление / создание — indigo filled, регистр предложения (без uppercase). */
+/** Добавление / создание / сохранение — indigo filled, регистр предложения (без uppercase). */
 export const btnAddCls =
   `${btnBaseCls} bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs`;
 

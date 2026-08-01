@@ -4,6 +4,7 @@ import { Coins, X } from "lucide-react";
 import type { Subscription } from "../../types";
 import type { PaymentMethod } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
+import { btnAddCls } from "../ui/buttonStyles";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
 import { useI18n } from "../../hooks/useI18n";
@@ -261,7 +262,7 @@ export default function PartialSubscriptionRefundDialog({
             <button type="button" onClick={onClose} disabled={createRefund.isPending} className="px-3 py-2 text-xs font-semibold uppercase text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer">
               {t("common.cancel")}
             </button>
-            <button type="button" onClick={handleSubmit} disabled={!canSubmit || createRefund.isPending || previewQuery.isLoading} className="px-3 py-2 text-xs font-semibold uppercase bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer disabled:opacity-50">
+            <button type="button" onClick={handleSubmit} disabled={!canSubmit || createRefund.isPending || previewQuery.isLoading} className={btnAddCls}>
               {createRefund.isPending ? t("subscriptions.refund.submitPending") : t("subscriptions.refund.partialSubmit")}
             </button>
           </div>

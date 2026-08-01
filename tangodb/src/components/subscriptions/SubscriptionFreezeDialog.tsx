@@ -14,6 +14,7 @@ import { useI18n } from "../../hooks/useI18n";
 import { toISODateLocal } from "../../lib/scheduleWeek";
 import DatePickerField from "../ui/DatePickerField";
 import { fieldCls } from "../ui/AppSelect";
+import { btnAddCls } from "../ui/buttonStyles";
 
 interface SubscriptionFreezeDialogProps {
   subscription: Subscription | null;
@@ -233,7 +234,7 @@ export default function SubscriptionFreezeDialog({
                 type="button"
                 onClick={() => void handleSubmit()}
                 disabled={!canSubmit || applyFreeze.isPending}
-                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className={btnAddCls}
               >
                 {applyFreeze.isPending ? t("common.saving") : t("freeze.dialog.submit")}
               </button>

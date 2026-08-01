@@ -1,8 +1,11 @@
 import { ChevronDown } from "lucide-react";
 
+/** Single-line control height — matches header Telegram/Email buttons (`DeveloperContacts`). */
+export const controlHeightCls = "h-8";
+
 /** Shared height/styles for text inputs, selects, and date pickers (not multiline description fields). */
 export const fieldCls =
-  "w-full h-10 box-border bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 text-xs transition-all";
+  `w-full ${controlHeightCls} box-border bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3 text-xs transition-all`;
 
 /** Multiline description fields — intentionally taller than single-line controls. */
 export const descriptionFieldCls =

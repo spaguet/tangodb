@@ -24,6 +24,7 @@ import { translateConnectionBlockReason, translateMutationBlockedMessage } from 
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
 import AppSelect, { fieldCls as inputCls } from "../ui/AppSelect";
+import { btnAddCls } from "../ui/buttonStyles";
 import LoadingState from "../ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "../ui/PageTabs";
 import QueryErrorState from "../ui/QueryErrorState";
@@ -207,7 +208,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
               type="submit"
               disabled={connectionState !== "online" || upsertRenter.isPending}
               title={translateConnectionBlockReason(connectionState, t)}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-50"
+              className={`w-full ${btnAddCls}`}
             >
               {upsertRenter.isPending ? t("common.saving") : t("common.save")}
             </button>

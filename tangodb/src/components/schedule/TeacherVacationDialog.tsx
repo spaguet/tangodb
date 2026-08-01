@@ -11,6 +11,7 @@ import { toISODateLocal } from "../../lib/scheduleWeek";
 import { useI18n } from "../../hooks/useI18n";
 import type { ScheduleSlot } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 
 export interface TeacherVacationOption {
   id: string;
@@ -237,7 +238,7 @@ export default function TeacherVacationDialog({
                 type="button"
                 onClick={onClose}
                 disabled={vacationMutation.isPending}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className={`flex-1 ${btnCancelCls}`}
               >
                 {t("common.cancel")}
               </button>
@@ -250,7 +251,7 @@ export default function TeacherVacationDialog({
                   !endDate ||
                   previewDates.length === 0
                 }
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className={`flex-1 ${btnAddCls}`}
               >
                 <CalendarOff className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-center leading-snug">

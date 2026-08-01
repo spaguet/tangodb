@@ -42,6 +42,7 @@ import { useI18n } from "../../hooks/useI18n";
 import type { I18nKey } from "../../lib/i18n/keys";
 import type { Client, Subscription } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import ClientAutocomplete from "../ui/ClientAutocomplete";
 import DatePickerField from "../ui/DatePickerField";
 import DisciplineSelect from "../ui/DisciplineSelect";
@@ -585,7 +586,7 @@ export default function PersonalLessonSaleForm({
       return (
         <div className="field-stack">
           <label className={labelCls}>{t("common.date")}</label>
-          <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
+          <div className="flex items-center gap-2 h-8 px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
             <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
             {formatDate(prefill.date)}
           </div>
@@ -741,7 +742,7 @@ export default function PersonalLessonSaleForm({
         {isScheduleCell && showLocationInForm ? (
           <div className="field-stack">
             <label className={labelCls}>{t("schedule.form.location")}</label>
-            <div className="flex items-center gap-2 h-10 px-3.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
+            <div className="flex items-center gap-2 h-8 px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
               <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
               {selectedLocationName}
             </div>
@@ -958,7 +959,7 @@ export default function PersonalLessonSaleForm({
                 onClick={() => handleBook(true)}
                 disabled={connectionState !== "online" || addPersonalLessons.isPending}
                 title={translateConnectionBlockReason(connectionState, t)}
-                className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                className={btnAddCls}
               >
                 {t("common.withPayment")}
               </button>
@@ -967,7 +968,7 @@ export default function PersonalLessonSaleForm({
                 onClick={() => handleBook(false)}
                 disabled={connectionState !== "online" || addPersonalLessons.isPending}
                 title={translateConnectionBlockReason(connectionState, t)}
-                className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className={btnCancelCls}
               >
                 {t("common.withoutPayment")}
               </button>
@@ -1017,7 +1018,7 @@ export default function PersonalLessonSaleForm({
                 !linkedSubscriptionId
               }
               title={translateConnectionBlockReason(connectionState, t)}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+              className={`w-full ${btnAddCls}`}
             >
               {t("common.book")}
             </button>

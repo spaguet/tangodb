@@ -24,6 +24,7 @@ import { useSettings } from "../../settings/SettingsProvider";
 import type { ToastType } from "../../App";
 import type { Client, Discipline, Price } from "../../types";
 import AppSelect from "./AppSelect";
+import { btnAddCls } from "./buttonStyles";
 import ClientAutocomplete from "./ClientAutocomplete";
 import DatePickerField from "./DatePickerField";
 import DisciplineSelect from "./DisciplineSelect";
@@ -353,7 +354,7 @@ export default function SellPackageModal({
                 type="button"
                 onClick={handleSell}
                 disabled={addSubscription.isPending || packageTariffs.length === 0}
-                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60 panel-form-full-row-md"
+                className={`w-full panel-form-full-row-md ${btnAddCls}`}
               >
                 {addSubscription.isPending
                   ? t("subscriptions.package.submitPending")

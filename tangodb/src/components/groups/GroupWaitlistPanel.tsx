@@ -11,6 +11,7 @@ import {
 import { useClientDirectory } from "../../hooks/useClients";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import ClientAutocomplete from "../ui/ClientAutocomplete";
+import { btnAddCls } from "../ui/buttonStyles";
 import type { ToastType } from "../../App";
 import type { GroupWaitlistStatus } from "../../types";
 
@@ -102,7 +103,7 @@ export default function GroupWaitlistPanel({ classId, canManage = false, toast }
             type="button"
             onClick={() => void handleAdd()}
             disabled={addEntry.isPending}
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
+            className={`w-full ${btnAddCls}`}
           >
             {addEntry.isPending ? t("common.saving") : t("groupWaitlist.addToQueue")}
           </button>

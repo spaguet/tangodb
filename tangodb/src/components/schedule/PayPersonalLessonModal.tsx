@@ -23,6 +23,7 @@ import {
 } from "../../lib/utils";
 import type { Subscription } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
+import { btnAddCls } from "../ui/buttonStyles";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useI18n } from "../../hooks/useI18n";
 import SellPackageModal from "../ui/SellPackageModal";
@@ -382,7 +383,7 @@ export default function PayPersonalLessonModal({
                     onClick={() => void handlePaySingle()}
                     disabled={connectionState !== "online" || pending}
                     title={translateConnectionBlockReason(connectionState, t)}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                    className={`w-full ${btnAddCls}`}
                   >
                     {paymentSubmit.phase === "saving"
                       ? t("common.saving")
@@ -433,7 +434,7 @@ export default function PayPersonalLessonModal({
                       !linkedSubscriptionId
                     }
                     title={translateConnectionBlockReason(connectionState, t)}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+                    className={`w-full ${btnAddCls}`}
                   >
                     {t("common.chargePackage")}
                   </button>

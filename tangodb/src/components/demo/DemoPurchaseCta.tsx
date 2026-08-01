@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import { useDemoLicenseUi } from "../../hooks/useDemoLicenseUi";
 import { useI18n } from "../../hooks/useI18n";
+import { btnAddCls } from "../ui/buttonStyles";
 
 interface DemoPurchaseCtaProps {
   variant: "nav" | "banner";
@@ -15,9 +16,7 @@ export default function DemoPurchaseCta({ variant, onNavigate }: DemoPurchaseCta
   if (!showPurchaseCta) return null;
 
   const className =
-    variant === "nav"
-      ? "w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-xs font-semibold tracking-wide bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
-      : "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shrink-0";
+    variant === "nav" ? `w-full ${btnAddCls}` : `${btnAddCls} shrink-0`;
 
   return (
     <Link to={purchasePath} onClick={onNavigate} className={className}>

@@ -37,6 +37,7 @@ import {
 } from "../lib/utils";
 import { useSettings } from "../settings/SettingsProvider";
 import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "./ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "./ui/buttonStyles";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import LocationTariffField from "./ui/LocationTariffField";
 import DisciplineTariffField from "./ui/DisciplineTariffField";
@@ -83,7 +84,7 @@ function TariffCreateSection({
         type="button"
         onClick={onSubmit}
         disabled={pending}
-        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+        className={`w-full ${btnAddCls}`}
       >
         {pending ? t("common.saving") : t("prices.add")}
       </button>
@@ -818,14 +819,14 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                   type="button"
                   onClick={handleSaveMeta}
                   disabled={updatePriceMeta.isPending}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                  className={`flex-1 ${btnAddCls}`}
                 >
                   {updatePriceMeta.isPending ? t("common.saving") : t("prices.modal.accept")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingPrice(null)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
+                  className={`flex-1 ${btnCancelCls}`}
                 >
                   {t("common.cancel")}
                 </button>
@@ -887,7 +888,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               <button
                 type="button"
                 onClick={closeCreateModal}
-                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer text-xs"
+                className={`w-full ${btnCancelCls}`}
               >
                 {t("common.close")}
               </button>
@@ -1167,7 +1168,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               <button
                 type="button"
                 onClick={closeCreateModal}
-                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer text-xs"
+                className={`w-full ${btnCancelCls}`}
               >
                 {t("common.close")}
               </button>

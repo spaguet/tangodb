@@ -17,6 +17,7 @@ import { useOrganization } from "../organization/OrganizationProvider";
 import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import QueryErrorState from "./ui/QueryErrorState";
+import { btnAddCls } from "./ui/buttonStyles";
 
 interface ClientNotesPanelProps {
   clientId: string;
@@ -145,7 +146,7 @@ export default function ClientNotesPanel({ clientId, toast }: ClientNotesPanelPr
               onClick={() => void handleAdd()}
               disabled={connectionState !== "online" || addNote.isPending || !body.trim()}
               title={translateConnectionBlockReason(connectionState, t)}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold tracking-widest uppercase rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+              className={`w-full ${btnAddCls}`}
             >
               {addNote.isPending ? t("notes.addPending") : t("notes.addSubmit")}
             </button>

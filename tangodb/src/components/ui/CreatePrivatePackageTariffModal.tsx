@@ -12,6 +12,7 @@ import { useSettings } from "../../settings/SettingsProvider";
 import { DEFAULT_ORG_MODULES } from "../../lib/orgModules";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "./AppSelect";
+import { btnAddCls, btnCancelCls } from "./buttonStyles";
 import LocationTariffField from "./LocationTariffField";
 import DisciplineTariffField from "./DisciplineTariffField";
 import type { ToastType } from "../../App";
@@ -249,14 +250,14 @@ export default function CreatePrivatePackageTariffModal({
                 type="button"
                 onClick={handleSubmit}
                 disabled={connectionState !== "online" || pending}
-                className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className={`w-full ${btnAddCls}`}
               >
                 {pending ? t("common.saving") : t("prices.add")}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer text-xs"
+                className={`w-full ${btnCancelCls}`}
               >
                 {t("common.close")}
               </button>

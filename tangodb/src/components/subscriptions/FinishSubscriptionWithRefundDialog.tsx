@@ -4,6 +4,7 @@ import { Banknote, X } from "lucide-react";
 import type { Subscription } from "../../types";
 import type { PaymentMethod } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
+import { btnAddCls } from "../ui/buttonStyles";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
 import { useI18n } from "../../hooks/useI18n";
@@ -322,7 +323,7 @@ export default function FinishSubscriptionWithRefundDialog({
                 type="button"
                 onClick={handleSubmit}
                 disabled={!canSubmit || finishWithRefund.isPending || previewQuery.isLoading}
-                className="px-3 py-2 text-xs font-semibold uppercase tracking-wider bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer disabled:opacity-50"
+                className={btnAddCls}
               >
                 {finishWithRefund.isPending
                   ? t("subscriptions.refund.submitPending")

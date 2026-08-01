@@ -6,6 +6,8 @@ import { useSubmitPurchaseRequest } from "../../hooks/useSubmitPurchaseRequest";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import type { DeveloperContactsConfig } from "../../lib/paymentConfig";
 import DeveloperContacts from "./DeveloperContacts";
+import { btnAddCls } from "../ui/buttonStyles";
+import { fieldCls } from "../ui/AppSelect";
 
 interface PurchaseRequestPanelProps {
   contacts: DeveloperContactsConfig | null | undefined;
@@ -86,7 +88,7 @@ export default function PurchaseRequestPanel({ contacts }: PurchaseRequestPanelP
               value={contactEmail}
               onChange={(event) => setContactEmail(event.target.value)}
               placeholder="name@example.com"
-              className="w-full h-10 box-border bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 text-xs transition-all"
+              className={fieldCls}
             />
           </label>
           <label className="block space-y-1">
@@ -97,7 +99,7 @@ export default function PurchaseRequestPanel({ contacts }: PurchaseRequestPanelP
               value={contactTelegram}
               onChange={(event) => setContactTelegram(event.target.value)}
               placeholder="@username"
-              className="w-full h-10 box-border bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 text-xs transition-all"
+              className={fieldCls}
             />
           </label>
         </div>
@@ -111,7 +113,7 @@ export default function PurchaseRequestPanel({ contacts }: PurchaseRequestPanelP
         <button
           type="submit"
           disabled={submitRequest.isPending || paymentComment.trim().length < 20}
-          className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+          className={`w-full ${btnAddCls}`}
         >
           <Send className="w-3.5 h-3.5" />
           {submitRequest.isPending ? t("license.purchase.request.submitting") : t("license.purchase.request.submit")}

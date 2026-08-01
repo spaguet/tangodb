@@ -7,6 +7,7 @@ import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { ToastType } from "../../App";
 import type { Client } from "../../types";
 import { fieldCls as inputCls } from "./AppSelect";
+import { btnAddCls, btnCancelCls } from "./buttonStyles";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
@@ -312,14 +313,14 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
                 <button
                   type="submit"
                   disabled={addClient.isPending}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                  className={`flex-1 ${btnAddCls}`}
                 >
                   {addClient.isPending ? t("clients.form.addPending") : resolvedSubmitLabel}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer"
+                  className={`flex-1 ${btnCancelCls}`}
                 >
                   {t("common.cancel")}
                 </button>

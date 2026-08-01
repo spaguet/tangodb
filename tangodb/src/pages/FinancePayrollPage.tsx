@@ -12,6 +12,7 @@ import {
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect from "../components/ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "../components/ui/buttonStyles";
 import DatePickerField from "../components/ui/DatePickerField";
 import { useToast } from "../App";
 import { useI18n } from "../hooks/useI18n";
@@ -283,14 +284,14 @@ function RecordPaymentModal({
             type="button"
             onClick={handleSubmit}
             disabled={recordPayment.isPending}
-            className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase tracking-wider font-sans text-xs rounded-lg cursor-pointer disabled:opacity-60"
+            className={`flex-1 ${btnAddCls}`}
           >
             {recordPayment.isPending ? t("common.saving") : t("finance.payroll.recordSubmit")}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans text-xs rounded-lg cursor-pointer"
+            className={`flex-1 ${btnCancelCls}`}
           >
             {t("common.cancel")}
           </button>

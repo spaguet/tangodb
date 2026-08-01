@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Download, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
+import { btnAddCls } from "../ui/buttonStyles";
 
 function qrDownloadFilename(dataUrl: string): string {
   const match = /^data:image\/(\w+);/i.exec(dataUrl);
@@ -85,7 +86,7 @@ export function QrImagePreview({ value }: { value?: string }) {
               <button
                 type="button"
                 onClick={() => downloadQrImage(value)}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-indigo-700 cursor-pointer"
+                className={`mt-4 w-full ${btnAddCls}`}
               >
                 <Download className="w-4 h-4" />
                 {t("license.payment.qr.download")}
