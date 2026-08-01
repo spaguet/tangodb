@@ -116,7 +116,7 @@ function SettlementPaymentsList({
               {t("finance.payroll.paymentIssuedBy", { date: dateLabel, issuer })}
               {payment.note ? ` · ${payment.note}` : ""}
             </span>
-            <span className="font-semibold text-emerald-700 whitespace-nowrap">
+            <span className="font-semibold text-indigo-700 whitespace-nowrap">
               {formatCurrency(payment.amount)}
             </span>
           </li>
@@ -453,7 +453,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
                       {payRatePercentLabel(rate, t, personalLessonsEnabled)}
                     </td>
                     <td className="py-2.5 px-3 text-right font-semibold text-slate-800">{formatCurrency(accrued)}</td>
-                    <td className="py-2.5 px-3 text-right text-emerald-700">{formatCurrency(paid)}</td>
+                    <td className="py-2.5 px-3 text-right text-indigo-700">{formatCurrency(paid)}</td>
                     <td className="py-2.5 px-3 text-right font-semibold text-indigo-700">{formatCurrency(balance)}</td>
                     {canWrite && settlement && (
                       <td className="py-2.5 px-3">
@@ -540,7 +540,7 @@ function TeacherOwnPayrollView() {
               </div>
               <div>
                 <p className="text-[10px] text-slate-400 uppercase font-semibold">{t("finance.payroll.colPaid")}</p>
-                <p className="text-sm font-semibold text-emerald-700 mt-0.5">{formatCurrency(settlement.amountPaid)}</p>
+                <p className="text-sm font-semibold text-indigo-700 mt-0.5">{formatCurrency(settlement.amountPaid)}</p>
               </div>
               <div>
                 <p className="text-[10px] text-slate-400 uppercase font-semibold">{t("finance.payroll.colBalance")}</p>

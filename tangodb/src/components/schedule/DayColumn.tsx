@@ -81,7 +81,7 @@ export default function DayColumn({
           isToday ? "bg-slate-200/70" : "bg-slate-50/95"
         }`}
       >
-        <div className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-400 leading-none">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 leading-none">
           {dowShort(dayOfWeek, locale)}
         </div>
         <div className="text-xs sm:text-sm font-semibold text-slate-800 tabular-nums leading-tight">

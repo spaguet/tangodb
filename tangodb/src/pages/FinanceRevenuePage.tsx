@@ -217,7 +217,7 @@ export default function FinanceRevenuePage() {
                   type="button"
                   onClick={() => void handleCompletePending(refund.id, refund.amount)}
                   disabled={completeRefund.isPending}
-                  className="shrink-0 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer disabled:opacity-50"
+                  className="shrink-0 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer disabled:opacity-50"
                 >
                   {t("subscriptions.refund.completeAction")}
                 </button>

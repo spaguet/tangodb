@@ -617,14 +617,14 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                   </span>
                 ) : null}
                 {p.disciplineId ? (
-                  <span className="text-violet-600 font-semibold">
+                  <span className="text-indigo-500 font-semibold">
                     {t("prices.disciplineLabel")} · {disciplineMap[p.disciplineId] ?? t("prices.fallbackDiscipline")}
                   </span>
                 ) : null}
               </>
             )}
             {!isGlobalTeacherTariff(p) ? (
-              <span className="text-emerald-600 font-semibold">
+              <span className="text-indigo-700 font-semibold">
                 {t("prices.teacherLabel")} ·{" "}
                 {(p.teacherMemberIds ?? [])
                   .map((id) => teacherMap[id] ?? t("prices.fallbackTeacher"))

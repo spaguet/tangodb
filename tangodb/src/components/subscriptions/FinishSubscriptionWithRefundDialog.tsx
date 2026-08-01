@@ -158,7 +158,7 @@ export default function FinishSubscriptionWithRefundDialog({
           >
             <div className="flex items-start justify-between px-4 py-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Banknote className="w-4 h-4 text-emerald-600" />
+                <Banknote className="w-4 h-4 text-indigo-600" />
                 <h2 id="refund-dialog-title" className="font-sans text-sm font-semibold text-slate-800">
                   {t("subscriptions.refund.title")}
                 </h2>
@@ -214,7 +214,7 @@ export default function FinishSubscriptionWithRefundDialog({
                       ) : null}
                       <div>
                         <span className="text-slate-400">{t("subscriptions.refund.available")}</span>
-                        <p className="font-semibold text-emerald-700">{formatCurrency(formula.availableAmount)}</p>
+                        <p className="font-semibold text-indigo-700">{formatCurrency(formula.availableAmount)}</p>
                       </div>
                     </div>
                     {!formula.requiresManualAmount && formula.formula ? (
@@ -322,7 +322,7 @@ export default function FinishSubscriptionWithRefundDialog({
                 type="button"
                 onClick={handleSubmit}
                 disabled={!canSubmit || finishWithRefund.isPending || previewQuery.isLoading}
-                className="px-3 py-2 text-xs font-semibold uppercase tracking-wider bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer disabled:opacity-50"
+                className="px-3 py-2 text-xs font-semibold uppercase tracking-wider bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer disabled:opacity-50"
               >
                 {finishWithRefund.isPending
                   ? t("subscriptions.refund.submitPending")

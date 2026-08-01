@@ -67,7 +67,7 @@ export default function WeeklyScheduleGrid({
             {timeLabels.map(({ top, label }) => (
               <div
                 key={label}
-                className="absolute right-0.5 sm:right-1 z-[1] bg-white pl-0.5 text-[9px] sm:text-[10px] font-semibold text-slate-400 tabular-nums leading-none -translate-y-full"
+                className="absolute right-0.5 sm:right-1 z-[1] bg-white pl-0.5 text-[10px] font-semibold text-slate-400 tabular-nums leading-none -translate-y-full"
                 style={{ top }}
               >
                 {label}

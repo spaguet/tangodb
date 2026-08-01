@@ -139,7 +139,7 @@ export default function PaymentCorrectionDialog({
         >
           <div className="absolute inset-0 bg-slate-900/40" onClick={handleClose} />
           <motion.div
-            className="relative w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto"
+            className="relative w-full sm:max-w-lg bg-white rounded-t-xl sm:rounded-xl shadow-xl max-h-[90vh] overflow-y-auto"
             initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
@@ -260,7 +260,7 @@ export default function PaymentCorrectionDialog({
               )}
 
               {isSaved && savedOperationNumber != null && (
-                <p className="text-sm text-emerald-700 font-medium">
+                <p className="text-sm text-indigo-700 font-medium">
                   {t("corrections.payment.saved", { op: formatOperationNumber(savedOperationNumber) })}
                 </p>
               )}

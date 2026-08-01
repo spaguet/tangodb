@@ -58,7 +58,7 @@ export default function ClientSubscriptionParticipationPanel({
                 <p className="font-semibold text-slate-800">{tariffLabel}</p>
                 <span
                   className={`text-[10px] font-semibold uppercase tracking-wide shrink-0 ${
-                    isActive ? "text-emerald-600" : "text-slate-400"
+                    isActive ? "text-indigo-600" : "text-slate-400"
                   }`}
                 >
                   {isActive

@@ -96,7 +96,7 @@ export default function AttendanceCorrectionDialog({
         >
           <div className="absolute inset-0 bg-slate-900/40" onClick={onClose} />
           <motion.div
-            className="relative w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-xl"
+            className="relative w-full sm:max-w-md bg-white rounded-t-xl sm:rounded-xl shadow-xl"
             initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}

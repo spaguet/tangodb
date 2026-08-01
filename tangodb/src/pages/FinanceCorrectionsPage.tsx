@@ -206,11 +206,11 @@ export default function FinanceCorrectionsPage() {
       <p className="text-xs text-slate-400">{countLabel}</p>
 
       {totalRows === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
           {t("corrections.page.empty")}
         </div>
       ) : (
-        <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white">
+        <div className="rounded-xl border border-slate-200 overflow-hidden bg-white">
           {filtered.payments.map((row) => (
             <PaymentCorrectionRow
               key={`p-${row.id}`}

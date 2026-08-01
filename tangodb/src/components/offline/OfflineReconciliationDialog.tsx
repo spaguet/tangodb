@@ -42,7 +42,7 @@ function OpRow({
         <span
           className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
             op.status === "applied"
-              ? "bg-emerald-50 text-emerald-700"
+              ? "bg-indigo-50 text-indigo-700"
               : op.status === "conflict"
                 ? "bg-amber-50 text-amber-800"
                 : op.status === "failed"
@@ -56,19 +56,19 @@ function OpRow({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
         <div className="rounded-lg bg-slate-50 p-2">
-          <p className="text-slate-400 uppercase text-[9px] font-semibold">
+          <p className="text-slate-400 uppercase text-[10px] font-semibold">
             {t("offline.reconciliation.inSnapshot")}
           </p>
           <p>{statusLabel(op.expectedOldStatus, t)}</p>
         </div>
         <div className="rounded-lg bg-slate-50 p-2">
-          <p className="text-slate-400 uppercase text-[9px] font-semibold">
+          <p className="text-slate-400 uppercase text-[10px] font-semibold">
             {t("offline.reconciliation.proposedOffline")}
           </p>
           <p>{statusLabel(op.newStatus, t)}</p>
         </div>
         <div className="rounded-lg bg-slate-50 p-2">
-          <p className="text-slate-400 uppercase text-[9px] font-semibold">
+          <p className="text-slate-400 uppercase text-[10px] font-semibold">
             {t("offline.reconciliation.onServer")}
           </p>
           <p>{statusLabel(op.serverOldStatus ?? null, t)}</p>
@@ -201,7 +201,7 @@ export default function OfflineReconciliationDialog({
               ) : null}
 
               {allDone && ops.some((o) => o.status === "applied") ? (
-                <p className="text-xs text-emerald-700 flex items-center gap-1.5">
+                <p className="text-xs text-indigo-700 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" />
                   {t("offline.reconciliation.allSynced")}
                 </p>

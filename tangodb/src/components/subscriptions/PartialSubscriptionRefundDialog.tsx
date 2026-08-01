@@ -189,7 +189,7 @@ export default function PartialSubscriptionRefundDialog({
                 <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-slate-400">{t("subscriptions.refund.available")}</span>
-                    <p className="font-semibold text-emerald-700">{formatCurrency(formula.availableAmount)}</p>
+                    <p className="font-semibold text-indigo-700">{formatCurrency(formula.availableAmount)}</p>
                   </div>
                   <div>
                     <span className="text-slate-400">{t("subscriptions.refund.lessonsLeft")}</span>

@@ -86,7 +86,7 @@ export default function SubscriptionWaitlistCard({ disabled }: SubscriptionWaitl
           <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">{error}</p>
         )}
         {message && (
-          <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+          <p className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
             {message}
           </p>
         )}

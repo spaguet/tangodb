@@ -150,7 +150,7 @@ export default function GroupWaitlistPanel({ classId, canManage = false, toast }
                         type="button"
                         onClick={() => void handleStatus(entry.id, "enrolled")}
                         disabled={updateStatus.isPending}
-                        className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 cursor-pointer disabled:opacity-60"
+                        className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 cursor-pointer disabled:opacity-60"
                       >
                         {t("groupWaitlist.action.enrolled")}
                       </button>

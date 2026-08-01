@@ -30,7 +30,7 @@ export function CrmSubNav({ title, items, active, onChange }: Props) {
                   : "text-slate-600 hover:bg-slate-50 border border-transparent"
               }`}
             >
-              <Icon className="w-3.5 h-3.5 shrink-0" />
+              <Icon className="w-4 h-4 shrink-0" />
               {item.label}
             </button>
           );

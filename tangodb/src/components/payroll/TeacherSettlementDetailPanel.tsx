@@ -132,7 +132,7 @@ export default function TeacherSettlementDetailPanel({
       <div
         className={`rounded-lg px-3 py-2 text-xs font-sans ${
           reconciliation.matches
-            ? "bg-emerald-50 border border-emerald-100 text-emerald-800"
+            ? "bg-indigo-50 border border-indigo-100 text-indigo-800"
             : "bg-amber-50 border border-amber-100 text-amber-900"
         }`}
       >

@@ -481,7 +481,7 @@ export default function EditCalendarEventDialog({
                         </ul>
                       ) : null}
                       {cancellableConflicts.length === 0 && eventConflicts.length === 0 ? (
-                        <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+                        <p className="text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
                           {t("schedule.event.noConflicts")}
                         </p>
                       ) : cancellableConflicts.length > 0 ? (

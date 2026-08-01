@@ -430,7 +430,7 @@ export default function FinancePaymentsPage() {
               ? "bg-rose-600 text-white"
               : toastMsg.type === "info"
                 ? "bg-slate-700 text-white"
-                : "bg-emerald-600 text-white"
+                : "bg-indigo-600 text-white"
           }`}
         >
           {toastMsg.msg}

@@ -18,7 +18,7 @@ export default function OfflineLimitedState({
   const { t } = useI18n();
 
   return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-6 text-center space-y-3">
+    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-6 text-center space-y-3">
       <CloudOff className="w-10 h-10 mx-auto text-amber-700" />
       <h3 className="font-semibold text-slate-800">
         {reason === "expired"

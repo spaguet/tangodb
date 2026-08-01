@@ -43,7 +43,7 @@ interface PersonalLessonRowProps {
 function PaymentBadge({ lesson, t }: { lesson: PersonalLesson; t: ReturnType<typeof useI18n>["t"] }) {
   if (lesson.subscriptionId) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-violet-50 text-violet-700 border border-violet-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
         {t("personal.row.package")}
       </span>
     );
@@ -247,7 +247,7 @@ export default function PersonalLessonRow({
           {activeClosure && !canReopen && (
             <span
               title={t("venueCosts.closeLesson.closed")}
-              className="p-1.5 rounded-lg text-emerald-600"
+              className="p-1.5 rounded-lg text-indigo-600"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
             </span>

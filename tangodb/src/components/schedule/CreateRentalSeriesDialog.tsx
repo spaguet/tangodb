@@ -341,7 +341,7 @@ export default function CreateRentalSeriesDialog({
                 {previewQuery.data?.hasConflicts ? (
                   <p className="text-rose-600 text-xs">{t("rentalSeries.conflictBlocked")}</p>
                 ) : previewQuery.data?.success ? (
-                  <p className="text-emerald-700 text-xs">{t("rentalSeries.noConflicts")}</p>
+                  <p className="text-indigo-700 text-xs">{t("rentalSeries.noConflicts")}</p>
                 ) : null}
               </div>
             )}

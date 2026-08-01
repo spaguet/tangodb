@@ -711,11 +711,11 @@ export default function FinancialDashboard() {
             {!financialStatsLoading ? (
               <>
                 <div className="flex items-center gap-1 mt-0.5">
-                  {momPositive && <ArrowUp className="w-3 h-3 text-emerald-600" />}
+                  {momPositive && <ArrowUp className="w-3 h-3 text-indigo-600" />}
                   {momNegative && <ArrowDown className="w-3 h-3 text-rose-600" />}
                   <p
                     className={`text-[10px] font-semibold ${
-                      momPositive ? "text-emerald-600" : momNegative ? "text-rose-600" : "text-slate-500"
+                      momPositive ? "text-indigo-600" : momNegative ? "text-rose-600" : "text-slate-500"
                     }`}
                   >
                     {momPercent === null ? t("dashboard.momUnavailable") : formatMomPercent(momPercent)}
@@ -804,7 +804,7 @@ export default function FinancialDashboard() {
             <DashboardStatValue
               loading={profitLoading}
               className={`text-xl font-semibold mt-0.5 ${
-                profit >= 0 ? "text-emerald-700" : "text-rose-700"
+                profit >= 0 ? "text-indigo-700" : "text-rose-700"
               }`}
             >
               {formatCurrency(profit)}
@@ -887,7 +887,7 @@ export default function FinancialDashboard() {
               <ClipboardCheck className="w-3 h-3" />
               {t("dashboard.occupancy")}
             </p>
-            <DashboardStatValue loading={analyticsLoading} className="text-xl font-semibold text-emerald-700 mt-0.5">
+            <DashboardStatValue loading={analyticsLoading} className="text-xl font-semibold text-indigo-700 mt-0.5">
               {formatOccupancyPercent(occupancyStats.rate)}
             </DashboardStatValue>
             {!analyticsLoading ? (

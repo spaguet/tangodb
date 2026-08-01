@@ -1219,7 +1219,7 @@ export default function SubscriptionsPanel({
                                   onClick={() => setRefundTarget(sub)}
                                   disabled={connectionState !== "online"}
                                   title={translateConnectionBlockReason(connectionState, t)}
-                                  className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                                  className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
                                 >
                                   <Banknote className="w-3 h-3" />
                                   {t("subscriptions.refund.action")}

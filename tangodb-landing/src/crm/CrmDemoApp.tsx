@@ -264,7 +264,7 @@ export function CrmDemoApp({ locale }: Props) {
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <Icon className="w-4 h-4 shrink-0" />
                 <span className="min-w-0 leading-snug">{item.label}</span>
               </button>
             );
@@ -337,10 +337,10 @@ export function CrmDemoApp({ locale }: Props) {
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                <span className="text-[8px] font-semibold uppercase tracking-wide leading-none text-center">
+                <span className="text-[10px] font-semibold uppercase tracking-wide leading-none text-center">
                   {item.line1}
                 </span>
-                <span className="text-[8px] font-semibold uppercase tracking-wide leading-none text-center">
+                <span className="text-[10px] font-semibold uppercase tracking-wide leading-none text-center">
                   {item.line2}
                 </span>
               </button>

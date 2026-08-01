@@ -89,7 +89,7 @@ export function SchedulePanel({ locale }: Props) {
                   {timeLabels.map(({ top, label }) => (
                     <div
                       key={label}
-                      className="absolute right-0.5 sm:right-1 text-[9px] sm:text-[10px] font-semibold text-slate-400 tabular-nums -translate-y-1/2"
+                      className="absolute right-0.5 sm:right-1 text-[10px] font-semibold text-slate-400 tabular-nums -translate-y-1/2"
                       style={{ top }}
                     >
                       {label}
@@ -112,7 +112,7 @@ export function SchedulePanel({ locale }: Props) {
                   return (
                     <div key={dow} className="flex-1 min-w-0 border-l border-slate-100 first:border-l-0">
                       <div className="sticky top-0 z-[1] flex h-9 sm:h-11 flex-col items-center justify-center border-b border-slate-100 bg-slate-50/95 backdrop-blur-[2px] px-0.5">
-                        <div className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                           {days[idx]}
                         </div>
                         <div className="text-xs font-semibold text-slate-800 tabular-nums">{dayNum}</div>

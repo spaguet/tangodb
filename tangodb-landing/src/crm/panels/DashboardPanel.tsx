@@ -231,8 +231,8 @@ export function DashboardPanel({ locale, onNavigate }: Props) {
                   <p className="text-xl font-semibold text-slate-900 mt-0.5">{money(financialStats.revenue)}</p>
                   {financialStats.mom !== null && (
                     <div className="flex items-center gap-1 mt-0.5">
-                      <ArrowUp className="w-3 h-3 text-emerald-600" />
-                      <p className="text-[10px] font-semibold text-emerald-600">
+                      <ArrowUp className="w-3 h-3 text-indigo-600" />
+                      <p className="text-[10px] font-semibold text-indigo-600">
                         {s.dashboard.mom.replace("{n}", String(financialStats.mom))}
                       </p>
                       <span className="text-[10px] text-slate-400">{s.dashboard.momVsPrevious}</span>
@@ -275,7 +275,7 @@ export function DashboardPanel({ locale, onNavigate }: Props) {
                 </div>
                 <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100 col-span-2 lg:col-span-1">
                   <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{s.dashboard.profit}</p>
-                  <p className="text-xl font-semibold text-emerald-700 mt-0.5">{money(financialStats.profit)}</p>
+                  <p className="text-xl font-semibold text-indigo-700 mt-0.5">{money(financialStats.profit)}</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">{s.dashboard.profitHint}</p>
                 </div>
               </div>
@@ -354,7 +354,7 @@ export function DashboardPanel({ locale, onNavigate }: Props) {
                     <ClipboardCheck className="w-3 h-3" />
                     {s.dashboard.occupancy}
                   </p>
-                  <p className="text-xl font-semibold text-emerald-700 mt-0.5">{financialStats.occupancy}%</p>
+                  <p className="text-xl font-semibold text-indigo-700 mt-0.5">{financialStats.occupancy}%</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
                     {s.dashboard.occupancyDetail
                       .replace("{present}", String(financialStats.occupancyPresent))

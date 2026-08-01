@@ -106,7 +106,7 @@ export default function SubscriptionRefundHistory({
                     <button
                       type="button"
                       onClick={() => void handleComplete(refund)}
-                      className="inline-flex items-center gap-1 text-emerald-700 hover:underline cursor-pointer text-[10px] font-semibold uppercase"
+                      className="inline-flex items-center gap-1 text-indigo-700 hover:underline cursor-pointer text-[10px] font-semibold uppercase"
                     >
                       <CheckCircle2 className="w-3 h-3" />
                       {t("subscriptions.refund.completeAction")}
