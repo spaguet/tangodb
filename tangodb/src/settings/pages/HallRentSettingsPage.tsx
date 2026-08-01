@@ -35,7 +35,7 @@ export default function HallRentSettingsPage() {
       )}
 
       {canVenue && (
-        <section className="bg-white rounded-xl border border-amber-200/80 shadow-xs p-4 space-y-3">
+        <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-slate-900">{t("hallRent.studioTitle")}</h3>
             <p className="text-xs text-slate-500 mt-1">{t("hallRent.studioSubtitle")}</p>

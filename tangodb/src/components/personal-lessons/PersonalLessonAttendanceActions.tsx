@@ -83,8 +83,8 @@ export default function PersonalLessonAttendanceActions({
         title={t("common.excusedFull")}
         className={`flex items-center gap-1 rounded-lg font-semibold border transition-all cursor-pointer disabled:opacity-60 ${btnBase} ${
           lesson.attendanceStatus === "excused"
-            ? "bg-amber-600 border-amber-600 text-white"
-            : "bg-white border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50"
+            ? "bg-slate-600 border-slate-600 text-white"
+            : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
         }`}
       >
         <ShieldCheck className="w-3 h-3" />

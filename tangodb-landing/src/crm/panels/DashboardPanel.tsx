@@ -270,7 +270,7 @@ export function DashboardPanel({ locale, onNavigate }: Props) {
                 </div>
                 <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
                   <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{s.dashboard.payrollAccrued}</p>
-                  <p className="text-xl font-semibold text-amber-700 mt-0.5">{money(financialStats.payroll)}</p>
+                  <p className="text-xl font-semibold text-slate-700 mt-0.5">{money(financialStats.payroll)}</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">{s.dashboard.payrollAccruedHint}</p>
                 </div>
                 <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100 col-span-2 lg:col-span-1">

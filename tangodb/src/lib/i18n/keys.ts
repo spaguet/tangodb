@@ -2279,7 +2279,7 @@ export type I18nKey =
   | "venueCosts.teacher"
   | "venueCosts.selectTeacher"
   | "venueCosts.teacherRequiredHint"
-  | "venueCosts.newDraft"
+  | "venueCosts.createRule"
   | "venueCosts.editorTitle"
   | "venueCosts.mode"
   | "venueCosts.mode.perLesson"

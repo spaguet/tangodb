@@ -704,7 +704,7 @@ export default function FinancialDashboard() {
               </p>
             ) : null}
             {!financialStatsLoading && stats.pendingRefundsTotal > 0 ? (
-              <p className="text-[10px] text-amber-700 mt-0.5">
+              <p className="text-[10px] text-slate-500 mt-0.5">
                 {t("finance.revenue.pendingRefunds")}: {formatCurrency(stats.pendingRefundsTotal)}
               </p>
             ) : null}
@@ -791,7 +791,7 @@ export default function FinancialDashboard() {
             </p>
             <DashboardStatValue
               loading={payrollQuery.isLoading || recalculatePayroll.isPending}
-              className="text-xl font-semibold text-amber-700 mt-0.5"
+              className="text-xl font-semibold text-slate-700 mt-0.5"
             >
               {formatCurrency(payrollAccrued)}
             </DashboardStatValue>

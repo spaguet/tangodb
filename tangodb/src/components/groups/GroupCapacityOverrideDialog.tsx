@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
+import { btnCancelCls, btnDestructiveCls } from "../ui/buttonStyles";
 
 interface GroupCapacityOverrideDialogProps {
   open: boolean;
@@ -95,7 +96,7 @@ export default function GroupCapacityOverrideDialog({
                 type="button"
                 onClick={onCancel}
                 disabled={pending}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className={`flex-1 ${btnCancelCls}`}
               >
                 {t("common.cancel")}
               </button>
@@ -103,7 +104,7 @@ export default function GroupCapacityOverrideDialog({
                 type="button"
                 onClick={() => onConfirm(reason.trim())}
                 disabled={pending || !reason.trim()}
-                className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className={`flex-1 ${btnDestructiveCls}`}
               >
                 {pending ? t("common.saving") : t("groupCapacity.override.confirm")}
               </button>

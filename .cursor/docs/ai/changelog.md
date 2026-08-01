@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-01 — design system: типы кнопок в `buttonStyles.ts` (add/open/destructive/refresh); «Создать правило»; amber убран из UI-кнопок; расписание — единый `btnOpenCls` для Мероприятие/Аренда/Отпуск.
+
 2026-08-01 — design system audit: CRM demo (landing) и tangodb — минимальный шрифт 10px (mobile tabs, schedule grid), emerald/violet success-акценты заменены на indigo, карточки `rounded-xl`, поля demo `fieldCls` как в AppSelect.
 
 2026-08-01 — tangodb настройки: «Тарифы аренды» и «Затраты на зал» объединены в раздел «Аренда зала» (`/settings/hall-rent`); понятные подписи — сдача арендаторам vs затраты студии на занятия; в правилах затрат обязателен выбор преподавателя (UI + миграция матчинга).

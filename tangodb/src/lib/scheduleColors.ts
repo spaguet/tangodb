@@ -19,9 +19,9 @@ export const EVENT_LESSON_COLOR = {
   text: "text-white",
 } as const;
 
-/** Hall rentals — янтарный (amber) */
+/** Hall rentals — серый (slate) */
 export const RENTAL_LESSON_COLOR = {
-  bg: "bg-amber-600",
-  border: "border-amber-700",
+  bg: "bg-slate-600",
+  border: "border-slate-700",
   text: "text-white",
 } as const;

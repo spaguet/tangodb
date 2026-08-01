@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarRange, Plus, X } from "lucide-react";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import DatePickerField from "../ui/DatePickerField";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { timeToMinutes } from "../../lib/scheduleWeek";
@@ -253,7 +254,7 @@ export default function CreateRentalSeriesDialog({
                       <input className={fieldCls} value={newRenterName} onChange={(e) => setNewRenterName(e.target.value)} />
                     </div>
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => void handleCreateRenter()} disabled={createRenterMutation.isPending} className="px-3 py-1.5 text-xs font-semibold text-white bg-amber-600 rounded-lg cursor-pointer">
+                      <button type="button" onClick={() => void handleCreateRenter()} disabled={createRenterMutation.isPending} className={btnAddCls}>
                         {t("common.save")}
                       </button>
                       <button type="button" onClick={() => setShowNewRenter(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 cursor-pointer">
@@ -347,7 +348,7 @@ export default function CreateRentalSeriesDialog({
             )}
 
             <div className="flex items-center gap-2 pt-2">
-              <button type="button" onClick={onClose} disabled={createMutation.isPending} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer">
+              <button type="button" onClick={onClose} disabled={createMutation.isPending} className={`flex-1 ${btnCancelCls}`}>
                 {t("common.cancel")}
               </button>
               {step === "form" ? (
@@ -357,9 +358,9 @@ export default function CreateRentalSeriesDialog({
                     if (!validateForm()) return;
                     setStep("preview");
                   }}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer"
+                  className={`flex-1 ${btnAddCls}`}
                 >
-                  <CalendarRange className="w-3.5 h-3.5" />
+                  <CalendarRange className="w-4 h-4" />
                   {t("rentalSeries.previewAction")}
                 </button>
               ) : (
@@ -367,7 +368,7 @@ export default function CreateRentalSeriesDialog({
                   type="button"
                   onClick={() => void handleSubmit()}
                   disabled={createMutation.isPending || previewQuery.data?.hasConflicts || !previewQuery.data?.success}
-                  className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
+                  className={`flex-1 ${btnAddCls}`}
                 >
                   {createMutation.isPending ? t("common.saving") : t("rentalSeries.confirmCreate")}
                 </button>

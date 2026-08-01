@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Edit, Plus, X } from "lucide-react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
+import { btnAddSoftCls } from "../../components/ui/buttonStyles";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import RequirePermission from "../../components/RequirePermission";
@@ -267,8 +268,8 @@ export default function RentalTariffsSettingsPage({ embedded = false }: { embedd
         </div>
         <RequirePermission action="finance.read" mode="hide">
           <RequirePermission action="schedule.write" mode="hide">
-            <button type="button" onClick={openCreate} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg cursor-pointer shrink-0">
-              <Plus className="w-3.5 h-3.5" />
+            <button type="button" onClick={openCreate} className={btnAddSoftCls}>
+              <Plus className="w-4 h-4" />
               {t("common.add")}
             </button>
           </RequirePermission>

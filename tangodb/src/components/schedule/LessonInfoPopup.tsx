@@ -22,6 +22,7 @@ import { toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
 import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
+import { btnAddCls, btnDestructiveCls, btnOpenCls } from "../ui/buttonStyles";
 import RequirePermission from "../RequirePermission";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
 import MoveGroupLessonDialog from "./MoveGroupLessonDialog";
@@ -411,9 +412,9 @@ export default function LessonInfoPopup({
                 <button
                   type="button"
                   onClick={handleOpenPay}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+                  className={`w-full ${btnAddCls}`}
                 >
-                  <Coins className="w-3.5 h-3.5" />
+                  <Coins className="w-4 h-4" />
                   {t("common.pay")}
                 </button>
               ) : null}
@@ -423,16 +424,16 @@ export default function LessonInfoPopup({
                   type="button"
                   onClick={() => void handleClosePersonal()}
                   disabled={closePersonalLesson.isPending}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-60"
+                  className={`w-full ${btnAddCls}`}
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="w-4 h-4" />
                   {closePersonalLesson.isPending ? t("common.saving") : t("venueCosts.closeLesson")}
                 </button>
               ) : null}
 
               {activePersonalClosure ? (
-                <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3 space-y-2">
-                  <p className="text-xs font-semibold text-amber-900">{t("venueCosts.closeLesson.closed")}</p>
+                <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-slate-800">{t("venueCosts.closeLesson.closed")}</p>
                   {canReopenPersonal && (
                     <>
                       <label className="block space-y-1">
@@ -450,7 +451,7 @@ export default function LessonInfoPopup({
                         type="button"
                         onClick={() => void handleReopenPersonal()}
                         disabled={reopenLessonClosure.isPending}
-                        className="w-full py-2 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-[10px] font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
+                        className={`w-full ${btnOpenCls}`}
                       >
                         {reopenLessonClosure.isPending ? t("common.saving") : t("venueCosts.reopenLesson")}
                       </button>
@@ -464,9 +465,9 @@ export default function LessonInfoPopup({
                   <button
                     type="button"
                     onClick={() => setCancelOneConfirmOpen(true)}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+                    className={`w-full ${btnDestructiveCls}`}
                   >
-                    <XCircle className="w-3.5 h-3.5" />
+                    <XCircle className="w-4 h-4" />
                     {t("schedule.lessonInfo.cancelOne")}
                   </button>
                 </RequirePermission>
@@ -477,9 +478,9 @@ export default function LessonInfoPopup({
                   <button
                     type="button"
                     onClick={() => setMoveDialogOpen(true)}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+                    className={`w-full ${btnOpenCls}`}
                   >
-                    <ArrowRightLeft className="w-3.5 h-3.5" />
+                    <ArrowRightLeft className="w-4 h-4" />
                     {t("schedule.lessonInfo.moveOne")}
                   </button>
                 </RequirePermission>

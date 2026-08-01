@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import type { VenueCostRuleStatus } from "../../hooks/useVenueCosts";
+import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import VenueRuleExpiryNotice from "./VenueRuleExpiryNotice";
 
 interface VenueRulePaymentConfirmDialogProps {
@@ -46,7 +47,7 @@ export default function VenueRulePaymentConfirmDialog({
                 type="button"
                 onClick={onCancel}
                 disabled={pending}
-                className="flex-1 py-2.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer disabled:opacity-60"
+                className={`flex-1 ${btnCancelCls}`}
               >
                 {t("common.cancel")}
               </button>
@@ -54,7 +55,7 @@ export default function VenueRulePaymentConfirmDialog({
                 type="button"
                 onClick={onConfirm}
                 disabled={pending}
-                className="flex-1 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider cursor-pointer disabled:opacity-60"
+                className={`flex-1 ${btnAddCls}`}
               >
                 {pending ? t("common.saving") : t("venueCosts.paymentConfirm.confirm")}
               </button>

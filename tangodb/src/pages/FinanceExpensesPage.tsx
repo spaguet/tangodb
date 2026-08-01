@@ -5,6 +5,7 @@ import { Pencil, Plus, Receipt, Trash2, X } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect from "../components/ui/AppSelect";
+import { btnAddCls } from "../components/ui/buttonStyles";
 import DatePickerField from "../components/ui/DatePickerField";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { useToast } from "../App";
@@ -225,9 +226,9 @@ export default function FinanceExpensesPage() {
             <button
               type="button"
               onClick={openCreate}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer transition-colors"
+              className={btnAddCls}
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               {t("finance.expenses.add")}
             </button>
           )}
@@ -313,8 +314,8 @@ export default function FinanceExpensesPage() {
         <VenueRuleExpiryNotice status={venueStatus} compact />
       )}
 
-      <div className="bg-white rounded-xl border border-amber-200/80 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-amber-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-amber-50/40">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/40">
           <div>
             <h2 className="font-sans text-sm font-semibold text-slate-800">{t("venueCosts.finance.venueTotal")}</h2>
             <p className="text-[11px] text-slate-500 mt-0.5">{t("venueCosts.finance.autoRow")}</p>
@@ -323,13 +324,13 @@ export default function FinanceExpensesPage() {
             {canManageVenueRules && (
               <Link
                 to={venueRulesLink}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+                className={btnAddCls}
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4" />
                 {t(hasVenueRules ? "venueCosts.finance.manageRules" : "venueCosts.finance.createRules")}
               </Link>
             )}
-            <p className="text-sm font-semibold text-amber-800 whitespace-nowrap">
+            <p className="text-sm font-semibold text-slate-800 whitespace-nowrap">
               {formatCurrency(venueTotal)}
             </p>
           </div>
@@ -340,9 +341,9 @@ export default function FinanceExpensesPage() {
             {canManageVenueRules && (
               <Link
                 to={venueRulesLink}
-                className="inline-flex items-center gap-1.5 mt-4 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors"
+                className={`${btnAddCls} mt-4`}
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4" />
                 {t(hasVenueRules ? "venueCosts.finance.manageRules" : "venueCosts.finance.createRules")}
               </Link>
             )}

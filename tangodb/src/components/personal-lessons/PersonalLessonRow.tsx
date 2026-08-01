@@ -85,7 +85,7 @@ function AttendanceBadge({ lesson, t }: { lesson: PersonalLesson; t: ReturnType<
     );
   }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
       {t("personal.row.excusedSkip")}
     </span>
   );
@@ -228,7 +228,7 @@ export default function PersonalLessonRow({
               onClick={() => void handleClose()}
               disabled={closePersonalLesson.isPending}
               title={t("venueCosts.closeLesson")}
-              className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-50 cursor-pointer transition-colors disabled:opacity-60"
+              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors disabled:opacity-60"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
             </button>
@@ -239,7 +239,7 @@ export default function PersonalLessonRow({
               onClick={() => void handleReopen()}
               disabled={reopenLessonClosure.isPending}
               title={t("venueCosts.reopenLesson")}
-              className="p-1.5 rounded-lg text-amber-800 hover:bg-amber-50 cursor-pointer transition-colors disabled:opacity-60"
+              className="p-1.5 rounded-lg text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors disabled:opacity-60"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>

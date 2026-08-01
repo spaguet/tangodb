@@ -7,6 +7,7 @@ import { computeWeeklyOccurrencesInRange } from "../../lib/groupLessonOccurrence
 import { useI18n } from "../../hooks/useI18n";
 import type { GroupDisplayLesson } from "../../types";
 import { fieldCls } from "../ui/AppSelect";
+import { btnCancelCls, btnDestructiveCls } from "../ui/buttonStyles";
 
 interface CancelGroupLessonDialogProps {
   lesson: GroupDisplayLesson | null;
@@ -221,7 +222,7 @@ export default function CancelGroupLessonDialog({
                 type="button"
                 onClick={onClose}
                 disabled={cancelOccurrences.isPending}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className={`flex-1 ${btnCancelCls}`}
               >
                 {t("common.cancel")}
               </button>
@@ -229,9 +230,9 @@ export default function CancelGroupLessonDialog({
                 type="button"
                 onClick={() => void handleSubmit()}
                 disabled={cancelOccurrences.isPending || previewDates.length === 0}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                className={`flex-1 ${btnDestructiveCls}`}
               >
-                <XCircle className="w-3.5 h-3.5" />
+                <XCircle className="w-4 h-4" />
                 {cancelOccurrences.isPending ? t("common.saving") : confirmLabel}
               </button>
             </div>

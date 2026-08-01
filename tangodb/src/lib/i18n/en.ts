@@ -2337,7 +2337,7 @@ export const EN: Record<I18nKey, string> = {
   "venueCosts.teacher": "Teacher",
   "venueCosts.selectTeacher": "Select teacher…",
   "venueCosts.teacherRequiredHint": "Choose the teacher this cost applies to — different teachers can have different amounts.",
-  "venueCosts.newDraft": "New draft",
+  "venueCosts.createRule": "Create rule",
   "venueCosts.editorTitle": "Rule draft",
   "venueCosts.mode": "Mode",
   "venueCosts.mode.perLesson": "Per conducted lesson",

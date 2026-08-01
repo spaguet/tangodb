@@ -2335,7 +2335,7 @@ export const RU: Record<I18nKey, string> = {
   "venueCosts.teacher": "Преподаватель",
   "venueCosts.selectTeacher": "Выберите преподавателя…",
   "venueCosts.teacherRequiredHint": "Укажите преподавателя, для которого действует сумма — у разных преподавателей могут быть разные условия.",
-  "venueCosts.newDraft": "Новый черновик",
+  "venueCosts.createRule": "Создать правило",
   "venueCosts.editorTitle": "Черновик правила",
   "venueCosts.mode": "Режим",
   "venueCosts.mode.perLesson": "С каждого урока",

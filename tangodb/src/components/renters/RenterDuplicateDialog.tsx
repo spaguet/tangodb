@@ -3,6 +3,7 @@ import { AlertTriangle, X } from "lucide-react";
 import type { RenterDuplicateMatch } from "../../types";
 import type { I18nKey } from "../../lib/i18n/keys";
 import { useI18n } from "../../hooks/useI18n";
+import { btnCancelCls, btnDestructiveCls } from "../ui/buttonStyles";
 import { fieldCls } from "../ui/AppSelect";
 
 interface RenterDuplicateDialogProps {
@@ -89,14 +90,14 @@ export default function RenterDuplicateDialog({
         ) : null}
 
         <div className="flex gap-2">
-          <button type="button" onClick={onClose} className="flex-1 py-2.5 bg-slate-100 text-slate-700 text-xs font-semibold uppercase rounded-lg cursor-pointer">
+          <button type="button" onClick={onClose} className={`flex-1 ${btnCancelCls}`}>
             {t("common.cancel")}
           </button>
           <button
             type="button"
             onClick={handleCreateAnyway}
             disabled={showReason && !reason.trim()}
-            className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase rounded-lg cursor-pointer disabled:opacity-50"
+            className={`flex-1 ${btnDestructiveCls}`}
           >
             {t("renters.duplicate.createAnyway")}
           </button>

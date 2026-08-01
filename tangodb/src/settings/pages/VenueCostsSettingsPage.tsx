@@ -23,6 +23,7 @@ import {
 } from "../../lib/venueCostRules";
 import { formatCurrency } from "../../lib/utils";
 import AppSelect, { fieldCls, selectLabelCls } from "../../components/ui/AppSelect";
+import { btnAddLinkCls, btnAddSoftCls, btnCancelCls, btnAddCls } from "../../components/ui/buttonStyles";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import VenueRuleExpiryNotice from "../../components/venue-costs/VenueRuleExpiryNotice";
@@ -183,10 +184,10 @@ export default function VenueCostsSettingsPage({ embedded = false }: { embedded?
           <button
             type="button"
             onClick={() => setDraft(newDraft())}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider cursor-pointer shrink-0"
+            className={btnAddSoftCls}
           >
-            <Plus className="w-3.5 h-3.5" />
-            {t("venueCosts.newDraft")}
+            <Plus className="w-4 h-4" />
+            {t("venueCosts.createRule")}
           </button>
         )}
       </div>
@@ -225,10 +226,10 @@ export default function VenueCostsSettingsPage({ embedded = false }: { embedded?
           )}
 
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
-            <button type="button" onClick={() => setDraft(null)} disabled={saveDraft.isPending} className="px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 cursor-pointer">
+            <button type="button" onClick={() => setDraft(null)} disabled={saveDraft.isPending} className={btnCancelCls}>
               {t("common.cancel")}
             </button>
-            <button type="button" onClick={() => void handleSave()} disabled={saveDraft.isPending} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider cursor-pointer disabled:opacity-60">
+            <button type="button" onClick={() => void handleSave()} disabled={saveDraft.isPending} className={btnAddCls}>
               {saveDraft.isPending ? t("common.saving") : t("common.save")}
             </button>
           </div>
@@ -461,7 +462,7 @@ function PerLessonEditor({
                     ),
                   });
                 }}
-                className="text-xs font-semibold text-indigo-600 cursor-pointer"
+                className={btnAddLinkCls}
               >
                 {t("venueCosts.addTier")}
               </button>
@@ -529,7 +530,7 @@ function RuleSection({ title, onAdd, children }: { title: string; onAdd: () => v
     <section className="space-y-2">
       <div className="flex justify-between items-center">
         <h4 className="text-sm font-semibold text-slate-800">{title}</h4>
-        <button type="button" onClick={onAdd} className="text-xs font-semibold text-indigo-600 cursor-pointer">
+        <button type="button" onClick={onAdd} className={btnAddLinkCls}>
           + {t("common.add")}
         </button>
       </div>

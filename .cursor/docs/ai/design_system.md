@@ -91,7 +91,7 @@ Sidebar и desktop-layout — от `md:`. Сетки форм/дашборда �
 | Роль | Tailwind | Когда |
 |------|----------|-------|
 | Ошибка / долг / destructive | `rose-50`, `rose-100`, `rose-600`, `rose-700` | Ошибки, неоплаченные уроки, низкий баланс |
-| Предупреждение (лицензия) | `amber-50`, `amber-100`, `amber-800` | Demo retention, осторожные статусы |
+| `amber-50`, `amber-100`, `amber-800` | Demo retention, осторожные статусы — **только пассивные баннеры**, не кнопки |
 | Информация / успех | `indigo-500`, `indigo-600`, `indigo-50` | Toast info/success, оплаченные уроки, присутствие |
 | Telegram | `#229ED9` / `#1C82B4` | Только для кнопок Telegram (исключение из палитры) |
 
@@ -243,27 +243,44 @@ Focus outline (глобально в `index.css`):
 
 ### Кнопки
 
-**Primary CTA:**
+**Общее правило:** высота всех кнопок = `h-10` (как `fieldCls` / `selectFieldCls`). Базовые классы — `tangodb/src/components/ui/buttonStyles.ts`.
+
+| Тип | Класс | Цвет | Регистр текста | Когда |
+|-----|-------|------|----------------|-------|
+| Добавление / создание | `btnAddCls` | indigo filled | С заглавной буквы, **без** uppercase | «Добавить», «Создать правило», сохранить новую запись |
+| Добавление (мягкое) | `btnAddSoftCls` | indigo outline | С заглавной буквы | Вторичное создание в заголовке секции |
+| Открытие popup / страницы | `btnOpenCls` | indigo outline | **UPPERCASE** + tracking-wider | «Мероприятие», «Аренда», «Отпуск преподавателя», открыть диалог |
+| Удаление / предупреждение | `btnDestructiveCls` | rose filled | **UPPERCASE** | Удалить, аннулировать, опасное действие |
+| Обновить / отмена | `btnRefreshCls` / `btnCancelCls` | slate | **UPPERCASE** | «Обновить», «Отмена» |
+| Текстовая ссылка «+ Добавить» | `btnAddLinkCls` | indigo text | С заглавной буквы | Внутри форм и секций |
+
+**Исключения (не менять стиль):**
+
+| Элемент | Правило |
+|---------|---------|
+| Telegram | `#229ED9` / `#1C82B4`, фон `#229ED9/10` — только для Telegram |
+| Email | Существующие email-кнопки/ссылки — без изменений |
+| Выход (Sign out) | Существующий стиль nav/header — без изменений |
+
+**Primary CTA (legacy, формы submit):**
 ```
-bg-indigo-600 hover:bg-indigo-700 text-white
-font-sans text-xs font-semibold uppercase tracking-wider
-rounded-lg transition-colors shadow-xs cursor-pointer disabled:opacity-60
+btnAddCls — indigo filled, sentence case, h-10
 ```
 
-**Secondary / outline:**
+**Secondary / outline (legacy):**
 ```
 border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50
-rounded-lg text-xs font-semibold
+rounded-lg text-xs font-semibold h-10
 ```
 
 **Accent secondary (продажа пакета, переключатели):**
 ```
-bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100
+bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 h-10
 ```
 
-**Destructive:**
+**Destructive (кнопка):**
 ```
-bg-rose-600 hover:bg-rose-700 text-white
+btnDestructiveCls
 ```
 
 **Icon button (edit):**
@@ -279,8 +296,10 @@ p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-
 **Dashed link:**
 ```
 border border-dashed border-slate-300 hover:border-slate-400
-text-slate-500 text-[11px] uppercase tracking-wider font-semibold
+text-slate-500 text-[11px] uppercase tracking-wider font-semibold h-10
 ```
+
+> **Не использовать amber/brown для кнопок и акцентов UI.** Amber допустим только для **пассивных** warning-баннеров (лицензия, demo retention).
 
 ### Поля ввода
 
@@ -457,20 +476,22 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 ## Правила для агента
 
-1. **Акцентный цвет — только indigo.** Не добавлять violet/emerald/green/purple.
+1. **Акцентный цвет — только indigo.** Не добавлять violet/emerald/green/purple для UI-кнопок (violet — только блоки мероприятий в сетке).
 2. **Ошибки и долги — rose.** Не заменять rose на indigo.
-3. **Не дублировать стили полей** — использовать `AppSelect`, `selectFieldCls`, `selectLabelCls`.
-4. **Не использовать inline-стили** (`style={{}}`), кроме grid columns в `PageTabs`.
-5. **Карточки панелей** — `rounded-xl`, не `rounded-2xl`.
-6. **CTA-кнопки** — uppercase + tracking-wider/widest.
-7. **Метки полей** — всегда 10px, uppercase, slate-400.
-8. **Минимальный размер шрифта** — `text-[10px]`. Не использовать `text-[8px]` или `text-[9px]`.
-9. **Персональные vs групповые** — различать оттенком indigo (500 vs 700), не другим цветом.
-10. **Z-index** — только из таблицы слоёв.
-11. **Иконки** — размеры по таблице; для нового кода по умолчанию `w-4 h-4`.
-12. **Пустые списки** — использовать паттерн Empty State, не оставлять пустой контейнер без пояснения.
-13. **Новые UI-компоненты** — в `tangodb/src/components/ui/`, следовать существующим паттернам.
-14. При изменении палитры или добавлении токена — обновить этот файл.
+3. **Кнопки — через `buttonStyles.ts`.** Add — sentence case; open popup — uppercase; destructive/warning — rose + uppercase; refresh/cancel — slate + uppercase.
+4. **Не использовать amber для кнопок и акцентов.** Amber — только пассивные warning-баннеры.
+5. **Не дублировать стили полей** — `AppSelect`, `selectFieldCls`, `selectLabelCls`.
+6. **Не использовать inline-стили** (`style={{}}`), кроме grid columns в `PageTabs`.
+7. **Карточки панелей** — `rounded-xl`, не `rounded-2xl`.
+8. **Высота кнопок** — `h-10`, как у полей ввода.
+9. **Метки полей** — всегда 10px, uppercase, slate-400.
+10. **Минимальный размер шрифта** — `text-[10px]`.
+11. **Z-index** — только из таблицы слоёв.
+12. **Иконки** — по умолчанию `w-4 h-4`.
+13. **Пустые списки** — паттерн Empty State.
+14. **Telegram / email / выход** — не менять стиль (см. раздел «Кнопки»).
+15. **Новые UI-компоненты** — в `tangodb/src/components/ui/`.
+16. При изменении палитры — обновить этот файл.
 
 ---
 
@@ -480,7 +501,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 |---------|------|
 | Layout, nav, toast | `tangodb/src/App.tsx` |
 | Глобальные стили | `tangodb/src/index.css` |
-| Select / labels | `tangodb/src/components/ui/AppSelect.tsx` |
+| Select / labels / buttons | `tangodb/src/components/ui/AppSelect.tsx`, `buttonStyles.ts` |
 | Tabs | `tangodb/src/components/ui/PageTabs.tsx` |
 | Dashboard widgets | `tangodb/src/components/OperationalDashboard.tsx`, `FinancialDashboard.tsx`, `TeacherScopedDashboard.tsx` |
 | Finance sub-nav | `tangodb/src/pages/FinanceLayout.tsx` |
@@ -497,6 +518,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 | Групповой урок | `indigo-600` / `indigo-700` | Регулярные и разовые групповые занятия |
 | Персональный | `sky-400` / `sky-500` | Персональные уроки |
 | Мероприятие | `violet-600` / `violet-700` | Мастер-класс / открытый урок (`calendar_events`); **исключение** из общего запрета violet для отличия от уроков |
+| Аренда зала | `slate-600` / `slate-700` | Сдача зала арендаторам |
 
 ---
 
@@ -504,7 +526,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 | Дата | Изменение |
 |------|-----------|
-| 2026-07-29 | Блок мероприятия в сетке расписания — violet (`EVENT_LESSON_COLOR`). |
+| 2026-08-01 | Кнопки: типы add/open/destructive/refresh в `buttonStyles.ts`; amber убран из UI-кнопок; аренда в сетке — slate. |
 | 2026-06-20 | RBAC R5: FinanceLayout (sub-nav как Settings), split Operational/Financial dashboard. |
 | 2026-06-19 | Унификация палитры: violet/emerald заменены на indigo; rose сохранён для ошибок. Документ заполнен. |
 | 2026-06-19 | Ревью: добавлены брейкпоинты, z-index, иконки, empty state, skeleton; пояснение семантики indigo; правила агента расширены. Z-index и брейкпоинты сверены с кодом. |

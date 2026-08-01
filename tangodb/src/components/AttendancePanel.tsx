@@ -82,6 +82,7 @@ import OfflineScopeNotice from "./offline/OfflineScopeNotice";
 import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
 import VirtualList from "./ui/VirtualList";
 import AppSelect from "./ui/AppSelect";
+import { btnAddCls, btnOpenCls } from "./ui/buttonStyles";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./schedule/PayPersonalLessonModal";
 import type { ToastType } from "../App";
@@ -1069,8 +1070,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             title={connectionTitle ?? t("attendance.titleExcusedNoDeduct")}
             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "excused"
-                ? "bg-amber-600 border-amber-600 text-white shadow-xs"
-                : "bg-white border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50"
+                ? "bg-slate-600 border-slate-600 text-white shadow-xs"
+                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -1265,13 +1266,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         {selectedGroupLesson.slotId &&
           connectionState === "online" &&
           (canCloseGroupOccurrence || (Boolean(activeGroupClosure) && canReopenGroupClosure)) && (
-          <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-3 space-y-2">
-            <p className="text-[11px] font-semibold text-amber-900 uppercase tracking-wider">
+          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+            <p className="text-[11px] font-semibold text-slate-800 uppercase tracking-wider">
               {t("venueCosts.closeLesson")}
             </p>
             {activeGroupClosure ? (
               <>
-                <p className="text-xs text-amber-900 font-semibold">{t("venueCosts.closeLesson.closed")}</p>
+                <p className="text-xs text-slate-800 font-semibold">{t("venueCosts.closeLesson.closed")}</p>
                 {activeGroupClosure.confirmedAttendeeCount != null && (
                   <p className="text-[11px] text-slate-600">
                     {t("venueCosts.closeLesson.attendeesConfirmed", {
@@ -1296,7 +1297,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       type="button"
                       onClick={() => void handleReopenGroupLesson()}
                       disabled={reopenLessonClosure.isPending}
-                      className="w-full py-2 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
+                      className={`w-full ${btnOpenCls}`}
                     >
                       {reopenLessonClosure.isPending ? t("common.saving") : t("venueCosts.reopenLesson")}
                     </button>
@@ -1325,7 +1326,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   type="button"
                   onClick={() => void handleCloseGroupLesson()}
                   disabled={closeGroupLesson.isPending}
-                  className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60"
+                  className={`w-full ${btnAddCls}`}
                 >
                   {closeGroupLesson.isPending ? t("common.saving") : t("venueCosts.closeLesson.confirm")}
                 </button>
@@ -1752,8 +1753,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             title={translateConnectionBlockReason(connectionState, t) ?? t("attendance.titleExcusedNoDeduct")}
                             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                               activePersonalLesson.attendanceStatus === "excused"
-                                ? "bg-amber-600 border-amber-600 text-white shadow-xs"
-                                : "bg-white border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50"
+                                ? "bg-slate-600 border-slate-600 text-white shadow-xs"
+                                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                             }`}
                           >
                             <ShieldCheck className="w-3.5 h-3.5" />

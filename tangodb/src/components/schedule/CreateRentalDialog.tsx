@@ -12,6 +12,7 @@ import { useRentalTariffs } from "../../hooks/useRentalTariffs";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import type { PaymentMethod } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
+import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import DatePickerField from "../ui/DatePickerField";
 import type { ScheduleCellPrefill } from "./AddLessonTypePopup";
 
@@ -291,7 +292,7 @@ export default function CreateRentalDialog({
                       <input className={fieldCls} value={newRenterName} onChange={(e) => setNewRenterName(e.target.value)} />
                     </div>
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => void handleCreateRenter()} disabled={createRenterMutation.isPending} className="px-3 py-1.5 text-xs font-semibold text-white bg-amber-600 rounded-lg cursor-pointer">
+                      <button type="button" onClick={() => void handleCreateRenter()} disabled={createRenterMutation.isPending} className={btnAddCls}>
                         {t("common.save")}
                       </button>
                       <button type="button" onClick={() => setShowNewRenter(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 cursor-pointer">
@@ -354,7 +355,7 @@ export default function CreateRentalDialog({
                 ) : conflictsQuery.data?.conflicts.length ? (
                   <p className="text-rose-600 text-xs">{t("schedule.rental.conflictBlocked")}</p>
                 ) : (
-                  <p className="text-amber-700 text-xs">{t("schedule.rental.noConflicts")}</p>
+                  <p className="text-indigo-600 text-xs">{t("schedule.rental.noConflicts")}</p>
                 )}
               </div>
             )}
@@ -364,17 +365,17 @@ export default function CreateRentalDialog({
                 type="button"
                 onClick={step === "preview" ? () => setStep("form") : onClose}
                 disabled={createMutation.isPending}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer"
+                className={`flex-1 ${btnCancelCls}`}
               >
                 {t(step === "preview" ? "common.back" : "common.cancel")}
               </button>
               {step === "form" ? (
-                <button type="button" onClick={handleCreate} disabled={createRequested} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60">
-                  <Building2 className="w-3.5 h-3.5" />
+                <button type="button" onClick={handleCreate} disabled={createRequested} className={`flex-1 ${btnAddCls}`}>
+                  <Building2 className="w-4 h-4" />
                   {t("schedule.rental.confirmCreate")}
                 </button>
               ) : (
-                <button type="button" onClick={() => void handleSubmit()} disabled={createMutation.isPending || !!conflictsQuery.data?.conflicts.length} className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-60">
+                <button type="button" onClick={() => void handleSubmit()} disabled={createMutation.isPending || !!conflictsQuery.data?.conflicts.length} className={`flex-1 ${btnAddCls}`}>
                   {createMutation.isPending ? t("common.saving") : t("schedule.rental.confirmCreate")}
                 </button>
               )}
