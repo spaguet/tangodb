@@ -30,6 +30,14 @@ export const btnRefreshCls =
 
 export const btnCancelCls = btnRefreshCls;
 
+/** Header support links (Email, Telegram, WhatsApp) — outline, h-8 like sign out. */
+export const btnHeaderContactCls =
+  `${btnBaseCls} border border-slate-200 bg-white text-slate-700 font-medium hover:border-indigo-200 hover:text-indigo-700`;
+
+/** Header sign out — outline slate, h-8. */
+export const btnHeaderSignOutCls =
+  `${btnBaseCls} text-slate-500 hover:text-slate-800 border border-slate-200 hover:bg-slate-50`;
+
 /** Текстовая ссылка «+ Добавить» внутри формы. */
 export const btnAddLinkCls =
   "text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer";

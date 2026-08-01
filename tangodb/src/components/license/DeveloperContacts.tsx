@@ -6,6 +6,7 @@ import {
   type DeveloperContactsConfig,
 } from "../../lib/paymentConfig";
 import { useI18n } from "../../hooks/useI18n";
+import { btnHeaderContactCls } from "../ui/buttonStyles";
 
 interface DeveloperContactsProps {
   contacts: DeveloperContactsConfig | null | undefined;
@@ -42,7 +43,7 @@ export default function DeveloperContacts({
         {mailto && (
           <a
             href={mailto}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-indigo-200 hover:text-indigo-700"
+            className={btnHeaderContactCls}
           >
             <Mail className="w-3.5 h-3.5" />
             Email
@@ -53,7 +54,7 @@ export default function DeveloperContacts({
             href={telegram}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-indigo-200 hover:text-indigo-700"
+            className={btnHeaderContactCls}
           >
             <MessageCircle className="w-3.5 h-3.5" />
             Telegram
@@ -64,7 +65,7 @@ export default function DeveloperContacts({
             href={whatsapp}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-indigo-200 hover:text-indigo-700"
+            className={btnHeaderContactCls}
           >
             <Phone className="w-3.5 h-3.5" />
             WhatsApp

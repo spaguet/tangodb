@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-01 — header: кнопки Email/Telegram/WhatsApp — `btnHeaderContactCls` (h-8), как «Выйти».
+
 2026-08-01 — design system: поля поиска унифицированы через `searchFieldCls` (h-8) — Платежи, Корректировки, Действующие абонементы, Клиенты, Арендаторы, персональные уроки.
 
 2026-08-01 — design system: primary add/save/submit кнопки переведены на `btnAddCls` (sentence case, h-8) в ~40 компонентах; соседние cancel — `btnCancelCls`.

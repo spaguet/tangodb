@@ -86,6 +86,7 @@ import DemoPurchaseCta from "./components/demo/DemoPurchaseCta";
 import { useDemoLicenseUi } from "./hooks/useDemoLicenseUi";
 import { usePlatformPaymentConfig } from "./hooks/usePlatformPaymentConfig";
 import DeveloperContacts from "./components/license/DeveloperContacts";
+import { btnHeaderSignOutCls } from "./components/ui/buttonStyles";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -383,7 +384,7 @@ function AppLayout() {
               </div>
               <button
                 onClick={() => signOut()}
-                className="hidden sm:inline-flex items-center gap-1.5 h-8 box-border px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
+                className={`hidden sm:inline-flex ${btnHeaderSignOutCls.replace(/^inline-flex /, "")}`}
               >
                 <LogOut className="w-3.5 h-3.5" />
                 {t("nav.signOut")}

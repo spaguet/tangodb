@@ -254,13 +254,12 @@ Focus outline (глобально в `index.css`):
 | Обновить / отмена | `btnRefreshCls` / `btnCancelCls` | slate | **UPPERCASE** | «Обновить», «Отмена» |
 | Текстовая ссылка «+ Добавить» | `btnAddLinkCls` | indigo text | С заглавной буквы | Внутри форм и секций |
 
-**Исключения (не менять стиль):**
+**Header (поддержка и выход):**
 
-| Элемент | Правило |
-|---------|---------|
-| Telegram | `#229ED9` / `#1C82B4`, фон `#229ED9/10` — только для Telegram |
-| Email | Существующие email-кнопки/ссылки — без изменений |
-| Выход (Sign out) | `h-8 px-3`, border slate — стиль nav/header без uppercase |
+| Элемент | Класс |
+|---------|--------|
+| Email / Telegram / WhatsApp | `btnHeaderContactCls` — outline white, h-8 |
+| Выход (Sign out) | `btnHeaderSignOutCls` — outline slate, h-8 |
 
 **Primary CTA (legacy, формы submit):**
 ```
@@ -313,7 +312,7 @@ focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100
 outline-none rounded-lg px-3 text-xs transition-all
 ```
 
-**Высота контролов:** `h-8` (32px), `px-3`, `text-xs` — эталон: кнопки Telegram/Email в header (`DeveloperContacts`: `px-3 py-2`). Экспорт: `controlHeightCls` в `AppSelect.tsx`.
+**Высота контролов:** `h-8` (32px), `px-3`, `text-xs` — эталон: `btnBaseCls` / `controlHeightCls` в `AppSelect.tsx` и `buttonStyles.ts`.
 
 **Select:** `selectFieldCls` = `fieldCls` + `appearance-none cursor-pointer pr-10`.
 
@@ -487,13 +486,13 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 5. **Не дублировать стили полей** — `AppSelect`, `selectFieldCls`, `selectLabelCls`.
 6. **Не использовать inline-стили** (`style={{}}`), кроме grid columns в `PageTabs`.
 7. **Карточки панелей** — `rounded-xl`, не `rounded-2xl`.
-8. **Высота кнопок и полей** — `h-8` (`controlHeightCls`), как кнопка Telegram в header.
+8. **Высота кнопок и полей** — `h-8` (`controlHeightCls`), через `btnBaseCls` / `fieldCls`.
 9. **Метки полей** — всегда 10px, uppercase, slate-400.
 10. **Минимальный размер шрифта** — `text-[10px]`.
 11. **Z-index** — только из таблицы слоёв.
 12. **Иконки** — по умолчанию `w-4 h-4`.
 13. **Пустые списки** — паттерн Empty State.
-14. **Telegram / email / выход** — не менять стиль (см. раздел «Кнопки»).
+14. **Telegram / email / выход в header** — `btnHeaderContactCls` / `btnHeaderSignOutCls` (h-8).
 15. **Новые UI-компоненты** — в `tangodb/src/components/ui/`.
 16. При изменении палитры — обновить этот файл.
 
