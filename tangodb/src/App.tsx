@@ -383,7 +383,7 @@ function AppLayout() {
               </div>
               <button
                 onClick={() => signOut()}
-                className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
+                className="hidden sm:inline-flex items-center gap-1.5 h-8 box-border px-3 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 {t("nav.signOut")}
@@ -454,7 +454,7 @@ function AppLayout() {
                 <div className="p-3 border-t border-slate-100">
                   <button
                     onClick={() => signOut()}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                    className="w-full inline-flex items-center gap-3 h-8 box-border px-3 rounded-md text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" /> {t("nav.signOut")}
                   </button>

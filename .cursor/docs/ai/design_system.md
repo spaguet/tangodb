@@ -260,7 +260,7 @@ Focus outline (глобально в `index.css`):
 |---------|---------|
 | Telegram | `#229ED9` / `#1C82B4`, фон `#229ED9/10` — только для Telegram |
 | Email | Существующие email-кнопки/ссылки — без изменений |
-| Выход (Sign out) | Существующий стиль nav/header — без изменений |
+| Выход (Sign out) | `h-8 px-3`, border slate — стиль nav/header без uppercase |
 
 **Primary CTA (legacy, формы submit):**
 ```

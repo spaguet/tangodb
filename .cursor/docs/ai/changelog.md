@@ -4,6 +4,8 @@
 
 2026-08-01 — design system: primary add/save/submit кнопки переведены на `btnAddCls` (sentence case, h-8) в ~40 компонентах; соседние cancel — `btnCancelCls`.
 
+2026-08-01 — header: кнопка «Выйти» — h-8, как остальные контролы.
+
 2026-08-01 — design system: компактные контролы h-8 (эталон — Telegram в header); add/save-кнопки без uppercase по всему CRM.
 
 2026-08-01 — design system: типы кнопок в `buttonStyles.ts` (add/open/destructive/refresh); «Создать правило»; amber убран из UI-кнопок.
