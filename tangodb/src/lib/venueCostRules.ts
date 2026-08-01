@@ -14,12 +14,14 @@ export interface VenueCostAttendanceTier {
 }
 
 export interface VenueCostGroupRule {
+  teacherMemberId: string | null;
   disciplineId: string | null;
   locationId: string | null;
   attendanceTiers: VenueCostAttendanceTier[];
 }
 
 export interface VenueCostPersonalRule {
+  teacherMemberId: string | null;
   disciplineId: string | null;
   locationId: string | null;
   amount: number;
@@ -65,9 +67,11 @@ export function validateVenueCostDraft(draft: VenueCostRuleDraft): string[] {
     const rules = draft.rules as VenueCostPerLessonRules;
     if (!rules.currency.trim()) errors.push("currency_required");
     for (const rule of rules.personal) {
+      if (!rule.teacherMemberId) errors.push("teacher_required");
       if (!finiteNonNegative(rule.amount)) errors.push("invalid_personal_amount");
     }
     for (const rule of rules.group) {
+      if (!rule.teacherMemberId) errors.push("teacher_required");
       if (!rule.attendanceTiers.length) {
         errors.push("group_tiers_required");
         continue;
@@ -92,19 +96,25 @@ export function validateVenueCostDraft(draft: VenueCostRuleDraft): string[] {
   return [...new Set(errors)];
 }
 
-function specificity(rule: { disciplineId: string | null; locationId: string | null }): number {
-  return Number(!!rule.disciplineId) + Number(!!rule.locationId);
+function specificity(rule: {
+  teacherMemberId: string | null;
+  disciplineId: string | null;
+  locationId: string | null;
+}): number {
+  return Number(!!rule.teacherMemberId) + Number(!!rule.disciplineId) + Number(!!rule.locationId);
 }
 
 export function previewGroupVenueCost(
   rules: VenueCostPerLessonRules,
   attendees: number,
   disciplineId: string | null = null,
-  locationId: string | null = null
+  locationId: string | null = null,
+  teacherMemberId: string | null = null
 ): number {
   const matching = rules.group
     .filter(
       (rule) =>
+        (!rule.teacherMemberId || rule.teacherMemberId === teacherMemberId) &&
         (!rule.disciplineId || rule.disciplineId === disciplineId) &&
         (!rule.locationId || rule.locationId === locationId)
     )
@@ -121,6 +131,7 @@ export function venueCostDraftToPayload(draft: VenueCostRuleDraft): Record<strin
       ? {
           currency: (draft.rules as VenueCostPerLessonRules).currency,
           group: (draft.rules as VenueCostPerLessonRules).group.map((rule) => ({
+            teacher_member_id: rule.teacherMemberId,
             discipline_id: rule.disciplineId,
             location_id: rule.locationId,
             attendance_tiers: rule.attendanceTiers.map((tier) => ({
@@ -130,6 +141,7 @@ export function venueCostDraftToPayload(draft: VenueCostRuleDraft): Record<strin
             })),
           })),
           personal: (draft.rules as VenueCostPerLessonRules).personal.map((rule) => ({
+            teacher_member_id: rule.teacherMemberId,
             discipline_id: rule.disciplineId,
             location_id: rule.locationId,
             amount: rule.amount,

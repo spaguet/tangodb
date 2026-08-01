@@ -38,8 +38,7 @@ import GeneralSettingsPage from "./settings/pages/GeneralSettingsPage";
 import OrganizationSettingsPage from "./settings/pages/OrganizationSettingsPage";
 import SubscriptionSettingsPage from "./settings/pages/SubscriptionSettingsPage";
 import DisciplinesSettingsPage from "./settings/pages/DisciplinesSettingsPage";
-import RentalTariffsSettingsPage from "./settings/pages/RentalTariffsSettingsPage";
-import VenueCostsSettingsPage from "./settings/pages/VenueCostsSettingsPage";
+import HallRentSettingsPage, { VenueCostsLegacyRedirect } from "./settings/pages/HallRentSettingsPage";
 import LocationsSettingsPage from "./settings/pages/LocationsSettingsPage";
 import DataExportPage from "./settings/pages/DataExportPage";
 import TeamSettingsPage from "./settings/pages/TeamSettingsPage";
@@ -577,8 +576,9 @@ export default function App() {
                     <Route path="subscriptions" element={<ErrorBoundary><SubscriptionSettingsPage /></ErrorBoundary>} />
                     <Route path="disciplines" element={<ErrorBoundary><DisciplinesSettingsPage /></ErrorBoundary>} />
                     <Route path="locations" element={<ErrorBoundary><LocationsSettingsPage /></ErrorBoundary>} />
-                    <Route path="rental-tariffs" element={<ErrorBoundary><RentalTariffsSettingsPage /></ErrorBoundary>} />
-                    <Route path="venue-costs" element={<ErrorBoundary><VenueCostsSettingsPage /></ErrorBoundary>} />
+                    <Route path="hall-rent" element={<ErrorBoundary><HallRentSettingsPage /></ErrorBoundary>} />
+                    <Route path="rental-tariffs" element={<Navigate to="/settings/hall-rent" replace />} />
+                    <Route path="venue-costs" element={<VenueCostsLegacyRedirect />} />
                     <Route path="data" element={<ErrorBoundary><DataExportPage /></ErrorBoundary>} />
                     <Route path="license" element={<ErrorBoundary><LicenseSettingsPage /></ErrorBoundary>} />
                   </Route>

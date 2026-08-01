@@ -206,7 +206,7 @@ export default function FinanceExpensesPage() {
   const items = expensesQuery.data ?? [];
   const venueStatus = venueStatusQuery.data;
   const hasVenueRules = venueStatus?.status !== "not_configured";
-  const venueRulesLink = hasVenueRules ? "/settings/venue-costs" : "/settings/venue-costs?new=1";
+  const venueRulesLink = hasVenueRules ? "/settings/hall-rent" : "/settings/hall-rent?new=1";
   const manualTotal = items.reduce((sum, e) => sum + e.amount, 0);
   const venueTotal = financeCostsQuery.data?.venueTotal ?? 0;
   const combinedTotal = financeCostsQuery.data?.total ?? manualTotal + venueTotal;

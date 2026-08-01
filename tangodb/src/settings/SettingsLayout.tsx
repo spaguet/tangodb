@@ -8,7 +8,6 @@ import {
   Database,
   Users,
   KeyRound,
-  Coins,
   Warehouse,
 } from "lucide-react";
 import { usePermissions } from "../hooks/usePermissions";
@@ -33,8 +32,7 @@ const SETTINGS_NAV_ICONS: Record<SettingsSectionId, typeof Settings> = {
   subscriptions: Ticket,
   disciplines: BookOpen,
   locations: MapPin,
-  "rental-tariffs": Coins,
-  "venue-costs": Warehouse,
+  "hall-rent": Warehouse,
   data: Database,
   team: Users,
   license: KeyRound,

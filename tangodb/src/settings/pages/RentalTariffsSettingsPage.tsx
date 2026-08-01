@@ -229,7 +229,7 @@ function TariffEditorModal({
   );
 }
 
-export default function RentalTariffsSettingsPage() {
+export default function RentalTariffsSettingsPage({ embedded = false }: { embedded?: boolean }) {
   const { t } = useI18n();
   const toast = useToast();
   const tariffsQuery = useRentalTariffs({ status: null });
@@ -255,11 +255,15 @@ export default function RentalTariffsSettingsPage() {
   const tariffs = tariffsQuery.data ?? [];
 
   return (
-    <div className="panel-card-stack max-w-2xl">
+    <div className={embedded ? "space-y-3" : "panel-card-stack max-w-2xl"}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">{t("rentalTariffs.pageTitle")}</h2>
-          <p className="text-xs text-slate-500 mt-1">{t("rentalTariffs.pageSubtitle")}</p>
+          {!embedded && (
+            <>
+              <h2 className="text-base font-semibold text-slate-900">{t("rentalTariffs.pageTitle")}</h2>
+              <p className="text-xs text-slate-500 mt-1">{t("rentalTariffs.pageSubtitle")}</p>
+            </>
+          )}
         </div>
         <RequirePermission action="finance.read" mode="hide">
           <RequirePermission action="schedule.write" mode="hide">

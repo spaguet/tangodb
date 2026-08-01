@@ -26,7 +26,7 @@ export default function VenueRuleExpiryNotice({ status, compact = false }: Venue
           </p>
           {!compact && (
             <Link
-              to="/settings/venue-costs"
+              to="/settings/hall-rent"
               className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-amber-900 hover:underline"
             >
               {t("venueCosts.expiry.openSettings")}

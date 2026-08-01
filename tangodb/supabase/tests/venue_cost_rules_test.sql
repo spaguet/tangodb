@@ -135,6 +135,7 @@ BEGIN
       'rules', jsonb_build_object(
         'group', '[]'::jsonb,
         'personal', jsonb_build_array(jsonb_build_object(
+          'teacher_member_id', v_teacher_member,
           'location_id', gen_random_uuid(), 'amount', 1
         ))
       )
@@ -156,6 +157,7 @@ BEGIN
         'currency', 'RUB',
         'group', jsonb_build_array(
           jsonb_build_object(
+            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline, 'location_id', v_location,
             'attendance_tiers', jsonb_build_array(
               jsonb_build_object('min_attendees', 0, 'max_attendees', 4, 'amount', 1200),
@@ -163,6 +165,7 @@ BEGIN
             )
           ),
           jsonb_build_object(
+            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline,
             'attendance_tiers', jsonb_build_array(
               jsonb_build_object('min_attendees', 0, 'max_attendees', 4, 'amount', 1000),
@@ -172,9 +175,13 @@ BEGIN
         ),
         'personal', jsonb_build_array(
           jsonb_build_object(
+            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline, 'location_id', v_location, 'amount', 750
           ),
-          jsonb_build_object('discipline_id', v_discipline, 'amount', 700)
+          jsonb_build_object(
+            'teacher_member_id', v_teacher_member,
+            'discipline_id', v_discipline, 'amount', 700
+          )
         )
       )
     ),
@@ -192,6 +199,7 @@ BEGIN
         'currency', 'RUB',
         'group', jsonb_build_array(
           jsonb_build_object(
+            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline, 'location_id', v_location,
             'attendance_tiers', jsonb_build_array(
               jsonb_build_object('min_attendees', 0, 'max_attendees', 4, 'amount', 1200),
@@ -199,6 +207,7 @@ BEGIN
             )
           ),
           jsonb_build_object(
+            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline,
             'attendance_tiers', jsonb_build_array(
               jsonb_build_object('min_attendees', 0, 'max_attendees', 4, 'amount', 1000),
@@ -208,9 +217,13 @@ BEGIN
         ),
         'personal', jsonb_build_array(
           jsonb_build_object(
+            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline, 'location_id', v_location, 'amount', 750
           ),
-          jsonb_build_object('discipline_id', v_discipline, 'amount', 700)
+          jsonb_build_object(
+            'teacher_member_id', v_teacher_member,
+            'discipline_id', v_discipline, 'amount', 700
+          )
         )
       )
     ),
@@ -224,24 +237,28 @@ BEGIN
 
   SELECT * INTO v_rule FROM venue_cost_rule_versions WHERE id = v_rule_id;
   PERFORM _venue_test_assert(
-    venue_cost_amount_for_lesson(v_rule, 'group', v_discipline, v_location, 4) = 1200,
+    venue_cost_amount_for_lesson(v_rule, 'group', v_discipline, v_location, 4, v_teacher_member) = 1200,
     'attendance boundary 4 uses location-specific lower tier'
   );
   PERFORM _venue_test_assert(
-    venue_cost_amount_for_lesson(v_rule, 'group', v_discipline, v_location, 5) = 1700,
+    venue_cost_amount_for_lesson(v_rule, 'group', v_discipline, v_location, 5, v_teacher_member) = 1700,
     'attendance boundary 5 uses location-specific upper tier'
   );
   PERFORM _venue_test_assert(
-    venue_cost_amount_for_lesson(v_rule, 'group', v_discipline, v_location_other, 4) = 1000,
+    venue_cost_amount_for_lesson(v_rule, 'group', v_discipline, v_location_other, 4, v_teacher_member) = 1000,
     'group pricing falls back to discipline-only rule'
   );
   PERFORM _venue_test_assert(
-    venue_cost_amount_for_lesson(v_rule, 'personal', v_discipline, v_location, NULL) = 750,
+    venue_cost_amount_for_lesson(v_rule, 'personal', v_discipline, v_location, NULL, v_teacher_member) = 750,
     'personal location-specific rule has precedence'
   );
   PERFORM _venue_test_assert(
-    venue_cost_amount_for_lesson(v_rule, 'personal', v_discipline, v_location_other, NULL) = 700,
+    venue_cost_amount_for_lesson(v_rule, 'personal', v_discipline, v_location_other, NULL, v_teacher_member) = 700,
     'personal pricing falls back to discipline-only rule'
+  );
+  PERFORM _venue_test_assert(
+    venue_cost_amount_for_lesson(v_rule, 'group', v_discipline, v_location, 4, v_member) = 0,
+    'group pricing does not apply to another teacher'
   );
 
   -- Accepted snapshots cannot be mutated.
@@ -288,6 +305,7 @@ BEGIN
       'rules', jsonb_build_object(
         'group', '[]'::jsonb,
         'personal', jsonb_build_array(jsonb_build_object(
+          'teacher_member_id', v_member,
           'discipline_id', v_discipline, 'location_id', v_location, 'amount', 800
         ))
       )
@@ -364,6 +382,7 @@ BEGIN
       'mode', 'per_lesson', 'valid_from', '2026-05-01', 'valid_to', '2026-05-31',
       'rules', jsonb_build_object(
         'group', jsonb_build_array(jsonb_build_object(
+          'teacher_member_id', v_teacher_member,
           'discipline_id', NULL,
           'attendance_tiers', jsonb_build_array(
             jsonb_build_object('min_attendees', 0, 'max_attendees', NULL, 'amount', 100)
@@ -386,12 +405,14 @@ BEGIN
       'mode', 'per_lesson', 'valid_from', '2026-08-01', 'valid_to', '2026-08-31',
       'rules', jsonb_build_object(
         'group', jsonb_build_array(jsonb_build_object(
+          'teacher_member_id', v_teacher_member,
           'discipline_id', NULL, 'location_id', NULL,
           'attendance_tiers', jsonb_build_array(
             jsonb_build_object('min_attendees', 0, 'max_attendees', NULL, 'amount', 110)
           )
         )),
         'personal', jsonb_build_array(jsonb_build_object(
+          'teacher_member_id', v_teacher_member,
           'discipline_id', NULL, 'location_id', NULL, 'amount', 90
         ))
       )

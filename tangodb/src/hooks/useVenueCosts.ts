@@ -61,6 +61,7 @@ export function mapVenueCostStatus(row: RpcObject): VenueCostRuleStatus {
 }
 
 const mapGroupRule = (row: RpcObject): VenueCostGroupRule => ({
+  teacherMemberId: nullableString(row.teacher_member_id),
   disciplineId: nullableString(row.discipline_id),
   locationId: nullableString(row.location_id),
   attendanceTiers: Array.isArray(row.attendance_tiers)
@@ -76,6 +77,7 @@ const mapGroupRule = (row: RpcObject): VenueCostGroupRule => ({
 });
 
 const mapPersonalRule = (row: RpcObject): VenueCostPersonalRule => ({
+  teacherMemberId: nullableString(row.teacher_member_id),
   disciplineId: nullableString(row.discipline_id),
   locationId: nullableString(row.location_id),
   amount: Number(row.amount) || 0,

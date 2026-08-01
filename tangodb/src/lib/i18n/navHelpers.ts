@@ -146,8 +146,9 @@ export function getPanelTitle(pathname: string, subscriptionsTab: string, t: Tra
   if (pathname.startsWith("/settings/subscriptions")) return t("nav.panel.settingsSubscriptions");
   if (pathname.startsWith("/settings/disciplines")) return t("nav.panel.settingsDisciplines");
   if (pathname.startsWith("/settings/locations")) return t("nav.panel.settingsLocations");
-  if (pathname.startsWith("/settings/rental-tariffs")) return t("nav.panel.settingsRentalTariffs");
-  if (pathname.startsWith("/settings/venue-costs")) return t("nav.panel.settingsVenueCosts");
+  if (pathname.startsWith("/settings/hall-rent")) return t("nav.panel.settingsHallRent");
+  if (pathname.startsWith("/settings/rental-tariffs")) return t("nav.panel.settingsHallRent");
+  if (pathname.startsWith("/settings/venue-costs")) return t("nav.panel.settingsHallRent");
   if (pathname.startsWith("/settings/data")) return t("nav.panel.settingsData");
   if (pathname.startsWith("/settings/team")) return t("nav.panel.team");
   if (pathname.startsWith("/settings/license")) return t("nav.panel.settingsLicense");
@@ -162,8 +163,7 @@ export function getSettingsNav(t: TranslateFn): { id: string; label: string; pat
     { id: "subscriptions", label: t("settings.section.subscriptions"), path: "/settings/subscriptions" },
     { id: "disciplines", label: t("settings.section.disciplines"), path: "/settings/disciplines" },
     { id: "locations", label: t("settings.section.locations"), path: "/settings/locations" },
-    { id: "rental-tariffs", label: t("settings.section.rentalTariffs"), path: "/settings/rental-tariffs" },
-    { id: "venue-costs", label: t("settings.section.venueCosts"), path: "/settings/venue-costs" },
+    { id: "hall-rent", label: t("settings.section.hallRent"), path: "/settings/hall-rent" },
     { id: "data", label: t("settings.section.data"), path: "/settings/data" },
     { id: "license", label: t("settings.section.license"), path: "/settings/license" },
   ];
