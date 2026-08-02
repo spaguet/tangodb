@@ -1,5 +1,5 @@
 import type { Payment } from "../types";
-import type { RentalPayment } from "../types";
+import type { RentalMoneyRegisterEntry } from "../types";
 import type { Expense } from "../types/expense";
 import type { FinanceCostEntry } from "../hooks/useVenueCosts";
 import type { DebtorEntry } from "./financeReports";
@@ -26,7 +26,9 @@ function todayDateStr(): string {
 
 export interface FinancialExportParams {
   payments: Payment[];
-  rentalPayments?: RentalPayment[];
+  rentalRegisterEntries?: RentalMoneyRegisterEntry[];
+  /** @deprecated Use rentalRegisterEntries */
+  rentalPayments?: RentalMoneyRegisterEntry[];
   expenses: Expense[];
   /** Automatic venue-cost accruals (read-only); merged into expenses CSV. */
   venueCostEntries?: FinanceCostEntry[];
@@ -67,13 +69,14 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
     skipped.push(labels.skipPayments);
   }
 
-  const rentalRows = (params.rentalPayments ?? []).map((p) => ({
+  const rentalEntries = params.rentalRegisterEntries ?? params.rentalPayments ?? [];
+  const rentalRows = rentalEntries.map((p) => ({
     renter: p.renterDisplay || "—",
     date: labels.formatDateTime(p.createdAt),
-    source: t(locale, "finance.revenue.rental"),
+    source: t(locale, `finance.rentalRegister.type.${p.entryType}` as import("./i18n/keys").I18nKey),
     rentalDate: p.rentalDate ? labels.formatDate(p.rentalDate) : "—",
     method: labels.paymentMethod(p.method),
-    amount: p.amount,
+    amount: p.signedAmount,
   }));
 
   if (rentalRows.length > 0) {

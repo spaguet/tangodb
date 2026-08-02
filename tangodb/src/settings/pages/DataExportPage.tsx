@@ -266,7 +266,7 @@ function FinancialExportSection() {
     try {
       const result = await exportAllFinancialCsv({
         payments: paymentsQuery.data ?? [],
-        rentalPayments: rentalPaymentsQuery.data ?? [],
+        rentalRegisterEntries: rentalPaymentsQuery.data ?? [],
         expenses: expensesQuery.data ?? [],
         venueCostEntries: financeCostsQuery.data?.entries ?? [],
         debtors: debtorsQuery.data ?? [],

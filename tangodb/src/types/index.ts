@@ -459,6 +459,38 @@ export interface RentalPayment {
   rentalDate?: string;
 }
 
+/** Canonical rental cash register entry (stage 5). */
+export type RentalMoneyEntryType =
+  | "direct_booking_payment"
+  | "invoice_payment"
+  | "advance_received"
+  | "deposit_receive"
+  | "deposit_return";
+
+export interface RentalMoneyRegisterEntry {
+  registerKey: string;
+  id: string;
+  entryType: RentalMoneyEntryType;
+  sourceTable: string;
+  sourceId: string;
+  signedAmount: number;
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  methodComment?: string | null;
+  renterId?: string | null;
+  renterDisplay?: string;
+  rentalId?: string | null;
+  invoiceId?: string | null;
+  advanceId?: string | null;
+  depositId?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  operationDate: string;
+  rentalDate?: string;
+  locationId?: string | null;
+}
+
 export type RenterCounterpartyType = "individual" | "sole_proprietor" | "company";
 
 export type RenterStatus = "active" | "archived" | "blocked";

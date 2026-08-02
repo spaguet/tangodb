@@ -522,7 +522,7 @@ export default function FinancialDashboard() {
     const allPending = (refundsQuery.data ?? []).filter((refund) => refund.status === "pending");
     const base = buildExtendedRevenueStats(monthPayments, monthRefunds, {
       otherIncomeAmount: otherFromTable,
-      rentalPayments: rentalPaymentsQuery.data ?? [],
+      rentalRegisterEntries: rentalPaymentsQuery.data ?? [],
     });
     return {
       ...base,

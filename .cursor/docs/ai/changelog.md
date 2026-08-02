@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-02 — hall-rent этап 5: единый регистр денег аренды (F20, F21) — SQL view `rental_money_register_v` + RPC `list_rental_money_register` (прямые платежи, счета, авансы, депозит receive/return; без allocate/apply_to_invoice); фронт `useRentalMoneyRegister`, агрегаты журнала/выручки на регистре; тесты `test:db:rental-register`, `test:finance-rental-aggregates`.
+
 2026-08-02 — hall-rent этап 4: аренда в кассовых агрегатах (F17, F31) — `count`/`byMethod` включают `rental_payments` через `buildExtendedRevenueStats`; журнал платежей — секция аренды + фильтр источника; `RecordRentalPaymentModal` — поле комментария к методу и confirm переплаты (F19); assert `test:finance-rental-aggregates`.
 
 2026-08-02 — hall-rent этап 2: единая effective amount (F32) — `record_rental_payment`, `list_renter_rentals`, `_renter_debt_total`, `get_renter_detail` считают по `_rental_effective_amount`; фронт `lib/rentalAmount.ts` + остаток в popup/модалке/сетке/карточке арендатора; assert `test:rental-effective-amount` и SQL `test:db:rental-effective-amount`.

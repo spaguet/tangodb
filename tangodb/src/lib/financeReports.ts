@@ -2,8 +2,9 @@ import type {
   AttendanceRecord,
   Client,
   Payment,
+  PaymentMethod,
   PersonalLesson,
-  RentalPayment,
+  RentalMoneyRegisterEntry,
   ScheduleSlot,
   SingleVisit,
   SubscriptionGroupLink,
@@ -85,26 +86,41 @@ export function refundsInMonth(
 
 export interface RentalPaymentAggregate {
   total: number;
+  grossInflow: number;
   count: number;
   byMethod: Record<string, number>;
 }
 
-/** Direct rental_payments only (stage 4 provisional; stage 5 → unified register). */
-export function aggregateRentalPaymentStats(
-  payments: Array<Pick<RentalPayment, "amount" | "method">>
+/** Unified rental money register aggregates (stage 5). */
+export function aggregateRentalMoneyRegisterStats(
+  entries: Array<Pick<RentalMoneyRegisterEntry, "signedAmount" | "method">>
 ): RentalPaymentAggregate {
   const byMethod: Record<string, number> = {};
   let total = 0;
+  let grossInflow = 0;
   let count = 0;
 
-  for (const payment of payments) {
-    if (payment.amount <= 0) continue;
-    total += payment.amount;
-    count += 1;
-    byMethod[payment.method] = (byMethod[payment.method] ?? 0) + payment.amount;
+  for (const entry of entries) {
+    const amount = entry.signedAmount;
+    if (amount === 0) continue;
+    total += amount;
+    if (amount > 0) {
+      grossInflow += amount;
+      count += 1;
+    }
+    byMethod[entry.method] = (byMethod[entry.method] ?? 0) + amount;
   }
 
-  return { total, count, byMethod };
+  return { total, grossInflow, count, byMethod };
+}
+
+/** @deprecated Use aggregateRentalMoneyRegisterStats */
+export function aggregateRentalPaymentStats(
+  payments: Array<{ amount: number; method: string }>
+): RentalPaymentAggregate {
+  return aggregateRentalMoneyRegisterStats(
+    payments.map((p) => ({ signedAmount: p.amount, method: p.method as PaymentMethod }))
+  );
 }
 
 export function mergePaymentStatsWithRentals<T extends PaymentStats>(
@@ -131,21 +147,29 @@ export function buildExtendedRevenueStats(
   refunds: SubscriptionRefundRecord[],
   options?: {
     otherIncomeAmount?: number;
-    rentalPayments?: Array<Pick<RentalPayment, "amount" | "method">>;
+    rentalRegisterEntries?: Array<Pick<RentalMoneyRegisterEntry, "signedAmount" | "method">>;
+    /** @deprecated Use rentalRegisterEntries */
+    rentalPayments?: Array<{ amount: number; method: string }>;
   }
 ): ExtendedRevenueStats {
   const base = combineRevenueStats(payments, refunds);
   const otherFromTable = options?.otherIncomeAmount ?? 0;
-  const rentalStats = aggregateRentalPaymentStats(options?.rentalPayments ?? []);
+  const rentalStats = aggregateRentalMoneyRegisterStats(
+    options?.rentalRegisterEntries ??
+      (options?.rentalPayments ?? []).map((p) => ({
+        signedAmount: p.amount,
+        method: p.method as PaymentMethod,
+      }))
+  );
   const withRentals = mergePaymentStatsWithRentals(base, rentalStats);
 
   return {
     ...withRentals,
     otherTotal: base.otherTotal + otherFromTable,
-    rentalTotal: rentalStats.total,
-    grossTotal: base.grossTotal + otherFromTable + rentalStats.total,
-    netTotal: base.netTotal + otherFromTable + rentalStats.total,
-    total: base.netTotal + otherFromTable + rentalStats.total,
+    rentalTotal: rentalStats.grossInflow,
+    grossTotal: base.grossTotal + otherFromTable + rentalStats.grossInflow,
+    netTotal: base.netTotal + otherFromTable + rentalStats.grossInflow,
+    total: base.netTotal + otherFromTable + rentalStats.grossInflow,
   };
 }
 

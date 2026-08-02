@@ -38,7 +38,7 @@ export default function FinanceRevenuePage() {
     const otherFromTable = (otherIncomeQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
     return buildExtendedRevenueStats(paymentsQuery.data ?? [], monthRefunds, {
       otherIncomeAmount: otherFromTable,
-      rentalPayments: rentalPaymentsQuery.data ?? [],
+      rentalRegisterEntries: rentalPaymentsQuery.data ?? [],
     });
   }, [paymentsQuery.data, refundsQuery.data, otherIncomeQuery.data, rentalPaymentsQuery.data, yearMonth]);
 

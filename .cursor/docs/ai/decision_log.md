@@ -12,6 +12,14 @@
 
 ## Записи
 
+### HALL-RENT-5 — Единый read-model регистра денег аренды (2026-08-02)
+
+- **Дата:** 2026-08-02
+- **Решение:** SQL view `rental_money_register_v` (UNION cash movements) + RPC `list_rental_money_register` с gate `can_read_financial()`. Уникальный ключ `register_key` = `source_table:source_id`. Типы: `direct_booking_payment`, `invoice_payment`, `advance_received`, `deposit_receive`, `deposit_return`. Исключены `rental_advance_allocations` и `deposit apply_to_invoice` / `hold` — внутренние переводы, не касса. Provisional `operation_date` = дата `created_at` в TZ организации; редактируемое поле — этап 9.
+- **Контекст:** Этап 5 аудита: три параллельных контура (`rental_payments`, invoice/advance/deposit) не сведены; агрегаты этапа 4 читали только прямые платежи.
+- **Альтернативы:** (1) Отдельная ledger-таблица с триггерами на INSERT — дублирование и миграция истории; (2) Прямой SELECT нескольких таблиц на клиенте — двойные формулы и RLS-дыры.
+- **Почему так:** View не переписывает историю, один канонический read-path для журнала и отчётов; gross inflow для выручки, signed sum для net; сторно/коррекции (этап 8) добавят строки в те же source-таблицы.
+
 ### HALL-RENT-1 — Кассовый gate оплаты аренды (2026-08-02)
 
 - **Дата:** 2026-08-02

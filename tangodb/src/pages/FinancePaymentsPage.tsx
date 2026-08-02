@@ -20,7 +20,7 @@ import { useI18n } from "../hooks/useI18n";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { useRentalPayments } from "../hooks/useRentalPayments";
 import {
-  aggregateRentalPaymentStats,
+  aggregateRentalMoneyRegisterStats,
   buildClassLocationMap,
   buildClassTeacherMap,
   resolvePaymentLocationId,
@@ -35,7 +35,7 @@ import {
   type PaymentWithCorrectionMeta,
 } from "../lib/paymentCorrection";
 import { formatCurrency, formatMonthTitle } from "../lib/utils";
-import type { PaymentMethod, RentalPayment } from "../types";
+import type { PaymentMethod, RentalMoneyRegisterEntry } from "../types";
 
 type PaymentSourceFilter = "all" | "subscription" | "personal_lesson" | "single_visit" | "rental";
 type PaymentMethodFilter = "all" | PaymentMethod;
@@ -44,19 +44,19 @@ const PAYMENT_METHODS: PaymentMethod[] = ["cash", "transfer", "card", "other"];
 
 interface MonthRentalGroup {
   yearMonth: string;
-  payments: RentalPayment[];
+  payments: RentalMoneyRegisterEntry[];
   paymentCount: number;
   paymentSum: number;
 }
 
-function rentalYearMonth(payment: RentalPayment): string {
+function rentalYearMonth(payment: RentalMoneyRegisterEntry): string {
   const d = new Date(payment.createdAt);
   if (Number.isNaN(d.getTime())) return "unknown";
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function groupRentalsByMonth(items: RentalPayment[]): MonthRentalGroup[] {
-  const map = new Map<string, RentalPayment[]>();
+function groupRentalsByMonth(items: RentalMoneyRegisterEntry[]): MonthRentalGroup[] {
+  const map = new Map<string, RentalMoneyRegisterEntry[]>();
   for (const payment of items) {
     const key = rentalYearMonth(payment);
     const list = map.get(key) ?? [];
@@ -69,8 +69,8 @@ function groupRentalsByMonth(items: RentalPayment[]): MonthRentalGroup[] {
     .map(([yearMonth, payments]) => ({
       yearMonth,
       payments,
-      paymentCount: payments.length,
-      paymentSum: payments.reduce((sum, p) => sum + p.amount, 0),
+      paymentCount: payments.filter((p) => p.signedAmount > 0).length,
+      paymentSum: payments.reduce((sum, p) => sum + p.signedAmount, 0),
     }));
 }
 
@@ -319,6 +319,14 @@ function PaymentRow({
   );
 }
 
+function rentalEntryTypeLabel(
+  entryType: RentalMoneyRegisterEntry["entryType"],
+  translate: ReturnType<typeof useI18n>["t"]
+): string {
+  const key = `finance.rentalRegister.type.${entryType}` as Parameters<typeof translate>[0];
+  return translate(key);
+}
+
 function RentalPaymentRow({
   payment,
   formatDateTime,
@@ -327,7 +335,7 @@ function RentalPaymentRow({
   expanded,
   onToggle,
 }: {
-  payment: RentalPayment;
+  payment: RentalMoneyRegisterEntry;
   formatDateTime: ReturnType<typeof useI18n>["formatDateTime"];
   translate: ReturnType<typeof useI18n>["t"];
   locationNameById: Map<string, string>;
@@ -344,6 +352,8 @@ function RentalPaymentRow({
   const methodLabel = getPaymentMethodLabel(payment.method, translate);
   const locationName = payment.locationId ? locationNameById.get(payment.locationId) ?? "—" : "—";
   const rentalDate = payment.rentalDate ?? "—";
+  const sourceLabel = rentalEntryTypeLabel(payment.entryType, translate);
+  const isOutflow = payment.signedAmount < 0;
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
@@ -362,7 +372,7 @@ function RentalPaymentRow({
           </div>
         </button>
         <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer">
-          {translate("common.payment.source.rental")}
+          {sourceLabel}
         </button>
         <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer">
           {methodLabel}
@@ -370,19 +380,26 @@ function RentalPaymentRow({
         <button
           type="button"
           onClick={onToggle}
-          className="text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer text-amber-700"
+          className={`text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer ${
+            isOutflow ? "text-rose-600" : "text-amber-700"
+          }`}
         >
-          {formatCurrency(payment.amount)}
+          {isOutflow ? "−" : ""}
+          {formatCurrency(Math.abs(payment.signedAmount))}
         </button>
       </div>
       {expanded ? (
         <div className="px-3 pb-3 pt-0 border-t border-slate-50 bg-slate-50/40">
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-8 py-2">
             <PaymentDetailItem label={translate("finance.payments.acceptedAt")} value={acceptedAt} />
-            <PaymentDetailItem label={translate("common.source")} value={translate("common.payment.source.rental")} />
+            <PaymentDetailItem label={translate("common.source")} value={sourceLabel} />
             <PaymentDetailItem label={translate("common.method")} value={methodLabel} />
-            <PaymentDetailItem label={translate("schedule.rental.dateLabel")} value={rentalDate} />
-            <PaymentDetailItem label={translate("schedule.form.location")} value={locationName} />
+            {payment.rentalDate ? (
+              <PaymentDetailItem label={translate("schedule.rental.dateLabel")} value={rentalDate} />
+            ) : null}
+            {payment.locationId ? (
+              <PaymentDetailItem label={translate("schedule.form.location")} value={locationName} />
+            ) : null}
             {payment.methodComment ? (
               <PaymentDetailItem label={translate("finance.payments.methodComment")} value={payment.methodComment} />
             ) : null}
@@ -574,7 +591,7 @@ export default function FinancePaymentsPage() {
   if (rentalPaymentsQuery.isError) return <QueryErrorState error={rentalPaymentsQuery.error} />;
 
   const clientTotal = aggregateEffectivePaymentTotal(filtered);
-  const rentalTotal = aggregateRentalPaymentStats(filteredRentals).total;
+  const rentalTotal = aggregateRentalMoneyRegisterStats(filteredRentals).grossInflow;
   const combinedTotal = clientTotal + rentalTotal;
   const hasAnyClientPayments = (paymentsQuery.data?.length ?? 0) > 0;
   const hasAnyRentalPayments = (rentalPaymentsQuery.data?.length ?? 0) > 0;
