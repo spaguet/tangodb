@@ -38,7 +38,7 @@
     "test:db:rental-series": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_series_tariffs_test.sql",
     "test:db:venue-cost": "psql \"%DATABASE_URL%\" -f supabase/tests/venue_cost_rules_test.sql",
     "test:venue-cost-preview": "node scripts/venue-cost-rules-check.mjs",
-    "test:rbac": "node scripts/rbac-regression-check.mjs",
+    "test:rbac": "tsx scripts/rbac-regression-check.mjs",
     "db:reset-test": "node scripts/reset-for-test-run.mjs",
     "db:push": "supabase db push",
     "db:link": "supabase link"
@@ -64,6 +64,7 @@
     "@types/react-dom": "^19.1.6",
     "supabase": "^2.107.0",
     "tailwindcss": "^4.1.14",
+    "tsx": "^4.23.1",
     "typescript": "~5.8.2"
   }
 }

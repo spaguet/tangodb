@@ -41,6 +41,7 @@ export default function RentalInfoPopup({
   const { can, role } = usePermissions();
   const { isReadOnly } = useOrganization();
   const canSeeFinance = can("finance.read");
+  const canSeeCashAmounts = can("rentals.payments.write");
   const canManage =
     !isReadOnly &&
     can("schedule.write") &&
@@ -69,7 +70,7 @@ export default function RentalInfoPopup({
   const pricingBreakdown = detail?.pricingBreakdown;
 
   const canRecordPayment =
-    canSeeFinance &&
+    canSeeCashAmounts &&
     !isReadOnly &&
     lesson.bookingStatus === "confirmed" &&
     paymentStatus !== "paid" &&
@@ -159,19 +160,21 @@ export default function RentalInfoPopup({
                   <p className="text-xs text-indigo-700 font-semibold">{t("rentalSeries.partOfSeries")}</p>
                 </div>
               ) : null}
-              {canSeeFinance && (fixedAmount > 0 || calculatedAmount != null) ? (
+              {canSeeCashAmounts && (fixedAmount > 0 || calculatedAmount != null || paymentStatus) ? (
                 <>
-                  {calculatedAmount != null && calculatedAmount !== fixedAmount ? (
+                  {canSeeFinance && calculatedAmount != null && calculatedAmount !== fixedAmount ? (
                     <div>
                       <span className={labelCls}>{t("rentalSeries.calculatedAmountLabel")}</span>
                       <p className="text-slate-800">{formatCurrency(calculatedAmount)} {lesson.currency ?? "RUB"}</p>
                     </div>
                   ) : null}
-                  <div>
-                    <span className={labelCls}>{t("schedule.rental.fixedAmountLabel")}</span>
-                    <p className="text-slate-800">{formatCurrency(fixedAmount)} {lesson.currency ?? "RUB"}</p>
-                  </div>
-                  {pricingBreakdown && Array.isArray(pricingBreakdown) ? (
+                  {(fixedAmount > 0 || paymentStatus) ? (
+                    <div>
+                      <span className={labelCls}>{t("schedule.rental.fixedAmountLabel")}</span>
+                      <p className="text-slate-800">{formatCurrency(fixedAmount)} {lesson.currency ?? "RUB"}</p>
+                    </div>
+                  ) : null}
+                  {canSeeFinance && pricingBreakdown && Array.isArray(pricingBreakdown) ? (
                     <div>
                       <span className={labelCls}>{t("rentalSeries.pricingBreakdownLabel")}</span>
                       <ul className="mt-1 space-y-1 text-xs text-slate-700">

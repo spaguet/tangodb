@@ -150,6 +150,17 @@ assert(
   "teacher sub sell when org flag on"
 );
 assert(can("accountant", "finance.read", optsFor("accountant")), "accountant finance");
+assert(can("accountant", "rentals.payments.write", optsFor("accountant")), "accountant rental cash");
+assert(can("admin", "rentals.payments.write", optsFor("admin")), "admin rental cash");
+assert(
+  !can("admin", "rentals.payments.write", { ...optsFor("admin"), restrictedAdmin: true }),
+  "reception no rental cash"
+);
+assert(
+  !can("admin", "rentals.payments.write", { ...optsFor("admin"), adminCanAcceptPayments: false }),
+  "admin no rental cash when payments flag off"
+);
+assert(!can("teacher", "rentals.payments.write", optsFor("teacher")), "teacher no rental cash");
 assert(!can("accountant", "clients.read", optsFor("accountant")), "accountant no clients");
 assert(!canAccessPanel("accountant", "personal", optsFor("accountant")), "accountant no personal");
 assert(!canAccessPanel("accountant", "personal_sell", optsFor("accountant")), "accountant no personal_sell");

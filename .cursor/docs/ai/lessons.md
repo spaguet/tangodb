@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-02 — Касса аренды: не подменять finance.read голым payments.write
+
+- **Ошибка (потенциальная):** выдать оплату аренды через `can("payments.write")` / `member_can_accept_payments()`.
+- **Причина:** `restricted_admin` уже проходит `payments.write`; teacher может пройти `member_can_accept_payments()` при sell-флагах.
+- **Как избежать:** канонический gate `rentals.payments.write` / `member_can_record_rental_payment()` = finance **или** (manage_rentals ∧ admin payment-accept); reception — только после явной политики этапа 12.
+
 ### 2026-07-31 — Finance: Cannot read properties of undefined (reading 'toLocaleString')
 
 - **Ошибка:** раздел «Финансы» → «Коррекции» падал с `toLocaleString` на undefined.

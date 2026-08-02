@@ -12,6 +12,7 @@ import { normalizeOrgModules } from "../../lib/orgModules";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
 import { useI18n } from "../../hooks/useI18n";
+import { formatCurrency } from "../../lib/utils";
 import {
   canAddPersonalFromGrid,
   canClickEmptyCell,
@@ -308,6 +309,16 @@ export default function SchedulePageContainer() {
                   ? "schedule.rental.paymentOverpaid"
                   : "schedule.rental.paymentUnpaid";
           parts.push(t(statusKey));
+          if (
+            can("rentals.payments.write") &&
+            lesson.bookingStatus === "confirmed" &&
+            (lesson.paymentStatus === "unpaid" || lesson.paymentStatus === "partial")
+          ) {
+            const remaining = Math.max(0, (lesson.fixedAmount ?? 0) - (lesson.paidAmount ?? 0));
+            if (remaining > 0) {
+              parts.push(formatCurrency(remaining));
+            }
+          }
         }
       } else {
         const clientLabel = lesson.clientDisplay;
@@ -329,7 +340,7 @@ export default function SchedulePageContainer() {
 
       return parts.length > 0 ? parts.join(" · ") : undefined;
     },
-    [disciplineMap, teamMap, t]
+    [disciplineMap, teamMap, t, can]
   );
 
   const handleLessonClick = useCallback((lesson: DisplayLesson) => {

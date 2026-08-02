@@ -20,7 +20,17 @@ interface LessonBlockProps {
 export default function LessonBlock({ item, rangeStartMin, title, subtitle, onClick }: LessonBlockProps) {
   const { lesson, column, columnCount } = item;
   const isPast = isPastDate(lesson.date);
-  const hasDebt = lesson.kind === "personal" && lesson.paid === "no";
+  const personalDebt = lesson.kind === "personal" && lesson.paid === "no";
+  const rentalRemaining =
+    lesson.kind === "rental"
+      ? Math.max(0, (lesson.fixedAmount ?? 0) - (lesson.paidAmount ?? 0))
+      : 0;
+  const rentalDebt =
+    lesson.kind === "rental" &&
+    lesson.bookingStatus === "confirmed" &&
+    (lesson.paymentStatus === "unpaid" || lesson.paymentStatus === "partial") &&
+    rentalRemaining > 0;
+  const hasDebt = personalDebt || rentalDebt;
 
   const colors =
     lesson.kind === "rental"

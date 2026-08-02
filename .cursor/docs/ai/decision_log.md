@@ -12,6 +12,14 @@
 
 ## Записи
 
+### HALL-RENT-1 — Кассовый gate оплаты аренды (2026-08-02)
+
+- **Дата:** 2026-08-02
+- **Решение:** Ввести permission `rentals.payments.write` и SQL-helper `member_can_record_rental_payment()` = `can_read_financial()` **или** (`member_can_manage_rentals()` ∧ `admin_can_accept_payments` для full admin). UI (`RentalInfoPopup`, сумма/rose-ring на сетке) и RPC `record_rental_payment` / история в `get_rental_detail` используют этот gate. RLS `rental_payments` SELECT не расширяли — кассир читает историю через SECURITY DEFINER detail RPC.
+- **Контекст:** Этап 1 аудита «Аренда зала»: operational admin бронирует зал, но не принимает оплату (`finance.read` vs `payments.write`); `restricted_admin` уже имеет голый `payments.write`.
+- **Альтернативы:** (1) Заменить gate на `payments.write` — открыло бы reception; (2) Выдать admin полный `can_read_financial()` — лишняя аналитика/venue cost; (3) Переиспользовать `member_can_accept_payments()` — teacher/reception могут пройти.
+- **Почему так:** Единый канонический gate на UI и backend без ослабления tenant isolation и без контура reception до этапа 12. Accountant/owner/director сохраняют путь через finance.
+
 ### VENUE-COST-2 — Frontend payment gates and finance unification (2026-07-31)
 
 - **Дата:** 2026-07-31

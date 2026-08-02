@@ -1,5 +1,5 @@
-import type { MemberRole, OrgModules, TeacherScope } from "../types/organization";
-import { PRESET_MODULES } from "../types/organization";
+import type { MemberRole, OrgModules, TeacherScope } from "../types/organization.ts";
+import { PRESET_MODULES } from "../types/organization.ts";
 import {
   DEFAULT_ORG_MODULES,
   isModuleEnabled,
@@ -91,7 +91,9 @@ export type PermissionAction =
   | "renters.contracts.write"
   | "renters.documents.read"
   | "renters.documents.write"
-  | "renters.finance.read";
+  | "renters.finance.read"
+  /** Cash desk: record rental payment + see amount/paid/remaining (not full finance). */
+  | "rentals.payments.write";
 
 export interface PermissionContext {
   disciplineId?: string | null;
@@ -146,6 +148,7 @@ const WRITE_ACTIONS = new Set<PermissionAction>([
   "renters.contacts.write",
   "renters.contracts.write",
   "renters.documents.write",
+  "rentals.payments.write",
 ]);
 
 function isOperationalAdmin(role: MemberRole): boolean {
@@ -531,6 +534,17 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
     case "renters.finance.read":
       return FINANCIAL_READ_ROLES.includes(role);
 
+    case "rentals.payments.write":
+      // Finance roles keep rental cash via finance.read (no payments.write).
+      if (FINANCIAL_READ_ROLES.includes(role)) return true;
+      // Full operational admin: manage rentals ∧ payment-accept. Never bare payments.write
+      // (restricted_admin already has payments.write).
+      if (isRestrictedReceptionAdmin(role, options)) return false;
+      if (isFullOperationalAdmin(role, options)) {
+        return adminHasScheduleWriteAccess(role, options) && adminHasPaymentAccess(role, options);
+      }
+      return false;
+
     default:
       return false;
   }
@@ -783,6 +797,30 @@ export function assertReceptionPermissions(): void {
   }
   if (!can("admin", "payments.write", receptionOpts)) {
     throw new Error("reception must write payments");
+  }
+  if (can("admin", "rentals.payments.write", receptionOpts)) {
+    throw new Error("reception must not record rental payments until stage 12 policy");
+  }
+  if (!can("admin", "rentals.payments.write", adminOpts)) {
+    throw new Error("full admin must record rental payments (hall-rent stage 1)");
+  }
+  if (can("admin", "rentals.payments.write", { ...adminOpts, adminCanAcceptPayments: false })) {
+    throw new Error("full admin without payment accept must not record rental payments");
+  }
+  if (can("admin", "rentals.payments.write", { ...adminOpts, adminCanEditSchedule: false })) {
+    throw new Error("full admin without schedule write must not record rental payments");
+  }
+  if (!can("accountant", "rentals.payments.write", adminOpts)) {
+    throw new Error("accountant must retain rental payment via finance path");
+  }
+  if (!can("owner", "rentals.payments.write", adminOpts)) {
+    throw new Error("owner must record rental payments");
+  }
+  if (!can("director", "rentals.payments.write", adminOpts)) {
+    throw new Error("director must record rental payments");
+  }
+  if (can("teacher", "rentals.payments.write", teacherOpts)) {
+    throw new Error("teacher must not record rental payments");
   }
   if (!canAccessPanel("admin", "clients", adminOpts)) {
     throw new Error("full admin must access clients panel");
