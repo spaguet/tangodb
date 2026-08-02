@@ -12,7 +12,7 @@ import { useRentalPayments } from "../hooks/useRentalPayments";
 import type { PaymentMethod } from "../types";
 import { useI18n } from "../hooks/useI18n";
 import {
-  combineRevenueStats,
+  buildExtendedRevenueStats,
   monthDateRange,
   refundsInMonth,
   shiftMonth,
@@ -35,18 +35,11 @@ export default function FinanceRevenuePage() {
 
   const stats = useMemo(() => {
     const monthRefunds = refundsInMonth(refundsQuery.data ?? [], yearMonth);
-    const paymentStats = combineRevenueStats(paymentsQuery.data ?? [], monthRefunds);
     const otherFromTable = (otherIncomeQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
-    const rentalTotal = (rentalPaymentsQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
-    const otherTotal = paymentStats.otherTotal + otherFromTable;
-    return {
-      ...paymentStats,
-      otherTotal,
-      rentalTotal,
-      grossTotal: paymentStats.grossTotal + otherFromTable + rentalTotal,
-      netTotal: paymentStats.netTotal + otherFromTable + rentalTotal,
-      total: paymentStats.netTotal + otherFromTable + rentalTotal,
-    };
+    return buildExtendedRevenueStats(paymentsQuery.data ?? [], monthRefunds, {
+      otherIncomeAmount: otherFromTable,
+      rentalPayments: rentalPaymentsQuery.data ?? [],
+    });
   }, [paymentsQuery.data, refundsQuery.data, otherIncomeQuery.data, rentalPaymentsQuery.data, yearMonth]);
 
   const pendingRefunds = useMemo(

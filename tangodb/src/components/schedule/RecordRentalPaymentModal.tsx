@@ -57,6 +57,16 @@ export default function RecordRentalPaymentModal({
       return;
     }
 
+    if (remaining > 0 && value > remaining) {
+      const confirmed = window.confirm(
+        t("schedule.rental.overpaymentConfirm", {
+          amount: formatCurrency(value),
+          remaining: formatCurrency(remaining),
+        })
+      );
+      if (!confirmed) return;
+    }
+
     const res = await recordPayment.mutateAsync({
       rentalId: lesson.rentalId,
       amount: value,
@@ -113,6 +123,15 @@ export default function RecordRentalPaymentModal({
                   <option key={m} value={m}>{getPaymentMethodLabel(m, t, locale)}</option>
                 ))}
               </AppSelect>
+              <div>
+                <span className={labelCls}>{t("schedule.rental.paymentCommentLabel")}</span>
+                <input
+                  className={fieldCls}
+                  value={methodComment}
+                  onChange={(e) => setMethodComment(e.target.value)}
+                  placeholder={t("schedule.rental.paymentCommentPlaceholder")}
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
               <button type="button" onClick={onClose} disabled={recordPayment.isPending} className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">{t("common.cancel")}</button>

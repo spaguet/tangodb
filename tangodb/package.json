@@ -40,6 +40,7 @@
     "test:db:venue-cost": "psql \"%DATABASE_URL%\" -f supabase/tests/venue_cost_rules_test.sql",
     "test:venue-cost-preview": "node scripts/venue-cost-rules-check.mjs",
     "test:rental-effective-amount": "node scripts/rental-effective-amount-check.mjs",
+    "test:finance-rental-aggregates": "node scripts/finance-rental-aggregates-check.mjs",
     "test:rbac": "tsx scripts/rbac-regression-check.mjs",
     "db:reset-test": "node scripts/reset-for-test-run.mjs",
     "db:push": "supabase db push",

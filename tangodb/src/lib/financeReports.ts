@@ -3,6 +3,7 @@ import type {
   Client,
   Payment,
   PersonalLesson,
+  RentalPayment,
   ScheduleSlot,
   SingleVisit,
   SubscriptionGroupLink,
@@ -80,6 +81,72 @@ export function refundsInMonth(
       refund.operationDate >= dateFrom &&
       refund.operationDate <= dateTo
   );
+}
+
+export interface RentalPaymentAggregate {
+  total: number;
+  count: number;
+  byMethod: Record<string, number>;
+}
+
+/** Direct rental_payments only (stage 4 provisional; stage 5 → unified register). */
+export function aggregateRentalPaymentStats(
+  payments: Array<Pick<RentalPayment, "amount" | "method">>
+): RentalPaymentAggregate {
+  const byMethod: Record<string, number> = {};
+  let total = 0;
+  let count = 0;
+
+  for (const payment of payments) {
+    if (payment.amount <= 0) continue;
+    total += payment.amount;
+    count += 1;
+    byMethod[payment.method] = (byMethod[payment.method] ?? 0) + payment.amount;
+  }
+
+  return { total, count, byMethod };
+}
+
+export function mergePaymentStatsWithRentals<T extends PaymentStats>(
+  base: T,
+  rentalStats: RentalPaymentAggregate
+): T {
+  const byMethod = { ...base.byMethod };
+  for (const [method, amount] of Object.entries(rentalStats.byMethod)) {
+    byMethod[method] = (byMethod[method] ?? 0) + amount;
+  }
+  return {
+    ...base,
+    count: base.count + rentalStats.count,
+    byMethod,
+  };
+}
+
+export interface ExtendedRevenueStats extends RevenueStats {
+  rentalTotal: number;
+}
+
+export function buildExtendedRevenueStats(
+  payments: Payment[],
+  refunds: SubscriptionRefundRecord[],
+  options?: {
+    otherIncomeAmount?: number;
+    rentalPayments?: Array<Pick<RentalPayment, "amount" | "method">>;
+  }
+): ExtendedRevenueStats {
+  const base = combineRevenueStats(payments, refunds);
+  const otherFromTable = options?.otherIncomeAmount ?? 0;
+  const rentalStats = aggregateRentalPaymentStats(options?.rentalPayments ?? []);
+  const withRentals = mergePaymentStatsWithRentals(base, rentalStats);
+
+  return {
+    ...withRentals,
+    otherTotal: base.otherTotal + otherFromTable,
+    rentalTotal: rentalStats.total,
+    grossTotal: base.grossTotal + otherFromTable + rentalStats.total,
+    netTotal: base.netTotal + otherFromTable + rentalStats.total,
+    total: base.netTotal + otherFromTable + rentalStats.total,
+  };
 }
 
 export function combineRevenueStats(

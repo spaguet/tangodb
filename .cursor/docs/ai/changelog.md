@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-02 — hall-rent этап 4: аренда в кассовых агрегатах (F17, F31) — `count`/`byMethod` включают `rental_payments` через `buildExtendedRevenueStats`; журнал платежей — секция аренды + фильтр источника; `RecordRentalPaymentModal` — поле комментария к методу и confirm переплаты (F19); assert `test:finance-rental-aggregates`.
+
 2026-08-02 — hall-rent этап 2: единая effective amount (F32) — `record_rental_payment`, `list_renter_rentals`, `_renter_debt_total`, `get_renter_detail` считают по `_rental_effective_amount`; фронт `lib/rentalAmount.ts` + остаток в popup/модалке/сетке/карточке арендатора; assert `test:rental-effective-amount` и SQL `test:db:rental-effective-amount`.
 
 2026-08-02 — hall-rent этап 1: кассир (full operational admin с приёмом платежей) видит сумму/остаток аренды и принимает оплату без `finance.read`; permission `rentals.payments.write` + SQL `member_can_record_rental_payment()`; rose-ring и сумма долга на блоке аренды; история платежей в `get_rental_detail` для кассы; reception/teacher вне контура.

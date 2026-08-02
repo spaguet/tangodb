@@ -18,7 +18,9 @@ import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useSingleVisits } from "../hooks/useSingleVisits";
 import { useI18n } from "../hooks/useI18n";
 import { useAccessibleLocations } from "../hooks/useLocations";
+import { useRentalPayments } from "../hooks/useRentalPayments";
 import {
+  aggregateRentalPaymentStats,
   buildClassLocationMap,
   buildClassTeacherMap,
   resolvePaymentLocationId,
@@ -33,12 +35,44 @@ import {
   type PaymentWithCorrectionMeta,
 } from "../lib/paymentCorrection";
 import { formatCurrency, formatMonthTitle } from "../lib/utils";
-import type { PaymentMethod } from "../types";
+import type { PaymentMethod, RentalPayment } from "../types";
 
-type PaymentSourceFilter = "all" | "subscription" | "personal_lesson" | "single_visit";
+type PaymentSourceFilter = "all" | "subscription" | "personal_lesson" | "single_visit" | "rental";
 type PaymentMethodFilter = "all" | PaymentMethod;
 
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "transfer", "card", "other"];
+
+interface MonthRentalGroup {
+  yearMonth: string;
+  payments: RentalPayment[];
+  paymentCount: number;
+  paymentSum: number;
+}
+
+function rentalYearMonth(payment: RentalPayment): string {
+  const d = new Date(payment.createdAt);
+  if (Number.isNaN(d.getTime())) return "unknown";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function groupRentalsByMonth(items: RentalPayment[]): MonthRentalGroup[] {
+  const map = new Map<string, RentalPayment[]>();
+  for (const payment of items) {
+    const key = rentalYearMonth(payment);
+    const list = map.get(key) ?? [];
+    list.push(payment);
+    map.set(key, list);
+  }
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([yearMonth, payments]) => ({
+      yearMonth,
+      payments,
+      paymentCount: payments.length,
+      paymentSum: payments.reduce((sum, p) => sum + p.amount, 0),
+    }));
+}
 
 interface MonthPaymentGroup {
   yearMonth: string;
@@ -285,8 +319,82 @@ function PaymentRow({
   );
 }
 
+function RentalPaymentRow({
+  payment,
+  formatDateTime,
+  translate,
+  locationNameById,
+  expanded,
+  onToggle,
+}: {
+  payment: RentalPayment;
+  formatDateTime: ReturnType<typeof useI18n>["formatDateTime"];
+  translate: ReturnType<typeof useI18n>["t"];
+  locationNameById: Map<string, string>;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const acceptedAt = formatDateTime(payment.createdAt, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const methodLabel = getPaymentMethodLabel(payment.method, translate);
+  const locationName = payment.locationId ? locationNameById.get(payment.locationId) ?? "—" : "—";
+  const rentalDate = payment.rentalDate ?? "—";
+
+  return (
+    <div className="border-b border-slate-100 last:border-b-0">
+      <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
+        <button type="button" onClick={onToggle} className="min-w-0 text-left cursor-pointer" aria-expanded={expanded}>
+          <div className="flex items-start gap-2">
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+                expanded ? "rotate-180" : ""
+              }`}
+            />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-800 truncate">{payment.renterDisplay || "—"}</p>
+              <p className="text-[10px] text-slate-400 font-sans mt-0.5">{acceptedAt}</p>
+            </div>
+          </div>
+        </button>
+        <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer">
+          {translate("common.payment.source.rental")}
+        </button>
+        <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer">
+          {methodLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer text-amber-700"
+        >
+          {formatCurrency(payment.amount)}
+        </button>
+      </div>
+      {expanded ? (
+        <div className="px-3 pb-3 pt-0 border-t border-slate-50 bg-slate-50/40">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-8 py-2">
+            <PaymentDetailItem label={translate("finance.payments.acceptedAt")} value={acceptedAt} />
+            <PaymentDetailItem label={translate("common.source")} value={translate("common.payment.source.rental")} />
+            <PaymentDetailItem label={translate("common.method")} value={methodLabel} />
+            <PaymentDetailItem label={translate("schedule.rental.dateLabel")} value={rentalDate} />
+            <PaymentDetailItem label={translate("schedule.form.location")} value={locationName} />
+            {payment.methodComment ? (
+              <PaymentDetailItem label={translate("finance.payments.methodComment")} value={payment.methodComment} />
+            ) : null}
+          </dl>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function matchesSourceFilter(payment: PaymentWithCorrectionMeta, source: PaymentSourceFilter): boolean {
-  if (source === "all") return true;
+  if (source === "all" || source === "rental") return source === "all";
   if (source === "subscription") return payment.subscriptionId != null;
   if (source === "personal_lesson") return payment.personalLessonId != null;
   return payment.singleVisitId != null;
@@ -304,7 +412,9 @@ export default function FinancePaymentsPage() {
   const [teacherFilter, setTeacherFilter] = useState("all");
   const [correctionTarget, setCorrectionTarget] = useState<PaymentWithCorrectionMeta | null>(null);
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
+  const [expandedRentalId, setExpandedRentalId] = useState<string | null>(null);
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => new Set());
+  const [expandedRentalMonths, setExpandedRentalMonths] = useState<Set<string>>(() => new Set());
   const [toastMsg, setToastMsg] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
 
   const toast = (msg: string, type: "success" | "error" | "info" = "success") => {
@@ -313,6 +423,9 @@ export default function FinancePaymentsPage() {
   };
 
   const paymentsQuery = usePaymentsWithCorrections(
+    dateFrom || dateTo ? { dateFrom: dateFrom || undefined, dateTo: dateTo || undefined } : undefined
+  );
+  const rentalPaymentsQuery = useRentalPayments(
     dateFrom || dateTo ? { dateFrom: dateFrom || undefined, dateTo: dateTo || undefined } : undefined
   );
   const teamQuery = useTeamMembers();
@@ -371,7 +484,13 @@ export default function FinancePaymentsPage() {
     return map;
   }, [paymentsQuery.data]);
 
+  const showClientPayments = sourceFilter !== "rental";
+  const showRentalPayments =
+    (sourceFilter === "all" || sourceFilter === "rental") && teacherFilter === "all";
+
   const filtered = useMemo(() => {
+    if (!showClientPayments) return [];
+
     let items = (paymentsQuery.data ?? []).map((payment) =>
       resolveDisplayPayment(payment, paymentById)
     );
@@ -392,12 +511,47 @@ export default function FinancePaymentsPage() {
     }
 
     return items;
-  }, [paymentsQuery.data, paymentById, sourceFilter, methodFilter, teacherFilter, teacherCtx, search]);
+  }, [
+    paymentsQuery.data,
+    paymentById,
+    sourceFilter,
+    methodFilter,
+    teacherFilter,
+    teacherCtx,
+    search,
+    showClientPayments,
+  ]);
+
+  const filteredRentals = useMemo(() => {
+    if (!showRentalPayments) return [];
+
+    let items = rentalPaymentsQuery.data ?? [];
+    if (methodFilter !== "all") {
+      items = items.filter((p) => p.method === methodFilter);
+    }
+
+    const q = search.trim().toLowerCase();
+    if (q) {
+      items = items.filter((p) => (p.renterDisplay ?? "").toLowerCase().includes(q));
+    }
+
+    return items;
+  }, [rentalPaymentsQuery.data, methodFilter, search, showRentalPayments]);
 
   const monthGroups = useMemo(() => groupPaymentsByMonth(filtered), [filtered]);
+  const rentalMonthGroups = useMemo(() => groupRentalsByMonth(filteredRentals), [filteredRentals]);
 
   const toggleMonth = (yearMonth: string) => {
     setExpandedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(yearMonth)) next.delete(yearMonth);
+      else next.add(yearMonth);
+      return next;
+    });
+  };
+
+  const toggleRentalMonth = (yearMonth: string) => {
+    setExpandedRentalMonths((prev) => {
       const next = new Set(prev);
       if (next.has(yearMonth)) next.delete(yearMonth);
       else next.add(yearMonth);
@@ -413,13 +567,19 @@ export default function FinancePaymentsPage() {
       scheduleQuery.isLoading ||
       subscriptionGroupsQuery.isLoading);
 
-  if (paymentsQuery.isLoading || contextLoading) {
+  if (paymentsQuery.isLoading || rentalPaymentsQuery.isLoading || contextLoading) {
     return <LoadingState label={t("finance.payments.loading")} />;
   }
   if (paymentsQuery.isError) return <QueryErrorState error={paymentsQuery.error} />;
+  if (rentalPaymentsQuery.isError) return <QueryErrorState error={rentalPaymentsQuery.error} />;
 
-  const total = aggregateEffectivePaymentTotal(filtered);
-  const hasAnyPayments = (paymentsQuery.data?.length ?? 0) > 0;
+  const clientTotal = aggregateEffectivePaymentTotal(filtered);
+  const rentalTotal = aggregateRentalPaymentStats(filteredRentals).total;
+  const combinedTotal = clientTotal + rentalTotal;
+  const hasAnyClientPayments = (paymentsQuery.data?.length ?? 0) > 0;
+  const hasAnyRentalPayments = (rentalPaymentsQuery.data?.length ?? 0) > 0;
+  const hasAnyPayments = hasAnyClientPayments || hasAnyRentalPayments;
+  const visibleCount = filtered.length + filteredRentals.length;
   const hasActiveFilters =
     Boolean(dateFrom || dateTo) ||
     sourceFilter !== "all" ||
@@ -483,6 +643,7 @@ export default function FinancePaymentsPage() {
               <option value="subscription">{t("common.payment.source.subscription")}</option>
               <option value="personal_lesson">{t("common.payment.source.personalLesson")}</option>
               <option value="single_visit">{t("common.payment.source.singleVisit")}</option>
+              <option value="rental">{t("common.payment.source.rental")}</option>
             </AppSelect>
             <AppSelect
               label={t("common.method")}
@@ -499,19 +660,22 @@ export default function FinancePaymentsPage() {
           </div>
         </div>
 
-        {filtered.length === 0 ? (
+        {visibleCount === 0 ? (
           <div className="py-20 text-center">
             <Landmark className="w-8 h-8 text-slate-300 mx-auto mb-3" />
             <p className="text-sm text-slate-500">
               {hasAnyPayments && hasActiveFilters
                 ? t("finance.payments.emptyFiltered")
-                : t("finance.payments.empty")}
+                : sourceFilter === "rental"
+                  ? t("finance.payments.rentalEmpty")
+                  : t("finance.payments.empty")}
             </p>
           </div>
         ) : (
           <>
-            <div>
-              {monthGroups.map((group) => {
+            {showClientPayments && filtered.length > 0 ? (
+              <div>
+                {monthGroups.map((group) => {
                 const open = expandedMonths.has(group.yearMonth);
                 const monthTitle =
                   group.yearMonth === "unknown"
@@ -593,18 +757,101 @@ export default function FinancePaymentsPage() {
                   </section>
                 );
               })}
-            </div>
-            <div className="px-4 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/60">
+              </div>
+            ) : null}
+
+            {showRentalPayments && filteredRentals.length > 0 ? (
+              <div className={showClientPayments && filtered.length > 0 ? "border-t border-slate-200" : ""}>
+                {showClientPayments && filtered.length > 0 ? (
+                  <div className="px-4 py-2 bg-amber-50/60 border-b border-amber-100">
+                    <p className="text-xs font-semibold text-amber-800">{t("finance.payments.rentalSection")}</p>
+                  </div>
+                ) : null}
+                {rentalMonthGroups.map((group) => {
+                  const open = expandedRentalMonths.has(group.yearMonth);
+                  const monthTitle =
+                    group.yearMonth === "unknown" ? "—" : formatMonthTitle(group.yearMonth, locale);
+                  const paymentCountLabel = `${group.paymentCount} ${plural(group.paymentCount, [
+                    t("common.payment.one"),
+                    t("common.payment.few"),
+                    t("common.payment.many"),
+                  ])}`;
+
+                  return (
+                    <section key={`rental-${group.yearMonth}`} className="border-b border-slate-100 last:border-b-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleRentalMonth(group.yearMonth)}
+                        aria-expanded={open}
+                        className="w-full flex items-start sm:items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer hover:bg-slate-50/80 transition-colors"
+                      >
+                        <div className="min-w-0 space-y-1">
+                          <p className="text-sm font-semibold text-slate-800">{monthTitle}</p>
+                          <p className="text-[11px] text-slate-500 font-sans">
+                            {paymentCountLabel}
+                            {" · "}
+                            {formatCurrency(group.paymentSum)}
+                          </p>
+                        </div>
+                        <ChevronDown
+                          className={`w-4 h-4 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+                            open ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+
+                      {open ? (
+                        <div className="border-t border-slate-100">
+                          <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
+                            <span>{t("schedule.rental.renterLabel")}</span>
+                            <span>{t("common.source")}</span>
+                            <span>{t("common.method")}</span>
+                            <span className="text-right">{t("common.amount")}</span>
+                          </div>
+                          <div>
+                            {group.payments.map((p) => (
+                              <RentalPaymentRow
+                                key={p.id}
+                                payment={p}
+                                formatDateTime={formatDateTime}
+                                translate={t}
+                                locationNameById={locationNameById}
+                                expanded={expandedRentalId === p.id}
+                                onToggle={() =>
+                                  setExpandedRentalId((prev) => (prev === p.id ? null : p.id))
+                                }
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </section>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            <div className="px-4 py-3 border-t border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-slate-50/60">
               <span className="text-xs text-slate-500 font-sans">
-                {plural(filtered.length, [
-                  t("common.records.one", { count: filtered.length }),
-                  t("common.records.few", { count: filtered.length }),
-                  t("common.records.many", { count: filtered.length }),
+                {plural(visibleCount, [
+                  t("common.records.one", { count: visibleCount }),
+                  t("common.records.few", { count: visibleCount }),
+                  t("common.records.many", { count: visibleCount }),
                 ])}
               </span>
-              <span className="text-sm font-sans font-semibold text-slate-800">
-                {t("finance.payments.total", { amount: formatCurrency(total) })}
-              </span>
+              <div className="text-sm font-sans font-semibold text-slate-800 text-right space-y-0.5">
+                {showClientPayments && showRentalPayments && filtered.length > 0 && filteredRentals.length > 0 ? (
+                  <>
+                    <p className="text-xs font-normal text-slate-500">
+                      {t("finance.payments.clientSubtotal", { amount: formatCurrency(clientTotal) })}
+                    </p>
+                    <p className="text-xs font-normal text-slate-500">
+                      {t("finance.payments.rentalSubtotal", { amount: formatCurrency(rentalTotal) })}
+                    </p>
+                  </>
+                ) : null}
+                <p>{t("finance.payments.total", { amount: formatCurrency(combinedTotal) })}</p>
+              </div>
             </div>
           </>
         )}

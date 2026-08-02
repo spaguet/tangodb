@@ -27,7 +27,7 @@ import {
   buildRevenueSplit,
   buildTopClientsByRevenue,
   buildTopTeachersByRevenue,
-  combineRevenueStats,
+  buildExtendedRevenueStats,
   computeMomChangePercent,
   computeOccupancyStats,
   countNewClientsInMonth,
@@ -518,17 +518,14 @@ export default function FinancialDashboard() {
   const stats = useMemo(() => {
     const monthPayments = paymentsInMonth(paymentsQuery.data ?? [], statsMonth);
     const monthRefunds = refundsInMonth(refundsQuery.data ?? [], statsMonth);
-    const base = combineRevenueStats(monthPayments, monthRefunds);
     const otherFromTable = (otherIncomeQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
-    const rentalTotal = (rentalPaymentsQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
     const allPending = (refundsQuery.data ?? []).filter((refund) => refund.status === "pending");
+    const base = buildExtendedRevenueStats(monthPayments, monthRefunds, {
+      otherIncomeAmount: otherFromTable,
+      rentalPayments: rentalPaymentsQuery.data ?? [],
+    });
     return {
       ...base,
-      otherTotal: base.otherTotal + otherFromTable + rentalTotal,
-      grossTotal: base.grossTotal + otherFromTable + rentalTotal,
-      netTotal: base.netTotal + otherFromTable + rentalTotal,
-      total: base.total + otherFromTable + rentalTotal,
-      rentalTotal,
       pendingRefundsTotal: allPending.reduce((sum, refund) => sum + refund.amount, 0),
       pendingRefundCount: allPending.length,
     };
