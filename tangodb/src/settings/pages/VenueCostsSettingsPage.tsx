@@ -17,11 +17,14 @@ import {
   previewGroupVenueCost,
   validateVenueCostDraft,
   type VenueCostFixedRules,
+  type VenueCostGroupRule,
   type VenueCostMode,
   type VenueCostPerLessonRules,
+  type VenueCostPersonalRule,
   type VenueCostRuleDraft,
 } from "../../lib/venueCostRules";
 import { formatCurrency } from "../../lib/utils";
+import { useSettings } from "../SettingsProvider";
 import AppSelect, { fieldCls, selectLabelCls } from "../../components/ui/AppSelect";
 import { btnAddLinkCls, btnAddSoftCls, btnCancelCls, btnAddCls } from "../../components/ui/buttonStyles";
 import LoadingState from "../../components/ui/LoadingState";
@@ -30,21 +33,36 @@ import VenueRuleExpiryNotice from "../../components/venue-costs/VenueRuleExpiryN
 import { useToast } from "../../App";
 
 const today = () => new Date().toISOString().slice(0, 10);
-const emptyPerLessonRules = (): VenueCostPerLessonRules => ({
-  currency: "RUB",
-  group: [
-    {
-      teacherMemberId: null,
-      disciplineId: null,
-      locationId: null,
-      attendanceTiers: [
-        { minAttendees: 0, maxAttendees: 4, amount: 0 },
-        { minAttendees: 5, maxAttendees: null, amount: 0 },
-      ],
-    },
+
+const defaultGroupRule = (): VenueCostGroupRule => ({
+  teacherMemberId: null,
+  disciplineId: null,
+  locationId: null,
+  attendanceTiers: [
+    { minAttendees: 0, maxAttendees: 4, amount: 0 },
+    { minAttendees: 5, maxAttendees: null, amount: 0 },
   ],
-  personal: [{ teacherMemberId: null, disciplineId: null, locationId: null, amount: 0 }],
 });
+
+const defaultPersonalRule = (): VenueCostPersonalRule => ({
+  teacherMemberId: null,
+  disciplineId: null,
+  locationId: null,
+  amount: 0,
+});
+
+const emptyPerLessonRules = (currency: string): VenueCostPerLessonRules => ({
+  currency,
+  group: [],
+  personal: [],
+});
+
+const emptyFixedRules = (currency: string): VenueCostFixedRules => ({
+  currency,
+  period: "month",
+  amount: 0,
+});
+
 const newDraft = (): VenueCostRuleDraft => ({
   mode: "disabled",
   validFrom: today(),
@@ -65,6 +83,8 @@ function versionToDraft(version: VenueCostRuleVersion): VenueCostRuleDraft {
 export default function VenueCostsSettingsPage({ embedded = false }: { embedded?: boolean }) {
   const { t, formatDate } = useI18n();
   const toast = useToast();
+  const { settings } = useSettings();
+  const orgCurrency = settings?.currency_code || "RUB";
   const { role, can } = usePermissions();
   const canManage = role === "owner" || role === "director";
   const canRead = can("finance.read");
@@ -119,10 +139,12 @@ export default function VenueCostsSettingsPage({ embedded = false }: { embedded?
         rules:
           mode === "per_lesson"
             ? base.mode === "per_lesson"
-              ? base.rules
-              : emptyPerLessonRules()
+              ? { ...(base.rules as VenueCostPerLessonRules), currency: orgCurrency }
+              : emptyPerLessonRules(orgCurrency)
             : mode === "fixed_period"
-              ? ({ currency: "RUB", period: "month", amount: 0 } satisfies VenueCostFixedRules)
+              ? base.mode === "fixed_period"
+                ? { ...(base.rules as VenueCostFixedRules), currency: orgCurrency }
+                : emptyFixedRules(orgCurrency)
               : {},
       };
     });
@@ -130,12 +152,24 @@ export default function VenueCostsSettingsPage({ embedded = false }: { embedded?
 
   const handleSave = async () => {
     if (!draft || saveDraft.isPending) return;
-    const errors = validateVenueCostDraft(draft);
+    const draftToSave: VenueCostRuleDraft =
+      draft.mode === "per_lesson"
+        ? {
+            ...draft,
+            rules: { ...(draft.rules as VenueCostPerLessonRules), currency: orgCurrency },
+          }
+        : draft.mode === "fixed_period"
+          ? {
+              ...draft,
+              rules: { ...(draft.rules as VenueCostFixedRules), currency: orgCurrency },
+            }
+          : draft;
+    const errors = validateVenueCostDraft(draftToSave);
     if (errors.length) {
       toast(t("venueCosts.error.invalid"), "error");
       return;
     }
-    const result = await saveDraft.mutateAsync({ draft, idempotencyKey: crypto.randomUUID() });
+    const result = await saveDraft.mutateAsync({ draft: draftToSave, idempotencyKey: crypto.randomUUID() });
     if (!result.success) {
       toast(t("venueCosts.error.save", { error: result.error }), "error");
       return;
@@ -295,14 +329,13 @@ function FixedPeriodEditor({
 }) {
   const rules = draft.rules as VenueCostFixedRules;
   return (
-    <div className="grid sm:grid-cols-3 gap-3">
+    <div className="grid sm:grid-cols-2 gap-3">
       <AppSelect label={t("venueCosts.period")} value={rules.period} onChange={(e) => setDraft({ ...draft, rules: { ...rules, period: e.target.value as VenueCostFixedRules["period"] } })}>
         <option value="week">{t("venueCosts.period.week")}</option>
         <option value="month">{t("venueCosts.period.month")}</option>
         <option value="custom">{t("venueCosts.period.custom")}</option>
       </AppSelect>
       <MoneyInput label={t("venueCosts.amount")} value={rules.amount} onChange={(amount) => setDraft({ ...draft, rules: { ...rules, amount } })} />
-      <TextInput label={t("venueCosts.currency")} value={rules.currency} onChange={(currency) => setDraft({ ...draft, rules: { ...rules, currency } })} />
     </div>
   );
 }
@@ -324,167 +357,66 @@ function PerLessonEditor({
 }) {
   const rules = draft.rules as VenueCostPerLessonRules;
   const updateRules = (next: VenueCostPerLessonRules) => setDraft({ ...draft, rules: next });
+  const groupEnabled = rules.group.length > 0;
+  const personalEnabled = rules.personal.length > 0;
+
+  const setGroupEnabled = (enabled: boolean) => {
+    updateRules({
+      ...rules,
+      group: enabled ? (rules.group.length ? rules.group : [defaultGroupRule()]) : [],
+    });
+  };
+
+  const setPersonalEnabled = (enabled: boolean) => {
+    updateRules({
+      ...rules,
+      personal: enabled ? (rules.personal.length ? rules.personal : [defaultPersonalRule()]) : [],
+    });
+  };
+
   return (
     <div className="space-y-4">
-      <div className="max-w-xs">
-        <TextInput label={t("venueCosts.currency")} value={rules.currency} onChange={(currency) => updateRules({ ...rules, currency })} />
-      </div>
-      <p className="text-[11px] text-slate-500">{t("venueCosts.teacherRequiredHint")}</p>
-      <RuleSection
-        title={t("venueCosts.groupRules")}
-        onAdd={() =>
-          updateRules({
-            ...rules,
-            group: [
-              ...rules.group,
-              {
-                teacherMemberId: null,
-                disciplineId: null,
-                locationId: null,
-                attendanceTiers: [{ minAttendees: 0, maxAttendees: null, amount: 0 }],
-              },
-            ],
-          })
-        }
-      >
-        {rules.group.map((rule, ruleIndex) => (
-          <div key={ruleIndex} className="rounded-xl border border-slate-200 p-3 space-y-3">
-            <RuleScope
-              teacherMemberId={rule.teacherMemberId}
-              disciplineId={rule.disciplineId}
-              locationId={rule.locationId}
-              disciplines={disciplines}
-              locations={locations}
-              teachers={teachers}
-              t={t}
-              onChange={(scope) =>
-                updateRules({
-                  ...rules,
-                  group: rules.group.map((item, index) => (index === ruleIndex ? { ...item, ...scope } : item)),
-                })
-              }
+      <div className="space-y-2">
+        <p className="text-[11px] text-slate-500">{t("venueCosts.applyTypesHint")}</p>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={groupEnabled}
+              onChange={(e) => setGroupEnabled(e.target.checked)}
+              className="rounded border-slate-300 text-indigo-600"
             />
-            {rule.attendanceTiers.map((tier, tierIndex) => (
-              <div key={tierIndex} className="grid grid-cols-[1fr_1fr_1.3fr_auto] gap-2 items-end">
-                <MoneyInput
-                  label={t("venueCosts.tierMin")}
-                  value={tier.minAttendees}
-                  onChange={(value) =>
-                    updateRules({
-                      ...rules,
-                      group: rules.group.map((item, index) =>
-                        index === ruleIndex
-                          ? {
-                              ...item,
-                              attendanceTiers: item.attendanceTiers.map((part, idx) =>
-                                idx === tierIndex ? { ...part, minAttendees: value } : part
-                              ),
-                            }
-                          : item
-                      ),
-                    })
-                  }
-                />
-                <label className="field-stack">
-                  <span className={selectLabelCls}>{t("venueCosts.tierMax")}</span>
-                  <input
-                    className={fieldCls}
-                    type="number"
-                    min={0}
-                    value={tier.maxAttendees ?? ""}
-                    onChange={(e) =>
-                      updateRules({
-                        ...rules,
-                        group: rules.group.map((item, index) =>
-                          index === ruleIndex
-                            ? {
-                                ...item,
-                                attendanceTiers: item.attendanceTiers.map((part, idx) =>
-                                  idx === tierIndex
-                                    ? { ...part, maxAttendees: e.target.value === "" ? null : Number(e.target.value) }
-                                    : part
-                                ),
-                              }
-                            : item
-                        ),
-                      })
-                    }
-                  />
-                </label>
-                <MoneyInput
-                  label={t("venueCosts.amount")}
-                  value={tier.amount}
-                  onChange={(amount) =>
-                    updateRules({
-                      ...rules,
-                      group: rules.group.map((item, index) =>
-                        index === ruleIndex
-                          ? {
-                              ...item,
-                              attendanceTiers: item.attendanceTiers.map((part, idx) =>
-                                idx === tierIndex ? { ...part, amount } : part
-                              ),
-                            }
-                          : item
-                      ),
-                    })
-                  }
-                />
-                <IconDelete
-                  onClick={() =>
-                    updateRules({
-                      ...rules,
-                      group: rules.group.map((item, index) =>
-                        index === ruleIndex
-                          ? { ...item, attendanceTiers: item.attendanceTiers.filter((_, idx) => idx !== tierIndex) }
-                          : item
-                      ),
-                    })
-                  }
-                />
-              </div>
-            ))}
-            <div className="flex justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  const last = rule.attendanceTiers.at(-1);
-                  const min = last?.maxAttendees == null ? 0 : last.maxAttendees + 1;
-                  updateRules({
-                    ...rules,
-                    group: rules.group.map((item, index) =>
-                      index === ruleIndex
-                        ? {
-                            ...item,
-                            attendanceTiers: [...item.attendanceTiers, { minAttendees: min, maxAttendees: null, amount: 0 }],
-                          }
-                        : item
-                    ),
-                  });
-                }}
-                className={btnAddLinkCls}
-              >
-                {t("venueCosts.addTier")}
-              </button>
-              <IconDelete onClick={() => updateRules({ ...rules, group: rules.group.filter((_, index) => index !== ruleIndex) })} />
-            </div>
-          </div>
-        ))}
-      </RuleSection>
-      <RuleSection
-        title={t("venueCosts.personalRules")}
-        onAdd={() =>
-          updateRules({
-            ...rules,
-            personal: [...rules.personal, { teacherMemberId: null, disciplineId: null, locationId: null, amount: 0 }],
-          })
-        }
-      >
-        {rules.personal.map((rule, index) => (
-          <div key={index} className="rounded-xl border border-indigo-100 bg-indigo-50/30 p-3 space-y-2">
-            <div className="grid sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-end">
+            {t("venueCosts.groupRules")}
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={personalEnabled}
+              onChange={(e) => setPersonalEnabled(e.target.checked)}
+              className="rounded border-slate-300 text-indigo-600"
+            />
+            {t("venueCosts.personalRules")}
+          </label>
+        </div>
+      </div>
+
+      {(groupEnabled || personalEnabled) && (
+        <p className="text-[11px] text-slate-500">{t("venueCosts.teacherRequiredHint")}</p>
+      )}
+
+      {groupEnabled && (
+        <RuleSection
+          title={t("venueCosts.groupRules")}
+          onAdd={() =>
+            updateRules({
+              ...rules,
+              group: [...rules.group, defaultGroupRule()],
+            })
+          }
+        >
+          {rules.group.map((rule, ruleIndex) => (
+            <div key={ruleIndex} className="rounded-xl border border-slate-200 p-3 space-y-3">
               <RuleScope
-                compact
                 teacherMemberId={rule.teacherMemberId}
                 disciplineId={rule.disciplineId}
                 locationId={rule.locationId}
@@ -495,31 +427,183 @@ function PerLessonEditor({
                 onChange={(scope) =>
                   updateRules({
                     ...rules,
-                    personal: rules.personal.map((item, idx) => (idx === index ? { ...item, ...scope } : item)),
+                    group: rules.group.map((item, index) => (index === ruleIndex ? { ...item, ...scope } : item)),
                   })
                 }
               />
-              <MoneyInput
-                label={t("venueCosts.amount")}
-                value={rule.amount}
-                onChange={(amount) =>
-                  updateRules({
-                    ...rules,
-                    personal: rules.personal.map((item, idx) => (idx === index ? { ...item, amount } : item)),
-                  })
-                }
-              />
-              <IconDelete onClick={() => updateRules({ ...rules, personal: rules.personal.filter((_, idx) => idx !== index) })} />
+              {rule.attendanceTiers.map((tier, tierIndex) => (
+                <div key={tierIndex} className="grid grid-cols-[1fr_1fr_1.3fr_auto] gap-2 items-end">
+                  <MoneyInput
+                    label={t("venueCosts.tierMin")}
+                    value={tier.minAttendees}
+                    onChange={(value) =>
+                      updateRules({
+                        ...rules,
+                        group: rules.group.map((item, index) =>
+                          index === ruleIndex
+                            ? {
+                                ...item,
+                                attendanceTiers: item.attendanceTiers.map((part, idx) =>
+                                  idx === tierIndex ? { ...part, minAttendees: value } : part
+                                ),
+                              }
+                            : item
+                        ),
+                      })
+                    }
+                  />
+                  <label className="field-stack">
+                    <span className={selectLabelCls}>{t("venueCosts.tierMax")}</span>
+                    <input
+                      className={fieldCls}
+                      type="number"
+                      min={0}
+                      value={tier.maxAttendees ?? ""}
+                      onChange={(e) =>
+                        updateRules({
+                          ...rules,
+                          group: rules.group.map((item, index) =>
+                            index === ruleIndex
+                              ? {
+                                  ...item,
+                                  attendanceTiers: item.attendanceTiers.map((part, idx) =>
+                                    idx === tierIndex
+                                      ? { ...part, maxAttendees: e.target.value === "" ? null : Number(e.target.value) }
+                                      : part
+                                  ),
+                                }
+                              : item
+                          ),
+                        })
+                      }
+                    />
+                  </label>
+                  <MoneyInput
+                    label={t("venueCosts.amount")}
+                    value={tier.amount}
+                    onChange={(amount) =>
+                      updateRules({
+                        ...rules,
+                        group: rules.group.map((item, index) =>
+                          index === ruleIndex
+                            ? {
+                                ...item,
+                                attendanceTiers: item.attendanceTiers.map((part, idx) =>
+                                  idx === tierIndex ? { ...part, amount } : part
+                                ),
+                              }
+                            : item
+                        ),
+                      })
+                    }
+                  />
+                  <IconDelete
+                    onClick={() =>
+                      updateRules({
+                        ...rules,
+                        group: rules.group.map((item, index) =>
+                          index === ruleIndex
+                            ? { ...item, attendanceTiers: item.attendanceTiers.filter((_, idx) => idx !== tierIndex) }
+                            : item
+                        ),
+                      })
+                    }
+                  />
+                </div>
+              ))}
+              <div className="flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const last = rule.attendanceTiers.at(-1);
+                    const min = last?.maxAttendees == null ? 0 : last.maxAttendees + 1;
+                    updateRules({
+                      ...rules,
+                      group: rules.group.map((item, index) =>
+                        index === ruleIndex
+                          ? {
+                              ...item,
+                              attendanceTiers: [...item.attendanceTiers, { minAttendees: min, maxAttendees: null, amount: 0 }],
+                            }
+                          : item
+                      ),
+                    });
+                  }}
+                  className={btnAddLinkCls}
+                >
+                  {t("venueCosts.addTier")}
+                </button>
+                <IconDelete
+                  onClick={() => {
+                    const nextGroup = rules.group.filter((_, index) => index !== ruleIndex);
+                    updateRules({ ...rules, group: nextGroup });
+                  }}
+                />
+              </div>
             </div>
-          </div>
-        ))}
-      </RuleSection>
-      <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 text-xs text-slate-600">
-        {t("venueCosts.preview", {
-          four: formatCurrency(previewGroupVenueCost(rules, 4)),
-          five: formatCurrency(previewGroupVenueCost(rules, 5)),
-        })}
-      </div>
+          ))}
+        </RuleSection>
+      )}
+
+      {personalEnabled && (
+        <RuleSection
+          title={t("venueCosts.personalRules")}
+          onAdd={() =>
+            updateRules({
+              ...rules,
+              personal: [...rules.personal, defaultPersonalRule()],
+            })
+          }
+        >
+          {rules.personal.map((rule, index) => (
+            <div key={index} className="rounded-xl border border-indigo-100 bg-indigo-50/30 p-3 space-y-2">
+              <div className="grid sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-end">
+                <RuleScope
+                  compact
+                  teacherMemberId={rule.teacherMemberId}
+                  disciplineId={rule.disciplineId}
+                  locationId={rule.locationId}
+                  disciplines={disciplines}
+                  locations={locations}
+                  teachers={teachers}
+                  t={t}
+                  onChange={(scope) =>
+                    updateRules({
+                      ...rules,
+                      personal: rules.personal.map((item, idx) => (idx === index ? { ...item, ...scope } : item)),
+                    })
+                  }
+                />
+                <MoneyInput
+                  label={t("venueCosts.amount")}
+                  value={rule.amount}
+                  onChange={(amount) =>
+                    updateRules({
+                      ...rules,
+                      personal: rules.personal.map((item, idx) => (idx === index ? { ...item, amount } : item)),
+                    })
+                  }
+                />
+                <IconDelete
+                  onClick={() => {
+                    const nextPersonal = rules.personal.filter((_, idx) => idx !== index);
+                    updateRules({ ...rules, personal: nextPersonal });
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </RuleSection>
+      )}
+
+      {groupEnabled && (
+        <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 text-xs text-slate-600">
+          {t("venueCosts.preview", {
+            four: formatCurrency(previewGroupVenueCost(rules, 4)),
+            five: formatCurrency(previewGroupVenueCost(rules, 5)),
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -618,14 +702,6 @@ function MoneyInput({ label, value, onChange }: { label: string; value: number; 
     <label className="field-stack">
       <span className={selectLabelCls}>{label}</span>
       <input className={fieldCls} type="number" min={0} step="0.01" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)} />
-    </label>
-  );
-}
-function TextInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return (
-    <label className="field-stack">
-      <span className={selectLabelCls}>{label}</span>
-      <input className={fieldCls} value={value} onChange={(e) => onChange(e.target.value.toUpperCase())} />
     </label>
   );
 }

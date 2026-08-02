@@ -2302,6 +2302,7 @@ export type I18nKey =
   | "venueCosts.period.custom"
   | "venueCosts.amount"
   | "venueCosts.currency"
+  | "venueCosts.applyTypesHint"
   | "venueCosts.groupRules"
   | "venueCosts.personalRules"
   | "venueCosts.discipline"

@@ -65,7 +65,7 @@ export function validateVenueCostDraft(draft: VenueCostRuleDraft): string[] {
 
   if (draft.mode === "per_lesson") {
     const rules = draft.rules as VenueCostPerLessonRules;
-    if (!rules.currency.trim()) errors.push("currency_required");
+    if (!rules.group.length && !rules.personal.length) errors.push("lesson_types_required");
     for (const rule of rules.personal) {
       if (!rule.teacherMemberId) errors.push("teacher_required");
       if (!finiteNonNegative(rule.amount)) errors.push("invalid_personal_amount");
