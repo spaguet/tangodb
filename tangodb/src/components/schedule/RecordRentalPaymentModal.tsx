@@ -5,6 +5,7 @@ import { resolveMutationError } from "../../lib/resolveMutationError";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { useRecordRentalPayment } from "../../hooks/useRentals";
 import { useI18n } from "../../hooks/useI18n";
+import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { formatCurrency } from "../../lib/utils";
 import type { PaymentMethod, RentalDisplayLesson } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
@@ -37,9 +38,7 @@ export default function RecordRentalPaymentModal({
 
   const remaining = useMemo(() => {
     if (!lesson) return 0;
-    const fixed = lesson.fixedAmount ?? 0;
-    const paid = lesson.paidAmount ?? 0;
-    return Math.max(0, fixed - paid);
+    return rentalRemainingAmount(lesson.fixedAmount, lesson.paidAmount);
   }, [lesson]);
 
   useEffect(() => {

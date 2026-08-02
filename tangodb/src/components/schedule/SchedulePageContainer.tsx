@@ -13,6 +13,7 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
 import { useI18n } from "../../hooks/useI18n";
 import { formatCurrency } from "../../lib/utils";
+import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import {
   canAddPersonalFromGrid,
   canClickEmptyCell,
@@ -314,7 +315,7 @@ export default function SchedulePageContainer() {
             lesson.bookingStatus === "confirmed" &&
             (lesson.paymentStatus === "unpaid" || lesson.paymentStatus === "partial")
           ) {
-            const remaining = Math.max(0, (lesson.fixedAmount ?? 0) - (lesson.paidAmount ?? 0));
+            const remaining = rentalRemainingAmount(lesson.fixedAmount, lesson.paidAmount);
             if (remaining > 0) {
               parts.push(formatCurrency(remaining));
             }

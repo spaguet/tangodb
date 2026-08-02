@@ -22,6 +22,7 @@ import type {
   RenterRentalRow,
   RenterCommunication,
 } from "../../types";
+import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { useI18n } from "../../hooks/useI18n";
 import { useCan } from "../../hooks/usePermissions";
 import { useLocations } from "../../hooks/useLocations";
@@ -569,7 +570,9 @@ function FinanceTab({
 
   if (!finance) return null;
   const extended = rentalFinanceQuery.data;
-  const withDebt = rentals.filter((r) => r.fixedAmount != null && r.paidAmount != null && r.fixedAmount > r.paidAmount);
+  const withDebt = rentals.filter(
+    (r) => r.fixedAmount != null && r.paidAmount != null && rentalRemainingAmount(r.fixedAmount, r.paidAmount) > 0
+  );
   const invoices = invoicesQuery.data ?? [];
 
   const invoiceStatusLabel = (status: string) => {
@@ -639,7 +642,7 @@ function FinanceTab({
               <li key={r.id} className="flex justify-between border-b border-slate-50 py-1">
                 <span>{formatDate(r.rentalDate)} · {locationMap.get(r.locationId)}</span>
                 <span className="text-rose-600 font-semibold">
-                  {formatCurrency((r.fixedAmount ?? 0) - (r.paidAmount ?? 0))}
+                  {formatCurrency(rentalRemainingAmount(r.fixedAmount, r.paidAmount))}
                 </span>
               </li>
             ))}

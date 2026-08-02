@@ -2,6 +2,7 @@ import type { KeyboardEvent } from "react";
 import type { DisplayLesson } from "../../types";
 import { GROUP_LESSON_COLOR, PERSONAL_LESSON_COLOR, EVENT_LESSON_COLOR, RENTAL_LESSON_COLOR } from "../../lib/scheduleColors";
 import { isPastDate } from "../../lib/scheduleWeek";
+import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import {
   lessonHeightPx,
   lessonTopPx,
@@ -23,7 +24,7 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
   const personalDebt = lesson.kind === "personal" && lesson.paid === "no";
   const rentalRemaining =
     lesson.kind === "rental"
-      ? Math.max(0, (lesson.fixedAmount ?? 0) - (lesson.paidAmount ?? 0))
+      ? rentalRemainingAmount(lesson.fixedAmount, lesson.paidAmount)
       : 0;
   const rentalDebt =
     lesson.kind === "rental" &&

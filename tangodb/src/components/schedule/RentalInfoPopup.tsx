@@ -7,6 +7,7 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import { useCancelRental, useRentalDetail } from "../../hooks/useRentals";
 import { useCancelRentalSeriesOccurrence } from "../../hooks/useRentalSeries";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
+import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { formatCurrency } from "../../lib/utils";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { RentalDisplayLesson } from "../../types";
@@ -63,10 +64,10 @@ export default function RentalInfoPopup({
   const seriesId = detail?.rentalSeriesId ?? lesson.rentalSeriesId ?? null;
   const displayTitle = lesson.renterName ?? t("schedule.rental.blockTitle");
   const paymentStatus = detail?.paymentStatus ?? lesson.paymentStatus;
-  const fixedAmount = detail?.fixedAmount ?? lesson.fixedAmount ?? 0;
   const calculatedAmount = detail?.calculatedAmount ?? null;
   const paidAmount = detail?.paidAmount ?? lesson.paidAmount ?? 0;
-  const remaining = Math.max(0, fixedAmount - paidAmount);
+  const effectiveAmount = detail?.fixedAmount ?? lesson.fixedAmount ?? 0;
+  const remaining = rentalRemainingAmount(effectiveAmount, paidAmount);
   const pricingBreakdown = detail?.pricingBreakdown;
 
   const canRecordPayment =
@@ -160,18 +161,18 @@ export default function RentalInfoPopup({
                   <p className="text-xs text-indigo-700 font-semibold">{t("rentalSeries.partOfSeries")}</p>
                 </div>
               ) : null}
-              {canSeeCashAmounts && (fixedAmount > 0 || calculatedAmount != null || paymentStatus) ? (
+              {canSeeCashAmounts && (effectiveAmount > 0 || calculatedAmount != null || paymentStatus) ? (
                 <>
-                  {canSeeFinance && calculatedAmount != null && calculatedAmount !== fixedAmount ? (
+                  {canSeeFinance && calculatedAmount != null && calculatedAmount !== effectiveAmount ? (
                     <div>
                       <span className={labelCls}>{t("rentalSeries.calculatedAmountLabel")}</span>
                       <p className="text-slate-800">{formatCurrency(calculatedAmount)} {lesson.currency ?? "RUB"}</p>
                     </div>
                   ) : null}
-                  {(fixedAmount > 0 || paymentStatus) ? (
+                  {(effectiveAmount > 0 || paymentStatus) ? (
                     <div>
                       <span className={labelCls}>{t("schedule.rental.fixedAmountLabel")}</span>
-                      <p className="text-slate-800">{formatCurrency(fixedAmount)} {lesson.currency ?? "RUB"}</p>
+                      <p className="text-slate-800">{formatCurrency(effectiveAmount)} {lesson.currency ?? "RUB"}</p>
                     </div>
                   ) : null}
                   {canSeeFinance && pricingBreakdown && Array.isArray(pricingBreakdown) ? (
