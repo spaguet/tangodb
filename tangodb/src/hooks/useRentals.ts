@@ -360,6 +360,41 @@ export interface UpdateRentalInput {
   currency?: string;
 }
 
+export function useAdjustRentalAmount() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { rentalId: string; newAmount: number; reason: string }) => {
+      const { data, error } = await supabase.rpc("apply_rental_pricing_adjustment", {
+        p_rental_id: input.rentalId,
+        p_new_amount: input.newAmount,
+        p_reason: input.reason,
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        old_amount?: number;
+        new_amount?: number;
+        remaining?: number;
+      } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "schedule.rental.amountAdjustFailed" };
+      }
+
+      return {
+        success: true as const,
+        oldAmount: result.old_amount,
+        newAmount: result.new_amount,
+        remaining: result.remaining,
+      };
+    },
+    onSuccess: () => invalidateRentalQueries(queryClient),
+  });
+}
+
 export function useUpdateRental() {
   const queryClient = useQueryClient();
 

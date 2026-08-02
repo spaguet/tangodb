@@ -12,6 +12,14 @@
 
 ## Записи
 
+### HALL-RENT-6 — Правка суммы брони с аудитом (2026-08-02)
+
+- **Дата:** 2026-08-02
+- **Решение:** UI правки суммы через `apply_rental_pricing_adjustment` (аудит в `rental_pricing_adjustments`), gate `member_can_adjust_rental_amount()` = `member_can_record_rental_payment()`. Accountant без `manage_rentals` — тот же узкий RPC (путь через `finance.read`). `update_rental.fixed_amount` — для прочих полей брони; gate суммы выровнен; восстановлена запись `fixed_amount` в UPDATE (регресс renters_crm).
+- **Контекст:** Этап 6 аудита F29: бронь с суммой 0, кассир не проходил `can_read_financial()`; хук `useApplyRentalPricingAdjustment` вызывал неверный параметр RPC.
+- **Альтернативы:** (1) Только `update_rental` без reason/audit; (2) Эскалация accountant к admin в UI без RPC.
+- **Почему так:** Существующая таблица аудита + единый кассовый gate; hard block `new < paid` до сторно (этап 8).
+
 ### HALL-RENT-5 — Единый read-model регистра денег аренды (2026-08-02)
 
 - **Дата:** 2026-08-02

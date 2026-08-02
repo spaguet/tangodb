@@ -326,24 +326,33 @@ export function useApplyRentalPricingAdjustment() {
   return useMutation({
     mutationFn: async (input: {
       rentalId: string;
-      adjustmentAmount: number;
+      newAmount: number;
       reason: string;
       renterId?: string;
     }) => {
       const { data, error } = await supabase.rpc("apply_rental_pricing_adjustment", {
         p_rental_id: input.rentalId,
-        p_adjustment_amount: input.adjustmentAmount,
+        p_new_amount: input.newAmount,
         p_reason: input.reason,
       });
 
       if (error) return { success: false as const, error: error.message };
 
-      const result = data as { success?: boolean; error?: string; final_amount?: number } | null;
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        new_amount?: number;
+        remaining?: number;
+      } | null;
       if (!result?.success) {
-        return { success: false as const, error: result?.error ?? "rentalInvoices.error.adjustmentFailed" };
+        return { success: false as const, error: result?.error ?? "schedule.rental.amountAdjustFailed" };
       }
 
-      return { success: true as const, finalAmount: result.final_amount };
+      return {
+        success: true as const,
+        newAmount: result.new_amount,
+        remaining: result.remaining,
+      };
     },
     onSuccess: (_data, variables) => invalidateRenterFinance(queryClient, variables.renterId),
   });

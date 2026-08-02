@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Building2, Coins, X } from "lucide-react";
+import { Building2, Coins, Pencil, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -12,6 +12,7 @@ import { formatCurrency } from "../../lib/utils";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { RentalDisplayLesson } from "../../types";
 import RecordRentalPaymentModal from "./RecordRentalPaymentModal";
+import EditRentalAmountModal from "./EditRentalAmountModal";
 import type { LocationOption } from "./CreateRentalDialog";
 
 interface RentalInfoPopupProps {
@@ -53,6 +54,7 @@ export default function RentalInfoPopup({
   const cancelOccurrenceMutation = useCancelRentalSeriesOccurrence();
 
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [editAmountOpen, setEditAmountOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelOccurrenceOpen, setCancelOccurrenceOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -76,6 +78,11 @@ export default function RentalInfoPopup({
     lesson.bookingStatus === "confirmed" &&
     paymentStatus !== "paid" &&
     paymentStatus !== "overpaid";
+
+  const canEditAmount =
+    canSeeCashAmounts &&
+    !isReadOnly &&
+    lesson.bookingStatus === "confirmed";
 
   const handleCancel = async () => {
     if (!cancelReason.trim()) {
@@ -212,6 +219,16 @@ export default function RentalInfoPopup({
             </div>
 
             <div className="flex flex-wrap gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
+              {canEditAmount ? (
+                <button
+                  type="button"
+                  onClick={() => setEditAmountOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  {t("schedule.rental.editAmountAction")}
+                </button>
+              ) : null}
               {canRecordPayment ? (
                 <button type="button" onClick={() => setPaymentOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
                   <Coins className="w-3.5 h-3.5" />
@@ -233,6 +250,19 @@ export default function RentalInfoPopup({
           </motion.div>
         </div>
       </AnimatePresence>
+
+      <EditRentalAmountModal
+        lesson={lesson}
+        currentAmount={effectiveAmount}
+        paidAmount={paidAmount}
+        open={editAmountOpen}
+        toast={toast}
+        onClose={() => setEditAmountOpen(false)}
+        onSuccess={() => {
+          onSuccess();
+          void detailQuery.refetch();
+        }}
+      />
 
       <RecordRentalPaymentModal
         lesson={lesson}
