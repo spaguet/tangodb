@@ -267,6 +267,17 @@ export function useRentalDetail(rentalId: string | null, enabled: boolean) {
             method: (p.method as PaymentMethod) ?? "cash",
             methodComment: p.method_comment != null ? String(p.method_comment) : null,
             createdAt: String(p.created_at ?? ""),
+            createdBy: p.created_by != null ? String(p.created_by) : null,
+            operationKind: p.operation_kind === "storno" ? "storno" : "payment",
+            reversesPaymentId: p.reverses_payment_id != null ? String(p.reverses_payment_id) : null,
+            replacesPaymentId: p.replaces_payment_id != null ? String(p.replaces_payment_id) : null,
+            correctionReasonCode:
+              p.correction_reason_code != null ? String(p.correction_reason_code) : null,
+            correctionComment: p.correction_comment != null ? String(p.correction_comment) : null,
+            operationNumber: p.operation_number != null ? Number(p.operation_number) : null,
+            correctionStatus: p.correction_status as RentalPayment["correctionStatus"],
+            remainingAmount:
+              p.remaining_amount != null ? Number(p.remaining_amount) : undefined,
           })
         ),
       } satisfies RentalDetail;

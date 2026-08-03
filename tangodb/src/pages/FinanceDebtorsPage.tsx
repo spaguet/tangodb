@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { AlertCircle, Coins } from "lucide-react";
+import { Link } from "react-router-dom";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
@@ -7,10 +8,17 @@ import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { useToast } from "../App";
 import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
-import { sumDebtorAmounts, formatDebtorDetail } from "../lib/financeReports";
+import { sumDebtorAmounts, formatDebtorDetail, type DebtorEntry } from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "../components/schedule/PayPersonalLessonModal";
 import { btnAddCls } from "../components/ui/buttonStyles";
+
+type DebtorTab = "all" | "clients" | "rentals";
+
+function debtorKindLabel(kind: DebtorEntry["kind"], t: ReturnType<typeof useI18n>["t"]): string | null {
+  if (kind === "rental") return t("finance.debtors.kind.rental");
+  return null;
+}
 
 export default function FinanceDebtorsPage() {
   const { t, plural, formatDate } = useI18n();
@@ -18,21 +26,30 @@ export default function FinanceDebtorsPage() {
   const { can, isReadOnly } = usePermissions();
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
+  const [tab, setTab] = useState<DebtorTab>("all");
 
   const debtorsQuery = useFinancialDebtors();
-  const debtors = useMemo(
-    () =>
-      personalLessonsEnabled
-        ? (debtorsQuery.data ?? [])
-        : (debtorsQuery.data ?? []).filter((entry) => entry.kind !== "personal"),
-    [debtorsQuery.data, personalLessonsEnabled]
-  );
+  const allDebtors = useMemo(() => {
+    const rows = debtorsQuery.data ?? [];
+    return personalLessonsEnabled ? rows : rows.filter((entry) => entry.kind !== "personal");
+  }, [debtorsQuery.data, personalLessonsEnabled]);
+
+  const debtors = useMemo(() => {
+    if (tab === "clients") return allDebtors.filter((e) => e.kind !== "rental");
+    if (tab === "rentals") return allDebtors.filter((e) => e.kind === "rental");
+    return allDebtors;
+  }, [allDebtors, tab]);
+
   const totalDebt = useMemo(() => sumDebtorAmounts(debtors), [debtors]);
+  const rentalDebtTotal = useMemo(
+    () => sumDebtorAmounts(allDebtors.filter((e) => e.kind === "rental")),
+    [allDebtors]
+  );
 
   if (debtorsQuery.isLoading) return <LoadingState label={t("finance.debtors.loading")} />;
   if (debtorsQuery.isError) return <QueryErrorState error={debtorsQuery.error} />;
 
-  const openPersonalPayment = (entry: (typeof debtors)[number]) => {
+  const openPersonalPayment = (entry: DebtorEntry) => {
     if (!entry.personalLessonId || !entry.clientId1 || !entry.lessonDate) return;
     setPayTarget({
       lessonId: entry.personalLessonId,
@@ -49,6 +66,12 @@ export default function FinanceDebtorsPage() {
     });
   };
 
+  const tabs: { id: DebtorTab; label: string }[] = [
+    { id: "all", label: t("finance.debtors.tab.all") },
+    { id: "clients", label: t("finance.debtors.tab.clients") },
+    { id: "rentals", label: t("finance.debtors.tab.rentals") },
+  ];
+
   return (
     <div className="panel-page-stack">
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
@@ -60,6 +83,26 @@ export default function FinanceDebtorsPage() {
           <span className="text-sm font-sans font-semibold text-rose-700">
             {t("finance.debtors.toPay", { amount: formatCurrency(totalDebt) })}
           </span>
+        </div>
+
+        <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap gap-2">
+          {tabs.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setTab(item.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${
+                tab === item.id
+                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                  : "text-slate-600 hover:bg-slate-50 border border-transparent"
+              }`}
+            >
+              {item.label}
+              {item.id === "rentals" && rentalDebtTotal > 0 ? (
+                <span className="ml-1 text-rose-600">({formatCurrency(rentalDebtTotal)})</span>
+              ) : null}
+            </button>
+          ))}
         </div>
 
         {debtors.length === 0 ? (
@@ -78,6 +121,7 @@ export default function FinanceDebtorsPage() {
             </div>
             <div>
               {debtors.map((entry) => {
+                const kindLabel = debtorKindLabel(entry.kind, t);
                 const canPayPersonal =
                   entry.kind === "personal" &&
                   !!entry.personalLessonId &&
@@ -93,7 +137,12 @@ export default function FinanceDebtorsPage() {
                     key={entry.id}
                     className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0"
                   >
-                    <p className="text-sm font-semibold text-slate-800 truncate">{entry.clientDisplay}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{entry.clientDisplay}</p>
+                      {kindLabel ? (
+                        <p className="text-[10px] font-semibold text-amber-700 mt-0.5">{kindLabel}</p>
+                      ) : null}
+                    </div>
                     <p className="text-xs text-slate-500 font-sans hidden sm:block">{entry.contact}</p>
                     <p className="text-xs text-slate-500 font-sans hidden sm:block">
                       {formatDebtorDetail(entry, t, formatDate)}
@@ -111,6 +160,13 @@ export default function FinanceDebtorsPage() {
                           <Coins className="w-3.5 h-3.5" />
                           {t("common.pay")}
                         </button>
+                      ) : entry.kind === "rental" && entry.renterId ? (
+                        <Link
+                          to={`/renters/${entry.renterId}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-lg"
+                        >
+                          {t("finance.debtors.openRenter")}
+                        </Link>
                       ) : null}
                     </div>
                   </div>

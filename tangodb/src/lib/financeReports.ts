@@ -250,9 +250,11 @@ export interface DebtorEntry {
   lessonTimeEnd?: string | null;
   locationId?: string | null;
   disciplineId?: string | null;
+  rentalId?: string | null;
+  renterId?: string | null;
   clientDisplay: string;
   contact: string;
-  kind: "subscription" | "personal";
+  kind: "subscription" | "personal" | "rental";
   detail: string;
   amount: number;
   lessonsLeft?: number | null;
@@ -274,6 +276,10 @@ export function formatDebtorDetail(
   if (entry.kind === "personal" && entry.lessonDate) {
     const dateLabel = formatDate ? formatDate(entry.lessonDate) : entry.lessonDate;
     return translate("finance.debtors.detail.personal", { date: dateLabel });
+  }
+  if (entry.kind === "rental" && entry.lessonDate) {
+    const dateLabel = formatDate ? formatDate(entry.lessonDate) : entry.lessonDate;
+    return translate("finance.debtors.detail.rental", { date: dateLabel });
   }
   return entry.detail;
 }

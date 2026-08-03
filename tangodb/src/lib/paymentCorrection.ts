@@ -59,7 +59,7 @@ export interface AttendanceCorrectionRecord {
 }
 
 export interface CorrectionReportPaymentRow {
-  kind: "payment";
+  kind: "payment" | "rental_payment";
   id: string;
   operationNumber: number | null;
   operationKind: PaymentOperationKind;
@@ -73,6 +73,7 @@ export interface CorrectionReportPaymentRow {
   createdAt: string;
   authorName: string | null;
   relatedStatus: PaymentCorrectionStatus;
+  rentalId?: string | null;
 }
 
 export interface CorrectionReportAttendanceRow {
@@ -167,6 +168,16 @@ export function mapCorrectionReportPaymentRow(
     createdAt: String(row.created_at ?? ""),
     authorName: str(row.author_name),
     relatedStatus: (row.related_status as PaymentCorrectionStatus) ?? "active",
+  };
+}
+
+export function mapCorrectionReportRentalPaymentRow(
+  row: Record<string, unknown>
+): CorrectionReportPaymentRow {
+  return {
+    ...mapCorrectionReportPaymentRow(row),
+    kind: "rental_payment",
+    rentalId: str(row.rental_id),
   };
 }
 

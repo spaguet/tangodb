@@ -14,6 +14,7 @@ import { usePayments } from "../../hooks/usePayments";
 import { useExpenses } from "../../hooks/useExpenses";
 import { useFinanceCosts } from "../../hooks/useVenueCosts";
 import { useFinancialDebtors } from "../../hooks/useFinancialDebtors";
+import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
 import { useRentalPayments } from "../../hooks/useRentalPayments";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { canAccessDataExportSection, permissionOptionsFromSettings } from "../../lib/permissions";
@@ -222,6 +223,7 @@ function FinancialExportSection() {
   const expensesQuery = useExpenses({ dateFrom: range.dateFrom, dateTo: range.dateTo });
   const financeCostsQuery = useFinanceCosts(range.dateFrom, range.dateTo);
   const debtorsQuery = useFinancialDebtors();
+  const teamQuery = useTeamMembers();
   const rentalPaymentsQuery = useRentalPayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
 
   const isLoading =
@@ -264,6 +266,9 @@ function FinancialExportSection() {
     if (exporting) return;
     setExporting(true);
     try {
+      const memberNameById = new Map(
+        (teamQuery.data ?? []).map((member) => [member.id, memberListLabel(member, locale)])
+      );
       const result = await exportAllFinancialCsv({
         payments: paymentsQuery.data ?? [],
         rentalRegisterEntries: rentalPaymentsQuery.data ?? [],
@@ -272,6 +277,7 @@ function FinancialExportSection() {
         debtors: debtorsQuery.data ?? [],
         statsMonth,
         locale,
+        memberNameById,
       });
       if (result.manualSave) setManualExport(result.manualSave);
       showExportToast(result, t("common.nothingToExport"));

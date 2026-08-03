@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import {
   mapCorrectionReportAttendanceRow,
   mapCorrectionReportPaymentRow,
+  mapCorrectionReportRentalPaymentRow,
   type AttendanceCorrectionRecord,
   type CorrectionReportAttendanceRow,
   type CorrectionReportPaymentRow,
@@ -111,12 +112,16 @@ export function useCorrectionsReport(dateFrom?: string, dateTo?: string) {
         success?: boolean;
         error?: string;
         payments?: CorrectionReportPaymentRow[];
+        rental_payments?: CorrectionReportPaymentRow[];
         attendance?: CorrectionReportAttendanceRow[];
       } | null;
       if (!result?.success) throw new Error(result?.error ?? "corrections.error.loadFailed");
       return {
         payments: ((result.payments as unknown[]) ?? []).map((row) =>
           mapCorrectionReportPaymentRow(row as Record<string, unknown>)
+        ),
+        rentalPayments: ((result.rental_payments as unknown[]) ?? []).map((row) =>
+          mapCorrectionReportRentalPaymentRow(row as Record<string, unknown>)
         ),
         attendance: ((result.attendance as unknown[]) ?? []).map((row) =>
           mapCorrectionReportAttendanceRow(row as Record<string, unknown>)

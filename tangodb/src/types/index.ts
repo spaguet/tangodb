@@ -454,6 +454,15 @@ export interface RentalPayment {
   method: PaymentMethod;
   methodComment?: string | null;
   createdAt: string;
+  createdBy?: string | null;
+  operationKind?: "payment" | "storno";
+  reversesPaymentId?: string | null;
+  replacesPaymentId?: string | null;
+  correctionReasonCode?: string | null;
+  correctionComment?: string | null;
+  operationNumber?: number | null;
+  correctionStatus?: import("../lib/paymentCorrection").PaymentCorrectionStatus;
+  remainingAmount?: number;
   renterDisplay?: string;
   locationId?: string | null;
   rentalDate?: string;
@@ -462,6 +471,7 @@ export interface RentalPayment {
 /** Canonical rental cash register entry (stage 5). */
 export type RentalMoneyEntryType =
   | "direct_booking_payment"
+  | "direct_booking_storno"
   | "invoice_payment"
   | "advance_received"
   | "deposit_receive"
@@ -489,6 +499,14 @@ export interface RentalMoneyRegisterEntry {
   operationDate: string;
   rentalDate?: string;
   locationId?: string | null;
+  operationKind?: "payment" | "storno";
+  reversesPaymentId?: string | null;
+  replacesPaymentId?: string | null;
+  correctionReasonCode?: string | null;
+  correctionComment?: string | null;
+  operationNumber?: number | null;
+  correctionStatus?: import("../lib/paymentCorrection").PaymentCorrectionStatus;
+  remainingAmount?: number;
 }
 
 export type RenterCounterpartyType = "individual" | "sole_proprietor" | "company";

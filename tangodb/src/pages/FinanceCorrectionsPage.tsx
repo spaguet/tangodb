@@ -43,11 +43,13 @@ function PaymentCorrectionRow({
   originalPayment,
   t,
   formatDateTime,
+  kindLabel,
 }: {
   row: CorrectionReportPaymentRow;
   originalPayment: CorrectionReportPaymentRow | null;
   t: ReturnType<typeof useI18n>["t"];
   formatDateTime: ReturnType<typeof useI18n>["formatDateTime"];
+  kindLabel?: string;
 }) {
   const actionKey = paymentCorrectionActionLabelKey(row);
   const reasonKey = paymentCorrectionReasonLabelKey(row.reasonCode);
@@ -57,7 +59,7 @@ function PaymentCorrectionRow({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-2 px-4 py-3 border-b border-slate-100 last:border-b-0">
       <div>
-        <KindBadge kind={t("corrections.page.kindPayment")} operationNumber={row.operationNumber} />
+        <KindBadge kind={kindLabel ?? t("corrections.page.kindPayment")} operationNumber={row.operationNumber} />
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium text-slate-800 truncate">{row.clientDisplay}</p>
@@ -135,18 +137,33 @@ export default function FinanceCorrectionsPage() {
     for (const row of reportQuery.data?.payments ?? []) {
       map.set(row.id, row);
     }
+    for (const row of reportQuery.data?.rentalPayments ?? []) {
+      map.set(row.id, row);
+    }
     return map;
-  }, [reportQuery.data?.payments]);
+  }, [reportQuery.data?.payments, reportQuery.data?.rentalPayments]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const visiblePayments = filterVisibleCorrectionPayments(reportQuery.data?.payments ?? []);
+    const visibleRentalPayments = filterVisibleCorrectionPayments(
+      reportQuery.data?.rentalPayments ?? []
+    );
 
-    if (!reportQuery.data) return { payments: [], attendance: [] };
+    if (!reportQuery.data) return { payments: [], rentalPayments: [], attendance: [] };
 
     const payments = !q
       ? visiblePayments
       : visiblePayments.filter(
+          (row) =>
+            row.clientDisplay.toLowerCase().includes(q) ||
+            String(row.operationNumber ?? "").includes(q) ||
+            (row.reasonCode ?? "").toLowerCase().includes(q)
+        );
+
+    const rentalPayments = !q
+      ? visibleRentalPayments
+      : visibleRentalPayments.filter(
           (row) =>
             row.clientDisplay.toLowerCase().includes(q) ||
             String(row.operationNumber ?? "").includes(q) ||
@@ -162,7 +179,7 @@ export default function FinanceCorrectionsPage() {
             (row.reasonCode ?? "").toLowerCase().includes(q)
         );
 
-    return { payments, attendance };
+    return { payments, rentalPayments, attendance };
   }, [reportQuery.data, search]);
 
   if (reportQuery.isLoading) return <LoadingState />;
@@ -170,7 +187,8 @@ export default function FinanceCorrectionsPage() {
     return <QueryErrorState error={reportQuery.error instanceof Error ? reportQuery.error : null} />;
   }
 
-  const totalRows = filtered.payments.length + filtered.attendance.length;
+  const totalRows =
+    filtered.payments.length + filtered.rentalPayments.length + filtered.attendance.length;
   const countLabel = plural(totalRows, [
     t("common.records.one", { count: totalRows }),
     t("common.records.few", { count: totalRows }),
@@ -216,6 +234,23 @@ export default function FinanceCorrectionsPage() {
             <PaymentCorrectionRow
               key={`p-${row.id}`}
               row={row}
+              originalPayment={
+                row.reversesPaymentId
+                  ? (paymentById.get(row.reversesPaymentId) ?? null)
+                  : row.replacesPaymentId
+                    ? (paymentById.get(row.replacesPaymentId) ?? null)
+                    : null
+              }
+              t={t}
+              formatDateTime={formatDateTime}
+            />
+          ))}
+
+          {filtered.rentalPayments.map((row) => (
+            <PaymentCorrectionRow
+              key={`rp-${row.id}`}
+              row={row}
+              kindLabel={t("corrections.page.kindRentalPayment")}
               originalPayment={
                 row.reversesPaymentId
                   ? (paymentById.get(row.reversesPaymentId) ?? null)

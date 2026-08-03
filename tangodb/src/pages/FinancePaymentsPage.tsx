@@ -5,6 +5,7 @@ import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect, { searchFieldCls } from "../components/ui/AppSelect";
 import DatePickerField from "../components/ui/DatePickerField";
 import PaymentCorrectionDialog from "../components/finance/PaymentCorrectionDialog";
+import RentalPaymentCorrectionDialog from "../components/finance/RentalPaymentCorrectionDialog";
 import {
   getPaymentMethodLabel,
   paymentSourceLabel,
@@ -34,6 +35,10 @@ import {
   paymentStatusLabelKey,
   type PaymentWithCorrectionMeta,
 } from "../lib/paymentCorrection";
+import {
+  rentalPaymentCanCorrect,
+  type RentalPaymentWithCorrectionMeta,
+} from "../lib/rentalPaymentCorrection";
 import { formatCurrency, formatMonthTitle } from "../lib/utils";
 import type { PaymentMethod, RentalMoneyRegisterEntry } from "../types";
 
@@ -332,6 +337,9 @@ function RentalPaymentRow({
   formatDateTime,
   translate,
   locationNameById,
+  memberNameById,
+  canCorrect,
+  onCorrect,
   expanded,
   onToggle,
 }: {
@@ -339,6 +347,9 @@ function RentalPaymentRow({
   formatDateTime: ReturnType<typeof useI18n>["formatDateTime"];
   translate: ReturnType<typeof useI18n>["t"];
   locationNameById: Map<string, string>;
+  memberNameById: Map<string, string>;
+  canCorrect: boolean;
+  onCorrect: (payment: RentalPaymentWithCorrectionMeta) => void;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -354,10 +365,44 @@ function RentalPaymentRow({
   const rentalDate = payment.rentalDate ?? "—";
   const sourceLabel = rentalEntryTypeLabel(payment.entryType, translate);
   const isOutflow = payment.signedAmount < 0;
+  const isStorno = payment.operationKind === "storno" || payment.entryType === "direct_booking_storno";
+  const acceptedBy = payment.createdBy
+    ? memberNameById.get(payment.createdBy) ?? translate("team.auditSystem")
+    : translate("team.auditSystem");
+  const statusKey = payment.correctionStatus ? paymentStatusLabelKey(payment.correctionStatus) : null;
+  const reasonKey = paymentCorrectionReasonLabelKey(payment.correctionReasonCode ?? null);
+  const reasonParts = [
+    reasonKey ? translate(reasonKey as Parameters<typeof translate>[0]) : null,
+    payment.correctionComment?.trim() || null,
+  ].filter(Boolean);
+  const reasonLabel = reasonParts.length > 0 ? reasonParts.join(" · ") : "—";
+  const correctionTarget: RentalPaymentWithCorrectionMeta = {
+    id: payment.id,
+    rentalId: payment.rentalId ?? "",
+    amount: payment.amount,
+    currency: payment.currency,
+    method: payment.method,
+    methodComment: payment.methodComment,
+    createdAt: payment.createdAt,
+    createdBy: payment.createdBy,
+    operationKind: payment.operationKind,
+    reversesPaymentId: payment.reversesPaymentId,
+    replacesPaymentId: payment.replacesPaymentId,
+    correctionReasonCode: payment.correctionReasonCode,
+    correctionComment: payment.correctionComment,
+    operationNumber: payment.operationNumber,
+    correctionStatus: payment.correctionStatus,
+    remainingAmount: payment.remainingAmount,
+    renterDisplay: payment.renterDisplay,
+  };
+  const showCorrect =
+    canCorrect &&
+    payment.entryType === "direct_booking_payment" &&
+    rentalPaymentCanCorrect(correctionTarget);
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
-      <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
+      <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
         <button type="button" onClick={onToggle} className="min-w-0 text-left cursor-pointer" aria-expanded={expanded}>
           <div className="flex items-start gap-2">
             <ChevronDown
@@ -368,6 +413,15 @@ function RentalPaymentRow({
             <div className="min-w-0">
               <p className="text-sm font-semibold text-slate-800 truncate">{payment.renterDisplay || "—"}</p>
               <p className="text-[10px] text-slate-400 font-sans mt-0.5">{acceptedAt}</p>
+              {isStorno ? (
+                <p className="text-[10px] text-rose-600 mt-0.5 font-semibold">
+                  {translate("finance.payments.refundBadge")}
+                </p>
+              ) : statusKey ? (
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  {translate(statusKey as Parameters<typeof translate>[0])}
+                </p>
+              ) : null}
             </div>
           </div>
         </button>
@@ -387,11 +441,24 @@ function RentalPaymentRow({
           {isOutflow ? "−" : ""}
           {formatCurrency(Math.abs(payment.signedAmount))}
         </button>
+        {showCorrect ? (
+          <button
+            type="button"
+            onClick={() => onCorrect(correctionTarget)}
+            className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg cursor-pointer"
+            aria-label={translate("corrections.payment.title")}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        ) : (
+          <span className="hidden sm:block w-8" />
+        )}
       </div>
       {expanded ? (
         <div className="px-3 pb-3 pt-0 border-t border-slate-50 bg-slate-50/40">
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-8 py-2">
             <PaymentDetailItem label={translate("finance.payments.acceptedAt")} value={acceptedAt} />
+            <PaymentDetailItem label={translate("finance.payments.acceptedBy")} value={acceptedBy} />
             <PaymentDetailItem label={translate("common.source")} value={sourceLabel} />
             <PaymentDetailItem label={translate("common.method")} value={methodLabel} />
             {payment.rentalDate ? (
@@ -402,6 +469,15 @@ function RentalPaymentRow({
             ) : null}
             {payment.methodComment ? (
               <PaymentDetailItem label={translate("finance.payments.methodComment")} value={payment.methodComment} />
+            ) : null}
+            {payment.correctionReasonCode ? (
+              <PaymentDetailItem label={translate("corrections.payment.reason")} value={reasonLabel} />
+            ) : null}
+            {payment.operationNumber != null ? (
+              <PaymentDetailItem
+                label={translate("corrections.payment.operationNumber")}
+                value={`#${payment.operationNumber}`}
+              />
             ) : null}
           </dl>
         </div>
@@ -428,6 +504,8 @@ export default function FinancePaymentsPage() {
   const [methodFilter, setMethodFilter] = useState<PaymentMethodFilter>("all");
   const [teacherFilter, setTeacherFilter] = useState("all");
   const [correctionTarget, setCorrectionTarget] = useState<PaymentWithCorrectionMeta | null>(null);
+  const [rentalCorrectionTarget, setRentalCorrectionTarget] =
+    useState<RentalPaymentWithCorrectionMeta | null>(null);
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
   const [expandedRentalId, setExpandedRentalId] = useState<string | null>(null);
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => new Set());
@@ -833,6 +911,9 @@ export default function FinancePaymentsPage() {
                                 formatDateTime={formatDateTime}
                                 translate={t}
                                 locationNameById={locationNameById}
+                                memberNameById={memberNameById}
+                                canCorrect={canCorrectPayments}
+                                onCorrect={setRentalCorrectionTarget}
                                 expanded={expandedRentalId === p.id}
                                 onToggle={() =>
                                   setExpandedRentalId((prev) => (prev === p.id ? null : p.id))
@@ -890,6 +971,12 @@ export default function FinancePaymentsPage() {
         payment={correctionTarget}
         open={correctionTarget != null}
         onClose={() => setCorrectionTarget(null)}
+        toast={toast}
+      />
+      <RentalPaymentCorrectionDialog
+        payment={rentalCorrectionTarget}
+        open={rentalCorrectionTarget != null}
+        onClose={() => setRentalCorrectionTarget(null)}
         toast={toast}
       />
     </div>

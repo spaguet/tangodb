@@ -2,7 +2,7 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
-2026-08-03 — hall-rent этап 16: закрытие gap venue cost без клиентского платежа (F30) — таблица `venue_rule_gap_acknowledgements`, RPC `preview_venue_cost_gap_impact` / `confirm_venue_cost_rule_gap`; `venue_cost_status_for_org` учитывает gap ack; UI `VenueCostGapResolutionPanel` (принять черновик или подтвердить gap с причиной/периодом); i18n RU/EN; тесты в `venue_cost_rules_test.sql`.
+2026-08-03 — hall-rent этап 8: должники аренды, сторно и автор платежа (F16, F18, F27) — `financial_debtors_v` + вкладки «Аренда зала»; RPC `storno_rental_payment` / `correct_rental_payment`; регистр с `direct_booking_storno`; `created_by` в popup/журнале/CSV; UI `RentalPaymentCorrectionDialog`; отчёт коррекций; тест `test:db:rental-corrections`.
 
 2026-08-03 — hall-rent этап 15: прозрачная история версий venue cost (F10, F28) — `acceptedBy` в `mapVenueCostVersion`; раскрываемая read-only матрица правил; «Копировать в черновик» без изменения accepted; diff draft vs active (add/change/remove); i18n RU/EN; расширен `test:venue-cost-preview`.
 

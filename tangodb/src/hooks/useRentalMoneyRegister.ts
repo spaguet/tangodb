@@ -36,6 +36,13 @@ const mapRegisterEntry = (row: Record<string, unknown>): RentalMoneyRegisterEntr
   operationDate: String(row.operation_date ?? "").slice(0, 10),
   rentalDate: row.rental_date != null ? String(row.rental_date).slice(0, 10) : undefined,
   locationId: row.location_id != null ? String(row.location_id) : null,
+  operationKind: row.operation_kind === "storno" ? "storno" : "payment",
+  reversesPaymentId: row.reverses_payment_id != null ? String(row.reverses_payment_id) : null,
+  replacesPaymentId: row.replaces_payment_id != null ? String(row.replaces_payment_id) : null,
+  correctionReasonCode:
+    row.correction_reason_code != null ? String(row.correction_reason_code) : null,
+  correctionComment: row.correction_comment != null ? String(row.correction_comment) : null,
+  operationNumber: row.operation_number != null ? Number(row.operation_number) : null,
 });
 
 export function useRentalMoneyRegister(filter?: RentalMoneyRegisterFilter) {
@@ -58,6 +65,34 @@ export function useRentalMoneyRegister(filter?: RentalMoneyRegisterFilter) {
       }
 
       return (payload.entries ?? []).map((row) => mapRegisterEntry(row));
+    },
+    select: (entries) => {
+      const stornoByOriginal = new Map<string, number>();
+      const hasReplacement = new Set<string>();
+      for (const entry of entries) {
+        if (entry.operationKind === "storno" && entry.reversesPaymentId) {
+          stornoByOriginal.set(
+            entry.reversesPaymentId,
+            (stornoByOriginal.get(entry.reversesPaymentId) ?? 0) + entry.amount
+          );
+        }
+        if (entry.replacesPaymentId) hasReplacement.add(entry.replacesPaymentId);
+      }
+      return entries.map((entry) => {
+        if (entry.entryType !== "direct_booking_payment" && entry.entryType !== "direct_booking_storno") {
+          return entry;
+        }
+        if (entry.operationKind === "storno") {
+          return { ...entry, correctionStatus: "storno" as const };
+        }
+        const stornoTotal = stornoByOriginal.get(entry.id) ?? 0;
+        const remaining = Math.max(0, entry.amount - stornoTotal);
+        let correctionStatus = entry.correctionStatus ?? ("active" as const);
+        if (hasReplacement.has(entry.id)) correctionStatus = "replaced";
+        else if (stornoTotal >= entry.amount && stornoTotal > 0) correctionStatus = "voided";
+        else if (stornoTotal > 0) correctionStatus = "partially_voided";
+        return { ...entry, remainingAmount: remaining, correctionStatus };
+      });
     },
     staleTime: 30 * 1000,
   });

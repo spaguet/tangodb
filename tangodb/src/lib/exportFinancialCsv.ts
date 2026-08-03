@@ -35,6 +35,7 @@ export interface FinancialExportParams {
   debtors: DebtorEntry[];
   statsMonth: string;
   locale?: string | null;
+  memberNameById?: Map<string, string>;
 }
 
 export interface FinancialExportResult {
@@ -70,12 +71,16 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
   }
 
   const rentalEntries = params.rentalRegisterEntries ?? params.rentalPayments ?? [];
+  const memberNameById = params.memberNameById ?? new Map<string, string>();
   const rentalRows = rentalEntries.map((p) => ({
     renter: p.renterDisplay || "—",
     date: labels.formatDateTime(p.createdAt),
     source: t(locale, `finance.rentalRegister.type.${p.entryType}` as import("./i18n/keys").I18nKey),
     rentalDate: p.rentalDate ? labels.formatDate(p.rentalDate) : "—",
     method: labels.paymentMethod(p.method),
+    acceptedBy: p.createdBy
+      ? memberNameById.get(p.createdBy) ?? p.createdBy
+      : "—",
     amount: p.signedAmount,
   }));
 
@@ -89,6 +94,7 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
         source: labels.payments.source,
         rentalDate: t(locale, "schedule.rental.dateLabel"),
         method: labels.payments.method,
+        acceptedBy: t(locale, "finance.payments.acceptedBy"),
         amount: labels.payments.amount,
       },
     });

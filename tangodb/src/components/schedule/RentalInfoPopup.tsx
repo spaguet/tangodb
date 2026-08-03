@@ -5,9 +5,11 @@ import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useCancelRental, useRentalDetail } from "../../hooks/useRentals";
+import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
 import { useCancelRentalSeriesOccurrence } from "../../hooks/useRentalSeries";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
+import { filterVisibleRentalCorrectionPayments } from "../../lib/rentalPaymentCorrection";
 import { formatCurrency } from "../../lib/utils";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { RentalDisplayLesson } from "../../types";
@@ -50,6 +52,7 @@ export default function RentalInfoPopup({
     (role === "owner" || role === "director" || role === "admin");
 
   const detailQuery = useRentalDetail(lesson?.rentalId ?? null, !!lesson);
+  const teamQuery = useTeamMembers();
   const cancelMutation = useCancelRental();
   const cancelOccurrenceMutation = useCancelRentalSeriesOccurrence();
 
@@ -71,6 +74,10 @@ export default function RentalInfoPopup({
   const effectiveAmount = detail?.fixedAmount ?? lesson.fixedAmount ?? 0;
   const remaining = rentalRemainingAmount(effectiveAmount, paidAmount);
   const pricingBreakdown = detail?.pricingBreakdown;
+  const memberNameById = new Map(
+    (teamQuery.data ?? []).map((member) => [member.id, memberListLabel(member, locale)])
+  );
+  const visiblePayments = filterVisibleRentalCorrectionPayments(detail?.payments ?? []);
 
   const canRecordPayment =
     canSeeCashAmounts &&
@@ -202,15 +209,21 @@ export default function RentalInfoPopup({
                       {t("schedule.rental.paidSummary", { paid: formatCurrency(paidAmount), remaining: formatCurrency(remaining) })}
                     </p>
                   </div>
-                  {detail?.payments.length ? (
+                  {visiblePayments.length ? (
                     <div>
                       <span className={labelCls}>{t("schedule.rental.paymentsLabel")}</span>
                       <ul className="mt-1 space-y-1 text-xs text-slate-700">
-                        {detail.payments.map((p) => (
-                          <li key={p.id}>
-                            {formatCurrency(p.amount)} · {getPaymentMethodLabel(p.method, t, locale)}
-                          </li>
-                        ))}
+                        {visiblePayments.map((p) => {
+                          const author = p.createdBy
+                            ? memberNameById.get(p.createdBy) ?? t("team.auditSystem")
+                            : t("team.auditSystem");
+                          return (
+                            <li key={p.id}>
+                              {formatCurrency(p.amount)} · {getPaymentMethodLabel(p.method, t, locale)}
+                              <span className="text-slate-400"> · {author}</span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   ) : null}
