@@ -46,6 +46,7 @@ export function usePermissions() {
     membership,
     isReadOnly,
     canEditPastSchedule,
+    options,
     can: canAction,
     canAccessPanel: canPanel,
   };

@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent этап 12: read-only прайс для admin + политика reception — SQL `member_can_see_rental_tariff_prices()` (= кассовый gate); `list_rental_tariffs` отдаёт цены кассиру; UI lookup в `/settings/hall-rent`, ссылки из расписания; `canSeeRentalTariffPrices`; reception вне контура; тест `test:db:rental-tariff-lookup`.
+
 2026-08-03 — hall-rent этап 11: финансовое действие при отмене аренды (F26) — RPC `cancel_rental` / `cancel_rental_series_occurrence` с `refund`, `transfer_to_advance`, штрафами; сторно через регистр + аванс; UI `CancelRentalModal` (разовая и серия); i18n RU/EN; тест `test:db:rental-cancellation`.
 
 2026-08-03 — hall-rent этап 10: UI счетов и авансов, отчёт начислений (F20, F23) — RPC `list_renter_rental_advances`, `list_renter_rental_advance_allocations`, `get_rental_accrual_report`; `operation_date` на оплате счёта и авансе; модалки в карточке арендатора (счёт, оплата, аванс, allocate/отмена); страница `/finance/rental-accruals`; тест `test:db:rental-invoices-ui`.

@@ -5,7 +5,6 @@ import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import { btnAddCls, btnAddSoftCls, btnCancelCls } from "../../components/ui/buttonStyles";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
-import RequirePermission from "../../components/RequirePermission";
 import { useToast } from "../../App";
 import { useI18n } from "../../hooks/useI18n";
 import { useLocations } from "../../hooks/useLocations";
@@ -246,6 +245,11 @@ export default function RentalTariffsSettingsPage({
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<RentalTariff | null>(null);
 
+  const formatTariffPrice = (tariff: RentalTariff) => {
+    if (tariff.price == null) return t("rentalTariffs.priceHidden");
+    return `${formatCurrency(tariff.price)} ${tariff.currency ?? "RUB"}`;
+  };
+
   const openCreate = () => {
     setEditing(null);
     setEditorOpen(true);
@@ -263,6 +267,12 @@ export default function RentalTariffsSettingsPage({
 
   return (
     <div className={embedded ? "space-y-3" : "panel-card-stack max-w-2xl"}>
+      {!canWrite ? (
+        <p className="text-xs text-slate-500 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2">
+          {t("rentalTariffs.lookupHint")}
+        </p>
+      ) : null}
+
       <div className="flex items-start justify-between gap-3">
         <div>
           {!embedded && (
@@ -272,16 +282,12 @@ export default function RentalTariffsSettingsPage({
             </>
           )}
         </div>
-        <RequirePermission action="finance.read" mode="hide">
-          <RequirePermission action="schedule.write" mode="hide">
-            {canWrite ? (
-              <button type="button" onClick={openCreate} className={btnAddSoftCls}>
-                <Plus className="w-4 h-4" />
-                {t("common.add")}
-              </button>
-            ) : null}
-          </RequirePermission>
-        </RequirePermission>
+        {canWrite ? (
+          <button type="button" onClick={openCreate} className={btnAddSoftCls}>
+            <Plus className="w-4 h-4" />
+            {t("common.add")}
+          </button>
+        ) : null}
       </div>
 
       {tariffs.length === 0 ? (
@@ -295,19 +301,15 @@ export default function RentalTariffsSettingsPage({
                 <p className="text-xs text-slate-500 mt-0.5">
                   {tariff.tariffType === "hourly" ? t("rentalTariffs.typeHourly") : t("rentalTariffs.typeFixed")}
                   {tariff.locationId ? ` · ${locationMap.get(tariff.locationId)}` : ` · ${t("rentalTariffs.allLocations")}`}
-                  {tariff.price != null ? ` · ${formatCurrency(tariff.price)} ${tariff.currency ?? "RUB"}` : ""}
+                  {` · ${formatTariffPrice(tariff)}`}
                   {tariff.rulesCount > 0 ? ` · ${t("rentalTariffs.rulesCount", { count: tariff.rulesCount })}` : ""}
                 </p>
               </div>
-              <RequirePermission action="finance.read" mode="hide">
-                <RequirePermission action="schedule.write" mode="hide">
-                  {canWrite ? (
-                    <button type="button" onClick={() => openEdit(tariff)} className="p-1.5 text-slate-400 hover:text-indigo-600 cursor-pointer" aria-label={t("common.edit")}>
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  ) : null}
-                </RequirePermission>
-              </RequirePermission>
+              {canWrite ? (
+                <button type="button" onClick={() => openEdit(tariff)} className="p-1.5 text-slate-400 hover:text-indigo-600 cursor-pointer" aria-label={t("common.edit")}>
+                  <Edit className="w-4 h-4" />
+                </button>
+              ) : null}
             </li>
           ))}
         </ul>

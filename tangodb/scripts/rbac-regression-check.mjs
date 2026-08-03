@@ -8,6 +8,7 @@ import {
   canAccessSettingsSection,
   canManageVenueCostRules,
   canReadRentalTariffs,
+  canSeeRentalTariffPrices,
   canWriteRentalTariffs,
   findFirstAccessiblePanelPath,
   findFirstEnabledAccessiblePanelPath,
@@ -157,7 +158,15 @@ assert(can("accountant", "rentals.payments.write", optsFor("accountant")), "acco
 assert(can("admin", "rentals.payments.write", optsFor("admin")), "admin rental cash");
 assert(
   !can("admin", "rentals.payments.write", { ...optsFor("admin"), restrictedAdmin: true }),
-  "reception no rental cash"
+  "reception no rental cash (stage 12)"
+);
+assert(
+  !canReadRentalTariffs("admin", { ...optsFor("admin"), restrictedAdmin: true }),
+  "reception no tariff lookup (stage 12)"
+);
+assert(
+  !canSeeRentalTariffPrices("admin", { ...optsFor("admin"), restrictedAdmin: true }),
+  "reception no tariff prices (stage 12)"
 );
 assert(
   !can("admin", "rentals.payments.write", { ...optsFor("admin"), adminCanAcceptPayments: false }),
@@ -182,7 +191,7 @@ assert(can("accountant", "reports.financial", optsFor("accountant")), "accountan
 const navExpect = {
   owner: 11,
   director: 11,
-  admin: 9,
+  admin: 10,
   teacher: 7,
   accountant: 3,
 };
@@ -246,8 +255,8 @@ const noFinanceModules = normalizeOrgModules({
   finance_basic: false,
 });
 assert(
-  findFirstEnabledAccessiblePanelPath("accountant", noFinanceModules, optsFor("accountant")) === "/settings",
-  "accountant with finance_basic off falls back to settings"
+  findFirstEnabledAccessiblePanelPath("accountant", noFinanceModules, optsFor("accountant")) === "/renters",
+  "accountant with finance_basic off falls back to renters CRM"
 );
 assert(
   findFirstEnabledAccessiblePanelPath("owner", noFinanceModules, optsFor("owner")) === "/clients",
@@ -303,6 +312,9 @@ assert(canReadRentalTariffs("accountant", optsFor("accountant")), "accountant re
 assert(!canWriteRentalTariffs("accountant", optsFor("accountant")), "accountant no write tariffs");
 assert(canManageVenueCostRules("accountant"), "accountant manage venue cost");
 assert(canAccessSettingsSection("admin", "hall-rent", optsFor("admin")), "admin hall-rent for stage 12 path");
+assert(canSeeRentalTariffPrices("admin", optsFor("admin")), "admin sees tariff prices stage 12");
+assert(canAccessPanel("admin", "settings", optsFor("admin")), "admin settings panel for lookup stage 12");
+assert(!canAccessPanel("admin", "settings", { ...optsFor("admin"), restrictedAdmin: true }), "reception no settings");
 assert(!canManageVenueCostRules("admin"), "admin no manage venue cost");
 assert(!canWriteRentalTariffs("admin", optsFor("admin")), "admin no write tariffs without finance");
 assert(canWriteRentalTariffs("owner", optsFor("owner")), "owner write tariffs");

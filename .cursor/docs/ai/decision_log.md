@@ -12,6 +12,14 @@
 
 ## Записи
 
+### HALL-RENT-12 — Read-only прайс для admin и политика reception (2026-08-03)
+
+- **Дата:** 2026-08-03
+- **Решение:** Точка входа lookup — `/settings/hall-rent` (только блок тарифов, без venue cost). Цены в `list_rental_tariffs` через `member_can_see_rental_tariff_prices()` = `can_read_financial() OR member_can_record_rental_payment()` (тот же gate, что этап 1/13). UI: `canSeeRentalTariffPrices` на фронте; read-only баннер в `RentalTariffsSettingsPage`; ссылка из `CreateRentalDialog` / `RentalInfoPopup`. `canAccessPanel("settings")` и route guard для section-level доступа admin без `settings.manage`. **Reception (`restricted_admin`):** явный запрет — нет `schedule.write`, нет `rentals.payments.write`, нет lookup тарифов, нет settings; эскалация к admin/director (текст в i18n). Этап 13 расширит create/сумму по тому же price-gate.
+- **Контекст:** Этап 12 аудита hall-rent: operational admin не видел прайс; reception не должен молча наследовать кассовые права этапа 1.
+- **Альтернативы:** (1) Lookup только в модалке брони без settings; (2) Расширить reception до оплаты/прайса аренды.
+- **Почему так:** Settings — естественный справочник; один SQL/UI gate с кассой; reception остаётся вне контура аренды до отдельного продуктового решения.
+
 ### HALL-RENT-9 — operation_date и закрытие кассового периода (2026-08-03)
 
 - **Дата:** 2026-08-03

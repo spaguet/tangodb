@@ -596,6 +596,7 @@ export function canAccessPanel(
       }
       if (can(role, "license.view", options)) return true;
       if (role === "teacher" && can(role, "disciplines.read", options)) return true;
+      if (canReadRentalTariffs(role, options)) return true;
       return false;
     default:
       return false;
@@ -620,10 +621,16 @@ export function settingsSectionFromPath(pathname: string): SettingsSectionId | n
   return valid.includes(section) ? section : null;
 }
 
-/** Hall-rent settings: read rental tariffs (manage_rentals OR finance.read on backend). */
+/** Hall-rent settings: read rental tariff list (manage_rentals OR finance.read on backend). */
 export function canReadRentalTariffs(role: MemberRole | null, options?: PermissionOptions): boolean {
   if (!role) return false;
   return can(role, "finance.read", options) || can(role, "schedule.write", options);
+}
+
+/** Tariff prices in list/lookup — same canonical cash gate as rental payments (stage 1/12). */
+export function canSeeRentalTariffPrices(role: MemberRole | null, options?: PermissionOptions): boolean {
+  if (!role) return false;
+  return can(role, "finance.read", options) || can(role, "rentals.payments.write", options);
 }
 
 /** Hall-rent settings: write rental tariffs (manage_rentals + finance on backend). */
@@ -813,7 +820,13 @@ export function assertReceptionPermissions(): void {
     throw new Error("reception must write payments");
   }
   if (can("admin", "rentals.payments.write", receptionOpts)) {
-    throw new Error("reception must not record rental payments until stage 12 policy");
+    throw new Error("reception must not record rental payments (stage 12: out of rental contour)");
+  }
+  if (canReadRentalTariffs("admin", receptionOpts)) {
+    throw new Error("reception must not read rental tariffs (stage 12)");
+  }
+  if (canSeeRentalTariffPrices("admin", receptionOpts)) {
+    throw new Error("reception must not see rental tariff prices (stage 12)");
   }
   if (!can("admin", "rentals.payments.write", adminOpts)) {
     throw new Error("full admin must record rental payments (hall-rent stage 1)");
@@ -907,6 +920,15 @@ export function assertReceptionPermissions(): void {
   }
   if (!canAccessSettingsSection("admin", "hall-rent", adminOpts)) {
     throw new Error("full admin must access hall-rent settings for stage 12 lookup path");
+  }
+  if (!canSeeRentalTariffPrices("admin", adminOpts)) {
+    throw new Error("full admin must see rental tariff prices (stage 12)");
+  }
+  if (!canAccessPanel("admin", "settings", adminOpts)) {
+    throw new Error("full admin must access settings panel for hall-rent lookup (stage 12)");
+  }
+  if (canAccessPanel("admin", "settings", receptionOpts)) {
+    throw new Error("reception must not access settings panel (stage 12)");
   }
   if (canManageVenueCostRules("admin")) {
     throw new Error("admin must not manage venue cost rules (stage 7)");

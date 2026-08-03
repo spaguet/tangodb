@@ -10,10 +10,12 @@ import { useCreateRenter, useRenters } from "../../hooks/useRenters";
 import { useCreateRental, useRentalConflictsPreview } from "../../hooks/useRentals";
 import { useRentalTariffs } from "../../hooks/useRentalTariffs";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
+import { canReadRentalTariffs } from "../../lib/permissions";
 import type { PaymentMethod } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import DatePickerField from "../ui/DatePickerField";
+import RentalTariffLookupLink from "./RentalTariffLookupLink";
 import type { ScheduleCellPrefill } from "./AddLessonTypePopup";
 
 export interface LocationOption {
@@ -51,8 +53,9 @@ export default function CreateRentalDialog({
   onSuccess,
 }: CreateRentalDialogProps) {
   const { t, formatDate, locale } = useI18n();
-  const { can } = usePermissions();
+  const { can, role, options } = usePermissions();
   const canSeeFinance = can("finance.read");
+  const canLookupTariffs = canReadRentalTariffs(role, options);
   const createMutation = useCreateRental();
   const createRenterMutation = useCreateRenter();
   const rentersQuery = useRenters({ enabled: open, activeOnly: true });
@@ -306,6 +309,13 @@ export default function CreateRentalDialog({
                   <span className={labelCls}>{t("schedule.rental.purposeLabel")}</span>
                   <input className={fieldCls} value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder={t("schedule.rental.purposePlaceholder")} />
                 </div>
+
+                {canLookupTariffs && !canSeeFinance ? (
+                  <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 px-3 py-2 space-y-1">
+                    <RentalTariffLookupLink />
+                    <p className="text-[11px] text-slate-500">{t("rentalTariffs.lookupCreateHint")}</p>
+                  </div>
+                ) : null}
 
                 {canSeeFinance && fixedTariffs.length > 0 ? (
                   <AppSelect label={t("rentalTariffs.fixedTariffLabel")} value={tariffId} onChange={(e) => setTariffId(e.target.value)}>

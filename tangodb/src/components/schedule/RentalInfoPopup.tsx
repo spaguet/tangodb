@@ -9,11 +9,13 @@ import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { filterVisibleRentalCorrectionPayments } from "../../lib/rentalPaymentCorrection";
+import { canReadRentalTariffs } from "../../lib/permissions";
 import { formatCurrency } from "../../lib/utils";
 import type { RentalDisplayLesson } from "../../types";
 import RecordRentalPaymentModal from "./RecordRentalPaymentModal";
 import EditRentalAmountModal from "./EditRentalAmountModal";
 import CancelRentalModal from "./CancelRentalModal";
+import RentalTariffLookupLink from "./RentalTariffLookupLink";
 import type { LocationOption } from "./CreateRentalDialog";
 
 interface RentalInfoPopupProps {
@@ -41,10 +43,11 @@ export default function RentalInfoPopup({
   onSuccess,
 }: RentalInfoPopupProps) {
   const { t, formatDate, formatDateTime, locale } = useI18n();
-  const { can, role } = usePermissions();
+  const { can, role, options } = usePermissions();
   const { isReadOnly } = useOrganization();
   const canSeeFinance = can("finance.read");
   const canSeeCashAmounts = can("rentals.payments.write");
+  const canLookupTariffs = canReadRentalTariffs(role, options);
   const canManage =
     !isReadOnly &&
     can("schedule.write") &&
@@ -168,6 +171,7 @@ export default function RentalInfoPopup({
                       {t("schedule.rental.paidSummary", { paid: formatCurrency(paidAmount), remaining: formatCurrency(remaining) })}
                     </p>
                   </div>
+                  {canLookupTariffs ? <RentalTariffLookupLink className="mt-1" /> : null}
                   {visiblePayments.length ? (
                     <div>
                       <span className={labelCls}>{t("schedule.rental.paymentsLabel")}</span>

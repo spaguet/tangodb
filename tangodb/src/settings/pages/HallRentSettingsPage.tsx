@@ -1,7 +1,11 @@
 import { Navigate, useSearchParams } from "react-router-dom";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useI18n } from "../../hooks/useI18n";
-import { canManageVenueCostRules } from "../../lib/permissions";
+import {
+  canManageVenueCostRules,
+  canReadRentalTariffs,
+  canWriteRentalTariffs,
+} from "../../lib/permissions";
 import RentalTariffsSettingsPage from "./RentalTariffsSettingsPage";
 import VenueCostsSettingsPage from "./VenueCostsSettingsPage";
 
@@ -14,9 +18,9 @@ export function VenueCostsLegacyRedirect() {
 
 export default function HallRentSettingsPage() {
   const { t } = useI18n();
-  const { can, role } = usePermissions();
-  const canReadTariffs = can("finance.read") || can("schedule.write");
-  const canWriteTariffs = can("schedule.write") && can("finance.read");
+  const { can, role, options } = usePermissions();
+  const canReadTariffs = canReadRentalTariffs(role, options);
+  const canWriteTariffs = canWriteRentalTariffs(role, options);
   const canManageVenue = canManageVenueCostRules(role);
   const canReadVenue = can("finance.read");
 
@@ -24,14 +28,20 @@ export default function HallRentSettingsPage() {
     <div className="panel-card-stack max-w-4xl">
       <div>
         <h2 className="text-base font-semibold text-slate-900">{t("hallRent.pageTitle")}</h2>
-        <p className="text-xs text-slate-500 mt-1">{t("hallRent.pageSubtitle")}</p>
+        <p className="text-xs text-slate-500 mt-1">
+          {canReadTariffs && !canReadVenue
+            ? t("hallRent.pageSubtitleLookupOnly")
+            : t("hallRent.pageSubtitle")}
+        </p>
       </div>
 
       {canReadTariffs && (
         <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-slate-900">{t("hallRent.rentersTitle")}</h3>
-            <p className="text-xs text-slate-500 mt-1">{t("hallRent.rentersSubtitle")}</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {canWriteTariffs ? t("hallRent.rentersSubtitle") : t("hallRent.rentersSubtitleLookup")}
+            </p>
           </div>
           <RentalTariffsSettingsPage embedded canWrite={canWriteTariffs} />
         </section>

@@ -143,6 +143,7 @@ export function PanelAccessRoute() {
       const fallbackSection = findFirstAccessibleSettingsSection(role, modules, options);
       return <Navigate to={fallbackSection ? `/settings/${fallbackSection}` : "/"} replace />;
     }
+    return <Outlet />;
   }
 
   const panelModuleKey = moduleKeyFromPanel(panel);
