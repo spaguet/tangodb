@@ -37,19 +37,30 @@ BEGIN
 
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES (v_org, 'Rental Amount Org', 'rental-amount', 'licensed', v_version_id, v_owner)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    status = 'licensed',
+    owner_user_id = EXCLUDED.owner_user_id;
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET
+    license_type = 'lifetime',
+    activated_at = now();
 
   INSERT INTO organization_members (id, organization_id, user_id, role, display_name)
   VALUES
     (v_member_owner, v_org, v_owner, 'owner', 'Owner Amount'),
     (v_member_admin, v_org, v_admin, 'admin', 'Admin Cashier')
-  ON CONFLICT (organization_id, user_id) DO NOTHING;
+  ON CONFLICT (organization_id, user_id) DO UPDATE SET
+    role = EXCLUDED.role,
+    display_name = EXCLUDED.display_name;
 
   INSERT INTO organization_settings (organization_id, timezone, admin_can_accept_payments, admin_can_edit_schedule)
   VALUES (v_org, 'Europe/Moscow', true, true)
   ON CONFLICT (organization_id) DO UPDATE SET
     admin_can_accept_payments = true,
-    admin_can_edit_schedule = true;
+    admin_can_edit_schedule = true,
+    finance_period_closed_until = NULL,
+    rental_billing_profile = '{}'::jsonb;
 
   INSERT INTO locations (id, organization_id, name)
   VALUES (v_loc, v_org, 'Hall B')
@@ -76,12 +87,11 @@ BEGIN
 
   DELETE FROM rental_pricing_adjustments WHERE rental_id = v_rental;
   DELETE FROM rental_payments WHERE rental_id = v_rental;
+  DELETE FROM rental_invoice_lines WHERE organization_id = v_org;
+  DELETE FROM rental_invoices WHERE organization_id = v_org;
 
   -- Owner: fix zero amount booking
-  PERFORM set_config('request.jwt.claim.sub', v_owner::text, true);
-  PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner)::text, true);
-  PERFORM set_active_organization(v_org);
+  PERFORM _hall_rent_test_set_jwt(v_owner, v_org, v_member_owner, 'owner');
 
   v_result := apply_rental_pricing_adjustment(v_rental, 2500, 'Forgot tariff at booking');
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'owner adjusts zero amount');
@@ -100,9 +110,7 @@ BEGIN
   PERFORM _test_assert(NOT COALESCE((v_result ->> 'success')::boolean, false), 'below paid blocked');
 
   -- Operational admin cashier without finance.read
-  PERFORM set_config('request.jwt.claim.sub', v_admin::text, true);
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_admin)::text, true);
-  PERFORM set_active_organization(v_org);
+  PERFORM _hall_rent_test_set_jwt(v_admin, v_org, v_member_admin, 'admin');
 
   PERFORM _test_assert(member_can_adjust_rental_amount(), 'admin cashier can adjust');
   PERFORM _test_assert(NOT can_read_financial(), 'admin still no finance.read');

@@ -56,6 +56,7 @@
     "test:rental-tariff-rules": "tsx scripts/rental-tariff-rules-check.mjs",
     "test:rental-payment-inbox": "node scripts/rental-payment-inbox-check.mjs",
     "test:rental-billing-profile": "tsx scripts/rental-billing-profile-check.mjs",
+    "test:hall-rent-integration": "node scripts/hall-rent-integration-check.mjs",
     "test:rbac": "tsx scripts/rbac-regression-check.mjs",
     "db:reset-test": "node scripts/reset-for-test-run.mjs",
     "db:push": "supabase db push",

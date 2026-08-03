@@ -48,7 +48,14 @@ BEGIN
 
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES (v_org, 'Rental OpDate Org', 'rental-opdate', 'licensed', v_version_id, v_user)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    status = 'licensed',
+    owner_user_id = EXCLUDED.owner_user_id;
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET
+    license_type = 'lifetime',
+    activated_at = now();
 
   INSERT INTO organization_members (id, organization_id, user_id, role, display_name)
   VALUES (v_member, v_org, v_user, 'owner', 'Owner OpDate')
@@ -58,7 +65,8 @@ BEGIN
   VALUES (v_org, 'Europe/Moscow', NULL)
   ON CONFLICT (organization_id) DO UPDATE SET
     timezone = EXCLUDED.timezone,
-    finance_period_closed_until = EXCLUDED.finance_period_closed_until;
+    finance_period_closed_until = EXCLUDED.finance_period_closed_until,
+    rental_billing_profile = '{}'::jsonb;
 
   INSERT INTO locations (id, organization_id, name)
   VALUES (v_loc, v_org, 'OpDate Hall')
@@ -79,10 +87,7 @@ BEGIN
 
   DELETE FROM rental_payments WHERE rental_id IN (v_rental, v_rental2);
 
-  PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
-  PERFORM set_config('request.jwt.claim.organization_id', v_org::text, true);
-  PERFORM set_config('request.jwt.claim.member_id', v_member::text, true);
-  PERFORM set_config('request.jwt.claim.role', 'owner', true);
+  PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
 
   v_today := _org_local_date(v_org);
   v_yesterday := v_today - 1;
@@ -103,7 +108,7 @@ BEGIN
   );
 
   -- Register filters by operation_date
-  SELECT list_rental_money_register(v_yesterday::text, v_yesterday::text) INTO v_result;
+  SELECT list_rental_money_register(v_yesterday, v_yesterday) INTO v_result;
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'list register success');
   PERFORM _test_assert(
     jsonb_array_length(v_result -> 'entries') >= 1,

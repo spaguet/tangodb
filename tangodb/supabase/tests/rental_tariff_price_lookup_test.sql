@@ -40,20 +40,33 @@ BEGIN
 
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES (v_org, 'Rental Lookup Org', 'rental-lookup', 'licensed', v_version_id, v_owner)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    status = 'licensed',
+    owner_user_id = EXCLUDED.owner_user_id;
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET
+    license_type = 'lifetime',
+    activated_at = now();
 
   INSERT INTO organization_members (id, organization_id, user_id, role, display_name, meta)
   VALUES
     (v_member_owner, v_org, v_owner, 'owner', 'Owner Lookup', '{}'::jsonb),
     (v_member_admin, v_org, v_admin, 'admin', 'Admin Cashier', '{}'::jsonb),
     (v_member_reception, v_org, v_reception, 'admin', 'Reception', '{"restricted_admin": true}'::jsonb)
-  ON CONFLICT (organization_id, user_id) DO UPDATE SET meta = EXCLUDED.meta;
+  ON CONFLICT (organization_id, user_id) DO UPDATE SET
+    meta = EXCLUDED.meta,
+    role = EXCLUDED.role,
+    display_name = EXCLUDED.display_name;
 
   INSERT INTO organization_settings (organization_id, timezone, admin_can_accept_payments, admin_can_edit_schedule)
   VALUES (v_org, 'Europe/Moscow', true, true)
   ON CONFLICT (organization_id) DO UPDATE SET
+    timezone = EXCLUDED.timezone,
     admin_can_accept_payments = true,
-    admin_can_edit_schedule = true;
+    admin_can_edit_schedule = true,
+    finance_period_closed_until = NULL,
+    rental_billing_profile = '{}'::jsonb;
 
   INSERT INTO locations (id, organization_id, name)
   VALUES (v_loc, v_org, 'Lookup Hall')
@@ -66,7 +79,7 @@ BEGIN
   ON CONFLICT (id) DO UPDATE SET price = 3500, status = 'active';
 
   -- Owner sees prices
-  PERFORM set_config('request.jwt.claim.sub', v_owner::text, true);
+  PERFORM _hall_rent_test_set_jwt(v_owner, v_org, v_member_owner, 'owner');
   PERFORM _test_assert(member_can_see_rental_tariff_prices(), 'owner sees tariff prices');
   v_result := list_rental_tariffs('active', NULL);
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'owner list tariffs');
@@ -74,7 +87,7 @@ BEGIN
   PERFORM _test_assert(v_price = 3500, 'owner list returns price');
 
   -- Full admin (cashier) sees prices without finance.read
-  PERFORM set_config('request.jwt.claim.sub', v_admin::text, true);
+  PERFORM _hall_rent_test_set_jwt(v_admin, v_org, v_member_admin, 'admin');
   PERFORM _test_assert(NOT can_read_financial(), 'admin no finance.read');
   PERFORM _test_assert(member_can_record_rental_payment(), 'admin can record rental payment');
   PERFORM _test_assert(member_can_see_rental_tariff_prices(), 'admin sees tariff prices');
@@ -83,7 +96,7 @@ BEGIN
   PERFORM _test_assert(v_price = 3500, 'admin list returns price');
 
   -- Reception: no manage rentals, no tariff list, no prices
-  PERFORM set_config('request.jwt.claim.sub', v_reception::text, true);
+  PERFORM _hall_rent_test_set_jwt(v_reception, v_org, v_member_reception, 'admin');
   PERFORM _test_assert(NOT member_can_manage_rentals(), 'reception no manage rentals');
   PERFORM _test_assert(NOT member_can_record_rental_payment(), 'reception no rental payment');
   PERFORM _test_assert(NOT member_can_see_rental_tariff_prices(), 'reception no tariff prices');
@@ -91,7 +104,7 @@ BEGIN
   PERFORM _test_assert((v_result ->> 'success') = 'false', 'reception cannot list tariffs');
 
   -- Stage 14: archive filter — archived tariff excluded from active list, visible when filtered.
-  PERFORM set_config('request.jwt.claim.sub', v_owner::text, true);
+  PERFORM _hall_rent_test_set_jwt(v_owner, v_org, v_member_owner, 'owner');
   v_result := upsert_rental_tariff(jsonb_build_object(
     'tariff_id', v_tariff,
     'name', 'Evening fixed',

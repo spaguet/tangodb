@@ -49,7 +49,14 @@ BEGIN
 
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES (v_org, 'Rental Cancel Fin Org', 'rental-cancel-fin', 'licensed', v_version_id, v_user)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    status = 'licensed',
+    owner_user_id = EXCLUDED.owner_user_id;
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET
+    license_type = 'lifetime',
+    activated_at = now();
 
   INSERT INTO organization_members (id, organization_id, user_id, role, display_name)
   VALUES (v_member, v_org, v_user, 'owner', 'Owner Cancel')
@@ -75,15 +82,18 @@ BEGIN
     (v_rental_unpaid, v_org, v_renter, v_loc, current_date + 7, '10:00', '12:00', 'confirmed', 2000, 'RUB'),
     (v_rental_paid, v_org, v_renter, v_loc, current_date + 8, '12:00', '14:00', 'confirmed', 3000, 'RUB'),
     (v_rental_advance, v_org, v_renter, v_loc, current_date + 9, '14:00', '16:00', 'confirmed', 1500, 'RUB')
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    booking_status = EXCLUDED.booking_status,
+    fixed_amount = EXCLUDED.fixed_amount;
 
+  DELETE FROM rental_payments WHERE rental_id IN (v_rental_paid, v_rental_advance, v_rental_unpaid);
   INSERT INTO rental_payments (id, organization_id, rental_id, amount, currency, method, created_by)
   VALUES
     (v_payment, v_org, v_rental_paid, 3000, 'RUB', 'cash', v_member)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET amount = EXCLUDED.amount;
 
   INSERT INTO rental_payments (id, organization_id, rental_id, amount, currency, method, created_by)
-  SELECT
+  VALUES (
     'ffffffff-ffff-ffff-ffff-000000000815',
     v_org,
     v_rental_advance,
@@ -91,13 +101,10 @@ BEGIN
     'RUB',
     'transfer',
     v_member
-  WHERE NOT EXISTS (
-    SELECT 1 FROM rental_payments WHERE id = 'ffffffff-ffff-ffff-ffff-000000000815'
-  );
+  )
+  ON CONFLICT (id) DO UPDATE SET amount = EXCLUDED.amount;
 
-  PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
-  PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
-  PERFORM set_config('app.current_organization_id', v_org::text, true);
+  PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
 
   -- Unpaid cancel with none
   v_result := cancel_rental(v_rental_unpaid, 'Client cancelled', 'none', NULL, gen_random_uuid()::text);

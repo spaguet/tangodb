@@ -47,7 +47,14 @@ BEGIN
 
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES (v_org, 'Rental Corrections Org', 'rental-corrections', 'licensed', v_version_id, v_user)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    status = 'licensed',
+    owner_user_id = EXCLUDED.owner_user_id;
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET
+    license_type = 'lifetime',
+    activated_at = now();
 
   INSERT INTO organization_members (id, organization_id, user_id, role, display_name)
   VALUES (v_member, v_org, v_user, 'owner', 'Owner Corrections')
@@ -55,7 +62,10 @@ BEGIN
 
   INSERT INTO organization_settings (organization_id, timezone)
   VALUES (v_org, 'Europe/Moscow')
-  ON CONFLICT (organization_id) DO UPDATE SET timezone = EXCLUDED.timezone;
+  ON CONFLICT (organization_id) DO UPDATE SET
+    timezone = EXCLUDED.timezone,
+    finance_period_closed_until = NULL,
+    rental_billing_profile = '{}'::jsonb;
 
   INSERT INTO locations (id, organization_id, name)
   VALUES (v_loc, v_org, 'Corrections Hall')
@@ -75,15 +85,18 @@ BEGIN
   )
   ON CONFLICT (id) DO NOTHING;
 
+  DELETE FROM rental_payments WHERE organization_id = v_org;
+  DELETE FROM operation_idempotency
+  WHERE organization_id = v_org
+    AND scope IN ('storno_rental_payment', 'correct_rental_payment');
+
   INSERT INTO rental_payments (
     id, organization_id, rental_id, amount, currency, method, created_by
   )
   VALUES (v_payment, v_org, v_rental, 1000, 'RUB', 'cash', v_member)
   ON CONFLICT (id) DO NOTHING;
 
-  PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
-  PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
-  PERFORM set_config('app.current_organization_id', v_org::text, true);
+  PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
 
   PERFORM _test_assert(_rental_paid_total(v_rental, v_org) = 1000, 'initial paid total');
 

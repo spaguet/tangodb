@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent финал: интеграционная проверка контура аренды — `test:hall-rent-integration` (RBAC, venue/rental node-checks, 13 SQL-тестов на linked DB); JWT helper `_hall_rent_test_set_jwt`; миграции 710–750: ambiguous `record_rental_payment` / `schedule_location_has_conflict` / `cancel_rental_series_occurrence`, `preview_rental_conflicts` client join, cancellation advance без `notes`, scoped rental payment idempotency, порядок `confirm_venue_cost_rule_gap`; правки SQL-тестов (license, динамические даты, cleanup).
+
 2026-08-03 — hall-rent этап 23: бухгалтер создаёт/правит слот аренды — permission `rentals.write` (accountant + operational admin); SQL `member_can_create_rental()`; UI `EditRentalSlotModal`, create из inbox и карточки арендатора; `RentalInfoPopup` cancel/edit slot через `rentals.write`; RBAC-тесты.
 
 2026-08-03 — hall-rent этап 22: кассовый inbox неоплаченных аренд — RPC `list_rental_payment_inbox` (бакеты today/overdue/partial/overpaid/queue, effective amount, пагинация); `useRentalPaymentInbox`, `FinanceRentalInboxPage` (`/finance/rental-inbox`); доступ `rentals.payments.write` / `canAccessRentalInboxRoute`; навигация для admin-кассира без полного finance; `test:rental-payment-inbox`, `test:db:rental-inbox`.

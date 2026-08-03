@@ -56,7 +56,16 @@ BEGIN
 
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES (v_org, 'Venue Cost Test', 'venue-cost-test', 'licensed', v_product_version, v_user)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    status = 'licensed',
+    owner_user_id = EXCLUDED.owner_user_id;
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_product_version, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET
+    license_type = 'lifetime',
+    activated_at = now();
+
+  DELETE FROM venue_rule_gap_acknowledgements WHERE organization_id = v_org;
 
   INSERT INTO organization_members (id, organization_id, user_id, role, display_name)
   VALUES (v_member, v_org, v_user, 'owner', 'Venue Owner')
@@ -115,14 +124,7 @@ BEGIN
 
   PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
   PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
-  PERFORM set_config(
-    'request.jwt.claims',
-    json_build_object(
-      'sub', v_user, 'organization_id', v_org, 'member_id', v_member, 'role', 'owner'
-    )::text,
-    true
-  );
-  PERFORM set_active_organization(v_org);
+  PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
 
   -- Existing organizations are not gated before any accepted policy.
   v_status := get_venue_cost_rule_status(date '2026-01-01');
@@ -136,7 +138,7 @@ BEGIN
         'group', '[]'::jsonb,
         'personal', jsonb_build_array(jsonb_build_object(
           'teacher_member_id', v_teacher_member,
-          'location_id', gen_random_uuid(), 'amount', 1
+          'location_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid, 'amount', 1
         ))
       )
     ),

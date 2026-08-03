@@ -42,18 +42,32 @@ BEGIN
 
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES (v_org, 'Rental Inbox Org', 'rental-inbox', 'licensed', v_version_id, v_owner)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    status = 'licensed',
+    owner_user_id = EXCLUDED.owner_user_id;
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET
+    license_type = 'lifetime',
+    activated_at = now();
 
   INSERT INTO organization_members (id, organization_id, user_id, role, display_name, meta)
   VALUES
     (v_member_owner, v_org, v_owner, 'owner', 'Owner Inbox', '{}'::jsonb),
     (v_member_admin, v_org, v_admin, 'admin', 'Admin Cashier', '{}'::jsonb),
     (v_member_reception, v_org, v_reception, 'admin', 'Reception', '{"restricted_admin": true}'::jsonb)
-  ON CONFLICT (organization_id, user_id) DO UPDATE SET meta = EXCLUDED.meta;
+  ON CONFLICT (organization_id, user_id) DO UPDATE SET
+    meta = EXCLUDED.meta,
+    role = EXCLUDED.role,
+    display_name = EXCLUDED.display_name;
 
   INSERT INTO organization_settings (organization_id, timezone, admin_can_accept_payments)
   VALUES (v_org, 'Europe/Moscow', true)
-  ON CONFLICT (organization_id) DO UPDATE SET timezone = EXCLUDED.timezone, admin_can_accept_payments = true;
+  ON CONFLICT (organization_id) DO UPDATE SET
+    timezone = EXCLUDED.timezone,
+    admin_can_accept_payments = true,
+    finance_period_closed_until = NULL,
+    rental_billing_profile = '{}'::jsonb;
 
   INSERT INTO locations (id, organization_id, name)
   VALUES (v_loc, v_org, 'Inbox Hall')
@@ -72,9 +86,7 @@ BEGIN
     (v_rental_overdue, v_org, v_renter, v_loc, _org_local_date(v_org) - 2, '14:00', '16:00', 'confirmed', 2000, 'RUB')
   ON CONFLICT (id) DO NOTHING;
 
-  PERFORM set_config('request.jwt.claim.sub', v_owner::text, true);
-  PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
-  PERFORM set_config('app.organization_id', v_org::text, true);
+  PERFORM _hall_rent_test_set_jwt(v_owner, v_org, v_member_owner, 'owner');
 
   v_result := list_rental_payment_inbox('queue', NULL, NULL, NULL, NULL, NULL, 50, 0);
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'owner queue success');
@@ -92,11 +104,11 @@ BEGIN
     'today excludes overdue rental'
   );
 
-  PERFORM set_config('request.jwt.claim.sub', v_admin::text, true);
+  PERFORM _hall_rent_test_set_jwt(v_admin, v_org, v_member_admin, 'admin');
   v_result := list_rental_payment_inbox('overdue', NULL, NULL, NULL, NULL, NULL, 50, 0);
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'admin overdue success');
 
-  PERFORM set_config('request.jwt.claim.sub', v_reception::text, true);
+  PERFORM _hall_rent_test_set_jwt(v_reception, v_org, v_member_reception, 'admin');
   v_result := list_rental_payment_inbox('queue', NULL, NULL, NULL, NULL, NULL, 50, 0);
   PERFORM _test_assert(NOT COALESCE((v_result ->> 'success')::boolean, false), 'reception forbidden');
 

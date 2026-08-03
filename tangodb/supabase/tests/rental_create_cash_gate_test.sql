@@ -27,6 +27,11 @@ DECLARE
   v_tariff_fixed uuid := 'ffffffff-ffff-ffff-ffff-000000000402';
   v_result jsonb;
   v_rental_id uuid;
+  v_day1 date := current_date + 14;
+  v_day2 date := current_date + 15;
+  v_day3 date := current_date + 16;
+  v_day4 date := current_date + 17;
+  v_day5 date := current_date + 18;
 BEGIN
   SELECT id INTO v_version_id FROM crm_product_versions WHERE code = 'v2';
 
@@ -38,19 +43,30 @@ BEGIN
 
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES (v_org, 'Rental Create Gate Org', 'rental-create-gate', 'licensed', v_version_id, v_owner_user)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    status = 'licensed',
+    owner_user_id = EXCLUDED.owner_user_id;
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET
+    license_type = 'lifetime',
+    activated_at = now();
 
   INSERT INTO organization_members (id, organization_id, user_id, role, display_name)
   VALUES
     (v_owner_member, v_org, v_owner_user, 'owner', 'Owner'),
     (v_admin_member, v_org, v_admin_user, 'admin', 'Admin Cashier')
-  ON CONFLICT (organization_id, user_id) DO NOTHING;
+  ON CONFLICT (organization_id, user_id) DO UPDATE SET
+    role = EXCLUDED.role,
+    display_name = EXCLUDED.display_name;
 
   INSERT INTO organization_settings (organization_id, timezone, admin_can_accept_payments, admin_can_edit_schedule)
   VALUES (v_org, 'Europe/Moscow', true, true)
   ON CONFLICT (organization_id) DO UPDATE SET
     admin_can_accept_payments = true,
-    admin_can_edit_schedule = true;
+    admin_can_edit_schedule = true,
+    finance_period_closed_until = NULL,
+    rental_billing_profile = '{}'::jsonb;
 
   INSERT INTO locations (id, organization_id, name)
   VALUES (v_loc, v_org, 'Hall A')
@@ -65,14 +81,14 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
 
   -- Admin cashier: preview pricing
-  PERFORM set_config('request.jwt.claim.sub', v_admin_user::text, true);
-  PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
-  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_admin_user)::text, true);
-  PERFORM set_active_organization(v_org);
+  DELETE FROM rental_payments WHERE organization_id = v_org;
+  DELETE FROM rentals WHERE organization_id = v_org;
+
+  PERFORM _hall_rent_test_set_jwt(v_admin_user, v_org, v_admin_member, 'admin');
 
   v_result := preview_rental_pricing(jsonb_build_object(
     'tariff_id', v_tariff_fixed,
-    'rental_date', '2026-04-01',
+    'rental_date', v_day1,
     'time_start', '10:00',
     'time_end', '14:00'
   ));
@@ -81,14 +97,13 @@ BEGIN
 
   -- Create with tariff_id (server price, no finance.read on admin)
   v_result := create_rental(jsonb_build_object(
-    'idempotency_key', 'stage13-admin-tariff',
-    'rental_date', '2026-04-02',
+    'idempotency_key', 'stage13-admin-tariff-' || gen_random_uuid()::text,
+    'rental_date', v_day2,
     'time_start', '10:00',
     'time_end', '14:00',
     'location_id', v_loc,
     'renter_id', v_renter,
     'tariff_id', v_tariff_fixed,
-    'fixed_amount', 0,
     'initial_payment', 1500,
     'payment_method', 'cash'
   ));
@@ -99,7 +114,7 @@ BEGIN
   -- Override without reason blocked
   v_result := create_rental(jsonb_build_object(
     'idempotency_key', 'stage13-admin-overrides',
-    'rental_date', '2026-04-03',
+    'rental_date', v_day3,
     'time_start', '10:00',
     'time_end', '14:00',
     'location_id', v_loc,
@@ -113,7 +128,7 @@ BEGIN
   -- Override with reason
   v_result := create_rental(jsonb_build_object(
     'idempotency_key', 'stage13-admin-overrides-ok',
-    'rental_date', '2026-04-04',
+    'rental_date', v_day4,
     'time_start', '10:00',
     'time_end', '14:00',
     'location_id', v_loc,
@@ -130,7 +145,7 @@ BEGIN
   -- Manual amount without tariff requires cash gate (admin passes)
   v_result := create_rental(jsonb_build_object(
     'idempotency_key', 'stage13-admin-manual',
-    'rental_date', '2026-04-05',
+    'rental_date', v_day5,
     'time_start', '10:00',
     'time_end', '14:00',
     'location_id', v_loc,

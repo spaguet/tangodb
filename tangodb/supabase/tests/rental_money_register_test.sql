@@ -53,7 +53,14 @@ BEGIN
 
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES (v_org, 'Rental Register Org', 'rental-register', 'licensed', v_version_id, v_user)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    status = 'licensed',
+    owner_user_id = EXCLUDED.owner_user_id;
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET
+    license_type = 'lifetime',
+    activated_at = now();
 
   INSERT INTO organization_members (id, organization_id, user_id, role, display_name)
   VALUES (v_member, v_org, v_user, 'owner', 'Owner Register')
@@ -94,10 +101,10 @@ BEGIN
   VALUES (v_payment, v_org, v_rental, 1500, 'cash', v_member);
 
   INSERT INTO rental_invoices (
-    id, organization_id, renter_id, period_start, period_end, status, total_amount, currency, created_by
+    id, organization_id, renter_id, period_start, period_end, due_date, status, total_amount, currency, created_by
   )
   VALUES (
-    v_invoice, v_org, v_renter, current_date, current_date + 30, 'invoiced', 5000, 'RUB', v_member
+    v_invoice, v_org, v_renter, current_date, current_date + 30, current_date + 14, 'invoiced', 5000, 'RUB', v_member
   );
 
   INSERT INTO rental_invoice_payments (id, organization_id, invoice_id, amount, method, created_by)
@@ -118,8 +125,7 @@ BEGIN
   INSERT INTO rental_advance_allocations (organization_id, advance_id, invoice_id, amount, allocated_by)
   VALUES (v_org, v_advance, v_invoice, 200, v_member);
 
-  PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
-  PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
+  PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
 
   v_result := list_rental_money_register(NULL, NULL);
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'list_rental_money_register should succeed for owner');
