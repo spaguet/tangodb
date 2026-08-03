@@ -66,6 +66,8 @@ function invalidateSeriesQueries(queryClient: ReturnType<typeof useQueryClient>)
   void queryClient.invalidateQueries({ queryKey: rentalSeriesQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: rentalsQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: scheduleQueryKey, refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: ["rentalMoneyRegister"], refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: ["renterFinance"], refetchType: "active" });
 }
 
 export function usePreviewRentalSeries(payload: RentalSeriesPayload | null, enabled: boolean) {
@@ -159,7 +161,16 @@ export function useCreateRentalSeries() {
   });
 }
 
-export type RentalSeriesFinancialAction = "none" | "full_penalty" | "partial_penalty" | "manual";
+export type RentalSeriesFinancialAction =
+  | "none"
+  | "full_penalty"
+  | "partial_penalty"
+  | "manual"
+  | "refund"
+  | "transfer_to_advance";
+
+/** Shared with single rental cancel (stage 11). */
+export type RentalCancelFinancialAction = RentalSeriesFinancialAction;
 
 export function useCancelRentalSeriesOccurrence() {
   const queryClient = useQueryClient();
@@ -171,6 +182,7 @@ export function useCancelRentalSeriesOccurrence() {
       reason: string;
       financialAction?: RentalSeriesFinancialAction;
       penaltyAmount?: number | null;
+      idempotencyKey?: string;
     }) => {
       const { data, error } = await supabase.rpc("cancel_rental_series_occurrence", {
         p_series_id: input.seriesId,
@@ -178,6 +190,7 @@ export function useCancelRentalSeriesOccurrence() {
         p_reason: input.reason,
         p_financial_action: input.financialAction ?? "none",
         p_penalty_amount: input.penaltyAmount ?? null,
+        p_idempotency_key: input.idempotencyKey ?? null,
       });
 
       if (error) return { success: false as const, error: error.message };

@@ -5,6 +5,7 @@ import type { PaymentMethod, RentalDisplayLesson, RentalPayment, RentalPaymentSt
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { scheduleQueryKey } from "./useSchedule";
 import { rentalPaymentsQueryKey } from "./useRentalPayments";
+import type { RentalCancelFinancialAction } from "./useRentalSeries";
 
 export const rentalsQueryKey = ["rentals"] as const;
 
@@ -309,7 +310,9 @@ function invalidateRentalQueries(queryClient: ReturnType<typeof useQueryClient>)
   void queryClient.invalidateQueries({ queryKey: scheduleQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: rentalsQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: rentalPaymentsQueryKey, refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: ["rentalMoneyRegister"], refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: ["payments"], refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: ["renterFinance"], refetchType: "active" });
 }
 
 export function useCreateRental() {
@@ -445,10 +448,19 @@ export function useCancelRental() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { rentalId: string; reason: string }) => {
+    mutationFn: async (input: {
+      rentalId: string;
+      reason: string;
+      financialAction?: RentalCancelFinancialAction;
+      penaltyAmount?: number | null;
+      idempotencyKey?: string;
+    }) => {
       const { data, error } = await supabase.rpc("cancel_rental", {
         p_rental_id: input.rentalId,
         p_reason: input.reason,
+        p_financial_action: input.financialAction ?? "none",
+        p_penalty_amount: input.penaltyAmount ?? null,
+        p_idempotency_key: input.idempotencyKey ?? null,
       });
 
       if (error) return { success: false as const, error: error.message };

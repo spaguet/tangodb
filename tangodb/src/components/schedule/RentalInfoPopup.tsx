@@ -4,17 +4,16 @@ import { Building2, Coins, Pencil, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
-import { useCancelRental, useRentalDetail } from "../../hooks/useRentals";
+import { useRentalDetail } from "../../hooks/useRentals";
 import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
-import { useCancelRentalSeriesOccurrence } from "../../hooks/useRentalSeries";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { filterVisibleRentalCorrectionPayments } from "../../lib/rentalPaymentCorrection";
 import { formatCurrency } from "../../lib/utils";
-import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { RentalDisplayLesson } from "../../types";
 import RecordRentalPaymentModal from "./RecordRentalPaymentModal";
 import EditRentalAmountModal from "./EditRentalAmountModal";
+import CancelRentalModal from "./CancelRentalModal";
 import type { LocationOption } from "./CreateRentalDialog";
 
 interface RentalInfoPopupProps {
@@ -53,14 +52,10 @@ export default function RentalInfoPopup({
 
   const detailQuery = useRentalDetail(lesson?.rentalId ?? null, !!lesson);
   const teamQuery = useTeamMembers();
-  const cancelMutation = useCancelRental();
-  const cancelOccurrenceMutation = useCancelRentalSeriesOccurrence();
 
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [editAmountOpen, setEditAmountOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [cancelOccurrenceOpen, setCancelOccurrenceOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
 
   if (!lesson) return null;
 
@@ -90,42 +85,6 @@ export default function RentalInfoPopup({
     canSeeCashAmounts &&
     !isReadOnly &&
     lesson.bookingStatus === "confirmed";
-
-  const handleCancel = async () => {
-    if (!cancelReason.trim()) {
-      toast(t("schedule.rental.cancelReasonRequired"), "error");
-      return;
-    }
-    const res = await cancelMutation.mutateAsync({ rentalId: lesson.rentalId, reason: cancelReason.trim() });
-    if (!res.success) {
-      toast(resolveMutationError(res.error, "schedule.rental.cancelFailed", t), "error");
-      return;
-    }
-    toast(t("schedule.rental.cancelSuccess"), "success");
-    onSuccess();
-    onClose();
-  };
-
-  const handleCancelOccurrence = async () => {
-    if (!seriesId) return;
-    if (!cancelReason.trim()) {
-      toast(t("schedule.rental.cancelReasonRequired"), "error");
-      return;
-    }
-    const res = await cancelOccurrenceMutation.mutateAsync({
-      seriesId,
-      date: lesson.date,
-      reason: cancelReason.trim(),
-      financialAction: "none",
-    });
-    if (!res.success) {
-      toast(resolveMutationError(res.error, "rentalSeries.error.cancelOccurrenceFailed", t), "error");
-      return;
-    }
-    toast(t("rentalSeries.cancelOccurrenceSuccess"), "success");
-    onSuccess();
-    onClose();
-  };
 
   return (
     <>
@@ -256,15 +215,9 @@ export default function RentalInfoPopup({
                 </button>
               ) : null}
               {canManage && lesson.bookingStatus === "confirmed" ? (
-                seriesId ? (
-                  <button type="button" onClick={() => setCancelOccurrenceOpen(true)} className="px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg cursor-pointer">
-                    {t("rentalSeries.cancelOccurrenceAction")}
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => setCancelOpen(true)} className="px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg cursor-pointer">
-                    {t("schedule.rental.cancelAction")}
-                  </button>
-                )
+                <button type="button" onClick={() => setCancelOpen(true)} className="px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg cursor-pointer">
+                  {seriesId ? t("rentalSeries.cancelOccurrenceAction") : t("schedule.rental.cancelAction")}
+                </button>
               ) : null}
             </div>
           </motion.div>
@@ -295,49 +248,22 @@ export default function RentalInfoPopup({
         }}
       />
 
-      <AnimatePresence>
-        {cancelOccurrenceOpen && (
-          <div className="fixed inset-0 z-[65] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40" onClick={() => !cancelOccurrenceMutation.isPending && setCancelOccurrenceOpen(false)} />
-            <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-xl p-4 space-y-3">
-              <h4 className="font-semibold text-slate-900">{t("rentalSeries.cancelOccurrenceAction")}</h4>
-              <div>
-                <span className={labelCls}>{t("schedule.rental.cancelReasonLabel")}</span>
-                <textarea className={`${fieldCls} min-h-[80px]`} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setCancelOccurrenceOpen(false)} className="px-3 py-2 text-xs font-semibold text-slate-600 cursor-pointer">{t("common.cancel")}</button>
-                <button type="button" onClick={() => void handleCancelOccurrence()} disabled={cancelOccurrenceMutation.isPending} className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 rounded-lg cursor-pointer disabled:opacity-60">
-                  {cancelOccurrenceMutation.isPending ? t("common.saving") : t("rentalSeries.confirmCancelOccurrence")}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {cancelOpen && (
-          <div className="fixed inset-0 z-[65] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40" onClick={() => !cancelMutation.isPending && setCancelOpen(false)} />
-            <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-xl p-4 space-y-3">
-              <h4 className="font-semibold text-slate-900">{t("schedule.rental.cancelAction")}</h4>
-              <div>
-                <span className={labelCls}>{t("schedule.rental.cancelReasonLabel")}</span>
-                <textarea className={`${fieldCls} min-h-[80px]`} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setCancelOpen(false)} className="px-3 py-2 text-xs font-semibold text-slate-600 cursor-pointer">{t("common.cancel")}</button>
-                <button type="button" onClick={() => void handleCancel()} disabled={cancelMutation.isPending} className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 rounded-lg cursor-pointer disabled:opacity-60">
-                  {cancelMutation.isPending ? t("common.saving") : t("schedule.rental.confirmCancel")}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <CancelRentalModal
+        open={cancelOpen}
+        mode={seriesId ? "series_occurrence" : "single"}
+        rentalId={lesson.rentalId}
+        seriesId={seriesId}
+        occurrenceDate={lesson.date}
+        paidAmount={paidAmount}
+        effectiveAmount={effectiveAmount}
+        currency={lesson.currency ?? detail?.currency ?? "RUB"}
+        toast={toast}
+        onClose={() => setCancelOpen(false)}
+        onSuccess={() => {
+          onSuccess();
+          onClose();
+        }}
+      />
     </>
   );
 }
-
-const fieldCls = "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/30";
