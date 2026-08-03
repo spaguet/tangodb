@@ -39,6 +39,7 @@ export interface VenueCostRuleVersion {
   createdAt: string;
   updatedAt: string;
   acceptedAt: string | null;
+  acceptedBy: string | null;
 }
 
 type RpcObject = Record<string, unknown>;
@@ -117,6 +118,7 @@ export function mapVenueCostVersion(row: RpcObject): VenueCostRuleVersion {
     createdAt: String(row.created_at ?? ""),
     updatedAt: String(row.updated_at ?? ""),
     acceptedAt: nullableString(row.accepted_at),
+    acceptedBy: nullableString(row.accepted_by),
   };
 }
 

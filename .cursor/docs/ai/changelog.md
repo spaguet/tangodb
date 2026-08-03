@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent этап 15: прозрачная история версий venue cost (F10, F28) — `acceptedBy` в `mapVenueCostVersion`; раскрываемая read-only матрица правил; «Копировать в черновик» без изменения accepted; diff draft vs active (add/change/remove); i18n RU/EN; расширен `test:venue-cost-preview`.
+
 2026-08-03 — hall-rent этап 7: права бухгалтера на venue cost и read тарифов — SQL `member_can_manage_venue_cost_rules()`, `list_rental_tariffs` для `manage_rentals OR finance.read`, RLS read тарифов; UI `canReadTariffs` / `canWriteTariffs` / `canManageVenue`; `canAccessSettingsSection("hall-rent")` не сужает путь admin (stage 12); RBAC tests.
 
 2026-08-03 — hall-rent этап 3: корректное превью venue cost (F4) — scope-превью с выбором преподавателя/локации/дисциплины в `VenueCostGroupPreview`; хелперы `defaultGroupPreviewScope` / `computeGroupPreviewPair`; подсказка вместо ложного «0» без контекста; расширен `test:venue-cost-preview`.

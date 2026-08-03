@@ -121,4 +121,91 @@ assert.deepEqual(defaultGroupPreviewScope(tangoRules), {
   locationId: null,
 });
 
+function scopeKey(prefix, teacherMemberId, disciplineId, locationId) {
+  return `${prefix}:${teacherMemberId ?? "*"}:${disciplineId ?? "*"}:${locationId ?? "*"}`;
+}
+
+function diffPerLessonRules(draft, active, entries) {
+  const draftGroup = new Map(
+    draft.group.map((rule) => [
+      scopeKey("group", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+      rule,
+    ])
+  );
+  const activeGroup = new Map(
+    active.group.map((rule) => [
+      scopeKey("group", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+      rule,
+    ])
+  );
+  for (const [key, rule] of draftGroup) {
+    const baseline = activeGroup.get(key);
+    if (!baseline) {
+      entries.push({ kind: "added", section: "group", key });
+      continue;
+    }
+    if (JSON.stringify(rule.attendanceTiers) !== JSON.stringify(baseline.attendanceTiers)) {
+      entries.push({ kind: "changed", section: "group", key });
+    }
+  }
+  for (const key of activeGroup.keys()) {
+    if (!draftGroup.has(key)) entries.push({ kind: "removed", section: "group", key });
+  }
+}
+
+function diffVenueCostVersions(draft, active) {
+  const entries = [];
+  if (!active) return entries;
+  if (draft.mode !== active.mode) {
+    entries.push({ kind: "changed", section: "meta", key: "mode" });
+    return entries;
+  }
+  if (draft.mode === "per_lesson") {
+    diffPerLessonRules(draft.rules, active.rules, entries);
+  }
+  return entries;
+}
+
+const activeSnapshot = {
+  mode: "per_lesson",
+  rules: tangoRules,
+};
+const draftWithTierChange = {
+  mode: "per_lesson",
+  rules: {
+    ...tangoRules,
+    group: tangoRules.group.map((rule, index) =>
+      index === 0
+        ? {
+            ...rule,
+            attendanceTiers: [
+              { minAttendees: 0, maxAttendees: 4, amount: 160_000 },
+              { minAttendees: 5, maxAttendees: null, amount: 200_000 },
+            ],
+          }
+        : rule
+    ),
+  },
+};
+const draftDiff = diffVenueCostVersions(draftWithTierChange, activeSnapshot);
+assert.ok(draftDiff.some((entry) => entry.kind === "changed" && entry.section === "group"));
+
+const draftWithNewTeacher = {
+  mode: "per_lesson",
+  rules: {
+    ...tangoRules,
+    group: [
+      ...tangoRules.group,
+      {
+        teacherMemberId: "t9",
+        disciplineId: null,
+        locationId: null,
+        attendanceTiers: [{ minAttendees: 0, maxAttendees: null, amount: 99 }],
+      },
+    ],
+  },
+};
+const addDiff = diffVenueCostVersions(draftWithNewTeacher, activeSnapshot);
+assert.ok(addDiff.some((entry) => entry.kind === "added" && entry.key.includes("t9")));
+
 console.log("venue-cost-rules-check: ok");

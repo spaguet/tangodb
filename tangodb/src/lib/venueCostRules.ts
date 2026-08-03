@@ -159,6 +159,197 @@ export function previewGroupVenueCost(
   return tier?.amount ?? 0;
 }
 
+export interface VenueCostVersionSnapshot {
+  mode: VenueCostMode;
+  validFrom: string;
+  validTo: string | null;
+  rules: VenueCostRules;
+}
+
+export type VenueCostDiffKind = "added" | "removed" | "changed";
+
+export interface VenueCostDiffEntry {
+  kind: VenueCostDiffKind;
+  section: "meta" | "group" | "personal" | "fixed";
+  key: string;
+}
+
+function scopeKey(
+  prefix: "group" | "personal",
+  teacherMemberId: string | null,
+  disciplineId: string | null,
+  locationId: string | null
+): string {
+  return `${prefix}:${teacherMemberId ?? "*"}:${disciplineId ?? "*"}:${locationId ?? "*"}`;
+}
+
+function stableJson(value: unknown): string {
+  return JSON.stringify(value);
+}
+
+function pushMetaDiff(
+  entries: VenueCostDiffEntry[],
+  field: string,
+  left: unknown,
+  right: unknown
+) {
+  if (left !== right) {
+    entries.push({ kind: "changed", section: "meta", key: field });
+  }
+}
+
+function diffPerLessonRules(
+  draft: VenueCostPerLessonRules,
+  active: VenueCostPerLessonRules,
+  entries: VenueCostDiffEntry[]
+) {
+  const draftGroup = new Map(
+    draft.group.map((rule) => [
+      scopeKey("group", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+      rule,
+    ])
+  );
+  const activeGroup = new Map(
+    active.group.map((rule) => [
+      scopeKey("group", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+      rule,
+    ])
+  );
+  for (const [key, rule] of draftGroup) {
+    const baseline = activeGroup.get(key);
+    if (!baseline) {
+      entries.push({ kind: "added", section: "group", key });
+      continue;
+    }
+    if (stableJson(rule.attendanceTiers) !== stableJson(baseline.attendanceTiers)) {
+      entries.push({ kind: "changed", section: "group", key });
+    }
+  }
+  for (const key of activeGroup.keys()) {
+    if (!draftGroup.has(key)) entries.push({ kind: "removed", section: "group", key });
+  }
+
+  const draftPersonal = new Map(
+    draft.personal.map((rule) => [
+      scopeKey("personal", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+      rule,
+    ])
+  );
+  const activePersonal = new Map(
+    active.personal.map((rule) => [
+      scopeKey("personal", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+      rule,
+    ])
+  );
+  for (const [key, rule] of draftPersonal) {
+    const baseline = activePersonal.get(key);
+    if (!baseline) {
+      entries.push({ kind: "added", section: "personal", key });
+      continue;
+    }
+    if (rule.amount !== baseline.amount) {
+      entries.push({ kind: "changed", section: "personal", key });
+    }
+  }
+  for (const key of activePersonal.keys()) {
+    if (!draftPersonal.has(key)) entries.push({ kind: "removed", section: "personal", key });
+  }
+}
+
+/** Compare draft snapshot against active accepted version (add / remove / change). */
+export function diffVenueCostVersions(
+  draft: VenueCostVersionSnapshot,
+  active: VenueCostVersionSnapshot | null
+): VenueCostDiffEntry[] {
+  if (!active) {
+    const entries: VenueCostDiffEntry[] = [{ kind: "added", section: "meta", key: "version" }];
+    if (draft.mode === "per_lesson") {
+      for (const rule of (draft.rules as VenueCostPerLessonRules).group) {
+        entries.push({
+          kind: "added",
+          section: "group",
+          key: scopeKey("group", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+        });
+      }
+      for (const rule of (draft.rules as VenueCostPerLessonRules).personal) {
+        entries.push({
+          kind: "added",
+          section: "personal",
+          key: scopeKey("personal", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+        });
+      }
+    } else if (draft.mode === "fixed_period") {
+      entries.push({ kind: "added", section: "fixed", key: "fixed_period" });
+    }
+    return entries;
+  }
+
+  const entries: VenueCostDiffEntry[] = [];
+  pushMetaDiff(entries, "mode", draft.mode, active.mode);
+  pushMetaDiff(entries, "validFrom", draft.validFrom, active.validFrom);
+  pushMetaDiff(entries, "validTo", draft.validTo, active.validTo);
+
+  if (draft.mode !== active.mode) {
+    if (active.mode === "per_lesson") {
+      for (const rule of (active.rules as VenueCostPerLessonRules).group) {
+        entries.push({
+          kind: "removed",
+          section: "group",
+          key: scopeKey("group", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+        });
+      }
+      for (const rule of (active.rules as VenueCostPerLessonRules).personal) {
+        entries.push({
+          kind: "removed",
+          section: "personal",
+          key: scopeKey("personal", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+        });
+      }
+    } else if (active.mode === "fixed_period") {
+      entries.push({ kind: "removed", section: "fixed", key: "fixed_period" });
+    }
+    if (draft.mode === "per_lesson") {
+      for (const rule of (draft.rules as VenueCostPerLessonRules).group) {
+        entries.push({
+          kind: "added",
+          section: "group",
+          key: scopeKey("group", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+        });
+      }
+      for (const rule of (draft.rules as VenueCostPerLessonRules).personal) {
+        entries.push({
+          kind: "added",
+          section: "personal",
+          key: scopeKey("personal", rule.teacherMemberId, rule.disciplineId, rule.locationId),
+        });
+      }
+    } else if (draft.mode === "fixed_period") {
+      entries.push({ kind: "added", section: "fixed", key: "fixed_period" });
+    }
+    return entries;
+  }
+
+  if (draft.mode === "per_lesson") {
+    diffPerLessonRules(
+      draft.rules as VenueCostPerLessonRules,
+      active.rules as VenueCostPerLessonRules,
+      entries
+    );
+  } else if (draft.mode === "fixed_period") {
+    const draftRules = draft.rules as VenueCostFixedRules;
+    const activeRules = active.rules as VenueCostFixedRules;
+    if (
+      draftRules.amount !== activeRules.amount ||
+      draftRules.period !== activeRules.period ||
+      draftRules.currency !== activeRules.currency
+    ) {
+      entries.push({ kind: "changed", section: "fixed", key: "fixed_period" });
+    }
+  }
+
+  return entries;
+}
+
 export function venueCostDraftToPayload(draft: VenueCostRuleDraft): Record<string, unknown> {
   const rules =
     draft.mode === "per_lesson"

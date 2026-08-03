@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Edit, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useLocations } from "../../hooks/useLocations";
@@ -11,7 +11,6 @@ import {
   useSaveVenueCostRuleDraft,
   useVenueCostRuleStatus,
   useVenueCostRuleVersions,
-  type VenueCostRuleVersion,
 } from "../../hooks/useVenueCosts";
 import {
   validateVenueCostDraft,
@@ -28,6 +27,7 @@ import { btnAddLinkCls, btnAddSoftCls, btnCancelCls, btnAddCls } from "../../com
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import VenueRuleExpiryNotice from "../../components/venue-costs/VenueRuleExpiryNotice";
+import VenueCostVersionHistoryRow from "../../components/venue-costs/VenueCostVersionHistoryRow";
 import VenueCostGroupPreview from "../../components/venue-costs/VenueCostGroupPreview";
 import { useToast } from "../../App";
 
@@ -69,16 +69,6 @@ const newDraft = (): VenueCostRuleDraft => ({
   rules: {},
 });
 
-function versionToDraft(version: VenueCostRuleVersion): VenueCostRuleDraft {
-  return {
-    id: version.status === "draft" ? version.id : undefined,
-    mode: version.mode,
-    validFrom: version.validFrom,
-    validTo: version.validTo,
-    rules: structuredClone(version.rules),
-  };
-}
-
 export default function VenueCostsSettingsPage({
   embedded = false,
   canManage: canManageProp,
@@ -86,7 +76,7 @@ export default function VenueCostsSettingsPage({
   embedded?: boolean;
   canManage?: boolean;
 }) {
-  const { t, formatDate } = useI18n();
+  const { t } = useI18n();
   const toast = useToast();
   const { settings } = useSettings();
   const orgCurrency = settings?.currency_code || "RUB";
@@ -211,6 +201,11 @@ export default function VenueCostsSettingsPage({
   if (error) return <QueryErrorState error={error} onRetry={() => void versionsQuery.refetch()} />;
 
   const versions = versionsQuery.data ?? [];
+  const activeVersion =
+    versions.find((item) => item.id === statusQuery.data?.currentRuleId && item.status === "accepted") ??
+    versions.find((item) => item.status === "accepted") ??
+    null;
+  const teamMembers = teamQuery.data ?? [];
 
   return (
     <div className={embedded ? "space-y-4" : "panel-card-stack max-w-4xl"}>
@@ -282,40 +277,21 @@ export default function VenueCostsSettingsPage({
         ) : (
           <div className="divide-y divide-slate-100">
             {versions.map((version) => (
-              <div key={version.id} className="py-3 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {t("venueCosts.version", { version: version.versionNumber })} · {t(`venueCosts.mode.${version.mode === "per_lesson" ? "perLesson" : version.mode === "fixed_period" ? "fixedPeriod" : "disabled"}`)}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {formatDate(version.validFrom)} — {version.validTo ? formatDate(version.validTo) : "∞"} · {t(`venueCosts.status.${version.status}`)}
-                  </p>
-                  {version.mode === "per_lesson" && (version.rules as VenueCostPerLessonRules).group.length > 0 && (
-                    <VenueCostGroupPreview
-                      compact
-                      rules={version.rules as VenueCostPerLessonRules}
-                      teachers={teachers}
-                      disciplines={disciplines}
-                      locations={locations}
-                    />
-                  )}
-                </div>
-                {canManage && (
-                  <div className="flex gap-1 shrink-0">
-                    {version.status === "draft" && (
-                      <>
-                        <button type="button" onClick={() => setDraft(versionToDraft(version))} className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 cursor-pointer" aria-label={t("common.edit")}>
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button type="button" onClick={() => void handleAccept(version.id)} disabled={acceptVersion.isPending} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold cursor-pointer disabled:opacity-60">
-                          <Check className="w-3.5 h-3.5" />
-                          {t("venueCosts.accept")}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              <VenueCostVersionHistoryRow
+                key={version.id}
+                version={version}
+                activeVersion={activeVersion}
+                canManage={canManage}
+                hasOpenDraft={!!draft}
+                teachers={teachers}
+                disciplines={disciplines}
+                locations={locations}
+                teamMembers={teamMembers}
+                onEditDraft={setDraft}
+                onCopyToDraft={setDraft}
+                onAccept={handleAccept}
+                acceptPending={acceptVersion.isPending}
+              />
             ))}
           </div>
         )}
