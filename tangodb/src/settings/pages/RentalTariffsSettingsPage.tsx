@@ -16,25 +16,54 @@ import {
 } from "../../hooks/useRentalTariffs";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import {
+  formatTariffRulePeriod,
+  nextTariffRulePriority,
+  sortTariffRulesByApplicationOrder,
+  validateRentalTariffRules,
+  type TariffRuleValidationIssue,
+} from "../../lib/rentalTariffRules";
+import {
   groupTariffsByLocation,
   resolveTariffStatusQueryFilter,
   type RentalTariffStatusFilter,
 } from "../../lib/rentalTariffPricing";
 import { formatCurrency } from "../../lib/utils";
 import type { RentalTariff, RentalTariffRule, RentalTariffType } from "../../types";
+import type { I18nKey } from "../../lib/i18n/keys";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 const WEEK_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
-function emptyRule(): RentalTariffRule {
+function emptyRule(priority = 0): RentalTariffRule {
   return {
-    priority: 0,
+    priority,
     daysOfWeek: [1, 2, 3, 4, 5],
     timeStart: "18:00",
     timeEnd: "22:00",
     priceOverride: 0,
+    validFrom: null,
+    validTo: null,
   };
+}
+
+function validationIssueMessage(issue: TariffRuleValidationIssue, t: (key: I18nKey, params?: Record<string, string | number>) => string): string {
+  switch (issue.code) {
+    case "daysRequired":
+      return t("rentalTariffs.error.ruleDaysRequired");
+    case "timeInvalid":
+      return t("rentalTariffs.error.ruleTimeInvalid");
+    case "dateRangeInvalid":
+      return t("rentalTariffs.error.ruleDateRangeInvalid");
+    case "ambiguousOverlap":
+      return t("rentalTariffs.error.ruleAmbiguousOverlap", {
+        a: (issue.conflict!.indexA + 1),
+        b: (issue.conflict!.indexB + 1),
+        priority: issue.conflict!.priority,
+      });
+    default:
+      return t("rentalTariffs.error.saveFailed");
+  }
 }
 
 function TariffEditorModal({
@@ -83,7 +112,14 @@ function TariffEditorModal({
     setRules(rulesQuery.data.length ? rulesQuery.data : []);
   }, [open, tariff?.id, rulesQuery.data]);
 
-  const dayLabel = (d: number) => t(`rentalSeries.days.${d}` as import("../../lib/i18n/keys").I18nKey);
+  const dayLabel = (d: number) => t(`rentalSeries.days.${d}` as I18nKey);
+
+  const ruleValidationIssues = useMemo(() => validateRentalTariffRules(rules), [rules]);
+
+  const sortedRuleEntries = useMemo(
+    () => sortTariffRulesByApplicationOrder(rules.map((rule, index) => ({ rule, index }))),
+    [rules]
+  );
 
   const toggleDay = (ruleIndex: number, day: number) => {
     setRules((prev) =>
@@ -98,6 +134,12 @@ function TariffEditorModal({
   };
 
   const handleSave = async () => {
+    const issues = validateRentalTariffRules(rules);
+    if (issues.length > 0) {
+      toast(validationIssueMessage(issues[0]!, t), "error");
+      return;
+    }
+
     const payload: UpsertRentalTariffInput = {
       tariffId: tariff?.id,
       name: name.trim(),
@@ -196,14 +238,48 @@ function TariffEditorModal({
 
           {tariffType === "hourly" ? (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-slate-800">{t("rentalTariffs.rulesTitle")}</h4>
-                <button type="button" onClick={() => setRules((prev) => [...prev, emptyRule()])} className="text-xs font-semibold text-indigo-600 cursor-pointer">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-800">{t("rentalTariffs.rulesTitle")}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">{t("rentalTariffs.rulesApplyOrderHint")}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t("rentalTariffs.rulePriorityHint")}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRules((prev) => [...prev, emptyRule(nextTariffRulePriority(prev))])}
+                  className="text-xs font-semibold text-indigo-600 cursor-pointer shrink-0"
+                >
                   {t("rentalTariffs.addRule")}
                 </button>
               </div>
-              {rules.map((rule, idx) => (
+              {ruleValidationIssues.length > 0 ? (
+                <p className="text-xs text-rose-600 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2">
+                  {validationIssueMessage(ruleValidationIssues[0]!, t)}
+                </p>
+              ) : null}
+              {sortedRuleEntries.map(({ rule, index: idx }, order) => (
                 <div key={idx} className="rounded-lg border border-slate-100 p-3 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                      {t("rentalTariffs.ruleApplicationOrder", { order: order + 1 })}
+                    </span>
+                    <span className="text-xs text-slate-500">{formatTariffRulePeriod(rule, t)}</span>
+                  </div>
+                  <div>
+                    <span className={labelCls}>{t("rentalTariffs.rulePriorityLabel")}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      className={inputCls}
+                      value={rule.priority}
+                      onChange={(e) =>
+                        setRules((prev) =>
+                          prev.map((r, i) => (i === idx ? { ...r, priority: Math.max(0, Number(e.target.value) || 0) } : r))
+                        )
+                      }
+                    />
+                  </div>
                   <div className="flex flex-wrap gap-1">
                     {WEEK_DAYS.map((day) => (
                       <button
@@ -222,6 +298,34 @@ function TariffEditorModal({
                     <input type="time" className={inputCls} value={rule.timeStart} onChange={(e) => setRules((prev) => prev.map((r, i) => (i === idx ? { ...r, timeStart: e.target.value } : r)))} />
                     <input type="time" className={inputCls} value={rule.timeEnd} onChange={(e) => setRules((prev) => prev.map((r, i) => (i === idx ? { ...r, timeEnd: e.target.value } : r)))} />
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className={labelCls}>{t("rentalTariffs.ruleValidFromLabel")}</span>
+                      <input
+                        type="date"
+                        className={inputCls}
+                        value={rule.validFrom ?? ""}
+                        onChange={(e) =>
+                          setRules((prev) =>
+                            prev.map((r, i) => (i === idx ? { ...r, validFrom: e.target.value || null } : r))
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <span className={labelCls}>{t("rentalTariffs.ruleValidToLabel")}</span>
+                      <input
+                        type="date"
+                        className={inputCls}
+                        value={rule.validTo ?? ""}
+                        onChange={(e) =>
+                          setRules((prev) =>
+                            prev.map((r, i) => (i === idx ? { ...r, validTo: e.target.value || null } : r))
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
                   <input type="number" min={0} step="0.01" className={inputCls} placeholder={t("rentalTariffs.priceOverrideLabel")} value={rule.priceOverride || ""} onChange={(e) => setRules((prev) => prev.map((r, i) => (i === idx ? { ...r, priceOverride: Number(e.target.value) || 0 } : r)))} />
                   <button type="button" onClick={() => setRules((prev) => prev.filter((_, i) => i !== idx))} className="text-xs text-rose-600 font-semibold cursor-pointer">
                     {t("common.delete")}
@@ -235,7 +339,7 @@ function TariffEditorModal({
             <button type="button" onClick={onClose} disabled={upsertMutation.isPending} className={`flex-1 ${btnCancelCls}`}>
               {t("common.cancel")}
             </button>
-            <button type="button" onClick={() => void handleSave()} disabled={upsertMutation.isPending} className={`flex-1 ${btnAddCls}`}>
+            <button type="button" onClick={() => void handleSave()} disabled={upsertMutation.isPending || ruleValidationIssues.length > 0} className={`flex-1 ${btnAddCls}`}>
               {upsertMutation.isPending ? t("common.saving") : t("common.save")}
             </button>
           </div>

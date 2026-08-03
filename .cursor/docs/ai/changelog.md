@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent этап 19: приоритет и даты льготных окон тарифов (F2, F3) — UI `priority` / `validFrom` / `validTo` на правиле в `RentalTariffsSettingsPage`; `lib/rentalTariffRules.ts` (валидация ambiguous overlap, порядок применения); i18n RU/EN + `rental.tariff.ruleAmbiguousOverlap`; тест `test:rental-tariff-rules`.
+
 2026-08-03 — hall-rent этап 18: массовое копирование правил venue cost — `venueCostBulkCopy.ts` (plan/apply teachers + locations, duplicate/ambiguous detection); `VenueCostBulkCopyPanel` в per-lesson редакторе; валидация ambiguous/duplicate в `validateVenueCostDraft`; i18n RU/EN; расширен `test:venue-cost-preview`.
 
 2026-08-03 — hall-rent этап 17: первичка и фискальные реквизиты (F24, F25) — `rental_billing_profile` в `organization_settings`; нумерация/версии/НДС на `rental_invoices`; фискальные поля на `rental_payments` / `rental_invoice_payments`; RPC issue/export/document + `update_rental_payment_fiscal`; UI настройки в `/settings/hall-rent`, документ счёта и фискальные поля в оплате; тесты `test:db:rental-fiscal-documents`, `test:rental-billing-profile`.
