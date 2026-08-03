@@ -89,6 +89,23 @@ BEGIN
   PERFORM _test_assert(NOT member_can_see_rental_tariff_prices(), 'reception no tariff prices');
   v_result := list_rental_tariffs('active', NULL);
   PERFORM _test_assert((v_result ->> 'success') = 'false', 'reception cannot list tariffs');
+
+  -- Stage 14: archive filter — archived tariff excluded from active list, visible when filtered.
+  PERFORM set_config('request.jwt.claim.sub', v_owner::text, true);
+  v_result := upsert_rental_tariff(jsonb_build_object(
+    'tariff_id', v_tariff,
+    'name', 'Evening fixed',
+    'tariff_type', 'fixed',
+    'status', 'archived',
+    'location_id', v_loc,
+    'price', 3500
+  ));
+  PERFORM _test_assert((v_result ->> 'success')::boolean, 'owner archives tariff');
+  v_result := list_rental_tariffs('active', NULL);
+  PERFORM _test_assert(jsonb_array_length(COALESCE(v_result -> 'tariffs', '[]'::jsonb)) = 0, 'active list hides archived');
+  v_result := list_rental_tariffs('archived', NULL);
+  PERFORM _test_assert(jsonb_array_length(COALESCE(v_result -> 'tariffs', '[]'::jsonb)) = 1, 'archived list shows tariff');
+  PERFORM _test_assert((v_result -> 'tariffs' -> 0 ->> 'status') = 'archived', 'archived status preserved');
 END;
 $$;
 

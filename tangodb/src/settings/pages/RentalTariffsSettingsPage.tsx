@@ -15,6 +15,11 @@ import {
   type UpsertRentalTariffInput,
 } from "../../hooks/useRentalTariffs";
 import { resolveMutationError } from "../../lib/resolveMutationError";
+import {
+  groupTariffsByLocation,
+  resolveTariffStatusQueryFilter,
+  type RentalTariffStatusFilter,
+} from "../../lib/rentalTariffPricing";
 import { formatCurrency } from "../../lib/utils";
 import type { RentalTariff, RentalTariffRule, RentalTariffType } from "../../types";
 
@@ -167,6 +172,17 @@ function TariffEditorModal({
             </div>
           ) : null}
 
+          {tariff ? (
+            <AppSelect
+              label={t("rentalTariffs.statusLabel")}
+              value={status}
+              onChange={(e) => setStatus(e.target.value as "active" | "archived")}
+            >
+              <option value="active">{t("rentalTariffs.statusActive")}</option>
+              <option value="archived">{t("rentalTariffs.statusArchived")}</option>
+            </AppSelect>
+          ) : null}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <span className={labelCls}>{t("rentalTariffs.validFromLabel")}</span>
@@ -238,7 +254,12 @@ export default function RentalTariffsSettingsPage({
 }) {
   const { t } = useI18n();
   const toast = useToast();
-  const tariffsQuery = useRentalTariffs({ status: null });
+  const [statusFilter, setStatusFilter] = useState<RentalTariffStatusFilter>("active");
+  const [locationFilter, setLocationFilter] = useState("");
+  const tariffsQuery = useRentalTariffs({
+    status: resolveTariffStatusQueryFilter(statusFilter),
+    locationId: locationFilter || null,
+  });
   const { data: locations = [] } = useLocations();
   const locationMap = useMemo(() => new Map(locations.map((l) => [l.id, l.name])), [locations]);
 
@@ -249,6 +270,11 @@ export default function RentalTariffsSettingsPage({
     if (tariff.price == null) return t("rentalTariffs.priceHidden");
     return `${formatCurrency(tariff.price)} ${tariff.currency ?? "RUB"}`;
   };
+
+  const groupedTariffs = useMemo(
+    () => groupTariffsByLocation(tariffsQuery.data ?? [], locationMap),
+    [tariffsQuery.data, locationMap]
+  );
 
   const openCreate = () => {
     setEditing(null);
@@ -264,6 +290,32 @@ export default function RentalTariffsSettingsPage({
   if (tariffsQuery.isError) return <QueryErrorState error={tariffsQuery.error} onRetry={() => void tariffsQuery.refetch()} />;
 
   const tariffs = tariffsQuery.data ?? [];
+
+  const renderTariffRow = (tariff: RentalTariff) => (
+    <li key={tariff.id} className="py-3 flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-semibold text-slate-900">{tariff.name}</p>
+          {tariff.status === "archived" ? (
+            <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full bg-slate-100 text-slate-600 px-2 py-0.5">
+              {t("rentalTariffs.statusArchivedBadge")}
+            </span>
+          ) : null}
+        </div>
+        <p className="text-xs text-slate-500 mt-0.5">
+          {tariff.tariffType === "hourly" ? t("rentalTariffs.typeHourly") : t("rentalTariffs.typeFixed")}
+          {tariff.locationId ? ` · ${locationMap.get(tariff.locationId)}` : ` · ${t("rentalTariffs.allLocations")}`}
+          {` · ${formatTariffPrice(tariff)}`}
+          {tariff.rulesCount > 0 ? ` · ${t("rentalTariffs.rulesCount", { count: tariff.rulesCount })}` : ""}
+        </p>
+      </div>
+      {canWrite ? (
+        <button type="button" onClick={() => openEdit(tariff)} className="p-1.5 text-slate-400 hover:text-indigo-600 cursor-pointer" aria-label={t("common.edit")}>
+          <Edit className="w-4 h-4" />
+        </button>
+      ) : null}
+    </li>
+  );
 
   return (
     <div className={embedded ? "space-y-3" : "panel-card-stack max-w-2xl"}>
@@ -290,29 +342,45 @@ export default function RentalTariffsSettingsPage({
         ) : null}
       </div>
 
-      {tariffs.length === 0 ? (
-        <p className="text-sm text-slate-500">{t("rentalTariffs.empty")}</p>
-      ) : (
-        <ul className="divide-y divide-slate-100">
-          {tariffs.map((tariff) => (
-            <li key={tariff.id} className="py-3 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-semibold text-slate-900">{tariff.name}</p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {tariff.tariffType === "hourly" ? t("rentalTariffs.typeHourly") : t("rentalTariffs.typeFixed")}
-                  {tariff.locationId ? ` · ${locationMap.get(tariff.locationId)}` : ` · ${t("rentalTariffs.allLocations")}`}
-                  {` · ${formatTariffPrice(tariff)}`}
-                  {tariff.rulesCount > 0 ? ` · ${t("rentalTariffs.rulesCount", { count: tariff.rulesCount })}` : ""}
-                </p>
-              </div>
-              {canWrite ? (
-                <button type="button" onClick={() => openEdit(tariff)} className="p-1.5 text-slate-400 hover:text-indigo-600 cursor-pointer" aria-label={t("common.edit")}>
-                  <Edit className="w-4 h-4" />
-                </button>
-              ) : null}
-            </li>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <AppSelect
+          label={t("rentalTariffs.filterStatus")}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as RentalTariffStatusFilter)}
+        >
+          <option value="active">{t("rentalTariffs.filterStatusActive")}</option>
+          <option value="archived">{t("rentalTariffs.filterStatusArchived")}</option>
+          <option value="all">{t("rentalTariffs.filterStatusAll")}</option>
+        </AppSelect>
+        <AppSelect
+          label={t("rentalTariffs.filterLocation")}
+          value={locationFilter}
+          onChange={(e) => setLocationFilter(e.target.value)}
+        >
+          <option value="">{t("rentalTariffs.filterLocationAll")}</option>
+          {locations.map((loc) => (
+            <option key={loc.id} value={loc.id}>
+              {loc.name}
+            </option>
           ))}
-        </ul>
+        </AppSelect>
+      </div>
+
+      {tariffs.length === 0 ? (
+        <p className="text-sm text-slate-500">{t("rentalTariffs.emptyFiltered")}</p>
+      ) : (
+        <div className="space-y-4">
+          {groupedTariffs.map((group) => (
+            <section key={group.locationKey ?? "all"}>
+              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                {group.locationKey
+                  ? locationMap.get(group.locationKey) ?? group.locationKey
+                  : t("rentalTariffs.groupAllLocations")}
+              </h3>
+              <ul className="divide-y divide-slate-100">{group.tariffs.map(renderTariffRow)}</ul>
+            </section>
+          ))}
+        </div>
       )}
 
       <TariffEditorModal tariff={editing} open={editorOpen && canWrite} onClose={() => setEditorOpen(false)} toast={toast} />

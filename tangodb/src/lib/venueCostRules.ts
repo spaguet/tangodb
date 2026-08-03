@@ -33,10 +33,32 @@ export interface VenueCostPerLessonRules {
   personal: VenueCostPersonalRule[];
 }
 
+export interface VenueCostFixedLocationAmount {
+  locationId: string;
+  amount: number;
+}
+
 export interface VenueCostFixedRules {
   currency: string;
   period: VenueCostFixedPeriod;
+  /** Org-wide amount when `locations` is empty (legacy). */
   amount: number;
+  locations?: VenueCostFixedLocationAmount[];
+}
+
+export function isVenueCostFixedPerLocation(rules: VenueCostFixedRules): boolean {
+  return (rules.locations?.length ?? 0) > 0;
+}
+
+export function buildFixedLocationAmounts(
+  locations: Array<{ id: string }>,
+  existing?: VenueCostFixedLocationAmount[]
+): VenueCostFixedLocationAmount[] {
+  const byId = new Map((existing ?? []).map((row) => [row.locationId, row.amount]));
+  return locations.map((loc) => ({
+    locationId: loc.id,
+    amount: byId.get(loc.id) ?? 0,
+  }));
 }
 
 export type VenueCostRules = VenueCostPerLessonRules | VenueCostFixedRules | Record<string, never>;
@@ -60,7 +82,14 @@ export function validateVenueCostDraft(draft: VenueCostRuleDraft): string[] {
   if (draft.mode === "fixed_period") {
     const rules = draft.rules as VenueCostFixedRules;
     if (!["week", "month", "custom"].includes(rules.period)) errors.push("invalid_period");
-    if (!finiteNonNegative(rules.amount)) errors.push("invalid_amount");
+    if (isVenueCostFixedPerLocation(rules)) {
+      for (const row of rules.locations ?? []) {
+        if (!row.locationId) errors.push("fixed_location_required");
+        if (!finiteNonNegative(row.amount)) errors.push("invalid_amount");
+      }
+    } else if (!finiteNonNegative(rules.amount)) {
+      errors.push("invalid_amount");
+    }
   }
 
   if (draft.mode === "per_lesson") {
@@ -338,10 +367,19 @@ export function diffVenueCostVersions(
   } else if (draft.mode === "fixed_period") {
     const draftRules = draft.rules as VenueCostFixedRules;
     const activeRules = active.rules as VenueCostFixedRules;
+    const draftLocKey = (draftRules.locations ?? [])
+      .map((row) => `${row.locationId}:${row.amount}`)
+      .sort()
+      .join("|");
+    const activeLocKey = (activeRules.locations ?? [])
+      .map((row) => `${row.locationId}:${row.amount}`)
+      .sort()
+      .join("|");
     if (
       draftRules.amount !== activeRules.amount ||
       draftRules.period !== activeRules.period ||
-      draftRules.currency !== activeRules.currency
+      draftRules.currency !== activeRules.currency ||
+      draftLocKey !== activeLocKey
     ) {
       entries.push({ kind: "changed", section: "fixed", key: "fixed_period" });
     }
@@ -373,7 +411,21 @@ export function venueCostDraftToPayload(draft: VenueCostRuleDraft): Record<strin
           })),
         }
       : draft.mode === "fixed_period"
-        ? draft.rules
+        ? (() => {
+            const fixed = draft.rules as VenueCostFixedRules;
+            const payload: Record<string, unknown> = {
+              currency: fixed.currency,
+              period: fixed.period,
+              amount: fixed.amount,
+            };
+            if (isVenueCostFixedPerLocation(fixed)) {
+              payload.locations = fixed.locations!.map((row) => ({
+                location_id: row.locationId,
+                amount: row.amount,
+              }));
+            }
+            return payload;
+          })()
         : {};
   return {
     id: draft.id ?? null,

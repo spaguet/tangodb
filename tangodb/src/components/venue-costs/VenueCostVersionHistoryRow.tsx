@@ -5,6 +5,7 @@ import type { VenueCostRuleVersion } from "../../hooks/useVenueCosts";
 import { memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import {
   diffVenueCostVersions,
+  isVenueCostFixedPerLocation,
   type VenueCostDiffEntry,
   type VenueCostFixedRules,
   type VenueCostGroupRule,
@@ -194,11 +195,29 @@ function VersionDetails({
 
   if (version.mode === "fixed_period") {
     const rules = version.rules as VenueCostFixedRules;
+    if (isVenueCostFixedPerLocation(rules)) {
+      return (
+        <div className="text-xs text-slate-600 space-y-1">
+          <p>
+            {t(`venueCosts.period.${rules.period}`)} · {t("venueCosts.fixedPeriod.perLocation")} ({rules.currency})
+          </p>
+          <ul className="space-y-0.5">
+            {(rules.locations ?? []).map((row) => (
+              <li key={row.locationId}>
+                {locations.find((loc) => loc.id === row.locationId)?.name ?? row.locationId}:{" "}
+                {formatCurrency(row.amount)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
     return (
       <div className="text-xs text-slate-600 space-y-1">
         <p>
           {t(`venueCosts.period.${rules.period}`)} · {formatCurrency(rules.amount)} ({rules.currency})
         </p>
+        <p className="text-slate-500">{t("venueCosts.fixedPeriod.orgWide")}</p>
       </div>
     );
   }

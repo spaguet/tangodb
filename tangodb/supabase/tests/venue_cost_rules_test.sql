@@ -363,6 +363,33 @@ BEGIN
   WHERE rule_version_id = v_fixed_rule_id AND accrual_kind = 'fixed_period' AND accrual_status = 'posted';
   PERFORM _venue_test_assert(v_count = 3, 'fixed weekly schedule has 3 rows');
 
+  -- Per-location fixed period: one accrual per hall per period (stage 14).
+  v_result := save_venue_cost_rule_draft(
+    jsonb_build_object(
+      'mode', 'fixed_period', 'valid_from', '2026-07-01', 'valid_to', '2026-07-07',
+      'rules', jsonb_build_object(
+        'period', 'custom', 'amount', 0, 'currency', 'RUB',
+        'locations', jsonb_build_array(
+          jsonb_build_object('location_id', v_location, 'amount', 5000),
+          jsonb_build_object('location_id', v_location_other, 'amount', 7000)
+        )
+      )
+    ),
+    gen_random_uuid()
+  );
+  v_fixed_rule_id := (v_result ->> 'rule_version_id')::uuid;
+  v_result := accept_venue_cost_rule_version(v_fixed_rule_id, gen_random_uuid());
+  PERFORM _venue_test_assert((v_result ->> 'success')::boolean, 'fixed per-location rule accepts');
+  SELECT count(*) INTO v_count FROM venue_cost_accruals
+  WHERE rule_version_id = v_fixed_rule_id AND accrual_kind = 'fixed_period' AND accrual_status = 'posted';
+  PERFORM _venue_test_assert(v_count = 2, 'fixed per-location custom range has 2 rows');
+  SELECT count(*) INTO v_count FROM venue_cost_accruals
+  WHERE rule_version_id = v_fixed_rule_id AND location_id = v_location AND amount = 5000;
+  PERFORM _venue_test_assert(v_count = 1, 'main hall fixed amount');
+  SELECT count(*) INTO v_count FROM venue_cost_accruals
+  WHERE rule_version_id = v_fixed_rule_id AND location_id = v_location_other AND amount = 7000;
+  PERFORM _venue_test_assert(v_count = 1, 'other hall fixed amount');
+
   -- Explicit disabled policy does not gate while it covers the requested date.
   v_result := save_venue_cost_rule_draft(
     jsonb_build_object(

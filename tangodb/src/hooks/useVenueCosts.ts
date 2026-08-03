@@ -96,10 +96,20 @@ function mapRules(mode: VenueCostMode, value: unknown): VenueCostRules {
     };
   }
   if (mode === "fixed_period") {
+    const locations = Array.isArray(rules.locations)
+      ? rules.locations.map((row) => {
+          const item = row as RpcObject;
+          return {
+            locationId: String(item.location_id ?? ""),
+            amount: Number(item.amount) || 0,
+          };
+        })
+      : undefined;
     return {
       currency: String(rules.currency ?? "RUB"),
       period: String(rules.period ?? "month") as "week" | "month" | "custom",
       amount: Number(rules.amount) || 0,
+      ...(locations?.length ? { locations } : {}),
     };
   }
   return {};

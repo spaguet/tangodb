@@ -14,6 +14,8 @@ import {
 } from "../../hooks/useVenueCosts";
 import {
   validateVenueCostDraft,
+  buildFixedLocationAmounts,
+  isVenueCostFixedPerLocation,
   type VenueCostFixedRules,
   type VenueCostGroupRule,
   type VenueCostMode,
@@ -260,7 +262,9 @@ export default function VenueCostsSettingsPage({
             </label>
           </div>
 
-          {draft.mode === "fixed_period" && <FixedPeriodEditor draft={draft} setDraft={setDraft} t={t} />}
+          {draft.mode === "fixed_period" && (
+            <FixedPeriodEditor draft={draft} setDraft={setDraft} locations={locations} t={t} />
+          )}
           {draft.mode === "per_lesson" && (
             <PerLessonEditor
               draft={draft}
@@ -316,21 +320,116 @@ export default function VenueCostsSettingsPage({
 function FixedPeriodEditor({
   draft,
   setDraft,
+  locations,
   t,
 }: {
   draft: VenueCostRuleDraft;
   setDraft: (value: VenueCostRuleDraft) => void;
+  locations: Array<{ id: string; name: string }>;
   t: ReturnType<typeof useI18n>["t"];
 }) {
   const rules = draft.rules as VenueCostFixedRules;
+  const perLocation = isVenueCostFixedPerLocation(rules);
+
+  const setScope = (nextPerLocation: boolean) => {
+    if (nextPerLocation === perLocation) return;
+    setDraft({
+      ...draft,
+      rules: nextPerLocation
+        ? {
+            ...rules,
+            locations: buildFixedLocationAmounts(locations, rules.locations),
+          }
+        : { ...rules, locations: undefined },
+    });
+  };
+
+  const updateLocationAmount = (locationId: string, amount: number) => {
+    const rows = rules.locations ?? buildFixedLocationAmounts(locations, rules.locations);
+    setDraft({
+      ...draft,
+      rules: {
+        ...rules,
+        locations: rows.map((row) => (row.locationId === locationId ? { ...row, amount } : row)),
+      },
+    });
+  };
+
   return (
-    <div className="grid sm:grid-cols-2 gap-3">
-      <AppSelect label={t("venueCosts.period")} value={rules.period} onChange={(e) => setDraft({ ...draft, rules: { ...rules, period: e.target.value as VenueCostFixedRules["period"] } })}>
-        <option value="week">{t("venueCosts.period.week")}</option>
-        <option value="month">{t("venueCosts.period.month")}</option>
-        <option value="custom">{t("venueCosts.period.custom")}</option>
-      </AppSelect>
-      <MoneyInput label={t("venueCosts.amount")} value={rules.amount} onChange={(amount) => setDraft({ ...draft, rules: { ...rules, amount } })} />
+    <div className="space-y-3">
+      <div className="space-y-2">
+        <span className={selectLabelCls}>{t("venueCosts.fixedPeriod.scopeLabel")}</span>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <input
+              type="radio"
+              name="fixed-period-scope"
+              checked={!perLocation}
+              onChange={() => setScope(false)}
+            />
+            {t("venueCosts.fixedPeriod.orgWide")}
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <input
+              type="radio"
+              name="fixed-period-scope"
+              checked={perLocation}
+              onChange={() => setScope(true)}
+            />
+            {t("venueCosts.fixedPeriod.perLocation")}
+          </label>
+        </div>
+        <p className="text-[11px] text-slate-500">
+          {perLocation ? t("venueCosts.fixedPeriod.perLocationHint") : t("venueCosts.fixedPeriod.orgWideHint")}
+        </p>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        <AppSelect
+          label={t("venueCosts.period")}
+          value={rules.period}
+          onChange={(e) =>
+            setDraft({ ...draft, rules: { ...rules, period: e.target.value as VenueCostFixedRules["period"] } })
+          }
+        >
+          <option value="week">{t("venueCosts.period.week")}</option>
+          <option value="month">{t("venueCosts.period.month")}</option>
+          <option value="custom">{t("venueCosts.period.custom")}</option>
+        </AppSelect>
+        {!perLocation ? (
+          <MoneyInput
+            label={t("venueCosts.amount")}
+            value={rules.amount}
+            onChange={(amount) => setDraft({ ...draft, rules: { ...rules, amount } })}
+          />
+        ) : null}
+      </div>
+
+      {perLocation ? (
+        <div className="space-y-2 rounded-lg border border-slate-100 p-3">
+          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+            {t("venueCosts.fixedPeriod.locationAmount")}
+          </p>
+          {locations.length === 0 ? (
+            <p className="text-xs text-slate-500">{t("venueCosts.fixedPeriod.noLocations")}</p>
+          ) : (
+            <ul className="space-y-2">
+              {buildFixedLocationAmounts(locations, rules.locations).map((row) => (
+                <li key={row.locationId} className="flex items-center gap-3">
+                  <span className="text-sm text-slate-700 min-w-0 flex-1 truncate">
+                    {locations.find((loc) => loc.id === row.locationId)?.name}
+                  </span>
+                  <MoneyInput
+                    label=""
+                    value={row.amount}
+                    onChange={(amount) => updateLocationAmount(row.locationId, amount)}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

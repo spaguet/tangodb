@@ -208,4 +208,27 @@ const draftWithNewTeacher = {
 const addDiff = diffVenueCostVersions(draftWithNewTeacher, activeSnapshot);
 assert.ok(addDiff.some((entry) => entry.kind === "added" && entry.key.includes("t9")));
 
+function isVenueCostFixedPerLocation(rules) {
+  return (rules.locations?.length ?? 0) > 0;
+}
+
+function buildFixedLocationAmounts(locations, existing) {
+  const byId = new Map((existing ?? []).map((row) => [row.locationId, row.amount]));
+  return locations.map((loc) => ({
+    locationId: loc.id,
+    amount: byId.get(loc.id) ?? 0,
+  }));
+}
+
+const hallLocs = [{ id: "loc-a" }, { id: "loc-b" }];
+const builtAmounts = buildFixedLocationAmounts(hallLocs, [{ locationId: "loc-a", amount: 12000 }]);
+assert.equal(builtAmounts.length, 2);
+assert.equal(builtAmounts[0].amount, 12000);
+assert.equal(builtAmounts[1].amount, 0);
+assert.equal(
+  isVenueCostFixedPerLocation({ currency: "RUB", period: "month", amount: 0, locations: [{ locationId: "loc-a", amount: 1 }] }),
+  true
+);
+assert.equal(isVenueCostFixedPerLocation({ currency: "RUB", period: "month", amount: 9000 }), false);
+
 console.log("venue-cost-rules-check: ok");

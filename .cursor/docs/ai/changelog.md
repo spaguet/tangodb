@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent этап 14: fixed-period venue cost по локациям + архив тарифов (F1, F8) — `VenueCostFixedRules.locations[]`, миграция `venue_cost_accruals.location_id`, UI scope в `VenueCostsSettingsPage`; `RentalTariffsSettingsPage`: статус active/archived, фильтры, группировка по локации; create dialogs по-прежнему `status: active`; тесты `test:venue-cost-preview`, `test:rental-tariff-archive`, `test:db:venue-cost`, `test:db:rental-tariff-lookup`.
+
 2026-08-03 — hall-rent этап 13: тариф → сумма при создании (F7, F14, F15) — `CreateRentalDialog`: fixed-тариф автоподставляет цену; сумма/тариф/оплата для кассового gate (`canSeeRentalTariffPrices` / `rentals.payments.write`); подсказка hourly-only для серий (вариант B); override с причиной; SQL `preview_rental_pricing`, `create_rental` gates через `member_can_record_rental_payment()`; `lib/rentalTariffPricing.ts`; тест `test:db:rental-create-gate`.
 
 2026-08-03 — hall-rent этап 12: read-only прайс для admin + политика reception — SQL `member_can_see_rental_tariff_prices()` (= кассовый gate); `list_rental_tariffs` отдаёт цены кассиру; UI lookup в `/settings/hall-rent`, ссылки из расписания; `canSeeRentalTariffPrices`; reception вне контура; тест `test:db:rental-tariff-lookup`.
