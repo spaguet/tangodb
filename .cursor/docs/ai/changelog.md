@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent этап 3: корректное превью venue cost (F4) — scope-превью с выбором преподавателя/локации/дисциплины в `VenueCostGroupPreview`; хелперы `defaultGroupPreviewScope` / `computeGroupPreviewPair`; подсказка вместо ложного «0» без контекста; расширен `test:venue-cost-preview`.
+
 2026-08-02 — hall-rent этап 6: правка суммы брони (F29) — UI `EditRentalAmountModal` в `RentalInfoPopup` (разовая и occurrence серии); RPC `apply_rental_pricing_adjustment` с gate `member_can_adjust_rental_amount()` (= кассовый gate этапа 1); accountant через узкий RPC без `manage_rentals`; hard block `new < paid` (включая 0); аудит в `rental_pricing_adjustments`; fix `update_rental` (восстановлен `fixed_amount`); тест `test:db:rental-amount-adjustment`.
 
 2026-08-02 — hall-rent этап 5: единый регистр денег аренды (F20, F21) — SQL view `rental_money_register_v` + RPC `list_rental_money_register` (прямые платежи, счета, авансы, депозит receive/return; без allocate/apply_to_invoice); фронт `useRentalMoneyRegister`, агрегаты журнала/выручки на регистре; тесты `test:db:rental-register`, `test:finance-rental-aggregates`.

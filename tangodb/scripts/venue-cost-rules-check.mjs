@@ -23,6 +23,30 @@ function previewGroupVenueCost(rules, attendees, disciplineId = null, locationId
   return tier?.amount ?? 0;
 }
 
+function isVenueCostPreviewScopeReady(scope) {
+  return !!scope.teacherMemberId;
+}
+
+function defaultGroupPreviewScope(rules) {
+  const rule = rules.group.find((item) => item.teacherMemberId) ?? rules.group[0];
+  if (!rule) {
+    return { teacherMemberId: null, disciplineId: null, locationId: null };
+  }
+  return {
+    teacherMemberId: rule.teacherMemberId,
+    disciplineId: rule.disciplineId,
+    locationId: rule.locationId,
+  };
+}
+
+function computeGroupPreviewPair(rules, scope) {
+  if (!isVenueCostPreviewScopeReady(scope)) return null;
+  return {
+    four: previewGroupVenueCost(rules, 4, scope.disciplineId, scope.locationId, scope.teacherMemberId),
+    five: previewGroupVenueCost(rules, 5, scope.disciplineId, scope.locationId, scope.teacherMemberId),
+  };
+}
+
 const tangoRules = {
   currency: "VND",
   group: [
@@ -54,5 +78,47 @@ assert.equal(previewGroupVenueCost(tangoRules, 12, "tango", null, "t1"), 200_000
 assert.equal(previewGroupVenueCost(tangoRules, 5, "ballroom", null, "t1"), 0);
 assert.equal(previewGroupVenueCost(tangoRules, 3, "tango", null, "t2"), 50_000);
 assert.equal(previewGroupVenueCost(tangoRules, 3, "tango", null, "t3"), 0);
+
+// Without teacher scope — raw preview is 0, but UI must not show it as a real calculation.
+assert.equal(previewGroupVenueCost(tangoRules, 4, null, null, null), 0);
+assert.equal(computeGroupPreviewPair(tangoRules, { teacherMemberId: null, disciplineId: null, locationId: null }), null);
+assert.equal(
+  computeGroupPreviewPair(tangoRules, { teacherMemberId: "t1", disciplineId: "tango", locationId: null })?.four,
+  150_000
+);
+assert.equal(
+  computeGroupPreviewPair(tangoRules, { teacherMemberId: "t1", disciplineId: "tango", locationId: null })?.five,
+  200_000
+);
+
+// Scope mismatch — real zero, not missing context.
+assert.equal(
+  computeGroupPreviewPair(tangoRules, { teacherMemberId: "t1", disciplineId: "ballroom", locationId: null })?.four,
+  0
+);
+
+// Open-ended upper tier.
+const openTierRules = {
+  currency: "RUB",
+  group: [
+    {
+      teacherMemberId: "t1",
+      disciplineId: null,
+      locationId: null,
+      attendanceTiers: [
+        { minAttendees: 0, maxAttendees: 3, amount: 100 },
+        { minAttendees: 4, maxAttendees: null, amount: 150 },
+      ],
+    },
+  ],
+  personal: [],
+};
+assert.equal(previewGroupVenueCost(openTierRules, 4, null, null, "t1"), 150);
+assert.equal(previewGroupVenueCost(openTierRules, 5, null, null, "t1"), 150);
+assert.deepEqual(defaultGroupPreviewScope(tangoRules), {
+  teacherMemberId: "t1",
+  disciplineId: "tango",
+  locationId: null,
+});
 
 console.log("venue-cost-rules-check: ok");

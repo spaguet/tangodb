@@ -14,7 +14,6 @@ import {
   type VenueCostRuleVersion,
 } from "../../hooks/useVenueCosts";
 import {
-  previewGroupVenueCost,
   validateVenueCostDraft,
   type VenueCostFixedRules,
   type VenueCostGroupRule,
@@ -23,13 +22,13 @@ import {
   type VenueCostPersonalRule,
   type VenueCostRuleDraft,
 } from "../../lib/venueCostRules";
-import { formatCurrency } from "../../lib/utils";
 import { useSettings } from "../SettingsProvider";
 import AppSelect, { fieldCls, selectLabelCls } from "../../components/ui/AppSelect";
 import { btnAddLinkCls, btnAddSoftCls, btnCancelCls, btnAddCls } from "../../components/ui/buttonStyles";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import VenueRuleExpiryNotice from "../../components/venue-costs/VenueRuleExpiryNotice";
+import VenueCostGroupPreview from "../../components/venue-costs/VenueCostGroupPreview";
 import { useToast } from "../../App";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -285,13 +284,14 @@ export default function VenueCostsSettingsPage({ embedded = false }: { embedded?
                   <p className="text-xs text-slate-500 mt-1">
                     {formatDate(version.validFrom)} — {version.validTo ? formatDate(version.validTo) : "∞"} · {t(`venueCosts.status.${version.status}`)}
                   </p>
-                  {version.mode === "per_lesson" && (
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      {t("venueCosts.preview", {
-                        four: formatCurrency(previewGroupVenueCost(version.rules as VenueCostPerLessonRules, 4)),
-                        five: formatCurrency(previewGroupVenueCost(version.rules as VenueCostPerLessonRules, 5)),
-                      })}
-                    </p>
+                  {version.mode === "per_lesson" && (version.rules as VenueCostPerLessonRules).group.length > 0 && (
+                    <VenueCostGroupPreview
+                      compact
+                      rules={version.rules as VenueCostPerLessonRules}
+                      teachers={teachers}
+                      disciplines={disciplines}
+                      locations={locations}
+                    />
                   )}
                 </div>
                 {canManage && (
@@ -597,12 +597,12 @@ function PerLessonEditor({
       )}
 
       {groupEnabled && (
-        <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 text-xs text-slate-600">
-          {t("venueCosts.preview", {
-            four: formatCurrency(previewGroupVenueCost(rules, 4)),
-            five: formatCurrency(previewGroupVenueCost(rules, 5)),
-          })}
-        </div>
+        <VenueCostGroupPreview
+          rules={rules}
+          teachers={teachers}
+          disciplines={disciplines}
+          locations={locations}
+        />
       )}
     </div>
   );

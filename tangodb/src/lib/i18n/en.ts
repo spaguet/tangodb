@@ -2397,6 +2397,8 @@ export const EN: Record<I18nKey, string> = {
   "venueCosts.tierMax": "To attendees",
   "venueCosts.addTier": "Add tier",
   "venueCosts.preview": "Example: 4 people → {{four}}, 5 people → {{five}}",
+  "venueCosts.preview.scopeHint": "Sample group-lesson calculation — choose a teacher and optionally discipline and location.",
+  "venueCosts.preview.selectTeacher": "Select a teacher to see a sample calculation.",
   "venueCosts.history": "Version history",
   "venueCosts.empty": "No rules yet. Existing organizations keep working without automatic accruals.",
   "venueCosts.version": "Version {{version}}",

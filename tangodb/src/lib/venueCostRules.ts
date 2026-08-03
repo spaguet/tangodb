@@ -104,6 +104,40 @@ function specificity(rule: {
   return Number(!!rule.teacherMemberId) + Number(!!rule.disciplineId) + Number(!!rule.locationId);
 }
 
+export interface VenueCostPreviewScope {
+  teacherMemberId: string | null;
+  disciplineId: string | null;
+  locationId: string | null;
+}
+
+export function isVenueCostPreviewScopeReady(scope: VenueCostPreviewScope): boolean {
+  return !!scope.teacherMemberId;
+}
+
+/** First group rule with a teacher, else first group rule — for default preview scope. */
+export function defaultGroupPreviewScope(rules: VenueCostPerLessonRules): VenueCostPreviewScope {
+  const rule = rules.group.find((item) => item.teacherMemberId) ?? rules.group[0];
+  if (!rule) {
+    return { teacherMemberId: null, disciplineId: null, locationId: null };
+  }
+  return {
+    teacherMemberId: rule.teacherMemberId,
+    disciplineId: rule.disciplineId,
+    locationId: rule.locationId,
+  };
+}
+
+export function computeGroupPreviewPair(
+  rules: VenueCostPerLessonRules,
+  scope: VenueCostPreviewScope
+): { four: number; five: number } | null {
+  if (!isVenueCostPreviewScopeReady(scope)) return null;
+  return {
+    four: previewGroupVenueCost(rules, 4, scope.disciplineId, scope.locationId, scope.teacherMemberId),
+    five: previewGroupVenueCost(rules, 5, scope.disciplineId, scope.locationId, scope.teacherMemberId),
+  };
+}
+
 export function previewGroupVenueCost(
   rules: VenueCostPerLessonRules,
   attendees: number,

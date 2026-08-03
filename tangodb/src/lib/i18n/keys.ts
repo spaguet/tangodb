@@ -2338,6 +2338,8 @@ export type I18nKey =
   | "venueCosts.tierMax"
   | "venueCosts.addTier"
   | "venueCosts.preview"
+  | "venueCosts.preview.scopeHint"
+  | "venueCosts.preview.selectTeacher"
   | "venueCosts.history"
   | "venueCosts.empty"
   | "venueCosts.version"

@@ -2395,6 +2395,8 @@ export const RU: Record<I18nKey, string> = {
   "venueCosts.tierMax": "До участников",
   "venueCosts.addTier": "Добавить порог",
   "venueCosts.preview": "Пример: 4 чел. → {{four}}, 5 чел. → {{five}}",
+  "venueCosts.preview.scopeHint": "Пример расчёта для группового урока — укажите преподавателя и при необходимости направление и локацию.",
+  "venueCosts.preview.selectTeacher": "Выберите преподавателя, чтобы увидеть пример расчёта.",
   "venueCosts.history": "История версий",
   "venueCosts.empty": "Правила ещё не созданы. Существующие организации работают без автоматических начислений.",
   "venueCosts.version": "Версия {{version}}",
