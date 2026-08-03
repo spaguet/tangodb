@@ -55,9 +55,9 @@ interface MonthRentalGroup {
 }
 
 function rentalYearMonth(payment: RentalMoneyRegisterEntry): string {
-  const d = new Date(payment.createdAt);
-  if (Number.isNaN(d.getTime())) return "unknown";
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const d = payment.operationDate || payment.createdAt.slice(0, 10);
+  if (!d || d.length < 7) return "unknown";
+  return d.slice(0, 7);
 }
 
 function groupRentalsByMonth(items: RentalMoneyRegisterEntry[]): MonthRentalGroup[] {
@@ -336,6 +336,7 @@ function RentalPaymentRow({
   payment,
   formatDateTime,
   translate,
+  formatDate,
   locationNameById,
   memberNameById,
   canCorrect,
@@ -345,6 +346,7 @@ function RentalPaymentRow({
 }: {
   payment: RentalMoneyRegisterEntry;
   formatDateTime: ReturnType<typeof useI18n>["formatDateTime"];
+  formatDate: ReturnType<typeof useI18n>["formatDate"];
   translate: ReturnType<typeof useI18n>["t"];
   locationNameById: Map<string, string>;
   memberNameById: Map<string, string>;
@@ -353,13 +355,14 @@ function RentalPaymentRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const acceptedAt = formatDateTime(payment.createdAt, {
+  const recordedAt = formatDateTime(payment.createdAt, {
     day: "numeric",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
+  const operationDay = payment.operationDate ? formatDate(payment.operationDate) : recordedAt;
   const methodLabel = getPaymentMethodLabel(payment.method, translate);
   const locationName = payment.locationId ? locationNameById.get(payment.locationId) ?? "—" : "—";
   const rentalDate = payment.rentalDate ?? "—";
@@ -384,6 +387,7 @@ function RentalPaymentRow({
     method: payment.method,
     methodComment: payment.methodComment,
     createdAt: payment.createdAt,
+    operationDate: payment.operationDate,
     createdBy: payment.createdBy,
     operationKind: payment.operationKind,
     reversesPaymentId: payment.reversesPaymentId,
@@ -412,7 +416,7 @@ function RentalPaymentRow({
             />
             <div className="min-w-0">
               <p className="text-sm font-semibold text-slate-800 truncate">{payment.renterDisplay || "—"}</p>
-              <p className="text-[10px] text-slate-400 font-sans mt-0.5">{acceptedAt}</p>
+              <p className="text-[10px] text-slate-400 font-sans mt-0.5">{operationDay}</p>
               {isStorno ? (
                 <p className="text-[10px] text-rose-600 mt-0.5 font-semibold">
                   {translate("finance.payments.refundBadge")}
@@ -457,7 +461,8 @@ function RentalPaymentRow({
       {expanded ? (
         <div className="px-3 pb-3 pt-0 border-t border-slate-50 bg-slate-50/40">
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-8 py-2">
-            <PaymentDetailItem label={translate("finance.payments.acceptedAt")} value={acceptedAt} />
+            <PaymentDetailItem label={translate("finance.operationDate.label")} value={operationDay} />
+            <PaymentDetailItem label={translate("finance.operationDate.recordedAt")} value={recordedAt} />
             <PaymentDetailItem label={translate("finance.payments.acceptedBy")} value={acceptedBy} />
             <PaymentDetailItem label={translate("common.source")} value={sourceLabel} />
             <PaymentDetailItem label={translate("common.method")} value={methodLabel} />
@@ -494,7 +499,7 @@ function matchesSourceFilter(payment: PaymentWithCorrectionMeta, source: Payment
 }
 
 export default function FinancePaymentsPage() {
-  const { t, locale, formatDateTime, plural } = useI18n();
+  const { t, locale, formatDateTime, formatDate, plural } = useI18n();
   const { can } = usePermissions();
   const canCorrectPayments = can("finance.read");
   const [search, setSearch] = useState("");
@@ -909,6 +914,7 @@ export default function FinancePaymentsPage() {
                                 key={p.id}
                                 payment={p}
                                 formatDateTime={formatDateTime}
+                                formatDate={formatDate}
                                 translate={t}
                                 locationNameById={locationNameById}
                                 memberNameById={memberNameById}

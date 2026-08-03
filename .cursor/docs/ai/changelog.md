@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent этап 9: operation_date и закрытие периода (F22) — колонка `operation_date` на rental money tables; `finance_period_closed_until`; helpers `_org_local_date`; `record_rental_payment(p_operation_date)`; регистр и отчёты по `operation_date`; UI даты в `RecordRentalPaymentModal`; аудит обеих дат; тест `test:db:rental-operation-date`.
+
 2026-08-03 — hall-rent этап 8: должники аренды, сторно и автор платежа (F16, F18, F27) — `financial_debtors_v` + вкладки «Аренда зала»; RPC `storno_rental_payment` / `correct_rental_payment`; регистр с `direct_booking_storno`; `created_by` в popup/журнале/CSV; UI `RentalPaymentCorrectionDialog`; отчёт коррекций; тест `test:db:rental-corrections`.
 
 2026-08-03 — hall-rent этап 15: прозрачная история версий venue cost (F10, F28) — `acceptedBy` в `mapVenueCostVersion`; раскрываемая read-only матрица правил; «Копировать в черновик» без изменения accepted; diff draft vs active (add/change/remove); i18n RU/EN; расширен `test:venue-cost-preview`.

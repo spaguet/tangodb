@@ -12,6 +12,14 @@
 
 ## Записи
 
+### HALL-RENT-9 — operation_date и закрытие кассового периода (2026-08-03)
+
+- **Дата:** 2026-08-03
+- **Решение:** Колонка `operation_date DATE NOT NULL` на rental money tables (backfill из `created_at` в org TZ через `_org_local_date`). `finance_period_closed_until` в `organization_settings` — inclusive последний закрытый календарный день; прямой `record_rental_payment` блокируется для дат ≤ closed_until; коррекции (сторно/замена) — с `operation_date = org today` и `member_can_correct_payments()`. Регистр и отчёты фильтруют по `operation_date`; `created_at` сохраняется для аудита ввода.
+- **Контекст:** Этап 9 аудита F22: кассовый день ≠ момент записи в CRM.
+- **Альтернативы:** (1) Отдельная ledger-таблица дат; (2) Закрытие периода только на UI без backend gate.
+- **Почему так:** Минимальная миграция на существующий регистр этапа 5; единый helper TZ; closed period на write-path.
+
 ### HALL-RENT-7 — Read/manage настроек аренды для бухгалтера (2026-08-03)
 
 - **Дата:** 2026-08-03

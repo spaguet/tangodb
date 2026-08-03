@@ -123,6 +123,10 @@ function mapSettings(row: Record<string, unknown>): OrganizationSettings {
     pair_cycle_enabled: row.pair_cycle_enabled as boolean,
     branding_name: (row.branding_name as string | null) ?? null,
     branding_logo_url: (row.branding_logo_url as string | null) ?? null,
+    finance_period_closed_until:
+      row.finance_period_closed_until != null
+        ? String(row.finance_period_closed_until).slice(0, 10)
+        : null,
     updated_at: row.updated_at as string,
   };
 }

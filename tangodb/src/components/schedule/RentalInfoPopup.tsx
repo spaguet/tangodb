@@ -41,7 +41,7 @@ export default function RentalInfoPopup({
   onClose,
   onSuccess,
 }: RentalInfoPopupProps) {
-  const { t, formatDate, locale } = useI18n();
+  const { t, formatDate, formatDateTime, locale } = useI18n();
   const { can, role } = usePermissions();
   const { isReadOnly } = useOrganization();
   const canSeeFinance = can("finance.read");
@@ -220,7 +220,14 @@ export default function RentalInfoPopup({
                           return (
                             <li key={p.id}>
                               {formatCurrency(p.amount)} · {getPaymentMethodLabel(p.method, t, locale)}
+                              {p.operationDate ? (
+                                <span className="text-slate-400"> · {formatDate(p.operationDate)}</span>
+                              ) : null}
                               <span className="text-slate-400"> · {author}</span>
+                              <span className="text-slate-400 text-[10px]">
+                                {" "}
+                                ({formatDateTime(p.createdAt, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })})
+                              </span>
                             </li>
                           );
                         })}

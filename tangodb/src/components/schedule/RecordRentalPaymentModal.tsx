@@ -6,9 +6,12 @@ import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { useRecordRentalPayment } from "../../hooks/useRentals";
 import { useI18n } from "../../hooks/useI18n";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
+import { minOpenOperationDate, orgLocalDateString } from "../../lib/orgFinanceDate";
 import { formatCurrency } from "../../lib/utils";
 import type { PaymentMethod, RentalDisplayLesson } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
+import DatePickerField from "../ui/DatePickerField";
+import { useOrganization } from "../../organization/OrganizationProvider";
 import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 
 interface RecordRentalPaymentModalProps {
@@ -29,11 +32,18 @@ export default function RecordRentalPaymentModal({
   onSuccess,
 }: RecordRentalPaymentModalProps) {
   const { t, locale } = useI18n();
+  const { settings } = useOrganization();
   const recordPayment = useRecordRentalPayment();
+
+  const orgTimezone = settings?.timezone ?? "UTC";
+  const closedUntil = settings?.finance_period_closed_until ?? null;
+  const orgToday = orgLocalDateString(orgTimezone);
+  const minOperationDate = minOpenOperationDate(closedUntil);
 
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [methodComment, setMethodComment] = useState("");
+  const [operationDate, setOperationDate] = useState(orgToday);
   const [idempotencyKey, setIdempotencyKey] = useState("");
 
   const remaining = useMemo(() => {
@@ -46,8 +56,9 @@ export default function RecordRentalPaymentModal({
     setAmount(remaining > 0 ? String(remaining) : "");
     setMethod("cash");
     setMethodComment("");
+    setOperationDate(orgLocalDateString(orgTimezone));
     setIdempotencyKey(crypto.randomUUID());
-  }, [open, lesson, remaining]);
+  }, [open, lesson, remaining, orgTimezone]);
 
   const handleSubmit = async () => {
     if (!lesson) return;
@@ -73,6 +84,7 @@ export default function RecordRentalPaymentModal({
       method,
       methodComment: methodComment.trim() || undefined,
       idempotencyKey,
+      operationDate,
     });
 
     if (!res.success) {
@@ -123,6 +135,13 @@ export default function RecordRentalPaymentModal({
                   <option key={m} value={m}>{getPaymentMethodLabel(m, t, locale)}</option>
                 ))}
               </AppSelect>
+              <DatePickerField
+                label={t("finance.operationDate.label")}
+                value={operationDate}
+                onChange={setOperationDate}
+                min={minOperationDate}
+                max={orgToday}
+              />
               <div>
                 <span className={labelCls}>{t("schedule.rental.paymentCommentLabel")}</span>
                 <input

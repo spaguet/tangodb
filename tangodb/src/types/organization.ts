@@ -114,6 +114,8 @@ export interface OrganizationSettings {
   pair_cycle_enabled: boolean;
   branding_name: string | null;
   branding_logo_url: string | null;
+  /** Inclusive last day of closed cash period (org calendar); null = no closure. */
+  finance_period_closed_until: string | null;
   updated_at: string;
 }
 

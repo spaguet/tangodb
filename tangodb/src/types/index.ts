@@ -454,6 +454,7 @@ export interface RentalPayment {
   method: PaymentMethod;
   methodComment?: string | null;
   createdAt: string;
+  operationDate?: string;
   createdBy?: string | null;
   operationKind?: "payment" | "storno";
   reversesPaymentId?: string | null;

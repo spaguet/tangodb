@@ -267,6 +267,8 @@ export function useRentalDetail(rentalId: string | null, enabled: boolean) {
             method: (p.method as PaymentMethod) ?? "cash",
             methodComment: p.method_comment != null ? String(p.method_comment) : null,
             createdAt: String(p.created_at ?? ""),
+            operationDate:
+              p.operation_date != null ? String(p.operation_date).slice(0, 10) : undefined,
             createdBy: p.created_by != null ? String(p.created_by) : null,
             operationKind: p.operation_kind === "storno" ? "storno" : "payment",
             reversesPaymentId: p.reverses_payment_id != null ? String(p.reverses_payment_id) : null,
@@ -468,6 +470,7 @@ export interface RecordRentalPaymentInput {
   method: PaymentMethod;
   methodComment?: string;
   idempotencyKey: string;
+  operationDate?: string;
 }
 
 export function useRecordRentalPayment() {
@@ -481,6 +484,7 @@ export function useRecordRentalPayment() {
         p_method: input.method,
         p_method_comment: input.methodComment ?? null,
         p_idempotency_key: input.idempotencyKey,
+        p_operation_date: input.operationDate ?? null,
       });
 
       if (error) return { success: false as const, error: error.message };

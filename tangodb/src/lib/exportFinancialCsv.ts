@@ -74,7 +74,8 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
   const memberNameById = params.memberNameById ?? new Map<string, string>();
   const rentalRows = rentalEntries.map((p) => ({
     renter: p.renterDisplay || "—",
-    date: labels.formatDateTime(p.createdAt),
+    date: p.operationDate ? labels.formatDate(p.operationDate) : labels.formatDateTime(p.createdAt),
+    recordedAt: labels.formatDateTime(p.createdAt),
     source: t(locale, `finance.rentalRegister.type.${p.entryType}` as import("./i18n/keys").I18nKey),
     rentalDate: p.rentalDate ? labels.formatDate(p.rentalDate) : "—",
     method: labels.paymentMethod(p.method),
@@ -90,7 +91,8 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
       filename: `tangodb_rentals_${statsMonth}_${dateStr}.csv`,
       columnLabels: {
         renter: t(locale, "schedule.rental.renterLabel"),
-        date: labels.payments.date,
+        date: t(locale, "finance.operationDate.label"),
+        recordedAt: t(locale, "finance.operationDate.recordedAt"),
         source: labels.payments.source,
         rentalDate: t(locale, "schedule.rental.dateLabel"),
         method: labels.payments.method,

@@ -14,6 +14,7 @@ export type RentalPaymentWithCorrectionMeta = {
   method: PaymentMethod;
   methodComment?: string | null;
   createdAt: string;
+  operationDate?: string;
   createdBy?: string | null;
   operationKind?: PaymentOperationKind;
   reversesPaymentId?: string | null;
