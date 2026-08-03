@@ -24,7 +24,9 @@ import type {
 } from "../../types";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { useI18n } from "../../hooks/useI18n";
-import { useCan } from "../../hooks/usePermissions";
+import { useCan, usePermissions } from "../../hooks/usePermissions";
+import { canWriteRentals } from "../../lib/permissions";
+import CreateRentalDialog from "../schedule/CreateRentalDialog";
 import { useLocations } from "../../hooks/useLocations";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import {
@@ -74,7 +76,10 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const navigate = useNavigate();
   const { t, formatDate, formatDateTime } = useI18n();
   const { connectionState } = useOnlineStatus();
+  const { role, options } = usePermissions();
   const canWrite = useCan("renters.write");
+  const canWriteRentalsSlot = canWriteRentals(role, options);
+  const canOpenSchedule = useCan("schedule.read");
   const canSeeFinance = useCan("renters.finance.read");
   const canWriteRentalFinance = useCan("finance.read");
   const canSeeDocuments = useCan("renters.documents.read");
@@ -86,6 +91,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveForce, setArchiveForce] = useState(false);
   const [archiveReason, setArchiveReason] = useState("");
+  const [createRentalOpen, setCreateRentalOpen] = useState(false);
 
   const detailQuery = useRenterDetail(renterId);
   const rentalsQuery = useRenterRentals(renterId, activeTab === "rentals" || activeTab === "finance");
@@ -107,6 +113,11 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
     }
     return map;
   }, [locationsQuery.data]);
+
+  const locationOptions = useMemo(
+    () => (locationsQuery.data ?? []).map((loc) => ({ id: loc.id, name: loc.name })),
+    [locationsQuery.data]
+  );
 
   const tabs: import("../ui/PageTabs").PageTabItem[] = useMemo(() => {
     const items: import("../ui/PageTabs").PageTabItem[] = [
@@ -215,10 +226,12 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
             rentals={rentalsQuery.data ?? []}
             locationMap={locationMap}
             canSeeFinance={canSeeFinance}
-            renterId={renterId}
             navigate={navigate}
             formatDate={formatDate}
             t={t}
+            canWriteRentals={canWriteRentalsSlot}
+            canOpenSchedule={canOpenSchedule}
+            onCreateRental={() => setCreateRentalOpen(true)}
           />
         ) : null}
 
@@ -265,6 +278,18 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
           />
         ) : null}
       </div>
+
+      <CreateRentalDialog
+        open={createRentalOpen}
+        preselectedRenterId={renterId}
+        locations={locationOptions}
+        toast={toast}
+        onClose={() => setCreateRentalOpen(false)}
+        onSuccess={() => {
+          setCreateRentalOpen(false);
+          void rentalsQuery.refetch();
+        }}
+      />
 
       <ConfirmDialog
         open={archiveOpen}
@@ -496,30 +521,37 @@ function RentalsTab({
   rentals,
   locationMap,
   canSeeFinance,
-  renterId,
   navigate,
   formatDate,
   t,
+  canWriteRentals,
+  canOpenSchedule,
+  onCreateRental,
 }: {
   rentals: RenterRentalRow[];
   locationMap: Map<string, string>;
   canSeeFinance: boolean;
-  renterId: string;
   navigate: ReturnType<typeof useNavigate>;
   formatDate: (d: string) => string;
   t: (key: import("../../lib/i18n/keys").I18nKey) => string;
+  canWriteRentals: boolean;
+  canOpenSchedule: boolean;
+  onCreateRental: () => void;
 }) {
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
-        <Link
-          to={`/schedule?action=createRental&renterId=${renterId}`}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          {t("renters.rentals.createNew")}
-        </Link>
-      </div>
+      {canWriteRentals ? (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={onCreateRental}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {t("renters.rentals.createNew")}
+          </button>
+        </div>
+      ) : null}
       {rentals.length === 0 ? (
         <p className="text-sm text-slate-400">{t("renters.detail.noRentals")}</p>
       ) : (
@@ -554,13 +586,17 @@ function RentalsTab({
                     </>
                   ) : null}
                   <td className="py-2">
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/schedule?date=${r.rentalDate}`)}
-                      className="text-indigo-600 font-semibold cursor-pointer"
-                    >
-                      {t("renters.rentals.openSchedule")}
-                    </button>
+                    {canOpenSchedule ? (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/schedule?date=${r.rentalDate}`)}
+                        className="text-indigo-600 font-semibold cursor-pointer"
+                      >
+                        {t("renters.rentals.openSchedule")}
+                      </button>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
                   </td>
                 </tr>
               ))}

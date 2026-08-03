@@ -93,7 +93,9 @@ export type PermissionAction =
   | "renters.documents.write"
   | "renters.finance.read"
   /** Cash desk: record rental payment + see amount/paid/remaining (not full finance). */
-  | "rentals.payments.write";
+  | "rentals.payments.write"
+  /** Create/edit rental slots without full schedule.write (accountant narrow path). */
+  | "rentals.write";
 
 export interface PermissionContext {
   disciplineId?: string | null;
@@ -149,6 +151,7 @@ const WRITE_ACTIONS = new Set<PermissionAction>([
   "renters.contracts.write",
   "renters.documents.write",
   "rentals.payments.write",
+  "rentals.write",
 ]);
 
 function isOperationalAdmin(role: MemberRole): boolean {
@@ -545,6 +548,12 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       }
       return false;
 
+    case "rentals.write":
+      if (role === "accountant") return can(role, "finance.read", options);
+      if (STRATEGIC_ROLES.includes(role)) return true;
+      if (isFullOperationalAdmin(role, options) && adminHasScheduleWriteAccess(role, options)) return true;
+      return false;
+
     default:
       return false;
   }
@@ -631,6 +640,12 @@ export function canReadRentalTariffs(role: MemberRole | null, options?: Permissi
 export function canSeeRentalTariffPrices(role: MemberRole | null, options?: PermissionOptions): boolean {
   if (!role) return false;
   return can(role, "finance.read", options) || can(role, "rentals.payments.write", options);
+}
+
+/** Write rental booking slots (narrow path for accountant; operational admin / owner / director). */
+export function canWriteRentals(role: MemberRole | null, options?: PermissionOptions): boolean {
+  if (!role) return false;
+  return can(role, "rentals.write", options);
 }
 
 /** Hall-rent settings: write rental tariffs (manage_rentals + finance on backend). */
@@ -945,6 +960,12 @@ export function assertReceptionPermissions(): void {
   }
   if (!canManageVenueCostRules("accountant")) {
     throw new Error("accountant must manage venue cost rules (stage 7)");
+  }
+  if (!can("accountant", "rentals.write", adminOpts)) {
+    throw new Error("accountant must write rental slots (stage 23)");
+  }
+  if (can("accountant", "schedule.write", adminOpts)) {
+    throw new Error("accountant must not have schedule.write (stage 23)");
   }
   if (!canAccessSettingsSection("admin", "hall-rent", adminOpts)) {
     throw new Error("full admin must access hall-rent settings for stage 12 lookup path");

@@ -159,6 +159,8 @@ assert(
 );
 assert(can("accountant", "finance.read", optsFor("accountant")), "accountant finance");
 assert(can("accountant", "rentals.payments.write", optsFor("accountant")), "accountant rental cash");
+assert(can("accountant", "rentals.write", optsFor("accountant")), "accountant rental slot write (stage 23)");
+assert(!can("accountant", "schedule.write", optsFor("accountant")), "accountant no schedule.write (stage 23)");
 assert(can("admin", "rentals.payments.write", optsFor("admin")), "admin rental cash");
 assert(
   !can("admin", "rentals.payments.write", { ...optsFor("admin"), restrictedAdmin: true }),

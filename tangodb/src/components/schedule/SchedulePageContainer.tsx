@@ -89,9 +89,9 @@ export default function SchedulePageContainer() {
   );
 
   const canManageTeacherVacation = can("schedule.write");
+  const canManageRentals = can("rentals.write");
   const canManageCalendarEvents =
     can("schedule.write") && (role === "owner" || role === "director" || role === "admin");
-  const canManageRentals = canManageCalendarEvents;
   const canAddGroup = canOfferGroupLessonAdd(role, can, scheduleGridAddOptions);
   const canAddPersonal = canAddPersonalFromGrid(role, can, scheduleGridAddOptions);
   const canAddRental = canManageRentals;

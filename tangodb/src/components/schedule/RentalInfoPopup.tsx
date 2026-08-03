@@ -9,11 +9,12 @@ import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { filterVisibleRentalCorrectionPayments } from "../../lib/rentalPaymentCorrection";
-import { canReadRentalTariffs } from "../../lib/permissions";
+import { canReadRentalTariffs, canWriteRentals } from "../../lib/permissions";
 import { formatCurrency } from "../../lib/utils";
 import type { RentalDisplayLesson } from "../../types";
 import RecordRentalPaymentModal from "./RecordRentalPaymentModal";
 import EditRentalAmountModal from "./EditRentalAmountModal";
+import EditRentalSlotModal from "./EditRentalSlotModal";
 import CancelRentalModal from "./CancelRentalModal";
 import RentalTariffLookupLink from "./RentalTariffLookupLink";
 import type { LocationOption } from "./CreateRentalDialog";
@@ -49,15 +50,14 @@ export default function RentalInfoPopup({
   const canSeeCashAmounts = can("rentals.payments.write");
   const canLookupTariffs = canReadRentalTariffs(role, options);
   const canManage =
-    !isReadOnly &&
-    can("schedule.write") &&
-    (role === "owner" || role === "director" || role === "admin");
+    !isReadOnly && can("rentals.write");
 
   const detailQuery = useRentalDetail(lesson?.rentalId ?? null, !!lesson);
   const teamQuery = useTeamMembers();
 
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [editAmountOpen, setEditAmountOpen] = useState(false);
+  const [editSlotOpen, setEditSlotOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
 
   if (!lesson) return null;
@@ -86,6 +86,11 @@ export default function RentalInfoPopup({
 
   const canEditAmount =
     canSeeCashAmounts &&
+    !isReadOnly &&
+    lesson.bookingStatus === "confirmed";
+
+  const canEditSlot =
+    canWriteRentals(role, options) &&
     !isReadOnly &&
     lesson.bookingStatus === "confirmed";
 
@@ -212,6 +217,16 @@ export default function RentalInfoPopup({
                   {t("schedule.rental.editAmountAction")}
                 </button>
               ) : null}
+              {canEditSlot ? (
+                <button
+                  type="button"
+                  onClick={() => setEditSlotOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  {t("schedule.rental.editSlotAction")}
+                </button>
+              ) : null}
               {canRecordPayment ? (
                 <button type="button" onClick={() => setPaymentOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
                   <Coins className="w-3.5 h-3.5" />
@@ -235,6 +250,18 @@ export default function RentalInfoPopup({
         open={editAmountOpen}
         toast={toast}
         onClose={() => setEditAmountOpen(false)}
+        onSuccess={() => {
+          onSuccess();
+          void detailQuery.refetch();
+        }}
+      />
+
+      <EditRentalSlotModal
+        lesson={lesson}
+        locations={locations}
+        open={editSlotOpen}
+        toast={toast}
+        onClose={() => setEditSlotOpen(false)}
         onSuccess={() => {
           onSuccess();
           void detailQuery.refetch();

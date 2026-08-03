@@ -12,7 +12,13 @@
 
 ## Записи
 
-### HALL-RENT-17 — Первичка и фискальные реквизиты (2026-08-03)
+### HALL-RENT-23 — Бухгалтер: узкое создание слота аренды (2026-08-03)
+
+- **Решение:** Бухгалтер с `finance.read` получает `rentals.write` (UI) и backend `member_can_create_rental()` = `manage_rentals OR (accountant AND can_read_financial)` для `create_rental`, `update_rental` (слот), `cancel_rental`, `preview_rental_conflicts`. Без `schedule.write` — нет групповых/персональных/событий. Правка суммы остаётся на этапе 6 (`apply_rental_pricing_adjustment`).
+- **Контекст:** Этап 23 аудита hall-rent: бухгалтер мог принять оплату, но не завести бронь.
+- **Альтернативы:** (1) Только эскалация к admin без расширения прав; (2) Полный `schedule.write` для accountant.
+- **Почему так:** Узкий контур «слот аренды» закрывает типичный сценарий малых студий; сумма и касса уже на этапах 1/6; UI вход — inbox аренды и карточка арендатора (модалка), не полное расписание.
+
 
 - **Дата:** 2026-08-03
 - **Решение:** Минимальный контур без заявления юридического compliance: `rental_billing_profile` (JSONB) с режимами `off | crm | export`. **CRM** — нумерация счетов, версии при перевыдаче, НДС (none/included/on_top), строки из `rental_invoice_lines`, просмотр и CSV-экспорт. **Export** — пакет через `export_rental_invoice_documents` с `export_batch_id`. Фискализация опциональна (`fiscal_tracking_enabled`): статус, номер внешнего чека, касса, терминал, acquiring ID, возвратный чек через `update_rental_payment_fiscal`. Чтение профиля — `finance.read` или кассовый gate; запись — owner/director/accountant (`member_can_manage_venue_cost_rules` + `finance.read`).

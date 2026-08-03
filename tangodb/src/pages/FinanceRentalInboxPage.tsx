@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
-import { Coins, Inbox } from "lucide-react";
+import { Coins, Inbox, Plus } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect from "../components/ui/AppSelect";
+import CreateRentalDialog from "../components/schedule/CreateRentalDialog";
+import RentalInfoPopup from "../components/schedule/RentalInfoPopup";
 import RecordRentalPaymentModal from "../components/schedule/RecordRentalPaymentModal";
 import { useRentalPaymentInbox, type RentalInboxBucket } from "../hooks/useRentalPaymentInbox";
 import { useLocations } from "../hooks/useLocations";
@@ -10,6 +12,7 @@ import { useRenters } from "../hooks/useRenters";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
+import { canWriteRentals } from "../lib/permissions";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useToast } from "../App";
 import { inboxItemToRentalLesson } from "../lib/rentalInbox";
@@ -32,7 +35,7 @@ function paymentStatusLabel(status: RentalPaymentStatus, t: ReturnType<typeof us
 export default function FinanceRentalInboxPage() {
   const { t, formatDate, locale, plural } = useI18n();
   const toast = useToast();
-  const { can } = usePermissions();
+  const { can, role, options } = usePermissions();
   const { isReadOnly, settings } = useOrganization();
   const orgToday = orgLocalDateString(settings?.timezone ?? "UTC");
 
@@ -43,6 +46,8 @@ export default function FinanceRentalInboxPage() {
   const [statusFilter, setStatusFilter] = useState<RentalPaymentStatus | "">("");
   const [page, setPage] = useState(0);
   const [payLesson, setPayLesson] = useState<RentalDisplayLesson | null>(null);
+  const [detailLesson, setDetailLesson] = useState<RentalDisplayLesson | null>(null);
+  const [createRentalOpen, setCreateRentalOpen] = useState(false);
 
   const locationsQuery = useLocations();
   const rentersQuery = useRenters({ activeOnly: true });
@@ -68,6 +73,12 @@ export default function FinanceRentalInboxPage() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const canRecordPayment = !isReadOnly && can("rentals.payments.write");
+  const canCreateRental = !isReadOnly && canWriteRentals(role, options);
+
+  const locationOptions = useMemo(
+    () => (locationsQuery.data ?? []).map((loc) => ({ id: loc.id, name: loc.name })),
+    [locationsQuery.data]
+  );
 
   const memberNameById = useMemo(
     () => new Map((teamQuery.data ?? []).map((m) => [m.id, memberListLabel(m, locale)])),
@@ -100,9 +111,21 @@ export default function FinanceRentalInboxPage() {
             <Inbox className="w-4 h-4 text-indigo-600" />
             <h2 className="font-sans text-sm font-semibold text-slate-800">{t("rentalInbox.title")}</h2>
           </div>
-          <span className="text-xs text-slate-500 font-sans">
-            {t("rentalInbox.asOf", { date: formatDate(orgToday) })}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500 font-sans">
+              {t("rentalInbox.asOf", { date: formatDate(orgToday) })}
+            </span>
+            {canCreateRental ? (
+              <button
+                type="button"
+                onClick={() => setCreateRentalOpen(true)}
+                className={btnAddCls}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {t("rentalInbox.createRental")}
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap gap-2">
@@ -189,7 +212,12 @@ export default function FinanceRentalInboxPage() {
           </AppSelect>
         </div>
 
-        <p className="px-4 py-2 text-xs text-slate-500 border-b border-slate-100">{t("rentalInbox.hint")}</p>
+        <p className="px-4 py-2 text-xs text-slate-500 border-b border-slate-100">
+          {t("rentalInbox.hint")}
+          {canCreateRental ? null : (
+            <span className="block mt-1 text-slate-400">{t("rental.booking.escalateSchedule")}</span>
+          )}
+        </p>
 
         {items.length === 0 ? (
           <div className="py-20 text-center">
@@ -248,7 +276,14 @@ export default function FinanceRentalInboxPage() {
                     <p className="text-sm font-sans font-semibold text-right whitespace-nowrap text-rose-700">
                       {row.remainingAmount > 0 ? formatCurrency(row.remainingAmount) : "—"}
                     </p>
-                    <div className="text-right col-span-2 lg:col-span-1">
+                    <div className="text-right col-span-2 lg:col-span-1 flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDetailLesson(inboxItemToRentalLesson(row))}
+                        className="px-2.5 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50"
+                      >
+                        {t("common.details")}
+                      </button>
                       {canRecordPayment && row.paymentStatus !== "paid" ? (
                         <button
                           type="button"
@@ -302,6 +337,25 @@ export default function FinanceRentalInboxPage() {
           </>
         )}
       </div>
+
+      <CreateRentalDialog
+        open={createRentalOpen}
+        locations={locationOptions}
+        toast={toast}
+        onClose={() => setCreateRentalOpen(false)}
+        onSuccess={() => {
+          setCreateRentalOpen(false);
+          void inboxQuery.refetch();
+        }}
+      />
+
+      <RentalInfoPopup
+        lesson={detailLesson}
+        locations={locationOptions}
+        toast={toast}
+        onClose={() => setDetailLesson(null)}
+        onSuccess={() => void inboxQuery.refetch()}
+      />
 
       <RecordRentalPaymentModal
         lesson={payLesson}

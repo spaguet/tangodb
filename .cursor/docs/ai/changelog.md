@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent этап 23: бухгалтер создаёт/правит слот аренды — permission `rentals.write` (accountant + operational admin); SQL `member_can_create_rental()`; UI `EditRentalSlotModal`, create из inbox и карточки арендатора; `RentalInfoPopup` cancel/edit slot через `rentals.write`; RBAC-тесты.
+
 2026-08-03 — hall-rent этап 22: кассовый inbox неоплаченных аренд — RPC `list_rental_payment_inbox` (бакеты today/overdue/partial/overpaid/queue, effective amount, пагинация); `useRentalPaymentInbox`, `FinanceRentalInboxPage` (`/finance/rental-inbox`); доступ `rentals.payments.write` / `canAccessRentalInboxRoute`; навигация для admin-кассира без полного finance; `test:rental-payment-inbox`, `test:db:rental-inbox`.
 
 2026-08-03 — hall-rent этап 21: калькулятор ожидаемых затрат venue cost — `venueCostEstimate.ts` (matching как `venue_cost_amount_for_lesson`, fixed-period окна, breakdown); `useVenueCostEstimate` + `VenueCostEstimatePanel` в настройках; `expandSlotsToDateRange`; `findMatchingAttendanceTier` / `matchScopedRule` в `venueCostRules.ts`; тесты в `test:venue-cost-preview`.
