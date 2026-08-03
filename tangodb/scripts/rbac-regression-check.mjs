@@ -10,6 +10,9 @@ import {
   canReadRentalTariffs,
   canSeeRentalTariffPrices,
   canWriteRentalTariffs,
+  canAccessRentalInboxRoute,
+  canAccessFinanceNav,
+  isRentalInboxOnly,
   findFirstAccessiblePanelPath,
   findFirstEnabledAccessiblePanelPath,
   panelIdFromPath,
@@ -28,6 +31,7 @@ import {
 } from "../src/hooks/useLocations.ts";
 
 const ROLES = ["owner", "director", "admin", "teacher", "accountant"];
+const defaultModules = normalizeOrgModules({});
 const ALL_PANELS = [
   "dashboard",
   "finance",
@@ -173,6 +177,15 @@ assert(
   "admin no rental cash when payments flag off"
 );
 assert(!can("teacher", "rentals.payments.write", optsFor("teacher")), "teacher no rental cash");
+assert(canAccessRentalInboxRoute("admin", defaultModules, optsFor("admin")), "admin rental inbox route");
+assert(canAccessRentalInboxRoute("accountant", defaultModules, optsFor("accountant")), "accountant rental inbox route");
+assert(
+  !canAccessRentalInboxRoute("admin", defaultModules, { ...optsFor("admin"), restrictedAdmin: true }),
+  "reception no rental inbox (stage 12)"
+);
+assert(isRentalInboxOnly("admin", optsFor("admin")), "admin is rental inbox only without finance.read");
+assert(!isRentalInboxOnly("accountant", optsFor("accountant")), "accountant has finance.read");
+assert(canAccessFinanceNav("admin", defaultModules, optsFor("admin")), "admin finance nav via inbox");
 assert(!can("accountant", "clients.read", optsFor("accountant")), "accountant no clients");
 assert(!canAccessPanel("accountant", "personal", optsFor("accountant")), "accountant no personal");
 assert(!canAccessPanel("accountant", "personal_sell", optsFor("accountant")), "accountant no personal_sell");

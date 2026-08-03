@@ -742,6 +742,10 @@ export function findFirstEnabledAccessiblePanelPath(
     return "/finance/payroll";
   }
 
+  if (canAccessRentalInboxRoute(role, modules, options) && isRentalInboxOnly(role, options)) {
+    return "/finance/rental-inbox";
+  }
+
   for (const { panel, path } of PANEL_FALLBACK_PATHS) {
     const moduleKey = moduleKeyFromPanel(panel);
     if (moduleKey && !isModuleEnabled(modules, moduleKey)) continue;
@@ -762,6 +766,30 @@ export function canAccessPayrollRoute(
 
 export function isTeacherPayrollOnly(role: MemberRole | null, options?: PermissionOptions): boolean {
   return can(role, "payroll.read.own", options) && !can(role, "finance.read", options);
+}
+
+/** Route-level access to `/finance/rental-inbox` (cashier queue — stage 22). */
+export function canAccessRentalInboxRoute(
+  role: MemberRole | null,
+  modules: OrgModules,
+  options?: PermissionOptions
+): boolean {
+  if (!isModuleEnabled(modules, "finance_basic")) return false;
+  return can(role, "rentals.payments.write", options);
+}
+
+export function isRentalInboxOnly(role: MemberRole | null, options?: PermissionOptions): boolean {
+  return can(role, "rentals.payments.write", options) && !can(role, "finance.read", options);
+}
+
+/** Main nav / finance workspace: full finance or rental inbox only. */
+export function canAccessFinanceNav(
+  role: MemberRole | null,
+  modules: OrgModules,
+  options?: PermissionOptions
+): boolean {
+  if (canAccessPanel(role, "finance", options)) return true;
+  return canAccessRentalInboxRoute(role, modules, options);
 }
 
 export function panelIdFromPath(pathname: string): PanelId {

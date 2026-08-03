@@ -8,11 +8,16 @@ import FinanceExpensesPage from "./FinanceExpensesPage";
 import FinancePayrollPage from "./FinancePayrollPage";
 import FinanceCorrectionsPage from "./FinanceCorrectionsPage";
 import FinanceRentalAccrualsPage from "./FinanceRentalAccrualsPage";
+import FinanceRentalInboxPage from "./FinanceRentalInboxPage";
+import { isRentalInboxOnly } from "../lib/permissions";
 
 function FinanceIndexRedirect() {
-  const { can } = usePermissions();
+  const { can, role, options } = usePermissions();
   if (can("payroll.read.own") && !can("finance.read")) {
     return <Navigate to="payroll" replace />;
+  }
+  if (isRentalInboxOnly(role, options)) {
+    return <Navigate to="rental-inbox" replace />;
   }
   return <Navigate to="payments" replace />;
 }
@@ -29,6 +34,7 @@ export default function FinancePage() {
         <Route path="payroll" element={<FinancePayrollPage />} />
         <Route path="corrections" element={<FinanceCorrectionsPage />} />
         <Route path="rental-accruals" element={<FinanceRentalAccrualsPage />} />
+        <Route path="rental-inbox" element={<FinanceRentalInboxPage />} />
       </Route>
       <Route path="*" element={<FinanceIndexRedirect />} />
     </Routes>

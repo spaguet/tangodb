@@ -7,6 +7,7 @@ import type { PaymentMethod, RentalDisplayLesson, RentalPayment, RentalPaymentSt
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { scheduleQueryKey } from "./useSchedule";
 import { rentalPaymentsQueryKey } from "./useRentalPayments";
+import { rentalPaymentInboxQueryKey } from "./useRentalPaymentInbox";
 import type { RentalCancelFinancialAction } from "./useRentalSeries";
 
 export const rentalsQueryKey = ["rentals"] as const;
@@ -316,6 +317,7 @@ function invalidateRentalQueries(queryClient: ReturnType<typeof useQueryClient>)
   void queryClient.invalidateQueries({ queryKey: ["rentalMoneyRegister"], refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: ["payments"], refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: ["renterFinance"], refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: rentalPaymentInboxQueryKey, refetchType: "active" });
 }
 
 export function useCreateRental() {

@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { Landmark, TrendingUp, AlertCircle, Wallet, Receipt, History, FileBarChart } from "lucide-react";
+import { Landmark, TrendingUp, AlertCircle, Wallet, Receipt, History, FileBarChart, Inbox } from "lucide-react";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
+import { isRentalInboxOnly } from "../lib/permissions";
 import { getFinanceNav } from "../lib/i18n";
 
 const FINANCE_NAV_ICONS: Record<string, typeof Landmark> = {
@@ -13,12 +14,14 @@ const FINANCE_NAV_ICONS: Record<string, typeof Landmark> = {
   "/finance/payroll": Wallet,
   "/finance/corrections": History,
   "/finance/rental-accruals": FileBarChart,
+  "/finance/rental-inbox": Inbox,
 };
 
 export default function FinanceLayout() {
   const { t } = useI18n();
-  const { can } = usePermissions();
+  const { can, role, options } = usePermissions();
   const teacherPayrollOnly = can("payroll.read.own") && !can("finance.read");
+  const rentalInboxOnly = isRentalInboxOnly(role, options);
 
   const financeNav = useMemo(() => {
     const items = getFinanceNav(t).map((item) => ({
@@ -30,7 +33,12 @@ export default function FinanceLayout() {
       return items.filter((item) => item.path === "/finance/payroll");
     }
 
+    if (rentalInboxOnly) {
+      return items.filter((item) => item.path === "/finance/rental-inbox");
+    }
+
     return items.filter((item) => {
+      if (item.path === "/finance/rental-inbox") return can("rentals.payments.write");
       if (item.path === "/finance/corrections") return can("finance.read");
       if (item.path === "/finance/expenses") return can("expenses.read");
       if (item.path === "/finance/payroll") {
@@ -38,7 +46,7 @@ export default function FinanceLayout() {
       }
       return can("finance.read");
     });
-  }, [t, teacherPayrollOnly, can]);
+  }, [t, teacherPayrollOnly, rentalInboxOnly, can]);
 
   return (
     <div className="flex flex-col gap-5">

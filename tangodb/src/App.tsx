@@ -77,7 +77,7 @@ import {
   type NavItem,
   type MobileTabItem,
 } from "./lib/i18n";
-import { panelIdFromPath, canAccessSettingsSection, permissionOptionsFromSettings } from "./lib/permissions";
+import { panelIdFromPath, canAccessSettingsSection, permissionOptionsFromSettings, canAccessFinanceNav } from "./lib/permissions";
 import { useOrganization } from "./organization/OrganizationProvider";
 import { normalizeOrgModules } from "./lib/orgModules";
 import DemoBrandBadge from "./components/demo/DemoBrandBadge";
@@ -276,6 +276,9 @@ function AppLayout() {
         const visibleItems = section.items.filter((item) => {
           if (item.settingsSection) {
             return canAccessSettingsSection(role, item.settingsSection, permissionOptions);
+          }
+          if (item.path === "/finance") {
+            return canAccessFinanceNav(role, orgModules, permissionOptions);
           }
           return canAccessPanel(panelIdFromPath(item.path));
         });

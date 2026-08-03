@@ -13,6 +13,7 @@ import {
   settingsSectionFromPath,
   canAccessSettingsSection,
   canAccessPayrollRoute,
+  canAccessRentalInboxRoute,
   permissionOptionsFromSettings,
 } from "../lib/permissions";
 import {
@@ -154,6 +155,11 @@ export function PanelAccessRoute() {
 
   const isPayrollRoute = location.pathname.startsWith("/finance/payroll");
   if (isPayrollRoute && canAccessPayrollRoute(role, modules, options)) {
+    return <Outlet />;
+  }
+
+  const isRentalInboxRoute = location.pathname.startsWith("/finance/rental-inbox");
+  if (isRentalInboxRoute && canAccessRentalInboxRoute(role, modules, options)) {
     return <Outlet />;
   }
 

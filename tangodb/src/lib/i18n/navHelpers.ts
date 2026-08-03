@@ -177,6 +177,7 @@ export function getFinanceNav(t: TranslateFn): { label: string; path: string }[]
     { label: t("finance.nav.expenses"), path: "/finance/expenses" },
     { label: t("finance.nav.corrections"), path: "/finance/corrections" },
     { label: t("finance.nav.rentalAccruals"), path: "/finance/rental-accruals" },
+    { label: t("finance.nav.rentalInbox"), path: "/finance/rental-inbox" },
     { label: t("finance.nav.payroll"), path: "/finance/payroll" },
   ];
 }
