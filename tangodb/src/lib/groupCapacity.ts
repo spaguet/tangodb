@@ -16,6 +16,16 @@ export function collectSubscriptionClientIds(input: {
 /** Frozen subscriptions keep their seat — documented rule for UI copy. */
 export const FROZEN_SUBSCRIPTION_KEEPS_SEAT = true as const;
 
+export function parseMaxCapacityInput(
+  raw: string
+): { ok: true; value: number | null } | { ok: false } {
+  const trimmed = raw.trim();
+  if (trimmed === "") return { ok: true, value: null };
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed) || parsed <= 0) return { ok: false };
+  return { ok: true, value: parsed };
+}
+
 export function formatGroupOccupancy(
   snapshot: Pick<GroupCapacitySnapshot, "occupied" | "maxCapacity" | "hasLimit">,
   t: (key: string, params?: Record<string, string | number>) => string

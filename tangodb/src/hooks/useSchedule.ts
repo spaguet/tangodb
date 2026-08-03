@@ -14,6 +14,8 @@ import { usePersonalLessons, personalLessonsQueryKey } from "./usePersonalLesson
 import { usePersonalLessonsModuleEnabled } from "./useOrgModules";
 import { useCalendarEventsForWeek, calendarEventsQueryKey } from "./useCalendarEvents";
 import { useRentalsForWeek, rentalsQueryKey } from "./useRentals";
+import { scheduleGroupsQueryKey } from "./useScheduleGroups";
+import { groupCapacityQueryKey } from "./useGroupCapacity";
 
 export const scheduleQueryKey = ["schedule"] as const;
 
@@ -211,12 +213,14 @@ export function useAddGroupSchedule() {
       locationId,
       teacherMemberId,
       days,
+      maxCapacity,
     }: {
       groupName: string;
       disciplineId: string;
       locationId: string;
       teacherMemberId: string;
       days: ScheduleDayInput[];
+      maxCapacity?: number | null;
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
@@ -254,7 +258,7 @@ export function useAddGroupSchedule() {
         };
       });
 
-      const { error } = await supabase.from(scheduleTable).insert(rows);
+      const { data, error } = await supabase.from(scheduleTable).insert(rows).select("class_id");
       if (error) {
         if (error.code === "23505") {
           return { success: false as const, error: "schedule.error.duplicateSlot" };
@@ -264,10 +268,35 @@ export function useAddGroupSchedule() {
         }
         return { success: false as const, error: error.message };
       }
-      return { success: true as const };
+
+      const classId = data?.[0]?.class_id != null ? String(data[0].class_id) : null;
+      if (classId && maxCapacity != null) {
+        const { data: capacityData, error: capacityError } = await supabase.rpc("update_class_max_capacity", {
+          p_class_id: classId,
+          p_max_capacity: maxCapacity,
+        });
+        if (capacityError) {
+          return { success: false as const, error: capacityError.message };
+        }
+        const capacityResult = capacityData as { success?: boolean; error?: string } | null;
+        if (!capacityResult?.success) {
+          return {
+            success: false as const,
+            error: capacityResult?.error ?? "groupCapacity.error.updateFailed",
+          };
+        }
+      }
+
+      return { success: true as const, classId };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) {
+        invalidateScheduleQueries(queryClient);
+        if ("classId" in result && result.classId) {
+          void queryClient.invalidateQueries({ queryKey: scheduleGroupsQueryKey });
+          void queryClient.invalidateQueries({ queryKey: groupCapacityQueryKey });
+        }
+      }
     },
   });
 }

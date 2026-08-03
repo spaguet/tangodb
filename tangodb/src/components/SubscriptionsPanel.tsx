@@ -24,7 +24,6 @@ import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useScheduleGroups } from "../hooks/useScheduleGroups";
 import { useSchedule } from "../hooks/useSchedule";
 import { useRecordSubscriptionPayment, PAYMENT_METHODS, getPaymentMethodLabel } from "../hooks/usePayments";
-import { usePaymentFormIdempotency } from "../hooks/usePaymentFormIdempotency";
 import type { PaymentMethod } from "../types";
 import {
   translateConnectionBlockReason,
@@ -296,7 +295,7 @@ export default function SubscriptionsPanel({
     clientLastName: string;
     amount: number;
   } | null>(null);
-  const sellPaymentIdempotencyKey = usePaymentFormIdempotency(activeTab === "sell");
+
   const addWaitlistEntry = useAddGroupWaitlistEntry();
   const canOverrideCapacity = role === "owner" || role === "director";
 
@@ -506,12 +505,16 @@ export default function SubscriptionsPanel({
         amount,
         method: paymentMethod,
         methodComment: paymentMethod === "other" ? paymentMethodComment.trim() : undefined,
-        idempotencyKey: sellPaymentIdempotencyKey || crypto.randomUUID(),
+        idempotencyKey: res.id,
         venueRuleAcknowledged,
       };
       const paymentRes = await recordSubscriptionPayment.mutateAsync(paymentPayload);
       if (!paymentRes.success) {
-        if ("errorCode" in paymentRes && paymentRes.errorCode === "venue_rule_ack_required") {
+        if (
+          "errorCode" in paymentRes &&
+          paymentRes.errorCode === "venue_rule_ack_required" &&
+          "venueRuleStatus" in paymentRes
+        ) {
           setPendingVenuePayment({
             subscriptionId: paymentPayload.subscriptionId,
             clientId: paymentPayload.clientId,
@@ -537,7 +540,7 @@ export default function SubscriptionsPanel({
       ...pendingVenuePayment,
       method: paymentMethod,
       methodComment: paymentMethod === "other" ? paymentMethodComment.trim() : undefined,
-      idempotencyKey: sellPaymentIdempotencyKey || crypto.randomUUID(),
+      idempotencyKey: pendingVenuePayment.subscriptionId,
       venueRuleAcknowledged: true,
     });
     if (!paymentRes.success) {

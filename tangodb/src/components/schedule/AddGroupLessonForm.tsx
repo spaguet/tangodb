@@ -8,6 +8,7 @@ import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModu
 import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { findScheduleConflict } from "../../lib/scheduleConflicts";
 import { computeSlotValidTo, defaultGroupRepeatConfig, type GroupRepeatConfig } from "../../lib/groupLessonRepeat";
+import { parseMaxCapacityInput } from "../../lib/groupCapacity";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { dowFullEntries, timesOverlap } from "../../lib/utils";
@@ -99,12 +100,14 @@ export default function AddGroupLessonForm({
   const [groupName, setGroupName] = useState("");
   const [disciplineId, setDisciplineId] = useState<string>("");
   const [teacherMemberId, setTeacherMemberId] = useState("");
+  const [maxCapacity, setMaxCapacity] = useState("");
   const [groupSlotRows, setGroupSlotRows] = useState<GroupSlotRow[]>([]);
   const [repeatConfig, setRepeatConfig] = useState<GroupRepeatConfig>(() => defaultGroupRepeatConfig());
 
   useEffect(() => {
     if (!prefill) return;
     setGroupName("");
+    setMaxCapacity("");
     setRepeatConfig(defaultGroupRepeatConfig());
     setGroupSlotRows([
       makeGroupSlotRow(prefill.dayOfWeek, prefill.timeStart, computeAutoTimeEnd(prefill.timeStart, [])),
@@ -237,6 +240,12 @@ export default function AddGroupLessonForm({
       return;
     }
 
+    const capacityParsed = parseMaxCapacityInput(maxCapacity);
+    if (!capacityParsed.ok) {
+      toast(t("groupCapacity.error.invalidCapacity"), "error");
+      return;
+    }
+
     const baseDate = prefill.date;
 
     const res = await addGroupSchedule.mutateAsync({
@@ -244,6 +253,7 @@ export default function AddGroupLessonForm({
       disciplineId,
       locationId: prefill.locationId,
       teacherMemberId,
+      maxCapacity: capacityParsed.value,
       days: groupSlotRows.map((row) => {
         const validFrom = nextOccurrenceOnOrAfter(baseDate, row.dayOfWeek);
         const validTo = computeSlotValidTo(validFrom, repeatConfig);
@@ -351,6 +361,22 @@ export default function AddGroupLessonForm({
                   ))
                 )}
               </AppSelect>
+
+              <div className="field-stack">
+                <label className={labelCls} htmlFor="add-group-max-capacity">
+                  {t("groupCapacity.maxCapacityLabel")}
+                </label>
+                <input
+                  id="add-group-max-capacity"
+                  type="number"
+                  min={1}
+                  value={maxCapacity}
+                  onChange={(e) => setMaxCapacity(e.target.value)}
+                  placeholder={t("groupCapacity.maxCapacityPlaceholder")}
+                  className={fieldCls}
+                />
+                <p className="text-[10px] text-slate-400 leading-relaxed">{t("groupCapacity.maxCapacityHint")}</p>
+              </div>
 
               <div className="field-stack">
                 <label className={labelCls}>{t("schedule.form.daysAndTime")}</label>

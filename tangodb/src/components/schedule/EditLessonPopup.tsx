@@ -19,6 +19,10 @@ import {
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
 import { findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
+import { useUpdateClassMaxCapacity } from "../../hooks/useGroupWaitlist";
+import { useScheduleGroups } from "../../hooks/useScheduleGroups";
+import { parseMaxCapacityInput } from "../../lib/groupCapacity";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import { pickGroupSlotsForEdit } from "../../lib/scheduleSlotEdit";
 import {
   computeSlotValidTo,
@@ -145,6 +149,8 @@ export default function EditLessonPopup({
   const addGroupSchedule = useAddGroupSchedule();
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const updatePersonalLesson = useUpdatePersonalLesson();
+  const updateClassMaxCapacity = useUpdateClassMaxCapacity();
+  const { data: scheduleGroups = [] } = useScheduleGroups();
 
   const isTeacher = role === "teacher";
   const todayISO = toISODateLocal(new Date());
@@ -152,6 +158,7 @@ export default function EditLessonPopup({
   const [groupName, setGroupName] = useState("");
   const [disciplineId, setDisciplineId] = useState("");
   const [teacherMemberId, setTeacherMemberId] = useState("");
+  const [maxCapacity, setMaxCapacity] = useState("");
   const [timeStart, setTimeStart] = useState("19:00");
   const [timeEnd, setTimeEnd] = useState("20:00");
   const [personalDate, setPersonalDate] = useState("");
@@ -223,6 +230,14 @@ export default function EditLessonPopup({
       return resolveTeacherMemberId(lesson.teacherMemberId, teacherOptions, isTeacher ? memberId : null);
     });
   }, [lesson, teacherOptions, memberId, isTeacher]);
+
+  useEffect(() => {
+    if (!lesson || lesson.kind !== "group") return;
+    const canonical = lesson.scheduleGroupId
+      ? scheduleGroups.find((group) => group.id === lesson.scheduleGroupId)
+      : undefined;
+    setMaxCapacity(canonical?.maxCapacity != null ? String(canonical.maxCapacity) : "");
+  }, [editLessonKey, lesson, scheduleGroups]);
 
   const updateGroupSlotRow = (key: string, patch: Partial<GroupSlotRow>) => {
     setGroupSlotRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
@@ -386,6 +401,31 @@ export default function EditLessonPopup({
       return;
     }
 
+    const capacityParsed = parseMaxCapacityInput(maxCapacity);
+    if (!capacityParsed.ok) {
+      toast(t("groupCapacity.error.invalidCapacity"), "error");
+      return;
+    }
+
+    const originalCapacity =
+      lesson.scheduleGroupId != null
+        ? (scheduleGroups.find((group) => group.id === lesson.scheduleGroupId)?.maxCapacity ?? null)
+        : null;
+    const capacityChanged = capacityParsed.value !== originalCapacity;
+
+    const persistGroupMaxCapacity = async (): Promise<boolean> => {
+      if (!lesson.scheduleGroupId || !capacityChanged) return true;
+      const res = await updateClassMaxCapacity.mutateAsync({
+        classId: lesson.scheduleGroupId,
+        maxCapacity: capacityParsed.value,
+      });
+      if (!res.success) {
+        toast(resolveMutationError(res.error, "groupCapacity.error.updateFailed", t), "error");
+        return false;
+      }
+      return true;
+    };
+
     const repeatChanged =
       repeatConfig.repeatWeekly !== originalRepeatConfig.repeatWeekly ||
       repeatConfig.endMode !== originalRepeatConfig.endMode ||
@@ -415,6 +455,18 @@ export default function EditLessonPopup({
         );
       });
 
+    if (!metadataChanged && !anySlotStructureChanged && !repeatChanged) {
+      if (!capacityChanged) {
+        onClose();
+        return;
+      }
+      if (!(await persistGroupMaxCapacity())) return;
+      toast(t("schedule.success.groupUpdated"), "success");
+      onSuccess();
+      onClose();
+      return;
+    }
+
     if (metadataChanged && !anySlotStructureChanged && !repeatChanged) {
       const slotIds = groupSlotRows.map((row) => row.id).filter((id): id is string => Boolean(id));
       const res = await updateGroupScheduleMetadata.mutateAsync({
@@ -428,6 +480,8 @@ export default function EditLessonPopup({
         toast(res.error ?? t("schedule.error.updateFailed"), "error");
         return;
       }
+
+      if (!(await persistGroupMaxCapacity())) return;
 
       toast(t("schedule.success.groupUpdated"), "success");
       onSuccess();
@@ -456,6 +510,8 @@ export default function EditLessonPopup({
           return;
         }
       }
+
+      if (!(await persistGroupMaxCapacity())) return;
 
       toast(t("schedule.success.groupUpdated"), "success");
       onSuccess();
@@ -488,6 +544,8 @@ export default function EditLessonPopup({
           return;
         }
       }
+
+      if (!(await persistGroupMaxCapacity())) return;
 
       toast(t("schedule.success.groupUpdated"), "success");
       onSuccess();
@@ -572,6 +630,8 @@ export default function EditLessonPopup({
         }
       }
     }
+
+    if (!(await persistGroupMaxCapacity())) return;
 
     toast(t("schedule.success.groupUpdated"), "success");
     onSuccess();
@@ -682,7 +742,8 @@ export default function EditLessonPopup({
     updateGroupScheduleValidity.isPending ||
     addGroupSchedule.isPending ||
     deleteScheduleSlot.isPending ||
-    updatePersonalLesson.isPending;
+    updatePersonalLesson.isPending ||
+    updateClassMaxCapacity.isPending;
   const readOnly = lesson ? isScheduleDateLockedForWrite(lesson.date, canEditPastSchedule) : false;
 
   return (
@@ -796,6 +857,26 @@ export default function EditLessonPopup({
                         ))
                       )}
                     </AppSelect>
+
+                    {lesson.scheduleGroupId && (
+                      <div className="field-stack">
+                        <label className={labelCls} htmlFor="edit-group-max-capacity">
+                          {t("groupCapacity.maxCapacityLabel")}
+                        </label>
+                        <input
+                          id="edit-group-max-capacity"
+                          type="number"
+                          min={1}
+                          value={maxCapacity}
+                          onChange={(e) => setMaxCapacity(e.target.value)}
+                          placeholder={t("groupCapacity.maxCapacityPlaceholder")}
+                          className={fieldCls}
+                        />
+                        <p className="text-[10px] text-slate-400 leading-relaxed">
+                          {t("groupCapacity.maxCapacityHint")}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="field-stack">
                       <label className={labelCls}>{t("schedule.form.daysAndTime")}</label>

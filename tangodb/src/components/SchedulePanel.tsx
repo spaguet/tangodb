@@ -31,7 +31,7 @@ import { usePermissions } from "../hooks/usePermissions";
 import { useScheduleGroups } from "../hooks/useScheduleGroups";
 import { useUpdateClassMaxCapacity } from "../hooks/useGroupWaitlist";
 import { buildCapacityByGroupId, useGroupCapacitySnapshot } from "../hooks/useGroupCapacity";
-import { formatGroupOccupancy } from "../lib/groupCapacity";
+import { formatGroupOccupancy, parseMaxCapacityInput } from "../lib/groupCapacity";
 import GroupWaitlistPanel from "./groups/GroupWaitlistPanel";
 import { useI18n } from "../hooks/useI18n";
 import { translateMutationBlockedMessage, useOnlineStatus } from "../hooks/useOnlineStatus";
@@ -147,6 +147,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   const [disciplineId, setDisciplineId] = useState<string | "">("");
   const [locationId, setLocationId] = useState<string | "">("");
   const [teacherMemberId, setTeacherMemberId] = useState<string | "">("");
+  const [maxCapacity, setMaxCapacity] = useState("");
   const [dayRows, setDayRows] = useState<DayFormRow[]>(() => [makeDayRow()]);
   const [deleteTarget, setDeleteTarget] = useState<ScheduleSlot | null>(null);
   const [deleteGroupTarget, setDeleteGroupTarget] = useState<ScheduleGroup | null>(null);
@@ -324,11 +325,18 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       }
     }
 
+    const capacityParsed = parseMaxCapacityInput(maxCapacity);
+    if (!capacityParsed.ok) {
+      toast(t("groupCapacity.error.invalidCapacity"), "error");
+      return;
+    }
+
     const res = await addGroupSchedule.mutateAsync({
       groupName: trimmedGroup,
       disciplineId,
       locationId,
       teacherMemberId,
+      maxCapacity: capacityParsed.value,
       days: dayRows.map(({ day, time, timeEnd }) => ({
         dayOfWeek: day,
         time,
@@ -341,6 +349,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
     } else {
       toast(t("schedule.success.groupAdded", { name: trimmedGroup }), "success");
       setGroupName("");
+      setMaxCapacity("");
       setDayRows([makeDayRow()]);
     }
   };
@@ -475,15 +484,14 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       toast(resolveMutationError(res.error, "schedule.error.saveFailed", t), "error");
     } else {
       if (editingGroup.scheduleGroupId) {
-        const trimmed = editMaxCapacity.trim();
-        const parsedCapacity = trimmed === "" ? null : Number(trimmed);
-        if (trimmed !== "" && (!Number.isInteger(parsedCapacity) || (parsedCapacity ?? 0) <= 0)) {
+        const capacityParsed = parseMaxCapacityInput(editMaxCapacity);
+        if (!capacityParsed.ok) {
           toast(t("groupCapacity.error.invalidCapacity"), "error");
           return;
         }
         const capacityRes = await updateClassMaxCapacity.mutateAsync({
           classId: editingGroup.scheduleGroupId,
-          maxCapacity: parsedCapacity,
+          maxCapacity: capacityParsed.value,
         });
         if (!capacityRes.success) {
           toast(resolveMutationError(capacityRes.error, "groupCapacity.error.updateFailed", t), "error");
@@ -567,6 +575,22 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                 ))
               )}
             </AppSelect>
+
+            <div className="field-stack">
+              <label className={labelCls} htmlFor="add-group-max-capacity">
+                {t("groupCapacity.maxCapacityLabel")}
+              </label>
+              <input
+                id="add-group-max-capacity"
+                type="number"
+                min={1}
+                value={maxCapacity}
+                onChange={(e) => setMaxCapacity(e.target.value)}
+                placeholder={t("groupCapacity.maxCapacityPlaceholder")}
+                className={fieldCls}
+              />
+              <p className="text-[10px] text-slate-400 leading-relaxed">{t("groupCapacity.maxCapacityHint")}</p>
+            </div>
 
             {dayRows.map((row) => (
               <div key={row.key} className="space-y-3 pt-1 border-t border-slate-100 first:border-t-0 first:pt-0">
