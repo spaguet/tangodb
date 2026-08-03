@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, MapPin, Ticket, Trash2 } from "lucide-react";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
 import { useDisciplines } from "../../hooks/useDisciplines";
@@ -136,7 +136,15 @@ export default function PersonalLessonSaleForm({
   const addPersonalLessons = useAddPersonalLessons();
   const recordPersonalLessonPayment = useRecordPersonalLessonPayment();
   const venueStatusQuery = useVenueCostRuleStatus();
-  const [paymentIdempotencyKey] = useState(() => crypto.randomUUID());
+  const lessonPaymentIdempotencyKeys = useRef<Record<string, string>>({});
+
+  const getLessonPaymentIdempotencyKey = (lessonId: string): string => {
+    const existing = lessonPaymentIdempotencyKeys.current[lessonId];
+    if (existing) return existing;
+    const key = crypto.randomUUID();
+    lessonPaymentIdempotencyKeys.current[lessonId] = key;
+    return key;
+  };
   const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
   const [pendingVenuePayment, setPendingVenuePayment] = useState<{
     lessonIds: string[];
@@ -498,7 +506,7 @@ export default function PersonalLessonSaleForm({
           amount: priceNum,
           method: "cash",
           markPaid: true,
-          idempotencyKey: `${paymentIdempotencyKey}:${lessonId}`,
+          idempotencyKey: getLessonPaymentIdempotencyKey(lessonId),
           venueRuleAcknowledged,
         });
         if (!paymentRes.success) {
@@ -549,7 +557,7 @@ export default function PersonalLessonSaleForm({
         amount: pending.amount,
         method: "cash",
         markPaid: true,
-        idempotencyKey: `${paymentIdempotencyKey}:${lessonId}`,
+        idempotencyKey: getLessonPaymentIdempotencyKey(lessonId),
         venueRuleAcknowledged: true,
       });
       if (!paymentRes.success) {

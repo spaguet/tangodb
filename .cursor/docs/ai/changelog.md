@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — fix: запись персонального урока с оплатой — `PersonalLessonSaleForm` передавал в RPC `record_personal_lesson_payment` составной idempotency key `uuid:uuid` вместо одного UUID; PostgreSQL отклонял значение.
+
 2026-08-03 — fix: белый экран при загрузке — `supabase.ts` читает `import.meta.env.VITE_SUPABASE_*` напрямую (Vite не инлайнит env при доступе через промежуточную переменную).
 
 2026-08-03 — hall-rent финал: интеграционная проверка контура аренды — `test:hall-rent-integration` (RBAC, venue/rental node-checks, 13 SQL-тестов на linked DB); JWT helper `_hall_rent_test_set_jwt`; миграции 710–750: ambiguous `record_rental_payment` / `schedule_location_has_conflict` / `cancel_rental_series_occurrence`, `preview_rental_conflicts` client join, cancellation advance без `notes`, scoped rental payment idempotency, порядок `confirm_venue_cost_rule_gap`; правки SQL-тестов (license, динамические даты, cleanup).

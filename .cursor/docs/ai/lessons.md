@@ -11,6 +11,13 @@
 
 ## Записи
 
+### 2026-08-03 — Idempotency key персонального урока: не UUID
+
+- **Дата:** 2026-08-03
+- **Ошибка:** при записи персонального урока с оплатой — `invalid input syntax for type uuid: "uuid:uuid"`
+- **Причина:** `PersonalLessonSaleForm` передавал в RPC `p_idempotency_key` строку `${sessionKey}:${lessonId}`; PostgreSQL ожидает тип `uuid`
+- **Как избежать:** для payment RPC с `p_idempotency_key uuid` использовать один `crypto.randomUUID()` на операцию; для пакета уроков — стабильный UUID на каждый `lessonId` (ref/map), как в `PayPersonalLessonModal`
+
 ### 2026-08-03 — Белый экран: Vite не инлайнит env через переменную
 
 - **Дата:** 2026-08-03
