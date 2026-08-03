@@ -355,6 +355,80 @@ export function useAcceptVenueCostRuleVersion() {
   });
 }
 
+export interface VenueCostGapPreview {
+  asOf: string;
+  expiredRuleId: string;
+  expiredRuleValidTo: string | null;
+  suggestedGapFrom: string;
+  suggestedGapTo: string | null;
+  nextRuleValidFrom: string | null;
+  draftVersionId: string | null;
+  closedPendingUnpricedInGap: number;
+  closedPricedInGap: number;
+  pendingUnpricedTotal: number;
+  pastWillNotRecalculate: boolean;
+}
+
+export function mapVenueCostGapPreview(row: RpcObject): VenueCostGapPreview {
+  return {
+    asOf: String(row.as_of ?? "").slice(0, 10),
+    expiredRuleId: String(row.expired_rule_id ?? ""),
+    expiredRuleValidTo: nullableString(row.expired_rule_valid_to)?.slice(0, 10) ?? null,
+    suggestedGapFrom: String(row.suggested_gap_from ?? "").slice(0, 10),
+    suggestedGapTo: nullableString(row.suggested_gap_to)?.slice(0, 10) ?? null,
+    nextRuleValidFrom: nullableString(row.next_rule_valid_from)?.slice(0, 10) ?? null,
+    draftVersionId: nullableString(row.draft_version_id),
+    closedPendingUnpricedInGap: Number(row.closed_pending_unpriced_in_gap) || 0,
+    closedPricedInGap: Number(row.closed_priced_in_gap) || 0,
+    pendingUnpricedTotal: Number(row.pending_unpriced_total) || 0,
+    pastWillNotRecalculate: row.past_will_not_recalculate === true,
+  };
+}
+
+export function useVenueCostGapPreview(enabled: boolean) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  return useQuery({
+    queryKey: withOrgId([...venueCostStatusQueryKey, "gap-preview"]),
+    enabled: orgEnabled && enabled,
+    queryFn: async (): Promise<VenueCostGapPreview> => {
+      const { data, error } = await supabase.rpc("preview_venue_cost_gap_impact", { p_as_of: null });
+      if (error) throw error;
+      const result = data as RpcObject | null;
+      if (!result?.success) throw new Error(String(result?.error_code ?? "venue_cost_gap_preview_failed"));
+      return mapVenueCostGapPreview(result);
+    },
+    staleTime: 15_000,
+  });
+}
+
+export function useConfirmVenueCostRuleGap() {
+  const invalidate = useInvalidateVenueCosts();
+  return useMutation({
+    mutationFn: async (input: {
+      gapFrom: string;
+      gapTo: string | null;
+      reason: string;
+      idempotencyKey: string;
+    }) => {
+      const { data, error } = await supabase.rpc("confirm_venue_cost_rule_gap", {
+        p_gap_from: input.gapFrom,
+        p_gap_to: input.gapTo,
+        p_reason: input.reason,
+        p_idempotency_key: input.idempotencyKey,
+      });
+      if (error) return { success: false as const, error: error.message };
+      const result = data as RpcObject | null;
+      if (!result?.success) {
+        return { success: false as const, error: String(result?.error_code ?? "venue_cost_gap_confirm_failed") };
+      }
+      return { success: true as const, alreadyApplied: result.already_applied === true };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidate();
+    },
+  });
+}
+
 function mapCloseLessonResult(
   result: RpcObject
 ): { success: true; closureId: string; alreadyApplied: boolean; amount?: number; currency?: string; pricingStatus?: string } | {

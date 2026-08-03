@@ -44,6 +44,14 @@
 - **Альтернативы:** (1) Заменить gate на `payments.write` — открыло бы reception; (2) Выдать admin полный `can_read_financial()` — лишняя аналитика/venue cost; (3) Переиспользовать `member_can_accept_payments()` — teacher/reception могут пройти.
 - **Почему так:** Единый канонический gate на UI и backend без ослабления tenant isolation и без контура reception до этапа 12. Accountant/owner/director сохраняют путь через finance.
 
+### VENUE-COST-GAP-1 — Standalone gap acknowledgement without client payment (2026-08-03)
+
+- **Дата:** 2026-08-03
+- **Решение:** Отдельная таблица `venue_rule_gap_acknowledgements` и RPC `confirm_venue_cost_rule_gap` для owner/director/accountant (`member_can_manage_venue_cost_rules`). `venue_cost_status_for_org` снимает `acknowledgement_required`, если дата попадает в подтверждённый gap. Payment ack (`venue_rule_payment_acknowledgements`) остаётся для кассовых операций; gap ack — для настроек без платежа. Прошлые начисления не пересчитываются; preview показывает closed pending/priced в периоде.
+- **Контекст:** Этап 16 аудита F30 — бухгалтер видел баннер, но не мог закрыть gap без директора или оплаты урока.
+- **Альтернативы:** Только accept draft; автоматический disabled-bridge rule; переиспользовать payment ack с фиктивным payment.
+- **Почему так:** Явный аудит (причина, период, автор) без обхода payment RPC и без молчаливого пересчёта истории.
+
 ### VENUE-COST-2 — Frontend payment gates and finance unification (2026-07-31)
 
 - **Дата:** 2026-07-31

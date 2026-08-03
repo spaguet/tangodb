@@ -27,6 +27,7 @@ import { btnAddLinkCls, btnAddSoftCls, btnCancelCls, btnAddCls } from "../../com
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import VenueRuleExpiryNotice from "../../components/venue-costs/VenueRuleExpiryNotice";
+import VenueCostGapResolutionPanel from "../../components/venue-costs/VenueCostGapResolutionPanel";
 import VenueCostVersionHistoryRow from "../../components/venue-costs/VenueCostVersionHistoryRow";
 import VenueCostGroupPreview from "../../components/venue-costs/VenueCostGroupPreview";
 import { useToast } from "../../App";
@@ -201,6 +202,7 @@ export default function VenueCostsSettingsPage({
   if (error) return <QueryErrorState error={error} onRetry={() => void versionsQuery.refetch()} />;
 
   const versions = versionsQuery.data ?? [];
+  const draftVersion = versions.find((item) => item.status === "draft") ?? null;
   const activeVersion =
     versions.find((item) => item.id === statusQuery.data?.currentRuleId && item.status === "accepted") ??
     versions.find((item) => item.status === "accepted") ??
@@ -226,7 +228,18 @@ export default function VenueCostsSettingsPage({
         )}
       </div>
 
-      {statusQuery.data?.acknowledgementRequired && <VenueRuleExpiryNotice status={statusQuery.data} />}
+      {statusQuery.data?.acknowledgementRequired && canManage && statusQuery.data && (
+        <VenueCostGapResolutionPanel
+          status={statusQuery.data}
+          canManage={canManage}
+          draftVersionId={draftVersion?.id ?? null}
+          onAcceptDraft={(versionId) => void handleAccept(versionId)}
+          acceptPending={acceptVersion.isPending}
+        />
+      )}
+      {statusQuery.data?.acknowledgementRequired && !canManage && (
+        <VenueRuleExpiryNotice status={statusQuery.data} />
+      )}
 
       {draft && canManage && (
         <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">

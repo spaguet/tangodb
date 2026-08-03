@@ -431,6 +431,34 @@ BEGIN
     'gap status uses most recent non-disabled rule effective by requested date'
   );
 
+  -- Stage 16: preview + confirm gap without client payment (historical June gap).
+  v_result := preview_venue_cost_gap_impact(date '2026-06-01');
+  PERFORM _venue_test_assert((v_result ->> 'success')::boolean, 'gap preview succeeds');
+  PERFORM _venue_test_assert(
+    (v_result ->> 'expired_rule_id')::uuid = v_expiring_rule_id,
+    'gap preview identifies expired rule'
+  );
+  PERFORM _venue_test_assert(
+    (v_result ->> 'suggested_gap_from')::date = date '2026-06-01',
+    'gap preview suggests day after expired rule'
+  );
+
+  v_result := confirm_venue_cost_rule_gap(
+    date '2026-06-01', date '2026-07-31', 'planned policy gap', gen_random_uuid()
+  );
+  PERFORM _venue_test_assert((v_result ->> 'success')::boolean, 'confirm gap succeeds');
+
+  v_status := get_venue_cost_rule_status(date '2026-06-15');
+  PERFORM _venue_test_assert(
+    NOT (v_status ->> 'acknowledgement_required')::boolean,
+    'acknowledged gap date no longer gates'
+  );
+
+  v_result := confirm_venue_cost_rule_gap(
+    date '2026-06-01', NULL, 'duplicate', gen_random_uuid()
+  );
+  PERFORM _venue_test_assert(v_result ->> 'error_code' = 'gap_already_acknowledged', 'second confirm rejected');
+
   -- Assigned teacher can close their personal lesson, but receives no amount.
   PERFORM set_config('request.jwt.claim.sub', v_teacher_user::text, true);
   PERFORM set_config(
@@ -506,16 +534,17 @@ BEGIN
     PERFORM _venue_test_assert(v_count = 1, 'existing payment response creates no misleading new acknowledgement');
   END IF;
 
-  -- Security objects exist for all four financial tables.
+  -- Security objects exist for all venue financial tables.
   SELECT count(*) INTO v_count
   FROM pg_policies
   WHERE schemaname = 'public'
     AND tablename IN (
       'venue_cost_rule_versions', 'lesson_occurrence_closures',
-      'venue_cost_accruals', 'venue_rule_payment_acknowledgements'
+      'venue_cost_accruals', 'venue_rule_payment_acknowledgements',
+      'venue_rule_gap_acknowledgements'
     )
     AND policyname LIKE '%select%';
-  PERFORM _venue_test_assert(v_count = 4, 'all venue financial tables have select RLS policy');
+  PERFORM _venue_test_assert(v_count = 5, 'all venue financial tables have select RLS policy');
 
   SELECT count(*) INTO v_count
   FROM pg_proc p
