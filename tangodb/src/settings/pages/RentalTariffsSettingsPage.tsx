@@ -394,6 +394,7 @@ export default function RentalTariffsSettingsPage({
   if (tariffsQuery.isError) return <QueryErrorState error={tariffsQuery.error} onRetry={() => void tariffsQuery.refetch()} />;
 
   const tariffs = tariffsQuery.data ?? [];
+  const isDefaultFilter = statusFilter === "active" && !locationFilter;
 
   const renderTariffRow = (tariff: RentalTariff) => (
     <li key={tariff.id} className="py-3 flex items-start justify-between gap-3">
@@ -423,7 +424,7 @@ export default function RentalTariffsSettingsPage({
 
   return (
     <div className={embedded ? "space-y-3" : "panel-card-stack max-w-2xl"}>
-      {!canWrite ? (
+      {!canWrite && !embedded ? (
         <p className="text-xs text-slate-500 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2">
           {t("rentalTariffs.lookupHint")}
         </p>
@@ -471,7 +472,19 @@ export default function RentalTariffsSettingsPage({
       </div>
 
       {tariffs.length === 0 ? (
-        <p className="text-sm text-slate-500">{t("rentalTariffs.emptyFiltered")}</p>
+        <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-4 py-5 text-center space-y-3">
+          <p className="text-sm text-slate-600">
+            {isDefaultFilter ? t("rentalTariffs.empty") : t("rentalTariffs.emptyFiltered")}
+          </p>
+          {canWrite && isDefaultFilter ? (
+            <button type="button" onClick={openCreate} className={btnAddSoftCls}>
+              <Plus className="w-4 h-4" />
+              {t("rentalTariffs.emptyCta")}
+            </button>
+          ) : !canWrite ? (
+            <p className="text-xs text-slate-500">{t("rentalTariffs.lookupHint")}</p>
+          ) : null}
+        </div>
       ) : (
         <div className="space-y-4">
           {groupedTariffs.map((group) => (

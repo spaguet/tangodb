@@ -24,6 +24,7 @@ export default function HallRentSettingsPage() {
   const canWriteTariffs = canWriteRentalTariffs(role, options);
   const canManageVenue = canManageVenueCostRules(role);
   const canReadVenue = can("finance.read");
+  const hasAnyBlock = canReadTariffs || canReadVenue;
 
   return (
     <div className="panel-card-stack max-w-4xl">
@@ -35,6 +36,13 @@ export default function HallRentSettingsPage() {
             : t("hallRent.pageSubtitle")}
         </p>
       </div>
+
+      {!hasAnyBlock && (
+        <div className="rounded-xl border border-slate-200/90 bg-slate-50/80 px-4 py-6 text-center space-y-2">
+          <p className="text-sm text-slate-600">{t("hallRent.emptyNoAccess")}</p>
+          <p className="text-xs text-slate-500">{t("hallRent.emptyNoAccessHint")}</p>
+        </div>
+      )}
 
       {canReadTariffs && (
         <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">

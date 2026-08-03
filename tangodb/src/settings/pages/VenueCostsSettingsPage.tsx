@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
@@ -23,6 +23,7 @@ import {
   type VenueCostPersonalRule,
   type VenueCostRuleDraft,
 } from "../../lib/venueCostRules";
+import { formatVenueCostDraftError, formatVenueCostDraftErrors } from "../../lib/venueCostDraftErrors";
 import { useSettings } from "../SettingsProvider";
 import AppSelect, { fieldCls, selectLabelCls } from "../../components/ui/AppSelect";
 import { btnAddLinkCls, btnAddSoftCls, btnCancelCls, btnAddCls } from "../../components/ui/buttonStyles";
@@ -95,7 +96,16 @@ export default function VenueCostsSettingsPage({
   const saveDraft = useSaveVenueCostRuleDraft();
   const acceptVersion = useAcceptVenueCostRuleVersion();
   const [draft, setDraft] = useState<VenueCostRuleDraft | null>(null);
+  const [draftErrors, setDraftErrors] = useState<string[]>([]);
+  const draftErrorRef = useRef<HTMLDivElement | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const editorPanelCls = embedded
+    ? "space-y-4 border-t border-slate-100 pt-4"
+    : "bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4";
+  const historyPanelCls = embedded
+    ? "space-y-3 border-t border-slate-100 pt-4"
+    : "bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3";
 
   useEffect(() => {
     if (searchParams.get("new") !== "1" || !canManage || draft) return;
@@ -165,12 +175,16 @@ export default function VenueCostsSettingsPage({
           : draft;
     const errors = validateVenueCostDraft(draftToSave);
     if (errors.length) {
-      toast(t("venueCosts.error.invalid"), "error");
+      setDraftErrors(errors);
+      draftErrorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      toast(formatVenueCostDraftError(errors[0]!, t, "venueCosts.error.invalid"), "error");
       return;
     }
+    setDraftErrors([]);
     const result = await saveDraft.mutateAsync({ draft: draftToSave, idempotencyKey: crypto.randomUUID() });
     if (!result.success) {
-      toast(t("venueCosts.error.save", { error: result.error }), "error");
+      const message = formatVenueCostDraftError(result.error, t, "venueCosts.error.saveFailed");
+      toast(message, "error");
       return;
     }
     toast(t("venueCosts.saved"), "success");
@@ -184,7 +198,7 @@ export default function VenueCostsSettingsPage({
       idempotencyKey: crypto.randomUUID(),
     });
     if (!result.success) {
-      toast(t("venueCosts.error.accept", { error: result.error }), "error");
+      toast(formatVenueCostDraftError(result.error, t, "venueCosts.error.acceptFailed"), "error");
       return;
     }
     toast(t("venueCosts.accepted"), result.alreadyApplied ? "info" : "success");
@@ -216,13 +230,23 @@ export default function VenueCostsSettingsPage({
     <div className={embedded ? "space-y-4" : "panel-card-stack max-w-4xl"}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          {!embedded && <h2 className="text-base font-semibold text-slate-900">{t("venueCosts.pageTitle")}</h2>}
-          <p className={`text-xs text-slate-500 ${embedded ? "" : "mt-1"}`}>{t("venueCosts.sectionHint")}</p>
+          {!embedded && (
+            <>
+              <h2 className="text-base font-semibold text-slate-900">{t("venueCosts.pageTitle")}</h2>
+              <p className="text-xs text-slate-500 mt-1">{t("venueCosts.pageSubtitle")}</p>
+            </>
+          )}
+          {!embedded ? (
+            <p className="text-xs text-slate-500 mt-1">{t("venueCosts.sectionHint")}</p>
+          ) : null}
         </div>
         {canManage && !draft && (
           <button
             type="button"
-            onClick={() => setDraft(newDraft())}
+            onClick={() => {
+              setDraftErrors([]);
+              setDraft(newDraft());
+            }}
             className={btnAddSoftCls}
           >
             <Plus className="w-4 h-4" />
@@ -245,8 +269,22 @@ export default function VenueCostsSettingsPage({
       )}
 
       {draft && canManage && (
-        <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
+        <section className={editorPanelCls}>
           <h3 className="text-sm font-semibold text-slate-900">{t("venueCosts.editorTitle")}</h3>
+          {draftErrors.length > 0 ? (
+            <div
+              ref={draftErrorRef}
+              className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 space-y-1"
+              role="alert"
+            >
+              <p className="text-xs font-semibold text-rose-800">{t("venueCosts.error.validationTitle")}</p>
+              <ul className="text-xs text-rose-700 list-disc pl-4 space-y-0.5">
+                {formatVenueCostDraftErrors(draftErrors, t).map((message, index) => (
+                  <li key={`${draftErrors[index]}-${index}`}>{message}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <div className="grid sm:grid-cols-3 gap-3">
             <AppSelect label={t("venueCosts.mode")} value={draft.mode} onChange={(e) => switchMode(e.target.value as VenueCostMode)}>
               <option value="per_lesson">{t("venueCosts.mode.perLesson")}</option>
@@ -278,7 +316,15 @@ export default function VenueCostsSettingsPage({
           )}
 
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
-            <button type="button" onClick={() => setDraft(null)} disabled={saveDraft.isPending} className={btnCancelCls}>
+            <button
+              type="button"
+              onClick={() => {
+                setDraftErrors([]);
+                setDraft(null);
+              }}
+              disabled={saveDraft.isPending}
+              className={btnCancelCls}
+            >
               {t("common.cancel")}
             </button>
             <button type="button" onClick={() => void handleSave()} disabled={saveDraft.isPending} className={btnAddCls}>
@@ -288,10 +334,27 @@ export default function VenueCostsSettingsPage({
         </section>
       )}
 
-      <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
+      <section className={historyPanelCls}>
         <h3 className="text-sm font-semibold text-slate-900">{t("venueCosts.history")}</h3>
         {versions.length === 0 ? (
-          <p className="text-sm text-slate-500">{t("venueCosts.empty")}</p>
+          <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-4 py-5 text-center space-y-3">
+            <p className="text-sm text-slate-600">{t("venueCosts.empty")}</p>
+            {canManage ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftErrors([]);
+                  setDraft(newDraft());
+                }}
+                className={btnAddSoftCls}
+              >
+                <Plus className="w-4 h-4" />
+                {t("venueCosts.emptyCta")}
+              </button>
+            ) : (
+              <p className="text-xs text-slate-500">{t("venueCosts.emptyReadOnlyHint")}</p>
+            )}
+          </div>
         ) : (
           <div className="divide-y divide-slate-100">
             {versions.map((version) => (

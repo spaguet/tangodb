@@ -470,6 +470,28 @@ assert.equal(conflictPlan.valid, false);
 assert.ok(conflictPlan.conflicts.length > 0);
 assert.equal(applyVenueCostTeacherBulkApply(ambiguousRules, conflictPlan, "group", 0, ["t2"]), null);
 
+// Draft error code parsing (hall-rent stage 20)
+function parseVenueCostDraftErrorCode(raw) {
+  if (raw.startsWith("duplicate_scope:")) {
+    return { code: "duplicate_scope", params: { key: raw.slice("duplicate_scope:".length) } };
+  }
+  if (raw.startsWith("ambiguous_scope:")) {
+    const rest = raw.slice("ambiguous_scope:".length);
+    const [keyA, keyB] = rest.split(":");
+    return { code: "ambiguous_scope", params: { keyA: keyA ?? "", keyB: keyB ?? "" } };
+  }
+  return { code: raw };
+}
+assert.deepEqual(parseVenueCostDraftErrorCode("teacher_required"), { code: "teacher_required" });
+assert.deepEqual(parseVenueCostDraftErrorCode("duplicate_scope:group:t1:*:*"), {
+  code: "duplicate_scope",
+  params: { key: "group:t1:*:*" },
+});
+assert.deepEqual(parseVenueCostDraftErrorCode("ambiguous_scope:a:b"), {
+  code: "ambiguous_scope",
+  params: { keyA: "a", keyB: "b" },
+});
+
 // Location copy
 const locPlan = planVenueCostLocationBulkCopy(bulkApplied, "loc-a", ["loc-b", "loc-c"]);
 assert.equal(locPlan.createdRules, 24); // 11 group + 1 personal × 2 locations
