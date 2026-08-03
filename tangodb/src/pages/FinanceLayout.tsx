@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { Landmark, TrendingUp, AlertCircle, Wallet, Receipt, History } from "lucide-react";
+import { Landmark, TrendingUp, AlertCircle, Wallet, Receipt, History, FileBarChart } from "lucide-react";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { getFinanceNav } from "../lib/i18n";
@@ -12,6 +12,7 @@ const FINANCE_NAV_ICONS: Record<string, typeof Landmark> = {
   "/finance/expenses": Receipt,
   "/finance/payroll": Wallet,
   "/finance/corrections": History,
+  "/finance/rental-accruals": FileBarChart,
 };
 
 export default function FinanceLayout() {

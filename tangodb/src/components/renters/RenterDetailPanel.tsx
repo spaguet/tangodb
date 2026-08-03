@@ -39,7 +39,17 @@ import {
   useUpsertRenterContact,
   useUpsertRenterContract,
 } from "../../hooks/useRenterCrm";
-import { useRenterRentalFinance, useRenterRentalInvoices } from "../../hooks/useRentalInvoices";
+import { useRenterRentalFinance, useRenterRentalInvoices, useRenterRentalAdvances, useRenterRentalAdvanceAllocations } from "../../hooks/useRentalInvoices";
+import { monthDateRange } from "../../lib/financeReports";
+import { currentYearMonth } from "../../lib/utils";
+import {
+  AllocateRentalAdvanceModal,
+  CreateRentalInvoiceModal,
+  PayRentalInvoiceModal,
+  RecordRentalAdvanceModal,
+  RentalAdvanceAllocationHistory,
+} from "./RenterFinanceModals";
+import type { RentalInvoice } from "../../types";
 import { translateMutationBlockedMessage } from "../../hooks/useOnlineStatus";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
@@ -64,6 +74,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const { connectionState } = useOnlineStatus();
   const canWrite = useCan("renters.write");
   const canSeeFinance = useCan("renters.finance.read");
+  const canWriteRentalFinance = useCan("finance.read");
   const canSeeDocuments = useCan("renters.documents.read");
   const canWriteDocuments = useCan("renters.documents.write");
   const canWriteContacts = useCan("renters.contacts.write");
@@ -210,7 +221,16 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
         ) : null}
 
         {activeTab === "finance" && canSeeFinance ? (
-          <FinanceTab renterId={renterId} finance={finance} rentals={rentalsQuery.data ?? []} locationMap={locationMap} t={t} formatDate={formatDate} />
+          <FinanceTab
+            renterId={renterId}
+            finance={finance}
+            rentals={rentalsQuery.data ?? []}
+            locationMap={locationMap}
+            canWrite={canWriteRentalFinance}
+            toast={toast}
+            t={t}
+            formatDate={formatDate}
+          />
         ) : null}
 
         {activeTab === "contracts" ? (
@@ -555,6 +575,8 @@ function FinanceTab({
   finance,
   rentals,
   locationMap,
+  canWrite,
+  toast,
   t,
   formatDate,
 }: {
@@ -562,11 +584,21 @@ function FinanceTab({
   finance: RenterFinanceSummary | null;
   rentals: RenterRentalRow[];
   locationMap: Map<string, string>;
-  t: (key: import("../../lib/i18n/keys").I18nKey) => string;
+  canWrite: boolean;
+  toast: RenterDetailPanelProps["toast"];
+  t: (key: import("../../lib/i18n/keys").I18nKey, vars?: Record<string, string | number>) => string;
   formatDate: (d: string) => string;
 }) {
+  const monthRange = monthDateRange(currentYearMonth());
   const rentalFinanceQuery = useRenterRentalFinance(renterId);
   const invoicesQuery = useRenterRentalInvoices(renterId);
+  const advancesQuery = useRenterRentalAdvances(renterId);
+  const allocationsQuery = useRenterRentalAdvanceAllocations(renterId);
+
+  const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
+  const [payInvoice, setPayInvoice] = useState<RentalInvoice | null>(null);
+  const [advanceOpen, setAdvanceOpen] = useState(false);
+  const [allocateOpen, setAllocateOpen] = useState(false);
 
   if (!finance) return null;
   const extended = rentalFinanceQuery.data;
@@ -574,14 +606,37 @@ function FinanceTab({
     (r) => r.fixedAmount != null && r.paidAmount != null && rentalRemainingAmount(r.fixedAmount, r.paidAmount) > 0
   );
   const invoices = invoicesQuery.data ?? [];
+  const advances = advancesQuery.data ?? [];
+  const allocations = allocationsQuery.data ?? [];
 
   const invoiceStatusLabel = (status: string) => {
     const key = `rentalInvoices.status.${status}` as import("../../lib/i18n/keys").I18nKey;
     return t(key);
   };
 
+  const refreshFinance = () => {
+    void rentalFinanceQuery.refetch();
+    void invoicesQuery.refetch();
+    void advancesQuery.refetch();
+    void allocationsQuery.refetch();
+  };
+
   return (
     <div className="space-y-4">
+      {canWrite ? (
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setCreateInvoiceOpen(true)} className="py-1.5 px-3 bg-indigo-600 text-white text-xs font-semibold rounded-lg cursor-pointer">
+            {t("rentalInvoices.createAction")}
+          </button>
+          <button type="button" onClick={() => setAdvanceOpen(true)} className="py-1.5 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer">
+            {t("rentalInvoices.advanceAction")}
+          </button>
+          <button type="button" onClick={() => setAllocateOpen(true)} className="py-1.5 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer">
+            {t("rentalInvoices.allocateAction")}
+          </button>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <StatBox label={t("renters.detail.turnover")} value={formatCurrency(finance.fixedTotal)} />
         <StatBox label={t("renters.detail.paid")} value={formatCurrency(finance.paidTotal)} />
@@ -602,9 +657,11 @@ function FinanceTab({
         <p className="text-xs text-slate-400">{t("common.loading.default")}</p>
       ) : null}
 
-      {invoices.length > 0 ? (
-        <div>
-          <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("rentalInvoices.title")}</h4>
+      <div>
+        <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("rentalInvoices.title")}</h4>
+        {invoices.length === 0 ? (
+          <p className="text-xs text-slate-400">{t("rentalInvoices.empty")}</p>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -613,7 +670,8 @@ function FinanceTab({
                   <th className="py-1 pr-2">{t("rentalInvoices.dueDate")}</th>
                   <th className="py-1 pr-2">{t("rentalInvoices.statusLabel")}</th>
                   <th className="py-1 pr-2 text-right">{t("rentalInvoices.total")}</th>
-                  <th className="py-1 text-right">{t("rentalInvoices.outstanding")}</th>
+                  <th className="py-1 pr-2 text-right">{t("rentalInvoices.outstanding")}</th>
+                  {canWrite ? <th className="py-1 text-right">{t("common.actions")}</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -623,16 +681,53 @@ function FinanceTab({
                     <td className="py-2 pr-2">{formatDate(inv.dueDate)}</td>
                     <td className="py-2 pr-2">{invoiceStatusLabel(inv.status)}</td>
                     <td className="py-2 pr-2 text-right">{formatCurrency(inv.totalAmount)}</td>
-                    <td className={`py-2 text-right font-semibold ${inv.outstanding > 0 ? "text-rose-600" : "text-slate-600"}`}>
+                    <td className={`py-2 pr-2 text-right font-semibold ${inv.outstanding > 0 ? "text-rose-600" : "text-slate-600"}`}>
                       {formatCurrency(inv.outstanding)}
                     </td>
+                    {canWrite ? (
+                      <td className="py-2 text-right">
+                        {inv.outstanding > 0 && inv.status !== "cancelled" ? (
+                          <button type="button" onClick={() => setPayInvoice(inv)} className="text-indigo-600 font-semibold cursor-pointer">
+                            {t("rentalInvoices.payAction")}
+                          </button>
+                        ) : null}
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        )}
+      </div>
+
+      {advances.length > 0 ? (
+        <div>
+          <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("rentalInvoices.advancesTitle")}</h4>
+          <ul className="text-xs space-y-1">
+            {advances.map((adv) => (
+              <li key={adv.id} className="flex justify-between border-b border-slate-50 py-1">
+                <span>{formatDate(adv.operationDate)} · {adv.method}</span>
+                <span className="text-slate-700">
+                  {formatCurrency(adv.amount)}
+                  {adv.available > 0 ? (
+                    <span className="text-emerald-600 ml-1">({formatCurrency(adv.available)})</span>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       ) : null}
+
+      <RentalAdvanceAllocationHistory
+        allocations={allocations}
+        canWrite={canWrite}
+        renterId={renterId}
+        toast={toast}
+        formatDate={formatDate}
+        t={t}
+      />
 
       {withDebt.length > 0 ? (
         <div>
@@ -649,6 +744,40 @@ function FinanceTab({
           </ul>
         </div>
       ) : null}
+
+      <CreateRentalInvoiceModal
+        open={createInvoiceOpen}
+        renterId={renterId}
+        defaultPeriodStart={monthRange.dateFrom}
+        defaultPeriodEnd={monthRange.dateTo}
+        onClose={() => setCreateInvoiceOpen(false)}
+        onSuccess={refreshFinance}
+        toast={toast}
+      />
+      <PayRentalInvoiceModal
+        open={!!payInvoice}
+        invoice={payInvoice}
+        renterId={renterId}
+        onClose={() => setPayInvoice(null)}
+        onSuccess={refreshFinance}
+        toast={toast}
+      />
+      <RecordRentalAdvanceModal
+        open={advanceOpen}
+        renterId={renterId}
+        onClose={() => setAdvanceOpen(false)}
+        onSuccess={refreshFinance}
+        toast={toast}
+      />
+      <AllocateRentalAdvanceModal
+        open={allocateOpen}
+        renterId={renterId}
+        advances={advances}
+        invoices={invoices}
+        onClose={() => setAllocateOpen(false)}
+        onSuccess={refreshFinance}
+        toast={toast}
+      />
     </div>
   );
 }

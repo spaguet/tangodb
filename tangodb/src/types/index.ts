@@ -276,9 +276,39 @@ export interface RentalAdvance {
   id: string;
   amount: number;
   allocatedAmount: number;
+  available: number;
   currency: string;
+  method: PaymentMethod;
+  operationDate: string;
   receivedAt: string;
   notes: string | null;
+}
+
+export interface RentalAdvanceAllocation {
+  id: string;
+  advanceId: string;
+  invoiceId: string;
+  invoicePeriodStart: string;
+  invoicePeriodEnd: string;
+  amount: number;
+  allocatedAt: string;
+  cancelledAt: string | null;
+  allocatedBy: string | null;
+}
+
+export interface RentalAccrualReport {
+  periodStart: string;
+  periodEnd: string;
+  renterId: string | null;
+  accruedAmount: number;
+  paidDirect: number;
+  paidInvoice: number;
+  paidTotal: number;
+  advancesReceived: number;
+  advancesAllocated: number;
+  invoiceDebt: number;
+  uninvoicedDebt: number;
+  totalDebt: number;
 }
 
 export interface RentalDeposit {

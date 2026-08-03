@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent этап 10: UI счетов и авансов, отчёт начислений (F20, F23) — RPC `list_renter_rental_advances`, `list_renter_rental_advance_allocations`, `get_rental_accrual_report`; `operation_date` на оплате счёта и авансе; модалки в карточке арендатора (счёт, оплата, аванс, allocate/отмена); страница `/finance/rental-accruals`; тест `test:db:rental-invoices-ui`.
+
 2026-08-03 — hall-rent этап 9: operation_date и закрытие периода (F22) — колонка `operation_date` на rental money tables; `finance_period_closed_until`; helpers `_org_local_date`; `record_rental_payment(p_operation_date)`; регистр и отчёты по `operation_date`; UI даты в `RecordRentalPaymentModal`; аудит обеих дат; тест `test:db:rental-operation-date`.
 
 2026-08-03 — hall-rent этап 8: должники аренды, сторно и автор платежа (F16, F18, F27) — `financial_debtors_v` + вкладки «Аренда зала»; RPC `storno_rental_payment` / `correct_rental_payment`; регистр с `direct_booking_storno`; `created_by` в popup/журнале/CSV; UI `RentalPaymentCorrectionDialog`; отчёт коррекций; тест `test:db:rental-corrections`.

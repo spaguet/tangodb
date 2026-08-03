@@ -7,6 +7,7 @@ import FinanceDebtorsPage from "./FinanceDebtorsPage";
 import FinanceExpensesPage from "./FinanceExpensesPage";
 import FinancePayrollPage from "./FinancePayrollPage";
 import FinanceCorrectionsPage from "./FinanceCorrectionsPage";
+import FinanceRentalAccrualsPage from "./FinanceRentalAccrualsPage";
 
 function FinanceIndexRedirect() {
   const { can } = usePermissions();
@@ -27,6 +28,7 @@ export default function FinancePage() {
         <Route path="expenses" element={<FinanceExpensesPage />} />
         <Route path="payroll" element={<FinancePayrollPage />} />
         <Route path="corrections" element={<FinanceCorrectionsPage />} />
+        <Route path="rental-accruals" element={<FinanceRentalAccrualsPage />} />
       </Route>
       <Route path="*" element={<FinanceIndexRedirect />} />
     </Routes>

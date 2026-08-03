@@ -1,8 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { PaymentMethod, RentalInvoice, RentalInvoiceStatus, RenterRentalFinanceExtended } from "../types";
+import type {
+  PaymentMethod,
+  RentalAccrualReport,
+  RentalAdvance,
+  RentalAdvanceAllocation,
+  RentalInvoice,
+  RentalInvoiceStatus,
+  RenterRentalFinanceExtended,
+} from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { rentersQueryKey } from "./useRenters";
+import { rentalMoneyRegisterQueryKey } from "./useRentalMoneyRegister";
 
 export const rentalInvoicesQueryKey = ["rental-invoices"] as const;
 
@@ -40,12 +49,72 @@ function renterInvoicesQueryKey(renterId: string) {
   return [...rentalInvoicesQueryKey, "renter-invoices", renterId] as const;
 }
 
+function renterAdvancesQueryKey(renterId: string) {
+  return [...rentalInvoicesQueryKey, "renter-advances", renterId] as const;
+}
+
+function renterAllocationsQueryKey(renterId: string) {
+  return [...rentalInvoicesQueryKey, "renter-allocations", renterId] as const;
+}
+
+function accrualReportQueryKey(periodStart: string, periodEnd: string, renterId?: string | null) {
+  return [...rentalInvoicesQueryKey, "accrual-report", periodStart, periodEnd, renterId ?? "all"] as const;
+}
+
+function mapAdvance(row: Record<string, unknown>): RentalAdvance {
+  return {
+    id: String(row.id),
+    amount: Number(row.amount ?? 0),
+    allocatedAmount: Number(row.allocated_amount ?? 0),
+    available: Number(row.available ?? 0),
+    currency: String(row.currency ?? "RUB"),
+    method: (row.method as PaymentMethod) ?? "cash",
+    operationDate: String(row.operation_date).slice(0, 10),
+    receivedAt: String(row.created_at ?? ""),
+    notes: row.notes != null ? String(row.notes) : null,
+  };
+}
+
+function mapAllocation(row: Record<string, unknown>): RentalAdvanceAllocation {
+  return {
+    id: String(row.id),
+    advanceId: String(row.advance_id),
+    invoiceId: String(row.invoice_id),
+    invoicePeriodStart: String(row.invoice_period_start).slice(0, 10),
+    invoicePeriodEnd: String(row.invoice_period_end).slice(0, 10),
+    amount: Number(row.amount ?? 0),
+    allocatedAt: String(row.allocated_at ?? ""),
+    cancelledAt: row.cancelled_at != null ? String(row.cancelled_at) : null,
+    allocatedBy: row.allocated_by != null ? String(row.allocated_by) : null,
+  };
+}
+
+function mapAccrualReport(row: Record<string, unknown>): RentalAccrualReport {
+  return {
+    periodStart: String(row.period_start).slice(0, 10),
+    periodEnd: String(row.period_end).slice(0, 10),
+    renterId: row.renter_id != null ? String(row.renter_id) : null,
+    accruedAmount: Number(row.accrued_amount ?? 0),
+    paidDirect: Number(row.paid_direct ?? 0),
+    paidInvoice: Number(row.paid_invoice ?? 0),
+    paidTotal: Number(row.paid_total ?? 0),
+    advancesReceived: Number(row.advances_received ?? 0),
+    advancesAllocated: Number(row.advances_allocated ?? 0),
+    invoiceDebt: Number(row.invoice_debt ?? 0),
+    uninvoicedDebt: Number(row.uninvoiced_debt ?? 0),
+    totalDebt: Number(row.total_debt ?? 0),
+  };
+}
+
 function invalidateRenterFinance(queryClient: ReturnType<typeof useQueryClient>, renterId?: string) {
   void queryClient.invalidateQueries({ queryKey: rentalInvoicesQueryKey, refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: rentalMoneyRegisterQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: rentersQueryKey, refetchType: "active" });
   if (renterId) {
     void queryClient.invalidateQueries({ queryKey: renterFinanceQueryKey(renterId), refetchType: "active" });
     void queryClient.invalidateQueries({ queryKey: renterInvoicesQueryKey(renterId), refetchType: "active" });
+    void queryClient.invalidateQueries({ queryKey: renterAdvancesQueryKey(renterId), refetchType: "active" });
+    void queryClient.invalidateQueries({ queryKey: renterAllocationsQueryKey(renterId), refetchType: "active" });
   }
 }
 
@@ -68,6 +137,90 @@ export function useRenterRentalInvoices(renterId: string | null, enabled = true)
       }
 
       return (result.invoices ?? []).map((row) => mapInvoice(row as Record<string, unknown>));
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useRenterRentalAdvances(renterId: string | null, enabled = true) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+
+  return useQuery({
+    queryKey: withOrgId(renterAdvancesQueryKey(renterId ?? "")),
+    enabled: orgEnabled && enabled && !!renterId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("list_renter_rental_advances", {
+        p_renter_id: renterId!,
+      });
+
+      if (error) throw error;
+
+      const result = data as { success?: boolean; error?: string; advances?: unknown[] } | null;
+      if (!result?.success) {
+        throw new Error(result?.error ?? "rentalInvoices.error.advancesLoadFailed");
+      }
+
+      return (result.advances ?? []).map((row) => mapAdvance(row as Record<string, unknown>));
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useRenterRentalAdvanceAllocations(renterId: string | null, enabled = true) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+
+  return useQuery({
+    queryKey: withOrgId(renterAllocationsQueryKey(renterId ?? "")),
+    enabled: orgEnabled && enabled && !!renterId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("list_renter_rental_advance_allocations", {
+        p_renter_id: renterId!,
+      });
+
+      if (error) throw error;
+
+      const result = data as { success?: boolean; error?: string; allocations?: unknown[] } | null;
+      if (!result?.success) {
+        throw new Error(result?.error ?? "rentalInvoices.error.allocationsLoadFailed");
+      }
+
+      return (result.allocations ?? []).map((row) => mapAllocation(row as Record<string, unknown>));
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useRentalAccrualReport(
+  periodStart: string,
+  periodEnd: string,
+  renterId?: string | null,
+  enabled = true
+) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+
+  return useQuery({
+    queryKey: withOrgId(accrualReportQueryKey(periodStart, periodEnd, renterId)),
+    enabled: orgEnabled && enabled && !!periodStart && !!periodEnd,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_rental_accrual_report", {
+        p_period_start: periodStart,
+        p_period_end: periodEnd,
+        p_renter_id: renterId ?? null,
+      });
+
+      if (error) throw error;
+
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        report?: Record<string, unknown>;
+      } | null;
+
+      if (!result?.success || !result.report) {
+        throw new Error(result?.error ?? "rentalAccrual.error.loadFailed");
+      }
+
+      return mapAccrualReport(result.report);
     },
     staleTime: 30 * 1000,
   });
@@ -163,6 +316,7 @@ export function useRecordRentalInvoicePayment() {
       amount: number;
       method: PaymentMethod;
       idempotencyKey: string;
+      operationDate?: string;
       renterId?: string;
     }) => {
       const { data, error } = await supabase.rpc("record_rental_invoice_payment", {
@@ -170,6 +324,7 @@ export function useRecordRentalInvoicePayment() {
         p_amount: input.amount,
         p_method: input.method,
         p_idempotency_key: input.idempotencyKey,
+        p_operation_date: input.operationDate ?? null,
       });
 
       if (error) return { success: false as const, error: error.message };
@@ -208,6 +363,7 @@ export function useRecordRentalAdvance() {
       amount: number;
       method: PaymentMethod;
       idempotencyKey: string;
+      operationDate?: string;
       notes?: string;
     }) => {
       const { data, error } = await supabase.rpc("record_rental_advance", {
@@ -216,6 +372,7 @@ export function useRecordRentalAdvance() {
           amount: input.amount,
           method: input.method,
           idempotency_key: input.idempotencyKey,
+          operation_date: input.operationDate ?? null,
           notes: input.notes ?? null,
         },
       });
