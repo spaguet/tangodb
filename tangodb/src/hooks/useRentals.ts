@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
+import type { RentalFiscalInput } from "../lib/rentalBillingProfile";
+import { fiscalInputToRpcPayload } from "./useRentalBillingProfile";
 import { normalizeTime } from "../lib/scheduleWeek";
 import type { PaymentMethod, RentalDisplayLesson, RentalPayment, RentalPaymentStatus } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
@@ -485,6 +487,7 @@ export interface RecordRentalPaymentInput {
   methodComment?: string;
   idempotencyKey: string;
   operationDate?: string;
+  fiscal?: RentalFiscalInput;
 }
 
 export function useRecordRentalPayment() {
@@ -499,6 +502,7 @@ export function useRecordRentalPayment() {
         p_method_comment: input.methodComment ?? null,
         p_idempotency_key: input.idempotencyKey,
         p_operation_date: input.operationDate ?? null,
+        ...fiscalInputToRpcPayload(input.fiscal),
       });
 
       if (error) return { success: false as const, error: error.message };

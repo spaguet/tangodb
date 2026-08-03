@@ -11,6 +11,7 @@ import {
   useRecordRentalAdvance,
   useRecordRentalInvoicePayment,
 } from "../../hooks/useRentalInvoices";
+import { useRentalBillingProfile } from "../../hooks/useRentalBillingProfile";
 import { minOpenOperationDate, orgLocalDateString } from "../../lib/orgFinanceDate";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
@@ -19,6 +20,11 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import DatePickerField from "../ui/DatePickerField";
 import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
+import {
+  EMPTY_FISCAL_VALUES,
+  RentalFiscalPaymentFields,
+  fiscalValuesToInput,
+} from "../rental-billing/RentalFiscalPaymentFields";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
@@ -175,6 +181,7 @@ export function PayRentalInvoiceModal({
 }) {
   const { t } = useI18n();
   const { settings } = useOrganization();
+  const billingProfileQuery = useRentalBillingProfile();
   const recordPayment = useRecordRentalInvoicePayment();
   const orgTimezone = settings?.timezone ?? "UTC";
   const closedUntil = settings?.finance_period_closed_until ?? null;
@@ -185,7 +192,9 @@ export function PayRentalInvoiceModal({
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [operationDate, setOperationDate] = useState(orgToday);
   const [idempotencyKey, setIdempotencyKey] = useState("");
+  const [fiscalValues, setFiscalValues] = useState(EMPTY_FISCAL_VALUES);
 
+  const fiscalTrackingEnabled = billingProfileQuery.data?.fiscal_tracking_enabled ?? false;
   const outstanding = invoice?.outstanding ?? 0;
 
   useEffect(() => {
@@ -194,6 +203,7 @@ export function PayRentalInvoiceModal({
     setMethod("cash");
     setOperationDate(orgLocalDateString(orgTimezone));
     setIdempotencyKey(crypto.randomUUID());
+    setFiscalValues(EMPTY_FISCAL_VALUES);
   }, [open, invoice, outstanding, orgTimezone]);
 
   const handleSubmit = async () => {
@@ -219,6 +229,7 @@ export function PayRentalInvoiceModal({
       idempotencyKey,
       operationDate,
       renterId,
+      fiscal: fiscalTrackingEnabled ? fiscalValuesToInput(fiscalValues) : undefined,
     });
     if (!res.success) {
       toast(resolveMutationError(res.error, "rentalInvoices.error.paymentFailed", t), "error");
@@ -259,6 +270,12 @@ export function PayRentalInvoiceModal({
             onChange={setOperationDate}
             min={minOperationDate}
             max={orgToday}
+          />
+          <RentalFiscalPaymentFields
+            enabled={fiscalTrackingEnabled}
+            method={method}
+            values={fiscalValues}
+            onChange={setFiscalValues}
           />
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose} disabled={recordPayment.isPending} className={btnCancelCls}>

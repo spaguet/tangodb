@@ -259,6 +259,13 @@ export type RentalInvoiceStatus =
   | "overdue"
   | "cancelled";
 
+export type RentalFiscalStatus =
+  | "not_required"
+  | "pending"
+  | "issued"
+  | "failed"
+  | "refunded";
+
 export interface RentalInvoice {
   id: string;
   seriesId: string | null;
@@ -270,6 +277,14 @@ export interface RentalInvoice {
   totalAmount: number;
   paidAmount: number;
   outstanding: number;
+  documentNumber?: string | null;
+  documentVersion?: number;
+  vatMode?: "none" | "included" | "on_top" | null;
+  vatRate?: number | null;
+  netAmount?: number | null;
+  vatAmount?: number | null;
+  issuedAt?: string | null;
+  exportBatchId?: string | null;
 }
 
 export interface RentalAdvance {
@@ -497,6 +512,12 @@ export interface RentalPayment {
   renterDisplay?: string;
   locationId?: string | null;
   rentalDate?: string;
+  fiscalStatus?: RentalFiscalStatus;
+  fiscalReceiptNumber?: string | null;
+  fiscalCashRegisterId?: string | null;
+  fiscalTerminalId?: string | null;
+  fiscalAcquiringId?: string | null;
+  fiscalRefundReceiptNumber?: string | null;
 }
 
 /** Canonical rental cash register entry (stage 5). */

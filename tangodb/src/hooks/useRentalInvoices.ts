@@ -9,6 +9,8 @@ import type {
   RentalInvoiceStatus,
   RenterRentalFinanceExtended,
 } from "../types";
+import type { RentalFiscalInput } from "../lib/rentalBillingProfile";
+import { fiscalInputToRpcPayload } from "./useRentalBillingProfile";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { rentersQueryKey } from "./useRenters";
 import { rentalMoneyRegisterQueryKey } from "./useRentalMoneyRegister";
@@ -27,6 +29,14 @@ function mapInvoice(row: Record<string, unknown>): RentalInvoice {
     totalAmount: Number(row.total_amount ?? 0),
     paidAmount: Number(row.paid_amount ?? 0),
     outstanding: Number(row.outstanding ?? 0),
+    documentNumber: row.document_number != null ? String(row.document_number) : null,
+    documentVersion: row.document_version != null ? Number(row.document_version) : undefined,
+    vatMode: (row.vat_mode as RentalInvoice["vatMode"]) ?? null,
+    vatRate: row.vat_rate != null ? Number(row.vat_rate) : null,
+    netAmount: row.net_amount != null ? Number(row.net_amount) : null,
+    vatAmount: row.vat_amount != null ? Number(row.vat_amount) : null,
+    issuedAt: row.issued_at != null ? String(row.issued_at) : null,
+    exportBatchId: row.export_batch_id != null ? String(row.export_batch_id) : null,
   };
 }
 
@@ -318,6 +328,7 @@ export function useRecordRentalInvoicePayment() {
       idempotencyKey: string;
       operationDate?: string;
       renterId?: string;
+      fiscal?: RentalFiscalInput;
     }) => {
       const { data, error } = await supabase.rpc("record_rental_invoice_payment", {
         p_invoice_id: input.invoiceId,
@@ -325,6 +336,7 @@ export function useRecordRentalInvoicePayment() {
         p_method: input.method,
         p_idempotency_key: input.idempotencyKey,
         p_operation_date: input.operationDate ?? null,
+        ...fiscalInputToRpcPayload(input.fiscal),
       });
 
       if (error) return { success: false as const, error: error.message };

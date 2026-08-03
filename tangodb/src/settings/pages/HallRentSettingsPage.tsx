@@ -8,6 +8,7 @@ import {
 } from "../../lib/permissions";
 import RentalTariffsSettingsPage from "./RentalTariffsSettingsPage";
 import VenueCostsSettingsPage from "./VenueCostsSettingsPage";
+import RentalBillingProfileSection from "../../components/rental-billing/RentalBillingProfileSection";
 
 /** Preserve ?new=1 when old /settings/venue-costs bookmarks are opened. */
 export function VenueCostsLegacyRedirect() {
@@ -54,6 +55,16 @@ export default function HallRentSettingsPage() {
             <p className="text-xs text-slate-500 mt-1">{t("hallRent.studioSubtitle")}</p>
           </div>
           <VenueCostsSettingsPage embedded canManage={canManageVenue} />
+        </section>
+      )}
+
+      {canReadVenue && (
+        <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">{t("rentalBilling.sectionTitle")}</h3>
+            <p className="text-xs text-slate-500 mt-1">{t("rentalBilling.sectionSubtitle")}</p>
+          </div>
+          <RentalBillingProfileSection embedded />
         </section>
       )}
     </div>

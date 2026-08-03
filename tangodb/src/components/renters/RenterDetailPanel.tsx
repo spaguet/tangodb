@@ -40,6 +40,8 @@ import {
   useUpsertRenterContract,
 } from "../../hooks/useRenterCrm";
 import { useRenterRentalFinance, useRenterRentalInvoices, useRenterRentalAdvances, useRenterRentalAdvanceAllocations } from "../../hooks/useRentalInvoices";
+import { useIssueRentalInvoiceDocument, useRentalBillingProfile } from "../../hooks/useRentalBillingProfile";
+import RentalInvoiceDocumentModal from "../rental-billing/RentalInvoiceDocumentModal";
 import { monthDateRange } from "../../lib/financeReports";
 import { currentYearMonth } from "../../lib/utils";
 import {
@@ -594,11 +596,16 @@ function FinanceTab({
   const invoicesQuery = useRenterRentalInvoices(renterId);
   const advancesQuery = useRenterRentalAdvances(renterId);
   const allocationsQuery = useRenterRentalAdvanceAllocations(renterId);
+  const billingProfileQuery = useRentalBillingProfile();
+  const issueDocument = useIssueRentalInvoiceDocument();
 
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
   const [payInvoice, setPayInvoice] = useState<RentalInvoice | null>(null);
   const [advanceOpen, setAdvanceOpen] = useState(false);
   const [allocateOpen, setAllocateOpen] = useState(false);
+  const [documentInvoiceId, setDocumentInvoiceId] = useState<string | null>(null);
+
+  const documentsMode = billingProfileQuery.data?.documents_mode ?? "off";
 
   if (!finance) return null;
   const extended = rentalFinanceQuery.data;
@@ -619,6 +626,24 @@ function FinanceTab({
     void invoicesQuery.refetch();
     void advancesQuery.refetch();
     void allocationsQuery.refetch();
+  };
+
+  const handleIssueDocument = async (invoice: RentalInvoice) => {
+    const res = await issueDocument.mutateAsync({ invoiceId: invoice.id, renterId });
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "rentalBilling.error.issueFailed", t), "error");
+      return;
+    }
+    toast(
+      res.reissued
+        ? t("rentalBilling.success.documentReissued", {
+            number: res.documentNumber ?? "",
+            version: res.documentVersion,
+          })
+        : t("rentalBilling.success.documentIssued", { number: res.documentNumber ?? "" }),
+      "success"
+    );
+    refreshFinance();
   };
 
   return (
@@ -667,6 +692,9 @@ function FinanceTab({
               <thead>
                 <tr className="text-left text-slate-400 uppercase tracking-wider">
                   <th className="py-1 pr-2">{t("rentalInvoices.period")}</th>
+                  {documentsMode !== "off" ? (
+                    <th className="py-1 pr-2">{t("rentalBilling.documentNumber")}</th>
+                  ) : null}
                   <th className="py-1 pr-2">{t("rentalInvoices.dueDate")}</th>
                   <th className="py-1 pr-2">{t("rentalInvoices.statusLabel")}</th>
                   <th className="py-1 pr-2 text-right">{t("rentalInvoices.total")}</th>
@@ -678,6 +706,20 @@ function FinanceTab({
                 {invoices.map((inv) => (
                   <tr key={inv.id} className="border-b border-slate-50">
                     <td className="py-2 pr-2">{formatDate(inv.periodStart)} – {formatDate(inv.periodEnd)}</td>
+                    {documentsMode !== "off" ? (
+                      <td className="py-2 pr-2">
+                        {inv.documentNumber ? (
+                          <span>
+                            {inv.documentNumber}
+                            {inv.documentVersion && inv.documentVersion > 1 ? (
+                              <span className="text-slate-400"> v{inv.documentVersion}</span>
+                            ) : null}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                    ) : null}
                     <td className="py-2 pr-2">{formatDate(inv.dueDate)}</td>
                     <td className="py-2 pr-2">{invoiceStatusLabel(inv.status)}</td>
                     <td className="py-2 pr-2 text-right">{formatCurrency(inv.totalAmount)}</td>
@@ -685,7 +727,26 @@ function FinanceTab({
                       {formatCurrency(inv.outstanding)}
                     </td>
                     {canWrite ? (
-                      <td className="py-2 text-right">
+                      <td className="py-2 text-right space-x-2">
+                        {documentsMode === "crm" && inv.status !== "cancelled" ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleIssueDocument(inv)}
+                            disabled={issueDocument.isPending}
+                            className="text-slate-600 font-semibold cursor-pointer"
+                          >
+                            {inv.documentNumber ? t("rentalBilling.reissueAction") : t("rentalBilling.issueAction")}
+                          </button>
+                        ) : null}
+                        {documentsMode !== "off" ? (
+                          <button
+                            type="button"
+                            onClick={() => setDocumentInvoiceId(inv.id)}
+                            className="text-slate-600 font-semibold cursor-pointer"
+                          >
+                            {t("rentalBilling.viewDocument")}
+                          </button>
+                        ) : null}
                         {inv.outstanding > 0 && inv.status !== "cancelled" ? (
                           <button type="button" onClick={() => setPayInvoice(inv)} className="text-indigo-600 font-semibold cursor-pointer">
                             {t("rentalInvoices.payAction")}
@@ -761,6 +822,11 @@ function FinanceTab({
         onClose={() => setPayInvoice(null)}
         onSuccess={refreshFinance}
         toast={toast}
+      />
+      <RentalInvoiceDocumentModal
+        open={!!documentInvoiceId}
+        invoiceId={documentInvoiceId}
+        onClose={() => setDocumentInvoiceId(null)}
       />
       <RecordRentalAdvanceModal
         open={advanceOpen}

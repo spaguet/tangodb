@@ -4,6 +4,7 @@ import { Coins, X } from "lucide-react";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { useRecordRentalPayment } from "../../hooks/useRentals";
+import { useRentalBillingProfile } from "../../hooks/useRentalBillingProfile";
 import { useI18n } from "../../hooks/useI18n";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { minOpenOperationDate, orgLocalDateString } from "../../lib/orgFinanceDate";
@@ -13,6 +14,11 @@ import AppSelect, { fieldCls } from "../ui/AppSelect";
 import DatePickerField from "../ui/DatePickerField";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
+import {
+  EMPTY_FISCAL_VALUES,
+  RentalFiscalPaymentFields,
+  fiscalValuesToInput,
+} from "../rental-billing/RentalFiscalPaymentFields";
 
 interface RecordRentalPaymentModalProps {
   lesson: RentalDisplayLesson | null;
@@ -33,6 +39,7 @@ export default function RecordRentalPaymentModal({
 }: RecordRentalPaymentModalProps) {
   const { t, locale } = useI18n();
   const { settings } = useOrganization();
+  const billingProfileQuery = useRentalBillingProfile();
   const recordPayment = useRecordRentalPayment();
 
   const orgTimezone = settings?.timezone ?? "UTC";
@@ -45,6 +52,9 @@ export default function RecordRentalPaymentModal({
   const [methodComment, setMethodComment] = useState("");
   const [operationDate, setOperationDate] = useState(orgToday);
   const [idempotencyKey, setIdempotencyKey] = useState("");
+  const [fiscalValues, setFiscalValues] = useState(EMPTY_FISCAL_VALUES);
+
+  const fiscalTrackingEnabled = billingProfileQuery.data?.fiscal_tracking_enabled ?? false;
 
   const remaining = useMemo(() => {
     if (!lesson) return 0;
@@ -58,6 +68,7 @@ export default function RecordRentalPaymentModal({
     setMethodComment("");
     setOperationDate(orgLocalDateString(orgTimezone));
     setIdempotencyKey(crypto.randomUUID());
+    setFiscalValues(EMPTY_FISCAL_VALUES);
   }, [open, lesson, remaining, orgTimezone]);
 
   const handleSubmit = async () => {
@@ -85,6 +96,7 @@ export default function RecordRentalPaymentModal({
       methodComment: methodComment.trim() || undefined,
       idempotencyKey,
       operationDate,
+      fiscal: fiscalTrackingEnabled ? fiscalValuesToInput(fiscalValues) : undefined,
     });
 
     if (!res.success) {
@@ -151,6 +163,12 @@ export default function RecordRentalPaymentModal({
                   placeholder={t("schedule.rental.paymentCommentPlaceholder")}
                 />
               </div>
+              <RentalFiscalPaymentFields
+                enabled={fiscalTrackingEnabled}
+                method={method}
+                values={fiscalValues}
+                onChange={setFiscalValues}
+              />
             </div>
             <div className="flex justify-end gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
               <button type="button" onClick={onClose} disabled={recordPayment.isPending} className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">{t("common.cancel")}</button>
