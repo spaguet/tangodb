@@ -1715,7 +1715,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                               className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border bg-indigo-600 border-indigo-600 text-white shadow-xs cursor-pointer"
                             >
                               <Coins className="w-3.5 h-3.5" />
-                              {t("common.markPaid")}
+                              {t("common.pay")}
                             </button>
                           ) : null}
                           <button
