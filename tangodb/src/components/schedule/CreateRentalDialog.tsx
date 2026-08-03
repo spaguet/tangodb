@@ -4,13 +4,21 @@ import { AnimatePresence, motion } from "motion/react";
 import { Building2, Plus, X } from "lucide-react";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { minutesToTime, normalizeTime, timeToMinutes } from "../../lib/scheduleWeek";
+import {
+  filterFixedTariffsForLocation,
+  formatTariffSelectLabel,
+  fixedTariffListPrice,
+  hasHourlyTariffsForLocation,
+  needsRentalAmountOverrideReason,
+} from "../../lib/rentalTariffPricing";
+import { formatCurrency } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useCreateRenter, useRenters } from "../../hooks/useRenters";
 import { useCreateRental, useRentalConflictsPreview } from "../../hooks/useRentals";
 import { useRentalTariffs } from "../../hooks/useRentalTariffs";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
-import { canReadRentalTariffs } from "../../lib/permissions";
+import { canReadRentalTariffs, canSeeRentalTariffPrices } from "../../lib/permissions";
 import type { PaymentMethod } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
@@ -54,12 +62,13 @@ export default function CreateRentalDialog({
 }: CreateRentalDialogProps) {
   const { t, formatDate, locale } = useI18n();
   const { can, role, options } = usePermissions();
-  const canSeeFinance = can("finance.read");
+  const canSeeTariffPrices = canSeeRentalTariffPrices(role, options);
+  const canRecordPayment = can("rentals.payments.write");
   const canLookupTariffs = canReadRentalTariffs(role, options);
   const createMutation = useCreateRental();
   const createRenterMutation = useCreateRenter();
   const rentersQuery = useRenters({ enabled: open, activeOnly: true });
-  const tariffsQuery = useRentalTariffs({ status: "active" }, open && canSeeFinance);
+  const tariffsQuery = useRentalTariffs({ status: "active" }, open && canSeeTariffPrices);
 
   const defaultLocationId = prefill?.locationId ?? locations[0]?.id ?? "";
 
@@ -77,6 +86,7 @@ export default function CreateRentalDialog({
   const [initialPayment, setInitialPayment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [tariffId, setTariffId] = useState("");
+  const [amountOverrideReason, setAmountOverrideReason] = useState("");
   const [idempotencyKey, setIdempotencyKey] = useState("");
   const [createRequested, setCreateRequested] = useState(false);
 
@@ -97,6 +107,7 @@ export default function CreateRentalDialog({
     setInitialPayment("");
     setPaymentMethod("cash");
     setTariffId("");
+    setAmountOverrideReason("");
     setIdempotencyKey(crypto.randomUUID());
     setCreateRequested(false);
   }, [open, prefill, defaultLocationId, preselectedRenterId]);
@@ -113,14 +124,41 @@ export default function CreateRentalDialog({
   const renterLabel = rentersQuery.data?.find((r) => r.id === renterId)?.displayName ?? "";
 
   const fixedTariffs = useMemo(
-    () =>
-      (tariffsQuery.data ?? []).filter(
-        (tariff) =>
-          tariff.tariffType === "fixed" &&
-          (!tariff.locationId || tariff.locationId === locationId)
-      ),
+    () => filterFixedTariffsForLocation(tariffsQuery.data ?? [], locationId),
     [tariffsQuery.data, locationId]
   );
+
+  const hourlyTariffsExist = useMemo(
+    () => hasHourlyTariffsForLocation(tariffsQuery.data ?? [], locationId),
+    [tariffsQuery.data, locationId]
+  );
+
+  const selectedTariff = useMemo(
+    () => fixedTariffs.find((tariff) => tariff.id === tariffId) ?? null,
+    [fixedTariffs, tariffId]
+  );
+
+  const tariffListPrice = selectedTariff ? fixedTariffListPrice(selectedTariff) : null;
+
+  const enteredAmount = Number(fixedAmount) || 0;
+  const showOverrideReason = needsRentalAmountOverrideReason(tariffId, tariffListPrice, enteredAmount);
+
+  const handleTariffChange = (nextTariffId: string) => {
+    setTariffId(nextTariffId);
+    if (!nextTariffId) return;
+    const tariff = fixedTariffs.find((item) => item.id === nextTariffId);
+    const price = tariff ? fixedTariffListPrice(tariff) : null;
+    if (price != null) {
+      setFixedAmount(String(price));
+      setAmountOverrideReason("");
+    }
+  };
+
+  useEffect(() => {
+    if (!fixedTariffs.some((tariff) => tariff.id === tariffId)) {
+      setTariffId("");
+    }
+  }, [fixedTariffs, tariffId]);
 
   const previewSummary = useMemo(() => {
     if (!rentalDate || !timeStart || !timeEnd) return "";
@@ -157,8 +195,22 @@ export default function CreateRentalDialog({
       toast(t("schedule.rental.renterRequired"), "error");
       return false;
     }
+    if (showOverrideReason && !amountOverrideReason.trim()) {
+      toast(t("schedule.rental.amountOverrideReasonRequired"), "error");
+      return false;
+    }
     return true;
-  }, [rentalDate, timeStart, timeEnd, locationId, renterId, toast, t]);
+  }, [
+    rentalDate,
+    timeStart,
+    timeEnd,
+    locationId,
+    renterId,
+    showOverrideReason,
+    amountOverrideReason,
+    toast,
+    t,
+  ]);
 
   const handleCreate = () => {
     if (!validateForm()) return;
@@ -179,8 +231,8 @@ export default function CreateRentalDialog({
       return;
     }
 
-    const amount = canSeeFinance ? Number(fixedAmount) || 0 : 0;
-    const payment = canSeeFinance ? Number(initialPayment) || 0 : 0;
+    const amount = canSeeTariffPrices ? enteredAmount : 0;
+    const payment = canRecordPayment ? Number(initialPayment) || 0 : 0;
 
     const res = await createMutation.mutateAsync({
       idempotencyKey,
@@ -195,6 +247,7 @@ export default function CreateRentalDialog({
       fixedAmount: amount,
       initialPayment: payment,
       paymentMethod,
+      amountOverrideReason: showOverrideReason ? amountOverrideReason.trim() : undefined,
     });
 
     if (!res.success) {
@@ -248,7 +301,13 @@ export default function CreateRentalDialog({
                 </h3>
                 <p className="text-xs text-slate-500">{t("schedule.rental.subtitle")}</p>
               </div>
-              <button type="button" onClick={onClose} disabled={createMutation.isPending} aria-label={t("common.close")} className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={createMutation.isPending}
+                aria-label={t("common.close")}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -280,7 +339,11 @@ export default function CreateRentalDialog({
                         <option key={r.id} value={r.id}>{r.displayName}</option>
                       ))}
                     </AppSelect>
-                    <button type="button" onClick={() => setShowNewRenter(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800 cursor-pointer">
+                    <button
+                      type="button"
+                      onClick={() => setShowNewRenter(true)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800 cursor-pointer"
+                    >
                       <Plus className="w-3.5 h-3.5" />
                       {t("schedule.rental.addRenter")}
                     </button>
@@ -310,31 +373,82 @@ export default function CreateRentalDialog({
                   <input className={fieldCls} value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder={t("schedule.rental.purposePlaceholder")} />
                 </div>
 
-                {canLookupTariffs && !canSeeFinance ? (
+                {canLookupTariffs && !canSeeTariffPrices ? (
                   <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 px-3 py-2 space-y-1">
                     <RentalTariffLookupLink />
                     <p className="text-[11px] text-slate-500">{t("rentalTariffs.lookupCreateHint")}</p>
                   </div>
                 ) : null}
 
-                {canSeeFinance && fixedTariffs.length > 0 ? (
-                  <AppSelect label={t("rentalTariffs.fixedTariffLabel")} value={tariffId} onChange={(e) => setTariffId(e.target.value)}>
-                    <option value="">{t("rentalTariffs.noTariff")}</option>
-                    {fixedTariffs.map((tariff) => (
-                      <option key={tariff.id} value={tariff.id}>{tariff.name}</option>
-                    ))}
-                  </AppSelect>
-                ) : null}
-
-                {canSeeFinance ? (
+                {canSeeTariffPrices ? (
                   <>
+                    {hourlyTariffsExist ? (
+                      <p className="text-[11px] text-slate-500 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                        {t("rentalTariffs.hourlyOnlySeriesHint")}
+                      </p>
+                    ) : null}
+
+                    {fixedTariffs.length > 0 ? (
+                      <AppSelect
+                        label={t("rentalTariffs.fixedTariffLabel")}
+                        value={tariffId}
+                        onChange={(e) => handleTariffChange(e.target.value)}
+                      >
+                        <option value="">{t("rentalTariffs.noTariff")}</option>
+                        {fixedTariffs.map((tariff) => (
+                          <option key={tariff.id} value={tariff.id}>
+                            {formatTariffSelectLabel(tariff, (amount) => formatCurrency(amount))}
+                          </option>
+                        ))}
+                      </AppSelect>
+                    ) : null}
+
                     <div>
                       <span className={labelCls}>{t("schedule.rental.fixedAmountLabel")}</span>
-                      <input type="number" min={0} step="0.01" className={fieldCls} value={fixedAmount} onChange={(e) => setFixedAmount(e.target.value)} />
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className={fieldCls}
+                        value={fixedAmount}
+                        onChange={(e) => setFixedAmount(e.target.value)}
+                      />
+                      {selectedTariff && tariffListPrice != null && !showOverrideReason ? (
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          {t("schedule.rental.priceFromTariff", {
+                            name: selectedTariff.name,
+                            amount: formatCurrency(tariffListPrice),
+                          })}
+                        </p>
+                      ) : null}
                     </div>
+
+                    {showOverrideReason ? (
+                      <div>
+                        <span className={labelCls}>{t("schedule.rental.amountOverrideReasonLabel")}</span>
+                        <input
+                          className={fieldCls}
+                          value={amountOverrideReason}
+                          onChange={(e) => setAmountOverrideReason(e.target.value)}
+                          placeholder={t("schedule.rental.amountOverrideReasonPlaceholder")}
+                        />
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+
+                {canRecordPayment ? (
+                  <>
                     <div>
                       <span className={labelCls}>{t("schedule.rental.initialPaymentLabel")}</span>
-                      <input type="number" min={0} step="0.01" className={fieldCls} value={initialPayment} onChange={(e) => setInitialPayment(e.target.value)} />
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className={fieldCls}
+                        value={initialPayment}
+                        onChange={(e) => setInitialPayment(e.target.value)}
+                      />
                     </div>
                     <AppSelect label={t("finance.payroll.methodLabel")} value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}>
                       {(["cash", "transfer", "card", "other"] as PaymentMethod[]).map((m) => (
@@ -355,6 +469,11 @@ export default function CreateRentalDialog({
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">{t("schedule.rental.previewTitle")}</p>
                   <p className="mt-1 font-semibold text-slate-800">{previewSummary}</p>
                   {renterLabel ? <p className="text-slate-600 mt-1">{renterLabel}{purpose ? ` · ${purpose}` : ""}</p> : null}
+                  {canSeeTariffPrices && enteredAmount > 0 ? (
+                    <p className="text-slate-600 mt-1">
+                      {t("schedule.rental.fixedAmountLabel")}: {formatCurrency(enteredAmount)}
+                    </p>
+                  ) : null}
                 </div>
                 {conflictsQuery.isLoading ? (
                   <p className="text-slate-400">{t("common.loading.default")}</p>
@@ -385,7 +504,12 @@ export default function CreateRentalDialog({
                   {t("schedule.rental.confirmCreate")}
                 </button>
               ) : (
-                <button type="button" onClick={() => void handleSubmit()} disabled={createMutation.isPending || !!conflictsQuery.data?.conflicts.length} className={`flex-1 ${btnAddCls}`}>
+                <button
+                  type="button"
+                  onClick={() => void handleSubmit()}
+                  disabled={createMutation.isPending || !!conflictsQuery.data?.conflicts.length}
+                  className={`flex-1 ${btnAddCls}`}
+                >
                   {createMutation.isPending ? t("common.saving") : t("schedule.rental.confirmCreate")}
                 </button>
               )}

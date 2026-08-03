@@ -150,3 +150,62 @@ export function useUpsertRentalTariff() {
     },
   });
 }
+
+export interface PreviewRentalPricingInput {
+  tariffId: string;
+  rentalDate: string;
+  timeStart: string;
+  timeEnd: string;
+}
+
+export interface RentalPricingPreview {
+  calculatedAmount: number;
+  currency: string;
+  tariffType: string;
+  breakdown: unknown;
+  segments: unknown;
+}
+
+export function usePreviewRentalPricing(input: PreviewRentalPricingInput | null, enabled = true) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+
+  return useQuery({
+    queryKey: withOrgId([...rentalTariffsQueryKey, "pricing-preview", input]),
+    enabled: orgEnabled && enabled && !!input?.tariffId && !!input.rentalDate,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("preview_rental_pricing", {
+        p_payload: {
+          tariff_id: input!.tariffId,
+          rental_date: input!.rentalDate,
+          time_start: input!.timeStart,
+          time_end: input!.timeEnd,
+        },
+      });
+
+      if (error) throw error;
+
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        calculated_amount?: number;
+        currency?: string;
+        tariff_type?: string;
+        breakdown?: unknown;
+        segments?: unknown;
+      } | null;
+
+      if (!result?.success) {
+        throw new Error(result?.error ?? "schedule.rental.previewFailed");
+      }
+
+      return {
+        calculatedAmount: Number(result.calculated_amount ?? 0),
+        currency: result.currency ?? "RUB",
+        tariffType: result.tariff_type ?? "fixed",
+        breakdown: result.breakdown,
+        segments: result.segments,
+      } satisfies RentalPricingPreview;
+    },
+    staleTime: 0,
+  });
+}

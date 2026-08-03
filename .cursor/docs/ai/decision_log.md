@@ -12,6 +12,14 @@
 
 ## Записи
 
+### HALL-RENT-13 — Тариф → сумма при создании; hourly в разовой (2026-08-03)
+
+- **Дата:** 2026-08-03
+- **Решение:** **Вариант B** для почасового тарифа: в разовой брони (`CreateRentalDialog`) только fixed-тарифы + ручная сумма; подсказка «почасовой — только для серий». Автоподстановка суммы из fixed-тарифа; сумма/тариф/начальный платёж для ролей с `canSeeRentalTariffPrices` / `rentals.payments.write` (канонический кассовый gate, не голый `finance.read`). Backend: `create_rental` — ручной `fixed_amount` без `tariff_id` и `initial_payment > 0` через `member_can_record_rental_payment()`; override суммы при `tariff_id` с полем `amount_override_reason`; RPC `preview_rental_pricing` для сверки. Reception — без расширения (этап 12).
+- **Контекст:** Этап 13 аудита hall-rent (F7, F14, F15): кассир бронировал с суммой 0; fixed-тариф не подставлял цену.
+- **Альтернативы:** (A) Hourly в разовой с превью по длительности/льготам — больше UI и дублирование серверного `_calculate_rental_pricing`.
+- **Почему так:** Серии уже покрывают hourly; меньше риска расхождения расчёта; разовая форма остаётся простой; кассовый gate единый с этапами 1/12.
+
 ### HALL-RENT-12 — Read-only прайс для admin и политика reception (2026-08-03)
 
 - **Дата:** 2026-08-03

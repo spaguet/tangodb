@@ -304,6 +304,7 @@ export interface CreateRentalInput {
   initialPayment?: number;
   paymentMethod?: PaymentMethod;
   paymentComment?: string;
+  amountOverrideReason?: string;
 }
 
 function invalidateRentalQueries(queryClient: ReturnType<typeof useQueryClient>) {
@@ -336,6 +337,7 @@ export function useCreateRental() {
           initial_payment: input.initialPayment ?? 0,
           payment_method: input.paymentMethod ?? "cash",
           payment_comment: input.paymentComment ?? null,
+          amount_override_reason: input.amountOverrideReason ?? null,
         },
       });
 

@@ -16,6 +16,8 @@ import {
   usePreviewRentalSeries,
   type RentalSeriesPayload,
 } from "../../hooks/useRentalSeries";
+import { formatTariffSelectLabel } from "../../lib/rentalTariffPricing";
+import { canSeeRentalTariffPrices } from "../../lib/permissions";
 import { formatCurrency } from "../../lib/utils";
 import type { RentalSeriesPattern } from "../../types";
 import type { LocationOption } from "./CreateRentalDialog";
@@ -52,13 +54,13 @@ export default function CreateRentalSeriesDialog({
   onSuccess,
 }: CreateRentalSeriesDialogProps) {
   const { t, formatDate } = useI18n();
-  const { can } = usePermissions();
-  const canSeeFinance = can("finance.read");
+  const { role, options } = usePermissions();
+  const canSeeTariffPrices = canSeeRentalTariffPrices(role, options);
 
   const createMutation = useCreateRentalSeries();
   const createRenterMutation = useCreateRenter();
   const rentersQuery = useRenters({ enabled: open, activeOnly: true });
-  const tariffsQuery = useRentalTariffs({ status: "active" }, open);
+  const tariffsQuery = useRentalTariffs({ status: "active" }, open && canSeeTariffPrices);
 
   const defaultLocationId = prefill?.locationId ?? locations[0]?.id ?? "";
 
@@ -227,7 +229,11 @@ export default function CreateRentalSeriesDialog({
                 <AppSelect label={t("rentalSeries.tariffLabel")} value={tariffId} onChange={(e) => setTariffId(e.target.value)}>
                   <option value="">{t("rentalSeries.selectTariff")}</option>
                   {filteredTariffs.map((tariff) => (
-                    <option key={tariff.id} value={tariff.id}>{tariff.name}</option>
+                    <option key={tariff.id} value={tariff.id}>
+                      {canSeeTariffPrices
+                        ? formatTariffSelectLabel(tariff, (amount) => formatCurrency(amount))
+                        : tariff.name}
+                    </option>
                   ))}
                 </AppSelect>
 
@@ -315,7 +321,7 @@ export default function CreateRentalSeriesDialog({
                   {previewQuery.data?.success ? (
                     <p className="text-xs text-slate-600 mt-1">
                       {t("rentalSeries.occurrenceCount", { count: previewQuery.data.occurrenceCount })}
-                      {canSeeFinance && previewQuery.data.totalAmount != null
+                      {canSeeTariffPrices && previewQuery.data.totalAmount != null
                         ? ` · ${formatCurrency(previewQuery.data.totalAmount)}`
                         : ""}
                     </p>
@@ -330,7 +336,7 @@ export default function CreateRentalSeriesDialog({
                       <div key={`${occ.occurrenceDate}-${occ.timeStart}`} className={`flex justify-between gap-2 py-1 border-b border-slate-50 ${occ.hasConflict ? "text-rose-600" : "text-slate-700"}`}>
                         <span>{formatDate(occ.occurrenceDate)} · {occ.timeStart}–{occ.timeEnd}</span>
                         <span>
-                          {occ.hasConflict ? t("rentalSeries.hasConflict") : canSeeFinance && occ.calculatedAmount != null ? formatCurrency(occ.calculatedAmount) : ""}
+                          {occ.hasConflict ? t("rentalSeries.hasConflict") : canSeeTariffPrices && occ.calculatedAmount != null ? formatCurrency(occ.calculatedAmount) : ""}
                         </span>
                       </div>
                     ))}

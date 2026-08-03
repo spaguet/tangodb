@@ -48,6 +48,8 @@
     "test:db:rental-invoices-ui": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_invoices_advances_ui_test.sql",
     "test:db:rental-cancellation": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_cancellation_financial_test.sql",
     "test:db:rental-tariff-lookup": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_tariff_price_lookup_test.sql",
+    "test:db:rental-create-gate": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_create_cash_gate_test.sql",
+    "test:rental-tariff-pricing": "node scripts/rental-tariff-pricing-check.mjs",
     "test:rbac": "tsx scripts/rbac-regression-check.mjs",
     "db:reset-test": "node scripts/reset-for-test-run.mjs",
     "db:push": "supabase db push",
