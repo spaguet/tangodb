@@ -1,4 +1,8 @@
+import { expandSlotsToDateRange } from "./scheduleWeek";
 import type { GroupCapacitySnapshot, ScheduleGroup, ScheduleSlot, SubscriptionGroupLink } from "../types";
+
+/** Days before/after today when listing groups for subscription sale. */
+export const SUBSCRIPTION_SALE_GROUP_SCHEDULE_DAYS = 30;
 
 export interface ScheduleGroupOption {
   id: string;
@@ -24,6 +28,29 @@ export function mapScheduleGroup(row: Record<string, unknown>): ScheduleGroup {
     locationId: row.default_location_id != null ? String(row.default_location_id) : null,
     maxCapacity: row.max_capacity != null ? Number(row.max_capacity) : null,
   };
+}
+
+export function getScheduleGroupIdsInDateRange(
+  slots: ScheduleSlot[],
+  rangeStartISO: string,
+  rangeEndISO: string
+): Set<string> {
+  const lessons = expandSlotsToDateRange(slots, rangeStartISO, rangeEndISO);
+  const ids = new Set<string>();
+  for (const lesson of lessons) {
+    if (lesson.scheduleGroupId) ids.add(lesson.scheduleGroupId);
+  }
+  return ids;
+}
+
+export function filterGroupsScheduledInDateRange(
+  groups: ScheduleGroup[],
+  slots: ScheduleSlot[],
+  rangeStartISO: string,
+  rangeEndISO: string
+): ScheduleGroup[] {
+  const scheduledIds = getScheduleGroupIdsInDateRange(slots, rangeStartISO, rangeEndISO);
+  return groups.filter((group) => scheduledIds.has(group.id));
 }
 
 export function listScheduleGroupOptions(

@@ -22,6 +22,7 @@ import {
 } from "../hooks/useSubscriptions";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useScheduleGroups } from "../hooks/useScheduleGroups";
+import { useSchedule } from "../hooks/useSchedule";
 import { useRecordSubscriptionPayment, PAYMENT_METHODS, getPaymentMethodLabel } from "../hooks/usePayments";
 import { usePaymentFormIdempotency } from "../hooks/usePaymentFormIdempotency";
 import type { PaymentMethod } from "../types";
@@ -35,7 +36,14 @@ import { usePermissions, useCan } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
 import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionDaysLeft, getSubscriptionTariffLabel, isMonthlyUnlimitedSubscription, isMonthlyUnlimitedTariff, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitle } from "../lib/utils";
 import { filterActiveSubscriptions, filterHistorySubscriptions, ALL_LOCATIONS_KEY } from "../lib/subscriptionFilters";
-import { buildGroupNameById, getSubscriptionGroupDisplayNames, listScheduleGroupOptions } from "../lib/scheduleGroups";
+import {
+  SUBSCRIPTION_SALE_GROUP_SCHEDULE_DAYS,
+  buildGroupNameById,
+  filterGroupsScheduledInDateRange,
+  getSubscriptionGroupDisplayNames,
+  listScheduleGroupOptions,
+} from "../lib/scheduleGroups";
+import { addDays, toISODateLocal } from "../lib/scheduleWeek";
 import {
   collectSubscriptionClientIds,
   findCapacityConflict,
@@ -108,6 +116,7 @@ export default function SubscriptionsPanel({
   const subscriptionsQuery = useSubscriptions();
   const subscriptionGroupsQuery = useSubscriptionGroups();
   const scheduleGroupsQuery = useScheduleGroups();
+  const scheduleQuery = useSchedule();
   const pricesQuery = usePrices();
   const attendanceQuery = useAttendanceRecords();
   const personalLessonsQuery = usePersonalLessons();
@@ -127,6 +136,12 @@ export default function SubscriptionsPanel({
     isError: scheduleGroupsError,
     error: scheduleGroupsErr,
   } = scheduleGroupsQuery;
+  const {
+    data: scheduleSlots = [],
+    isLoading: scheduleLoading,
+    isError: scheduleError,
+    error: scheduleErr,
+  } = scheduleQuery;
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
   const {
     data: attendanceRecords = [],
@@ -163,6 +178,7 @@ export default function SubscriptionsPanel({
     subsLoading ||
     subscriptionGroupsLoading ||
     scheduleGroupsLoading ||
+    scheduleLoading ||
     pricesLoading ||
     attendanceLoading ||
     personalLessonsLoading ||
@@ -174,6 +190,7 @@ export default function SubscriptionsPanel({
     subsError ||
     subscriptionGroupsError ||
     scheduleGroupsError ||
+    scheduleError ||
     pricesError ||
     attendanceError ||
     personalLessonsError ||
@@ -185,6 +202,7 @@ export default function SubscriptionsPanel({
     subsErr ??
     subscriptionGroupsErr ??
     scheduleGroupsErr ??
+    scheduleErr ??
     pricesErr ??
     attendanceErr ??
     personalLessonsErr ??
@@ -314,12 +332,20 @@ export default function SubscriptionsPanel({
   const selectedTariff = groupTariffs.find((p) => p.id === selectedTariffId);
   const needsSecondClient = selectedTariff ? tariffNeedsSecondClient(selectedTariff) : false;
 
+  const saleEligibleGroups = useMemo(() => {
+    const today = toISODateLocal(new Date());
+    const rangeStart = addDays(today, -SUBSCRIPTION_SALE_GROUP_SCHEDULE_DAYS);
+    const rangeEnd = addDays(today, SUBSCRIPTION_SALE_GROUP_SCHEDULE_DAYS);
+    return filterGroupsScheduledInDateRange(scheduleGroups, scheduleSlots, rangeStart, rangeEnd);
+  }, [scheduleGroups, scheduleSlots]);
+
   const saleGroupIds = useMemo(
-    () => listScheduleGroupOptions(scheduleGroups, {
-      disciplineId: disciplineId || null,
-      locationId: localPriceList ? saleLocationId || null : null,
-    }).map((group) => group.id),
-    [scheduleGroups, disciplineId, localPriceList, saleLocationId]
+    () =>
+      listScheduleGroupOptions(saleEligibleGroups, {
+        disciplineId: disciplineId || null,
+        locationId: localPriceList ? saleLocationId || null : null,
+      }).map((group) => group.id),
+    [saleEligibleGroups, disciplineId, localPriceList, saleLocationId]
   );
 
   const capacitySnapshotQuery = useGroupCapacitySnapshot(saleGroupIds, {
@@ -342,7 +368,7 @@ export default function SubscriptionsPanel({
   const saleGroupOptions = useMemo(
     () =>
       listScheduleGroupOptions(
-        scheduleGroups,
+        saleEligibleGroups,
         {
           disciplineId: disciplineId || null,
           locationId: localPriceList ? saleLocationId || null : null,
@@ -369,7 +395,7 @@ export default function SubscriptionsPanel({
             : undefined,
         };
       }),
-    [scheduleGroups, disciplineId, localPriceList, saleLocationId, capacityByGroupId, t]
+    [saleEligibleGroups, disciplineId, localPriceList, saleLocationId, capacityByGroupId, t]
   );
 
   const activeLocationGroupOptions = useMemo(
