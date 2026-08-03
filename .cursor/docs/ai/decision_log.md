@@ -12,6 +12,14 @@
 
 ## Записи
 
+### HALL-RENT-7 — Read/manage настроек аренды для бухгалтера (2026-08-03)
+
+- **Дата:** 2026-08-03
+- **Решение:** Разведены read/write настроек аренды на UI и RPC. Бухгалтер: read тарифов с ценами (`list_rental_tariffs` + RLS: `manage_rentals OR can_read_financial`); manage venue cost (`member_can_manage_venue_cost_rules` = owner/director/accountant) без `schedule.write`. Write тарифов — по-прежнему `manage_rentals AND finance.read`. `canAccessSettingsSection("hall-rent")` = `finance.read OR schedule.write` (путь для admin lookup этапа 12 не сужен).
+- **Контекст:** Этап 7 аудита hall-rent: accountant не видел тарифы и не мог принять venue cost draft.
+- **Альтернативы:** (1) Отдельное permission `venue_costs.manage`; (2) Полный `schedule.write` для accountant.
+- **Почему так:** Минимальный scope; write тарифов — отдельное продуктовое решение; admin lookup — этап 12.
+
 ### HALL-RENT-6 — Правка суммы брони с аудитом (2026-08-02)
 
 - **Дата:** 2026-08-02

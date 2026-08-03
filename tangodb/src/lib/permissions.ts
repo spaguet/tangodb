@@ -620,6 +620,23 @@ export function settingsSectionFromPath(pathname: string): SettingsSectionId | n
   return valid.includes(section) ? section : null;
 }
 
+/** Hall-rent settings: read rental tariffs (manage_rentals OR finance.read on backend). */
+export function canReadRentalTariffs(role: MemberRole | null, options?: PermissionOptions): boolean {
+  if (!role) return false;
+  return can(role, "finance.read", options) || can(role, "schedule.write", options);
+}
+
+/** Hall-rent settings: write rental tariffs (manage_rentals + finance on backend). */
+export function canWriteRentalTariffs(role: MemberRole | null, options?: PermissionOptions): boolean {
+  if (!role) return false;
+  return can(role, "schedule.write", options) && can(role, "finance.read", options);
+}
+
+/** Hall-rent settings: draft/accept venue cost rules (owner, director, accountant). */
+export function canManageVenueCostRules(role: MemberRole | null): boolean {
+  return role === "owner" || role === "director" || role === "accountant";
+}
+
 export function canAccessSettingsSection(
   role: MemberRole | null,
   section: SettingsSectionId,
@@ -636,10 +653,7 @@ export function canAccessSettingsSection(
       if (role === "teacher" && can(role, "disciplines.read", options)) return true;
       return false;
     case "hall-rent":
-      return (
-        can(role, "finance.read", options) ||
-        (can(role, "schedule.write", options) && can(role, "finance.read", options))
-      );
+      return canReadRentalTariffs(role, options);
     case "data":
       return can(role, "dashboard.export", options) || can(role, "finance.export", options);
     case "team":
@@ -877,6 +891,34 @@ export function assertReceptionPermissions(): void {
   }
   if (!can("accountant", "finance.export", adminOpts)) {
     throw new Error("accountant must have finance.export (RBAC-8)");
+  }
+
+  if (!canAccessSettingsSection("accountant", "hall-rent", adminOpts)) {
+    throw new Error("accountant must access hall-rent settings (stage 7)");
+  }
+  if (!canReadRentalTariffs("accountant", adminOpts)) {
+    throw new Error("accountant must read rental tariffs (stage 7)");
+  }
+  if (canWriteRentalTariffs("accountant", adminOpts)) {
+    throw new Error("accountant must not write rental tariffs (stage 7)");
+  }
+  if (!canManageVenueCostRules("accountant")) {
+    throw new Error("accountant must manage venue cost rules (stage 7)");
+  }
+  if (!canAccessSettingsSection("admin", "hall-rent", adminOpts)) {
+    throw new Error("full admin must access hall-rent settings for stage 12 lookup path");
+  }
+  if (canManageVenueCostRules("admin")) {
+    throw new Error("admin must not manage venue cost rules (stage 7)");
+  }
+  if (!canWriteRentalTariffs("owner", adminOpts)) {
+    throw new Error("owner must write rental tariffs (stage 7)");
+  }
+  if (!canWriteRentalTariffs("director", adminOpts)) {
+    throw new Error("director must write rental tariffs (stage 7)");
+  }
+  if (canWriteRentalTariffs("admin", adminOpts)) {
+    throw new Error("admin must not write rental tariffs without finance.read (stage 7)");
   }
   const teacherNoExportOpts: PermissionOptions = { ...teacherOpts, teachersCanExport: false };
   if (can("teacher", "dashboard.export", teacherNoExportOpts)) {

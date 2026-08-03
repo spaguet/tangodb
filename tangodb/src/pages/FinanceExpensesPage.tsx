@@ -20,6 +20,7 @@ import VenueRuleExpiryNotice from "../components/venue-costs/VenueRuleExpiryNoti
 import { usePermissions } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
 import { EXPENSE_CATEGORIES, expenseCategoryKey } from "../lib/expenseCategories";
+import { canManageVenueCostRules } from "../lib/permissions";
 import { resolveMutationError } from "../lib/resolveMutationError";
 import { formatCurrency } from "../lib/utils";
 import { toISODateLocal } from "../lib/scheduleWeek";
@@ -98,7 +99,7 @@ export default function FinanceExpensesPage() {
   const toast = useToast();
   const { can, role } = usePermissions();
   const canWrite = can("expenses.write");
-  const canManageVenueRules = role === "owner" || role === "director";
+  const canManageVenueRules = canManageVenueCostRules(role);
 
   const todayIso = toISODateLocal(new Date());
 

@@ -1,6 +1,7 @@
 import { Navigate, useSearchParams } from "react-router-dom";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useI18n } from "../../hooks/useI18n";
+import { canManageVenueCostRules } from "../../lib/permissions";
 import RentalTariffsSettingsPage from "./RentalTariffsSettingsPage";
 import VenueCostsSettingsPage from "./VenueCostsSettingsPage";
 
@@ -13,9 +14,11 @@ export function VenueCostsLegacyRedirect() {
 
 export default function HallRentSettingsPage() {
   const { t } = useI18n();
-  const { can } = usePermissions();
-  const canRental = can("schedule.write") && can("finance.read");
-  const canVenue = can("finance.read");
+  const { can, role } = usePermissions();
+  const canReadTariffs = can("finance.read") || can("schedule.write");
+  const canWriteTariffs = can("schedule.write") && can("finance.read");
+  const canManageVenue = canManageVenueCostRules(role);
+  const canReadVenue = can("finance.read");
 
   return (
     <div className="panel-card-stack max-w-4xl">
@@ -24,23 +27,23 @@ export default function HallRentSettingsPage() {
         <p className="text-xs text-slate-500 mt-1">{t("hallRent.pageSubtitle")}</p>
       </div>
 
-      {canRental && (
+      {canReadTariffs && (
         <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-slate-900">{t("hallRent.rentersTitle")}</h3>
             <p className="text-xs text-slate-500 mt-1">{t("hallRent.rentersSubtitle")}</p>
           </div>
-          <RentalTariffsSettingsPage embedded />
+          <RentalTariffsSettingsPage embedded canWrite={canWriteTariffs} />
         </section>
       )}
 
-      {canVenue && (
+      {canReadVenue && (
         <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-slate-900">{t("hallRent.studioTitle")}</h3>
             <p className="text-xs text-slate-500 mt-1">{t("hallRent.studioSubtitle")}</p>
           </div>
-          <VenueCostsSettingsPage embedded />
+          <VenueCostsSettingsPage embedded canManage={canManageVenue} />
         </section>
       )}
     </div>

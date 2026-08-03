@@ -230,7 +230,13 @@ function TariffEditorModal({
   );
 }
 
-export default function RentalTariffsSettingsPage({ embedded = false }: { embedded?: boolean }) {
+export default function RentalTariffsSettingsPage({
+  embedded = false,
+  canWrite = true,
+}: {
+  embedded?: boolean;
+  canWrite?: boolean;
+}) {
   const { t } = useI18n();
   const toast = useToast();
   const tariffsQuery = useRentalTariffs({ status: null });
@@ -268,10 +274,12 @@ export default function RentalTariffsSettingsPage({ embedded = false }: { embedd
         </div>
         <RequirePermission action="finance.read" mode="hide">
           <RequirePermission action="schedule.write" mode="hide">
-            <button type="button" onClick={openCreate} className={btnAddSoftCls}>
-              <Plus className="w-4 h-4" />
-              {t("common.add")}
-            </button>
+            {canWrite ? (
+              <button type="button" onClick={openCreate} className={btnAddSoftCls}>
+                <Plus className="w-4 h-4" />
+                {t("common.add")}
+              </button>
+            ) : null}
           </RequirePermission>
         </RequirePermission>
       </div>
@@ -293,9 +301,11 @@ export default function RentalTariffsSettingsPage({ embedded = false }: { embedd
               </div>
               <RequirePermission action="finance.read" mode="hide">
                 <RequirePermission action="schedule.write" mode="hide">
-                  <button type="button" onClick={() => openEdit(tariff)} className="p-1.5 text-slate-400 hover:text-indigo-600 cursor-pointer" aria-label={t("common.edit")}>
-                    <Edit className="w-4 h-4" />
-                  </button>
+                  {canWrite ? (
+                    <button type="button" onClick={() => openEdit(tariff)} className="p-1.5 text-slate-400 hover:text-indigo-600 cursor-pointer" aria-label={t("common.edit")}>
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  ) : null}
                 </RequirePermission>
               </RequirePermission>
             </li>
@@ -303,7 +313,7 @@ export default function RentalTariffsSettingsPage({ embedded = false }: { embedd
         </ul>
       )}
 
-      <TariffEditorModal tariff={editing} open={editorOpen} onClose={() => setEditorOpen(false)} toast={toast} />
+      <TariffEditorModal tariff={editing} open={editorOpen && canWrite} onClose={() => setEditorOpen(false)} toast={toast} />
     </div>
   );
 }

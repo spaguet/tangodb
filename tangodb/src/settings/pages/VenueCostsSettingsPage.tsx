@@ -79,13 +79,19 @@ function versionToDraft(version: VenueCostRuleVersion): VenueCostRuleDraft {
   };
 }
 
-export default function VenueCostsSettingsPage({ embedded = false }: { embedded?: boolean }) {
+export default function VenueCostsSettingsPage({
+  embedded = false,
+  canManage: canManageProp,
+}: {
+  embedded?: boolean;
+  canManage?: boolean;
+}) {
   const { t, formatDate } = useI18n();
   const toast = useToast();
   const { settings } = useSettings();
   const orgCurrency = settings?.currency_code || "RUB";
   const { role, can } = usePermissions();
-  const canManage = role === "owner" || role === "director";
+  const canManage = canManageProp ?? (role === "owner" || role === "director");
   const canRead = can("finance.read");
   const statusQuery = useVenueCostRuleStatus();
   const versionsQuery = useVenueCostRuleVersions();

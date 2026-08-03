@@ -6,6 +6,9 @@ import {
   can,
   canAccessPanel,
   canAccessSettingsSection,
+  canManageVenueCostRules,
+  canReadRentalTariffs,
+  canWriteRentalTariffs,
   findFirstAccessiblePanelPath,
   findFirstEnabledAccessiblePanelPath,
   panelIdFromPath,
@@ -295,6 +298,14 @@ assert(canAccessSettingsSection("admin", "data", adminExportOpts), "admin export
 assert(!canAccessSettingsSection("admin", "data", optsFor("admin")), "admin no data default");
 assert(canAccessSettingsSection("accountant", "data", optsFor("accountant")), "accountant data");
 assert(!canAccessSettingsSection("accountant", "general", optsFor("accountant")), "accountant no general");
+assert(canAccessSettingsSection("accountant", "hall-rent", optsFor("accountant")), "accountant hall-rent");
+assert(canReadRentalTariffs("accountant", optsFor("accountant")), "accountant read tariffs");
+assert(!canWriteRentalTariffs("accountant", optsFor("accountant")), "accountant no write tariffs");
+assert(canManageVenueCostRules("accountant"), "accountant manage venue cost");
+assert(canAccessSettingsSection("admin", "hall-rent", optsFor("admin")), "admin hall-rent for stage 12 path");
+assert(!canManageVenueCostRules("admin"), "admin no manage venue cost");
+assert(!canWriteRentalTariffs("admin", optsFor("admin")), "admin no write tariffs without finance");
+assert(canWriteRentalTariffs("owner", optsFor("owner")), "owner write tariffs");
 
 // RBAC-8 export flags
 assert(!can("accountant", "dashboard.export", optsFor("accountant")), "accountant no dashboard.export");
