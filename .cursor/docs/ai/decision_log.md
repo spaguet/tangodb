@@ -12,6 +12,13 @@
 
 ## Записи
 
+### PRICE-ARCHIVE-1 — Soft archive основного прайс-листа (2026-08-03)
+
+- **Решение:** тарифы в `prices` не удаляются: `status = active | archived`, `archived_at` фиксирует архивацию, восстановление возвращает `active` и очищает `archived_at`. Все обычные `usePrices`-сценарии читают только active. Архив и агрегат продаж выдаёт SECURITY DEFINER RPC `list_archived_prices` с tenant/gate `can_read_prices`; продажа = запись `subscriptions` или `single_visits`, напрямую связанная через `price_id`.
+- **Контекст:** исторический тариф должен исчезнуть из кассы и общего прайс-листа, но сохранить ссылки продаж, даты и статистику.
+- **Альтернативы:** hard-delete; отдельная archive-таблица; клиентский подсчёт продаж из operational-таблиц.
+- **Почему так:** soft archive сохраняет внешние ключи и историю; отдельный агрегирующий RPC не раскрывает строки клиентов ролям, которым разрешено читать прайс. В старой схеме не было `prices.created_at`, поэтому legacy-значение backfill берётся из первой связанной продажи, а при её отсутствии — из времени миграции; для новых тарифов дата точная.
+
 ### HALL-RENT-23 — Бухгалтер: узкое создание слота аренды (2026-08-03)
 
 - **Решение:** Бухгалтер с `finance.read` получает `rentals.write` (UI) и backend `member_can_create_rental()` = `manage_rentals OR (accountant AND can_read_financial)` для `create_rental`, `update_rental` (слот), `cancel_rental`, `preview_rental_conflicts`. Без `schedule.write` — нет групповых/персональных/событий. Правка суммы остаётся на этапе 6 (`apply_rental_pricing_adjustment`).

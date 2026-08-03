@@ -52,6 +52,7 @@
 - **Accountant** не получает SELECT на operational-таблицы; teacher — через scope-policies.
 - **Settings/team:** `can_manage_settings()` / `can_manage_team()` — только owner, director.
 - **Prices:** read `can_read_prices()` (owner, director, admin, accountant); write `can_manage_prices()` (owner, director).
+- **Price archive:** `prices.status` (`active | archived`) + `created_at` / `archived_at`; обычный `usePrices` возвращает только active, поэтому архивный тариф недоступен в новых продажах. `list_archived_prices` возвращает tenant-scoped архив со счётчиком связанных `subscriptions` + `single_visits`, не раскрывая клиентские строки.
 - **Data migration R2:** существующие `admin` → `owner`, чтобы не потерять доступ к settings/team.
 - **Org overrides (§9):** boolean-флаги в `organization_settings` (`teachers_can_*`, `admin_can_*`); читаются в `permissions.ts` через `permissionOptionsFromSettings()` и в SQL через `can_export_data()`.
 - **Export split (RBAC-8):** `can_export_data()` — operational dashboard CSV (owner/director; admin при `admin_can_export`; teacher при `teachers_can_export` + scope). `can_export_financial()` — owner/director/accountant. UI: `DataExportPage` — отдельные секции; accountant не грузит CRM-хуки.

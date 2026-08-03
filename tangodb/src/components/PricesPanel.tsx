@@ -6,8 +6,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Coins, Edit, Ticket, Trash2, X } from "lucide-react";
-import { useCreatePrice, useDeletePrice, usePrices, useUpdatePrice, useUpdatePriceMeta, useUpdatePriceTeachers } from "../hooks/usePrices";
+import { Archive, Coins, Edit, RotateCcw, Ticket, X } from "lucide-react";
+import {
+  useArchivePrice,
+  useArchivedPrices,
+  useCreatePrice,
+  usePrices,
+  useRestorePrice,
+  useUpdatePrice,
+  useUpdatePriceMeta,
+  useUpdatePriceTeachers,
+} from "../hooks/usePrices";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
@@ -62,6 +71,7 @@ const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider 
 
 type CreateTabId = "group" | "privateLesson" | "privatePackage" | "singleVisit";
 type CreateModalStep = "picker" | "form";
+type PriceListView = "active" | "archive";
 
 function TariffCreateSection({
   title,
@@ -106,10 +116,12 @@ function TariffCreateSection({
 const CREATE_TAB_IDS: CreateTabId[] = ["group", "privateLesson", "singleVisit", "privatePackage"];
 
 export default function PricesPanel({ toast }: PricesPanelProps) {
-  const { t, plural } = useI18n();
+  const { t, plural, formatDate } = useI18n();
   const { connectionState } = useOnlineStatus();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [priceListView, setPriceListView] = useState<PriceListView>("active");
   const { data: prices = [], isLoading, isError, error } = usePrices();
+  const archivedPricesQuery = useArchivedPrices(priceListView === "archive");
   const {
     locations,
     isLoading: locationsLoading,
@@ -129,7 +141,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const updatePrice = useUpdatePrice();
   const updatePriceMeta = useUpdatePriceMeta();
   const updatePriceTeachers = useUpdatePriceTeachers();
-  const deletePrice = useDeletePrice();
+  const archivePrice = useArchivePrice();
+  const restorePrice = useRestorePrice();
   const createPrice = useCreatePrice();
 
   const [editedPrices, setEditedPrices] = useState<Record<string, string>>({});
@@ -137,7 +150,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const [editingPrice, setEditingPrice] = useState<Price | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [deleteTarget, setDeleteTarget] = useState<Price | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<Price | null>(null);
   const [createModalStep, setCreateModalStep] = useState<CreateModalStep | null>(null);
   const [groupForm, setGroupForm] = useState({
     label: "",
@@ -369,18 +382,32 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (!deleteTarget?.id) return;
+  const handleConfirmArchive = async () => {
+    if (!archiveTarget?.id) return;
     if (connectionState !== "online") {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
-    const res = await deletePrice.mutateAsync(deleteTarget.id);
+    const res = await archivePrice.mutateAsync(archiveTarget.id);
     if (!res.success) {
-      toast(resolveMutationError(res.error, "prices.error.deleteFailed", t), "error");
+      toast(resolveMutationError(res.error, "prices.error.archiveFailed", t), "error");
     } else {
-      toast(t("prices.success.deleted"), "success");
-      setDeleteTarget(null);
+      toast(t("prices.success.archived"), "success");
+      setArchiveTarget(null);
+    }
+  };
+
+  const handleRestore = async (price: Price) => {
+    if (!price.id) return;
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
+    const res = await restorePrice.mutateAsync(price.id);
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "prices.error.restoreFailed", t), "error");
+    } else {
+      toast(t("prices.success.restored"), "success");
     }
   };
 
@@ -587,12 +614,12 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setDeleteTarget(p)}
+                onClick={() => setArchiveTarget(p)}
                 className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                title={t("prices.action.delete")}
-                aria-label={`${t("prices.action.delete")} ${title}`}
+                title={t("prices.action.archive")}
+                aria-label={`${t("prices.action.archive")} ${title}`}
               >
-                <Trash2 className="w-4 h-4" />
+                <Archive className="w-4 h-4" />
               </button>
             </div>
             )}
@@ -710,6 +737,38 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </p>
         </div>
 
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={priceListView === "active"}
+            onClick={() => setPriceListView("active")}
+            className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              priceListView === "active"
+                ? "bg-white text-indigo-700 shadow-xs"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            {t("prices.view.active")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={priceListView === "archive"}
+            onClick={() => setPriceListView("archive")}
+            className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+              priceListView === "archive"
+                ? "bg-white text-indigo-700 shadow-xs"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <Archive className="w-4 h-4" />
+            {t("prices.view.archive")}
+          </button>
+        </div>
+
+        {priceListView === "active" && (
+        <>
         <RequirePermission action="prices.write">
         <button
           type="button"
@@ -746,6 +805,80 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               ? renderTariffSection(t("prices.section.privatePackage"), privatePackageItems)
               : null}
           </div>
+        )}
+        </>
+        )}
+
+        {priceListView === "archive" && (
+          archivedPricesQuery.isLoading ? (
+            <LoadingState label={t("prices.archive.loading")} />
+          ) : archivedPricesQuery.isError ? (
+            <QueryErrorState error={archivedPricesQuery.error} />
+          ) : (archivedPricesQuery.data ?? []).length === 0 ? (
+            <div className="text-center py-20 text-slate-400 space-y-3">
+              <Archive className="w-8 h-8 mx-auto text-slate-300" />
+              <p className="text-sm">{t("prices.archive.empty")}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {(archivedPricesQuery.data ?? []).map((price) => {
+                const title = getPriceLabel(price, t);
+                const createdAt = price.createdAt ? formatDate(price.createdAt.slice(0, 10)) : "—";
+                const archivedAt = price.archivedAt ? formatDate(price.archivedAt.slice(0, 10)) : "—";
+                const salesCount = price.salesCount ?? 0;
+                const salesKey = plural(
+                  salesCount,
+                  ["prices.sales.one", "prices.sales.few", "prices.sales.many"]
+                ) as I18nKey;
+
+                return (
+                  <div
+                    key={price.id}
+                    className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-3"
+                  >
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="font-semibold text-slate-800 text-sm leading-snug break-words">
+                          {title}
+                        </h4>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200 text-slate-600">
+                          {t("prices.status.archived")}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400">{getPriceDescription(price, t)}</p>
+                    </div>
+                    <dl className="grid grid-cols-2 gap-2 text-[11px]">
+                      <div>
+                        <dt className="text-slate-400">{t("prices.archive.createdAt")}</dt>
+                        <dd className="font-semibold text-slate-700">{createdAt}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-400">{t("prices.archive.archivedAt")}</dt>
+                        <dd className="font-semibold text-slate-700">{archivedAt}</dd>
+                      </div>
+                      <div className="col-span-2 border-t border-slate-200 pt-2">
+                        <dt className="text-slate-400">{t("prices.archive.sales")}</dt>
+                        <dd className="font-semibold text-slate-700">
+                          {t(salesKey, { count: salesCount })}
+                        </dd>
+                      </div>
+                    </dl>
+                    {canWritePrices && (
+                      <button
+                        type="button"
+                        onClick={() => void handleRestore(price)}
+                        disabled={restorePrice.isPending}
+                        className="h-8 w-full flex items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        {t("prices.action.restore")}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )
         )}
       </div>
 
@@ -1178,21 +1311,21 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       </AnimatePresence>
 
       <ConfirmDialog
-        open={deleteTarget !== null}
-        title={t("prices.confirm.deleteTitle")}
+        open={archiveTarget !== null}
+        title={t("prices.confirm.archiveTitle")}
         description={
-          deleteTarget ? (
+          archiveTarget ? (
             <>
-              {t("prices.confirm.deleteBody", { name: getPriceLabel(deleteTarget, t) })}
+              {t("prices.confirm.archiveBody", { name: getPriceLabel(archiveTarget, t) })}
             </>
           ) : (
             ""
           )
         }
-        confirmLabel={t("prices.confirm.deleteConfirm")}
-        pending={deletePrice.isPending}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteTarget(null)}
+        confirmLabel={t("prices.confirm.archiveConfirm")}
+        pending={archivePrice.isPending}
+        onConfirm={handleConfirmArchive}
+        onCancel={() => setArchiveTarget(null)}
       />
     </div>
   );

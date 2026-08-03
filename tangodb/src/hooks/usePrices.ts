@@ -9,9 +9,11 @@ type PriceTeacherRow = { member_id: string };
 
 const mapPrice = (row: Record<string, unknown>): Price => {
   const teacherRows = (row.price_teacher_members as PriceTeacherRow[] | null | undefined) ?? [];
-  const teacherMemberIds = teacherRows
-    .map((item) => item.member_id)
-    .filter((id): id is string => typeof id === "string" && id.length > 0);
+  const teacherMemberIds = Array.isArray(row.teacher_member_ids)
+    ? row.teacher_member_ids.map(String)
+    : teacherRows
+        .map((item) => item.member_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0);
 
   return {
     id: String(row.id),
@@ -27,6 +29,10 @@ const mapPrice = (row: Record<string, unknown>): Price => {
     billingModel: (row.billing_model as Price["billingModel"]) || "lesson_count",
     freezeMaxCount: row.freeze_max_count != null ? Number(row.freeze_max_count) : null,
     freezeMinLessons: row.freeze_min_lessons != null ? Number(row.freeze_min_lessons) : null,
+    status: row.status === "archived" ? "archived" : "active",
+    createdAt: row.created_at != null ? String(row.created_at) : undefined,
+    archivedAt: row.archived_at != null ? String(row.archived_at) : null,
+    salesCount: row.sales_count != null ? Number(row.sales_count) : undefined,
   };
 };
 
@@ -40,12 +46,31 @@ export function usePrices() {
       const { data, error } = await supabase
         .from("prices")
         .select("*, price_teacher_members(member_id)")
+        .eq("status", "active")
         .order("type")
         .order("lessons");
       if (error) throw error;
       return (data ?? []).map(mapPrice);
     },
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useArchivedPrices(enabled = true) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+
+  return useQuery({
+    queryKey: withOrgId([...pricesQueryKey, "archived"]),
+    enabled: orgEnabled && enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("list_archived_prices");
+      if (error) throw error;
+
+      const result = data as { success?: boolean; error?: string; prices?: unknown[] } | null;
+      if (!result?.success) throw new Error(result?.error ?? "prices.error.loadFailed");
+      return (result.prices ?? []).map((row) => mapPrice(row as Record<string, unknown>));
+    },
+    staleTime: 60 * 1000,
   });
 }
 
@@ -229,12 +254,35 @@ export function useCreatePrice() {
   });
 }
 
-export function useDeletePrice() {
+export function useArchivePrice() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("prices").delete().eq("id", id);
+      const { error } = await supabase
+        .from("prices")
+        .update({ status: "archived", archived_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("status", "active");
+      if (error) return { success: false as const, error: error.message };
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) void queryClient.invalidateQueries({ queryKey: pricesQueryKey });
+    },
+  });
+}
+
+export function useRestorePrice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("prices")
+        .update({ status: "active", archived_at: null })
+        .eq("id", id)
+        .eq("status", "archived");
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
     },

@@ -362,6 +362,10 @@ export interface Price {
   billingModel?: BillingModel;
   freezeMaxCount?: number | null;
   freezeMinLessons?: number | null;
+  status?: "active" | "archived";
+  createdAt?: string;
+  archivedAt?: string | null;
+  salesCount?: number;
 }
 
 export interface SubscriptionGroupLink {
