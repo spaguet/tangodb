@@ -135,9 +135,12 @@ export function resolveGroupPriceType(
     return { ok: true, type: "monthly_unlimited", billingModel: "monthly_unlimited" };
   }
   if (participant === "solo") return { ok: true, type: "solo", billingModel: "lesson_count" };
-  if (lessons === 4) return { ok: true, type: "pair_hm", billingModel: "lesson_count" };
-  if (lessons === 8) return { ok: true, type: "pair_m1", billingModel: "lesson_count" };
-  return { ok: false, error: "Парный абонемент: укажите 4 или 8 уроков." };
+  if (participant === "pair") {
+    if (lessons === 8) return { ok: true, type: "pair_m1", billingModel: "lesson_count" };
+    if (lessons >= 1) return { ok: true, type: "pair_hm", billingModel: "lesson_count" };
+    return { ok: false, error: "Парный абонемент: укажите количество уроков." };
+  }
+  return { ok: false, error: "Неизвестный формат тарифа." };
 }
 
 export function resolvePrivatePackagePriceType(format: PrivatePackageFormat): string {
