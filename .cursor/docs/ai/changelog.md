@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent этап 18: массовое копирование правил venue cost — `venueCostBulkCopy.ts` (plan/apply teachers + locations, duplicate/ambiguous detection); `VenueCostBulkCopyPanel` в per-lesson редакторе; валидация ambiguous/duplicate в `validateVenueCostDraft`; i18n RU/EN; расширен `test:venue-cost-preview`.
+
 2026-08-03 — hall-rent этап 17: первичка и фискальные реквизиты (F24, F25) — `rental_billing_profile` в `organization_settings`; нумерация/версии/НДС на `rental_invoices`; фискальные поля на `rental_payments` / `rental_invoice_payments`; RPC issue/export/document + `update_rental_payment_fiscal`; UI настройки в `/settings/hall-rent`, документ счёта и фискальные поля в оплате; тесты `test:db:rental-fiscal-documents`, `test:rental-billing-profile`.
 
 2026-08-03 — hall-rent этап 14: fixed-period venue cost по локациям + архив тарифов (F1, F8) — `VenueCostFixedRules.locations[]`, миграция `venue_cost_accruals.location_id`, UI scope в `VenueCostsSettingsPage`; `RentalTariffsSettingsPage`: статус active/archived, фильтры, группировка по локации; create dialogs по-прежнему `status: active`; тесты `test:venue-cost-preview`, `test:rental-tariff-archive`, `test:db:venue-cost`, `test:db:rental-tariff-lookup`.

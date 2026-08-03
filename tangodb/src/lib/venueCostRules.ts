@@ -1,3 +1,8 @@
+import {
+  findVenueCostAmbiguousPairs,
+  findVenueCostDuplicateKeys,
+} from "./venueCostBulkCopy";
+
 export type VenueCostMode = "per_lesson" | "fixed_period" | "disabled";
 export type VenueCostRuleStatusCode =
   | "active"
@@ -120,6 +125,12 @@ export function validateVenueCostDraft(draft: VenueCostRuleDraft): string[] {
         expectedMin = tier.maxAttendees == null ? null : tier.maxAttendees + 1;
       }
       if (expectedMin != null) errors.push("group_tiers_must_be_open_ended");
+    }
+    for (const key of findVenueCostDuplicateKeys(rules)) {
+      errors.push(`duplicate_scope:${key}`);
+    }
+    for (const pair of findVenueCostAmbiguousPairs(rules)) {
+      errors.push(`ambiguous_scope:${pair.keyA}:${pair.keyB}`);
     }
   }
   return [...new Set(errors)];

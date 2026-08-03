@@ -32,6 +32,7 @@ import VenueRuleExpiryNotice from "../../components/venue-costs/VenueRuleExpiryN
 import VenueCostGapResolutionPanel from "../../components/venue-costs/VenueCostGapResolutionPanel";
 import VenueCostVersionHistoryRow from "../../components/venue-costs/VenueCostVersionHistoryRow";
 import VenueCostGroupPreview from "../../components/venue-costs/VenueCostGroupPreview";
+import VenueCostBulkCopyPanel from "../../components/venue-costs/VenueCostBulkCopyPanel";
 import { useToast } from "../../App";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -688,6 +689,16 @@ function PerLessonEditor({
             </div>
           ))}
         </RuleSection>
+      )}
+
+      {(groupEnabled || personalEnabled) && (
+        <VenueCostBulkCopyPanel
+          rules={rules}
+          teachers={teachers}
+          disciplines={disciplines}
+          locations={locations}
+          onApply={(next) => updateRules(next)}
+        />
       )}
 
       {groupEnabled && (

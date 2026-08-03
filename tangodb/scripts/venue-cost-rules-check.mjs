@@ -231,4 +231,248 @@ assert.equal(
 );
 assert.equal(isVenueCostFixedPerLocation({ currency: "RUB", period: "month", amount: 9000 }), false);
 
+// Bulk copy — teachers
+const bulkBase = {
+  currency: "RUB",
+  group: [
+    {
+      teacherMemberId: "t1",
+      disciplineId: "d1",
+      locationId: "loc-a",
+      attendanceTiers: [
+        { minAttendees: 0, maxAttendees: 4, amount: 100 },
+        { minAttendees: 5, maxAttendees: null, amount: 150 },
+      ],
+    },
+  ],
+  personal: [
+    {
+      teacherMemberId: "t1",
+      disciplineId: null,
+      locationId: "loc-a",
+      amount: 500,
+    },
+  ],
+};
+
+function venueCostScopeKey(section, teacherMemberId, disciplineId, locationId) {
+  return `${section}:${teacherMemberId ?? "*"}:${disciplineId ?? "*"}:${locationId ?? "*"}`;
+}
+
+function venueCostScopeSpecificity(rule) {
+  return Number(!!rule.teacherMemberId) + Number(!!rule.disciplineId) + Number(!!rule.locationId);
+}
+
+function venueCostRulesOverlap(a, b) {
+  if (a.teacherMemberId && b.teacherMemberId && a.teacherMemberId !== b.teacherMemberId) return false;
+  if (a.disciplineId && b.disciplineId && a.disciplineId !== b.disciplineId) return false;
+  if (a.locationId && b.locationId && a.locationId !== b.locationId) return false;
+  return true;
+}
+
+function findVenueCostAmbiguousPairs(rules) {
+  const pairs = [];
+  for (const section of ["group", "personal"]) {
+    const list = section === "group" ? rules.group : rules.personal;
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i];
+        const b = list[j];
+        if (
+          venueCostRulesOverlap(a, b) &&
+          venueCostScopeSpecificity(a) === venueCostScopeSpecificity(b)
+        ) {
+          pairs.push({
+            section,
+            keyA: venueCostScopeKey(section, a.teacherMemberId, a.disciplineId, a.locationId),
+            keyB: venueCostScopeKey(section, b.teacherMemberId, b.disciplineId, b.locationId),
+          });
+        }
+      }
+    }
+  }
+  return pairs;
+}
+
+function planVenueCostTeacherBulkApply(rules, section, sourceIndex, teacherIds) {
+  const list = section === "group" ? rules.group : rules.personal;
+  const source = list[sourceIndex];
+  const base = {
+    createdRules: 0,
+    skippedDuplicates: 0,
+    conflicts: [],
+    valid: false,
+  };
+  if (!source) return base;
+  const existingKeys = new Set(
+    list.map((rule) => venueCostScopeKey(section, rule.teacherMemberId, rule.disciplineId, rule.locationId))
+  );
+  const proposed = [];
+  for (const teacherId of teacherIds) {
+    if (!teacherId || teacherId === source.teacherMemberId) continue;
+    const key = venueCostScopeKey(section, teacherId, source.disciplineId, source.locationId);
+    if (existingKeys.has(key)) {
+      base.skippedDuplicates += 1;
+      continue;
+    }
+    proposed.push({
+      teacherMemberId: teacherId,
+      disciplineId: source.disciplineId,
+      locationId: source.locationId,
+      attendanceTiers: section === "group" ? source.attendanceTiers.map((t) => ({ ...t })) : undefined,
+      amount: section === "personal" ? source.amount : undefined,
+    });
+    existingKeys.add(key);
+    base.createdRules += 1;
+  }
+  if (base.createdRules === 0) return base;
+  const merged =
+    section === "group"
+      ? { ...rules, group: [...rules.group, ...proposed] }
+      : { ...rules, personal: [...rules.personal, ...proposed] };
+  const ambiguous = findVenueCostAmbiguousPairs(merged);
+  for (const pair of ambiguous) {
+    const involvesNew = proposed.some(
+      (rule) =>
+        venueCostScopeKey(pair.section, rule.teacherMemberId, rule.disciplineId, rule.locationId) === pair.keyA ||
+        venueCostScopeKey(pair.section, rule.teacherMemberId, rule.disciplineId, rule.locationId) === pair.keyB
+    );
+    if (involvesNew) base.conflicts.push(pair);
+  }
+  base.valid = base.conflicts.length === 0 && base.createdRules > 0;
+  return base;
+}
+
+function applyVenueCostTeacherBulkApply(rules, plan, section, sourceIndex, teacherIds) {
+  if (!plan.valid) return null;
+  const list = section === "group" ? rules.group : rules.personal;
+  const source = list[sourceIndex];
+  if (!source) return null;
+  const newRules = [];
+  const existingKeys = new Set(
+    list.map((rule) => venueCostScopeKey(section, rule.teacherMemberId, rule.disciplineId, rule.locationId))
+  );
+  for (const teacherId of teacherIds) {
+    if (!teacherId || teacherId === source.teacherMemberId) continue;
+    const key = venueCostScopeKey(section, teacherId, source.disciplineId, source.locationId);
+    if (existingKeys.has(key)) continue;
+    if (section === "group") {
+      newRules.push({
+        teacherMemberId: teacherId,
+        disciplineId: source.disciplineId,
+        locationId: source.locationId,
+        attendanceTiers: source.attendanceTiers.map((t) => ({ ...t })),
+      });
+    } else {
+      newRules.push({
+        teacherMemberId: teacherId,
+        disciplineId: source.disciplineId,
+        locationId: source.locationId,
+        amount: source.amount,
+      });
+    }
+    existingKeys.add(key);
+  }
+  if (newRules.length !== plan.createdRules) return null;
+  return section === "group"
+    ? { ...rules, group: [...rules.group, ...newRules] }
+    : { ...rules, personal: [...rules.personal, ...newRules] };
+}
+
+function planVenueCostLocationBulkCopy(rules, sourceLocationId, targetLocationIds) {
+  const base = { createdRules: 0, skippedDuplicates: 0, conflicts: [], valid: false };
+  if (!sourceLocationId || targetLocationIds.length === 0) return base;
+  const proposed = [];
+  for (const section of ["group", "personal"]) {
+    const list = section === "group" ? rules.group : rules.personal;
+    const sourceRules = list.filter((rule) => rule.locationId === sourceLocationId);
+    const existingKeys = new Set(
+      list.map((rule) => venueCostScopeKey(section, rule.teacherMemberId, rule.disciplineId, rule.locationId))
+    );
+    for (const source of sourceRules) {
+      for (const targetLocationId of targetLocationIds) {
+        if (targetLocationId === sourceLocationId) continue;
+        const key = venueCostScopeKey(
+          section,
+          source.teacherMemberId,
+          source.disciplineId,
+          targetLocationId
+        );
+        if (existingKeys.has(key)) {
+          base.skippedDuplicates += 1;
+          continue;
+        }
+        proposed.push({
+          section,
+          rule: {
+            teacherMemberId: source.teacherMemberId,
+            disciplineId: source.disciplineId,
+            locationId: targetLocationId,
+            attendanceTiers: section === "group" ? source.attendanceTiers.map((t) => ({ ...t })) : undefined,
+            amount: section === "personal" ? source.amount : undefined,
+          },
+        });
+        existingKeys.add(key);
+        base.createdRules += 1;
+      }
+    }
+  }
+  if (base.createdRules === 0) return base;
+  const merged = { ...rules, group: [...rules.group], personal: [...rules.personal] };
+  for (const item of proposed) {
+    if (item.section === "group") merged.group.push(item.rule);
+    else merged.personal.push(item.rule);
+  }
+  const ambiguous = findVenueCostAmbiguousPairs(merged);
+  for (const pair of ambiguous) {
+    const involvesNew = proposed.some(
+      (item) =>
+        venueCostScopeKey(item.section, item.rule.teacherMemberId, item.rule.disciplineId, item.rule.locationId) ===
+          pair.keyA ||
+        venueCostScopeKey(item.section, item.rule.teacherMemberId, item.rule.disciplineId, item.rule.locationId) ===
+          pair.keyB
+    );
+    if (involvesNew) base.conflicts.push(pair);
+  }
+  base.valid = base.conflicts.length === 0 && base.createdRules > 0;
+  return base;
+}
+
+const teacherIds = ["t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10", "t11"];
+const bulkPlan = planVenueCostTeacherBulkApply(bulkBase, "group", 0, teacherIds);
+assert.equal(bulkPlan.createdRules, 10);
+assert.equal(bulkPlan.skippedDuplicates, 0);
+assert.equal(bulkPlan.valid, true);
+const bulkApplied = applyVenueCostTeacherBulkApply(bulkBase, bulkPlan, "group", 0, teacherIds);
+assert.equal(bulkApplied.group.length, 11);
+
+// Rollback on ambiguous conflict — equal specificity overlap
+const ambiguousRules = {
+  currency: "RUB",
+  group: [
+    {
+      teacherMemberId: "t1",
+      disciplineId: null,
+      locationId: "loc-a",
+      attendanceTiers: [{ minAttendees: 0, maxAttendees: null, amount: 100 }],
+    },
+    {
+      teacherMemberId: "t2",
+      disciplineId: "d1",
+      locationId: null,
+      attendanceTiers: [{ minAttendees: 0, maxAttendees: null, amount: 200 }],
+    },
+  ],
+  personal: [],
+};
+const conflictPlan = planVenueCostTeacherBulkApply(ambiguousRules, "group", 0, ["t2"]);
+assert.equal(conflictPlan.valid, false);
+assert.ok(conflictPlan.conflicts.length > 0);
+assert.equal(applyVenueCostTeacherBulkApply(ambiguousRules, conflictPlan, "group", 0, ["t2"]), null);
+
+// Location copy
+const locPlan = planVenueCostLocationBulkCopy(bulkApplied, "loc-a", ["loc-b", "loc-c"]);
+assert.equal(locPlan.createdRules, 24); // 11 group + 1 personal × 2 locations
+assert.equal(locPlan.valid, true);
+
 console.log("venue-cost-rules-check: ok");
