@@ -33,6 +33,7 @@ import VenueRuleExpiryNotice from "../../components/venue-costs/VenueRuleExpiryN
 import VenueCostGapResolutionPanel from "../../components/venue-costs/VenueCostGapResolutionPanel";
 import VenueCostVersionHistoryRow from "../../components/venue-costs/VenueCostVersionHistoryRow";
 import VenueCostGroupPreview from "../../components/venue-costs/VenueCostGroupPreview";
+import VenueCostEstimatePanel from "../../components/venue-costs/VenueCostEstimatePanel";
 import VenueCostBulkCopyPanel from "../../components/venue-costs/VenueCostBulkCopyPanel";
 import { useToast } from "../../App";
 
@@ -225,6 +226,14 @@ export default function VenueCostsSettingsPage({
     versions.find((item) => item.status === "accepted") ??
     null;
   const teamMembers = teamQuery.data ?? [];
+  const draftSnapshot = draft
+    ? {
+        mode: draft.mode,
+        validFrom: draft.validFrom,
+        validTo: draft.validTo,
+        rules: draft.rules,
+      }
+    : null;
 
   return (
     <div className={embedded ? "space-y-4" : "panel-card-stack max-w-4xl"}>
@@ -333,6 +342,16 @@ export default function VenueCostsSettingsPage({
           </div>
         </section>
       )}
+
+      <VenueCostEstimatePanel
+        versions={versions}
+        activeVersion={activeVersion}
+        draftSnapshot={draftSnapshot}
+        teachers={teachers}
+        disciplines={disciplines}
+        locations={locations}
+        embedded={embedded}
+      />
 
       <section className={historyPanelCls}>
         <h3 className="text-sm font-semibold text-slate-900">{t("venueCosts.history")}</h3>

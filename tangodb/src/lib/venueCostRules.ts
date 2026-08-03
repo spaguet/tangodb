@@ -144,6 +144,52 @@ function specificity(rule: {
   return Number(!!rule.teacherMemberId) + Number(!!rule.disciplineId) + Number(!!rule.locationId);
 }
 
+/** Mirrors SQL tier pick: highest matching min_attendees. */
+export function findMatchingAttendanceTier(
+  tiers: VenueCostAttendanceTier[],
+  attendees: number
+): VenueCostAttendanceTier | null {
+  const match = tiers
+    .filter(
+      (item) =>
+        item.minAttendees <= attendees &&
+        (item.maxAttendees == null || item.maxAttendees >= attendees)
+    )
+    .sort((a, b) => b.minAttendees - a.minAttendees)[0];
+  return match ?? null;
+}
+
+export function matchScopedRule<T extends {
+  teacherMemberId: string | null;
+  disciplineId: string | null;
+  locationId: string | null;
+}>(
+  rules: T[],
+  scope: {
+    teacherMemberId: string | null;
+    disciplineId: string | null;
+    locationId: string | null;
+  }
+): T | null {
+  const matching = rules.filter(
+    (rule) =>
+      (!rule.teacherMemberId || rule.teacherMemberId === scope.teacherMemberId) &&
+      (!rule.disciplineId || rule.disciplineId === scope.disciplineId) &&
+      (!rule.locationId || rule.locationId === scope.locationId)
+  );
+  if (!matching.length) return null;
+  matching.sort((a, b) => {
+    const specDiff = specificity(b) - specificity(a);
+    if (specDiff !== 0) return specDiff;
+    return (
+      Number(!!a.teacherMemberId) - Number(!!b.teacherMemberId) ||
+      Number(!!a.disciplineId) - Number(!!b.disciplineId) ||
+      Number(!!a.locationId) - Number(!!b.locationId)
+    );
+  });
+  return matching[0] ?? null;
+}
+
 export interface VenueCostPreviewScope {
   teacherMemberId: string | null;
   disciplineId: string | null;
@@ -193,9 +239,7 @@ export function previewGroupVenueCost(
         (!rule.locationId || rule.locationId === locationId)
     )
     .sort((a, b) => specificity(b) - specificity(a))[0];
-  const tier = matching?.attendanceTiers.find(
-    (item) => item.minAttendees <= attendees && (item.maxAttendees == null || item.maxAttendees >= attendees)
-  );
+  const tier = findMatchingAttendanceTier(matching?.attendanceTiers ?? [], attendees);
   return tier?.amount ?? 0;
 }
 

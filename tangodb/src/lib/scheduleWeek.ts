@@ -117,6 +117,39 @@ export function expandSlotsToWeek(
   );
 }
 
+/** Expand weekly template slots into concrete dates inside [rangeStartISO, rangeEndISO]. */
+export function expandSlotsToDateRange(
+  slots: ScheduleSlot[],
+  rangeStartISO: string,
+  rangeEndISO: string
+): GroupDisplayLesson[] {
+  if (rangeStartISO > rangeEndISO) return [];
+
+  const seen = new Set<string>();
+  const result: GroupDisplayLesson[] = [];
+  let cursorISO = rangeStartISO;
+
+  while (cursorISO <= rangeEndISO) {
+    const cursorDate = new Date(`${cursorISO}T12:00:00`);
+    const { weekStart, weekEnd } = getWeekRange(cursorDate);
+    const lessons = expandSlotsToWeek(slots, weekStart, weekEnd);
+
+    for (const lesson of lessons) {
+      if (lesson.date < rangeStartISO || lesson.date > rangeEndISO) continue;
+      const key = `${lesson.slotId}:${lesson.date}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(lesson);
+    }
+
+    cursorISO = addDays(toISODateLocal(weekEnd), 1);
+  }
+
+  return result.sort(
+    (a, b) => a.date.localeCompare(b.date) || timeToMinutes(a.timeStart) - timeToMinutes(b.timeStart)
+  );
+}
+
 export function formatWeekRangeLabel(weekStart: Date, weekEnd: Date, locale?: string | null): string {
   const code = resolveLocale(locale);
   const startDay = weekStart.getDate();

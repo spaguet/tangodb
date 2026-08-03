@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-03 — hall-rent этап 21: калькулятор ожидаемых затрат venue cost — `venueCostEstimate.ts` (matching как `venue_cost_amount_for_lesson`, fixed-period окна, breakdown); `useVenueCostEstimate` + `VenueCostEstimatePanel` в настройках; `expandSlotsToDateRange`; `findMatchingAttendanceTier` / `matchScopedRule` в `venueCostRules.ts`; тесты в `test:venue-cost-preview`.
+
 2026-08-03 — hall-rent этап 20: UI / ошибки / язык контуров (F5, F9, F11, F12) — убраны карточки-в-карточке в embedded `VenueCostsSettingsPage`; список ошибок venue draft по кодам (`venueCostDraftErrors.ts`); role-aware empty states; разведены термины дохода «сдача зала» и расхода «затраты студии» в i18n (финансы, закрытие урока); `hallRent.emptyNoAccess`; расширен `test:venue-cost-preview`.
 
 2026-08-03 — hall-rent этап 18: массовое копирование правил venue cost — `venueCostBulkCopy.ts` (plan/apply teachers + locations, duplicate/ambiguous detection); `VenueCostBulkCopyPanel` в per-lesson редакторе; валидация ambiguous/duplicate в `validateVenueCostDraft`; i18n RU/EN; расширен `test:venue-cost-preview`.

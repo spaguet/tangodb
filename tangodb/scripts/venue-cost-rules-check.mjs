@@ -497,4 +497,138 @@ const locPlan = planVenueCostLocationBulkCopy(bulkApplied, "loc-a", ["loc-b", "l
 assert.equal(locPlan.createdRules, 24); // 11 group + 1 personal × 2 locations
 assert.equal(locPlan.valid, true);
 
+// Hall-rent stage 21 — venue cost estimate calculator
+function matchScopedRuleEstimate(rules, scope) {
+  const matching = rules.filter(
+    (rule) =>
+      (!rule.teacherMemberId || rule.teacherMemberId === scope.teacherMemberId) &&
+      (!rule.disciplineId || rule.disciplineId === scope.disciplineId) &&
+      (!rule.locationId || rule.locationId === scope.locationId)
+  );
+  matching.sort((a, b) => specificity(b) - specificity(a));
+  return matching[0] ?? null;
+}
+
+function findMatchingTierEstimate(tiers, attendees) {
+  return (
+    tiers
+      .filter(
+        (item) =>
+          item.minAttendees <= attendees &&
+          (item.maxAttendees == null || item.maxAttendees >= attendees)
+      )
+      .sort((a, b) => b.minAttendees - a.minAttendees)[0] ?? null
+  );
+}
+
+function venueCostAmountForLessonEstimate(mode, rules, kind, scope, attendeeCount) {
+  if (mode === "disabled") return { amount: 0, reason: "mode_disabled" };
+  if (mode === "fixed_period") return { amount: 0, reason: "mode_fixed_period" };
+  if (kind === "personal") {
+    const rule = matchScopedRuleEstimate(rules.personal, scope);
+    return rule ? { amount: rule.amount, reason: "matched" } : { amount: 0, reason: "no_rule" };
+  }
+  const rule = matchScopedRuleEstimate(rules.group, scope);
+  if (!rule) return { amount: 0, reason: "no_rule" };
+  const tier = findMatchingTierEstimate(rule.attendanceTiers, attendeeCount ?? 0);
+  return tier ? { amount: tier.amount, reason: "matched" } : { amount: 0, reason: "no_tier" };
+}
+
+function computeFixedPeriodEstimateLines(rules, ruleFrom, ruleTo, periodStart, periodEnd) {
+  const rangeStart = ruleFrom > periodStart ? ruleFrom : periodStart;
+  const rangeEnd = (ruleTo ?? periodEnd) < periodEnd ? (ruleTo ?? periodEnd) : periodEnd;
+  if (rangeStart > rangeEnd) return [];
+  const lines = [];
+  let cursor = rangeStart;
+  while (cursor <= rangeEnd) {
+    const periodFrom = cursor;
+    let periodTo;
+    if (rules.period === "month") {
+      const [y, m] = cursor.slice(0, 7).split("-").map(Number);
+      const last = new Date(y, m, 0).getDate();
+      periodTo = `${y}-${String(m).padStart(2, "0")}-${String(last).padStart(2, "0")}`;
+      if (periodTo > rangeEnd) periodTo = rangeEnd;
+      const d = new Date(`${periodTo}T12:00:00`);
+      d.setDate(d.getDate() + 1);
+      cursor = d.toISOString().slice(0, 10);
+    } else {
+      periodTo = rangeEnd;
+      cursor = "9999-12-31";
+    }
+    lines.push({ periodFrom, periodTo, amount: rules.amount });
+  }
+  return lines;
+}
+
+const estimateRules = {
+  currency: "RUB",
+  group: [
+    {
+      teacherMemberId: "t1",
+      disciplineId: "d1",
+      locationId: null,
+      attendanceTiers: [
+        { minAttendees: 0, maxAttendees: 4, amount: 1000 },
+        { minAttendees: 5, maxAttendees: null, amount: 1500 },
+      ],
+    },
+  ],
+  personal: [{ teacherMemberId: "t1", disciplineId: null, locationId: "loc-a", amount: 700 }],
+};
+
+const groupMatch = venueCostAmountForLessonEstimate(
+  "per_lesson",
+  estimateRules,
+  "group",
+  { teacherMemberId: "t1", disciplineId: "d1", locationId: null },
+  5
+);
+assert.equal(groupMatch.amount, 1500);
+assert.equal(groupMatch.reason, "matched");
+
+const personalMatch = venueCostAmountForLessonEstimate(
+  "per_lesson",
+  estimateRules,
+  "personal",
+  { teacherMemberId: "t1", disciplineId: "x", locationId: "loc-a" },
+  null
+);
+assert.equal(personalMatch.amount, 700);
+
+const noRule = venueCostAmountForLessonEstimate(
+  "per_lesson",
+  estimateRules,
+  "group",
+  { teacherMemberId: "t9", disciplineId: "d1", locationId: null },
+  4
+);
+assert.equal(noRule.reason, "no_rule");
+
+const fixedLines = computeFixedPeriodEstimateLines(
+  { period: "month", amount: 50000, currency: "RUB" },
+  "2026-03-01",
+  "2026-03-31",
+  "2026-03-01",
+  "2026-03-31"
+);
+assert.equal(fixedLines.length, 1);
+assert.equal(fixedLines[0].amount, 50000);
+
+const manualTotal =
+  venueCostAmountForLessonEstimate(
+    "per_lesson",
+    estimateRules,
+    "group",
+    { teacherMemberId: "t1", disciplineId: "d1", locationId: null },
+    4
+  ).amount * 3 +
+  venueCostAmountForLessonEstimate(
+    "per_lesson",
+    estimateRules,
+    "personal",
+    { teacherMemberId: "t1", disciplineId: null, locationId: "loc-a" },
+    null
+  ).amount * 2;
+assert.equal(manualTotal, 1000 * 3 + 700 * 2);
+
 console.log("venue-cost-rules-check: ok");
