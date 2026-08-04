@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Clock, X } from "lucide-react";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
-import { useRecordPersonalLessonPayment } from "../../hooks/usePayments";
+import {
+  PAYMENT_METHODS,
+  getPaymentMethodLabel,
+  useRecordPersonalLessonPayment,
+} from "../../hooks/usePayments";
 import { usePaymentFormIdempotency, usePaymentSubmitState } from "../../hooks/usePaymentFormIdempotency";
 import { formatOperationNumber } from "../../lib/paymentCorrection";
 import { usePrices } from "../../hooks/usePrices";
@@ -21,7 +25,7 @@ import {
   filterPrivateLessonTariffsForSale,
   getSubscriptionClientIds,
 } from "../../lib/utils";
-import type { Subscription } from "../../types";
+import type { PaymentMethod, Subscription } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import { btnAddCls } from "../ui/buttonStyles";
 import { useDisciplines } from "../../hooks/useDisciplines";
@@ -62,7 +66,7 @@ export default function PayPersonalLessonModal({
   onClose,
   onSuccess,
 }: PayPersonalLessonModalProps) {
-  const { t, formatDate } = useI18n();
+  const { t, locale, formatDate } = useI18n();
   const { connectionState } = useOnlineStatus();
   const { data: prices = [] } = usePrices();
   const { data: subscriptions = [] } = useSubscriptions();
@@ -80,6 +84,7 @@ export default function PayPersonalLessonModal({
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
   const [packageModalOpen, setPackageModalOpen] = useState(false);
   const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
 
   const lessonTariffs = useMemo(
     () =>
@@ -118,6 +123,7 @@ export default function PayPersonalLessonModal({
     }
     setBookingPaymentMode(null);
     setLinkedSubscriptionId("");
+    setPaymentMethod("cash");
     const remainingDebt = Math.max(lesson.price - (lesson.paidAmount ?? 0), 0);
     const initialPrice = lesson.price > 0 ? remainingDebt.toString() : "";
     setCustomPrice(initialPrice);
@@ -184,7 +190,7 @@ export default function PayPersonalLessonModal({
       clientId: lesson.clientId1,
       clientDisplay: lesson.clientDisplay,
       amount: priceNum,
-      method: "cash",
+      method: paymentMethod,
       idempotencyKey: paymentIdempotencyKey || crypto.randomUUID(),
       venueRuleAcknowledged,
     });
@@ -299,7 +305,7 @@ export default function PayPersonalLessonModal({
               </div>
 
               <div className="field-stack">
-                <label className={labelCls}>{t("common.paymentMethod")}</label>
+                <label className={labelCls}>{t("common.paymentLabel")}</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -390,6 +396,17 @@ export default function PayPersonalLessonModal({
                       />
                     </div>
                   )}
+                  <AppSelect
+                    label={t("common.paymentMethod")}
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                  >
+                    {PAYMENT_METHODS.map((method) => (
+                      <option key={method} value={method}>
+                        {getPaymentMethodLabel(method, t, locale)}
+                      </option>
+                    ))}
+                  </AppSelect>
                   <button
                     type="button"
                     onClick={() => void handlePaySingle()}
