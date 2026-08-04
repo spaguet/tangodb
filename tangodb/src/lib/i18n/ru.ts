@@ -1093,7 +1093,8 @@ export const RU: Record<I18nKey, string> = {
   "attendance.loading": "Загрузка журнала посещений...",
   "attendance.singleVisit.button": "Разовое посещение",
   "attendance.singleVisit.tariff": "Тариф",
-  "attendance.singleVisit.tariffPlaceholder": "Выберите тариф...",
+  "attendance.singleVisit.tariffOptional": "Тариф (необязательно)",
+  "attendance.singleVisit.tariffPlaceholder": "Без тарифа — укажите сумму",
   "attendance.singleVisit.noTariffs": "Нет подходящих тарифов разового посещения.",
   "attendance.singleVisit.openPrices": "Открыть тарифы",
   "attendance.singleVisit.record": "Отметить и оплатить",
@@ -1102,6 +1103,7 @@ export const RU: Record<I18nKey, string> = {
   "attendance.singleVisit.error.noAccess": "Нет прав отметить разовое посещение",
   "attendance.singleVisit.error.clientRequired": "Выберите клиента",
   "attendance.singleVisit.error.tariffRequired": "Выберите тариф",
+  "attendance.singleVisit.error.amountOrTariffRequired": "Укажите сумму оплаты или выберите тариф",
   "attendance.singleVisit.error.recordFailed": "Не удалось отметить разовое посещение",
   "attendance.singleVisit.error.invalidAmount": "Укажите корректную сумму оплаты",
 

@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-04 — разовое посещение: тариф стал необязательным — можно указать только сумму (договорённая цена вне прайса); `record_single_visit` принимает `p_price_id = NULL` при `p_amount > 0`; миграция `20260879000001_single_visit_optional_tariff.sql`; UI `AttendancePanel`.
+
 2026-08-04 — fix: переоткрытие урока без причины — понятное сообщение «Пожалуйста, укажите причину переоткрытия урока» вместо технического `reason_required` (`formatReopenLessonError`, `AttendancePanel`, `LessonInfoPopup`, `PersonalLessonRow`).
 
 2026-08-04 — журнал посещений и персональные уроки: (1) разовое посещение — поле «Сумма» стало редактируемым (было read-only, показывало только цену тарифа); RPC `record_single_visit` принял опциональный `p_amount`. (2) частичная оплата персонального урока — `personal_lessons.paid_amount` копит чистую сумму оплат, `record_personal_lesson_payment` разрешает несколько платежей на один урок вместо блокировки после первого, `void_personal_lesson_payment` сторнирует все активные платежи урока; `PayPersonalLessonModal` показывает «Оплачено» / «Долг» и подставляет остаток долга по умолчанию; `AttendancePanel` и `PersonalLessonRow` показывают остаток долга; `financial_debtors_v`/`useScheduleDebtors` считают долг персонального урока как остаток, а не полную цену. Миграция `20260878000001_custom_amount_payments.sql`.

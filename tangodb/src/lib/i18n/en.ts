@@ -1095,7 +1095,8 @@ export const EN: Record<I18nKey, string> = {
   "attendance.loading": "Loading attendance journal...",
   "attendance.singleVisit.button": "Single visit",
   "attendance.singleVisit.tariff": "Tariff",
-  "attendance.singleVisit.tariffPlaceholder": "Choose a tariff...",
+  "attendance.singleVisit.tariffOptional": "Tariff (optional)",
+  "attendance.singleVisit.tariffPlaceholder": "No tariff — enter amount",
   "attendance.singleVisit.noTariffs": "No matching single-visit tariffs.",
   "attendance.singleVisit.openPrices": "Open tariffs",
   "attendance.singleVisit.record": "Mark and pay",
@@ -1104,6 +1105,7 @@ export const EN: Record<I18nKey, string> = {
   "attendance.singleVisit.error.noAccess": "No permission to record a single visit",
   "attendance.singleVisit.error.clientRequired": "Choose a client",
   "attendance.singleVisit.error.tariffRequired": "Choose a tariff",
+  "attendance.singleVisit.error.amountOrTariffRequired": "Enter a payment amount or choose a tariff",
   "attendance.singleVisit.error.recordFailed": "Could not record single visit",
   "attendance.singleVisit.error.invalidAmount": "Enter a valid payment amount",
 

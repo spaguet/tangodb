@@ -97,6 +97,21 @@ import {
   useSaveOfflinePaymentDraft,
 } from "../hooks/useOfflineShift";
 
+function parseSingleVisitAmountInput(amount: string): number | null {
+  const trimmed = amount.trim();
+  if (trimmed === "") return null;
+  const num = parseFloat(trimmed);
+  if (Number.isNaN(num) || num < 0) return null;
+  return num;
+}
+
+function canSubmitSingleVisitForm(clientId: string, priceId: string, amount: string): boolean {
+  if (!clientId) return false;
+  if (priceId) return true;
+  const parsed = parseSingleVisitAmountInput(amount);
+  return parsed !== null && parsed > 0;
+}
+
 interface AttendancePanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
@@ -851,12 +866,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       toast(t("attendance.singleVisit.error.clientRequired"), "error");
       return;
     }
+    const amountNum = parseSingleVisitAmountInput(singleVisitAmount);
     if (!singleVisitPriceId) {
-      toast(t("attendance.singleVisit.error.tariffRequired"), "error");
-      return;
-    }
-    const amountNum = parseFloat(singleVisitAmount);
-    if (Number.isNaN(amountNum) || amountNum < 0) {
+      if (amountNum === null || amountNum <= 0) {
+        toast(t("attendance.singleVisit.error.amountOrTariffRequired"), "error");
+        return;
+      }
+    } else if (singleVisitAmount.trim() !== "" && amountNum === null) {
       toast(t("attendance.singleVisit.error.invalidAmount"), "error");
       return;
     }
@@ -865,9 +881,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       visitDate: selectedDate,
       scheduleSlotId: selectedGroupLesson.slotId,
       clientId: singleVisitClientId,
-      priceId: singleVisitPriceId,
+      priceId: singleVisitPriceId || null,
       method: singleVisitMethod,
-      amount: amountNum,
+      amount: amountNum ?? undefined,
       idempotencyKey: singleVisitIdempotencyKey || crypto.randomUUID(),
       venueRuleAcknowledged,
     });
@@ -1216,7 +1232,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             />
 
             <AppSelect
-              label={t("attendance.singleVisit.tariff")}
+              label={t("attendance.singleVisit.tariffOptional")}
               value={singleVisitPriceId}
               onChange={(e) => {
                 const id = e.target.value;
@@ -1273,9 +1289,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               disabled={
                 recordSingleVisit.isPending ||
                 connectionState !== "online" ||
-                !singleVisitClientId ||
-                !singleVisitPriceId ||
-                singleVisitAmount.trim() === ""
+                !canSubmitSingleVisitForm(singleVisitClientId, singleVisitPriceId, singleVisitAmount)
               }
               className={`w-full ${btnAddCls}`}
             >

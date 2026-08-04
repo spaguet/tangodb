@@ -22,7 +22,7 @@ const mapSingleVisit = (row: Record<string, unknown>): SingleVisit => ({
   scheduleGroupId: String(row.schedule_group_id),
   clientId: String(row.client_id),
   clientDisplay: (row.client_display as string) || "",
-  priceId: String(row.price_id),
+  priceId: row.price_id != null ? String(row.price_id) : "",
   amount: Number(row.amount) || 0,
   method: (row.method as PaymentMethod) || "cash",
   attendanceStatus: "present",
@@ -90,7 +90,7 @@ export function useRecordSingleVisit() {
       visitDate: string;
       scheduleSlotId: string;
       clientId: string;
-      priceId: string;
+      priceId?: string | null;
       method: PaymentMethod;
       amount?: number;
       idempotencyKey?: string;
@@ -105,7 +105,7 @@ export function useRecordSingleVisit() {
         p_visit_date: input.visitDate,
         p_schedule_slot_id: input.scheduleSlotId,
         p_client_id: input.clientId,
-        p_price_id: input.priceId,
+        p_price_id: input.priceId || null,
         p_method: input.method,
         p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
         p_amount: input.amount ?? null,
