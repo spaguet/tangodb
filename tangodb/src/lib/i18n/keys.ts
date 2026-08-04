@@ -2726,6 +2726,7 @@ export type I18nKey =
   | "venueCosts.reopenLesson.reason"
   | "venueCosts.reopenLesson.success"
   | "venueCosts.reopenLesson.error"
+  | "venueCosts.reopenLesson.errorReasonRequired"
   | "venueCosts.finance.venueTotal"
   | "venueCosts.finance.manualTotal"
   | "venueCosts.finance.autoRow"

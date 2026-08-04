@@ -2786,6 +2786,7 @@ export const EN: Record<I18nKey, string> = {
   "venueCosts.reopenLesson.reason": "Reopen reason",
   "venueCosts.reopenLesson.success": "Closure reversed and accrual adjusted",
   "venueCosts.reopenLesson.error": "Could not reopen: {{error}}",
+  "venueCosts.reopenLesson.errorReasonRequired": "Please specify the reason for reopening the lesson",
   "venueCosts.finance.venueTotal": "Studio hall costs (by rules)",
   "venueCosts.finance.manualTotal": "Manual expenses",
   "venueCosts.finance.autoRow": "Automatic hall cost accrual",

@@ -55,6 +55,17 @@ export function formatVenueCostDraftError(
   return translate(key, parsed.params);
 }
 
+const REOPEN_LESSON_ERROR_KEY_MAP: Record<string, I18nKey> = {
+  reason_required: "venueCosts.reopenLesson.errorReasonRequired",
+  forbidden: "venueCosts.error.forbidden",
+};
+
+export function formatReopenLessonError(raw: string, translate: TranslateFn): string {
+  const key = REOPEN_LESSON_ERROR_KEY_MAP[raw];
+  if (key) return translate(key);
+  return translate("venueCosts.reopenLesson.error", { error: raw });
+}
+
 export function formatVenueCostDraftErrors(
   codes: string[],
   translate: TranslateFn

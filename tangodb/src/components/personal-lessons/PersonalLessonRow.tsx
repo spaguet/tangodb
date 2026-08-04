@@ -8,6 +8,7 @@ import {
 } from "../../lib/scheduleLessonAccess";
 import { isPersonalLessonLockedForWrite, toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
+import { formatReopenLessonError } from "../../lib/venueCostDraftErrors";
 import { useI18n } from "../../hooks/useI18n";
 import {
   useClosePersonalLessonOccurrence,
@@ -177,7 +178,7 @@ export default function PersonalLessonRow({
     const reason = window.prompt(t("venueCosts.reopenLesson.reason"));
     if (reason == null) return;
     if (!reason.trim()) {
-      toast(t("venueCosts.reopenLesson.error", { error: "reason_required" }), "error");
+      toast(formatReopenLessonError("reason_required", t), "error");
       return;
     }
     const res = await reopenLessonClosure.mutateAsync({
@@ -185,7 +186,7 @@ export default function PersonalLessonRow({
       reason: reason.trim(),
     });
     if (!res.success) {
-      toast(t("venueCosts.reopenLesson.error", { error: res.error }), "error");
+      toast(formatReopenLessonError(res.error, t), "error");
       return;
     }
     toast(t("venueCosts.reopenLesson.success"), "success");

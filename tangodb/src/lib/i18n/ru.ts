@@ -2784,6 +2784,7 @@ export const RU: Record<I18nKey, string> = {
   "venueCosts.reopenLesson.reason": "Причина переоткрытия",
   "venueCosts.reopenLesson.success": "Закрытие отменено, начисление скорректировано",
   "venueCosts.reopenLesson.error": "Не удалось переоткрыть: {{error}}",
+  "venueCosts.reopenLesson.errorReasonRequired": "Пожалуйста, укажите причину переоткрытия урока",
   "venueCosts.finance.venueTotal": "Затраты студии по правилам",
   "venueCosts.finance.manualTotal": "Ручные расходы",
   "venueCosts.finance.autoRow": "Автоначисление затрат на зал",

@@ -20,6 +20,7 @@ import { isRecurringGroupSlot } from "../../lib/groupLessonRepeat";
 import { personalLessonsInSeriesFromDate } from "../../lib/personalLessonSeries";
 import { toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
+import { formatReopenLessonError } from "../../lib/venueCostDraftErrors";
 import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import { btnAddCls, btnCancelCls, btnDestructiveCls, btnOpenCls } from "../ui/buttonStyles";
@@ -217,7 +218,7 @@ export default function LessonInfoPopup({
   const handleReopenPersonal = async () => {
     if (!activePersonalClosure) return;
     if (!reopenReason.trim()) {
-      toast(t("venueCosts.reopenLesson.error", { error: "reason_required" }), "error");
+      toast(formatReopenLessonError("reason_required", t), "error");
       return;
     }
     const res = await reopenLessonClosure.mutateAsync({
@@ -225,7 +226,7 @@ export default function LessonInfoPopup({
       reason: reopenReason.trim(),
     });
     if (!res.success) {
-      toast(t("venueCosts.reopenLesson.error", { error: res.error }), "error");
+      toast(formatReopenLessonError(res.error, t), "error");
       return;
     }
     setReopenReason("");

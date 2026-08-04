@@ -73,6 +73,7 @@ import {
   jsDayToIsoDow,
   shiftMonth,
 } from "../lib/utils";
+import { formatReopenLessonError } from "../lib/venueCostDraftErrors";
 import { useI18n } from "../hooks/useI18n";
 import { useUIStore } from "../store/ui";
 import QueryErrorState from "./ui/QueryErrorState";
@@ -938,7 +939,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       return;
     }
     if (!reopenReason.trim()) {
-      toast(t("venueCosts.reopenLesson.error", { error: "reason_required" }), "error");
+      toast(formatReopenLessonError("reason_required", t), "error");
       return;
     }
     const res = await reopenLessonClosure.mutateAsync({
@@ -946,7 +947,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       reason: reopenReason.trim(),
     });
     if (!res.success) {
-      toast(t("venueCosts.reopenLesson.error", { error: res.error }), "error");
+      toast(formatReopenLessonError(res.error, t), "error");
       return;
     }
     setReopenReason("");
