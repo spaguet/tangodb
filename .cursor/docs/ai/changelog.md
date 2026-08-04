@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-04 — fix: офлайн-строки i18n (`offline.snapshot.window` и др.) — плейсхолдеры `{start}`/`{end}` заменены на `{{start}}`/`{{end}}` в соответствии с `t()` в `core.ts`.
+
 2026-08-04 — fix: парный групповой абонемент считается как 2 присутствующих при закрытии урока, в отчёте проведённых занятий и в заполняемости на дашборде (`groupSubscriptionParticipantCount`, `countPresentAttendeesFromSubs`, миграция `20260880000001_pair_subscription_attendance_count.sql`).
 
 2026-08-04 — разовое посещение: тариф стал необязательным — можно указать только сумму (договорённая цена вне прайса); `record_single_visit` принимает `p_price_id = NULL` при `p_amount > 0`; миграция `20260879000001_single_visit_optional_tariff.sql`; UI `AttendancePanel`.
