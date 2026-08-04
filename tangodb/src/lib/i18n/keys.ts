@@ -1296,6 +1296,8 @@ export type I18nKey =
   | "personal.row.paid"
   | "personal.row.debt"
   | "personal.pay.paidSoFar"
+  | "personal.pay.success"
+  | "personal.pay.alreadyApplied"
   | "personal.row.presentCharged"
   | "personal.row.absentCharged"
   | "personal.row.excusedSkip"

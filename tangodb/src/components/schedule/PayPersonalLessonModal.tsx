@@ -8,7 +8,6 @@ import {
   useRecordPersonalLessonPayment,
 } from "../../hooks/usePayments";
 import { usePaymentFormIdempotency, usePaymentSubmitState } from "../../hooks/usePaymentFormIdempotency";
-import { formatOperationNumber } from "../../lib/paymentCorrection";
 import { usePrices } from "../../hooks/usePrices";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
@@ -208,14 +207,9 @@ export default function PayPersonalLessonModal({
     paymentSubmit.complete(paymentRes.operationNumber);
     setVenueConfirmStatus(null);
     if (paymentRes.alreadyApplied) {
-      toast(t("corrections.payment.alreadyApplied"), "info");
+      toast(t("personal.pay.alreadyApplied"), "info");
     } else {
-      toast(
-        paymentRes.operationNumber
-          ? t("corrections.payment.saved", { op: formatOperationNumber(paymentRes.operationNumber) })
-          : t("common.paymentRecorded"),
-        "success"
-      );
+      toast(t("personal.pay.success"), "success");
     }
     onSuccess();
     onClose();
@@ -417,9 +411,7 @@ export default function PayPersonalLessonModal({
                     {paymentSubmit.phase === "saving"
                       ? t("common.saving")
                       : paymentSubmit.phase === "saved"
-                        ? t("corrections.payment.saved", {
-                            op: formatOperationNumber(paymentSubmit.operationNumber),
-                          })
+                        ? t("personal.pay.success")
                         : t("common.pay")}
                   </button>
                 </>
