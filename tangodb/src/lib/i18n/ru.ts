@@ -2639,6 +2639,7 @@ export const RU: Record<I18nKey, string> = {
   "venueCosts.fixedPeriod.noLocations": "Добавьте локации в настройках организации.",
   "venueCosts.amount": "Сумма",
   "venueCosts.currency": "Валюта",
+  "venueCosts.amountCurrencyHint": "Все суммы указаны в {{currency}}",
   "venueCosts.applyTypesHint": "Включите типы уроков, для которых действует правило.",
   "venueCosts.groupRules": "Групповые уроки",
   "venueCosts.personalRules": "Персональные уроки",

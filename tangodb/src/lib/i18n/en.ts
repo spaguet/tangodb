@@ -2641,6 +2641,7 @@ export const EN: Record<I18nKey, string> = {
   "venueCosts.fixedPeriod.noLocations": "Add locations in organization settings first.",
   "venueCosts.amount": "Amount",
   "venueCosts.currency": "Currency",
+  "venueCosts.amountCurrencyHint": "All amounts are in {{currency}}",
   "venueCosts.applyTypesHint": "Enable the lesson types this rule should apply to.",
   "venueCosts.groupRules": "Group lessons",
   "venueCosts.personalRules": "Personal lessons",

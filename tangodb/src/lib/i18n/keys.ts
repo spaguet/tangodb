@@ -2581,6 +2581,7 @@ export type I18nKey =
   | "venueCosts.fixedPeriod.noLocations"
   | "venueCosts.amount"
   | "venueCosts.currency"
+  | "venueCosts.amountCurrencyHint"
   | "venueCosts.applyTypesHint"
   | "venueCosts.groupRules"
   | "venueCosts.personalRules"

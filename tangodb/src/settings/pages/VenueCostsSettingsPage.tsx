@@ -24,6 +24,8 @@ import {
   type VenueCostRuleDraft,
 } from "../../lib/venueCostRules";
 import { formatVenueCostDraftError, formatVenueCostDraftErrors } from "../../lib/venueCostDraftErrors";
+import { formatOptionsFromSettings, getCurrencyInputSuffix } from "../../lib/format";
+import { getCurrencySymbolHint } from "../../lib/currencies";
 import { useSettings } from "../SettingsProvider";
 import AppSelect, { fieldCls, selectLabelCls } from "../../components/ui/AppSelect";
 import { btnAddLinkCls, btnAddSoftCls, btnCancelCls, btnAddCls } from "../../components/ui/buttonStyles";
@@ -86,6 +88,12 @@ export default function VenueCostsSettingsPage({
   const toast = useToast();
   const { settings } = useSettings();
   const orgCurrency = settings?.currency_code || "RUB";
+  const formatOptions = formatOptionsFromSettings(settings);
+  const currencyLabel = (() => {
+    const symbol = getCurrencySymbolHint(orgCurrency);
+    if (formatOptions.currencyDisplay === "code" || symbol === orgCurrency) return orgCurrency;
+    return `${orgCurrency} (${symbol})`;
+  })();
   const { role, can } = usePermissions();
   const canManage = canManageProp ?? (role === "owner" || role === "director");
   const canRead = can("finance.read");
@@ -314,6 +322,12 @@ export default function VenueCostsSettingsPage({
               <input className={fieldCls} type="date" value={draft.validTo ?? ""} onChange={(e) => setDraft({ ...draft, validTo: e.target.value || null })} />
             </label>
           </div>
+
+          {draft.mode !== "disabled" && (
+            <p className="text-[11px] text-slate-500">
+              {t("venueCosts.amountCurrencyHint", { currency: currencyLabel })}
+            </p>
+          )}
 
           {draft.mode === "fixed_period" && (
             <FixedPeriodEditor draft={draft} setDraft={setDraft} locations={locations} t={t} />
@@ -890,11 +904,33 @@ function RuleScope({
   return compact ? fields : <div className="grid sm:grid-cols-3 gap-2">{fields}</div>;
 }
 
-function MoneyInput({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+function MoneyInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const { settings } = useSettings();
+  const currencySuffix = getCurrencyInputSuffix(formatOptionsFromSettings(settings));
   return (
     <label className="field-stack">
       <span className={selectLabelCls}>{label}</span>
-      <input className={fieldCls} type="number" min={0} step="0.01" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)} />
+      <div className="relative">
+        <input
+          className={`${fieldCls} pr-8`}
+          type="number"
+          min={0}
+          step="0.01"
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value) || 0)}
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">
+          {currencySuffix}
+        </span>
+      </div>
     </label>
   );
 }
