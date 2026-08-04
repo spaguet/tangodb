@@ -234,6 +234,11 @@ export default function VenueCostsSettingsPage({
         rules: draft.rules,
       }
     : null;
+  const draftPerLessonRules =
+    draft?.mode === "per_lesson" ? (draft.rules as VenueCostPerLessonRules) : null;
+  const draftPerLessonHasScope =
+    draftPerLessonRules != null &&
+    (draftPerLessonRules.group.length > 0 || draftPerLessonRules.personal.length > 0);
 
   return (
     <div className={embedded ? "space-y-4" : "panel-card-stack max-w-4xl"}>
@@ -340,6 +345,26 @@ export default function VenueCostsSettingsPage({
               {saveDraft.isPending ? t("common.saving") : t("common.save")}
             </button>
           </div>
+
+          {draftPerLessonHasScope && draftPerLessonRules && (
+            <div className="space-y-4 border-t border-slate-100 pt-4">
+              <VenueCostBulkCopyPanel
+                rules={draftPerLessonRules}
+                teachers={teachers}
+                disciplines={disciplines}
+                locations={locations}
+                onApply={(next) => setDraft({ ...draft, rules: next })}
+              />
+              {draftPerLessonRules.group.length > 0 && (
+                <VenueCostGroupPreview
+                  rules={draftPerLessonRules}
+                  teachers={teachers}
+                  disciplines={disciplines}
+                  locations={locations}
+                />
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -771,25 +796,6 @@ function PerLessonEditor({
             </div>
           ))}
         </RuleSection>
-      )}
-
-      {(groupEnabled || personalEnabled) && (
-        <VenueCostBulkCopyPanel
-          rules={rules}
-          teachers={teachers}
-          disciplines={disciplines}
-          locations={locations}
-          onApply={(next) => updateRules(next)}
-        />
-      )}
-
-      {groupEnabled && (
-        <VenueCostGroupPreview
-          rules={rules}
-          teachers={teachers}
-          disciplines={disciplines}
-          locations={locations}
-        />
       )}
     </div>
   );
