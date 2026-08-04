@@ -112,6 +112,7 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
     timeEnd: normalizeTime((row.time_end as string) || "15:00"),
     price: maskFinancial ? 0 : Number(row.price) || 0,
     paid: (row.paid as "yes" | "no" | undefined) ?? "yes",
+    paidAmount: maskFinancial ? 0 : Number(row.paid_amount) || 0,
     disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
     subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
     locationId: row.location_id != null ? String(row.location_id) : null,
@@ -121,7 +122,7 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
 };
 
 const personalLessonsSelect =
-  "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, price, paid, subscription_id, location_id, teacher_member_id, attendance_status";
+  "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, price, paid, paid_amount, subscription_id, location_id, teacher_member_id, attendance_status";
 
 const personalLessonsSelectTeacher =
   "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status";

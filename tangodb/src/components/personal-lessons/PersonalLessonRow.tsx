@@ -40,7 +40,15 @@ interface PersonalLessonRowProps {
   toast: (msg: string, type?: "success" | "error" | "info") => void;
 }
 
-function PaymentBadge({ lesson, t }: { lesson: PersonalLesson; t: ReturnType<typeof useI18n>["t"] }) {
+function PaymentBadge({
+  lesson,
+  t,
+  showAmount,
+}: {
+  lesson: PersonalLesson;
+  t: ReturnType<typeof useI18n>["t"];
+  showAmount: boolean;
+}) {
   if (lesson.subscriptionId) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -55,9 +63,11 @@ function PaymentBadge({ lesson, t }: { lesson: PersonalLesson; t: ReturnType<typ
       </span>
     );
   }
+  const debt = Math.max(lesson.price - lesson.paidAmount, 0);
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
       {t("personal.row.debt")}
+      {showAmount && lesson.paidAmount > 0 ? ` · ${formatCurrency(debt)}` : ""}
     </span>
   );
 }
@@ -193,7 +203,7 @@ export default function PersonalLessonRow({
       <td className="py-3 px-3 text-xs text-slate-500">{personalLessonTypeLabel(lesson.type, t)}</td>
       <td className="py-3 px-3">
         <div className="flex flex-wrap gap-1">
-          <PaymentBadge lesson={lesson} t={t} />
+          <PaymentBadge lesson={lesson} t={t} showAmount={showPrice} />
           {(canShowPaidStatus(role) || !lesson.subscriptionId) && <AttendanceBadge lesson={lesson} t={t} />}
         </div>
       </td>

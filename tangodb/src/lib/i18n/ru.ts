@@ -1103,6 +1103,7 @@ export const RU: Record<I18nKey, string> = {
   "attendance.singleVisit.error.clientRequired": "Выберите клиента",
   "attendance.singleVisit.error.tariffRequired": "Выберите тариф",
   "attendance.singleVisit.error.recordFailed": "Не удалось отметить разовое посещение",
+  "attendance.singleVisit.error.invalidAmount": "Укажите корректную сумму оплаты",
 
   // personal lessons
   "personal.loading": "Загрузка персональных уроков...",
@@ -1349,6 +1350,7 @@ export const RU: Record<I18nKey, string> = {
   "personal.row.package": "Пакет",
   "personal.row.paid": "Оплачено",
   "personal.row.debt": "Долг",
+  "personal.pay.paidSoFar": "Оплачено",
   "personal.row.presentCharged": "Пришёл",
   "personal.row.absentCharged": "Не пришёл",
   "personal.row.excusedSkip": "Уважит. пропуск",

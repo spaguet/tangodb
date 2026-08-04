@@ -586,7 +586,7 @@ BEGIN
     AND (
       (p.proname = 'record_subscription_payment' AND p.pronargs = 6)
       OR (p.proname = 'record_personal_lesson_payment' AND p.pronargs = 5)
-      OR (p.proname = 'record_single_visit' AND p.pronargs = 7)
+      OR (p.proname = 'record_single_visit' AND p.pronargs = 8)
     );
   PERFORM _venue_test_assert(v_count = 3, 'canonical PostgREST payment signatures are unambiguous');
   SELECT count(*) INTO v_count

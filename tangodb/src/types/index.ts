@@ -462,6 +462,7 @@ export interface PersonalLesson {
   timeEnd: string;
   price: number;
   paid: "yes" | "no";
+  paidAmount: number;
   disciplineId?: string | null;
   subscriptionId?: string | null;
   locationId?: string | null;

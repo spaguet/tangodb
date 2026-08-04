@@ -54,7 +54,7 @@ export function useScheduleDebtors(options?: { enabled?: boolean }) {
         disciplineId: lesson.disciplineId ?? null,
         locationId: lesson.locationId ?? null,
         teacherMemberId: lesson.teacherMemberId ?? null,
-        amount: includeAmount ? lesson.price : undefined,
+        amount: includeAmount ? Math.max(lesson.price - lesson.paidAmount, 0) : undefined,
       }));
   }, [lessonsQuery.data, includeAmount, role, memberId]);
 

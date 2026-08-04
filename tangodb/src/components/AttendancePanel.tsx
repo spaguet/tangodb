@@ -81,7 +81,7 @@ import OfflineLimitedState from "./offline/OfflineLimitedState";
 import OfflineScopeNotice from "./offline/OfflineScopeNotice";
 import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
 import VirtualList from "./ui/VirtualList";
-import AppSelect from "./ui/AppSelect";
+import AppSelect, { fieldCls } from "./ui/AppSelect";
 import { btnAddCls, btnOpenCls } from "./ui/buttonStyles";
 import ClientAutocomplete from "./ui/ClientAutocomplete";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./schedule/PayPersonalLessonModal";
@@ -262,6 +262,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const [singleVisitClientQuery, setSingleVisitClientQuery] = useState("");
   const [singleVisitClientId, setSingleVisitClientId] = useState("");
   const [singleVisitPriceId, setSingleVisitPriceId] = useState("");
+  const [singleVisitAmount, setSingleVisitAmount] = useState("");
   const [singleVisitMethod, setSingleVisitMethod] = useState<"cash" | "transfer" | "card" | "other">("cash");
   const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
   const [closeAttendeeCount, setCloseAttendeeCount] = useState("");
@@ -793,7 +794,6 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         : [],
     [prices, selectedGroupLesson, selectedLocationId]
   );
-  const selectedSingleVisitPrice = singleVisitTariffs.find((price) => price.id === singleVisitPriceId) ?? null;
   const selectedClient = (clientsQuery.data ?? []).find((client) => client.id === singleVisitClientId) ?? null;
   const groupSingleVisits = useMemo(
     () =>
@@ -854,6 +854,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       toast(t("attendance.singleVisit.error.tariffRequired"), "error");
       return;
     }
+    const amountNum = parseFloat(singleVisitAmount);
+    if (Number.isNaN(amountNum) || amountNum < 0) {
+      toast(t("attendance.singleVisit.error.invalidAmount"), "error");
+      return;
+    }
 
     const res = await recordSingleVisit.mutateAsync({
       visitDate: selectedDate,
@@ -861,6 +866,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       clientId: singleVisitClientId,
       priceId: singleVisitPriceId,
       method: singleVisitMethod,
+      amount: amountNum,
       idempotencyKey: singleVisitIdempotencyKey || crypto.randomUUID(),
       venueRuleAcknowledged,
     });
@@ -883,6 +889,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     setSingleVisitClientQuery("");
     setSingleVisitClientId("");
     setSingleVisitPriceId("");
+    setSingleVisitAmount("");
     void queryClient.invalidateQueries({ queryKey: singleVisitsQueryKey });
   };
 
@@ -1146,6 +1153,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       clientId3: lesson.clientId3,
       clientDisplay: lesson.clientDisplay,
       price: lesson.price,
+      paidAmount: lesson.paidAmount,
       locationId: lesson.locationId ?? null,
       disciplineId: lesson.disciplineId ?? null,
     });
@@ -1209,7 +1217,12 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             <AppSelect
               label={t("attendance.singleVisit.tariff")}
               value={singleVisitPriceId}
-              onChange={(e) => setSingleVisitPriceId(e.target.value)}
+              onChange={(e) => {
+                const id = e.target.value;
+                setSingleVisitPriceId(id);
+                const tariff = singleVisitTariffs.find((price) => price.id === id);
+                if (tariff) setSingleVisitAmount(tariff.price.toString());
+              }}
             >
               <option value="">{t("attendance.singleVisit.tariffPlaceholder")}</option>
               {singleVisitTariffs.map((tariff) => (
@@ -1240,11 +1253,17 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               ))}
             </AppSelect>
 
-            <div className="flex items-center justify-between gap-3 rounded-lg bg-white border border-slate-100 px-3 py-2">
-              <span className="text-xs text-slate-500 font-sans">{t("common.amount")}</span>
-              <span className="text-sm font-semibold text-slate-800">
-                {selectedSingleVisitPrice ? formatCurrency(selectedSingleVisitPrice.price) : "—"}
-              </span>
+            <div className="field-stack">
+              <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
+                {t("common.amount")}
+              </label>
+              <input
+                type="number"
+                placeholder="0"
+                value={singleVisitAmount}
+                onChange={(e) => setSingleVisitAmount(e.target.value)}
+                className={`${fieldCls} font-semibold`}
+              />
             </div>
 
             <button
@@ -1254,7 +1273,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 recordSingleVisit.isPending ||
                 connectionState !== "online" ||
                 !singleVisitClientId ||
-                !singleVisitPriceId
+                !singleVisitPriceId ||
+                singleVisitAmount.trim() === ""
               }
               className={`w-full ${btnAddCls}`}
             >
@@ -1680,6 +1700,18 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                                 : t("common.unpaidStatus")}
                             </span>
                           </p>
+                          {activePersonalLesson.paid === "no" && activePersonalLesson.paidAmount > 0 && (
+                            <p className="text-xs font-sans text-slate-500">
+                              {t("personal.pay.paidSoFar")}: {formatCurrency(activePersonalLesson.paidAmount)}
+                              {" · "}
+                              <span className="text-rose-600 font-semibold">
+                                {t("common.debt")}:{" "}
+                                {formatCurrency(
+                                  Math.max(activePersonalLesson.price - activePersonalLesson.paidAmount, 0)
+                                )}
+                              </span>
+                            </p>
+                          )}
                         </>
                       )}
                     </div>

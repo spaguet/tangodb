@@ -1105,6 +1105,7 @@ export const EN: Record<I18nKey, string> = {
   "attendance.singleVisit.error.clientRequired": "Choose a client",
   "attendance.singleVisit.error.tariffRequired": "Choose a tariff",
   "attendance.singleVisit.error.recordFailed": "Could not record single visit",
+  "attendance.singleVisit.error.invalidAmount": "Enter a valid payment amount",
 
   // personal lessons
   "personal.loading": "Loading private lessons...",
@@ -1351,6 +1352,7 @@ export const EN: Record<I18nKey, string> = {
   "personal.row.package": "Package",
   "personal.row.paid": "Paid",
   "personal.row.debt": "Debt",
+  "personal.pay.paidSoFar": "Paid so far",
   "personal.row.presentCharged": "Present",
   "personal.row.absentCharged": "Absent",
   "personal.row.excusedSkip": "Excused skip",

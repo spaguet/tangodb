@@ -12,6 +12,13 @@
 
 ## Записи
 
+### PAY-CUSTOM-1 — Произвольная сумма разового посещения и частичная оплата персонального урока (2026-08-04)
+
+- **Решение:** (1) `record_single_visit` получил опциональный `p_amount numeric DEFAULT NULL`; при передаче используется вместо `prices.price` тарифа (сигнатура сменилась — старая функция и `_record_single_visit_before_venue_rules` дропнуты и созданы заново, `p_venue_rule_acknowledged` остался последним параметром). (2) `personal_lessons.paid_amount NUMERIC DEFAULT 0` — накопленная чистая сумма оплат. `record_personal_lesson_payment` больше не возвращает `already_applied` только из-за существующего активного платежа — теперь блокирует новый платёж лишь когда `paid_amount >= price` (`error_code: already_fully_paid`), поэтому несколько частичных платежей складываются в `paid_amount` через `sync_personal_lesson_paid_status`. `void_personal_lesson_payment` сторнирует ВСЕ активные платежи урока (было — только первый), т.к. `payments_org_personal_lesson_unique` уже снят в PAY-CORRECTIONS. `financial_debtors_v.amount` для `kind='personal'` — теперь `GREATEST(price - paid_amount, 0)` (остаток долга), а не полная цена; `useScheduleDebtors` считает долг тем же способом.
+- **Контекст:** Пользователь просил (1) указывать в «Журнале посещений» сумму разового посещения, отличную от тарифа (напр. договорная скидка), и (2) частичную оплату персонального урока с видимым остатком долга.
+- **Альтернативы:** отдельная таблица частичных оплат/рассрочки для персональных уроков; хранить только `paid: yes/no` и выводить долг как «весь тариф» до полного гашения.
+- **Почему так:** `payments` уже допускает несколько строк на `personal_lesson_id` (индекс снят ранее) — переиспользование этого механизма для топ-апов не требует новой сущности. `paid_amount` — материализованный кэш `personal_lesson_net_payment()`, обновляется той же `sync_personal_lesson_paid_status`, которую уже вызывают все точки записи/сторно платежа, так что рассинхронизация невозможна. Для уроков с `price = 0` (покрыты абонементом) `sync_personal_lesson_paid_status` больше не трогает `paid` — раньше `v_net > 0 → 'yes' ELSE 'no'` мог сбросить вручную выставленный `paid='yes'` при вызове синка без реального платежа.
+
 ### PRICE-ARCHIVE-1 — Soft archive основного прайс-листа (2026-08-03)
 
 - **Решение:** тарифы в `prices` не удаляются: `status = active | archived`, `archived_at` фиксирует архивацию, восстановление возвращает `active` и очищает `archived_at`. Все обычные `usePrices`-сценарии читают только active. Архив и агрегат продаж выдаёт SECURITY DEFINER RPC `list_archived_prices` с tenant/gate `can_read_prices`; продажа = запись `subscriptions` или `single_visits`, напрямую связанная через `price_id`.

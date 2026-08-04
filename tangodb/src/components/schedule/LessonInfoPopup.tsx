@@ -188,6 +188,7 @@ export default function LessonInfoPopup({
       clientId3: fullLesson.clientId3,
       clientDisplay: fullLesson.clientDisplay,
       price: fullLesson.price,
+      paidAmount: fullLesson.paidAmount,
       locationId: fullLesson.locationId ?? null,
       disciplineId: fullLesson.disciplineId ?? null,
     });

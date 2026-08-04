@@ -203,6 +203,7 @@ export default function PersonalLessonsPageContainer({
       clientId3: lesson.clientId3,
       clientDisplay: lesson.clientDisplay,
       price: lesson.price,
+      paidAmount: lesson.paidAmount,
       locationId: lesson.locationId,
       disciplineId: lesson.disciplineId,
     });

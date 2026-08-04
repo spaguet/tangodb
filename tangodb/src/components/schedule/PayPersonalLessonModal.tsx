@@ -42,6 +42,7 @@ export interface PayPersonalLessonTarget {
   clientId3: string;
   clientDisplay: string;
   price: number;
+  paidAmount?: number;
   locationId?: string | null;
   disciplineId?: string | null;
 }
@@ -117,10 +118,11 @@ export default function PayPersonalLessonModal({
     }
     setBookingPaymentMode(null);
     setLinkedSubscriptionId("");
-    const initialPrice = lesson.price > 0 ? lesson.price.toString() : "";
+    const remainingDebt = Math.max(lesson.price - (lesson.paidAmount ?? 0), 0);
+    const initialPrice = lesson.price > 0 ? remainingDebt.toString() : "";
     setCustomPrice(initialPrice);
     setSelectedLessonTariffId("");
-  }, [lessonId, lesson?.price]);
+  }, [lessonId, lesson?.price, lesson?.paidAmount]);
 
   useEffect(() => {
     if (!lesson || lessonTariffs.length === 0) return;
@@ -336,6 +338,16 @@ export default function PayPersonalLessonModal({
 
               {bookingPaymentMode === "single" && (
                 <>
+                  {lesson.price > 0 && (lesson.paidAmount ?? 0) > 0 && (
+                    <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 text-xs font-sans">
+                      <span className="text-slate-500">
+                        {t("personal.pay.paidSoFar")}: {formatCurrency(lesson.paidAmount ?? 0)}
+                      </span>
+                      <span className="text-rose-600 font-semibold">
+                        {t("common.debt")}: {formatCurrency(Math.max(lesson.price - (lesson.paidAmount ?? 0), 0))}
+                      </span>
+                    </div>
+                  )}
                   {lessonTariffs.length > 0 && (
                     <div className="flex flex-nowrap items-end gap-3 w-full">
                       <div className="min-w-0 flex-1">

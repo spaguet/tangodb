@@ -92,6 +92,7 @@ export function useRecordSingleVisit() {
       clientId: string;
       priceId: string;
       method: PaymentMethod;
+      amount?: number;
       idempotencyKey?: string;
       venueRuleAcknowledged?: boolean;
     }) => {
@@ -107,6 +108,7 @@ export function useRecordSingleVisit() {
         p_price_id: input.priceId,
         p_method: input.method,
         p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
+        p_amount: input.amount ?? null,
         p_venue_rule_acknowledged: input.venueRuleAcknowledged ?? false,
       });
 
