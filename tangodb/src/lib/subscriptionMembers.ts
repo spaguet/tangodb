@@ -8,6 +8,11 @@ export function isPairGroupSubscription(sub: Pick<Subscription, "type" | "catego
   return sub.category === "group" && PAIR_SUBSCRIPTION_TYPES.has(sub.type);
 }
 
+/** Group attendance is marked per subscription; pair types represent two people. */
+export function groupSubscriptionParticipantCount(type: string): number {
+  return PAIR_SUBSCRIPTION_TYPES.has(type) ? 2 : 1;
+}
+
 export function subscriptionMemberSlots(sub: Subscription): Array<{
   slot: number;
   clientId: string;

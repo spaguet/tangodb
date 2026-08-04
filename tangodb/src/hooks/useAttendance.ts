@@ -9,6 +9,7 @@ import {
   type FreezePolicy,
   wouldExceedFreezeLimit,
 } from "../lib/freezePolicy";
+import { groupSubscriptionParticipantCount } from "../lib/subscriptionMembers";
 import { subscriptionMatchesScheduleGroup } from "../lib/scheduleGroups";
 import type {
   AttendanceRecord,
@@ -181,6 +182,19 @@ export function computeSubsForDate(
         category: s.category,
       };
     });
+}
+
+export function countPresentAttendeesFromSubs(
+  subs: Array<Pick<SubForDate, "currentStatus" | "type">>,
+  singleVisitCount = 0
+): number {
+  let count = singleVisitCount;
+  for (const sub of subs) {
+    if (sub.currentStatus === "present") {
+      count += groupSubscriptionParticipantCount(sub.type);
+    }
+  }
+  return count;
 }
 
 export type SubscriptionAttendanceStats = {

@@ -10,6 +10,7 @@ import type {
   SubscriptionGroupLink,
 } from "../types";
 import type { SubscriptionRefundRecord } from "../lib/subscriptionRefund";
+import { groupSubscriptionParticipantCount } from "../lib/subscriptionMembers";
 import { aggregateEffectivePaymentTotal, type PaymentWithCorrectionMeta } from "../lib/paymentCorrection";
 
 export function monthDateRange(yearMonth: string): { dateFrom: string; dateTo: string } {
@@ -574,14 +575,21 @@ export interface OccupancyStats {
 export function computeOccupancyStats(
   attendance: AttendanceRecord[],
   personalLessons: PersonalLesson[],
-  singleVisits: SingleVisit[] = []
+  singleVisits: SingleVisit[] = [],
+  subscriptionTypesById: Record<string, string> = {}
 ): OccupancyStats {
   let present = 0;
   let absent = 0;
 
+  const participantCount = (subscriptionId: string) => {
+    const type = subscriptionTypesById[subscriptionId];
+    return type ? groupSubscriptionParticipantCount(type) : 1;
+  };
+
   for (const record of attendance) {
-    if (record.attendanceStatus === "present") present += 1;
-    else if (record.attendanceStatus === "absent") absent += 1;
+    const count = participantCount(record.subscriptionId);
+    if (record.attendanceStatus === "present") present += count;
+    else if (record.attendanceStatus === "absent") absent += count;
   }
 
   for (const lesson of personalLessons) {

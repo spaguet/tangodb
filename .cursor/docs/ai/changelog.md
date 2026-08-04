@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-04 — fix: парный групповой абонемент считается как 2 присутствующих при закрытии урока, в отчёте проведённых занятий и в заполняемости на дашборде (`groupSubscriptionParticipantCount`, `countPresentAttendeesFromSubs`, миграция `20260880000001_pair_subscription_attendance_count.sql`).
+
 2026-08-04 — разовое посещение: тариф стал необязательным — можно указать только сумму (договорённая цена вне прайса); `record_single_visit` принимает `p_price_id = NULL` при `p_amount > 0`; миграция `20260879000001_single_visit_optional_tariff.sql`; UI `AttendancePanel`.
 
 2026-08-04 — fix: переоткрытие урока без причины — понятное сообщение «Пожалуйста, укажите причину переоткрытия урока» вместо технического `reason_required` (`formatReopenLessonError`, `AttendancePanel`, `LessonInfoPopup`, `PersonalLessonRow`).

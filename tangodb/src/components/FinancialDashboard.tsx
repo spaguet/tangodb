@@ -67,6 +67,7 @@ import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { useRecalculateTeacherSettlement, useTeacherSettlements } from "../hooks/usePayroll";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
+import { useSubscriptions } from "../hooks/useSubscriptions";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import { useSingleVisits } from "../hooks/useSingleVisits";
 import AppSelect from "./ui/AppSelect";
@@ -453,6 +454,7 @@ export default function FinancialDashboard() {
   });
   const scheduleQuery = useSchedule();
   const subscriptionGroupsQuery = useSubscriptionGroups();
+  const subscriptionsQuery = useSubscriptions();
   const teamQuery = useTeamMembers();
   const singleVisitsQuery = useSingleVisits({ yearMonth: statsMonth });
 
@@ -579,14 +581,26 @@ export default function FinancialDashboard() {
     [clientsQuery.data, statsMonth]
   );
 
+  const subscriptionTypesById = useMemo(
+    () => Object.fromEntries((subscriptionsQuery.data ?? []).map((sub) => [sub.id, sub.type])),
+    [subscriptionsQuery.data]
+  );
+
   const occupancyStats = useMemo(
     () =>
       computeOccupancyStats(
         attendanceQuery.data ?? [],
         personalLessonsEnabled ? (personalLessonsQuery.data ?? []) : [],
-        singleVisitsQuery.data ?? []
+        singleVisitsQuery.data ?? [],
+        subscriptionTypesById
       ),
-    [attendanceQuery.data, personalLessonsQuery.data, singleVisitsQuery.data, personalLessonsEnabled]
+    [
+      attendanceQuery.data,
+      personalLessonsQuery.data,
+      singleVisitsQuery.data,
+      personalLessonsEnabled,
+      subscriptionTypesById,
+    ]
   );
 
   const topClients = useMemo(

@@ -20,6 +20,7 @@ import {
   attendanceQueryKey,
   useMarkAttendance,
   useScheduleDates,
+  countPresentAttendeesFromSubs,
   useSubsForDate,
 } from "../hooks/useAttendance";
 import { useUndoAttendanceCorrection } from "../hooks/usePaymentCorrections";
@@ -919,8 +920,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
-    const presentFromMarks =
-      effectiveModalSubs.filter((st) => st.currentStatus === "present").length + groupSingleVisits.length;
+    const presentFromMarks = countPresentAttendeesFromSubs(effectiveModalSubs, groupSingleVisits.length);
     const presentCount =
       closeAttendeeCount.trim() === "" ? presentFromMarks : Number(closeAttendeeCount);
     if (!Number.isFinite(presentCount) || presentCount < 0) {
@@ -1350,8 +1350,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     min={0}
                     value={closeAttendeeCount}
                     placeholder={String(
-                      effectiveModalSubs.filter((st) => st.currentStatus === "present").length +
-                        groupSingleVisits.length
+                      countPresentAttendeesFromSubs(effectiveModalSubs, groupSingleVisits.length)
                     )}
                     onChange={(e) => setCloseAttendeeCount(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-amber-400"
