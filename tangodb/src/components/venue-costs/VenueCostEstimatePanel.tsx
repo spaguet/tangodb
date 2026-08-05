@@ -29,6 +29,8 @@ function versionToSnapshot(version: VenueCostRuleVersion): VenueCostVersionSnaps
     mode: version.mode,
     validFrom: version.validFrom,
     validTo: version.validTo,
+    expenseCategory: version.expenseCategory,
+    payee: version.payee,
     rules: version.rules,
   };
 }

@@ -23,6 +23,8 @@ const ERROR_KEY_MAP: Record<string, I18nKey> = {
   ambiguous_scope: "venueCosts.error.ambiguousScope",
   invalid_rule: "venueCosts.error.invalidRule",
   invalid_rule_reference: "venueCosts.error.invalidRuleReference",
+  invalid_expense_category: "venueCosts.error.invalidExpenseCategory",
+  payee_required: "venueCosts.error.payeeRequired",
   draft_not_found: "venueCosts.error.draftNotFound",
   forbidden: "venueCosts.error.forbidden",
   venue_cost_save_failed: "venueCosts.error.saveFailed",

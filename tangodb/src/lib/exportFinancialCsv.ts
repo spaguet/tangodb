@@ -111,13 +111,24 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
   }));
   const venueExpenseRows = (params.venueCostEntries ?? [])
     .filter((entry) => entry.sourceType === "venue_cost")
-    .map((entry) => ({
-      date: labels.formatDate(entry.entryDate),
-      category: t(locale, "venueCosts.finance.venueTotal"),
-      description: entry.description || t(locale, "venueCosts.finance.autoRow"),
-      amount: entry.amount,
-      source: t(locale, "venueCosts.finance.autoRow"),
-    }));
+    .map((entry) => {
+      const categoryKey =
+        entry.category === "rent" ||
+        entry.category === "utilities" ||
+        entry.category === "marketing" ||
+        entry.category === "other" ||
+        entry.category === "salary"
+          ? expenseCategoryKey(entry.category)
+          : ("venueCosts.finance.venueTotal" as const);
+      const payeeSuffix = entry.payee ? ` · ${entry.payee}` : "";
+      return {
+        date: labels.formatDate(entry.entryDate),
+        category: t(locale, categoryKey),
+        description: `${entry.description || t(locale, "venueCosts.finance.autoRow")}${payeeSuffix}`,
+        amount: entry.amount,
+        source: t(locale, "venueCosts.finance.autoRow"),
+      };
+    });
   const expenseRows = [...manualExpenseRows, ...venueExpenseRows];
 
   if (expenseRows.length > 0) {

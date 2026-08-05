@@ -59,7 +59,7 @@ import { usePaymentsTrend, getPaymentMethodLabel } from "../hooks/usePayments";
 import { useSubscriptionRefunds } from "../hooks/useSubscriptionRefunds";
 import type { PaymentMethod } from "../types";
 import { sumExpenses, useExpensesForMonth } from "../hooks/useExpenses";
-import { useFinanceCosts } from "../hooks/useVenueCosts";
+import { useFinanceCosts, useRecalculatePendingVenueCosts } from "../hooks/useVenueCosts";
 import { useOtherIncome } from "../hooks/useOtherIncome";
 import { useRentalPayments } from "../hooks/useRentalPayments";
 import { usePermissions } from "../hooks/usePermissions";
@@ -425,6 +425,7 @@ export default function FinancialDashboard() {
   const { can } = usePermissions();
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const canWritePayroll = can("payroll.write");
+  const canReadFinance = can("finance.read");
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
   const [trendPeriod, setTrendPeriod] = useState<RevenueTrendPeriod>("6months");
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
@@ -445,6 +446,7 @@ export default function FinancialDashboard() {
   });
   const payrollQuery = useTeacherSettlements(statsMonth);
   const recalculatePayroll = useRecalculateTeacherSettlement();
+  const recalculateVenueCosts = useRecalculatePendingVenueCosts();
   const debtorsQuery = useFinancialDebtors();
   const clientsQuery = useClients();
   const attendanceQuery = useAttendanceRecords(statsMonth);
@@ -467,7 +469,9 @@ export default function FinancialDashboard() {
   const receivablesLoading = debtorsQuery.isLoading;
 
   const expensesLoading =
-    expensesQuery.isLoading || (financeCostsQuery.isLoading && !financeCostsQuery.isError);
+    expensesQuery.isLoading ||
+    (financeCostsQuery.isLoading && !financeCostsQuery.isError) ||
+    recalculateVenueCosts.isPending;
 
   const profitLoading =
     financialStatsLoading ||
@@ -551,6 +555,14 @@ export default function FinancialDashboard() {
     if (!canWritePayroll) return;
     void recalculatePayroll.mutateAsync(statsMonth);
   }, [statsMonth, canWritePayroll]);
+
+  useEffect(() => {
+    if (!canReadFinance) return;
+    void recalculateVenueCosts.mutateAsync({
+      dateFrom: monthRange.dateFrom,
+      dateTo: monthRange.dateTo,
+    });
+  }, [statsMonth, monthRange.dateFrom, monthRange.dateTo, canReadFinance]);
 
   const payrollAccrued = useMemo(
     () => (payrollQuery.data ?? []).reduce((sum, settlement) => sum + settlement.amountAccrued, 0),

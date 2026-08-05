@@ -14,6 +14,7 @@ import {
   type VenueCostPersonalRule,
   type VenueCostRuleDraft,
 } from "../../lib/venueCostRules";
+import { expenseCategoryKey } from "../../lib/expenseCategories";
 import { formatCurrency } from "../../lib/utils";
 
 interface VenueCostVersionHistoryRowProps {
@@ -40,6 +41,8 @@ function versionSnapshot(version: VenueCostRuleVersion) {
     mode: version.mode,
     validFrom: version.validFrom,
     validTo: version.validTo,
+    expenseCategory: version.expenseCategory,
+    payee: version.payee,
     rules: version.rules,
   };
 }
@@ -78,6 +81,8 @@ function diffEntryLabel(
     if (entry.key === "mode") return t("venueCosts.diff.field.mode");
     if (entry.key === "validFrom") return t("venueCosts.diff.field.validFrom");
     if (entry.key === "validTo") return t("venueCosts.diff.field.validTo");
+    if (entry.key === "expenseCategory") return t("venueCosts.diff.field.expenseCategory");
+    if (entry.key === "payee") return t("venueCosts.diff.field.payee");
     return t("venueCosts.diff.field.version");
   }
   if (entry.section === "fixed") return t("venueCosts.diff.field.fixedPeriod");
@@ -101,11 +106,19 @@ function VersionSummary({
     return <p className="text-xs text-slate-500 mt-1.5 ml-6">{t("venueCosts.mode.disabled")}</p>;
   }
 
+  const accountingLine = (
+    <li className="text-slate-500">
+      {t("venueCosts.expenseCategory")}: {t(expenseCategoryKey(version.expenseCategory))}
+      {version.payee ? ` · ${t("venueCosts.payee")}: ${version.payee}` : null}
+    </li>
+  );
+
   if (version.mode === "fixed_period") {
     const rules = version.rules as VenueCostFixedRules;
     if (isVenueCostFixedPerLocation(rules)) {
       return (
         <ul className="text-xs text-slate-600 mt-1.5 ml-6 space-y-0.5">
+          {accountingLine}
           <li className="text-slate-500">
             {t(`venueCosts.period.${rules.period}`)} · {t("venueCosts.fixedPeriod.perLocation")}
           </li>
@@ -119,20 +132,29 @@ function VersionSummary({
       );
     }
     return (
-      <p className="text-xs text-slate-600 mt-1.5 ml-6">
-        {t(`venueCosts.period.${rules.period}`)} · {formatCurrency(rules.amount)} ·{" "}
-        {t("venueCosts.fixedPeriod.orgWide")}
-      </p>
+      <ul className="text-xs text-slate-600 mt-1.5 ml-6 space-y-0.5">
+        {accountingLine}
+        <li>
+          {t(`venueCosts.period.${rules.period}`)} · {formatCurrency(rules.amount)} ·{" "}
+          {t("venueCosts.fixedPeriod.orgWide")}
+        </li>
+      </ul>
     );
   }
 
   const rules = version.rules as VenueCostPerLessonRules;
   if (!rules.group.length && !rules.personal.length) {
-    return <p className="text-xs text-amber-700 mt-1.5 ml-6">{t("venueCosts.summary.emptyPerLesson")}</p>;
+    return (
+      <ul className="text-xs text-slate-600 mt-1.5 ml-6 space-y-0.5">
+        {accountingLine}
+        <li className="text-amber-700">{t("venueCosts.summary.emptyPerLesson")}</li>
+      </ul>
+    );
   }
 
   return (
     <ul className="text-xs text-slate-600 mt-1.5 ml-6 space-y-1">
+      {accountingLine}
       {rules.group.map((rule, index) => (
         <li key={`g-${index}`}>
           <span className="font-medium text-slate-700">{t("venueCosts.groupRules")}:</span>{" "}
@@ -295,11 +317,19 @@ function VersionDetails({
     return <p className="text-xs text-slate-500">{t("venueCosts.mode.disabled")}</p>;
   }
 
+  const accountingBlock = (
+    <p className="text-xs text-slate-600">
+      {t("venueCosts.expenseCategory")}: {t(expenseCategoryKey(version.expenseCategory))}
+      {version.payee ? ` · ${t("venueCosts.payee")}: ${version.payee}` : null}
+    </p>
+  );
+
   if (version.mode === "fixed_period") {
     const rules = version.rules as VenueCostFixedRules;
     if (isVenueCostFixedPerLocation(rules)) {
       return (
         <div className="text-xs text-slate-600 space-y-1">
+          {accountingBlock}
           <p>
             {t(`venueCosts.period.${rules.period}`)} · {t("venueCosts.fixedPeriod.perLocation")} ({rules.currency})
           </p>
@@ -316,6 +346,7 @@ function VersionDetails({
     }
     return (
       <div className="text-xs text-slate-600 space-y-1">
+        {accountingBlock}
         <p>
           {t(`venueCosts.period.${rules.period}`)} · {formatCurrency(rules.amount)} ({rules.currency})
         </p>
@@ -327,6 +358,7 @@ function VersionDetails({
   const rules = version.rules as VenueCostPerLessonRules;
   return (
     <div className="space-y-3">
+      {accountingBlock}
       {rules.group.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-xs font-semibold text-slate-700">{t("venueCosts.groupRules")}</h4>
@@ -407,6 +439,8 @@ export default function VenueCostVersionHistoryRow({
     mode: version.mode,
     validFrom: version.validFrom,
     validTo: version.validTo,
+    expenseCategory: version.expenseCategory,
+    payee: version.payee === "—" ? "" : version.payee,
     rules: structuredClone(version.rules),
   };
 

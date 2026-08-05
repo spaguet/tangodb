@@ -113,6 +113,8 @@ export function mapSubscriptionRefund(row: Record<string, unknown>): Subscriptio
   };
 }
 
+export type RefundCalcMode = "pro_rata" | "single_visit_rate";
+
 /** Client-side mirror of server recommended refund (preview only). */
 export function previewRecommendedRefund(
   salePrice: number,
@@ -123,6 +125,30 @@ export function previewRecommendedRefund(
   if (lessonsTotal <= 0 || lessonsLeft <= 0 || availableAmount <= 0) return 0;
   const recommended = Math.round(((salePrice * lessonsLeft) / lessonsTotal) * 100) / 100;
   return Math.min(recommended, availableAmount);
+}
+
+/**
+ * Refund = sale − used lessons × single-visit tariff (capped by available).
+ * Example: 1_600_000 package, 1 used @ 250_000 → refund 1_350_000.
+ */
+export function previewRefundBySingleVisitRate(
+  salePrice: number,
+  lessonsTotal: number,
+  lessonsLeft: number,
+  singleVisitRate: number,
+  availableAmount: number
+): { refundAmount: number; lessonsUsed: number; retainedAmount: number } {
+  const lessonsUsed = Math.max(0, lessonsTotal - lessonsLeft);
+  if (availableAmount <= 0 || !Number.isFinite(singleVisitRate) || singleVisitRate < 0) {
+    return { refundAmount: 0, lessonsUsed, retainedAmount: 0 };
+  }
+  const retainedAmount = Math.round(lessonsUsed * singleVisitRate * 100) / 100;
+  const raw = Math.max(0, Math.round((salePrice - retainedAmount) * 100) / 100);
+  return {
+    refundAmount: Math.min(raw, availableAmount),
+    lessonsUsed,
+    retainedAmount,
+  };
 }
 
 export function computeLessonsFromRefundAmount(

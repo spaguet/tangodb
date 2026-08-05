@@ -2,6 +2,7 @@ import {
   findVenueCostAmbiguousPairs,
   findVenueCostDuplicateKeys,
 } from "./venueCostBulkCopy";
+import type { ExpenseCategory } from "../types/expense";
 
 export type VenueCostMode = "per_lesson" | "fixed_period" | "disabled";
 export type VenueCostRuleStatusCode =
@@ -11,6 +12,23 @@ export type VenueCostRuleStatusCode =
   | "inactive"
   | "expired_ack_required";
 export type VenueCostFixedPeriod = "week" | "month" | "custom";
+
+/** Expense categories allowed on venue cost rules (not salary). */
+export const VENUE_COST_EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  "rent",
+  "utilities",
+  "marketing",
+  "other",
+];
+
+export const DEFAULT_VENUE_COST_EXPENSE_CATEGORY: ExpenseCategory = "rent";
+
+export function parseVenueCostExpenseCategory(value: unknown): ExpenseCategory {
+  const raw = typeof value === "string" ? value : "";
+  return (VENUE_COST_EXPENSE_CATEGORIES as string[]).includes(raw)
+    ? (raw as ExpenseCategory)
+    : DEFAULT_VENUE_COST_EXPENSE_CATEGORY;
+}
 
 export interface VenueCostAttendanceTier {
   minAttendees: number;
@@ -73,6 +91,10 @@ export interface VenueCostRuleDraft {
   mode: VenueCostMode;
   validFrom: string;
   validTo: string | null;
+  /** P&L expense article — where the accrual is classified (default rent). */
+  expenseCategory: ExpenseCategory;
+  /** Counterparty / landlord receiving the funds. */
+  payee: string;
   rules: VenueCostRules;
 }
 
@@ -83,6 +105,15 @@ export function validateVenueCostDraft(draft: VenueCostRuleDraft): string[] {
   if (!draft.validFrom) errors.push("valid_from_required");
   if (draft.validTo && draft.validTo < draft.validFrom) errors.push("invalid_date_range");
   if (draft.mode === "fixed_period" && !draft.validTo) errors.push("valid_to_required");
+
+  if (draft.mode !== "disabled") {
+    if (!VENUE_COST_EXPENSE_CATEGORIES.includes(draft.expenseCategory)) {
+      errors.push("invalid_expense_category");
+    }
+    if (!draft.payee.trim()) {
+      errors.push("payee_required");
+    }
+  }
 
   if (draft.mode === "fixed_period") {
     const rules = draft.rules as VenueCostFixedRules;
@@ -245,6 +276,8 @@ export interface VenueCostVersionSnapshot {
   mode: VenueCostMode;
   validFrom: string;
   validTo: string | null;
+  expenseCategory: ExpenseCategory;
+  payee: string;
   rules: VenueCostRules;
 }
 
@@ -370,6 +403,8 @@ export function diffVenueCostVersions(
   pushMetaDiff(entries, "mode", draft.mode, active.mode);
   pushMetaDiff(entries, "validFrom", draft.validFrom, active.validFrom);
   pushMetaDiff(entries, "validTo", draft.validTo, active.validTo);
+  pushMetaDiff(entries, "expenseCategory", draft.expenseCategory, active.expenseCategory);
+  pushMetaDiff(entries, "payee", draft.payee, active.payee);
 
   if (draft.mode !== active.mode) {
     if (active.mode === "per_lesson") {
@@ -441,10 +476,20 @@ export function diffVenueCostVersions(
   return entries;
 }
 
+function accountingFieldsPayload(draft: VenueCostRuleDraft): Record<string, unknown> {
+  if (draft.mode === "disabled") return {};
+  return {
+    expense_category: draft.expenseCategory,
+    payee: draft.payee.trim(),
+  };
+}
+
 export function venueCostDraftToPayload(draft: VenueCostRuleDraft): Record<string, unknown> {
+  const accounting = accountingFieldsPayload(draft);
   const rules =
     draft.mode === "per_lesson"
       ? {
+          ...accounting,
           currency: (draft.rules as VenueCostPerLessonRules).currency,
           group: (draft.rules as VenueCostPerLessonRules).group.map((rule) => ({
             teacher_member_id: rule.teacherMemberId,
@@ -467,6 +512,7 @@ export function venueCostDraftToPayload(draft: VenueCostRuleDraft): Record<strin
         ? (() => {
             const fixed = draft.rules as VenueCostFixedRules;
             const payload: Record<string, unknown> = {
+              ...accounting,
               currency: fixed.currency,
               period: fixed.period,
               amount: fixed.amount,

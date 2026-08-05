@@ -12,6 +12,20 @@
 
 ## Записи
 
+### REFUND-2 — Возврат с удержанием по тарифу разового посещения (2026-08-05)
+
+- **Решение:** В UI «Завершить с возвратом» для `lesson_count` добавить режим `single_visit_rate`: `refund = min(available, sale_price − used × single_visit_rate)`, где `used = lessons_total − lessons_left`. Тариф из прайса `single_visit` (фильтр по дисциплине) или ручной ввод. Сумма уходит в существующий `finish_subscription_with_refund`. Режим `pro_rata` остаётся умолчанием.
+- **Контекст:** Абонемент 8×1 600 000, 1 посещение, возврат с удержанием 250 000 (разовое), а не про-рата 1 400 000.
+- **Альтернативы:** Только ручной ввод; отдельный RPC на бэкенде; жёсткая привязка к одному тарифу.
+- **Почему так:** Явный бухгалтерский расчёт без смены серверного контракта возврата.
+
+### VENUE-COST-3 — Статья расхода и получатель в правилах затрат за зал (2026-08-05)
+
+- **Решение:** В `rules` JSONB версии venue cost — обязательные для режимов `per_lesson` / `fixed_period` поля `expense_category` (rent|utilities|marketing|other, default `rent`) и `payee` (арендодатель / контрагент). `finance_cost_entries_v` читает категорию и payee из `rule_snapshot.rules` (legacy без категории → `rent`). Financial dashboard при смене месяца вызывает `recalculate_pending_venue_costs` (как payroll). Исторические posted accruals не переписываются.
+- **Контекст:** Бухгалтер: 150 000 VND с персонального урока арендодателю — расход по статье «Аренда»; в правиле не было графы «куда идут средства»; в «Обзор и статистика» pending не дооценивались.
+- **Альтернативы:** (1) Отдельная сущность контрагента-арендодателя; (2) Автосоздание строк в `expenses` при закрытии урока; (3) Пересчёт уже posted начислений при смене правила.
+- **Почему так:** Зеркалит `teacher_pay_rules.expense_category`; snapshot в accrual сохраняет классификацию на дату факта; явный close + pending resolve сохраняют VENUE-COST-1.
+
 ### PAY-CUSTOM-1 — Произвольная сумма разового посещения и частичная оплата персонального урока (2026-08-04)
 
 - **Решение:** (1) `record_single_visit` получил опциональный `p_amount numeric DEFAULT NULL`; при передаче используется вместо `prices.price` тарифа (сигнатура сменилась — старая функция и `_record_single_visit_before_venue_rules` дропнуты и созданы заново, `p_venue_rule_acknowledged` остался последним параметром). (2) `personal_lessons.paid_amount NUMERIC DEFAULT 0` — накопленная чистая сумма оплат. `record_personal_lesson_payment` больше не возвращает `already_applied` только из-за существующего активного платежа — теперь блокирует новый платёж лишь когда `paid_amount >= price` (`error_code: already_fully_paid`), поэтому несколько частичных платежей складываются в `paid_amount` через `sync_personal_lesson_paid_status`. `void_personal_lesson_payment` сторнирует ВСЕ активные платежи урока (было — только первый), т.к. `payments_org_personal_lesson_unique` уже снят в PAY-CORRECTIONS. `financial_debtors_v.amount` для `kind='personal'` — теперь `GREATEST(price - paid_amount, 0)` (остаток долга), а не полная цена; `useScheduleDebtors` считает долг тем же способом.

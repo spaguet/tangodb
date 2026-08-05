@@ -362,6 +362,13 @@ export default function FinanceExpensesPage() {
                   </p>
                   <p className="text-[10px] text-slate-400 mt-0.5">
                     {formatDate(entry.entryDate, { day: "numeric", month: "short", year: "numeric" })}
+                    {entry.category === "rent" ||
+                    entry.category === "utilities" ||
+                    entry.category === "marketing" ||
+                    entry.category === "other"
+                      ? ` · ${categoryLabel(entry.category)}`
+                      : null}
+                    {entry.payee ? ` · ${entry.payee}` : null}
                   </p>
                 </div>
                 <p className="text-sm font-semibold text-rose-700 whitespace-nowrap">

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import {
+  parseVenueCostExpenseCategory,
   venueCostDraftToPayload,
   type VenueCostAttendanceTier,
   type VenueCostGroupRule,
@@ -11,6 +12,7 @@ import {
   type VenueCostRuleStatusCode,
   type VenueCostRules,
 } from "../lib/venueCostRules";
+import type { ExpenseCategory } from "../types/expense";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const venueCostStatusQueryKey = ["venue-costs", "status"] as const;
@@ -35,6 +37,8 @@ export interface VenueCostRuleVersion {
   mode: VenueCostMode;
   validFrom: string;
   validTo: string | null;
+  expenseCategory: ExpenseCategory;
+  payee: string;
   rules: VenueCostRules;
   createdAt: string;
   updatedAt: string;
@@ -121,8 +125,17 @@ function mapRules(mode: VenueCostMode, value: unknown): VenueCostRules {
   return {};
 }
 
+function mapAccountingFromRules(value: unknown): { expenseCategory: ExpenseCategory; payee: string } {
+  const rules = (value && typeof value === "object" ? value : {}) as RpcObject;
+  return {
+    expenseCategory: parseVenueCostExpenseCategory(rules.expense_category ?? rules.expenseCategory),
+    payee: String(rules.payee ?? "").trim(),
+  };
+}
+
 export function mapVenueCostVersion(row: RpcObject): VenueCostRuleVersion {
   const mode = String(row.mode) as VenueCostMode;
+  const accounting = mapAccountingFromRules(row.rules);
   return {
     id: String(row.id),
     versionNumber: Number(row.version_number) || 0,
@@ -130,6 +143,8 @@ export function mapVenueCostVersion(row: RpcObject): VenueCostRuleVersion {
     mode,
     validFrom: String(row.valid_from ?? "").slice(0, 10),
     validTo: nullableString(row.valid_to)?.slice(0, 10) ?? null,
+    expenseCategory: accounting.expenseCategory,
+    payee: accounting.payee,
     rules: mapRules(mode, row.rules),
     createdAt: String(row.created_at ?? ""),
     updatedAt: String(row.updated_at ?? ""),
@@ -605,6 +620,7 @@ export interface FinanceCostEntry {
   amount: number;
   category: string;
   description: string;
+  payee: string | null;
   ruleVersionId: string | null;
   closureId: string | null;
   teacherPayRuleId: string | null;
@@ -640,6 +656,7 @@ export function useFinanceCosts(dateFrom: string, dateTo: string, enabled = true
           amount: Number(item.amount) || 0,
           category: String(item.category ?? ""),
           description: String(item.description ?? ""),
+          payee: nullableString(item.payee),
           ruleVersionId: nullableString(item.rule_version_id),
           closureId: nullableString(item.closure_id),
           teacherPayRuleId: nullableString(item.teacher_pay_rule_id),
@@ -654,5 +671,37 @@ export function useFinanceCosts(dateFrom: string, dateTo: string, enabled = true
       };
     },
     staleTime: 30_000,
+  });
+}
+
+/** Resolve pending_unpriced closures for a date range (e.g. dashboard month). */
+export function useRecalculatePendingVenueCosts() {
+  const invalidate = useInvalidateVenueCosts();
+
+  return useMutation({
+    mutationFn: async (input: { dateFrom: string; dateTo: string; idempotencyKey?: string }) => {
+      const { data, error } = await supabase.rpc("recalculate_pending_venue_costs", {
+        p_date_from: input.dateFrom,
+        p_date_to: input.dateTo,
+        p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
+      });
+      if (error) return { success: false as const, error: error.message, resolvedCount: 0 };
+      const result = data as RpcObject | null;
+      if (!result?.success) {
+        return {
+          success: false as const,
+          error: String(result?.error_code ?? "recalculate_pending_venue_costs_failed"),
+          resolvedCount: 0,
+        };
+      }
+      return {
+        success: true as const,
+        resolvedCount: Number(result.resolved_count) || 0,
+        alreadyApplied: result.already_applied === true,
+      };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidate();
+    },
   });
 }

@@ -18,6 +18,8 @@ import {
   validateVenueCostDraft,
   buildFixedLocationAmounts,
   isVenueCostFixedPerLocation,
+  DEFAULT_VENUE_COST_EXPENSE_CATEGORY,
+  VENUE_COST_EXPENSE_CATEGORIES,
   type VenueCostFixedRules,
   type VenueCostGroupRule,
   type VenueCostMode,
@@ -25,6 +27,8 @@ import {
   type VenueCostPersonalRule,
   type VenueCostRuleDraft,
 } from "../../lib/venueCostRules";
+import { expenseCategoryKey } from "../../lib/expenseCategories";
+import type { ExpenseCategory } from "../../types/expense";
 import { formatVenueCostDraftError, formatVenueCostDraftErrors } from "../../lib/venueCostDraftErrors";
 import { formatOptionsFromSettings, getCurrencyInputSuffix } from "../../lib/format";
 import { getCurrencySymbolHint } from "../../lib/currencies";
@@ -76,6 +80,8 @@ const newDraft = (): VenueCostRuleDraft => ({
   mode: "disabled",
   validFrom: today(),
   validTo: null,
+  expenseCategory: DEFAULT_VENUE_COST_EXPENSE_CATEGORY,
+  payee: "",
   rules: {},
 });
 
@@ -273,6 +279,8 @@ export default function VenueCostsSettingsPage({
         mode: draft.mode,
         validFrom: draft.validFrom,
         validTo: draft.validTo,
+        expenseCategory: draft.expenseCategory,
+        payee: draft.payee,
         rules: draft.rules,
       }
     : null;
@@ -356,6 +364,35 @@ export default function VenueCostsSettingsPage({
               <input className={fieldCls} type="date" value={draft.validTo ?? ""} onChange={(e) => setDraft({ ...draft, validTo: e.target.value || null })} />
             </label>
           </div>
+
+          {draft.mode !== "disabled" && (
+            <div className="grid sm:grid-cols-2 gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+              <AppSelect
+                label={t("venueCosts.expenseCategory")}
+                value={draft.expenseCategory}
+                onChange={(e) =>
+                  setDraft({ ...draft, expenseCategory: e.target.value as ExpenseCategory })
+                }
+              >
+                {VENUE_COST_EXPENSE_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {t(expenseCategoryKey(cat))}
+                  </option>
+                ))}
+              </AppSelect>
+              <label className="field-stack">
+                <span className={selectLabelCls}>{t("venueCosts.payee")}</span>
+                <input
+                  className={fieldCls}
+                  type="text"
+                  value={draft.payee}
+                  placeholder={t("venueCosts.payeePlaceholder")}
+                  onChange={(e) => setDraft({ ...draft, payee: e.target.value })}
+                />
+              </label>
+              <p className="sm:col-span-2 text-[11px] text-slate-500">{t("venueCosts.accountingHint")}</p>
+            </div>
+          )}
 
           {draft.mode !== "disabled" && (
             <p className="text-[11px] text-slate-500">
