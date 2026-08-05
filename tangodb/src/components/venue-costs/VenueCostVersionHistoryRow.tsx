@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Check, ChevronDown, Copy, Edit } from "lucide-react";
+import { Check, ChevronDown, Copy, Edit, StopCircle } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
-import type { VenueCostRuleVersion } from "../../hooks/useVenueCosts";
+import { useEndVenueCostRuleEarly, type VenueCostRuleVersion } from "../../hooks/useVenueCosts";
+import ConfirmDialog from "../ui/ConfirmDialog";
 import { memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import {
   diffVenueCostVersions,
@@ -28,6 +29,8 @@ interface VenueCostVersionHistoryRowProps {
   onCopyToDraft: (draft: VenueCostRuleDraft) => void;
   onAccept: (versionId: string) => void;
   acceptPending: boolean;
+  endEarlyPending?: boolean;
+  onEndEarly?: (versionId: string) => void;
 }
 
 function versionSnapshot(version: VenueCostRuleVersion) {
@@ -272,9 +275,21 @@ export default function VenueCostVersionHistoryRow({
   onCopyToDraft,
   onAccept,
   acceptPending,
+  endEarlyPending = false,
+  onEndEarly,
 }: VenueCostVersionHistoryRowProps) {
   const { t, formatDate, formatDateTime } = useI18n();
   const [expanded, setExpanded] = useState(false);
+  const [endEarlyOpen, setEndEarlyOpen] = useState(false);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const isCurrentlyActive =
+    version.status === "accepted" &&
+    activeVersion?.id === version.id &&
+    version.validFrom <= today &&
+    (version.validTo == null || version.validTo >= today);
+  const canEndEarly =
+    canManage && isCurrentlyActive && version.validTo !== today && Boolean(onEndEarly);
 
   const acceptedByMember = version.acceptedBy
     ? teamMembers.find((member) => member.id === version.acceptedBy)
@@ -370,9 +385,36 @@ export default function VenueCostVersionHistoryRow({
                 {t("venueCosts.copyToDraft")}
               </button>
             )}
+            {canEndEarly && (
+              <button
+                type="button"
+                onClick={() => setEndEarlyOpen(true)}
+                disabled={endEarlyPending}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-200 text-amber-800 text-xs font-semibold hover:bg-amber-50 cursor-pointer disabled:opacity-60"
+              >
+                <StopCircle className="w-3.5 h-3.5" />
+                {t("venueCosts.endEarly")}
+              </button>
+            )}
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={endEarlyOpen}
+        title={t("venueCosts.endEarlyConfirm.title")}
+        description={t("venueCosts.endEarlyConfirm.body", {
+          date: formatDate(today),
+        })}
+        confirmLabel={t("venueCosts.endEarlyConfirm.confirm")}
+        pending={endEarlyPending}
+        onCancel={() => setEndEarlyOpen(false)}
+        onConfirm={() => {
+          if (!onEndEarly) return;
+          onEndEarly(version.id);
+          setEndEarlyOpen(false);
+        }}
+      />
 
       {expanded && (
         <div className="mt-3 ml-6 space-y-3 border-l border-slate-100 pl-3">

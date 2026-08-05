@@ -39,6 +39,7 @@
     "test:db:rental-effective-amount": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_effective_amount_test.sql",
     "test:db:rental-amount-adjustment": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_amount_adjustment_test.sql",
     "test:db:venue-cost": "psql \"%DATABASE_URL%\" -f supabase/tests/venue_cost_rules_test.sql",
+    "test:db:teacher-pay-audit": "psql \"%DATABASE_URL%\" -f supabase/tests/teacher_pay_audit_test.sql",
     "test:venue-cost-preview": "node scripts/venue-cost-rules-check.mjs",
     "test:rental-effective-amount": "node scripts/rental-effective-amount-check.mjs",
     "test:finance-rental-aggregates": "node scripts/finance-rental-aggregates-check.mjs",

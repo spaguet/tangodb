@@ -49,7 +49,7 @@ export type SettlementLineCategory = "fixed" | "group" | "personal" | "single_vi
 export interface TeacherSettlementLineItem {
   id: string;
   lineCategory: SettlementLineCategory;
-  sourceType: "rate" | "payment" | "adjustment";
+  sourceType: "rate" | "payment" | "adjustment" | "occurrence";
   sourceId: string | null;
   lineDate: string | null;
   timeStart: string | null;

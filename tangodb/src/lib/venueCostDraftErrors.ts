@@ -27,6 +27,9 @@ const ERROR_KEY_MAP: Record<string, I18nKey> = {
   forbidden: "venueCosts.error.forbidden",
   venue_cost_save_failed: "venueCosts.error.saveFailed",
   venue_cost_accept_failed: "venueCosts.error.acceptFailed",
+  end_date_in_past: "venueCosts.error.endDateInPast",
+  end_date_before_start: "venueCosts.error.endDateBeforeStart",
+  venue_cost_end_early_failed: "venueCosts.error.endEarlyFailed",
 };
 
 export function parseVenueCostDraftErrorCode(raw: string): VenueCostDraftErrorParsed {

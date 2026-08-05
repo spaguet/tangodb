@@ -101,11 +101,9 @@ export function validateVenueCostDraft(draft: VenueCostRuleDraft): string[] {
     const rules = draft.rules as VenueCostPerLessonRules;
     if (!rules.group.length && !rules.personal.length) errors.push("lesson_types_required");
     for (const rule of rules.personal) {
-      if (!rule.teacherMemberId) errors.push("teacher_required");
       if (!finiteNonNegative(rule.amount)) errors.push("invalid_personal_amount");
     }
     for (const rule of rules.group) {
-      if (!rule.teacherMemberId) errors.push("teacher_required");
       if (!rule.attendanceTiers.length) {
         errors.push("group_tiers_required");
         continue;
@@ -197,17 +195,17 @@ export interface VenueCostPreviewScope {
 }
 
 export function isVenueCostPreviewScopeReady(scope: VenueCostPreviewScope): boolean {
-  return !!scope.teacherMemberId;
+  return true;
 }
 
 /** First group rule with a teacher, else first group rule — for default preview scope. */
 export function defaultGroupPreviewScope(rules: VenueCostPerLessonRules): VenueCostPreviewScope {
-  const rule = rules.group.find((item) => item.teacherMemberId) ?? rules.group[0];
+  const rule = rules.group[0];
   if (!rule) {
     return { teacherMemberId: null, disciplineId: null, locationId: null };
   }
   return {
-    teacherMemberId: rule.teacherMemberId,
+    teacherMemberId: null,
     disciplineId: rule.disciplineId,
     locationId: rule.locationId,
   };

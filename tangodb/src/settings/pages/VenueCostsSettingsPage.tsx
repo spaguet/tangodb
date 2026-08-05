@@ -8,6 +8,7 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
 import {
   useAcceptVenueCostRuleVersion,
+  useEndVenueCostRuleEarly,
   useSaveVenueCostRuleDraft,
   useVenueCostRuleStatus,
   useVenueCostRuleVersions,
@@ -104,6 +105,7 @@ export default function VenueCostsSettingsPage({
   const teamQuery = useTeamMembers();
   const saveDraft = useSaveVenueCostRuleDraft();
   const acceptVersion = useAcceptVenueCostRuleVersion();
+  const endEarly = useEndVenueCostRuleEarly();
   const [draft, setDraft] = useState<VenueCostRuleDraft | null>(null);
   const [draftErrors, setDraftErrors] = useState<string[]>([]);
   const draftErrorRef = useRef<HTMLDivElement | null>(null);
@@ -212,6 +214,19 @@ export default function VenueCostsSettingsPage({
     }
     toast(t("venueCosts.accepted"), result.alreadyApplied ? "info" : "success");
     setDraft(null);
+  };
+
+  const handleEndEarly = async (versionId: string) => {
+    if (endEarly.isPending) return;
+    const result = await endEarly.mutateAsync({
+      ruleVersionId: versionId,
+      idempotencyKey: crypto.randomUUID(),
+    });
+    if (!result.success) {
+      toast(formatVenueCostDraftError(result.error, t, "venueCosts.error.endEarlyFailed"), "error");
+      return;
+    }
+    toast(t("venueCosts.endEarlySuccess"), result.alreadyApplied ? "info" : "success");
   };
 
   if (
@@ -364,8 +379,6 @@ export default function VenueCostsSettingsPage({
             <div className="space-y-4 border-t border-slate-100 pt-4">
               <VenueCostBulkCopyPanel
                 rules={draftPerLessonRules}
-                teachers={teachers}
-                disciplines={disciplines}
                 locations={locations}
                 onApply={(next) => setDraft({ ...draft, rules: next })}
               />
@@ -430,6 +443,8 @@ export default function VenueCostsSettingsPage({
                 onCopyToDraft={setDraft}
                 onAccept={handleAccept}
                 acceptPending={acceptVersion.isPending}
+                onEndEarly={(versionId) => void handleEndEarly(versionId)}
+                endEarlyPending={endEarly.isPending}
               />
             ))}
           </div>
@@ -617,7 +632,7 @@ function PerLessonEditor({
       </div>
 
       {(groupEnabled || personalEnabled) && (
-        <p className="text-[11px] text-slate-500">{t("venueCosts.teacherRequiredHint")}</p>
+        <p className="text-[11px] text-slate-500">{t("venueCosts.orgScopeHint")}</p>
       )}
 
       {groupEnabled && (
@@ -633,17 +648,17 @@ function PerLessonEditor({
           {rules.group.map((rule, ruleIndex) => (
             <div key={ruleIndex} className="rounded-xl border border-slate-200 p-3 space-y-3">
               <RuleScope
-                teacherMemberId={rule.teacherMemberId}
                 disciplineId={rule.disciplineId}
                 locationId={rule.locationId}
                 disciplines={disciplines}
                 locations={locations}
-                teachers={teachers}
                 t={t}
                 onChange={(scope) =>
                   updateRules({
                     ...rules,
-                    group: rules.group.map((item, index) => (index === ruleIndex ? { ...item, ...scope } : item)),
+                    group: rules.group.map((item, index) =>
+                      index === ruleIndex ? { ...item, ...scope, teacherMemberId: null } : item
+                    ),
                   })
                 }
               />
@@ -773,20 +788,20 @@ function PerLessonEditor({
         >
           {rules.personal.map((rule, index) => (
             <div key={index} className="rounded-xl border border-indigo-100 bg-indigo-50/30 p-3 space-y-2">
-              <div className="grid sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-end">
+              <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-end">
                 <RuleScope
                   compact
-                  teacherMemberId={rule.teacherMemberId}
                   disciplineId={rule.disciplineId}
                   locationId={rule.locationId}
                   disciplines={disciplines}
                   locations={locations}
-                  teachers={teachers}
                   t={t}
                   onChange={(scope) =>
                     updateRules({
                       ...rules,
-                      personal: rules.personal.map((item, idx) => (idx === index ? { ...item, ...scope } : item)),
+                      personal: rules.personal.map((item, idx) =>
+                        idx === index ? { ...item, ...scope, teacherMemberId: null } : item
+                      ),
                     })
                   }
                 />
@@ -831,24 +846,19 @@ function RuleSection({ title, onAdd, children }: { title: string; onAdd: () => v
 }
 
 function RuleScope({
-  teacherMemberId,
   disciplineId,
   locationId,
   disciplines,
   locations,
-  teachers,
   onChange,
   t,
   compact = false,
 }: {
-  teacherMemberId: string | null;
   disciplineId: string | null;
   locationId: string | null;
   disciplines: Array<{ id: string; name: string }>;
   locations: Array<{ id: string; name: string }>;
-  teachers: Array<{ id: string; label: string }>;
   onChange: (scope: {
-    teacherMemberId: string | null;
     disciplineId: string | null;
     locationId: string | null;
   }) => void;
@@ -858,24 +868,10 @@ function RuleScope({
   const fields = (
     <>
       <AppSelect
-        label={t("venueCosts.teacher")}
-        value={teacherMemberId ?? ""}
-        onChange={(e) =>
-          onChange({ teacherMemberId: e.target.value || null, disciplineId, locationId })
-        }
-      >
-        <option value="">{t("venueCosts.selectTeacher")}</option>
-        {teachers.map((item) => (
-          <option key={item.id} value={item.id}>
-            {item.label}
-          </option>
-        ))}
-      </AppSelect>
-      <AppSelect
         label={t("venueCosts.discipline")}
         value={disciplineId ?? ""}
         onChange={(e) =>
-          onChange({ teacherMemberId, disciplineId: e.target.value || null, locationId })
+          onChange({ disciplineId: e.target.value || null, locationId })
         }
       >
         <option value="">{t("venueCosts.allDisciplines")}</option>
@@ -889,7 +885,7 @@ function RuleScope({
         label={t("venueCosts.location")}
         value={locationId ?? ""}
         onChange={(e) =>
-          onChange({ teacherMemberId, disciplineId, locationId: e.target.value || null })
+          onChange({ disciplineId, locationId: e.target.value || null })
         }
       >
         <option value="">{t("venueCosts.allLocations")}</option>
@@ -901,7 +897,7 @@ function RuleScope({
       </AppSelect>
     </>
   );
-  return compact ? fields : <div className="grid sm:grid-cols-3 gap-2">{fields}</div>;
+  return compact ? fields : <div className="grid sm:grid-cols-2 gap-2">{fields}</div>;
 }
 
 function MoneyInput({

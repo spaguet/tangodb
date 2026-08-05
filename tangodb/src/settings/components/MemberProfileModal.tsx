@@ -12,8 +12,8 @@ import { useI18n } from "../../hooks/useI18n";
 import { useSettings } from "../useSettings";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import TeacherScopeFields from "./TeacherScopeFields";
+import TeacherPayRulesPanel from "./TeacherPayRulesPanel";
 import { isTeacherScopeConfigured, normalizeTeacherScope } from "../../lib/teacherScope";
-import { isModuleEnabled, normalizeOrgModules } from "../../lib/orgModules";
 import type { PayrollPayMode } from "../../types/payroll";
 import type { TeacherScope } from "../../types/organization";
 
@@ -88,10 +88,6 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
   const { t } = useI18n();
   const { settings } = useSettings();
   const currencyCode = settings?.currency_code ?? "RUB";
-  const personalLessonsEnabled = isModuleEnabled(
-    normalizeOrgModules(settings?.modules),
-    "personal_lessons"
-  );
   const showToast = useToast();
   const { can } = usePermissions();
   const { updateMember } = useTeamMutations();
@@ -128,17 +124,17 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
     setForm(toForm(member));
     const nextPayMode = activeRate?.payMode ?? "percent";
     const nextFixedAmount = activeRate ? String(activeRate.fixedAmount) : "";
-    const nextGroupRate = activeRate ? String(activeRate.groupRatePercent) : "";
-    const nextPersonalRate = activeRate ? String(activeRate.personalRatePercent) : "";
-    const nextSingleVisitRate = activeRate
-      ? String(activeRate.singleVisitRatePercent)
-      : nextGroupRate;
+    const nextGroupRate = activeRate ? String(activeRate.groupRatePercent) : "0";
+    const nextPersonalRate = activeRate ? String(activeRate.personalRatePercent) : "0";
+    const nextSingleVisitRate = activeRate ? String(activeRate.singleVisitRatePercent) : "0";
     setPayMode(nextPayMode);
     setFixedAmount(nextFixedAmount);
     setGroupRatePercent(nextGroupRate);
     setPersonalRatePercent(nextPersonalRate);
     setSingleVisitRatePercent(nextSingleVisitRate);
-    setInitialPayrollKey([nextPayMode, nextFixedAmount, nextGroupRate, nextPersonalRate, nextSingleVisitRate].join("|"));
+    setInitialPayrollKey(
+      [nextPayMode, nextFixedAmount, nextGroupRate, nextPersonalRate, nextSingleVisitRate].join("|")
+    );
     const nextScope = normalizeTeacherScope(member.scope);
     setScope(nextScope);
     setInitialScopeKey(JSON.stringify(nextScope));
@@ -182,18 +178,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
 
       if (canManageRate && canEdit && payrollKey !== initialPayrollKey) {
         const parsedFixed = Number(fixedAmount) || 0;
-        const parsedGroup = Number(groupRatePercent) || 0;
-        const parsedPersonal = Number(personalRatePercent) || 0;
-        const parsedSingleVisit = Number(singleVisitRatePercent) || 0;
-        if (
-          parsedFixed < 0 ||
-          parsedGroup < 0 ||
-          parsedGroup > 100 ||
-          parsedPersonal < 0 ||
-          parsedPersonal > 100 ||
-          parsedSingleVisit < 0 ||
-          parsedSingleVisit > 100
-        ) {
+        if (parsedFixed < 0) {
           showToast(t("finance.payroll.error.amount"), "error");
           return;
         }
@@ -201,9 +186,9 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
           memberId: member.id,
           payMode,
           fixedAmount: payMode === "percent" ? 0 : parsedFixed,
-          groupRatePercent: payMode === "fixed" ? 0 : parsedGroup,
-          personalRatePercent: payMode === "fixed" ? 0 : personalLessonsEnabled ? parsedPersonal : activeRate?.personalRatePercent ?? 0,
-          singleVisitRatePercent: payMode === "fixed" ? 0 : parsedSingleVisit,
+          groupRatePercent: Number(groupRatePercent) || 0,
+          personalRatePercent: Number(personalRatePercent) || 0,
+          singleVisitRatePercent: Number(singleVisitRatePercent) || 0,
         });
         if (!rateResult.success) {
           showToast(resolveMutationError(rateResult.error, "memberProfile.error.saveFailed", t), "error");
@@ -249,7 +234,7 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
+            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-2xl w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="min-w-0 pr-2">
@@ -335,8 +320,13 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                 />
               )}
 
+              {showRateField && member.role === "teacher" && (
+                <TeacherPayRulesPanel memberId={member.id} canManage={canManageRate} />
+              )}
+
               {showRateField && (
                 <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                  <p className="text-xs font-semibold text-slate-800">{t("memberProfile.field.baseSalary")}</p>
                   <AppSelect
                     label={t("memberProfile.field.payMode")}
                     value={payMode}
@@ -371,13 +361,10 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                       </div>
                     </label>
                   )}
+                  <p className="text-[10px] text-slate-400">{t("memberProfile.field.baseSalaryHint")}</p>
 
                   {(payMode === "percent" || payMode === "fixed_plus_percent") && (
-                    <div
-                      className={`grid grid-cols-1 gap-3 ${
-                        personalLessonsEnabled ? "sm:grid-cols-3" : "sm:grid-cols-2"
-                      }`}
-                    >
+                    <div className="grid sm:grid-cols-3 gap-2">
                       <label className="block space-y-1">
                         <span className={labelCls}>{t("memberProfile.field.groupRatePercent")}</span>
                         <input
@@ -393,23 +380,21 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                           className={fieldCls}
                         />
                       </label>
-                      {personalLessonsEnabled ? (
-                        <label className="block space-y-1">
-                          <span className={labelCls}>{t("memberProfile.field.personalRatePercent")}</span>
-                          <input
-                            type="number"
-                            min={0}
-                            max={100}
-                            step={0.1}
-                            value={personalRatePercent}
-                            onChange={(e) => {
-                              setPersonalRatePercent(e.target.value);
-                              setDirty(true);
-                            }}
-                            className={fieldCls}
-                          />
-                        </label>
-                      ) : null}
+                      <label className="block space-y-1">
+                        <span className={labelCls}>{t("memberProfile.field.personalRatePercent")}</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={personalRatePercent}
+                          onChange={(e) => {
+                            setPersonalRatePercent(e.target.value);
+                            setDirty(true);
+                          }}
+                          className={fieldCls}
+                        />
+                      </label>
                       <label className="block space-y-1">
                         <span className={labelCls}>{t("memberProfile.field.singleVisitRatePercent")}</span>
                         <input
@@ -427,7 +412,6 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                       </label>
                     </div>
                   )}
-                  <p className="text-[10px] text-slate-400">{t("memberProfile.field.payrollHint")}</p>
                 </div>
               )}
             </div>

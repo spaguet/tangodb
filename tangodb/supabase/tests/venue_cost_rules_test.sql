@@ -137,7 +137,6 @@ BEGIN
       'rules', jsonb_build_object(
         'group', '[]'::jsonb,
         'personal', jsonb_build_array(jsonb_build_object(
-          'teacher_member_id', v_teacher_member,
           'location_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid, 'amount', 1
         ))
       )
@@ -159,7 +158,6 @@ BEGIN
         'currency', 'RUB',
         'group', jsonb_build_array(
           jsonb_build_object(
-            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline, 'location_id', v_location,
             'attendance_tiers', jsonb_build_array(
               jsonb_build_object('min_attendees', 0, 'max_attendees', 4, 'amount', 1200),
@@ -167,7 +165,6 @@ BEGIN
             )
           ),
           jsonb_build_object(
-            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline,
             'attendance_tiers', jsonb_build_array(
               jsonb_build_object('min_attendees', 0, 'max_attendees', 4, 'amount', 1000),
@@ -177,11 +174,9 @@ BEGIN
         ),
         'personal', jsonb_build_array(
           jsonb_build_object(
-            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline, 'location_id', v_location, 'amount', 750
           ),
           jsonb_build_object(
-            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline, 'amount', 700
           )
         )
@@ -201,7 +196,6 @@ BEGIN
         'currency', 'RUB',
         'group', jsonb_build_array(
           jsonb_build_object(
-            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline, 'location_id', v_location,
             'attendance_tiers', jsonb_build_array(
               jsonb_build_object('min_attendees', 0, 'max_attendees', 4, 'amount', 1200),
@@ -209,7 +203,6 @@ BEGIN
             )
           ),
           jsonb_build_object(
-            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline,
             'attendance_tiers', jsonb_build_array(
               jsonb_build_object('min_attendees', 0, 'max_attendees', 4, 'amount', 1000),
@@ -219,11 +212,9 @@ BEGIN
         ),
         'personal', jsonb_build_array(
           jsonb_build_object(
-            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline, 'location_id', v_location, 'amount', 750
           ),
           jsonb_build_object(
-            'teacher_member_id', v_teacher_member,
             'discipline_id', v_discipline, 'amount', 700
           )
         )
@@ -307,7 +298,6 @@ BEGIN
       'rules', jsonb_build_object(
         'group', '[]'::jsonb,
         'personal', jsonb_build_array(jsonb_build_object(
-          'teacher_member_id', v_member,
           'discipline_id', v_discipline, 'location_id', v_location, 'amount', 800
         ))
       )
@@ -411,7 +401,6 @@ BEGIN
       'mode', 'per_lesson', 'valid_from', '2026-05-01', 'valid_to', '2026-05-31',
       'rules', jsonb_build_object(
         'group', jsonb_build_array(jsonb_build_object(
-          'teacher_member_id', v_teacher_member,
           'discipline_id', NULL,
           'attendance_tiers', jsonb_build_array(
             jsonb_build_object('min_attendees', 0, 'max_attendees', NULL, 'amount', 100)
@@ -434,14 +423,12 @@ BEGIN
       'mode', 'per_lesson', 'valid_from', '2026-08-01', 'valid_to', '2026-08-31',
       'rules', jsonb_build_object(
         'group', jsonb_build_array(jsonb_build_object(
-          'teacher_member_id', v_teacher_member,
           'discipline_id', NULL, 'location_id', NULL,
           'attendance_tiers', jsonb_build_array(
             jsonb_build_object('min_attendees', 0, 'max_attendees', NULL, 'amount', 110)
           )
         )),
         'personal', jsonb_build_array(jsonb_build_object(
-          'teacher_member_id', v_teacher_member,
           'discipline_id', NULL, 'location_id', NULL, 'amount', 90
         ))
       )

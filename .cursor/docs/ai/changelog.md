@@ -2,6 +2,10 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-05 — audit fixes гибких правил оплаты преподавателей: миграция `20260884000001` (dual accrual index, finance view `teacher_expense`, reopen всех accruals, historical revenue, payment fallback, rule overlap/precedence, RPC write gates); безопасная миграция `830` (session flag, single-tier group rules); UI: статусы правил, org-local dates, legacy % fallback, finance `teacherPayRuleId`; тест `teacher_pay_audit_test.sql`.
+
+2026-08-05 — гибкие правила оплаты преподавателей: миграции `20260881000001` (досрочное завершение venue cost), `20260882000001` (`teacher_pay_rules`, `group_occurrence_revenue`, payroll по closures/single_visits, expense_category), `20260883000001` (миграция teacher-scoped venue cost → teacher_pay_rules, org-wide venue cost); UI `TeacherPayRulesPanel` в профиле команды, досрочное завершение правил venue cost; venue cost per-lesson без привязки к преподавателю; bulk copy только по локациям.
+
 2026-08-04 — fix: настройки «Аренда зала» — в полях сумм venue cost отображается валюта организации (суффикс в инпуте и подсказка «Все суммы указаны в RUB (₽)»).
 
 2026-08-04 — fix: после оплаты персонального урока в расписании — toast «Урок оплачен» вместо технического «Сохранено · операция {op}»; плейсхолдеры `{{op}}` в строках corrections. (`offline.snapshot.window` и др.) — плейсхолдеры `{start}`/`{end}` заменены на `{{start}}`/`{{end}}` в соответствии с `t()` в `core.ts`.

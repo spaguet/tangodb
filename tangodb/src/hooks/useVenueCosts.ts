@@ -344,6 +344,33 @@ export function useSaveVenueCostRuleDraft() {
   });
 }
 
+export function useEndVenueCostRuleEarly() {
+  const invalidate = useInvalidateVenueCosts();
+  return useMutation({
+    mutationFn: async (input: { ruleVersionId: string; endDate?: string; idempotencyKey?: string }) => {
+      const { data, error } = await supabase.rpc("end_venue_cost_rule_early", {
+        p_rule_version_id: input.ruleVersionId,
+        p_end_date: input.endDate ?? new Date().toISOString().slice(0, 10),
+        p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
+      });
+      if (error) return { success: false as const, error: error.message };
+      const result = data as RpcObject | null;
+      if (!result?.success) {
+        return { success: false as const, error: String(result?.error_code ?? "venue_cost_end_early_failed") };
+      }
+      return {
+        success: true as const,
+        ruleVersionId: String(result.rule_version_id ?? input.ruleVersionId),
+        validTo: nullableString(result.valid_to)?.slice(0, 10) ?? null,
+        alreadyApplied: result.already_applied === true,
+      };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidate();
+    },
+  });
+}
+
 export function useAcceptVenueCostRuleVersion() {
   const invalidate = useInvalidateVenueCosts();
   return useMutation({
@@ -542,13 +569,14 @@ export const financeCostsQueryKey = ["finance-costs"] as const;
 
 export interface FinanceCostEntry {
   id: string;
-  sourceType: "manual_expense" | "venue_cost";
+  sourceType: "manual_expense" | "venue_cost" | "teacher_expense";
   entryDate: string;
   amount: number;
   category: string;
   description: string;
   ruleVersionId: string | null;
   closureId: string | null;
+  teacherPayRuleId: string | null;
   createdAt: string;
 }
 
@@ -583,6 +611,7 @@ export function useFinanceCosts(dateFrom: string, dateTo: string, enabled = true
           description: String(item.description ?? ""),
           ruleVersionId: nullableString(item.rule_version_id),
           closureId: nullableString(item.closure_id),
+          teacherPayRuleId: nullableString(item.teacher_pay_rule_id),
           createdAt: String(item.created_at ?? ""),
         } satisfies FinanceCostEntry;
       });
