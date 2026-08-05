@@ -8,6 +8,7 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
 import {
   useAcceptVenueCostRuleVersion,
+  useDeleteVenueCostRuleDraft,
   useEndVenueCostRuleEarly,
   useSaveVenueCostRuleDraft,
   useVenueCostRuleStatus,
@@ -105,6 +106,7 @@ export default function VenueCostsSettingsPage({
   const teamQuery = useTeamMembers();
   const saveDraft = useSaveVenueCostRuleDraft();
   const acceptVersion = useAcceptVenueCostRuleVersion();
+  const deleteDraft = useDeleteVenueCostRuleDraft();
   const endEarly = useEndVenueCostRuleEarly();
   const [draft, setDraft] = useState<VenueCostRuleDraft | null>(null);
   const [draftErrors, setDraftErrors] = useState<string[]>([]);
@@ -227,6 +229,23 @@ export default function VenueCostsSettingsPage({
       return;
     }
     toast(t("venueCosts.endEarlySuccess"), result.alreadyApplied ? "info" : "success");
+  };
+
+  const handleDeleteDraft = async (versionId: string) => {
+    if (deleteDraft.isPending) return;
+    const result = await deleteDraft.mutateAsync({
+      ruleVersionId: versionId,
+      idempotencyKey: crypto.randomUUID(),
+    });
+    if (!result.success) {
+      toast(formatVenueCostDraftError(result.error, t, "venueCosts.error.deleteDraftFailed"), "error");
+      return;
+    }
+    toast(t("venueCosts.deleteDraftSuccess"), result.alreadyApplied ? "info" : "success");
+    if (draft?.id === versionId) {
+      setDraftErrors([]);
+      setDraft(null);
+    }
   };
 
   if (
@@ -443,6 +462,8 @@ export default function VenueCostsSettingsPage({
                 onCopyToDraft={setDraft}
                 onAccept={handleAccept}
                 acceptPending={acceptVersion.isPending}
+                onDeleteDraft={(versionId) => void handleDeleteDraft(versionId)}
+                deleteDraftPending={deleteDraft.isPending}
                 onEndEarly={(versionId) => void handleEndEarly(versionId)}
                 endEarlyPending={endEarly.isPending}
               />

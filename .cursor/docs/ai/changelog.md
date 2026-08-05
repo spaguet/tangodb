@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-05 — настройки «Аренда зала» (затраты студии): удаление черновика правила (RPC `delete_venue_cost_rule_draft`, кнопка в истории версий); в списке принятых правил — сводка по дисциплинам, локациям и суммам без раскрытия; fix маппинга rules (snake_case и camelCase).
+
 2026-08-05 — настройки «Команда»: блок «Пригласить» свёрнут по умолчанию, раскрывается по клику; при повторном приглашении и после отправки — автоматически разворачивается.
 
 2026-08-05 — audit fixes гибких правил оплаты преподавателей: миграция `20260884000001` (dual accrual index, finance view `teacher_expense`, reopen всех accruals, historical revenue, payment fallback, rule overlap/precedence, RPC write gates); безопасная миграция `830` (session flag, single-tier group rules); UI: статусы правил, org-local dates, legacy % fallback, finance `teacherPayRuleId`; тест `teacher_pay_audit_test.sql`.

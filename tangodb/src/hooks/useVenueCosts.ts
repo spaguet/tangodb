@@ -61,26 +61,32 @@ export function mapVenueCostStatus(row: RpcObject): VenueCostRuleStatus {
   };
 }
 
-const mapGroupRule = (row: RpcObject): VenueCostGroupRule => ({
-  teacherMemberId: nullableString(row.teacher_member_id),
-  disciplineId: nullableString(row.discipline_id),
-  locationId: nullableString(row.location_id),
-  attendanceTiers: Array.isArray(row.attendance_tiers)
-    ? row.attendance_tiers.map((tier) => {
-        const item = tier as RpcObject;
-        return {
-          minAttendees: Number(item.min_attendees) || 0,
-          maxAttendees: item.max_attendees == null ? null : Number(item.max_attendees),
-          amount: Number(item.amount) || 0,
-        } satisfies VenueCostAttendanceTier;
-      })
-    : [],
-});
+const mapGroupRule = (row: RpcObject): VenueCostGroupRule => {
+  const tiersRaw = row.attendance_tiers ?? row.attendanceTiers;
+  return {
+    teacherMemberId: nullableString(row.teacher_member_id ?? row.teacherMemberId),
+    disciplineId: nullableString(row.discipline_id ?? row.disciplineId),
+    locationId: nullableString(row.location_id ?? row.locationId),
+    attendanceTiers: Array.isArray(tiersRaw)
+      ? tiersRaw.map((tier) => {
+          const item = tier as RpcObject;
+          return {
+            minAttendees: Number(item.min_attendees ?? item.minAttendees) || 0,
+            maxAttendees:
+              (item.max_attendees ?? item.maxAttendees) == null
+                ? null
+                : Number(item.max_attendees ?? item.maxAttendees),
+            amount: Number(item.amount) || 0,
+          } satisfies VenueCostAttendanceTier;
+        })
+      : [],
+  };
+};
 
 const mapPersonalRule = (row: RpcObject): VenueCostPersonalRule => ({
-  teacherMemberId: nullableString(row.teacher_member_id),
-  disciplineId: nullableString(row.discipline_id),
-  locationId: nullableString(row.location_id),
+  teacherMemberId: nullableString(row.teacher_member_id ?? row.teacherMemberId),
+  disciplineId: nullableString(row.discipline_id ?? row.disciplineId),
+  locationId: nullableString(row.location_id ?? row.locationId),
   amount: Number(row.amount) || 0,
 });
 
@@ -362,6 +368,31 @@ export function useEndVenueCostRuleEarly() {
         success: true as const,
         ruleVersionId: String(result.rule_version_id ?? input.ruleVersionId),
         validTo: nullableString(result.valid_to)?.slice(0, 10) ?? null,
+        alreadyApplied: result.already_applied === true,
+      };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidate();
+    },
+  });
+}
+
+export function useDeleteVenueCostRuleDraft() {
+  const invalidate = useInvalidateVenueCosts();
+  return useMutation({
+    mutationFn: async (input: { ruleVersionId: string; idempotencyKey?: string }) => {
+      const { data, error } = await supabase.rpc("delete_venue_cost_rule_draft", {
+        p_rule_version_id: input.ruleVersionId,
+        p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
+      });
+      if (error) return { success: false as const, error: error.message };
+      const result = data as RpcObject | null;
+      if (!result?.success) {
+        return { success: false as const, error: String(result?.error_code ?? "venue_cost_delete_draft_failed") };
+      }
+      return {
+        success: true as const,
+        ruleVersionId: String(result.rule_version_id ?? input.ruleVersionId),
         alreadyApplied: result.already_applied === true,
       };
     },

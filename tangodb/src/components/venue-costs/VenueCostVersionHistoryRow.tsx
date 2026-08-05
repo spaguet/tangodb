@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ChevronDown, Copy, Edit, StopCircle } from "lucide-react";
+import { Check, ChevronDown, Copy, Edit, StopCircle, Trash2 } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import { useEndVenueCostRuleEarly, type VenueCostRuleVersion } from "../../hooks/useVenueCosts";
 import ConfirmDialog from "../ui/ConfirmDialog";
@@ -29,6 +29,8 @@ interface VenueCostVersionHistoryRowProps {
   onCopyToDraft: (draft: VenueCostRuleDraft) => void;
   onAccept: (versionId: string) => void;
   acceptPending: boolean;
+  onDeleteDraft?: (versionId: string) => void;
+  deleteDraftPending?: boolean;
   endEarlyPending?: boolean;
   onEndEarly?: (versionId: string) => void;
 }
@@ -82,6 +84,97 @@ function diffEntryLabel(
   return resolveScopeLabel(entry.key, teachers, disciplines, locations, t);
 }
 
+function VersionSummary({
+  version,
+  teachers,
+  disciplines,
+  locations,
+  t,
+}: {
+  version: VenueCostRuleVersion;
+  teachers: Array<{ id: string; label: string }>;
+  disciplines: Array<{ id: string; name: string }>;
+  locations: Array<{ id: string; name: string }>;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  if (version.mode === "disabled") {
+    return <p className="text-xs text-slate-500 mt-1.5 ml-6">{t("venueCosts.mode.disabled")}</p>;
+  }
+
+  if (version.mode === "fixed_period") {
+    const rules = version.rules as VenueCostFixedRules;
+    if (isVenueCostFixedPerLocation(rules)) {
+      return (
+        <ul className="text-xs text-slate-600 mt-1.5 ml-6 space-y-0.5">
+          <li className="text-slate-500">
+            {t(`venueCosts.period.${rules.period}`)} · {t("venueCosts.fixedPeriod.perLocation")}
+          </li>
+          {(rules.locations ?? []).map((row) => (
+            <li key={row.locationId}>
+              {locations.find((loc) => loc.id === row.locationId)?.name ?? row.locationId}:{" "}
+              {formatCurrency(row.amount)}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    return (
+      <p className="text-xs text-slate-600 mt-1.5 ml-6">
+        {t(`venueCosts.period.${rules.period}`)} · {formatCurrency(rules.amount)} ·{" "}
+        {t("venueCosts.fixedPeriod.orgWide")}
+      </p>
+    );
+  }
+
+  const rules = version.rules as VenueCostPerLessonRules;
+  if (!rules.group.length && !rules.personal.length) {
+    return <p className="text-xs text-amber-700 mt-1.5 ml-6">{t("venueCosts.summary.emptyPerLesson")}</p>;
+  }
+
+  return (
+    <ul className="text-xs text-slate-600 mt-1.5 ml-6 space-y-1">
+      {rules.group.map((rule, index) => (
+        <li key={`g-${index}`}>
+          <span className="font-medium text-slate-700">{t("venueCosts.groupRules")}:</span>{" "}
+          <ScopeReadOnly
+            inline
+            teacherMemberId={rule.teacherMemberId}
+            disciplineId={rule.disciplineId}
+            locationId={rule.locationId}
+            teachers={teachers}
+            disciplines={disciplines}
+            locations={locations}
+            t={t}
+          />
+          <span className="text-slate-500">
+            {" "}
+            ·{" "}
+            {rule.attendanceTiers
+              .map((tier) => `${tier.minAttendees}–${tier.maxAttendees ?? "∞"}: ${formatCurrency(tier.amount)}`)
+              .join("; ")}
+          </span>
+        </li>
+      ))}
+      {rules.personal.map((rule, index) => (
+        <li key={`p-${index}`}>
+          <span className="font-medium text-slate-700">{t("venueCosts.personalRules")}:</span>{" "}
+          <ScopeReadOnly
+            inline
+            teacherMemberId={rule.teacherMemberId}
+            disciplineId={rule.disciplineId}
+            locationId={rule.locationId}
+            teachers={teachers}
+            disciplines={disciplines}
+            locations={locations}
+            t={t}
+          />
+          <span className="text-slate-500"> · {formatCurrency(rule.amount)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function ScopeReadOnly({
   teacherMemberId,
   disciplineId,
@@ -90,6 +183,7 @@ function ScopeReadOnly({
   disciplines,
   locations,
   t,
+  inline = false,
 }: {
   teacherMemberId: string | null;
   disciplineId: string | null;
@@ -98,6 +192,7 @@ function ScopeReadOnly({
   disciplines: Array<{ id: string; name: string }>;
   locations: Array<{ id: string; name: string }>;
   t: ReturnType<typeof useI18n>["t"];
+  inline?: boolean;
 }) {
   const teacherLabel = teacherMemberId
     ? teachers.find((item) => item.id === teacherMemberId)?.label ?? teacherMemberId
@@ -108,6 +203,10 @@ function ScopeReadOnly({
   const locationLabel = locationId
     ? locations.find((item) => item.id === locationId)?.name ?? locationId
     : t("venueCosts.allLocations");
+  const text = `${disciplineLabel} · ${locationLabel}`;
+  if (inline) {
+    return <span>{text}</span>;
+  }
   return (
     <p className="text-xs text-slate-600">
       {teacherLabel} · {disciplineLabel} · {locationLabel}
@@ -275,12 +374,15 @@ export default function VenueCostVersionHistoryRow({
   onCopyToDraft,
   onAccept,
   acceptPending,
+  onDeleteDraft,
+  deleteDraftPending = false,
   endEarlyPending = false,
   onEndEarly,
 }: VenueCostVersionHistoryRowProps) {
   const { t, formatDate, formatDateTime } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const [endEarlyOpen, setEndEarlyOpen] = useState(false);
+  const [deleteDraftOpen, setDeleteDraftOpen] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const isCurrentlyActive =
@@ -364,6 +466,17 @@ export default function VenueCostVersionHistoryRow({
                 >
                   <Edit className="w-4 h-4" />
                 </button>
+                {onDeleteDraft && (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteDraftOpen(true)}
+                    disabled={deleteDraftPending}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-60"
+                    aria-label={t("venueCosts.deleteDraft")}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => void onAccept(version.id)}
@@ -399,6 +512,28 @@ export default function VenueCostVersionHistoryRow({
           </div>
         )}
       </div>
+
+      <VersionSummary
+        version={version}
+        teachers={teachers}
+        disciplines={disciplines}
+        locations={locations}
+        t={t}
+      />
+
+      <ConfirmDialog
+        open={deleteDraftOpen}
+        title={t("venueCosts.deleteDraftConfirm.title")}
+        description={t("venueCosts.deleteDraftConfirm.body")}
+        confirmLabel={t("venueCosts.deleteDraftConfirm.confirm")}
+        pending={deleteDraftPending}
+        onCancel={() => setDeleteDraftOpen(false)}
+        onConfirm={() => {
+          if (!onDeleteDraft) return;
+          onDeleteDraft(version.id);
+          setDeleteDraftOpen(false);
+        }}
+      />
 
       <ConfirmDialog
         open={endEarlyOpen}
