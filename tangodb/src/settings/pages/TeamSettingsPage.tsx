@@ -1,5 +1,5 @@
 import { useRef, useState, useMemo } from "react";
-import { Mail, UserMinus, Users, Copy, Check, Edit, LifeBuoy, UserPlus, CalendarOff } from "lucide-react";
+import { Mail, UserMinus, Users, Copy, Check, Edit, LifeBuoy, UserPlus, CalendarOff, ChevronDown } from "lucide-react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import LoadingState from "../../components/ui/LoadingState";
@@ -98,6 +98,7 @@ export default function TeamSettingsPage() {
   const [inviteMetaOverride, setInviteMetaOverride] = useState<MemberMeta | null>(null);
   const [reinviteSourceId, setReinviteSourceId] = useState<string | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<TeamMemberRow | null>(null);
+  const [inviteExpanded, setInviteExpanded] = useState(false);
   const inviteFormRef = useRef<HTMLFormElement>(null);
 
   const activeMembers = members.filter((m) => m.is_active);
@@ -187,6 +188,7 @@ export default function TeamSettingsPage() {
       setLastName("");
       clearReinvitePreset();
       setLastInviteUrl(result.invite_url ?? null);
+      setInviteExpanded(true);
       showToast(
         result.email_sent ? t("team.inviteEmailSent") : t("team.inviteManualHint"),
         result.email_sent ? "success" : "info"
@@ -218,6 +220,7 @@ export default function TeamSettingsPage() {
     setInviteMetaOverride(meta);
     setReinviteSourceId(member.id);
     setLastInviteUrl(null);
+    setInviteExpanded(true);
     inviteFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -296,12 +299,26 @@ export default function TeamSettingsPage() {
       <form
         ref={inviteFormRef}
         onSubmit={handleInvite}
-        className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-3"
+        className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden"
       >
-        <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-          <Mail className="w-4 h-4 text-indigo-500" />
-          {t("team.invite")}
-        </h3>
+        <button
+          type="button"
+          onClick={() => setInviteExpanded((prev) => !prev)}
+          className="w-full flex items-center justify-between gap-3 px-3.5 py-3 text-left cursor-pointer hover:bg-slate-50/80 transition-colors"
+          aria-expanded={inviteExpanded}
+        >
+          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <Mail className="w-4 h-4 text-indigo-500" />
+            {t("team.invite")}
+          </h3>
+          <ChevronDown
+            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+              inviteExpanded ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {inviteExpanded && (
+        <div className="px-3.5 pb-3.5 space-y-3 border-t border-slate-100 pt-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="block space-y-1">
             <span className={labelCls}>{t("team.inviteEmail")}</span>
@@ -382,6 +399,8 @@ export default function TeamSettingsPage() {
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
+        )}
+        </div>
         )}
       </form>
       )}
