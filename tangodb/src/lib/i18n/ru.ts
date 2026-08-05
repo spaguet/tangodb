@@ -2768,6 +2768,7 @@ export const RU: Record<I18nKey, string> = {
   "venueCosts.error.forbidden": "Недостаточно прав для изменения правил затрат",
   "venueCosts.error.saveFailed": "Не удалось сохранить черновик",
   "venueCosts.error.acceptFailed": "Не удалось принять правило",
+  "venueCosts.error.acceptedRuleOverlap": "Период правила пересекается с принятой версией с тем же охватом уроков или залов",
   "venueCosts.error.deleteDraftFailed": "Не удалось удалить черновик",
   "venueCosts.error.save": "Не удалось сохранить: {{error}}",
   "venueCosts.error.accept": "Не удалось принять: {{error}}",

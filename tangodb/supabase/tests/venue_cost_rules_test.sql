@@ -262,19 +262,41 @@ BEGIN
   END;
   PERFORM _venue_test_assert(v_immutable_rejected, 'accepted rule is immutable');
 
-  -- Inclusive overlap: a rule starting on the previous valid_to is rejected.
+  -- Scoped overlap: same personal scope on overlapping dates is rejected.
   BEGIN
     INSERT INTO venue_cost_rule_versions (
       organization_id, version_number, status, mode, valid_from, valid_to,
       rules, created_by, accepted_by, accepted_at
     ) VALUES (
-      v_org, 999, 'accepted', 'disabled', date '2026-01-31', date '2026-02-01',
-      '{}'::jsonb, v_member, v_member, now()
+      v_org, 998, 'accepted', 'per_lesson', date '2026-01-31', NULL,
+      jsonb_build_object(
+        'group', '[]'::jsonb,
+        'personal', jsonb_build_array(jsonb_build_object(
+          'discipline_id', v_discipline, 'location_id', v_location, 'amount', 500
+        ))
+      ),
+      v_member, v_member, now()
     );
   EXCEPTION WHEN exclusion_violation THEN
     v_overlap_rejected := true;
   END;
-  PERFORM _venue_test_assert(v_overlap_rejected, 'inclusive accepted overlap rejected');
+  PERFORM _venue_test_assert(v_overlap_rejected, 'same-scope accepted overlap rejected');
+
+  -- Different scopes on overlapping dates are allowed.
+  v_result := save_venue_cost_rule_draft(
+    jsonb_build_object(
+      'mode', 'per_lesson', 'valid_from', '2026-01-01', 'valid_to', NULL,
+      'rules', jsonb_build_object(
+        'group', '[]'::jsonb,
+        'personal', jsonb_build_array(jsonb_build_object(
+          'discipline_id', v_discipline, 'location_id', v_location_other, 'amount', 600
+        ))
+      )
+    ),
+    gen_random_uuid()
+  );
+  v_result := accept_venue_cost_rule_version((v_result ->> 'rule_version_id')::uuid, gen_random_uuid());
+  PERFORM _venue_test_assert((v_result ->> 'success')::boolean, 'different-scope overlap accepts');
 
   -- Closing in a gap creates pending_unpriced.
   v_result := close_personal_lesson_occurrence(v_lesson, gen_random_uuid());

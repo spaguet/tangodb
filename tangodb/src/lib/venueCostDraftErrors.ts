@@ -26,6 +26,7 @@ const ERROR_KEY_MAP: Record<string, I18nKey> = {
   draft_not_found: "venueCosts.error.draftNotFound",
   forbidden: "venueCosts.error.forbidden",
   venue_cost_save_failed: "venueCosts.error.saveFailed",
+  accepted_rule_overlap: "venueCosts.error.acceptedRuleOverlap",
   venue_cost_accept_failed: "venueCosts.error.acceptFailed",
   venue_cost_delete_draft_failed: "venueCosts.error.deleteDraftFailed",
   end_date_in_past: "venueCosts.error.endDateInPast",

@@ -2710,6 +2710,7 @@ export type I18nKey =
   | "venueCosts.error.forbidden"
   | "venueCosts.error.saveFailed"
   | "venueCosts.error.acceptFailed"
+  | "venueCosts.error.acceptedRuleOverlap"
   | "venueCosts.error.deleteDraftFailed"
   | "venueCosts.error.save"
   | "venueCosts.error.accept"

@@ -2770,6 +2770,7 @@ export const EN: Record<I18nKey, string> = {
   "venueCosts.error.forbidden": "Insufficient permission to manage hall cost rules",
   "venueCosts.error.saveFailed": "Could not save draft",
   "venueCosts.error.acceptFailed": "Could not accept rule",
+  "venueCosts.error.acceptedRuleOverlap": "Rule period overlaps with an accepted version that covers the same lessons or halls",
   "venueCosts.error.deleteDraftFailed": "Could not delete draft",
   "venueCosts.error.save": "Could not save: {{error}}",
   "venueCosts.error.accept": "Could not accept: {{error}}",
