@@ -123,10 +123,13 @@ export default function FinanceExpensesPage() {
   const expensesQuery = useExpenses(expensesFilter);
   const financeCostsQuery = useFinanceCosts(dateFrom, dateTo, Boolean(dateFrom && dateTo));
   const venueStatusQuery = useVenueCostRuleStatus();
-  const venueEntries = useMemo(
-    () => (financeCostsQuery.data?.entries ?? []).filter((entry) => entry.sourceType === "venue_cost"),
-    [financeCostsQuery.data]
-  );
+  const venueEntries = useMemo(() => {
+    const all = (financeCostsQuery.data?.entries ?? []).filter(
+      (entry) => entry.sourceType === "venue_cost"
+    );
+    if (categoryFilter === "all") return all;
+    return all.filter((entry) => entry.category === categoryFilter);
+  }, [financeCostsQuery.data, categoryFilter]);
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
@@ -210,8 +213,11 @@ export default function FinanceExpensesPage() {
   const hasVenueRules = venueStatus?.status !== "not_configured";
   const venueRulesLink = hasVenueRules ? "/settings/hall-rent" : "/settings/hall-rent?new=1";
   const manualTotal = items.reduce((sum, e) => sum + e.amount, 0);
-  const venueTotal = financeCostsQuery.data?.venueTotal ?? 0;
-  const combinedTotal = financeCostsQuery.data?.total ?? manualTotal + venueTotal;
+  const venueTotal = venueEntries.reduce((sum, e) => sum + e.amount, 0);
+  const combinedTotal =
+    categoryFilter === "all"
+      ? (financeCostsQuery.data?.total ?? manualTotal + venueTotal)
+      : manualTotal + venueTotal;
   const hasActiveFilters = Boolean(dateFrom || dateTo || categoryFilter !== "all");
   const pending = createExpense.isPending || updateExpense.isPending;
 

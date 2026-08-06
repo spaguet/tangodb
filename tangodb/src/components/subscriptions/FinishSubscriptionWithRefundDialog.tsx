@@ -15,7 +15,6 @@ import {
 import {
   isRefundAmountValid,
   previewRecommendedRefund,
-  previewRefundBySingleVisitRate,
   type RefundCalcMode,
 } from "../../lib/subscriptionRefund";
 import { resolveMutationError } from "../../lib/resolveMutationError";
@@ -47,8 +46,6 @@ export default function FinishSubscriptionWithRefundDialog({
 }: FinishSubscriptionWithRefundDialogProps) {
   const { t, formatDate } = useI18n();
   const finishWithRefund = useFinishSubscriptionWithRefund();
-  const previewQuery = usePreviewSubscriptionRefund(subscription?.id ?? null);
-  const pricesQuery = usePrices();
 
   const [recipientClientId, setRecipientClientId] = useState("");
   const [amountInput, setAmountInput] = useState("");
@@ -58,36 +55,46 @@ export default function FinishSubscriptionWithRefundDialog({
   const [calcMode, setCalcMode] = useState<RefundCalcMode>("pro_rata");
   const [singleVisitTariffId, setSingleVisitTariffId] = useState<string>("");
   const [singleVisitRateInput, setSingleVisitRateInput] = useState("");
+  const [amountOverride, setAmountOverride] = useState(false);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
-
-  const preview = previewQuery.data;
-  const formula = preview?.formula;
-  const isLessonCount = preview?.billingModel === "lesson_count" && !formula?.requiresManualAmount;
-
-  const singleVisitTariffs = useMemo(() => {
-    if (!subscription) return [];
-    return filterSingleVisitTariffsForSale(pricesQuery.data ?? [], {
-      disciplineId: subscription.disciplineId ?? null,
-      locationId: null,
-    });
-  }, [pricesQuery.data, subscription]);
 
   const parsedSingleVisitRate = useMemo(() => {
     const value = parseFloat(singleVisitRateInput.replace(",", "."));
     return Number.isFinite(value) && value >= 0 ? value : NaN;
   }, [singleVisitRateInput]);
 
-  const singleVisitPreview = useMemo(() => {
-    if (!preview || !formula || !isLessonCount || calcMode !== "single_visit_rate") return null;
-    if (!Number.isFinite(parsedSingleVisitRate)) return null;
-    return previewRefundBySingleVisitRate(
-      formula.salePrice,
-      preview.lessonsTotal,
-      preview.lessonsLeft,
-      parsedSingleVisitRate,
-      formula.availableAmount
-    );
-  }, [preview, formula, isLessonCount, calcMode, parsedSingleVisitRate]);
+  const previewQuery = usePreviewSubscriptionRefund(subscription?.id ?? null, {
+    calcMode,
+    singleVisitRate:
+      calcMode === "single_visit_rate" && Number.isFinite(parsedSingleVisitRate)
+        ? parsedSingleVisitRate
+        : null,
+    singleVisitTariffId: singleVisitTariffId || null,
+  });
+  const pricesQuery = usePrices();
+
+  const preview = previewQuery.data;
+  const formula = preview?.formula;
+  const isLessonCount = preview?.billingModel === "lesson_count" && !formula?.requiresManualAmount;
+
+  const subscriptionLocationId = useMemo(() => {
+    if (!subscription?.priceId) return null;
+    const pkg = pricesQuery.data?.find((p) => p.id === subscription.priceId);
+    return pkg?.locationId ?? null;
+  }, [subscription?.priceId, pricesQuery.data]);
+
+  const singleVisitTariffs = useMemo(() => {
+    if (!subscription) return [];
+    return filterSingleVisitTariffsForSale(pricesQuery.data ?? [], {
+      disciplineId: subscription.disciplineId ?? null,
+      locationId: subscriptionLocationId,
+    });
+  }, [pricesQuery.data, subscription, subscriptionLocationId]);
+
+  const canUseSingleVisitCalc =
+    isLessonCount && subscription?.category === "group" && singleVisitTariffs.length > 0;
+
+  const serverRecommendedAmount = formula?.recommendedAmount;
 
   useEffect(() => {
     if (!subscription || !preview) return;
@@ -97,6 +104,7 @@ export default function FinishSubscriptionWithRefundDialog({
     setCalcMode("pro_rata");
     setSingleVisitTariffId("");
     setSingleVisitRateInput("");
+    setAmountOverride(false);
     setMethod("cash");
     setPayoutStatus("completed");
 
@@ -113,14 +121,27 @@ export default function FinishSubscriptionWithRefundDialog({
         );
       setAmountInput(recommended > 0 ? String(recommended) : "");
     }
-  }, [subscription, preview, formula]);
+  }, [subscription?.id, preview?.subscriptionId, formula?.requiresManualAmount, formula?.recommendedAmount]);
 
   useEffect(() => {
-    if (calcMode !== "single_visit_rate" || !singleVisitPreview) return;
-    setAmountInput(
-      singleVisitPreview.refundAmount > 0 ? String(singleVisitPreview.refundAmount) : "0"
-    );
-  }, [calcMode, singleVisitPreview]);
+    if (amountOverride || calcMode !== "pro_rata" || !preview || !formula) return;
+    if (formula.requiresManualAmount) return;
+    const recommended =
+      formula.recommendedAmount ??
+      previewRecommendedRefund(
+        formula.salePrice,
+        preview.lessonsTotal,
+        preview.lessonsLeft,
+        formula.availableAmount
+      );
+    setAmountInput(recommended > 0 ? String(recommended) : "");
+  }, [calcMode, preview, formula, amountOverride]);
+
+  useEffect(() => {
+    if (amountOverride || calcMode !== "single_visit_rate") return;
+    if (serverRecommendedAmount == null || !Number.isFinite(serverRecommendedAmount)) return;
+    setAmountInput(serverRecommendedAmount > 0 ? String(serverRecommendedAmount) : "0");
+  }, [calcMode, serverRecommendedAmount, amountOverride]);
 
   useEffect(() => {
     if (!subscription) return;
@@ -133,6 +154,7 @@ export default function FinishSubscriptionWithRefundDialog({
 
   const applyProRataAmount = () => {
     if (!preview || !formula) return;
+    setAmountOverride(false);
     const recommended =
       formula.recommendedAmount ??
       previewRecommendedRefund(
@@ -146,14 +168,11 @@ export default function FinishSubscriptionWithRefundDialog({
 
   const handleCalcModeChange = (mode: RefundCalcMode) => {
     setCalcMode(mode);
+    setAmountOverride(false);
     if (mode === "pro_rata") {
       applyProRataAmount();
-      return;
-    }
-    if (singleVisitTariffs.length > 0 && !singleVisitTariffId) {
-      const first = singleVisitTariffs[0]!;
-      setSingleVisitTariffId(first.id ?? "");
-      setSingleVisitRateInput(String(first.price));
+    } else {
+      setAmountInput("");
     }
   };
 
@@ -179,7 +198,8 @@ export default function FinishSubscriptionWithRefundDialog({
     Number.isFinite(parsedAmount) &&
     parsedAmount > 0 &&
     isRefundAmountValid(parsedAmount, availableAmount) &&
-    (calcMode !== "single_visit_rate" || Number.isFinite(parsedSingleVisitRate));
+    (calcMode !== "single_visit_rate" || Number.isFinite(parsedSingleVisitRate)) &&
+    (!canUseSingleVisitCalc || calcMode !== "single_visit_rate" || previewQuery.isSuccess);
 
   const handleSubmit = async () => {
     if (!subscription || !canSubmit) return;
@@ -192,6 +212,14 @@ export default function FinishSubscriptionWithRefundDialog({
       reason: reason.trim(),
       status: payoutStatus,
       idempotencyKey,
+      calcMode: canUseSingleVisitCalc ? calcMode : "pro_rata",
+      singleVisitRate:
+        canUseSingleVisitCalc && calcMode === "single_visit_rate" ? parsedSingleVisitRate : null,
+      singleVisitTariffId:
+        canUseSingleVisitCalc && calcMode === "single_visit_rate" && singleVisitTariffId
+          ? singleVisitTariffId
+          : null,
+      amountOverride,
     });
 
     if (!res.success) {
@@ -332,7 +360,7 @@ export default function FinishSubscriptionWithRefundDialog({
                     ) : null}
                   </div>
 
-                  {isLessonCount ? (
+                  {canUseSingleVisitCalc ? (
                     <div className="space-y-3">
                       <AppSelect
                         label={t("subscriptions.refund.calcMode")}
@@ -350,48 +378,54 @@ export default function FinishSubscriptionWithRefundDialog({
                           <p className="text-[11px] text-slate-600 leading-relaxed">
                             {t("subscriptions.refund.singleVisit.hint")}
                           </p>
-                          {singleVisitTariffs.length > 0 ? (
-                            <AppSelect
-                              label={t("subscriptions.refund.singleVisit.tariff")}
-                              value={singleVisitTariffId}
-                              onChange={(e) => handleSingleVisitTariffChange(e.target.value)}
-                            >
-                              <option value="">{t("subscriptions.refund.singleVisit.custom")}</option>
-                              {singleVisitTariffs.map((tariff) => (
-                                <option key={tariff.id} value={tariff.id ?? ""}>
-                                  {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
-                                </option>
-                              ))}
-                            </AppSelect>
-                          ) : null}
+                          <AppSelect
+                            label={t("subscriptions.refund.singleVisit.tariff")}
+                            value={singleVisitTariffId}
+                            onChange={(e) => handleSingleVisitTariffChange(e.target.value)}
+                          >
+                            <option value="">{t("subscriptions.refund.singleVisit.custom")}</option>
+                            {singleVisitTariffs.map((tariff) => (
+                              <option key={tariff.id} value={tariff.id ?? ""}>
+                                {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
+                              </option>
+                            ))}
+                          </AppSelect>
                           <div>
-                            <label className={labelCls}>
+                            <label htmlFor="single-visit-rate-input" className={labelCls}>
                               {t("subscriptions.refund.singleVisit.rate")}
                             </label>
                             <input
+                              id="single-visit-rate-input"
                               type="number"
                               min={0}
                               step="0.01"
                               value={singleVisitRateInput}
                               onChange={(e) => {
+                                setAmountOverride(false);
                                 setSingleVisitTariffId("");
                                 setSingleVisitRateInput(e.target.value);
                               }}
                               className={fieldCls}
                             />
                           </div>
-                          {singleVisitPreview ? (
+                          {previewQuery.isFetching ? (
+                            <p className="text-[11px] text-slate-500">{t("common.loading.data")}</p>
+                          ) : formula?.calcMode === "single_visit_rate" &&
+                            Number.isFinite(parsedSingleVisitRate) ? (
                             <div className="text-[11px] text-slate-600 space-y-1">
                               <p>
                                 {t("subscriptions.refund.singleVisit.used", {
-                                  count: singleVisitPreview.lessonsUsed,
+                                  count: formula.lessonsUsed ?? 0,
                                   rate: formatCurrency(parsedSingleVisitRate),
-                                  retained: formatCurrency(singleVisitPreview.retainedAmount),
+                                  retained: formatCurrency(formula.retainedAmount ?? 0),
                                 })}
                               </p>
+                              {formula.formula ? (
+                                <p className="text-slate-500">{formula.formula}</p>
+                              ) : null}
                               <p className="font-semibold text-indigo-800">
                                 {t("subscriptions.refund.singleVisit.result", {
-                                  amount: formatCurrency(singleVisitPreview.refundAmount),
+                                  amount: formatCurrency(formula.recommendedAmount ?? 0),
                                 })}
                               </p>
                             </div>
@@ -424,12 +458,15 @@ export default function FinishSubscriptionWithRefundDialog({
                       min={0}
                       step="0.01"
                       value={amountInput}
-                      onChange={(e) => setAmountInput(e.target.value)}
+                      onChange={(e) => {
+                        setAmountOverride(true);
+                        setAmountInput(e.target.value);
+                      }}
                       className={fieldCls}
                     />
                     {!formula.requiresManualAmount &&
                     formula.recommendedAmount != null &&
-                    calcMode === "pro_rata" ? (
+                    (calcMode === "pro_rata" || calcMode === "single_visit_rate") ? (
                       <p className="text-[10px] text-slate-400 mt-1">
                         {t("subscriptions.refund.recommended")}:{" "}
                         {formatCurrency(formula.recommendedAmount)}

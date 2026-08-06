@@ -111,6 +111,42 @@ BEGIN
     '12 lessons / 12000 with 5 left should recommend 5000'
   );
 
+  -- Single-visit rate preview: 1 used lesson @ 2500 → refund 9500
+  v_sub := 'ffffffff-ffff-ffff-ffff-000000000611';
+  INSERT INTO prices (id, organization_id, type, lessons, price, category, discipline_id)
+  VALUES ('ffffffff-ffff-ffff-ffff-000000000711', v_org, 'solo', 1, 2500, 'single_visit', v_disc)
+  ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO subscriptions (
+    id, organization_id, type, client_id1, lessons_total, lessons_left,
+    activation_date, status, discipline_id, price_id, category, billing_model
+  )
+  VALUES (
+    v_sub, v_org, 'solo', v_client, 12, 11,
+    CURRENT_DATE - 20, 'active', v_disc, v_price, 'group', 'lesson_count'
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO payments (
+    id, organization_id, client_id, client_display, amount, method, subscription_id, created_at
+  )
+  VALUES (
+    'ffffffff-ffff-ffff-ffff-000000000811', v_org, v_client, 'Refund Ivan', 12000, 'cash', v_sub, now() - interval '15 days'
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+  v_preview := preview_subscription_refund(v_sub::text, 'single_visit_rate', 2500, NULL);
+  PERFORM _refund_test_assert((v_preview ->> 'success')::boolean, 'single-visit preview should succeed');
+  PERFORM _refund_test_assert(
+    (v_preview #>> '{formula,recommendedAmount}')::numeric = 9500,
+    '12000 - 1*2500 should recommend 9500'
+  );
+  PERFORM _refund_test_assert(
+    v_preview #>> '{formula,calcMode}' = 'single_visit_rate',
+    'formula snapshot should record single_visit_rate calc mode'
+  );
+
+  v_sub := 'ffffffff-ffff-ffff-ffff-000000000601';
   v_result := finish_subscription_with_refund(
     v_sub::text,
     v_client,

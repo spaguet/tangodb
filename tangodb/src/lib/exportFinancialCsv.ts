@@ -105,6 +105,7 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
   const manualExpenseRows = params.expenses.map((e) => ({
     date: labels.formatDate(e.expenseDate),
     category: t(locale, expenseCategoryKey(e.category)),
+    payee: "—",
     description: e.description || "—",
     amount: e.amount,
     source: t(locale, "venueCosts.finance.manualTotal"),
@@ -120,11 +121,11 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
         entry.category === "salary"
           ? expenseCategoryKey(entry.category)
           : ("venueCosts.finance.venueTotal" as const);
-      const payeeSuffix = entry.payee ? ` · ${entry.payee}` : "";
       return {
         date: labels.formatDate(entry.entryDate),
         category: t(locale, categoryKey),
-        description: `${entry.description || t(locale, "venueCosts.finance.autoRow")}${payeeSuffix}`,
+        payee: entry.payee || "—",
+        description: entry.description || t(locale, "venueCosts.finance.autoRow"),
         amount: entry.amount,
         source: t(locale, "venueCosts.finance.autoRow"),
       };

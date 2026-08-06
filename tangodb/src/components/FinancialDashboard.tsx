@@ -15,6 +15,7 @@ import {
   GraduationCap,
   ClipboardCheck,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import {
   aggregatePaymentStats,
@@ -51,6 +52,7 @@ import {
   formatMonthTitle,
 } from "../lib/utils";
 import { useI18n } from "../hooks/useI18n";
+import { useToast } from "../App";
 import { useAttendanceRecords } from "../hooks/useAttendance";
 import { useClients } from "../hooks/useClients";
 import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
@@ -421,6 +423,7 @@ function RevenueRankList({
 
 export default function FinancialDashboard() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { t, locale, plural } = useI18n();
   const { can } = usePermissions();
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
@@ -447,6 +450,7 @@ export default function FinancialDashboard() {
   const payrollQuery = useTeacherSettlements(statsMonth);
   const recalculatePayroll = useRecalculateTeacherSettlement();
   const recalculateVenueCosts = useRecalculatePendingVenueCosts();
+  const venueRecalcIdempotencyKey = useMemo(() => crypto.randomUUID(), [statsMonth]);
   const debtorsQuery = useFinancialDebtors();
   const clientsQuery = useClients();
   const attendanceQuery = useAttendanceRecords(statsMonth);
@@ -556,13 +560,26 @@ export default function FinancialDashboard() {
     void recalculatePayroll.mutateAsync(statsMonth);
   }, [statsMonth, canWritePayroll]);
 
-  useEffect(() => {
+  const handleRecalculateVenueCosts = async () => {
     if (!canReadFinance) return;
-    void recalculateVenueCosts.mutateAsync({
+    const result = await recalculateVenueCosts.mutateAsync({
       dateFrom: monthRange.dateFrom,
       dateTo: monthRange.dateTo,
+      idempotencyKey: venueRecalcIdempotencyKey,
     });
-  }, [statsMonth, monthRange.dateFrom, monthRange.dateTo, canReadFinance]);
+    if (!result.success) {
+      toast(t("dashboard.venueCostsRecalculateFailed"), "error");
+      return;
+    }
+    if (result.alreadyApplied) {
+      toast(t("dashboard.venueCostsRecalculateAlready"), "info");
+      return;
+    }
+    toast(
+      t("dashboard.venueCostsRecalculateSuccess", { count: result.resolvedCount }),
+      "success"
+    );
+  };
 
   const payrollAccrued = useMemo(
     () => (payrollQuery.data ?? []).reduce((sum, settlement) => sum + settlement.amountAccrued, 0),
@@ -791,9 +808,24 @@ export default function FinancialDashboard() {
 
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pt-1 border-t border-slate-100">
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
-            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
-              {t("dashboard.expensesMonth")}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
+                {t("dashboard.expensesMonth")}
+              </p>
+              {canReadFinance ? (
+                <button
+                  type="button"
+                  onClick={() => void handleRecalculateVenueCosts()}
+                  disabled={recalculateVenueCosts.isPending}
+                  className="inline-flex items-center gap-1 text-[10px] font-sans font-semibold text-indigo-600 hover:text-indigo-800 disabled:opacity-50 shrink-0"
+                >
+                  <RefreshCw
+                    className={`w-3 h-3 ${recalculateVenueCosts.isPending ? "animate-spin" : ""}`}
+                  />
+                  {t("dashboard.venueCostsRecalculate")}
+                </button>
+              ) : null}
+            </div>
             <DashboardStatValue loading={expensesLoading} className="text-xl font-semibold text-rose-700 mt-0.5">
               {formatCurrency(expensesTotal)}
             </DashboardStatValue>

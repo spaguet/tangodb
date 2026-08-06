@@ -1,5 +1,7 @@
 import type { BillingModel } from "../types";
 
+export type RefundCalcMode = "pro_rata" | "single_visit_rate";
+
 export interface SubscriptionRefundFormula {
   billingModel: BillingModel;
   requiresManualAmount: boolean;
@@ -16,6 +18,11 @@ export interface SubscriptionRefundFormula {
   formula?: string;
   expiresAt?: string | null;
   activationDate?: string;
+  calcMode?: RefundCalcMode;
+  singleVisitRate?: number;
+  singleVisitTariffId?: string | null;
+  retainedAmount?: number;
+  amountOverride?: boolean;
 }
 
 export interface SubscriptionRefundParticipant {
@@ -70,6 +77,16 @@ export function mapRefundFormula(raw: Record<string, unknown>): SubscriptionRefu
     expiresAt: raw.expiresAt != null ? String(raw.expiresAt).slice(0, 10) : null,
     activationDate:
       raw.activationDate != null ? String(raw.activationDate).slice(0, 10) : undefined,
+    calcMode:
+      raw.calcMode === "single_visit_rate" || raw.calcMode === "pro_rata"
+        ? raw.calcMode
+        : undefined,
+    singleVisitRate:
+      raw.singleVisitRate != null ? Number(raw.singleVisitRate) : undefined,
+    singleVisitTariffId:
+      raw.singleVisitTariffId != null ? String(raw.singleVisitTariffId) : null,
+    retainedAmount: raw.retainedAmount != null ? Number(raw.retainedAmount) : undefined,
+    amountOverride: raw.amountOverride === true,
   };
 }
 
@@ -112,8 +129,6 @@ export function mapSubscriptionRefund(row: Record<string, unknown>): Subscriptio
     createdAt: String(row.created_at ?? ""),
   };
 }
-
-export type RefundCalcMode = "pro_rata" | "single_visit_rate";
 
 /** Client-side mirror of server recommended refund (preview only). */
 export function previewRecommendedRefund(

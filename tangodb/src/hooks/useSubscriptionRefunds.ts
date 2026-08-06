@@ -4,6 +4,7 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 import {
   mapRefundPreview,
   mapSubscriptionRefund,
+  type RefundCalcMode,
   type SubscriptionRefundPreview,
   type SubscriptionRefundRecord,
 } from "../lib/subscriptionRefund";
@@ -41,15 +42,40 @@ export function useSubscriptionRefunds(options?: { subscriptionId?: string; enab
   });
 }
 
-export function usePreviewSubscriptionRefund(subscriptionId: string | null) {
+export function usePreviewSubscriptionRefund(
+  subscriptionId: string | null,
+  calcOptions?: {
+    calcMode?: RefundCalcMode;
+    singleVisitRate?: number | null;
+    singleVisitTariffId?: string | null;
+  }
+) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const calcMode = calcOptions?.calcMode ?? "pro_rata";
+  const singleVisitRate =
+    calcMode === "single_visit_rate" && Number.isFinite(calcOptions?.singleVisitRate)
+      ? calcOptions!.singleVisitRate!
+      : null;
 
   return useQuery({
-    queryKey: withOrgId([...subscriptionRefundsQueryKey, "preview", subscriptionId]),
-    enabled: orgEnabled && !!subscriptionId,
+    queryKey: withOrgId([
+      ...subscriptionRefundsQueryKey,
+      "preview",
+      subscriptionId,
+      calcMode,
+      singleVisitRate,
+      calcOptions?.singleVisitTariffId ?? null,
+    ]),
+    enabled:
+      orgEnabled &&
+      !!subscriptionId &&
+      (calcMode !== "single_visit_rate" || singleVisitRate != null),
     queryFn: async (): Promise<SubscriptionRefundPreview> => {
       const { data, error } = await supabase.rpc("preview_subscription_refund", {
         p_sub_id: subscriptionId!,
+        p_calc_mode: calcMode,
+        p_single_visit_rate: singleVisitRate,
+        p_single_visit_tariff_id: calcOptions?.singleVisitTariffId ?? null,
       });
       if (error) throw error;
 
@@ -77,6 +103,10 @@ export function useFinishSubscriptionWithRefund() {
       status?: "pending" | "completed";
       operationDate?: string;
       idempotencyKey?: string;
+      calcMode?: RefundCalcMode;
+      singleVisitRate?: number | null;
+      singleVisitTariffId?: string | null;
+      amountOverride?: boolean;
     }) => {
       const { data, error } = await supabase.rpc("finish_subscription_with_refund", {
         p_sub_id: input.subscriptionId,
@@ -87,6 +117,12 @@ export function useFinishSubscriptionWithRefund() {
         p_status: input.status ?? "completed",
         p_operation_date: input.operationDate ?? null,
         p_idempotency_key: input.idempotencyKey ?? null,
+        p_calc_mode: input.calcMode ?? "pro_rata",
+        p_single_visit_rate:
+          input.calcMode === "single_visit_rate" ? input.singleVisitRate ?? null : null,
+        p_single_visit_tariff_id:
+          input.calcMode === "single_visit_rate" ? input.singleVisitTariffId ?? null : null,
+        p_amount_override: input.amountOverride ?? false,
       });
 
       if (error) return { success: false as const, error: error.message };

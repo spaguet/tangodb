@@ -84,6 +84,7 @@ export function getCsvExportLabels(locale?: string | null): CsvExportLabels {
     expenses: {
       date: col("csv.column.date"),
       category: col("csv.column.category"),
+      payee: col("csv.column.payee"),
       description: col("csv.column.description"),
       amount: col("csv.column.amount"),
     },
