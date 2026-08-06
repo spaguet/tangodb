@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-06 — Google Calendar интеграция, Этап 2 (Промпт 5): миграция `20260892000001_google_calendar_sync_outbox.sql` — `google_calendar_event_links`, `calendar_sync_outbox`, `enqueue_calendar_sync` (схлопывание pending/retry по `dedupe_key`), триггеры на `personal_lessons` (insert/update/delete, смена даты → delete old + upsert new), RLS и RPC `get_personal_lesson_google_sync_status`.
+
 2026-08-06 — Google Calendar интеграция, Этап 1 (Промпт 4): UI «Настройки → Интеграции» (`/settings/integrations`) — `IntegrationsSettingsPage`, хук `useGoogleCalendarIntegration`, `lib/googleCalendarApi.ts`; OAuth connect (popup), выбор/создание календаря, статус binding, verify, disconnect (оставить/удалить будущие/revoke везде); пункт `integrations` в `SettingsSectionId` и навигации настроек.
 
 2026-08-06 — Google Calendar интеграция, Этап 1 (Промпт 3): Edge Functions `google-calendar-list-calendars`, `google-calendar-create-calendar`, `google-calendar-set-binding`; модуль `_shared/googleCalendarClient.ts` (refresh access token, calendarList, calendars.insert, коды `token_revoked` / `calendar_access_denied`). Set-binding — disable старого enabled binding, partial UNIQUE, `privacy_mode: initials`, audit_log.

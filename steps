@@ -45,7 +45,7 @@ TangoDB — Google Calendar: этапы и промты
 
 ── Блок 2. Outbox + персональные уроки (§16 Этап 2) ──
 
-[ ]  5   Outbox + event links + enqueue для personal lessons
+[✅]  5   Outbox + event links + enqueue для personal lessons — 2026-08-06
          (можно начать после этапа 1, параллельно с 2–4)
 [ ]  6   Worker calendar-sync-worker: ядро upsert/delete
 [ ]  7   Cron, retry/backoff, reconciliation (персональные)
@@ -75,7 +75,7 @@ TangoDB — Google Calendar: этапы и промты
 СЛЕДУЮЩИЙ ШАГ
 =======================================================
 
-Сейчас: этап 5 — Outbox + event links + enqueue для personal lessons.
+Сейчас: этап 6 — Worker calendar-sync-worker: ядро upsert/delete.
 
 =======================================================
 СПРАВКА: ЧТО ЗА ЧТО ОТВЕЧАЕТ
