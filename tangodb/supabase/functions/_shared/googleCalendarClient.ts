@@ -25,6 +25,12 @@ export interface GoogleCalendarListEntry {
   selectable: boolean;
 }
 
+const FREEBUSY_ACCESS_ROLES = new Set(["freeBusyReader", "reader", "writer", "owner"]);
+
+export function isFreebusyReadableAccessRole(accessRole: string): boolean {
+  return FREEBUSY_ACCESS_ROLES.has(accessRole);
+}
+
 export interface GoogleCreatedCalendar {
   id: string;
   summary: string;
@@ -172,10 +178,17 @@ async function parseGoogleApiError(res: Response): Promise<GoogleCalendarApiErro
   return new GoogleCalendarApiError(res.status, code, message);
 }
 
-export async function listGoogleCalendars(accessToken: string): Promise<GoogleCalendarListEntry[]> {
-  const res = await fetch(`${CALENDAR_API_BASE}/users/me/calendarList?minAccessRole=freeBusyReader`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+export async function listGoogleCalendars(
+  accessToken: string,
+  options?: { forFreebusy?: boolean }
+): Promise<GoogleCalendarListEntry[]> {
+  const minAccessRole = options?.forFreebusy ? "freeBusyReader" : "reader";
+  const res = await fetch(
+    `${CALENDAR_API_BASE}/users/me/calendarList?minAccessRole=${minAccessRole}`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
 
   if (!res.ok) {
     throw await parseGoogleApiError(res);
@@ -196,13 +209,14 @@ export async function listGoogleCalendars(accessToken: string): Promise<GoogleCa
     .filter((item) => typeof item.id === "string" && item.id.length > 0)
     .map((item) => {
       const accessRole = String(item.accessRole ?? "");
+      const freebusyReadable = isFreebusyReadableAccessRole(accessRole);
       return {
         id: item.id as string,
         summary: String(item.summary ?? item.id),
         primary: item.primary === true,
         accessRole,
         timeZone: String(item.timeZone ?? "UTC"),
-        selectable: isWritableAccessRole(accessRole),
+        selectable: options?.forFreebusy ? freebusyReadable : isWritableAccessRole(accessRole),
       };
     });
 }
@@ -521,4 +535,57 @@ export async function stopWatchChannel(
   if (!res.ok) {
     throw await parseGoogleApiError(res);
   }
+}
+
+export type GoogleFreebusyInterval = {
+  start: string;
+  end: string;
+};
+
+export async function queryCalendarFreebusy(
+  accessToken: string,
+  params: {
+    calendarIds: string[];
+    timeMin: string;
+    timeMax: string;
+    timeZone: string;
+  }
+): Promise<GoogleFreebusyInterval[]> {
+  if (!params.calendarIds.length) {
+    return [];
+  }
+
+  const res = await fetch(`${CALENDAR_API_BASE}/freeBusy`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      timeMin: params.timeMin,
+      timeMax: params.timeMax,
+      timeZone: params.timeZone,
+      items: params.calendarIds.map((id) => ({ id })),
+    }),
+  });
+
+  if (!res.ok) {
+    throw await parseGoogleApiError(res);
+  }
+
+  const payload = await res.json() as {
+    calendars?: Record<string, { busy?: Array<{ start?: string; end?: string }> }>;
+  };
+
+  const merged: GoogleFreebusyInterval[] = [];
+  for (const cal of Object.values(payload.calendars ?? {})) {
+    for (const slot of cal.busy ?? []) {
+      if (typeof slot.start === "string" && typeof slot.end === "string") {
+        merged.push({ start: slot.start, end: slot.end });
+      }
+    }
+  }
+
+  merged.sort((a, b) => a.start.localeCompare(b.start));
+  return merged;
 }

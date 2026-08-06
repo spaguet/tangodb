@@ -20,6 +20,8 @@ import DisciplineSelect from "../ui/DisciplineSelect";
 import TimeSelect from "../ui/TimeSelect";
 import GroupLessonRepeatFields from "./GroupLessonRepeatFields";
 import type { ScheduleCellPrefill } from "./AddLessonTypePopup";
+import { useGoogleCalendarFreebusy } from "../../hooks/useGoogleCalendarFreebusy";
+import GoogleCalendarFreebusyWarning from "../integrations/GoogleCalendarFreebusyWarning";
 
 interface AddGroupLessonFormProps {
   prefill: ScheduleCellPrefill | null;
@@ -208,6 +210,23 @@ export default function AddGroupLessonForm({
 
     return conflicts;
   }, [prefill, groupSlotRows, personalLessons, scheduleSlots, t, locale]);
+
+  const freebusySlots = useMemo(() => {
+    if (!prefill) return [];
+    const today = toISODateLocal(new Date());
+    return groupSlotRows.map((row) => ({
+      date: nextOccurrenceOnOrAfter(today, row.dayOfWeek),
+      timeStart: row.timeStart,
+      timeEnd: row.timeEnd,
+    }));
+  }, [prefill, groupSlotRows]);
+
+  const { hasOverlap: hasGoogleFreebusyOverlap, isChecking: isCheckingGoogleFreebusy } =
+    useGoogleCalendarFreebusy({
+      teacherMemberId,
+      slots: freebusySlots,
+      enabled: Boolean(prefill),
+    });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -447,6 +466,11 @@ export default function AddGroupLessonForm({
                 config={repeatConfig}
                 onChange={(patch) => setRepeatConfig((prev) => ({ ...prev, ...patch }))}
                 minEndDate={prefill.date}
+              />
+
+              <GoogleCalendarFreebusyWarning
+                visible={hasGoogleFreebusyOverlap}
+                checking={isCheckingGoogleFreebusy}
               />
 
               <div className="flex items-center gap-2 pt-1">

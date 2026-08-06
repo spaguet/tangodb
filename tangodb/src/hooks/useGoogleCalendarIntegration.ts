@@ -8,6 +8,7 @@ import {
   fetchMyGoogleAccounts,
   listGoogleCalendars,
   setGoogleCalendarBinding,
+  setFreebusyCalendarConfig,
   startGoogleCalendarOAuth,
   requestMemberCalendarReconcile,
   type GoogleAccountSummary,
@@ -43,14 +44,21 @@ export function useGoogleCalendarIntegration() {
   };
 
   const connectMutation = useMutation({
-    mutationFn: async (returnUrl: string) => {
-      const url = await startGoogleCalendarOAuth(returnUrl);
+    mutationFn: async (input: string | { returnUrl: string; consentPurpose?: string }) => {
+      const returnUrl = typeof input === "string" ? input : input.returnUrl;
+      const consentPurpose = typeof input === "string" ? undefined : input.consentPurpose;
+      const url = await startGoogleCalendarOAuth(returnUrl, { consentPurpose });
       window.open(url, "_blank", "noopener,noreferrer");
     },
   });
 
   const listCalendarsMutation = useMutation({
-    mutationFn: (googleAccountId: string) => listGoogleCalendars(googleAccountId),
+    mutationFn: (input: string | { googleAccountId: string; purpose?: "freebusy" }) => {
+      if (typeof input === "string") {
+        return listGoogleCalendars(input);
+      }
+      return listGoogleCalendars(input.googleAccountId, { purpose: input.purpose });
+    },
   });
 
   const createCalendarMutation = useMutation({
@@ -84,6 +92,11 @@ export function useGoogleCalendarIntegration() {
     },
   });
 
+  const setFreebusyConfigMutation = useMutation({
+    mutationFn: setFreebusyCalendarConfig,
+    onSuccess: invalidateAll,
+  });
+
   const primaryAccount: GoogleAccountSummary | null =
     accountsQuery.data?.find((a) => a.status === "active") ??
     accountsQuery.data?.[0] ??
@@ -110,6 +123,7 @@ export function useGoogleCalendarIntegration() {
     disconnect: disconnectMutation,
     verify: verifyMutation,
     syncFuture: syncFutureMutation,
+    setFreebusyConfig: setFreebusyConfigMutation,
     invalidateAll,
     refetch: async () => {
       await accountsQuery.refetch();

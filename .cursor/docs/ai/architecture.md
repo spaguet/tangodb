@@ -103,3 +103,4 @@
 - **Dead-letter:** `retry_calendar_sync_dead_job` — сброс `dead` → `pending` (owner/director — любая org-задача; teacher — только свои уроки).
 - **Метрики:** `get_organization_calendar_sync_metrics`, `get_team_calendar_sync_metrics` (owner/director, для Prompt 8).
 - **UI статуса (Prompt 8):** `get_personal_lesson_google_sync_status` (урок), `useGoogleCalendarSyncStatus`, `TeamGoogleSyncSection`, `google-calendar-remind-connect`.
+- **Free/busy (Prompt 13):** `member_google_calendar_bindings.freebusy_calendar_ids`; incremental OAuth scopes (`calendar.freebusy` / `calendar.events.freebusy`); Edge Functions `google-calendar-freebusy` (только busy-интервалы, calendar IDs server-side), `google-calendar-set-freebusy-config`; UI `GoogleCalendarFreebusySection` + неблокирующее предупреждение в формах записи урока.

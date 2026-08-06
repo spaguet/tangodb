@@ -21,6 +21,7 @@ import type { I18nKey } from "../../lib/i18n/keys";
 import type { GoogleCalendarListEntry } from "../../lib/googleCalendarApi";
 import TeamGoogleSyncSection from "../components/TeamGoogleSyncSection";
 import OrgEventsGoogleSyncSection from "../components/OrgEventsGoogleSyncSection";
+import GoogleCalendarFreebusySection from "../../components/integrations/GoogleCalendarFreebusySection";
 
 type DisconnectMode = "leave" | "delete" | "revoke" | null;
 
@@ -526,6 +527,8 @@ export default function IntegrationsSettingsPage() {
           </div>
         </div>
       )}
+
+      {isConfigured && <GoogleCalendarFreebusySection />}
 
       {showTeamSection && <OrgEventsGoogleSyncSection />}
       {showTeamSection && <TeamGoogleSyncSection />}

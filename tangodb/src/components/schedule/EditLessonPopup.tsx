@@ -43,7 +43,9 @@ import RequirePermission from "../RequirePermission";
 import TimeSelect from "../ui/TimeSelect";
 import GroupLessonRepeatFields from "./GroupLessonRepeatFields";
 import GoogleCalendarSyncStatusBadge from "../integrations/GoogleCalendarSyncStatusBadge";
+import GoogleCalendarFreebusyWarning from "../integrations/GoogleCalendarFreebusyWarning";
 import { useGoogleCalendarSyncStatus } from "../../hooks/useGoogleCalendarSyncStatus";
+import { useGoogleCalendarFreebusy } from "../../hooks/useGoogleCalendarFreebusy";
 
 interface EditLessonPopupProps {
   lesson: GroupDisplayLesson | PersonalDisplayLesson | null;
@@ -362,6 +364,31 @@ export default function EditLessonPopup({
 
     return [...groupIntervals, ...personalIntervals];
   }, [lesson, personalDate, scheduleSlots, personalLessons]);
+
+  const freebusySlots = useMemo(() => {
+    if (!lesson) return [];
+    if (lesson.kind === "personal") {
+      const date = personalDate || lesson.date;
+      return [{ date, timeStart, timeEnd }];
+    }
+    return groupSlotRows.map((row) => ({
+      date: dateForDayOfWeekInWeek(lesson.date, row.dayOfWeek),
+      timeStart: row.timeStart,
+      timeEnd: row.timeEnd,
+    }));
+  }, [lesson, personalDate, timeStart, timeEnd, groupSlotRows]);
+
+  const resolvedTeacherForFreebusy =
+    teacherMemberId || lesson?.teacherMemberId || "";
+
+  const { hasOverlap: hasGoogleFreebusyOverlap, isChecking: isCheckingGoogleFreebusy } =
+    useGoogleCalendarFreebusy({
+      teacherMemberId: resolvedTeacherForFreebusy,
+      slots: freebusySlots,
+      enabled:
+        Boolean(lesson) &&
+        !isScheduleDateLockedForWrite(lesson?.date ?? todayISO, canEditPastSchedule),
+    });
 
   const handleTimeStartChange = (next: string) => {
     setTimeStart(next);
@@ -1054,6 +1081,11 @@ export default function EditLessonPopup({
                 )}
               </div>
             )}
+
+            <GoogleCalendarFreebusyWarning
+              visible={hasGoogleFreebusyOverlap}
+              checking={isCheckingGoogleFreebusy}
+            />
 
             <div className="flex items-center gap-2 pt-1">
               {!readOnly && (

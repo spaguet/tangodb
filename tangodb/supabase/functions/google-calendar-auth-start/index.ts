@@ -9,6 +9,8 @@ import {
   defaultIntegrationsReturnUrl,
   generateOAuthState,
   generateOidcNonce,
+  GOOGLE_EVENTS_FREEBUSY_SCOPE,
+  GOOGLE_FREEBUSY_SCOPE,
   hashOAuthState,
   isAllowedReturnUrl,
   loadGoogleOAuthConfig,
@@ -47,12 +49,14 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Unauthorized" }, 401, req);
   }
 
-  let body: { return_url?: string };
+  let body: { return_url?: string; consent_purpose?: string };
   try {
     body = await req.json();
   } catch {
     body = {};
   }
+
+  const consentPurpose = (body.consent_purpose ?? "").trim();
 
   const returnUrl = (body.return_url ?? "").trim() || defaultIntegrationsReturnUrl();
   if (!returnUrl || !isAllowedReturnUrl(returnUrl)) {
@@ -74,6 +78,14 @@ Deno.serve(async (req) => {
     (row) => row.status === "revoked" || row.status === "error"
   );
   const promptConsent = !hasStoredCredential || needsReconsent || (existingAccounts ?? []).length === 0;
+  const additionalScopes =
+    consentPurpose === "freebusy"
+      ? [GOOGLE_FREEBUSY_SCOPE, GOOGLE_EVENTS_FREEBUSY_SCOPE]
+      : consentPurpose === "freebusy_single"
+        ? [GOOGLE_FREEBUSY_SCOPE]
+        : consentPurpose === "freebusy_multi"
+          ? [GOOGLE_EVENTS_FREEBUSY_SCOPE]
+          : [];
 
   const state = generateOAuthState();
   const nonce = generateOidcNonce();
@@ -100,10 +112,15 @@ Deno.serve(async (req) => {
     state,
     nonce,
     codeChallenge: challenge,
-    promptConsent,
+    promptConsent: promptConsent || additionalScopes.length > 0,
+    additionalScopes,
   });
 
-  logEvent("gcal_auth_start", { user_id: userId, prompt_consent: promptConsent });
+  logEvent("gcal_auth_start", {
+    user_id: userId,
+    prompt_consent: promptConsent || additionalScopes.length > 0,
+    consent_purpose: consentPurpose || null,
+  });
 
   return jsonResponse({ ok: true, url }, 200, req);
 });

@@ -30,9 +30,15 @@ export interface MemberGoogleCalendarBinding {
   last_error_code: string | null;
   cleanup_pending: boolean;
   disabled_at: string | null;
+  freebusy_calendar_ids?: string[];
   created_at: string;
   updated_at: string;
 }
+
+export type GoogleFreebusyInterval = {
+  start: string;
+  end: string;
+};
 
 export interface OrganizationGoogleCalendarBinding {
   id: string;
@@ -106,7 +112,7 @@ export async function fetchMemberGoogleBinding(
   const { data, error } = await supabase
     .from("member_google_calendar_bindings")
     .select(
-      "id, organization_id, organization_member_id, google_account_id, calendar_id, calendar_name, timezone, enabled, sync_group, sync_personal, sync_events, privacy_mode, last_success_at, last_error_at, last_error_code, cleanup_pending, disabled_at, created_at, updated_at"
+      "id, organization_id, organization_member_id, google_account_id, calendar_id, calendar_name, timezone, enabled, sync_group, sync_personal, sync_events, privacy_mode, last_success_at, last_error_at, last_error_code, cleanup_pending, disabled_at, freebusy_calendar_ids, created_at, updated_at"
     )
     .eq("organization_member_id", organizationMemberId)
     .eq("enabled", true)
@@ -129,19 +135,31 @@ export async function fetchOrganizationGoogleBinding(): Promise<OrganizationGoog
   return (data as OrganizationGoogleCalendarBinding | null) ?? null;
 }
 
-export async function startGoogleCalendarOAuth(returnUrl: string): Promise<string> {
+export async function startGoogleCalendarOAuth(
+  returnUrl: string,
+  options?: { consentPurpose?: string }
+): Promise<string> {
   const payload = await invokeFunction<{ ok: boolean; url?: string }>(
     "google-calendar-auth-start",
-    { return_url: returnUrl }
+    {
+      return_url: returnUrl,
+      consent_purpose: options?.consentPurpose,
+    }
   );
   if (!payload.url) throw new Error("missing_oauth_url");
   return payload.url;
 }
 
-export async function listGoogleCalendars(googleAccountId: string): Promise<GoogleCalendarListEntry[]> {
+export async function listGoogleCalendars(
+  googleAccountId: string,
+  options?: { purpose?: "freebusy" }
+): Promise<GoogleCalendarListEntry[]> {
   const payload = await invokeFunction<{ ok: boolean; calendars?: GoogleCalendarListEntry[] }>(
     "google-calendar-list-calendars",
-    { google_account_id: googleAccountId }
+    {
+      google_account_id: googleAccountId,
+      purpose: options?.purpose,
+    }
   );
   return payload.calendars ?? [];
 }
@@ -317,4 +335,40 @@ export async function remindGoogleCalendarConnect(
   await invokeFunction("google-calendar-remind-connect", {
     organization_member_id: organizationMemberId,
   });
+}
+
+export async function setFreebusyCalendarConfig(input: {
+  organizationMemberId: string;
+  freebusyCalendarIds: string[];
+}): Promise<string[]> {
+  const payload = await invokeFunction<{
+    ok: boolean;
+    freebusy_calendar_ids?: string[];
+  }>("google-calendar-set-freebusy-config", {
+    organization_member_id: input.organizationMemberId,
+    freebusy_calendar_ids: input.freebusyCalendarIds,
+  });
+  return payload.freebusy_calendar_ids ?? [];
+}
+
+export async function fetchTeacherGoogleFreebusy(input: {
+  organizationMemberId: string;
+  date: string;
+  timeStart: string;
+  timeEnd: string;
+}): Promise<{ busy: GoogleFreebusyInterval[]; configured: boolean }> {
+  const payload = await invokeFunction<{
+    ok: boolean;
+    busy?: GoogleFreebusyInterval[];
+    configured?: boolean;
+  }>("google-calendar-freebusy", {
+    organization_member_id: input.organizationMemberId,
+    date: input.date,
+    time_start: input.timeStart,
+    time_end: input.timeEnd,
+  });
+  return {
+    busy: payload.busy ?? [],
+    configured: payload.configured ?? false,
+  };
 }

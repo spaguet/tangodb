@@ -6,8 +6,8 @@ import {
   exchangeAuthorizationCode,
   GoogleOAuthError,
   hashOAuthState,
+  mergeGrantedScopes,
   loadGoogleOAuthConfig,
-  parseGrantedScopes,
   uint8ArrayToByteaHex,
   validateGoogleIdToken,
 } from "../_shared/googleOAuth.ts";
@@ -118,7 +118,11 @@ Deno.serve(async (req) => {
       return safeRedirect(returnUrl, { ok: false, reason: "missing_refresh_token" });
     }
 
-    const grantedScopes = parseGrantedScopes(tokens.scope);
+    const grantedScopes = mergeGrantedScopes(
+      (existingForUser?.granted_scopes as string[] | null) ??
+        (subjectOwner?.granted_scopes as string[] | null),
+      tokens.scope
+    );
     const accountId = existingForUser?.id ?? subjectOwner?.id;
 
     const row = {

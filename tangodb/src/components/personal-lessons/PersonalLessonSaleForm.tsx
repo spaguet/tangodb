@@ -52,6 +52,8 @@ import TimeSelect from "../ui/TimeSelect";
 import type { ScheduleCellPrefill } from "../schedule/AddLessonTypePopup";
 import VenueRulePaymentConfirmDialog from "../venue-costs/VenueRulePaymentConfirmDialog";
 import { useVenueCostRuleStatus, type VenueCostRuleStatus } from "../../hooks/useVenueCosts";
+import { useGoogleCalendarFreebusy } from "../../hooks/useGoogleCalendarFreebusy";
+import GoogleCalendarFreebusyWarning from "../integrations/GoogleCalendarFreebusyWarning";
 
 export type PersonalLessonSaleFormMode = "schedule-cell" | "standalone";
 
@@ -174,6 +176,21 @@ export default function PersonalLessonSaleForm({
   const [weeklyWeekCount, setWeeklyWeekCount] = useState(4);
 
   const effectiveLocationId = isScheduleCell ? (prefill?.locationId ?? "") : locationId;
+
+  const freebusySlots = useMemo(
+    () =>
+      (isScheduleCell
+        ? [{ date: prefill?.date ?? todayISO, timeStart, timeEnd }]
+        : lessonEntries
+      ).filter((slot) => slot.date && slot.timeStart && slot.timeEnd),
+    [isScheduleCell, prefill?.date, todayISO, timeStart, timeEnd, lessonEntries]
+  );
+
+  const { hasOverlap: hasGoogleFreebusyOverlap, isChecking: isCheckingGoogleFreebusy } =
+    useGoogleCalendarFreebusy({
+      teacherMemberId,
+      slots: freebusySlots,
+    });
 
   const pType = participantTypeFromCount(bookingClients.length);
 
@@ -878,6 +895,11 @@ export default function PersonalLessonSaleForm({
             </button>
           )}
         </div>
+
+        <GoogleCalendarFreebusyWarning
+          visible={hasGoogleFreebusyOverlap}
+          checking={isCheckingGoogleFreebusy}
+        />
 
         <div className="field-stack">
           <label className={labelCls}>{t("common.paymentMethod")}</label>

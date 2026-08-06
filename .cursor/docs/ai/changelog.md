@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-06 — Google Calendar интеграция, Этап 5 (Промпт 13): free/busy при записи урока — миграция `20260900000001` (`freebusy_calendar_ids` на member binding); Edge Functions `google-calendar-freebusy`, `google-calendar-set-freebusy-config`; incremental OAuth consent (`consent_purpose` в auth-start); UI `GoogleCalendarFreebusySection` + предупреждение в формах урока (`useGoogleCalendarFreebusy`); fix merge `granted_scopes` при incremental consent в auth-callback.
+
 2026-08-06 — Google Calendar интеграция, Этап 5 (Промпт 12): webhook-наблюдение и incremental sync — миграция `20260899000001` (`google_calendar_watch_channels`, outbox `incremental_sync`, RPC `enqueue_binding_incremental_sync`); Edge Functions `google-calendar-webhook` (публичный, constant-time проверка channel headers), `google-calendar-renew-watches` (cron); модуль `_shared/googleCalendarWatch.ts` (events.watch, syncToken, detach `user_deleted`); расширен `googleCalendarClient.ts` (list/watch/stop); watch register/stop при set-binding/disconnect; env `GOOGLE_CALENDAR_WEBHOOK_URL`.
 
 2026-08-06 — Google Calendar интеграция, Этап 4 (Промпт 11): sync `calendar_event_sessions` — миграция `20260898000001` (enqueue на sessions/events, reconcile org); worker `calendarSyncEventSession.ts` (org binding + опциональная копия создателю при `sync_events`); payload `buildEventSessionGoogleEvent`; расширен `calendarSyncCommon` (org bindings, org links); Edge Function `google-calendar-set-org-binding`; UI `OrgEventsGoogleSyncSection` + `useOrgGoogleCalendarIntegration`.

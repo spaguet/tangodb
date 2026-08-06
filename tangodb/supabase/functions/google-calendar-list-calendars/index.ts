@@ -17,6 +17,7 @@ const RATE_WINDOW_MS = 15 * 60_000;
 
 type ListBody = {
   google_account_id?: string;
+  purpose?: string;
 };
 
 Deno.serve(async (req) => {
@@ -58,8 +59,9 @@ Deno.serve(async (req) => {
 
   try {
     const config = await loadGoogleOAuthConfigOrThrow();
+    const forFreebusy = (body.purpose ?? "").trim() === "freebusy";
     const accessToken = await obtainAccessTokenForAccount(admin, config, googleAccountId, userId);
-    const calendars = await listGoogleCalendars(accessToken);
+    const calendars = await listGoogleCalendars(accessToken, { forFreebusy });
 
     logEvent("gcal_list_calendars", {
       user_id: userId,

@@ -20,6 +20,41 @@ export const GOOGLE_CALENDAR_SCOPES = [
   "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
 ] as const;
 
+/** Own availability only (single primary-style calendar). */
+export const GOOGLE_FREEBUSY_SCOPE =
+  "https://www.googleapis.com/auth/calendar.freebusy";
+
+/** Busy times on calendars the user can access (multiple / non-primary). */
+export const GOOGLE_EVENTS_FREEBUSY_SCOPE =
+  "https://www.googleapis.com/auth/calendar.events.freebusy";
+
+export function mergeGrantedScopes(
+  existing: string[] | null | undefined,
+  fromToken: string
+): string[] {
+  const merged = new Set([
+    ...(existing ?? []),
+    ...parseGrantedScopes(fromToken),
+  ]);
+  return [...merged];
+}
+
+export function resolveFreebusyConsentScopes(calendarIds: string[]): string[] {
+  if (calendarIds.length === 0) return [];
+  if (calendarIds.length === 1) return [GOOGLE_FREEBUSY_SCOPE];
+  return [GOOGLE_EVENTS_FREEBUSY_SCOPE];
+}
+
+export function accountHasFreebusyScopes(
+  grantedScopes: string[] | null | undefined,
+  calendarIds: string[]
+): boolean {
+  if (!calendarIds.length) return false;
+  const scopes = new Set(grantedScopes ?? []);
+  const required = resolveFreebusyConsentScopes(calendarIds);
+  return required.every((scope) => scopes.has(scope));
+}
+
 export interface GoogleOAuthConfig {
   clientId: string;
   clientSecret: string;
@@ -156,12 +191,17 @@ export function buildGoogleAuthUrl(params: {
   nonce: string;
   codeChallenge: string;
   promptConsent: boolean;
+  additionalScopes?: string[];
 }): string {
+  const scopeSet = new Set<string>([...GOOGLE_CALENDAR_SCOPES]);
+  for (const scope of params.additionalScopes ?? []) {
+    scopeSet.add(scope);
+  }
   const url = new URL(GOOGLE_AUTH_URL);
   url.searchParams.set("client_id", params.config.clientId);
   url.searchParams.set("redirect_uri", params.config.redirectUri);
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", GOOGLE_CALENDAR_SCOPES.join(" "));
+  url.searchParams.set("scope", [...scopeSet].join(" "));
   url.searchParams.set("state", params.state);
   url.searchParams.set("nonce", params.nonce);
   url.searchParams.set("access_type", "offline");
