@@ -154,3 +154,69 @@ export async function hashGoogleEventPayload(
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
+
+export function buildGroupOccurrenceSummary(
+  groupName: string | null,
+  disciplineName: string | null
+): string {
+  const group = (groupName ?? "").trim();
+  if (group) return group;
+  const discipline = (disciplineName ?? "").trim();
+  if (discipline) return discipline;
+  return "Групповой урок";
+}
+
+export function buildGroupOccurrenceDescription(input: {
+  organizationName: string;
+  scheduleUrl: string;
+}): string {
+  return [
+    `Организация: ${input.organizationName}`,
+    `Открыть в CRM: ${input.scheduleUrl}`,
+    "Управляется TangoDB. Изменяйте урок в CRM.",
+  ].join("\n");
+}
+
+export function buildGroupOccurrenceGoogleEvent(input: {
+  slotId: string;
+  organizationId: string;
+  occurrenceDate: string;
+  timeStart: string;
+  timeEnd: string;
+  timeZone: string;
+  groupName: string | null;
+  disciplineName: string | null;
+  locationName: string | null;
+  organizationName: string;
+  scheduleUrl: string;
+}): GoogleCalendarEventResource {
+  return {
+    summary: buildGroupOccurrenceSummary(input.groupName, input.disciplineName),
+    description: buildGroupOccurrenceDescription({
+      organizationName: input.organizationName,
+      scheduleUrl: input.scheduleUrl,
+    }),
+    location: input.locationName?.trim() || undefined,
+    start: toGoogleDateTime(input.occurrenceDate, input.timeStart, input.timeZone),
+    end: toGoogleDateTime(input.occurrenceDate, input.timeEnd, input.timeZone),
+    transparency: "opaque",
+    visibility: "default",
+    reminders: { useDefault: true },
+    extendedProperties: {
+      private: {
+        managedBy: "tangodb",
+        organizationId: input.organizationId,
+        sourceType: "group_occurrence",
+        sourceId: input.slotId,
+        occurrenceKey: input.occurrenceDate,
+      },
+    },
+  };
+}
+
+export function googleEventIdForGroupOccurrence(
+  slotId: string,
+  occurrenceDate: string
+): string {
+  return googleEventIdFromUuid(`${slotId}-${occurrenceDate}`);
+}

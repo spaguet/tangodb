@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
       calendar_name: calendarName,
       timezone,
       enabled: true,
-      sync_group: false,
+      sync_group: true,
       sync_personal: true,
       sync_events: false,
       privacy_mode: "initials",

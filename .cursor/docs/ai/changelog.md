@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-06 — Google Calendar интеграция, Этап 3 (Промпт 10): worker `group_occurrence` — модули `_shared/calendarSyncCommon.ts`, `_shared/calendarSyncGroupOccurrence.ts`; payload `buildGroupOccurrenceGoogleEvent` с `occurrenceKey`; reconcile `execute_member_group_occurrences_reconcile` (миграция `20260897000001`); hourly reconcile включает `sync_group`; fix `sync_group: true` при set-binding + backfill существующих bindings.
+
 2026-08-06 — Google Calendar интеграция, Этап 3 (Промпт 9): миграция `20260896000001_google_calendar_group_occurrence_enqueue.sql` — enqueue `group_occurrence` для `schedule_slots` (INSERT/UPDATE/DELETE, горизонт 7/90), `schedule_occurrence_cancellations` (delete), явный enqueue в `move_group_lesson_occurrence`; RPC `run_group_occurrence_horizon_extension`; Edge Function `calendar-extend-group-horizon` (ежедневное продление горизонта).
 
 2026-08-06 — Google Calendar интеграция, Этап 2 (Промпт 8): UI статуса синхронизации — `GoogleCalendarSyncStatusBadge` в `LessonInfoPopup` / `EditLessonPopup` (personal); хуки `useGoogleCalendarSyncStatus`, `useTeamGoogleSyncStatus`; секция команды `TeamGoogleSyncSection` на Integrations (owner/director, метрики org/участников, «Напомнить подключить»); Edge Function `google-calendar-remind-connect`; миграция `20260895000001` (RPC `get_personal_lesson_google_sync_status` + `teacher_has_binding`, outbox SELECT для teacher).

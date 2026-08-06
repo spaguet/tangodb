@@ -91,12 +91,13 @@
 
 - **Outbox:** `calendar_sync_outbox` + `enqueue_calendar_sync` (триггеры на `personal_lessons`, `schedule_slots`, `schedule_occurrence_cancellations`); worker — Edge Function `calendar-sync-worker`.
 - **Group occurrence enqueue (Prompt 9):** горизонт 7 дней назад / 90 вперёд через `gcal_group_occurrence_horizon_bounds` + `_group_slot_occurrences_in_range`; триггеры на `schedule_slots` (union OLD/NEW при UPDATE), отмена → delete по `schedule_occurrence_cancellations`; `move_group_lesson_occurrence` — явный delete/upsert; ежедневное продление — RPC `run_group_occurrence_horizon_extension` + cron `calendar-extend-group-horizon`.
+- **Group occurrence worker (Prompt 10):** `calendar-sync-worker` обрабатывает `source_type = group_occurrence` (upsert/delete); payload из `group_name`/дисциплины, `occurrenceKey` в extendedProperties; смена преподавателя через `removeStaleLinks`; reconcile — `execute_member_group_occurrences_reconcile` (вместе с personal в `reconcile_member`).
 - **Claim:** RPC `claim_calendar_sync_jobs` — атомарный lease, `FOR UPDATE SKIP LOCKED`, дедуп по `(organization_id, dedupe_key)`.
 - **Расписание (cron):** внешний scheduler или **Supabase Dashboard → Cron Jobs** с заголовком `x-cron-secret: <CRON_SECRET>` (как `purge-expired-demo-orgs`):
   - `calendar-sync-worker` — каждые **2 мин** (`POST`, body `{}`, опционально `batch_size`);
   - `calendar-reconcile-personal` — **каждый час** (`POST`, body `{}`) → RPC `run_personal_lessons_calendar_reconciliation` → enqueue `reconcile_member` на каждый активный binding с `sync_personal`.
   - `calendar-extend-group-horizon` — **ежедневно** (`POST`, body `{}`) → RPC `run_group_occurrence_horizon_extension` → upsert на день `CURRENT_DATE + 90` для активных `schedule_slots`.
-- **Reconcile:** `execute_member_personal_lessons_reconcile` — будущие персоналки без link → upsert; stale links → delete. Ручной запуск: RPC `request_member_calendar_reconcile` (кнопка в Integrations).
+- **Reconcile:** `execute_member_personal_lessons_reconcile` + `execute_member_group_occurrences_reconcile` — будущие уроки/occurrence без link → upsert; stale links → delete. Ручной запуск: RPC `request_member_calendar_reconcile` (кнопка в Integrations).
 - **Dead-letter:** `retry_calendar_sync_dead_job` — сброс `dead` → `pending` (owner/director — любая org-задача; teacher — только свои уроки).
 - **Метрики:** `get_organization_calendar_sync_metrics`, `get_team_calendar_sync_metrics` (owner/director, для Prompt 8).
 - **UI статуса (Prompt 8):** `get_personal_lesson_google_sync_status` (урок), `useGoogleCalendarSyncStatus`, `TeamGoogleSyncSection`, `google-calendar-remind-connect`.
