@@ -7,6 +7,7 @@ import { exportCsvItems } from "./exportCsv";
 import type { CsvExportMethod, CsvManualSave } from "./exportCsv";
 import { getCsvExportLabels } from "./exportCsvI18n";
 import { expenseCategoryKey } from "./expenseCategories";
+import { formatFinanceCostEntryTitle } from "./financeCostEntryLabel";
 import { t } from "./i18n";
 
 function paymentSourceLabel(
@@ -126,7 +127,9 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
         date: labels.formatDate(entry.entryDate),
         category: t(locale, categoryKey),
         payee: entry.payee || "—",
-        description: entry.description || t(locale, "venueCosts.finance.autoRow"),
+        description:
+          formatFinanceCostEntryTitle(entry, (key, vars) => t(locale, key, vars)) ||
+          t(locale, "venueCosts.finance.autoRow"),
         amount: entry.amount,
         source: t(locale, "venueCosts.finance.autoRow"),
       };

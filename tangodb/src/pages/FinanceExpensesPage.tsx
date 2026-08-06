@@ -28,6 +28,7 @@ import { monthDateRange } from "../lib/financeReports";
 import { toISODateLocal } from "../lib/scheduleWeek";
 import type { Expense, ExpenseCategory, ExpenseInput } from "../types/expense";
 import type { FinanceCostEntry } from "../hooks/useVenueCosts";
+import { formatFinanceCostEntryTitle } from "../lib/financeCostEntryLabel";
 
 type CategoryFilter = "all" | ExpenseCategory;
 
@@ -40,11 +41,13 @@ function FinanceCostEntryRow({
   fallbackTitle,
   formatDate,
   categoryLabel,
+  title,
 }: {
   entry: FinanceCostEntry;
   fallbackTitle: string;
   formatDate: ReturnType<typeof useI18n>["formatDate"];
   categoryLabel: (category: ExpenseCategory) => string;
+  title: string;
 }) {
   const categorySuffix = isExpenseCategory(entry.category) ? ` · ${categoryLabel(entry.category)}` : null;
 
@@ -52,7 +55,7 @@ function FinanceCostEntryRow({
     <div className="grid grid-cols-[1fr_auto] gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-slate-800 truncate">
-          {entry.description || fallbackTitle}
+          {title || entry.description || fallbackTitle}
         </p>
         <p className="text-[10px] text-slate-400 mt-0.5">
           {formatDate(entry.entryDate, { day: "numeric", month: "short", year: "numeric" })}
@@ -430,6 +433,7 @@ export default function FinanceExpensesPage() {
                 key={entry.id}
                 entry={entry}
                 fallbackTitle={t("venueCosts.finance.autoRow")}
+                title={formatFinanceCostEntryTitle(entry, t)}
                 formatDate={formatDate}
                 categoryLabel={categoryLabel}
               />
@@ -465,6 +469,7 @@ export default function FinanceExpensesPage() {
                 key={entry.id}
                 entry={entry}
                 fallbackTitle={t("venueCosts.finance.teacherExpenseRow")}
+                title={formatFinanceCostEntryTitle(entry, t)}
                 formatDate={formatDate}
                 categoryLabel={categoryLabel}
               />

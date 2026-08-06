@@ -613,6 +613,14 @@ export function useReopenLessonOccurrenceClosure() {
 
 export const financeCostsQueryKey = ["finance-costs"] as const;
 
+export type FinanceCostDetailKind =
+  | "manual"
+  | "venue_fixed_period"
+  | "venue_adjustment"
+  | "venue_lesson_personal"
+  | "venue_lesson_group"
+  | "teacher_deduction";
+
 export interface FinanceCostEntry {
   id: string;
   sourceType: "manual_expense" | "venue_cost" | "teacher_expense";
@@ -624,6 +632,16 @@ export interface FinanceCostEntry {
   ruleVersionId: string | null;
   closureId: string | null;
   teacherPayRuleId: string | null;
+  detailKind: FinanceCostDetailKind | null;
+  title: string | null;
+  disciplineName: string | null;
+  locationName: string | null;
+  timeStart: string | null;
+  timeEnd: string | null;
+  attendeeCount: number | null;
+  periodFrom: string | null;
+  periodTo: string | null;
+  reason: string | null;
   createdAt: string;
 }
 
@@ -661,6 +679,16 @@ export function useFinanceCosts(dateFrom: string, dateTo: string, enabled = true
           ruleVersionId: nullableString(item.rule_version_id),
           closureId: nullableString(item.closure_id),
           teacherPayRuleId: nullableString(item.teacher_pay_rule_id),
+          detailKind: nullableString(item.detail_kind) as FinanceCostEntry["detailKind"],
+          title: nullableString(item.title),
+          disciplineName: nullableString(item.discipline_name),
+          locationName: nullableString(item.location_name),
+          timeStart: nullableString(item.time_start),
+          timeEnd: nullableString(item.time_end),
+          attendeeCount: item.attendee_count == null ? null : Number(item.attendee_count) || 0,
+          periodFrom: item.period_from != null ? String(item.period_from).slice(0, 10) : null,
+          periodTo: item.period_to != null ? String(item.period_to).slice(0, 10) : null,
+          reason: nullableString(item.reason),
           createdAt: String(item.created_at ?? ""),
         } satisfies FinanceCostEntry;
       });

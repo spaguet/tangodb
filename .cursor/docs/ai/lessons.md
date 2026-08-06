@@ -11,6 +11,13 @@
 
 ## Записи
 
+### 2026-08-06 — Расходы: column expenses.payee does not exist
+
+- **Дата:** 2026-08-06
+- **Ошибка:** раздел «Расходы» падал с `column expenses.payee does not exist`
+- **Причина:** фронт и хук `useExpenses` уже использовали поля `payee` / `document_number`, но миграция `20260889000001_expenses_payee_document.sql` не была применена к удалённой БД
+- **Как избежать:** после добавления колонок в коде сразу прогонять `npm run db:push` (или убедиться, что миграция в CI/deploy)
+
 ### 2026-08-04 — sync_personal_lesson_paid_status могла сбросить paid='yes' для price=0 уроков
 
 - **Дата:** 2026-08-04
