@@ -387,3 +387,138 @@ export async function deleteCalendarEvent(
     throw await parseGoogleApiError(res);
   }
 }
+
+export type GoogleCalendarListEventItem = {
+  id: string;
+  status: string;
+  extendedProperties?: { private?: Record<string, string> };
+};
+
+export type GoogleCalendarEventsListPage = {
+  items: GoogleCalendarListEventItem[];
+  nextSyncToken?: string;
+  nextPageToken?: string;
+};
+
+export async function listCalendarEventsPage(
+  accessToken: string,
+  calendarId: string,
+  params: {
+    syncToken?: string | null;
+    pageToken?: string | null;
+    showDeleted?: boolean;
+    privateExtendedProperty?: string;
+  }
+): Promise<GoogleCalendarEventsListPage> {
+  const query = new URLSearchParams();
+  query.set("maxResults", "250");
+  query.set("singleEvents", "true");
+
+  if (params.syncToken) {
+    query.set("syncToken", params.syncToken);
+  }
+  if (params.pageToken) {
+    query.set("pageToken", params.pageToken);
+  }
+  if (params.showDeleted !== false) {
+    query.set("showDeleted", "true");
+  }
+  if (params.privateExtendedProperty) {
+    query.set("privateExtendedProperty", params.privateExtendedProperty);
+  }
+
+  const res = await fetch(
+    `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events?${query.toString()}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!res.ok) {
+    throw await parseGoogleApiError(res);
+  }
+
+  const body = await res.json() as {
+    items?: GoogleCalendarListEventItem[];
+    nextSyncToken?: string;
+    nextPageToken?: string;
+  };
+
+  return {
+    items: body.items ?? [],
+    nextSyncToken: body.nextSyncToken,
+    nextPageToken: body.nextPageToken,
+  };
+}
+
+export type GoogleWatchChannelResponse = {
+  resourceId: string;
+  expiration: string;
+};
+
+export async function watchCalendarEvents(
+  accessToken: string,
+  calendarId: string,
+  params: {
+    channelId: string;
+    address: string;
+    token: string;
+    expirationMs?: number;
+  }
+): Promise<GoogleWatchChannelResponse> {
+  const expirationMs = params.expirationMs ?? 6 * 24 * 60 * 60 * 1000;
+  const res = await fetch(
+    `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/watch`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: params.channelId,
+        type: "web_hook",
+        address: params.address,
+        token: params.token,
+        expiration: String(Date.now() + expirationMs),
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    throw await parseGoogleApiError(res);
+  }
+
+  const body = await res.json() as { resourceId?: string; expiration?: string };
+  if (!body.resourceId) {
+    throw new GoogleCalendarApiError(500, "watch_missing_resource_id", "Watch response missing resourceId");
+  }
+
+  return {
+    resourceId: body.resourceId,
+    expiration: body.expiration ?? String(Date.now() + expirationMs),
+  };
+}
+
+export async function stopWatchChannel(
+  accessToken: string,
+  params: { channelId: string; resourceId: string }
+): Promise<void> {
+  const res = await fetch(`${CALENDAR_API_BASE}/channels/stop`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: params.channelId,
+      resourceId: params.resourceId,
+    }),
+  });
+
+  if (res.status === 404) {
+    return;
+  }
+
+  if (!res.ok) {
+    throw await parseGoogleApiError(res);
+  }
+}

@@ -11,6 +11,11 @@ import {
 } from "../_shared/googleOAuth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
+import {
+  GoogleCalendarApiError,
+  loadGoogleOAuthConfigOrThrow,
+} from "../_shared/googleCalendarClient.ts";
+import { stopWatchForBinding } from "../_shared/googleCalendarWatch.ts";
 
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 15 * 60_000;
@@ -119,6 +124,16 @@ Deno.serve(async (req) => {
       .eq("enabled", true);
 
     for (const binding of memberBindings ?? []) {
+      try {
+        const oauthConfig = await loadGoogleOAuthConfigOrThrow();
+        await stopWatchForBinding(admin, oauthConfig, "member", binding.id as string);
+      } catch (err) {
+        logEvent("gcal_watch_stop_on_revoke_error", {
+          binding_id: binding.id,
+          message: err instanceof Error ? err.message : "unknown",
+        });
+      }
+
       await admin
         .from("member_google_calendar_bindings")
         .update({
@@ -146,6 +161,16 @@ Deno.serve(async (req) => {
       .eq("enabled", true);
 
     for (const binding of orgBindings ?? []) {
+      try {
+        const oauthConfig = await loadGoogleOAuthConfigOrThrow();
+        await stopWatchForBinding(admin, oauthConfig, "organization", binding.id as string);
+      } catch (err) {
+        logEvent("gcal_watch_stop_on_revoke_error", {
+          binding_id: binding.id,
+          message: err instanceof Error ? err.message : "unknown",
+        });
+      }
+
       await admin
         .from("organization_google_calendar_bindings")
         .update({
@@ -239,6 +264,16 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Disconnect failed" }, 500, req);
     }
 
+    try {
+      const oauthConfig = await loadGoogleOAuthConfigOrThrow();
+      await stopWatchForBinding(admin, oauthConfig, "organization", orgBindingId);
+    } catch (err) {
+      logEvent("gcal_watch_stop_on_disconnect_error", {
+        binding_id: orgBindingId,
+        message: err instanceof Error ? err.message : "unknown",
+      });
+    }
+
     await writeAuditLog(admin, {
       organizationId: binding.organization_id as string,
       tableName: "organization_google_calendar_bindings",
@@ -291,6 +326,16 @@ Deno.serve(async (req) => {
 
   if (updateError) {
     return jsonResponse({ error: "Disconnect failed" }, 500, req);
+  }
+
+  try {
+    const oauthConfig = await loadGoogleOAuthConfigOrThrow();
+    await stopWatchForBinding(admin, oauthConfig, "member", binding.id as string);
+  } catch (err) {
+    logEvent("gcal_watch_stop_on_disconnect_error", {
+      binding_id: binding.id,
+      message: err instanceof Error ? err.message : "unknown",
+    });
   }
 
   await writeAuditLog(admin, {

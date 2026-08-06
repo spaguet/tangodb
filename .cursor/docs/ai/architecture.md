@@ -97,6 +97,8 @@
   - `calendar-sync-worker` — каждые **2 мин** (`POST`, body `{}`, опционально `batch_size`);
   - `calendar-reconcile-personal` — **каждый час** (`POST`, body `{}`) → RPC `run_personal_lessons_calendar_reconciliation` → enqueue `reconcile_member` на каждый активный binding с `sync_personal`.
   - `calendar-extend-group-horizon` — **ежедневно** (`POST`, body `{}`) → RPC `run_group_occurrence_horizon_extension` → upsert на день `CURRENT_DATE + 90` для активных `schedule_slots`.
+  - `google-calendar-renew-watches` — **ежедневно** (`POST`, body `{}`) → продление `events.watch` (<24h до expiration) и backfill watch для bindings без канала.
+- **Webhook observation (Prompt 12):** `google_calendar_watch_channels` (backend-only); публичный `google-calendar-webhook` → enqueue `incremental_sync`; worker обрабатывает syncToken, при HTTP 410 — full re-sync managed events; ручное удаление event → `sync_status=detached`, `detach_reason=user_deleted` (без изменения CRM). Secret `GOOGLE_CALENDAR_WEBHOOK_URL` — публичный URL webhook Edge Function.
 - **Reconcile:** `execute_member_personal_lessons_reconcile` + `execute_member_group_occurrences_reconcile` — будущие уроки/occurrence без link → upsert; stale links → delete. Ручной запуск: RPC `request_member_calendar_reconcile` (кнопка в Integrations).
 - **Dead-letter:** `retry_calendar_sync_dead_job` — сброс `dead` → `pending` (owner/director — любая org-задача; teacher — только свои уроки).
 - **Метрики:** `get_organization_calendar_sync_metrics`, `get_team_calendar_sync_metrics` (owner/director, для Prompt 8).

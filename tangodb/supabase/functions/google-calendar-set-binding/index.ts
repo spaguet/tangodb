@@ -5,6 +5,11 @@ import {
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
+import {
+  GoogleCalendarApiError,
+  loadGoogleOAuthConfigOrThrow,
+} from "../_shared/googleCalendarClient.ts";
+import { registerWatchForBinding, stopWatchForBinding } from "../_shared/googleCalendarWatch.ts";
 
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 15 * 60_000;
@@ -148,6 +153,16 @@ Deno.serve(async (req) => {
   }
 
   if (activeBinding) {
+    try {
+      const oauthConfig = await loadGoogleOAuthConfigOrThrow();
+      await stopWatchForBinding(admin, oauthConfig, "member", activeBinding.id as string);
+    } catch (err) {
+      logEvent("gcal_watch_stop_on_change_calendar_error", {
+        binding_id: activeBinding.id,
+        message: err instanceof Error ? err.message : "unknown",
+      });
+    }
+
     const { error: disableError } = await admin
       .from("member_google_calendar_bindings")
       .update({
@@ -224,6 +239,23 @@ Deno.serve(async (req) => {
     binding_id: newBinding.id as string,
     calendar_id: calendarId,
   });
+
+  try {
+    const oauthConfig = await loadGoogleOAuthConfigOrThrow();
+    await registerWatchForBinding(admin, oauthConfig, {
+      bindingKind: "member",
+      bindingId: newBinding.id as string,
+      organizationId,
+      calendarId,
+      googleAccountId,
+    });
+  } catch (err) {
+    const message = err instanceof GoogleCalendarApiError ? err.message : "watch_register_failed";
+    logEvent("gcal_watch_register_after_binding_error", {
+      binding_id: newBinding.id as string,
+      message,
+    });
+  }
 
   // Outbox enqueue for old-calendar cleanup — Prompt 5 (calendar_sync_outbox).
   return jsonResponse({

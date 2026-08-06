@@ -73,6 +73,19 @@
 - **Альтернативы:** pg_cron + `net.http_post` в миграции (отклонено: секреты и project URL вне репозитория); inline reconcile в hourly cron без outbox (отклонено: таймауты Edge Function).
 - **Почему так:** Переиспользует существующий worker/outbox; reconcile_member идемпотентен и безопасен при повторном запуске; отделение частого worker-тика от редкого полного reconcile.
 
+### GCAL-4 — Webhook observation и incremental sync (2026-08-06)
+
+- **Дата:** 2026-08-06
+- **Решение:**
+  1. **Watch state:** отдельная backend-only таблица `google_calendar_watch_channels` (channel_id, resource_id, channel_token, expiration, calendar_sync_token) — не в SELECTable bindings, т.к. `channel_token` — shared secret webhook.
+  2. **Webhook:** публичный `google-calendar-webhook` без JWT; проверка `X-Goog-Channel-ID` / `X-Goog-Resource-ID` / `X-Goog-Channel-Token` constant-time; быстрый 2xx + enqueue `incremental_sync` в outbox.
+  3. **Incremental sync:** worker обрабатывает `incremental_sync` через `syncToken`; HTTP 410 → сброс token и full list с `privateExtendedProperty=managedBy=tangodb`; удаление пользователем → `sync_status=detached`, `detach_reason=user_deleted` (без изменения CRM, без auto-restore).
+  4. **Watch lifecycle:** `events.watch` при set-binding; stop при disconnect/смене календаря; ежедневный cron `google-calendar-renew-watches` (<24h до expiration + backfill).
+  5. **URL:** `GOOGLE_CALENDAR_WEBHOOK_URL` в Supabase secrets (не в OAuth state).
+- **Контекст:** Промпт 12 `tangodb_google_calendar_integration.md` §13.
+- **Альтернативы:** хранить watch-поля в bindings (отклонено: утечка token через PostgREST SELECT); синхронный incremental sync в webhook handler (отклонено: таймауты Google).
+- **Почему так:** Соответствует §5/§13/§19 — обнаружение ручного удаления без двустороннего изменения CRM; переиспользует outbox/worker для надёжности.
+
 ### REFUND-2 — Возврат с удержанием по тарифу разового посещения (2026-08-05)
 
 - **Решение:** В UI «Завершить с возвратом» для `lesson_count` добавить режим `single_visit_rate`: `refund = min(available, sale_price − used × single_visit_rate)`, где `used = lessons_total − lessons_left`. Тариф из прайса `single_visit` (фильтр по дисциплине) или ручной ввод. Сумма уходит в существующий `finish_subscription_with_refund`. Режим `pro_rata` остаётся умолчанием.

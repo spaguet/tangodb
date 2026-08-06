@@ -39,6 +39,7 @@ import {
   deleteEventSession,
   upsertEventSession,
 } from "./calendarSyncEventSession.ts";
+import { processIncrementalSyncJob } from "./googleCalendarWatch.ts";
 
 export { CANCEL_POLICY, LEASE_SECONDS, type OutboxJob } from "./calendarSyncCommon.ts";
 
@@ -374,6 +375,11 @@ export async function processCalendarSyncJob(
   config: GoogleOAuthConfig,
   job: OutboxJob
 ): Promise<void> {
+  if (job.operation === "incremental_sync") {
+    await processIncrementalSyncJob(admin, config, job);
+    return;
+  }
+
   if (job.operation === "reconcile_member") {
     await runReconcileMember(admin, job);
     return;

@@ -25,7 +25,7 @@ export type OutboxJob = {
   source_id: string;
   occurrence_date: string | null;
   dedupe_key: string;
-  operation: "upsert" | "delete" | "reconcile_member";
+  operation: "upsert" | "delete" | "reconcile_member" | "incremental_sync";
   attempt_count: number;
 };
 

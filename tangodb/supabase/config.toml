@@ -434,6 +434,12 @@ verify_jwt = false
 [functions.calendar-extend-group-horizon]
 verify_jwt = false
 
+[functions.google-calendar-webhook]
+verify_jwt = false
+
+[functions.google-calendar-renew-watches]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
