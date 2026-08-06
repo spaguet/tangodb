@@ -55,8 +55,24 @@ export type MemberBindingRow = {
   enabled: boolean;
   sync_personal: boolean;
   sync_group: boolean;
+  sync_events?: boolean;
   privacy_mode: string;
   cleanup_pending: boolean;
+};
+
+export type OrganizationBindingRow = {
+  id: string;
+  organization_id: string;
+  google_account_id: string;
+  calendar_id: string;
+  calendar_name: string;
+  enabled: boolean;
+  cleanup_pending: boolean;
+};
+
+export type GoogleCalendarTarget = {
+  google_account_id: string;
+  calendar_id: string;
 };
 
 export type BindingContext = MemberBindingRow;
@@ -156,8 +172,11 @@ export async function loadOrgContext(
   };
 }
 
-const BINDING_SELECT =
-  "id, organization_id, organization_member_id, google_account_id, calendar_id, calendar_name, enabled, sync_personal, sync_group, privacy_mode, cleanup_pending";
+const MEMBER_BINDING_SELECT =
+  "id, organization_id, organization_member_id, google_account_id, calendar_id, calendar_name, enabled, sync_personal, sync_group, sync_events, privacy_mode, cleanup_pending";
+
+const ORG_BINDING_SELECT =
+  "id, organization_id, google_account_id, calendar_id, calendar_name, enabled, cleanup_pending";
 
 export async function loadActiveBinding(
   admin: SupabaseClient,
@@ -167,7 +186,7 @@ export async function loadActiveBinding(
 ): Promise<MemberBindingRow | null> {
   const { data } = await admin
     .from("member_google_calendar_bindings")
-    .select(BINDING_SELECT)
+    .select(MEMBER_BINDING_SELECT)
     .eq("organization_id", organizationId)
     .eq("organization_member_id", teacherMemberId)
     .eq("enabled", true)
@@ -177,6 +196,37 @@ export async function loadActiveBinding(
   return (data as MemberBindingRow | null) ?? null;
 }
 
+export async function loadActiveMemberEventsBinding(
+  admin: SupabaseClient,
+  organizationId: string,
+  memberId: string
+): Promise<MemberBindingRow | null> {
+  const { data } = await admin
+    .from("member_google_calendar_bindings")
+    .select(MEMBER_BINDING_SELECT)
+    .eq("organization_id", organizationId)
+    .eq("organization_member_id", memberId)
+    .eq("enabled", true)
+    .eq("sync_events", true)
+    .maybeSingle();
+
+  return (data as MemberBindingRow | null) ?? null;
+}
+
+export async function loadActiveOrgBinding(
+  admin: SupabaseClient,
+  organizationId: string
+): Promise<OrganizationBindingRow | null> {
+  const { data } = await admin
+    .from("organization_google_calendar_bindings")
+    .select(ORG_BINDING_SELECT)
+    .eq("organization_id", organizationId)
+    .eq("enabled", true)
+    .maybeSingle();
+
+  return (data as OrganizationBindingRow | null) ?? null;
+}
+
 export async function loadBindingById(
   admin: SupabaseClient,
   organizationId: string,
@@ -184,12 +234,27 @@ export async function loadBindingById(
 ): Promise<BindingContext | null> {
   const { data } = await admin
     .from("member_google_calendar_bindings")
-    .select(BINDING_SELECT)
+    .select(MEMBER_BINDING_SELECT)
     .eq("organization_id", organizationId)
     .eq("id", bindingId)
     .maybeSingle();
 
   return (data as BindingContext | null) ?? null;
+}
+
+export async function loadOrgBindingById(
+  admin: SupabaseClient,
+  organizationId: string,
+  bindingId: string
+): Promise<OrganizationBindingRow | null> {
+  const { data } = await admin
+    .from("organization_google_calendar_bindings")
+    .select(ORG_BINDING_SELECT)
+    .eq("organization_id", organizationId)
+    .eq("id", bindingId)
+    .maybeSingle();
+
+  return (data as OrganizationBindingRow | null) ?? null;
 }
 
 export async function isTeacherActive(
@@ -254,24 +319,65 @@ export async function maybeClearBindingCleanup(
     .eq("id", bindingId);
 }
 
+export async function maybeClearOrgBindingCleanup(
+  admin: SupabaseClient,
+  organizationId: string,
+  bindingId: string
+): Promise<void> {
+  const binding = await loadOrgBindingById(admin, organizationId, bindingId);
+  if (!binding?.cleanup_pending) return;
+
+  const { count } = await admin
+    .from("google_calendar_event_links")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("organization_binding_id", bindingId);
+
+  if ((count ?? 0) > 0) return;
+
+  await admin
+    .from("organization_google_calendar_bindings")
+    .update({
+      cleanup_pending: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", bindingId);
+}
+
 export async function deleteGoogleEventForLink(
   admin: SupabaseClient,
   config: GoogleOAuthConfig,
   link: EventLinkRow
 ): Promise<void> {
-  if (!link.google_event_id || !link.member_binding_id) return;
+  if (!link.google_event_id) return;
 
-  const binding = await loadBindingById(admin, link.organization_id, link.member_binding_id);
-  if (!binding) return;
-  if (!binding.enabled && !binding.cleanup_pending) return;
+  let target: GoogleCalendarTarget | null = null;
+
+  if (link.member_binding_id) {
+    const binding = await loadBindingById(admin, link.organization_id, link.member_binding_id);
+    if (!binding) return;
+    if (!binding.enabled && !binding.cleanup_pending) return;
+    target = binding;
+  } else if (link.organization_binding_id) {
+    const binding = await loadOrgBindingById(
+      admin,
+      link.organization_id,
+      link.organization_binding_id
+    );
+    if (!binding) return;
+    if (!binding.enabled && !binding.cleanup_pending) return;
+    target = binding;
+  }
+
+  if (!target) return;
 
   try {
     const accessToken = await obtainAccessTokenForGoogleAccount(
       admin,
       config,
-      binding.google_account_id
+      target.google_account_id
     );
-    await deleteCalendarEvent(accessToken, binding.calendar_id, link.google_event_id);
+    await deleteCalendarEvent(accessToken, target.calendar_id, link.google_event_id);
   } catch (err) {
     if (err instanceof GoogleCalendarApiError && (err.status === 404 || err.status === 410)) {
       return;
@@ -297,6 +403,13 @@ export async function removeStaleLinks(
     await deleteLinkRow(admin, link.id);
     if (link.member_binding_id) {
       await maybeClearBindingCleanup(admin, link.organization_id, link.member_binding_id);
+    }
+    if (link.organization_binding_id) {
+      await maybeClearOrgBindingCleanup(
+        admin,
+        link.organization_id,
+        link.organization_binding_id
+      );
     }
   }
 }
@@ -368,6 +481,73 @@ export async function upsertLinkRow(
   return inserted.id as string;
 }
 
+export async function upsertOrgLinkRow(
+  admin: SupabaseClient,
+  input: {
+    organizationId: string;
+    organizationBindingId: string;
+    sourceType: string;
+    sourceId: string;
+    occurrenceDate: string;
+    googleEventId: string;
+    googleEtag: string;
+    desiredHash: string;
+  }
+): Promise<string> {
+  const nowIso = new Date().toISOString();
+  const { data: existing } = await admin
+    .from("google_calendar_event_links")
+    .select("id")
+    .eq("organization_id", input.organizationId)
+    .eq("organization_binding_id", input.organizationBindingId)
+    .eq("source_type", input.sourceType)
+    .eq("source_id", input.sourceId)
+    .eq("occurrence_date", input.occurrenceDate)
+    .maybeSingle();
+
+  if (existing?.id) {
+    await admin
+      .from("google_calendar_event_links")
+      .update({
+        google_event_id: input.googleEventId,
+        google_etag: input.googleEtag,
+        desired_hash: input.desiredHash,
+        sync_status: "synced",
+        detach_reason: null,
+        last_synced_at: nowIso,
+        last_error: null,
+        updated_at: nowIso,
+      })
+      .eq("id", existing.id);
+    return existing.id as string;
+  }
+
+  const { data: inserted, error } = await admin
+    .from("google_calendar_event_links")
+    .insert({
+      organization_id: input.organizationId,
+      recipient_kind: "organization",
+      member_binding_id: null,
+      organization_binding_id: input.organizationBindingId,
+      source_type: input.sourceType,
+      source_id: input.sourceId,
+      occurrence_date: input.occurrenceDate,
+      google_event_id: input.googleEventId,
+      google_etag: input.googleEtag,
+      desired_hash: input.desiredHash,
+      sync_status: "synced",
+      last_synced_at: nowIso,
+      updated_at: nowIso,
+    })
+    .select("id")
+    .single();
+
+  if (error || !inserted) {
+    throw new Error(error?.message ?? "link_insert_failed");
+  }
+  return inserted.id as string;
+}
+
 export async function recordBindingSuccess(
   admin: SupabaseClient,
   bindingId: string
@@ -379,6 +559,38 @@ export async function recordBindingSuccess(
       last_success_at: nowIso,
       last_error_at: null,
       last_error_code: null,
+      updated_at: nowIso,
+    })
+    .eq("id", bindingId);
+}
+
+export async function recordOrgBindingSuccess(
+  admin: SupabaseClient,
+  bindingId: string
+): Promise<void> {
+  const nowIso = new Date().toISOString();
+  await admin
+    .from("organization_google_calendar_bindings")
+    .update({
+      last_success_at: nowIso,
+      last_error_at: null,
+      last_error_code: null,
+      updated_at: nowIso,
+    })
+    .eq("id", bindingId);
+}
+
+export async function recordOrgBindingError(
+  admin: SupabaseClient,
+  bindingId: string,
+  code: string
+): Promise<void> {
+  const nowIso = new Date().toISOString();
+  await admin
+    .from("organization_google_calendar_bindings")
+    .update({
+      last_error_at: nowIso,
+      last_error_code: code,
       updated_at: nowIso,
     })
     .eq("id", bindingId);
@@ -403,7 +615,7 @@ export async function recordBindingError(
 export async function syncEventToGoogle(
   admin: SupabaseClient,
   config: GoogleOAuthConfig,
-  binding: MemberBindingRow,
+  target: GoogleCalendarTarget,
   payload: GoogleCalendarEventResource,
   desiredHash: string,
   deterministicEventId: string,
@@ -412,14 +624,14 @@ export async function syncEventToGoogle(
   const accessToken = await obtainAccessTokenForGoogleAccount(
     admin,
     config,
-    binding.google_account_id
+    target.google_account_id
   );
 
   if (!existingLink?.google_event_id) {
     try {
       const created = await insertCalendarEvent(
         accessToken,
-        binding.calendar_id,
+        target.calendar_id,
         payload,
         deterministicEventId
       );
@@ -428,12 +640,12 @@ export async function syncEventToGoogle(
       if (err instanceof GoogleCalendarApiError && err.status === 409) {
         const existing = await getCalendarEvent(
           accessToken,
-          binding.calendar_id,
+          target.calendar_id,
           deterministicEventId
         );
         const updated = await updateCalendarEvent(
           accessToken,
-          binding.calendar_id,
+          target.calendar_id,
           existing.id,
           payload,
           existing.etag
@@ -458,7 +670,7 @@ export async function syncEventToGoogle(
   try {
     const updated = await updateCalendarEvent(
       accessToken,
-      binding.calendar_id,
+      target.calendar_id,
       existingLink.google_event_id,
       payload,
       existingLink.google_etag
@@ -470,12 +682,12 @@ export async function syncEventToGoogle(
     if (err.status === 412) {
       const fresh = await getCalendarEvent(
         accessToken,
-        binding.calendar_id,
+        target.calendar_id,
         existingLink.google_event_id
       );
       const updated = await updateCalendarEvent(
         accessToken,
-        binding.calendar_id,
+        target.calendar_id,
         fresh.id,
         payload,
         fresh.etag
@@ -486,7 +698,7 @@ export async function syncEventToGoogle(
     if (err.status === 404) {
       const created = await insertCalendarEvent(
         accessToken,
-        binding.calendar_id,
+        target.calendar_id,
         payload,
         deterministicEventId
       );
@@ -500,7 +712,8 @@ export async function syncEventToGoogle(
 export async function handleSyncJobError(
   admin: SupabaseClient,
   job: OutboxJob,
-  bindingId: string | null,
+  memberBindingId: string | null,
+  orgBindingId: string | null,
   currentLink: EventLinkRow | null,
   err: unknown
 ): Promise<void> {
@@ -508,8 +721,13 @@ export async function handleSyncJobError(
   const code = apiErr?.code ?? "sync_failed";
   const message = apiErr?.message ?? (err instanceof Error ? err.message : "unknown");
 
-  if (apiErr?.status === 403 && bindingId) {
-    await recordBindingError(admin, bindingId, code);
+  if (apiErr?.status === 403) {
+    if (memberBindingId) {
+      await recordBindingError(admin, memberBindingId, code);
+    }
+    if (orgBindingId) {
+      await recordOrgBindingError(admin, orgBindingId, code);
+    }
   }
 
   if (currentLink) {

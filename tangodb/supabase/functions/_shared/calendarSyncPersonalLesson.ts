@@ -35,6 +35,10 @@ import {
   deleteGroupOccurrence,
   upsertGroupOccurrence,
 } from "./calendarSyncGroupOccurrence.ts";
+import {
+  deleteEventSession,
+  upsertEventSession,
+} from "./calendarSyncEventSession.ts";
 
 export { CANCEL_POLICY, LEASE_SECONDS, type OutboxJob } from "./calendarSyncCommon.ts";
 
@@ -299,7 +303,7 @@ export async function upsertPersonalLesson(
       link_status: "synced",
     });
   } catch (err) {
-    await handleSyncJobError(admin, job, binding.id, currentLink, err);
+    await handleSyncJobError(admin, job, binding.id, null, currentLink, err);
 
     const apiErr = err instanceof Error ? err : null;
     logEvent("gcal_sync_job_error", {
@@ -381,6 +385,15 @@ export async function processCalendarSyncJob(
       return;
     }
     await upsertGroupOccurrence(admin, config, job);
+    return;
+  }
+
+  if (job.source_type === "event_session") {
+    if (job.operation === "delete") {
+      await deleteEventSession(admin, config, job);
+      return;
+    }
+    await upsertEventSession(admin, config, job);
     return;
   }
 

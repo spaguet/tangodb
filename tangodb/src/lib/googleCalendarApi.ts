@@ -34,6 +34,24 @@ export interface MemberGoogleCalendarBinding {
   updated_at: string;
 }
 
+export interface OrganizationGoogleCalendarBinding {
+  id: string;
+  organization_id: string;
+  google_account_id: string;
+  configured_by_member_id: string;
+  calendar_id: string;
+  calendar_name: string;
+  timezone: string;
+  enabled: boolean;
+  last_success_at: string | null;
+  last_error_at: string | null;
+  last_error_code: string | null;
+  cleanup_pending: boolean;
+  disabled_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface GoogleCalendarListEntry {
   id: string;
   summary: string;
@@ -98,6 +116,19 @@ export async function fetchMemberGoogleBinding(
   return (data as MemberGoogleCalendarBinding | null) ?? null;
 }
 
+export async function fetchOrganizationGoogleBinding(): Promise<OrganizationGoogleCalendarBinding | null> {
+  const { data, error } = await supabase
+    .from("organization_google_calendar_bindings")
+    .select(
+      "id, organization_id, google_account_id, configured_by_member_id, calendar_id, calendar_name, timezone, enabled, last_success_at, last_error_at, last_error_code, cleanup_pending, disabled_at, created_at, updated_at"
+    )
+    .eq("enabled", true)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return (data as OrganizationGoogleCalendarBinding | null) ?? null;
+}
+
 export async function startGoogleCalendarOAuth(returnUrl: string): Promise<string> {
   const payload = await invokeFunction<{ ok: boolean; url?: string }>(
     "google-calendar-auth-start",
@@ -145,14 +176,32 @@ export async function setGoogleCalendarBinding(input: {
   });
 }
 
+export async function setOrganizationGoogleCalendarBinding(input: {
+  googleAccountId: string;
+  calendarId: string;
+  calendarName: string;
+  timezone: string;
+  deleteOldEvents?: boolean;
+}): Promise<void> {
+  await invokeFunction("google-calendar-set-org-binding", {
+    google_account_id: input.googleAccountId,
+    calendar_id: input.calendarId,
+    calendar_name: input.calendarName,
+    timezone: input.timezone,
+    delete_old_events: input.deleteOldEvents ?? false,
+  });
+}
+
 export async function disconnectGoogleCalendar(input: {
   organizationMemberId?: string;
+  organizationBindingId?: string;
   deleteFutureEvents?: boolean;
   revokeAccount?: boolean;
   googleAccountId?: string;
 }): Promise<void> {
   await invokeFunction("google-calendar-disconnect", {
     organization_member_id: input.organizationMemberId,
+    organization_binding_id: input.organizationBindingId,
     delete_future_events: input.deleteFutureEvents ?? false,
     revoke_account: input.revokeAccount ?? false,
     google_account_id: input.googleAccountId,
@@ -176,6 +225,15 @@ export async function requestMemberCalendarReconcile(
   if (error) throw new Error(error.message);
   const payload = data as { ok?: boolean } | null;
   if (payload && payload.ok !== true) {
+    throw new Error("reconcile_request_failed");
+  }
+}
+
+export async function requestOrganizationCalendarReconcile(): Promise<void> {
+  const { data, error } = await supabase.rpc("request_organization_calendar_reconcile");
+  if (error) throw new Error(error.message);
+  const payload = data as { skipped?: boolean } | null;
+  if (!payload) {
     throw new Error("reconcile_request_failed");
   }
 }

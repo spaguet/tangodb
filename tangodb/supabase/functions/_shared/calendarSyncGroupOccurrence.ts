@@ -288,7 +288,7 @@ export async function upsertGroupOccurrence(
       link_status: "synced",
     });
   } catch (err) {
-    await handleSyncJobError(admin, job, binding.id, currentLink, err);
+    await handleSyncJobError(admin, job, binding.id, null, currentLink, err);
 
     logEvent("gcal_sync_job_error", {
       organization_id: job.organization_id,

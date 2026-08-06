@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-06 — Google Calendar интеграция, Этап 4 (Промпт 11): sync `calendar_event_sessions` — миграция `20260898000001` (enqueue на sessions/events, reconcile org); worker `calendarSyncEventSession.ts` (org binding + опциональная копия создателю при `sync_events`); payload `buildEventSessionGoogleEvent`; расширен `calendarSyncCommon` (org bindings, org links); Edge Function `google-calendar-set-org-binding`; UI `OrgEventsGoogleSyncSection` + `useOrgGoogleCalendarIntegration`.
+
 2026-08-06 — Google Calendar интеграция, Этап 3 (Промпт 10): worker `group_occurrence` — модули `_shared/calendarSyncCommon.ts`, `_shared/calendarSyncGroupOccurrence.ts`; payload `buildGroupOccurrenceGoogleEvent` с `occurrenceKey`; reconcile `execute_member_group_occurrences_reconcile` (миграция `20260897000001`); hourly reconcile включает `sync_group`; fix `sync_group: true` при set-binding + backfill существующих bindings.
 
 2026-08-06 — Google Calendar интеграция, Этап 3 (Промпт 9): миграция `20260896000001_google_calendar_group_occurrence_enqueue.sql` — enqueue `group_occurrence` для `schedule_slots` (INSERT/UPDATE/DELETE, горизонт 7/90), `schedule_occurrence_cancellations` (delete), явный enqueue в `move_group_lesson_occurrence`; RPC `run_group_occurrence_horizon_extension`; Edge Function `calendar-extend-group-horizon` (ежедневное продление горизонта).

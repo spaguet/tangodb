@@ -422,6 +422,9 @@ verify_jwt = true
 [functions.google-calendar-set-binding]
 verify_jwt = true
 
+[functions.google-calendar-set-org-binding]
+verify_jwt = true
+
 [functions.calendar-sync-worker]
 verify_jwt = false
 

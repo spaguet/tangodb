@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
-  CalendarDays,
+  CalendarHeart,
   CheckCircle2,
   ExternalLink,
   Loader2,
@@ -13,30 +12,24 @@ import AppSelect from "../../components/ui/AppSelect";
 import { btnAddCls, btnDestructiveCls, btnOpenCls, btnRefreshCls } from "../../components/ui/buttonStyles";
 import LoadingState from "../../components/ui/LoadingState";
 import { useToast } from "../../App";
-import { useGoogleCalendarIntegration } from "../../hooks/useGoogleCalendarIntegration";
-import { usePermissions } from "../../hooks/usePermissions";
+import { useOrgGoogleCalendarIntegration } from "../../hooks/useOrgGoogleCalendarIntegration";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError, isI18nKey } from "../../lib/resolveMutationError";
 import type { I18nKey } from "../../lib/i18n/keys";
 import type { GoogleCalendarListEntry } from "../../lib/googleCalendarApi";
-import TeamGoogleSyncSection from "../components/TeamGoogleSyncSection";
-import OrgEventsGoogleSyncSection from "../components/OrgEventsGoogleSyncSection";
 
-type DisconnectMode = "leave" | "delete" | "revoke" | null;
+type DisconnectMode = "leave" | "delete" | null;
 
-export default function IntegrationsSettingsPage() {
+export default function OrgEventsGoogleSyncSection() {
   const { t, formatDateTime } = useI18n();
-  const { role } = usePermissions();
   const toast = useToast();
-  const [searchParams, setSearchParams] = useSearchParams();
   const {
+    canManage,
     primaryAccount,
     binding,
     isConfigured,
     isLoading,
-    memberId,
     organizationId,
-    isMemberActive,
     connect,
     listCalendars,
     createCalendar,
@@ -44,8 +37,7 @@ export default function IntegrationsSettingsPage() {
     disconnect,
     verify,
     syncFuture,
-    invalidateAll,
-  } = useGoogleCalendarIntegration();
+  } = useOrgGoogleCalendarIntegration();
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [calendars, setCalendars] = useState<GoogleCalendarListEntry[]>([]);
@@ -58,25 +50,6 @@ export default function IntegrationsSettingsPage() {
     () => `${window.location.origin}/settings/integrations`,
     []
   );
-
-  useEffect(() => {
-    const gcal = searchParams.get("gcal");
-    if (!gcal) return;
-
-    if (gcal === "success") {
-      toast(t("integrations.googleCalendar.oauthSuccess"), "success");
-      void invalidateAll();
-    } else if (gcal === "error") {
-      const reason = searchParams.get("reason") ?? "unknown";
-      const reasonKey = `integrations.googleCalendar.oauthError.${reason}` as I18nKey;
-      const message = isI18nKey(reasonKey) ? t(reasonKey) : reason;
-      toast(t("integrations.googleCalendar.oauthErrorGeneric", { reason: message }), "error");
-    }
-
-    searchParams.delete("gcal");
-    searchParams.delete("reason");
-    setSearchParams(searchParams, { replace: true });
-  }, [searchParams, setSearchParams, toast, t, invalidateAll]);
 
   const loadCalendars = useCallback(
     async (googleAccountId: string) => {
@@ -122,17 +95,10 @@ export default function IntegrationsSettingsPage() {
     }
   }, [needsCalendarSetup, primaryAccount?.id]);
 
-  if (isLoading) {
-    return <LoadingState label={t("integrations.googleCalendar.loading")} />;
-  }
+  if (!canManage) return null;
 
-  if (!isMemberActive) {
-    return (
-      <div className="panel-card-stack max-w-xl">
-        <h2 className="text-base font-semibold text-slate-900">{t("integrations.title")}</h2>
-        <p className="text-xs text-slate-500">{t("integrations.googleCalendar.inactiveMember")}</p>
-      </div>
-    );
+  if (isLoading) {
+    return <LoadingState label={t("integrations.googleCalendar.orgEvents.loading")} />;
   }
 
   const handleConnect = async () => {
@@ -173,13 +139,12 @@ export default function IntegrationsSettingsPage() {
   };
 
   const handleSaveCalendar = async () => {
-    if (!memberId || !primaryAccount || !selectedCalendarId) return;
+    if (!primaryAccount || !selectedCalendarId) return;
     const selected = calendars.find((c) => c.id === selectedCalendarId);
     if (!selected) return;
 
     try {
       await setBinding.mutateAsync({
-        organizationMemberId: memberId,
         googleAccountId: primaryAccount.id,
         calendarId: selected.id,
         calendarName: selected.summary,
@@ -188,7 +153,7 @@ export default function IntegrationsSettingsPage() {
       });
       setPickerOpen(false);
       setDeleteOldOnChange(false);
-      toast(t("integrations.googleCalendar.saveCalendarSuccess"), "success");
+      toast(t("integrations.googleCalendar.orgEvents.saveSuccess"), "success");
     } catch (err) {
       toast(
         resolveMutationError(
@@ -202,9 +167,8 @@ export default function IntegrationsSettingsPage() {
   };
 
   const handleSyncFuture = async () => {
-    if (!memberId) return;
     try {
-      await syncFuture.mutateAsync(memberId);
+      await syncFuture.mutateAsync();
       toast(t("integrations.googleCalendar.syncFutureSuccess"), "success");
     } catch (err) {
       toast(
@@ -217,6 +181,7 @@ export default function IntegrationsSettingsPage() {
       );
     }
   };
+
   const handleVerify = async () => {
     if (!primaryAccount) return;
     try {
@@ -237,18 +202,9 @@ export default function IntegrationsSettingsPage() {
   const handleDisconnect = async () => {
     if (!disconnectMode) return;
     try {
-      if (disconnectMode === "revoke" && primaryAccount) {
-        await disconnect.mutateAsync({
-          revokeAccount: true,
-          googleAccountId: primaryAccount.id,
-          deleteFutureEvents: true,
-        });
-      } else if (memberId) {
-        await disconnect.mutateAsync({
-          organizationMemberId: memberId,
-          deleteFutureEvents: disconnectMode === "delete",
-        });
-      }
+      await disconnect.mutateAsync({
+        deleteFutureEvents: disconnectMode === "delete",
+      });
       setDisconnectMode(null);
       setPickerOpen(false);
       toast(t("integrations.googleCalendar.disconnectSuccess"), "success");
@@ -272,31 +228,30 @@ export default function IntegrationsSettingsPage() {
         : "text-rose-700 bg-rose-50 border-rose-100";
 
   const writableCalendars = calendars.filter((c) => c.selectable);
-  const showTeamSection = role === "owner" || role === "director";
 
   return (
-    <div className={`panel-card-stack space-y-6 ${showTeamSection ? "max-w-3xl" : "max-w-xl"}`}>
+    <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
       <div className="flex items-start gap-3">
-        <CalendarDays className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+        <CalendarHeart className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
         <div>
-          <h2 className="text-base font-semibold text-slate-900">{t("integrations.title")}</h2>
-          <p className="text-xs text-slate-500 mt-1">{t("integrations.googleCalendar.subtitle")}</p>
+          <h3 className="text-sm font-semibold text-slate-900">
+            {t("integrations.googleCalendar.orgEvents.title")}
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            {t("integrations.googleCalendar.orgEvents.subtitle")}
+          </p>
         </div>
       </div>
 
       {!primaryAccount || primaryAccount.status !== "active" ? (
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
-          <p className="text-sm text-slate-600">{t("integrations.googleCalendar.notConnectedHint")}</p>
-          {primaryAccount && primaryAccount.status !== "active" && (
-            <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${accountStatusTone}`}>
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{t("integrations.googleCalendar.reconnectRequired")}</span>
-            </div>
-          )}
+        <div className="space-y-3">
+          <p className="text-sm text-slate-600">
+            {t("integrations.googleCalendar.orgEvents.connectHint")}
+          </p>
           <button
             type="button"
             onClick={() => void handleConnect()}
-            disabled={connect.isPending || !memberId}
+            disabled={connect.isPending}
             className={btnAddCls}
           >
             {connect.isPending ? (
@@ -308,20 +263,19 @@ export default function IntegrationsSettingsPage() {
           </button>
         </div>
       ) : pickerOpen ? (
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-800">
-              {binding ? t("integrations.googleCalendar.changeCalendar") : t("integrations.googleCalendar.selectCalendar")}
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              {t("integrations.googleCalendar.selectCalendarHint", { email: primaryAccount.google_email })}
-            </p>
-          </div>
+        <div className="space-y-4">
+          <p className="text-xs text-slate-500">
+            {t("integrations.googleCalendar.selectCalendarHint", {
+              email: primaryAccount.google_email,
+            })}
+          </p>
 
           {loadingCalendars ? (
             <LoadingState label={t("integrations.googleCalendar.loadingCalendars")} />
           ) : writableCalendars.length === 0 ? (
-            <p className="text-xs text-slate-500">{t("integrations.googleCalendar.noWritableCalendars")}</p>
+            <p className="text-xs text-slate-500">
+              {t("integrations.googleCalendar.noWritableCalendars")}
+            </p>
           ) : (
             <AppSelect
               label={t("integrations.googleCalendar.calendarLabel")}
@@ -350,7 +304,6 @@ export default function IntegrationsSettingsPage() {
               {t("integrations.googleCalendar.createCalendar")}
             </button>
           </div>
-          <p className="text-xs text-slate-500">{t("integrations.googleCalendar.createCalendarHint")}</p>
 
           {binding && (
             <label className="flex items-start gap-2 text-xs text-slate-600">
@@ -375,18 +328,14 @@ export default function IntegrationsSettingsPage() {
               {t("integrations.googleCalendar.saveCalendar")}
             </button>
             {binding && (
-              <button
-                type="button"
-                onClick={() => setPickerOpen(false)}
-                className={btnRefreshCls}
-              >
+              <button type="button" onClick={() => setPickerOpen(false)} className={btnRefreshCls}>
                 {t("common.cancel")}
               </button>
             )}
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
+        <div className="space-y-4">
           <div className={`flex items-start gap-3 rounded-lg border px-3 py-3 ${accountStatusTone}`}>
             {isConfigured ? (
               <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
@@ -396,8 +345,8 @@ export default function IntegrationsSettingsPage() {
             <div className="space-y-1 text-sm min-w-0">
               <p className="font-semibold">
                 {isConfigured
-                  ? t("integrations.googleCalendar.status.connected")
-                  : t("integrations.googleCalendar.status.notConfigured")}
+                  ? t("integrations.googleCalendar.orgEvents.status.connected")
+                  : t("integrations.googleCalendar.orgEvents.status.notConfigured")}
               </p>
               <p className="text-xs opacity-80 truncate">
                 {t("integrations.googleCalendar.accountEmail")}: {primaryAccount.google_email}
@@ -417,7 +366,8 @@ export default function IntegrationsSettingsPage() {
 
           {binding?.last_success_at && (
             <p className="text-xs text-slate-500">
-              {t("integrations.googleCalendar.lastSuccess")}: {formatDateTime(binding.last_success_at)}
+              {t("integrations.googleCalendar.lastSuccess")}:{" "}
+              {formatDateTime(binding.last_success_at)}
             </p>
           )}
           {binding?.last_error_code && (
@@ -466,18 +416,16 @@ export default function IntegrationsSettingsPage() {
           </div>
 
           <div className="border-t border-slate-100 pt-4 space-y-3">
-            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
               <Unplug className="w-4 h-4 text-slate-500" />
               {t("integrations.googleCalendar.disconnect")}
-            </h3>
+            </h4>
             {disconnectMode ? (
               <div className="space-y-3">
                 <p className="text-xs text-slate-600">
-                  {disconnectMode === "revoke"
-                    ? t("integrations.googleCalendar.revokeEverywhereHint")
-                    : disconnectMode === "delete"
-                      ? t("integrations.googleCalendar.disconnectDeleteFutureHint")
-                      : t("integrations.googleCalendar.disconnectLeaveHint")}
+                  {disconnectMode === "delete"
+                    ? t("integrations.googleCalendar.disconnectDeleteFutureHint")
+                    : t("integrations.googleCalendar.disconnectLeaveHint")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -514,21 +462,11 @@ export default function IntegrationsSettingsPage() {
                 >
                   {t("integrations.googleCalendar.disconnectDeleteFuture")}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setDisconnectMode("revoke")}
-                  className={btnDestructiveCls}
-                >
-                  {t("integrations.googleCalendar.revokeEverywhere")}
-                </button>
               </div>
             )}
           </div>
         </div>
       )}
-
-      {showTeamSection && <OrgEventsGoogleSyncSection />}
-      {showTeamSection && <TeamGoogleSyncSection />}
     </div>
   );
 }

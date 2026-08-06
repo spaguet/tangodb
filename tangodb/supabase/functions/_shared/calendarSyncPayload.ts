@@ -220,3 +220,77 @@ export function googleEventIdForGroupOccurrence(
 ): string {
   return googleEventIdFromUuid(`${slotId}-${occurrenceDate}`);
 }
+
+export function buildEventSessionDescription(input: {
+  eventType: string;
+  guestTeacher: string | null;
+  organizer: string | null;
+  comment: string | null;
+  organizationName: string;
+  scheduleUrl: string;
+}): string {
+  const lines: string[] = [];
+  const typeLabel =
+    input.eventType === "master_class" ? "Мастер-класс" : "Открытый урок";
+  lines.push(`Тип: ${typeLabel}`);
+
+  if (input.guestTeacher?.trim()) {
+    lines.push(`Гостевой преподаватель: ${input.guestTeacher.trim()}`);
+  }
+  if (input.organizer?.trim()) {
+    lines.push(`Организатор: ${input.organizer.trim()}`);
+  }
+  if (input.comment?.trim()) {
+    lines.push(`Комментарий: ${input.comment.trim()}`);
+  }
+
+  lines.push(`Организация: ${input.organizationName}`);
+  lines.push(`Открыть в CRM: ${input.scheduleUrl}`);
+  lines.push("Управляется TangoDB. Изменяйте мероприятие в CRM.");
+  return lines.join("\n");
+}
+
+export function buildEventSessionGoogleEvent(input: {
+  sessionId: string;
+  organizationId: string;
+  sessionDate: string;
+  timeStart: string;
+  timeEnd: string;
+  timeZone: string;
+  title: string;
+  eventType: string;
+  guestTeacher: string | null;
+  organizer: string | null;
+  comment: string | null;
+  locationName: string | null;
+  organizationName: string;
+  scheduleUrl: string;
+}): GoogleCalendarEventResource {
+  const summary = (input.title ?? "").trim() || "Мероприятие";
+
+  return {
+    summary,
+    description: buildEventSessionDescription({
+      eventType: input.eventType,
+      guestTeacher: input.guestTeacher,
+      organizer: input.organizer,
+      comment: input.comment,
+      organizationName: input.organizationName,
+      scheduleUrl: input.scheduleUrl,
+    }),
+    location: input.locationName?.trim() || undefined,
+    start: toGoogleDateTime(input.sessionDate, input.timeStart, input.timeZone),
+    end: toGoogleDateTime(input.sessionDate, input.timeEnd, input.timeZone),
+    transparency: "opaque",
+    visibility: "default",
+    reminders: { useDefault: true },
+    extendedProperties: {
+      private: {
+        managedBy: "tangodb",
+        organizationId: input.organizationId,
+        sourceType: "event_session",
+        sourceId: input.sessionId,
+      },
+    },
+  };
+}
