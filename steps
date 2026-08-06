@@ -1,10 +1,10 @@
-TangoDB CRM — Настройки · Аренда зала: этапы и промты
+TangoDB — Google Calendar: этапы и промты
 
-Источник: hall_rent_settings_audit.md (§8 приоритеты, §11 промпты)
-Последнее обновление: 2026-08-03 (этап 23 выполнен)
+Источник: tangodb_google_calendar_integration.md (§16 план, §22 промпты)
+Последнее обновление: 2026-08-06
 
-Полный разбор дефектов — в hall_rent_settings_audit.md.
-Лендинговые промты — в tangodb_landing_cursor_prompts.md (не смешивать).
+Полная архитектурная спецификация — в tangodb_google_calendar_integration.md.
+Предыдущий контур (аренда зала, этапы 1–23) завершён — см. git history файла steps.
 
 =======================================================
 КАК ПОЛЬЗОВАТЬСЯ ЭТИМ ФАЙЛОМ
@@ -15,15 +15,16 @@ TangoDB CRM — Настройки · Аренда зала: этапы и пр�
      «реализуй этап N»  или  «@steps этап N»
 3. Перед этапом агент читает:
      .cursor/docs/ai/AI_CONTEXT.md
-     ловушки §11 в hall_rent_settings_audit.md
+     tangodb_google_calendar_integration.md (релевантные §)
      CodeGraph (projectPath: D:\cursor_dev\TangoDB\tangodb)
 4. Текст промта — внизу файла, блок «ЭТАП N».
 5. Перед каждым промтом вставляй «ОБЩИЙ ПРЕФИКС» (см. ниже).
 
-Важно: номера этапов (1…23) — это ID задач, а не всегда
-строгая последовательность 1→2→3→… Порядок задан только
-очередью ниже. Например, этап 3 делается раньше этапа 4,
-а этап 22 — только после этапа 12.
+Важно: номера этапов (0…14) — это ID промптов из §22 документа.
+Порядок задан очередью ниже; часть этапов можно параллелить
+(см. «ЗАВИСИМОСТИ»). Этапы 12–13 — опциональные (Этап 5 плана).
+Этап 6 плана (Google → CRM inbox) намеренно не разбит — только при
+подтверждённой потребности.
 
 =======================================================
 ГЛАВНАЯ ОЧЕРЕДЬ (делать строго сверху вниз)
@@ -31,110 +32,102 @@ TangoDB CRM — Настройки · Аренда зала: этапы и пр�
 
 Отмечай выполненное: замени [ ] на [✅] и дату.
 
-── Блок A. Касса и деньги (P0, обязательная цепочка) ──
+── Блок 0. Продуктовые решения ──
 
-[✅]  1   Кассир: оплата + долг на блоке          (2026-08-02)
-[✅]  2   Единая effective amount                 (2026-08-02)
-[✅]  4   byMethod + methodComment + переплата    (2026-08-02)
-[✅]  5   Единый регистр денег аренды             (2026-08-02)
-[✅]  6   UI правки суммы брони                   (2026-08-02)
+[✅]  0   Decision log (зафиксировать решения MVP) — 2026-08-06
 
-── Блок B. Venue cost / бухгалтер в настройках ──
+── Блок 1. OAuth и подключение (§16 Этап 1) ──
 
-[✅]  3   Превью venue cost 4/5                   (2026-08-03)
-[✅]  7   Accountant: venue cost + read тарифов   (2026-08-03)
-[✅] 15   История версий + accepted_by             (2026-08-03)
-[✅] 16   Закрытие gap venue cost                  (2026-08-03)
+[ ]  1   OAuth-таблицы + RLS
+[ ]  2   Edge Functions: OAuth start/callback/disconnect
+[ ]  3   Edge Function: список/создание календарей + binding
+[ ]  4   UI: Настройки → Интеграции → Google Calendar
 
-── Блок C. Бухгалтерия: долги, даты, счета ──
+── Блок 2. Outbox + персональные уроки (§16 Этап 2) ──
 
-[✅]  8   Должники + сторно + created_by             (2026-08-03)
-[✅]  9   operation_date + закрытие периода        (2026-08-03)
-[✅] 10   UI счетов/авансов + отчёт начислений     (2026-08-03)
-[✅] 11   Отмена с финдействием                    (2026-08-03)
+[ ]  5   Outbox + event links + enqueue для personal lessons
+         (можно начать после этапа 1, параллельно с 2–4)
+[ ]  6   Worker calendar-sync-worker: ядро upsert/delete
+[ ]  7   Cron, retry/backoff, reconciliation (персональные)
+[ ]  8   UI статуса синхронизации (урок / настройки / команда)
 
-── Блок D. Стойка: прайс и создание брони ──
+── Блок 3. Групповые occurrence (§16 Этап 3) ──
 
-[✅] 12   Lookup прайса + политика reception       (2026-08-03)
-[✅] 13   Тариф → сумма при создании               (2026-08-03)
-[✅] 14   Локации / fixed_period / архив тарифов   (2026-08-03)
+[ ]  9   Материализация групповых occurrence + enqueue
+         (после этапа 6; можно параллельно с 7–8)
+[ ]  10  Worker: групповые occurrence (перенос, отпуск, горизонт)
 
-── Блок E. Удобство (P2, после блоков A–D) ──
+── Блок 4. Мероприятия (§16 Этап 4) ──
 
-[✅] 17   Первичка / фискальные реквизиты              (2026-08-03)
-[✅] 18   Массовое копирование правил venue cost         (2026-08-03)
-[✅] 19   Приоритет и даты льготных окон тарифов         (2026-08-03)
-[✅] 20   UI / ошибки / язык контуров                  (2026-08-03)
-[✅] 21   Калькулятор ожидаемых затрат                 (2026-08-03)
-[✅] 22   Кассовый inbox неоплаченных аренд            (2026-08-03)
-[✅] 23   Accountant: создание слота в расписании  (2026-08-03)
+[ ]  11  Мероприятия: sync calendar_event_sessions
+         (после 5–6; можно параллельно с 9–10)
+
+── Блок 5. Опционально (§16 Этап 5) — только по продуктовому решению ──
+
+[ ]  12  Webhook-наблюдение + incremental sync
+[ ]  13  Free/busy при записи урока
 
 ── Финал ──
 
-[✅]  —   Интеграционная проверка (после всех нужных этапов 1–23)  (2026-08-03)
+[ ]  14  Регрессия и чек-лист тестирования (после 1–11; 12–13 если были)
 
 =======================================================
 СЛЕДУЮЩИЙ ШАГ
 =======================================================
 
-Сейчас: контур hall-rent (этапы 1–23 + интеграционная проверка) завершён.
+Сейчас: этап 1 — OAuth-таблицы + RLS.
 
 =======================================================
 СПРАВКА: ЧТО ЗА ЧТО ОТВЕЧАЕТ
 =======================================================
 
-| Этап | Суть одной строкой              | Дефекты   | Приоритет |
-|------|---------------------------------|-----------|-----------|
-|  1   | Кассир принимает оплату аренды  | F13, F33  | P0 ✅     |
-|  2   | Одна сумма/остаток везде        | F32       | P0        |
-|  3   | Честное превью 4/5 в настройках | F4      | P0 ✅     |
-|  4   | Аренда в выручке и журнале      | F17,F19,F31 | P0 ✅     |
-|  5   | Единый регистр денег аренды     | F20, F21  | P0 ✅     |
-|  6   | Правка суммы брони в UI         | F29       | P0 ✅     |
-|  7   | Бухгалтер: venue + read тарифов | F6+права | P1        |
-|  8   | Должники, сторно, автор        | F16,F18,F27 | P1     |
-|  9   | Дата операции ≠ дата ввода      | F22       | P1        |
-| 10   | Счета и авансы в UI             | F20,F23   | P1        |
-| 11   | Отмена с возвратом/штрафом      | F26       | P1        |
-| 12   | Прайс для admin + reception     | стойка    | P1        |
-| 13   | Тариф подставляет сумму         | F7,F14,F15| P1        |
-| 14   | Локации, архив тарифов          | F1, F8    | P1        |
-| 15   | Просмотр принятых версий venue  | F10, F28  | P1        |
-| 16   | Закрыть gap без клиент. платежа | F30       | P1        |
-| 17   | Первичка / чеки                 | F24, F25  | P2        |
-| 18   | Bulk-копирование правил         | bulk      | P2        |
-| 19   | Priority льготных окон          | F2, F3    | P2        |
-| 20   | Чистый UI и терминология        | F5,F9,…   | P2        |
-| 21   | Калькулятор затрат              | смета     | P2        |
-| 22   | Очередь «аренды к оплате»       | очередь   | P2 ✅     |
-| 23   | Бухгалтер создаёт слот          | слоты     | P2 ✅     |
-
-Почему этап 22 не раньше?
-  Inbox опирается на кассовые права (этап 1), effective amount (2),
-  регистр (5) и политику reception (12). Поэтому 22 стоит в блоке E
-  и явно «только после 12».
-
-Почему этап 3 не сразу после 1?
-  Это отдельная ветка (настройки venue cost), не блокирует кассу.
-  Логично после 2, когда кассовый минимум уже выровнен.
+| Этап | Суть одной строкой                              | §16 план | Зависит от   |
+|------|--------------------------------------------------|----------|--------------|
+|  0   | Зафиксировать продуктовые решения MVP            | Этап 0   | —            |
+|  1   | SQL: OAuth accounts, bindings, RLS               | Этап 1   | 0            |
+|  2   | Edge Functions OAuth start/callback/disconnect   | Этап 1   | 1            |
+|  3   | Список/создание календарей + сохранение binding  | Этап 1   | 2            |
+|  4   | UI Настройки → Интеграции → Google Calendar      | Этап 1   | 3            |
+|  5   | Outbox, event links, enqueue personal lessons    | Этап 2   | 1            |
+|  6   | Worker: upsert/delete personal lessons           | Этап 2   | 3, 5         |
+|  7   | Cron, reconciliation, dead-letter backend        | Этап 2   | 6            |
+|  8   | UI статуса sync (урок, настройки, команда)       | Этап 2   | 4, 7         |
+|  9   | Enqueue групповых occurrence + горизонт          | Этап 3   | 5            |
+|  10  | Worker: group occurrence                         | Этап 3   | 6, 9         |
+|  11  | Sync calendar_event_sessions (org calendar)      | Этап 4   | 5, 6         |
+|  12  | Webhook + incremental sync (опционально)         | Этап 5   | 7, 10        |
+|  13  | Free/busy предупреждение (опционально)           | Этап 5   | 2, 3         |
+|  14  | Регрессия по чек-листу §17                       | —        | 1–11         |
 
 =======================================================
-ЗАВИСИМОСТИ (если нужна схема)
+ЗАВИСИМОСТИ (схема)
 =======================================================
 
-  A:  1 → 2 → 4 → 5 → 6 → 8 → 9 → 10 → 11
-  B:  3 → 7 → 15 → 16
-  D:  7 → 12 → 13 → 14
-  E:  17…21 произвольно между собой; 22 после 12; 23 после 6
+```
+Этап 0
+   ↓
+Этап 1 → 2 → 3 → 4                (OAuth и подключение)
+   ↓ (после 1, параллельно с 2–4)
+Этап 5 → 6 → 7 → 8                (Outbox + персональные уроки)
+              ↓ (после 6; 9 можно параллельно с 7–8)
+Этап 9 → 10                       (Групповые occurrence)
+              ↓ (после 5–6; можно параллельно с 9–10)
+Этап 11                           (Мероприятия)
+              ↓
+Этап 12, 13 (опционально, параллельно)
+   ↓
+Этап 14 (регрессия, после всех выполненных)
+```
 
-  Слияние: этап 7 нужен и для B, и для D (бухгалтер + lookup admin).
+Этапы 12 и 13 — опциональные; запускать по продуктовому решению,
+не автоматически по порядку.
 
 =======================================================
 ОБЩИЙ ПРЕФИКС (вставлять перед каждым этапом)
 =======================================================
 
 ```
-Реализуй этап в текущем проекте TangoDB, основное приложение находится в `tangodb/`. Сначала прочитай `.cursor/docs/ai/AI_CONTEXT.md`, затем через CodeGraph (`projectPath: D:\cursor_dev\TangoDB\tangodb`) найди существующие символы, потоки данных и blast radius. Не создавай дубли компонентов, хуков и финансовых сущностей. Supabase вызывай только через `hooks/` и `lib/`; в компоненты запросы не помещай. Широкие RLS-политики и полный `can_read_financial()` для admin не открывай. Если этапу нужна миграция RPC/helper (или точечный SELECT сумм аренды для кассы), сделай её минимальной, с обоснованием в `decision_log.md` / changelog и без ослабления tenant isolation. Сохрани обратную совместимость и существующее разделение организаций. Добавь/обнови типы, i18n RU/EN, проверки прав и релевантные тесты в стиле репозитория (`npm run lint`, `npm run test:rbac`, `npm run test:venue-cost-preview`, при RPC — подходящие `npm run test:db:*`; без Vitest — assert-скрипты/`scripts/*-check.mjs`). Обнови `.cursor/docs/ai/changelog.md`; при исправлении дефекта — `.cursor/docs/ai/lessons.md`; при архитектурном решении — `.cursor/docs/ai/decision_log.md`; при изменении архитектуры — `.cursor/docs/ai/architecture.md`. В конце перечисли изменённые файлы, миграции, проверки и оставшиеся риски.
+Реализуй этап в текущем проекте TangoDB, основное приложение находится в `tangodb/`. Сначала прочитай `.cursor/docs/ai/AI_CONTEXT.md` и `tangodb_google_calendar_integration.md` (релевантные разделы для этапа). Затем через CodeGraph (`projectPath: D:\cursor_dev\TangoDB\tangodb`) найди существующие символы, потоки данных и blast radius. Не создавай дубли компонентов и хуков. Supabase вызывай только через `hooks/` и `lib/`; в компоненты запросы не помещай. Не обходи RLS; refresh token не отдавай в браузер и PostgREST. Google Calendar API — только из Edge Functions (worker), не из React. Если этапу нужна миграция — `<NEXT_TIMESTAMP>` = следующий по порядку файл в `tangodb/supabase/migrations/` (на 2026-08-06 последняя — `20260890000001_finance_cost_entry_labels.sql`). Обнови `.cursor/docs/ai/changelog.md`; при архитектурном решении — `.cursor/docs/ai/decision_log.md`; при исправлении бага — `.cursor/docs/ai/lessons.md`; при изменении архитектуры — `.cursor/docs/ai/architecture.md`. В конце перечисли изменённые файлы, миграции, проверки и оставшиеся риски.
 ```
 
 =======================================================
@@ -142,216 +135,426 @@ TangoDB CRM — Настройки · Аренда зала: этапы и пр�
 =======================================================
 
 -------------------------------------------------------
-ЭТАП 1 — Кассир принимает оплату аренды и видит долг
-✅ ВЫПОЛНЕН 2026-08-02
+ЭТАП 0 — Decision log
 -------------------------------------------------------
 
 ```
-Исправь RBAC и backend так, чтобы full operational admin с правом приёма платежей (`can("payments.write")` уже учитывает `admin_can_accept_payments`, плюс backend `member_can_manage_rentals()`) мог видеть сумму / оплачено / остаток по аренде и вызывать приём оплаты без полного `finance.read` и без доступа к отчётам/venue cost. Gate: `can_read_financial()` или (`member_can_manage_rentals()` ∧ payment-accept у full admin) — не голый `payments.write` (иначе попадёт `restricted_admin`). Сохрани приём для accountant/owner/director через `finance.read` (у них нет `payments.write`). Не выдавай контур `restricted_admin` до этапа 12; teacher — вне оплаты аренды. Исследуй `permissions.ts`, `RentalInfoPopup`, `RecordRentalPaymentModal`, `SchedulePageContainer`, `LessonBlock`, RPC `record_rental_payment` (`can_read_financial`), `member_can_see_rental_sensitive` / `get_rentals_for_schedule_week` (суммы admin уже часто в payload), `get_rental_detail` (суммы при sensitive; история `payments` и контакты ещё за `can_read_financial` — открой историю кассиру тем же helper или оставь только остаток), RLS `rental_payments`. Если нужен SQL-helper «может принимать оплату аренды» или permission `rentals.payments.write` — обоснуй и проведи единообразно на UI и в RPC. На блоке неоплаченной аренды — сумма долга и rose-ring как у персоналки (F13, F33). Критерий готовности: operational admin открывает карточку существующей аренды с уже заданной суммой (> 0) → видит остаток → принимает оплату; accountant/owner/director не потеряли приём; reception без политики этапа 12 и teacher — нет; аналитика finance кассиру не открыта. Точный остаток по effective amount — этап 2 (лучше сразу после). Создание брони с ненулевой суммой (F14) и правка суммы 0 — не в этом этапе.
+Задача: зафиксировать продуктовые решения перед реализацией интеграции TangoDB с Google Calendar.
+
+Прочитай tangodb_google_calendar_integration.md целиком (особенно §16 Этап 0, §19 «Что не делать», §20) и добавь в .cursor/docs/ai/decision_log.md записи по каждому пункту:
+- CRM — единственный источник истины; интеграция outbound-only (CRM → Google) в MVP
+- отдельный календарь TangoDB по умолчанию (не основной личный)
+- какие сущности синхронизируются в MVP: personal_lessons, schedule_slots (group occurrence); calendar_event_sessions и free/busy — отдельными этапами (§16 этапы 4 и 5)
+- privacy_mode по умолчанию для новых binding (предложение: initials)
+- политика отмены по умолчанию: delete (не mark_cancelled) — см. подраздел «Отмены» в §6
+- горизонт материализации групповых occurrence: 90 дней вперёд / 7 дней назад (§6 «Групповые уроки»)
+- organization_settings.timezone уже существует (default Europe/Moscow) — переиспользуем, новую настройку не создаём
+- rentals не синхронизируются с преподавательским календарём в MVP (§6 «Аренда»)
+
+Не менять код. Не создавать миграции. Только decision_log.md.
 ```
 
 -------------------------------------------------------
-ЭТАП 2 — Единая effective amount (UI + write-path)
-✅ ВЫПОЛНЕН 2026-08-02
+ЭТАП 1 — OAuth-таблицы и RLS
 -------------------------------------------------------
 
 ```
-Выровняй одну семантику итога/остатка везде (F32) — и в UI, и на write-path. На backend `_rental_effective_amount(fixed, final)` уже подставляется в `fixed_amount` в `get_rentals_for_schedule_week` / `get_rental_detail`, но не везде: `record_rental_payment` всё ещё считает `_rental_payment_status` по сырой колонке `rentals.fixed_amount`; карточка арендатора / серии / UI могут смешивать raw `calculatedAmount` и `final`. Найди все path; вынеси одну frontend-утилиту (effective + remaining) в `RentalInfoPopup`, `RecordRentalPaymentModal`, сетку, карточку арендатора и прочие места долга. Миграция почти наверняка нужна для `record_rental_payment` (status/остаток по effective). Добавь проверки: `npm run test:db:rental-series` при изменении SQL и assert-скрипт в стиле `venue-cost-rules-check.mjs` для fixed, hourly, series, корректировок, частичной оплаты, погашения и переплаты. Критерий готовности: одна аренда → одна итоговая сумма и остаток на всех экранах и в статусе после оплаты.
+Задача: SQL-миграция для хранения Google OAuth-аккаунтов и привязок календарей TangoDB.
+
+Контекст: tangodb_google_calendar_integration.md §9 (OAuth accounts и оба вида bindings) и §12 (безопасность). Названия полей — из документа, финальные типы/constraints подбери по конвенциям существующих миграций (UUID PK, organization_id FK на organizations, FOREIGN KEY (organization_id, x) REFERENCES ... (organization_id, id) — паттерн из tangodb/supabase/migrations/20260620000001_v2_tenant_core_schema.sql).
+
+Что сделать:
+1. Файл tangodb/supabase/migrations/<NEXT_TIMESTAMP>_google_calendar_accounts.sql (NEXT_TIMESTAMP — следующий по порядку после последней существующей миграции в tangodb/supabase/migrations/; на 2026-08-06 последняя — 20260890000001_finance_cost_entry_labels.sql).
+2. Таблица user_google_accounts: id, user_id (FK auth.users), google_subject, google_email, refresh_token_secret_id (Vault) **или** encrypted_refresh_token (ciphertext — выбрать один механизм), granted_scopes (text[] или jsonb), status (active/revoked/error), token_version, last_verified_at, created_at, updated_at.
+   - UNIQUE (user_id, google_subject).
+   - Отдельный UNIQUE/CHECK или explicit policy на google_subject, занятый другим user_id, — см. §9: не тихое дублирование (для MVP допустимо жёсткое UNIQUE (google_subject) с понятной ошибкой при конфликте; описать выбор в decision_log.md).
+   - `authenticated` не получает прямых grants на таблицу. RLS — defense in depth, но не способ скрыть credential-колонку от владельца строки.
+   - Для UI создать отдельный SECURITY DEFINER RPC или безопасный view, возвращающий только id/google_email/status/timestamps текущего пользователя; owner/director организации НЕ получают credential.
+3. Backend-only таблица google_oauth_states: hash state, user_id, OIDC nonce, PKCE verifier, allowlisted return_url, expires_at, consumed_at. Без grants для authenticated; индекс для TTL cleanup.
+4. Таблица member_google_calendar_bindings: id, organization_id, organization_member_id, google_account_id (FK user_google_accounts), calendar_id, calendar_name, timezone, enabled, sync_group, sync_personal, sync_events (bool, default false — включать явно на следующих этапах), privacy_mode (full_name/initials/hidden, default по решению из Промпта 0), last_success_at, last_error_at, last_error_code, disabled_at (nullable timestamptz), cleanup_pending (bool NOT NULL DEFAULT false), created_at, updated_at.
+   - FOREIGN KEY (organization_id, organization_member_id) REFERENCES organization_members (organization_id, id).
+   - Partial UNIQUE на (organization_id, organization_member_id) WHERE enabled — один активный binding на участника.
+   - При disconnect «оставить события»: enabled=false, disabled_at=now(), cleanup_pending=false.
+   - При disconnect «удалить будущие»: enabled=false, disabled_at=now(), cleanup_pending=true; worker ещё использует calendar_id/credential, пока есть links; после очистки links — cleanup_pending=false (§9, §10 Delete).
+   - RLS: SELECT безопасных binding-полей — сам участник (по member_id → user_id) и owner/director своей организации; INSERT/UPDATE — только доверенные Edge Functions/service_role после проверки JWT и membership. Не разрешать клиенту подменять `google_account_id`, `organization_member_id` или `calendar_id` прямым PostgREST UPDATE.
+5. Таблица organization_google_calendar_bindings: id, organization_id, google_account_id, configured_by_member_id, calendar_id/name/timezone, enabled, disabled_at, cleanup_pending, last_success_at, last_error_at/code, created_at, updated_at.
+   - tenant-safe FK на configured_by_member_id; partial UNIQUE (organization_id) WHERE enabled;
+   - те же правила disconnect/cleanup_pending, что у member binding;
+   - на этапе 1 таблица может оставаться без UI, но схема нужна для однозначного FK из google_calendar_event_links;
+   - запись только через доверенную Edge Function после проверки owner/director и принадлежности google_account_id текущему user; безопасный SELECT owner/director без credential.
+6. Индексы: member binding — (organization_id, organization_member_id), (google_account_id); org binding — (organization_id), (google_account_id).
+7. audit_log: не создавать новую инфраструктуру — переиспользовать существующий audit_log/триггеры, если они уже покрывают INSERT/UPDATE/DELETE generic-триггером; иначе явно зафиксировать как задачу Промпта 2 (аудит connect/disconnect делает Edge Function, а не DB trigger).
+
+Не делать: не создавать calendar_sync_outbox / google_calendar_event_links — это Промпт 5. Не менять существующие таблицы (personal_lessons, schedule_slots и т.д.).
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §9, §12
+- tangodb/supabase/migrations/20260620000001_v2_tenant_core_schema.sql (паттерн organization_id + composite FK)
+- tangodb/supabase/migrations/20260830000001_schedule_cancellations_teacher_vacation.sql (пример RLS на новой таблице с двумя политиками SELECT)
 ```
 
 -------------------------------------------------------
-ЭТАП 3 — Корректное превью venue cost
-✅ ВЫПОЛНЕН 2026-08-03
+ЭТАП 2 — Edge Functions: OAuth start/callback/disconnect
 -------------------------------------------------------
 
 ```
-Исправь ложное превью «4/5 человек» в `VenueCostsSettingsPage`: при обязательном преподавателе не вызывай `previewGroupVenueCost` с пустым scope (F4). Добавь явный выбор преподавателя/локации/дисциплины или несколько подписанных примеров — как лучше стыкуется с формой. До заполнения обязательного scope — подсказка, не «0». Переиспользуй `venueCostRules.ts` и при необходимости `scripts/venue-cost-rules-check.mjs`. Тесты: совпадение/несовпадение scope, tier 4/5, открытая верхняя граница. Критерий готовности: ноль только как реальный расчёт, не как отсутствие контекста.
+Задача: серверный OAuth 2.0 Authorization Code Flow для подключения Google-аккаунта.
+
+Контекст: tangodb_google_calendar_integration.md §4 («Подключение преподавателем»), §11 (OAuth и scopes), §12 (безопасность). Таблицы из Промпта 1 уже существуют.
+
+Что сделать:
+1. tangodb/supabase/functions/google-calendar-auth-start/index.ts:
+   - принимает текущего пользователя (JWT), генерирует криптографически случайные opaque `state`, OIDC nonce и PKCE verifier/challenge (S256); server-side запись с TTL связывает их с user_id и allowlisted return URL. Не сериализовать доверяемые user_id/return URL в клиентский state;
+   - строит Google OAuth URL: `access_type=offline`, `prompt=consent` при первом подключении без сохранённого credential и при reconnect после revoked/error (см. §11), `openid email` и выбранный набор Calendar scopes из §11, redirect_uri из allowlist (env var), PKCE S256;
+   - возвращает URL клиенту (не делает redirect сам — CRM открывает его в новой вкладке/popup).
+2. tangodb/supabase/functions/google-calendar-auth-callback/index.ts:
+   - публичный HTTPS endpoint (Google туда редиректит);
+   - атомарно consume-ит state (TTL, одноразовость), извлекает server-side user_id/return URL/PKCE verifier;
+   - обменивает authorization code на access+refresh token с PKCE verifier;
+   - валидирует OIDC id_token (signature/JWKS, issuer, audience, expiry, nonce) и получает `sub`/email; не считать Calendar scopes источником identity;
+   - сохраняет refresh_token выбранным в Промпте 1 способом (Vault secret либо encryption key из env) и делает upsert в user_google_accounts (по (user_id, google_subject)); если Google не вернул новый refresh_token при incremental consent, сохраняет прежний, а не затирает NULL;
+   - если google_subject уже принадлежит другому user_id — вернуть явную ошибку (см. Промпт 1, п.2), не перезаписывать;
+   - редиректит браузер обратно в CRM (на return URL из state) с результатом (success/error) в query, без токенов в URL.
+3. tangodb/supabase/functions/google-calendar-disconnect/index.ts:
+   - принимает JWT текущего пользователя и organization_member_id (или org binding id для org-level);
+   - для «оставить события»: enabled=false, disabled_at=now(), cleanup_pending=false;
+   - для «удалить будущие»: enabled=false, disabled_at=now(), cleanup_pending=true, затем enqueue удаления future links; окончательный сброс cleanup_pending делает worker после очистки (§9, §10);
+   - отзыв Google grant — только отдельное account-level действие «отключить везде» после показа всех затронутых bindings. Не отзывать refresh token при отключении одной организации;
+   - пишет запись в audit_log (connect/disconnect).
+4. Общий модуль tangodb/supabase/functions/_shared/googleOAuth.ts: обмен кода на токены, OIDC validation, refresh access token и выбранный adapter хранения credential (используй существующий helper для секретов только если его модель действительно подходит).
+5. Секреты (client_id, client_secret, encryption key, redirect URI) — через Supabase secrets, не хардкодить.
+
+Не делать: не делать список календарей и не создавать binding здесь — это Промпт 3. Не вызывать Google Calendar events API. Не хранить plaintext refresh token нигде, кроме мгновенного использования в памяти функции.
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §4, §11, §12
+- tangodb/supabase/functions/accept-invite/index.ts (паттерн Edge Function с state/token проверкой)
+- tangodb/supabase/functions/_shared/supabase.ts, _shared/http.ts (общие хелперы CORS/клиента)
+- Официальные материалы: https://developers.google.com/identity/protocols/oauth2
 ```
 
 -------------------------------------------------------
-ЭТАП 4 — Аренда в кассовых агрегатах и безопасная переплата
-✅ ВЫПОЛНЕН 2026-08-02
+ЭТАП 3 — список/создание календарей и сохранение binding
 -------------------------------------------------------
 
 ```
-Временно (до обязательного перевода отчётов на регистр этапа 5) приведи выручку и журнал оплат: `FinanceRevenuePage` уже кладёт `rentalTotal` в gross/net, но `count`/`byMethod` — только клиентские `payments`; `FinancePaymentsPage` вообще не знает про аренду — добавь секцию или строки `rental_payments` того же периода, без двойного добавления в totals (F17, F31). В `RecordRentalPaymentModal` отрисуй `methodComment` (state есть, input нет) и confirm при сумме > остатка (F19; F34 — дубль). Смысл переплаты — «подтверждённая переплата» или пометка «как аванс», но не создавай запись в `rental_advances` автоматически (авансы UI — этап 10). Период пока по `created_at`. Проверки: finance/RBAC assert-скрипты или узкий node-check агрегатов + `npm run lint`; без Vitest. Критерий готовности: методы + число операций + итог сходятся для прямых `rental_payments`. Не проектируй постоянный второй движок сумм — после этапа 5 чтение на регистр.
+Задача: выбор или создание рабочего календаря TangoDB после OAuth-подключения.
+
+Что сделать:
+1. tangodb/supabase/functions/google-calendar-list-calendars/index.ts:
+   - принимает JWT пользователя и google_account_id (должен принадлежать текущему user_id — проверить перед использованием токена);
+   - получает свежий access token по refresh token (общий модуль из Промпта 2);
+   - запрашивает CalendarList (read-only scope);
+   - возвращает пользователю список календарей (id, summary, primary, accessRole, timeZone) — без личных событий, только список;
+   - разрешает выбрать для записи только календарь с `accessRole` `writer` или `owner`.
+2. Тот же или отдельный Edge Function google-calendar-create-calendar/index.ts:
+   - создаёт новый календарь `TangoDB / <organization name>` по явному действию пользователя;
+   - возвращает его id.
+3. Endpoint (можно часть google-calendar-list-calendars или отдельный google-calendar-set-binding) для сохранения выбора:
+   - upsert в member_google_calendar_bindings (organization_id, organization_member_id, google_account_id, calendar_id, calendar_name, timezone, enabled = true);
+   - гарантировать partial UNIQUE из Промпта 1 (один активный binding на участника — при смене календаря: старый binding → enabled=false; если пользователь выбрал «перенести/удалить старые события» — cleanup_pending=true и enqueue delete, иначе cleanup_pending=false и оставить events; не плодить два enabled=true);
+   - privacy_mode и sync_* флаги — дефолты из Промпта 0, редактируемые позже в Промпте 4/8.
+4. Обработка ошибок токена (401/403) — вернуть понятный код клиенту, не проглатывать молча.
+
+Не делать: не создавать events.insert/patch — это Этап 2 (Промпт 6). Не запрашивать полный `https://www.googleapis.com/auth/calendar`. Для strict dedicated-calendar режима использовать `calendar.app.created`; `calendar.events` запрашивать только если пользователь явно выбирает уже существующий writable-календарь.
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §4 (пункты 6–7), §9 («member_google_calendar_bindings»), §11
+- tangodb/supabase/functions/_shared/supabase.ts
+- Google Calendar API calendarList/calendars: https://developers.google.com/workspace/calendar/api/guides/create-events (для соседних guides по calendars)
 ```
 
 -------------------------------------------------------
-ЭТАП 5 — Проектирование и основа единого регистра денег аренды
-✅ ВЫПОЛНЕН 2026-08-02
+ЭТАП 4 — UI: Настройки → Интеграции → Google Calendar
 -------------------------------------------------------
 
 ```
-Исследуй `rental_payments`, `rental_invoice_payments`, `rental_advances`, распределения, депозиты, RPC, хуки и отчёты (F20, F21). Реализуй минимальную основу единого read-model/регистра: уникальный id операции, тип, знак суммы, связи с арендатором/бронью/счётом, защита от двойного учёта. Для даты: provisional `operation_date = created_at` (или эквивалент в view); редактируемое поле и семантика кассового дня — этап 9, не дублируй его здесь. Не переписывай историю без плана миграции/сверки. Выбор SQL view/RPC vs ledger-таблица — сначала `decision_log.md`, затем реализация. Не ослабляй RLS и не открывай admin полный finance. Reconciliation-тесты: нет дублей; прямой платёж, оплата счёта, аванс, allocate, депозит не теряются. Обязательно переведи агрегаты этапа 4 (`count` / `byMethod` / журнал) на этот регистр в том же PR или немедленным follow-up — не оставляй две формулы. Критерий готовности: один канонический источник чтения для журнала и будущих отчётов.
+Задача: раздел «Интеграции» в настройках TangoDB с подключением Google Calendar.
+
+Контекст: раздела «Интеграции» в приложении сейчас нет (tangodb_google_calendar_integration.md §4). Nav настроек управляется getSettingsNav (tangodb/src/lib/i18n/navHelpers.ts) + SettingsSectionId (tangodb/src/lib/permissions.ts) + canAccessSettingsSection + SettingsLayout.tsx (SETTINGS_NAV_ICONS). Маршрут `/settings/team` — отдельный, вне SettingsLayout; integrations добавлять **внутрь** SettingsLayout по образцу general/license, не по образцу team.
+
+Что сделать:
+1. tangodb/src/lib/permissions.ts: добавить "integrations" в SettingsSectionId, в SETTINGS_SECTION_ORDER, и правило canAccessSettingsSection — доступно всем ролям с активным membership (`organization_members.is_active`), т.к. это персональное подключение, не org-wide настройка; owner/director видят дополнительно team-статус (см. Промпт 8). Неактивный участник не должен открывать connect.
+2. tangodb/src/lib/i18n/navHelpers.ts + ru.ts/en.ts: пункт меню "Интеграции" → путь /settings/integrations.
+3. tangodb/src/settings/SettingsLayout.tsx: добавить иконку в SETTINGS_NAV_ICONS (например, CalendarDays из lucide-react).
+4. tangodb/src/settings/pages/IntegrationsSettingsPage.tsx — новая страница:
+   - если Google не подключён: кнопка «Подключить Google Calendar» → вызывает google-calendar-auth-start, открывает возвращённый URL (новая вкладка/popup), после успешного колбэка (см. Промпт 2) — обновляет состояние (React Query invalidate);
+   - если подключён, но календарь не выбран: экран выбора/создания календаря (использует google-calendar-list-calendars / create-calendar из Промпта 3);
+   - если подключено и настроено: карточка со статусом (§15 «В настройках пользователя») — email, календарь, статус синхронизации, кнопки «Проверить подключение», «Синхронизировать будущие уроки» (заглушка до Промпта 7), «Сменить календарь», «Отключить» (с двумя вариантами из §12 — оставить/удалить будущие events; account-level «отозвать везде» — отдельно).
+5. Новый хук tangodb/src/hooks/useGoogleCalendarIntegration.ts (или аналогичное имя) — обёртка над Edge Functions из Промптов 2–3 через supabase.functions.invoke, без прямых Supabase-запросов из компонента (правило core.mdc).
+6. App.tsx: добавить Route path="integrations" внутри settings-роутов SettingsLayout (по аналогии с general/license), не рядом с settings/team.
+
+Не делать: не показывать refresh token нигде в UI. Не реализовывать статус синхронизации уроков (Промпт 8) и экран команды для owner/director (тоже Промпт 8) — здесь только собственное подключение пользователя.
+
+Обновить .cursor/docs/ai/changelog.md после реализации (новый раздел настроек).
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §4, §15 («В настройках пользователя»)
+- tangodb/src/settings/SettingsLayout.tsx
+- tangodb/src/lib/permissions.ts (SettingsSectionId, canAccessSettingsSection)
+- tangodb/src/lib/i18n/navHelpers.ts (getSettingsNav)
+- tangodb/src/settings/pages/LicenseSettingsPage.tsx (пример простой settings-страницы с внешним состоянием подключения/статусом)
 ```
 
 -------------------------------------------------------
-ЭТАП 6 — Редактирование суммы брони
-✅ ВЫПОЛНЕН 2026-08-02
+ЭТАП 5 — Outbox, event links и enqueue для персональных уроков
 -------------------------------------------------------
 
 ```
-Подключи `useUpdateRental` к UI разовой аренды (и occurrence серии, если правится сумма конкретного слота) (F29) и расширь backend согласованно: сейчас `update_rental` требует `member_can_manage_rentals()` (operational admin / owner / director, не accountant) и для `fixed_amount` — `can_read_financial()`. Важно: operational admin проходит первый gate, но не `can_read_financial()` — без узкого helper (тот же канонический gate, что этап 1; позже тот же gate у этапа 13, с `admin_can_accept_payments` на backend) правка суммы кассиром не заработает. Правка суммы — ролям с правом денег аренды после этапа 1 (тот же канонический gate, не голый `payments.write`), не teacher и не read-only. Для accountant с `finance.read` без `member_can_manage_rentals` — в этом же этапе выбрать и реализовать: узкий RPC «только смена суммы/валюты» или явная эскалация к admin/director в UI; не оставлять хук без рабочего пути и не откладывать на этап 23 (этап 23 = только создание слотов в расписании). Серийный `useUpdateRentalSeries` трогай только если нужен тот же сценарий на уровне серии/тарифа — не смешивать с правкой одной брони. Покажи старую/новую сумму, причину, влияние на остаток (effective amount этапа 2). До этапа 8 нельзя опускать сумму ниже уже оплаченного: усилить `paidExceedsFixed` на любое `new_amount < paid` (включая `new_amount = 0`); не создавать `overpaid` занижением суммы. Аудит автора/времени/причины; при отсутствии хранения — минимальная миграция/RPC. Тесты: `npm run test:rbac`, при SQL — `npm run test:db:rental-series`. Критерий готовности: бронь с суммой 0 исправляется в UI с аудитом и успешным RPC для целевых ролей.
+Задача: таблицы очереди синхронизации и enqueue-триггеры для personal_lessons.
+
+Что сделать:
+1. Файл tangodb/supabase/migrations/<NEXT_TIMESTAMP>_google_calendar_sync_outbox.sql:
+   - таблица google_calendar_event_links (§9): id, organization_id, recipient_kind ('member'|'organization'), member_binding_id nullable, organization_binding_id nullable, source_type ('group_occurrence'|'personal_lesson'|'event_session'), source_id, occurrence_date DATE NOT NULL, google_event_id, google_etag, desired_hash, sync_status ('pending'|'synced'|'failed'|'detached'), detach_reason, last_synced_at, last_error, created_at, updated_at.
+     - tenant-safe composite FK для обоих binding-полей и CHECK «ровно один FK соответствует recipient_kind»;
+     - два partial UNIQUE-индекса из §9: отдельно для member_binding_id и organization_binding_id.
+   - таблица calendar_sync_outbox (§9): id, organization_id, source_type, source_id, occurrence_date (nullable — NULL допустим для `reconcile_member`), dedupe_key NOT NULL, operation ('upsert'|'delete'|'reconcile_member'), status ('pending'|'processing'|'retry'|'done'|'dead'), attempt_count, available_at, locked_at, locked_by, last_error_code, last_error_message, created_at, processed_at.
+     - индекс на (status, available_at) для выборки worker'ом;
+     - partial UNIQUE для схлопывания `pending/retry` по `(organization_id, dedupe_key)`; helper строит разные канонические ключи для occurrence и `reconcile_member`, не полагаясь на равенство NULL.
+   - RLS: безопасный статус — участник для своих member links, owner/director по organization_id; технические google_event_id/etag/hash отдавать UI только через ограниченный RPC/view. INSERT/UPDATE — только service_role (worker и triggers через SECURITY DEFINER функции).
+2. Функция-хелпер enqueue_calendar_sync(source_type, source_id, occurrence_date, operation) — SECURITY DEFINER с фиксированным `search_path`, вызывается из триггеров/RPC, схлопывает несколько pending-задач на один источник (§9 — "worker всегда строит текущее желаемое состояние").
+3. Триггеры/вызовы enqueue на personal_lessons (§6 «Персональные уроки», §8):
+   - AFTER INSERT — upsert;
+   - AFTER UPDATE — upsert (включая переход cancelled_at IS NULL → NOT NULL). Если изменились date или teacher_member_id, enqueue cleanup для OLD date и upsert для NEW date; worker также удаляет stale links старого binding;
+   - BEFORE DELETE — enqueue delete **до** удаления строки, сохранив organization_id/source_id/occurrence_date (или явный enqueue внутри delete_personal_lesson / delete_personal_lesson_series_from_date перед DELETE — выбери один подход и примени его последовательно к обеим RPC). Не рассчитывать, что async worker позже прочитает удалённую строку.
+4. Обновить delete_personal_lesson и delete_personal_lesson_series_from_date (актуальная версия — tangodb/supabase/migrations/20260852000001_orphan_payments_on_personal_lesson_delete.sql; при необходимости сверить с предыдущими 20260851000001 / 20260849000001) — добавить enqueue delete перед фактическим DELETE.
+
+Не делать: не подключать schedule_slots/calendar_event_sessions — это Промпты 9 и 11. Не писать worker — это Промпт 6.
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §6 («Персональные уроки», «Отмены»), §9, §10 (Upsert/Delete алгоритм — для проектирования полей)
+- tangodb/supabase/migrations/20260852000001_orphan_payments_on_personal_lesson_delete.sql (актуальная версия delete_personal_lesson/delete_personal_lesson_series_from_date)
+- tangodb/supabase/migrations/20260831000001_calendar_events_master_class.sql (пример ALTER TABLE ADD COLUMN cancelled_at на personal_lessons)
 ```
 
 -------------------------------------------------------
-ЭТАП 7 — Права бухгалтера на venue cost и тарифы
-✅ ВЫПОЛНЕН 2026-08-03
+ЭТАП 6 — Worker calendar-sync-worker: ядро upsert/delete
 -------------------------------------------------------
 
 ```
-Разведи read/manage настроек аренды на UI и в RPC. Accountant: читать тарифы сдачи (не write в этом этапе); создавать/редактировать/принимать venue cost без `schedule.write`. Сейчас UI: `HallRentSettingsPage.canRental = schedule.write && finance.read`, `VenueCostsSettingsPage.canManage = owner|director`, `RentalTariffsSettingsPage` показывает create/edit всем, кто видит блок; SQL: `save_venue_cost_rule_draft` / `accept_venue_cost_rule_version` только owner/director; `list_rental_tariffs` требует `member_can_manage_rentals()` — accountant с `finance.read` не получает даже список (цены маскируются отдельно через `can_read_financial`). Все слои расширить согласованно: list — `manage_rentals OR can_read_financial`; write тарифов — manage (+ finance); venue accept/draft — owner/director/accountant (или `venue_costs.manage`); в UI — отдельные `canReadTariffs` / `canWriteTariffs` / `canManageVenue`. Owner/director сохранить. Operational admin — не manage venue cost и не write тарифов (кассовый/lookup scope — этапы 1/12/13). При правке `canAccessSettingsSection("hall-rent")` (F6) не сужай доступ так, чтобы этап 12 не смог дать admin lookup прайса: либо оставить/добавить отдельное право тарифов в section access, либо явно зафиксировать, что lookup этапа 12 живёт вне settings. Обнови навигацию и RBAC tests. Критерий готовности: бухгалтер видит оба блока (тарифы read-only с ценами), реально принимает версию venue cost; расписание и тарифы на запись не пишет.
+Задача: серверный worker, который читает calendar_sync_outbox и вызывает Google Calendar API.
+
+Контекст: таблицы из Промпта 5, OAuth/binding из Промптов 1–3. Пока покрываем только source_type = 'personal_lesson'.
+
+Что сделать:
+1. tangodb/supabase/functions/calendar-sync-worker/index.ts — вызывается по HTTP (для ручного триггера/теста) и будет вызываться по расписанию в Промпте 7.
+2. Lease-механизм: создать DB RPC `claim_calendar_sync_jobs(batch_size, worker_id)`, который в одной транзакции возвращает просроченные `processing` lease в `retry`, затем делает `FOR UPDATE SKIP LOCKED` + `UPDATE ... RETURNING` по готовым задачам. Не claim-ить pending/retry, если уже есть непросроченная processing-задача с тем же `(organization_id, dedupe_key)`. Edge Function вызывает RPC; отдельные PostgREST SELECT и UPDATE запрещены из-за гонки.
+3. Для каждой задачи с source_type = 'personal_lesson' — реализовать алгоритм §10 «Upsert»:
+   - загрузить строку personal_lessons по source_id; если её нет (hard DELETE) — трактовать как delete-задачу, опираясь на google_calendar_event_links (§6 «Персональные уроки»);
+   - если cancelled_at IS NOT NULL — применить политику delete/mark_cancelled (решение из Промпта 0) вместо upsert;
+   - если teacher_member_id IS NULL, нет активного binding (`enabled = true`), или organization_members.is_active = false у преподавателя — завершить upsert-задачу без API-вызова (done), без ошибки;
+   - построить Google payload: summary, description (клиент по privacy_mode — для pair/trio/quad перечислять всех клиентов, §7 версия 1.3), start/end.dateTime + timeZone из organization_settings.timezone (НЕ хардкодить offset), location, `transparency: opaque`, `visibility: private`, `reminders.useDefault: true`, extendedProperties.private (managedBy, organizationId, sourceType, sourceId — occurrenceKey не нужен для personal_lesson, §3);
+   - вычислить desired_hash (стабильный hash payload, например sha256 от canonical JSON);
+   - сначала найти **все** links по (organization_id, source_type, source_id) и удалить stale links старой даты/получателя; затем найти текущий member link по (member_binding_id, source_type, source_id, occurrence_date); если нет — events.insert; если есть и hash не изменился — done без API; если hash изменился — `events.update` полного CRM-payload с `If-Match: google_etag` (не `events.patch`: Google считает patch дороже — 3 quota units);
+   - id события генерировать в base32hex (a-v, 0-9, 5–1024 символов) из UUID строки — либо доверять серверной генерации Google и сохранять возвращённый id (выбери подход, задокументируй в decision_log.md; сохранённый id обязателен в любом случае, см. §7 последний пункт);
+   - сохранить google_event_id, google_etag, desired_hash, last_synced_at в google_calendar_event_links; пометить outbox done.
+4. Delete-алгоритм (§10 «Delete/отмена»): найти все links источника, удалить события (404 у Google = успех), пометить links detached/удалить с записью аудита; для binding с cleanup_pending — после исчезновения links сбросить cleanup_pending. Для политики mark_cancelled не ставить Google `status: cancelled`: оставить `confirmed`, добавить префикс и `transparency: transparent`.
+5. Retry-политика (§10 «Retry»): token endpoint `invalid_grant` → `user_google_accounts.status = revoked`; повторный API 401 → ошибка аккаунта; 403 → ошибка конкретного binding; 404 при update → controlled re-insert если link не detached; 409 → найти по extended property/детерминированному ID; 412 → get нового etag и ограниченный повтор политики «CRM побеждает»; 429/5xx → exponential backoff с jitter через available_at; лимит попыток → status = dead.
+6. Общий модуль tangodb/supabase/functions/_shared/googleCalendarClient.ts: obtain fresh access token (refresh flow из Промпта 2), events.insert/update/delete/get, обработка ошибок с кодами.
+7. Логи без payload с полными клиентскими данными (§18) — логировать только source_type/source_id/organization_id/статус.
+8. Учесть quota: по умолчанию `events.update` (+ get при 412), не `events.patch`. `desired_hash` обязан отсекать неизменившиеся события до API-вызова.
+
+Не делать: не обрабатывать schedule_slots/calendar_event_sessions (Промпты 9–11). Не строить cron здесь — это Промпт 7 (тут только сам обработчик, вызываемый вручную/по HTTP для теста).
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §7, §9, §10, §11 (получение access token), §18
+- tangodb/supabase/functions/stripe-webhook/index.ts (пример worker-подобной Edge Function с внешним API и обработкой ошибок)
+- Google Calendar API: https://developers.google.com/workspace/calendar/api/guides/create-events, https://developers.google.com/workspace/calendar/api/guides/extended-properties
 ```
 
 -------------------------------------------------------
-ЭТАП 8 — Должники аренды, сторно и автор платежа
-✅ ВЫПОЛНЕН 2026-08-03
+ЭТАП 7 — Cron, retry/backoff и reconciliation (персональные уроки)
 -------------------------------------------------------
 
 ```
-Долги арендаторов в `FinanceDebtorsPage` — отдельный таб или маркированные строки с типом контрагента (F16). Сторно/коррекция `rental_payments` по образцу `PaymentCorrectionDialog` (F18): причина, автор, ссылка на исходный платёж, неизменяемая история; проводки попадают в регистр этапа 5. До этапа 9 в коррекции используй provisional дату (= `created_at` / регистр), не изобретай вторую модель `operation_date`. Протяни `created_by` в select, тип `RentalPayment`, popup, журнал, CSV (F27). Исходные платежи не удалять. После этого этапа — опциональный follow-up этапа 6: сценарий «сумма брони < уже оплачено» только через сторно/коррекцию, не через тихое занижение `fixed_amount`. Тесты: частичная оплата, полное сторно, повторная коррекция, права (`test:rbac` / SQL). Критерий готовности: бухгалтер видит должника-арендатора и объясняет каждое изменение по журналу.
+Задача: регулярный запуск worker'а и восстановление пропущенных синхронизаций.
+
+Что сделать:
+1. Выбрать и настроить механизм расписания (§8 — в репозитории пока нет pg_cron/scheduled Edge Function): либо Supabase Cron (pg_cron + net.http_post на calendar-sync-worker), либо внешний scheduler. Зафиксировать выбор в decision_log.md и deployment checklist (.cursor/docs/ai/architecture.md).
+2. Расписание: частый тик (например, каждую 1–2 минуты) для обработки pending/retry задач из calendar_sync_outbox.
+3. Отдельная reconciliation-задача (§10 «Reconciliation», реже — например раз в час):
+   - для personal_lessons без cancelled_at в будущем окне без соответствующего google_calendar_event_links (при наличии активного binding) — enqueue upsert;
+   - для links, чей source исчез или cancelled_at проставлен — enqueue delete;
+   - НЕ сканировать личные события пользователя (только собственные CRM-данные).
+4. Кнопка «Синхронизировать будущие уроки» из Промпта 4 (settings UI) → вызывает reconcile для конкретного organization_member_id (operation = 'reconcile_member').
+5. Dead-letter обработка: видимый статус + ручной «Повторить» (UI — Промпт 8, тут только backend-поддержка: сброс status/attempt_count по запросу).
+6. Метрики (§18, минимально) — хотя бы количество pending/dead задач, доступное для UI команды (Промпт 8) через простой RPC/view с RLS по organization_id.
+
+Не делать: не переписывать ядро upsert/delete из Промпта 6 — только вызывать его и планировать.
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §8 (cron), §10 «Reconciliation», §18
+- tangodb/supabase/functions/purge-expired-demo-orgs/index.ts (пример периодической задачи в проекте, если она уже вызывается по расписанию — проверить, как именно)
 ```
 
 -------------------------------------------------------
-ЭТАП 9 — Дата операции и закрытие периода
-✅ ВЫПОЛНЕН 2026-08-03
+ЭТАП 8 — UI статуса синхронизации
 -------------------------------------------------------
 
 ```
-Добавь настоящее поле `operation_date` отдельно от `created_at` для денежных движений аренды и обнови регистр этапа 5 (F22). Timezone организации и семантика даты — в одном месте. В форме кассира — выбор фактической даты в открытом периоде/смене; закрытый период — только корректировка с причиной и правом. Backfill из `created_at` миграцией с документированной TZ-логикой. В аудите показывай обе даты; фильтры отчётов — по `operation_date`. Тесты: полночь, timezone, поздний ввод, закрытый период. Критерий готовности: вчерашний перевод, внесённый сегодня, попадает в нужный кассовый день без потери `created_at`.
+Задача: показать статус Google-синхронизации в уроке, в настройках пользователя и на экране команды owner/director.
+
+Что сделать:
+1. В уроке (§15 «В уроке»): компактный статус на LessonInfoPopup / EditLessonPopup для personal-уроков — синхронизировано / ожидает / ошибка / «календарь не подключён» (запрос по google_calendar_event_links для source_type=personal_lesson, source_id=lessonId, без блокировки сохранения урока при ошибке).
+2. В настройках пользователя (IntegrationsSettingsPage из Промпта 4): дополнить последней успешной синхронизацией, краткой последней ошибкой, кнопками «Проверить подключение» (перечитать статус binding) и «Синхронизировать будущие уроки» (вызывает reconcile из Промпта 7).
+3. Экран owner/director (§15 «Для owner/director») — новая секция/страница (например, в IntegrationsSettingsPage при role owner/director, или отдельная TeamGoogleSyncSection): список участников с подключением, последним sync, количеством pending/failed, кнопка «Напомнить подключить» (email/уведомление — реализовать минимально, например через существующий email-модуль _shared/email.ts, если подходит по контексту приглашений); без доступа к токенам, `google_account_id` и содержимому календаря.
+4. Хуки: useGoogleCalendarSyncStatus(lessonId) и useTeamGoogleSyncStatus() (или расширение useGoogleCalendarIntegration из Промпта 4) — через RPC/view с RLS, не прямые запросы к google_calendar_event_links из компонента, если там чувствительные поля (google_etag/desired_hash скрывать от UI).
+
+Не делать: не показывать refresh/access token и содержимое личных календарей нигде.
+
+Обновить .cursor/docs/ai/changelog.md.
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §15
+- tangodb/src/components/schedule/LessonInfoPopup.tsx, EditLessonPopup.tsx
+- tangodb/src/settings/pages/TeamSettingsPage.tsx (пример списка участников организации)
 ```
 
 -------------------------------------------------------
-ЭТАП 10 — Рабочий UI счетов и авансов, отчёт начислений
-✅ ВЫПОЛНЕН 2026-08-03
+ЭТАП 9 — Материализация групповых occurrence и enqueue
 -------------------------------------------------------
 
 ```
-Доведи хуки/RPC счетов и авансов до UI в `RenterDetailPanel` / `FinanceTab` (F20, F23): счёт из аренд периода, оплата счёта, приём аванса, allocate / отмена allocate с историей. Все движения — только через регистр этапа 5, без второго платёжного контура. Отчёт за период: начислено / оплачено / авансы получены и использованы / долг; разные даты услуги, счёта и платежа. Одна аренда не должна дважды попадать в строки счетов. Критерий готовности: бухгалтер ведёт корпоративного арендатора со счётом и авансом без SQL.
+Задача: расширить outbox на групповые уроки (schedule_slots).
+
+Что сделать:
+1. Расширить enqueue_calendar_sync (Промпт 5) и/или добавить отдельные триггеры/вызовы для source_type = 'group_occurrence':
+   - INSERT/UPDATE schedule_slots (включая смену дня/времени/преподавателя и закрытие версии через valid_to) → вычислить union OLD и NEW occurrence в рабочем горизонте (7 дней назад / 90 дней вперёд, §6): cleanup старых ключей + upsert новых;
+   - INSERT в schedule_occurrence_cancellations → enqueue delete для конкретной (slot_id, occurrence_date);
+   - RPC move_group_lesson_occurrence → enqueue delete по старому (slot_id, occurrence_date) и upsert по новому (использует moved_from_slot_id/moved_from_date/moved_from_time на новой версии слота);
+   - RPC cancel_group_lesson_occurrences, cancel_teacher_group_vacation → enqueue delete для всех затронутых дат.
+2. Ежедневная задача продления горизонта (по аналогии с Промптом 7 cron): для каждого активного schedule_slot без valid_to (или valid_to в будущем) добавлять enqueue upsert на новый день на дальнем конце 90-дневного окна.
+3. Источник дат — та же логика, что expandSlotsToDateRange/expandSlotsToWeek (tangodb/src/lib/scheduleWeek.ts), но на backend (SQL или Edge Function): учесть valid_from/valid_to, day_of_week, group_name; время occurrence брать из `schedule_slots.time` / `time_end` (не `time_start`); исключить даты из schedule_occurrence_cancellations отдельным запросом (expandSlots* сами их не фильтруют, §6).
+4. occurrence_date в google_calendar_event_links для group_occurrence — обязательна (канон §9); source_id = schedule_slot_id.
+
+Не делать: не писать сам вызов Google API для групп — это Промпт 10. Не трогать calendar_event_sessions (Промпт 11).
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §6 «Групповые уроки», §9, §10 «Reconciliation»
+- tangodb/src/lib/scheduleWeek.ts (expandSlotsToWeek, expandSlotsToDateRange — логика для порта на backend)
+- tangodb/supabase/migrations/20260828000001_move_group_lesson_occurrence.sql
+- tangodb/supabase/migrations/20260830000001_schedule_cancellations_teacher_vacation.sql (cancel_teacher_group_vacation, cancel_group_lesson_occurrences)
 ```
 
 -------------------------------------------------------
-ЭТАП 11 — Финансовое действие при отмене
-✅ ВЫПОЛНЕН 2026-08-03
+ЭТАП 10 — Worker: групповые occurrence
 -------------------------------------------------------
 
 ```
-Единый мастер отмены разовой и серийной аренды (F26). При наличии оплат обязателен выбор: без удержания / полный или частичный штраф / возврат / перенос в аванс. Важно: текущий enum серии — только `none | full_penalty | partial_penalty | manual`; `manual` сейчас no-op по суммам; разовая `cancel_rental` финдействия не принимает. Расширь модель (новые action и/или отдельные операции регистра этапа 5 для возврата/аванса) — не притворяйся, что refund/advance уже в enum. Штрафы переиспользуй из серии; разовую отмену выровняй. Каждое действие — отдельная аудируемая операция регистра; не удаляй оплату и не переписывай сумму задним числом без журнала. Превью итога и права на возврат/штраф. Тесты: неоплаченная / частичная / полная, серия, возврат, аванс, `manual`/штрафы. Критерий готовности: после отмены платежи, авансы, штрафы и долг сходятся по журналу.
+Задача: расширить calendar-sync-worker (Промпт 6) на source_type = 'group_occurrence'.
+
+Что сделать:
+1. Загрузка текущего состояния occurrence: schedule_slots (валидная версия на occurrence_date по valid_from/valid_to) + проверка отсутствия записи в schedule_occurrence_cancellations на эту дату (§10 Upsert п.2).
+2. Получатель — teacher_member_id слота + member binding; если teacher_member_id IS NULL, binding нет/`enabled = false`, или organization_members.is_active = false — done без вызова API (как для персоналок).
+3. Payload: summary из group_name (или дисциплины, если group_name пуст), start/end из `occurrence_date` + `schedule_slots.time` / `time_end` + `organization_settings.timezone`, extendedProperties.private.occurrenceKey = occurrence_date (§3 — только для group_occurrence), остальное — как в Промпте 6.
+4. Смена преподавателя (§10 «Смена преподавателя») — отдельная ветка: не update одного event между календарями, а delete в старом binding + пометка/удаление старого link + insert в новом binding + новый link.
+5. Обработка переноса (move_group_lesson_occurrence): задачи delete/upsert уже поставлены в очередь Промптом 9 — worker должен корректно резолвить обе по своим occurrence_date/slot_id без коллизий (учитывать, что слот после переноса — это уже другая строка schedule_slots с moved_from_*).
+6. Reconciliation для group_occurrence (расширение Промпта 7): проверка горизонта 90 дней, отсутствующих links, отменённых occurrence.
+
+Не делать: не переписывать retry/backoff — переиспользовать логику Промпта 6.
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §6 «Групповые уроки», §10 (все подразделы)
+- tangodb/supabase/functions/calendar-sync-worker/index.ts (результат Промпта 6)
 ```
 
 -------------------------------------------------------
-ЭТАП 12 — Read-only прайс для admin и политика reception
-✅ ВЫПОЛНЕН 2026-08-03
+ЭТАП 11 — Мероприятия: sync calendar_event_sessions
 -------------------------------------------------------
 
 ```
-Read-only lookup тарифов для operational admin с кассовым/schedule правом этапа 1, без venue cost и finance-отчётов. Открой цены узким helper (тот же канонический gate кассы, что этап 1) — не плоди второй helper: этап 13 переиспользует его для create. Точка входа: `/settings/hall-rent` (если section access это позволяет после этапа 7) или lookup из расписания/модалки брони — согласуй с решением ловушки 9 / F6 и зафиксируй в `decision_log.md`. Отдельно зафиксируй и реализуй политику `restricted_admin`: либо узкий сценарий прайс/бронь/оплата (тогда этап 13 расширит create/сумму на reception по этому решению), либо явный запрет с текстом эскалации — не наследуй права от этапа 1 молча. Доступ только через permissions, не через `role ===` в компонентах. Матрица RBAC-тестов; нет утечки полного finance. Критерий готовности: предсказуемый сценарий стойки; границы reception в `decision_log.md`; full admin видит прайс lookup.
+Задача: синхронизация мероприятий (calendar_events + calendar_event_sessions) в общий календарь организации.
+
+Зависимости: Промпты 5 и 6 (outbox + worker). Групповые Промпты 9–10 не обязательны; можно выполнять параллельно с ними.
+
+Что сделать:
+1. Enqueue (расширение Промпта 5) на INSERT/UPDATE/DELETE calendar_event_sessions и на изменения calendar_events (created_by, guest_teacher, organizer, время — если влияет на описание). Учесть, что hard-delete session отдельного RPC нет: удаление идёт через RPC `update_calendar_event_with_cancellations` (20260831200001_calendar_event_sessions_update.sql), который переписывает набор сессий целиком — enqueue должен сравнивать старый/новый набор session id и ставить delete для исчезнувших.
+2. Получатель (§6 «Мероприятия», §9, §10 Upsert п.3): использовать `organization_google_calendar_bindings` из Промпта 1; endpoint настройки разрешён owner/director и проверяет, что google_account_id принадлежит текущему user. НЕ использовать nullable `organization_member_id` в member binding, НЕ использовать created_by как «преподавателя» и не выбирать аккаунт по guest_teacher/organizer (это текстовые поля).
+3. Link основной копии использует `recipient_kind='organization'` + organization_binding_id. Опциональная копия создателю при активном member binding с sync_events=true использует отдельный link `recipient_kind='member'` + member_binding_id, тот же source_id/occurrence_date.
+4. Payload: summary из calendar_events (название мероприятия), guest_teacher/organizer — только текстом в description, не как получатель; occurrence_date = calendar_event_sessions.session_date.
+5. UI (минимально для этапа 4): настройка в IntegrationsSettingsPage или отдельном разделе организации — включение sync для мероприятий на уровне организации (кто настраивает — owner/director, т.к. это org-level binding, не персональный). Переиспользовать list/create calendar endpoints из Промпта 3.
+6. Deep link `?date=&focus=event:<session_id>` в описании — если к этому моменту реализован deep link на этапе UI расписания; иначе — ссылка на неделю/`/schedule` без фокуса (§7).
+
+Не делать: не добавлять teacher_member_id на calendar_events/calendar_event_sessions — это будущее улучшение вне текущего плана (§6).
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §6 «Мероприятия», §10 Upsert п.3
+- tangodb/supabase/migrations/20260831000001_calendar_events_master_class.sql (схема calendar_events/calendar_event_sessions)
+- tangodb/supabase/migrations/20260831200001_calendar_event_sessions_update.sql (update-RPC, переписывающий набор сессий)
 ```
 
 -------------------------------------------------------
-ЭТАП 13 — Тариф автоматически определяет сумму
-✅ ВЫПОЛНЕН 2026-08-03
+ЭТАП 12 — Webhook-наблюдение и incremental sync (опционально, Этап 5)
 -------------------------------------------------------
 
 ```
-Исправь `CreateRentalDialog` (и при необходимости серийный диалог для согласованности) (F7, F14, F15). Обязательно: fixed-тариф автоподставляет сумму; роли с правом денег аренды после этапа 1 видят тарифы/сумму/начальный платёж (не скрытый 0). По hourly выбери одно и зафиксируй в `decision_log.md`: (A) hourly доступен в разовой с превью по длительности, льготным окнам и priority, или (B) в настройках/форме явная подпись «почасовой — только для серий», а в разовой hourly не предлагается. Для `restricted_admin` — строго по политике этапа 12 (если 12 запретил — не расширять; если разрешил прайс/бронь/оплату — расширь gate этапов 1/12 на create, не дублируй UI). На backend уточни gates: ручной `fixed_amount > 0` без `tariff_id` → нужен тот же кассовый helper, что этапы 1/12; путь с `tariff_id` уже считает сумму на сервере без `can_read_financial`, но чтение цены/списка тарифов (`list_rental_tariffs` маскирует `price`) и `initial_payment > 0` всё ещё за `can_read_financial` — открой их тем же helper, без полного finance. Ручной override — только с правом и пометкой/причиной. Расчёт не копировать по компонентам: общая функция + сверка с сервером при сохранении; показать источник цены и breakdown. Тесты: `npm run test:db:rental-series`, сценарии fixed, (если A) hourly/льготы/полночь, override. Критерий готовности: бронь не уходит с 0 из-за скрытых финполей; цена объяснима; выбранный вариант hourly согласован с UI настроек; reception согласован с этапом 12.
+Задача: обнаруживать ручные изменения/удаления событий в рабочем календаре TangoDB.
+
+Запускать только после явного продуктового решения (это Этап 5 плана, не блокирует MVP).
+
+Что сделать (по §13):
+1. tangodb/supabase/functions/google-calendar-webhook/index.ts — публичный HTTPS endpoint, быстро отвечает 2xx и кладёт сигнал в очередь (например, тот же calendar_sync_outbox с operation = 'reconcile_member' или отдельный тип задачи).
+2. events.watch только на выбранный рабочий календарь (не на основной личный) при подключении/включении observation-режима; хранить channel_id, resource_id, expiration, sync_token в member_google_calendar_bindings или отдельной таблице.
+3. Обновление watch до истечения (отдельная cron-задача); канал не продлевается сам.
+4. При сигнале — incremental sync через syncToken; при HTTP 410 — сброс sync token и полный re-sync рабочего календаря.
+5. Проверка сохранённых `X-Goog-Channel-ID`, `X-Goog-Resource-ID` и непредсказуемого `X-Goog-Channel-Token` constant-time сравнением. Google не подписывает webhook body; OAuth/refresh token в channel token не помещать.
+6. При обнаружении удаления пользователем установить `sync_status='detached'`, `detach_reason='user_deleted'` в google_calendar_event_links — НЕ создавать событие заново автоматически, НЕ трактовать как отмену урока в CRM (§13, §19).
+
+Не делать: не изменять бизнес-данные CRM (personal_lessons, schedule_slots) на основе webhook напрямую.
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §5 «Изменение события в Google», §13
+- https://developers.google.com/workspace/calendar/api/guides/sync
+- https://developers.google.com/workspace/calendar/api/v3/reference/events/watch
 ```
 
 -------------------------------------------------------
-ЭТАП 14 — Локации, fixed period, архив и фильтры
-✅ ВЫПОЛНЕН 2026-08-03
+ЭТАП 13 — Free/busy при записи урока (опционально, Этап 5)
 -------------------------------------------------------
 
 ```
-Fixed-period venue cost — суммы по локациям при совместимости со старым org-wide (F1/F8 смежно с архивом тарифов). Миграция и расчёт: старые версии дают прежний результат. У тарифов арендаторов: UI архивации через `status`, фильтр active/archived, группировка/фильтр по локации. Архивация = write тарифов (owner/director / `canWriteTariffs` после этапа 7), не accountant с read-only. Архив нельзя выбрать для новой брони, история старых аренд сохраняется. Тесты: legacy org-wide, location-specific, архив, историческая ссылка, RBAC архива. Критерий готовности: сеть ведёт суммы по залам без поломки прошлых периодов.
+Задача: предупреждение о занятости преподавателя в его личном Google-календаре при записи урока.
+
+Запускать только после явного продуктового решения и отдельного согласия пользователя на доп. scope (§5 «Версия 2», §11).
+
+Что сделать:
+1. Отдельный OAuth scope запрашивается incremental consent по явному действию пользователя в IntegrationsSettingsPage (расширение Промпта 2/4), не автоматически при базовом подключении: `calendar.freebusy` — если проверяется только собственная занятость; `calendar.events.freebusy` — если пользователь выбирает несколько доступных календарей в `freebusy_calendar_ids` (см. §11).
+2. Добавить явный выбор календарей для проверки занятости (например, `freebusy_calendar_ids` в member binding; по умолчанию пусто). Нельзя молча считать выбранный рабочий TangoDB-календарь «личным».
+3. Edge Function google-calendar-freebusy/index.ts: принимает organization_member_id + диапазон времени, server-side определяет разрешённые calendar IDs и вызывает freebusy.query, возвращает только busy интервалы — без заголовков/описаний/участников. Не принимать произвольный calendarId от клиента.
+4. В формах добавления/редактирования урока (AddGroupLessonForm, AddPersonalLessonForm, EditLessonPopup) — не блокирующее предупреждение при пересечении с busy-интервалом (не блокирует сохранение, только toast/inline-подсказка).
+5. Не запрашивать и не кэшировать содержимое личных событий — только занято/свободно.
+
+Не делать: не делать эту проверку обязательной или блокирующей запись урока.
+
+Прочитай сначала:
+- tangodb_google_calendar_integration.md §5 «Версия 2», §11
+- tangodb/src/components/schedule/AddPersonalLessonForm.tsx, AddGroupLessonForm.tsx
 ```
 
 -------------------------------------------------------
-ЭТАП 15 — Прозрачная история версий venue cost
-✅ ВЫПОЛНЕН 2026-08-03
+ЭТАП 14 — Регрессия и чек-лист тестирования
 -------------------------------------------------------
 
 ```
-Read-only просмотр accepted-версии: полная матрица правил, scope, tier, даты, режим (F10). Протяни `accepted_by` / `accepted_at` в `mapVenueCostVersion` и UI с именем из team (F28). Действие «копировать в черновик» без изменения accepted. Diff draft vs active хотя бы по add/change/remove. Детали — lazy по раскрытию. Критерий готовности: аудит версии без случайного нового draft.
-```
+Задача: проверить реализацию интеграции с Google Calendar после Промптов 1–11 (12–13 — если были выполнены).
 
--------------------------------------------------------
-ЭТАП 16 — Закрытие gap venue cost
-✅ ВЫПОЛНЕН 2026-08-03
--------------------------------------------------------
+Что проверить (минимальный набор — §17 документа):
+1. npm run lint и сборка в tangodb/.
+2. RLS: другой пользователь и другой tenant не видят чужой credential/binding/outbox (user_google_accounts, member_google_calendar_bindings, google_calendar_event_links, calendar_sync_outbox).
+3. OAuth: подключение, переподключение после revoked (refresh_token переиздаётся благодаря prompt=consent), отзыв доступа, пользователь в двух организациях с разными календарями, два преподавателя с разными Google-аккаунтами.
+4. Personal lessons: create/update/soft-cancel (cancelled_at)/hard delete (delete_personal_lesson, delete_personal_lesson_series_from_date) — каждое действие доходит до Google без дублей.
+   - отдельно проверить смену date/teacher/calendar: старый event удаляется, stale link не остаётся;
+5. Групповые occurrence: обычная серия, перенос (move_group_lesson_occurrence), одиночная отмена (schedule_occurrence_cancellations), отпуск (cancel_teacher_group_vacation), смена преподавателя.
+6. Мероприятия: sync идёт в org-level календарь, а не в произвольный created_by.
+7. Отказоустойчивость: событие уже удалено в Google вручную; 409/412/429/5xx с корректным ограниченным повтором без дубля; два worker одновременно claim-ят очередь без двойной обработки; worker «упал» после успешного events.insert, но до записи link (проверить, что reconciliation не создаёт дубль по extended property/детерминированному ID); календарь стал read-only/удалён.
+8. Смена organization_settings.timezone → массовая пересинхронизация будущих событий не ломает существующие links.
+9. privacy_mode: full_name/initials/hidden корректно меняют текст в Google event, включая pair/trio/quad (§7 версия 1.3).
+10. Отключение интеграции с сохранением и с удалением будущих events — оба сценария из §12.
+    - binding одной организации отключается без revoke Google grant, если аккаунт используется во второй организации;
+    - cleanup_pending корректно сбрасывается после удаления links;
+11. Неактивный участник (is_active=false) не получает новые Google events при upsert.
+12. Массовая первоначальная синхронизация (много будущих уроков) не превышает Google API quota (проверить наличие троттлинга/батчинга в worker).
+13. Логи не содержат refresh/access token и полных клиентских данных (§18).
 
-```
-Отдельное действие для ролей с manage venue cost (после этапа 7): принять draft или подтвердить временный gap с причиной и периодом (F30). Не требовать клиентский платёж для acknowledge. Покажи последствия для закрытых и будущих уроков; прошлое не пересчитывать молча. Аудит автора/времени; переиспользуй `venue_rule_acknowledged`, если семантика подходит. Тесты: истекшее правило, нет draft, accept, confirm gap. Критерий готовности: баннер ведёт к завершаемому действию уполномоченным пользователем.
-```
-
--------------------------------------------------------
-ЭТАП 17 — Первичные документы и фискальные реквизиты
-✅ ВЫПОЛНЕН 2026-08-03
--------------------------------------------------------
-
-```
-Сначала зафиксируй продуктовый scope по странам и юрлицам: CRM сама формирует первичку или экспортирует во внешнюю бухгалтерию (F24, F25). Не заявляй юридическое соответствие без подтверждённых требований. Для минимального scope: реквизиты организации, НДС/«без НДС», нумерация, версия документа, связь счёта/акта со строками аренды или формальный экспорт. Для платежа: настраиваемый фискальный статус, номер внешнего чека, касса/терминал, ID эквайринга, возвратный чек — включаются настройкой юрлица/страны. Audit и тесты уникальности номера, версий, возврата. Критерий готовности: прослеживаемый документ в CRM или полный однозначный пакет на экспорт.
-```
-
--------------------------------------------------------
-ЭТАП 18 — Массовое копирование правил
-✅ ВЫПОЛНЕН 2026-08-03
--------------------------------------------------------
-
-```
-В per-lesson редакторе: один набор правил на несколько преподавателей и копирование между локациями. Matching не должен давать неоднозначное совпадение нескольких правил с одинаковым приоритетом на один урок. Перед сохранением — счётчик создаваемых правил, конфликты, дубли; операция атомарна. «Все текущие преподаватели» = разворот в явные правила, если wildcard запрещён; объясни поведение для будущих педагогов. Тесты: bulk create, rollback при конфликте, копирование. Критерий готовности: матрица на 10 педагогов без ручного копипаста.
-```
-
--------------------------------------------------------
-ЭТАП 19 — Приоритеты и даты льготных окон
-✅ ВЫПОЛНЕН 2026-08-03
--------------------------------------------------------
-
-```
-UI для `priority`, `validFrom`, `validTo` льготного правила (F2, F3). Валидация пересечений: равный priority + тот же scope не дают ambiguous overlap; семантика большего priority описана явно. Даты — с timezone org и открытыми границами. В списке — порядок применения и период. Тесты: пересечения, равный priority, прошлое/будущее правило. Критерий готовности: ambiguous overlap устраняется из UI без правки БД.
-```
-
--------------------------------------------------------
-ЭТАП 20 — Упрощение UI, ошибки, пустые состояния и язык контуров
-✅ ВЫПОЛНЕН 2026-08-03
--------------------------------------------------------
-
-```
-Переработай `HallRentSettingsPage` / `RentalTariffsSettingsPage` / `VenueCostsSettingsPage`: без карточки-в-карточке и дублей подсказок (F5, F11). Ошибки venue draft — по полям/правилам и кодам backend, фокус на первый дефект (F9). Empty states — role-aware CTA. Разведи пользовательские формулировки дохода «аренда зала» и расхода «затраты студии / учёт зала» в настройках и смежных finance-подписях (F12); при затронутых строках закрытия урока — не «аренда с педагога» (§5), без смешивания с payroll. Бизнес-логику денег в этом этапе не менять. Design system — только если меняются общие токены. Критерий готовности: два контура понятны; ошибка чинится без общего toast `invalid`.
-```
-
--------------------------------------------------------
-ЭТАП 21 — Калькулятор ожидаемых затрат
-✅ ВЫПОЛНЕН 2026-08-03
--------------------------------------------------------
-
-```
-Калькулятор/смета в настройках venue cost без финансовых проводок. Вход: период, преподаватель, локация, дисциплина, число занятий и явка — или фактическое расписание. Тот же matching, что production-начисление; breakdown по правилам/занятиям/причинам «нет match». Явная пометка «прогноз». Данные — только через hook/`lib`, не из компонента в Supabase. Тесты: fixed-period, per-lesson tiers, mixed scope, нет правила. Критерий готовности: прогноз воспроизводим и совпадает с движком на тех же входах.
-```
-
--------------------------------------------------------
-ЭТАП 22 — Кассовый inbox неоплаченных аренд
-✅ ВЫПОЛНЕН 2026-08-03
--------------------------------------------------------
-
-```
-Операционный список «аренды к оплате» на дату/смену: сегодня, просроченные, частичные, переплаты. Долг и effective amount — канонические (этапы 2/5), без второй формулы в UI. Фильтры: локация, смена/кассир, арендатор, статус; быстрый переход к оплате; обновление после mutation. Доступ — операционное право кассы этапа 1; для `restricted_admin` — строго по политике этапа 12. Pagination и timezone. Query/UI-проверки в стиле репозитория (без Vitest). Критерий готовности: кассир закрывает очередь из одного экрана.
-```
-
--------------------------------------------------------
-ЭТАП 23 — Сценарий бухгалтера для создания брони
-✅ ВЫПОЛНЕН 2026-08-03
--------------------------------------------------------
-
-```
-Продуктовое решение: accountant создаёт/правит слот аренды в расписании или только сверяет финансы. Правка суммы уже закрыта этапом 6 — здесь не переоткрывать. Если нужны слоты — узкое permission без полного `schedule.write` на уроки/события + RBAC-тесты + согласованный backend helper. Если нет — не расширять права; из finance дать workflow эскалации к admin и статус расхождения. Решение — в `decision_log.md`. Критерий готовности: у бухгалтера явный проверяемый путь закрыть ошибку бронирования (слот), согласованный с этапом 6 (сумма).
-```
-
--------------------------------------------------------
-ФИНАЛ — Интеграционная проверка (после нужных этапов 1–23)
--------------------------------------------------------
-
-```
-Интеграционная проверка контура аренды зала после реализованных этапов. Новых функций нет, только фикс регрессий. Сквозные сценарии: fixed/hourly разовая; серия; частичная и полная оплата; переплата; счёт и аванс; сторно; отмена с возвратом/штрафом; долг; `operation_date` / закрытие периода; venue cost draft → accept → начисление; gap acknowledge; бухгалтер; operational admin-кассир; teacher и `restricted_admin` по политике этапа 12. Сверка суммы и остатка: сетка, popup, карточка арендатора, должники, журнал/регистр, revenue `count`/`byMethod`, CSV. Tenant isolation и RLS без лишнего ослабления. Запусти `npm run lint`, `npm run test:rbac`, `npm run test:venue-cost-preview` и релевантные `npm run test:db:*` для затронутых RPC. Итог: покрытие F1–F34 (F34 = часть F19), известные ограничения, rollout/rollback миграций.
+После исправлений — обновить .cursor/docs/ai/changelog.md и .cursor/docs/ai/architecture.md (новый модуль calendar-sync). Если найден и исправлен баг — добавить запись в lessons.md.
 ```

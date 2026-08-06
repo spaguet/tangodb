@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-06 — Google Calendar интеграция, Этап 0: зафиксированы MVP-решения (GCAL-0 в `decision_log.md`) — CRM outbound-only, отдельный календарь TangoDB, personal + group occurrence в MVP, `privacy_mode: initials`, отмена `delete`, горизонт 7/90 дней, reuse `organization_settings.timezone`, без sync аренды.
+
 2026-08-06 — «Расходы»: автоначисления зала показывают контекст урока (клиент/группа, дисциплина, время, локация) вместо сырого `lesson`; миграция `20260890000001` + `formatFinanceCostEntryTitle` (RU/EN).
 
 2026-08-06 — «Дебиторская задолженность»: сортировка списка (дата, имя, сумма долга) с локализацией RU/EN; по умолчанию — от прошлой даты к будущей (`FinanceDebtorsPage`, `sortDebtors` в `financeReports`).
