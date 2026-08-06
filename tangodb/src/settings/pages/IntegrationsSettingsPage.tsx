@@ -39,6 +39,7 @@ export default function IntegrationsSettingsPage() {
     setBinding,
     disconnect,
     verify,
+    syncFuture,
     invalidateAll,
   } = useGoogleCalendarIntegration();
 
@@ -196,6 +197,22 @@ export default function IntegrationsSettingsPage() {
     }
   };
 
+  const handleSyncFuture = async () => {
+    if (!memberId) return;
+    try {
+      await syncFuture.mutateAsync(memberId);
+      toast(t("integrations.googleCalendar.syncFutureSuccess"), "success");
+    } catch (err) {
+      toast(
+        resolveMutationError(
+          err instanceof Error ? err.message : undefined,
+          "integrations.googleCalendar.errorGeneric",
+          t
+        ),
+        "error"
+      );
+    }
+  };
   const handleVerify = async () => {
     if (!primaryAccount) return;
     try {
@@ -420,10 +437,15 @@ export default function IntegrationsSettingsPage() {
             </button>
             <button
               type="button"
-              disabled
-              title={t("integrations.googleCalendar.syncFutureSoon")}
+              onClick={() => void handleSyncFuture()}
+              disabled={!isConfigured || syncFuture.isPending}
               className={btnRefreshCls}
             >
+              {syncFuture.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
               {t("integrations.googleCalendar.syncFuture")}
             </button>
             <button

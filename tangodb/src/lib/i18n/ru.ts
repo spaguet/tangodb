@@ -419,6 +419,7 @@ export const RU: Record<I18nKey, string> = {
   "integrations.googleCalendar.verify": "Проверить подключение",
   "integrations.googleCalendar.verifySuccess": "Подключение работает",
   "integrations.googleCalendar.syncFuture": "Синхронизировать будущие уроки",
+  "integrations.googleCalendar.syncFutureSuccess": "Синхронизация будущих уроков поставлена в очередь",
   "integrations.googleCalendar.syncFutureSoon": "Скоро: полная синхронизация будущих уроков (этап 7)",
   "integrations.googleCalendar.disconnect": "Отключить",
   "integrations.googleCalendar.disconnectLeaveEvents": "Отключить, события оставить",

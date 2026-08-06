@@ -9,6 +9,7 @@ import {
   listGoogleCalendars,
   setGoogleCalendarBinding,
   startGoogleCalendarOAuth,
+  requestMemberCalendarReconcile,
   type GoogleAccountSummary,
   type GoogleCalendarListEntry,
   type MemberGoogleCalendarBinding,
@@ -76,6 +77,13 @@ export function useGoogleCalendarIntegration() {
     },
   });
 
+  const syncFutureMutation = useMutation({
+    mutationFn: async (organizationMemberId: string) => {
+      await requestMemberCalendarReconcile(organizationMemberId);
+      await invalidateAll();
+    },
+  });
+
   const primaryAccount: GoogleAccountSummary | null =
     accountsQuery.data?.find((a) => a.status === "active") ??
     accountsQuery.data?.[0] ??
@@ -101,6 +109,7 @@ export function useGoogleCalendarIntegration() {
     setBinding: setBindingMutation,
     disconnect: disconnectMutation,
     verify: verifyMutation,
+    syncFuture: syncFutureMutation,
     invalidateAll,
     refetch: async () => {
       await accountsQuery.refetch();

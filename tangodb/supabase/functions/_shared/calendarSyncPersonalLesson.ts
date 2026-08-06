@@ -858,6 +858,29 @@ export async function processCalendarSyncJob(
   }
 
   if (job.operation === "reconcile_member") {
+    const { data, error } = await admin.rpc("execute_member_personal_lessons_reconcile", {
+      p_organization_id: job.organization_id,
+      p_member_id: job.source_id,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const result = (data ?? {}) as {
+      skipped?: boolean;
+      upserts_enqueued?: number;
+      deletes_enqueued?: number;
+    };
+
+    logEvent("gcal_reconcile_member_complete", {
+      organization_id: job.organization_id,
+      member_id: job.source_id,
+      skipped: result.skipped ?? false,
+      upserts_enqueued: result.upserts_enqueued ?? 0,
+      deletes_enqueued: result.deletes_enqueued ?? 0,
+    });
+
     await markJobDone(admin, job.id);
     return;
   }

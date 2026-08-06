@@ -158,3 +158,43 @@ export async function disconnectGoogleCalendar(input: {
     google_account_id: input.googleAccountId,
   });
 }
+
+export interface CalendarSyncMetrics {
+  pending_count: number;
+  retry_count: number;
+  processing_count: number;
+  dead_count: number;
+  oldest_pending_at: string | null;
+}
+
+export async function requestMemberCalendarReconcile(
+  organizationMemberId: string
+): Promise<void> {
+  const { data, error } = await supabase.rpc("request_member_calendar_reconcile", {
+    p_organization_member_id: organizationMemberId,
+  });
+  if (error) throw new Error(error.message);
+  const payload = data as { ok?: boolean } | null;
+  if (payload && payload.ok !== true) {
+    throw new Error("reconcile_request_failed");
+  }
+}
+
+export async function retryCalendarSyncDeadJob(jobId: string): Promise<void> {
+  const { data, error } = await supabase.rpc("retry_calendar_sync_dead_job", {
+    p_job_id: jobId,
+  });
+  if (error) throw new Error(error.message);
+  const payload = data as { ok?: boolean } | null;
+  if (payload && payload.ok !== true) {
+    throw new Error("retry_failed");
+  }
+}
+
+export async function fetchOrganizationCalendarSyncMetrics(): Promise<CalendarSyncMetrics | null> {
+  const { data, error } = await supabase.rpc("get_organization_calendar_sync_metrics");
+  if (error) throw new Error(error.message);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return row as CalendarSyncMetrics;
+}

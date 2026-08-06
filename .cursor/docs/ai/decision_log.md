@@ -60,6 +60,19 @@
 - **Альтернативы:** полностью доверять серверной генерации Google ID (хуже для reconciliation при падении после insert); отдельные PostgREST SELECT+UPDATE вместо RPC claim (гонки между worker).
 - **Почему так:** Соответствует §7 (детерминированный ID), §10 (атомарный claim, desired_hash, `events.update` + `If-Match`), §12 (credential только на backend).
 
+### GCAL-3 — Cron и reconciliation персональных уроков (2026-08-06)
+
+- **Дата:** 2026-08-06
+- **Решение:**
+  1. **Scheduler:** Supabase Dashboard Cron (или внешний scheduler) → HTTP POST на Edge Functions с `CRON_SECRET`, по образцу `purge-expired-demo-orgs`. Не pg_cron в миграциях — URL и secret не хардкодятся в SQL.
+  2. **Тики:** `calendar-sync-worker` каждые 2 мин; `calendar-reconcile-personal` каждый час — только enqueue `reconcile_member` на активные bindings (`sync_personal`, `is_active`).
+  3. **Reconcile member:** SQL `execute_member_personal_lessons_reconcile` — сканирует CRM (не Google); будущие `personal_lessons` без synced/pending link → upsert; stale links (отмена, удаление, смена даты/преподавателя) → delete.
+  4. **Ручной reconcile:** RPC `request_member_calendar_reconcile` — участник для себя, owner/director для любого member; UI «Синхронизировать будущие уроки».
+  5. **Dead-letter:** `retry_calendar_sync_dead_job` — backend для Prompt 8; метрики `get_organization_calendar_sync_metrics` + `get_team_calendar_sync_metrics`.
+- **Контекст:** Промпт 7 `tangodb_google_calendar_integration.md` — регулярный worker и восстановление пропусков для персоналок.
+- **Альтернативы:** pg_cron + `net.http_post` в миграции (отклонено: секреты и project URL вне репозитория); inline reconcile в hourly cron без outbox (отклонено: таймауты Edge Function).
+- **Почему так:** Переиспользует существующий worker/outbox; reconcile_member идемпотентен и безопасен при повторном запуске; отделение частого worker-тика от редкого полного reconcile.
+
 ### REFUND-2 — Возврат с удержанием по тарифу разового посещения (2026-08-05)
 
 - **Решение:** В UI «Завершить с возвратом» для `lesson_count` добавить режим `single_visit_rate`: `refund = min(available, sale_price − used × single_visit_rate)`, где `used = lessons_total − lessons_left`. Тариф из прайса `single_visit` (фильтр по дисциплине) или ручной ввод. Сумма уходит в существующий `finish_subscription_with_refund`. Режим `pro_rata` остаётся умолчанием.

@@ -422,6 +422,7 @@ export const EN: Record<I18nKey, string> = {
   "integrations.googleCalendar.verify": "Verify connection",
   "integrations.googleCalendar.verifySuccess": "Connection is working",
   "integrations.googleCalendar.syncFuture": "Sync future lessons",
+  "integrations.googleCalendar.syncFutureSuccess": "Future lesson sync has been queued",
   "integrations.googleCalendar.syncFutureSoon": "Coming soon: full future-lesson sync (stage 7)",
   "integrations.googleCalendar.disconnect": "Disconnect",
   "integrations.googleCalendar.disconnectLeaveEvents": "Disconnect, keep events",

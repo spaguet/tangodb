@@ -87,4 +87,13 @@
 - **UI:** `OfflineBanner` (режим офлайн, счётчики, ссылка на сверку), `OfflineLimitedState` (нет/просрочен снимок), `useOnlineStatus.justConnectionRestored`.
 - **Безопасность:** `useOfflineSecurityReset` очищает данные при logout / смене org / user.
 
-## Записи
+## Google Calendar sync (GCAL)
+
+- **Outbox:** `calendar_sync_outbox` + `enqueue_calendar_sync` (триггеры на `personal_lessons`); worker — Edge Function `calendar-sync-worker`.
+- **Claim:** RPC `claim_calendar_sync_jobs` — атомарный lease, `FOR UPDATE SKIP LOCKED`, дедуп по `(organization_id, dedupe_key)`.
+- **Расписание (cron):** внешний scheduler или **Supabase Dashboard → Cron Jobs** с заголовком `x-cron-secret: <CRON_SECRET>` (как `purge-expired-demo-orgs`):
+  - `calendar-sync-worker` — каждые **2 мин** (`POST`, body `{}`, опционально `batch_size`);
+  - `calendar-reconcile-personal` — **каждый час** (`POST`, body `{}`) → RPC `run_personal_lessons_calendar_reconciliation` → enqueue `reconcile_member` на каждый активный binding с `sync_personal`.
+- **Reconcile:** `execute_member_personal_lessons_reconcile` — будущие персоналки без link → upsert; stale links → delete. Ручной запуск: RPC `request_member_calendar_reconcile` (кнопка в Integrations).
+- **Dead-letter:** `retry_calendar_sync_dead_job` — сброс `dead` → `pending` (owner/director — любая org-задача; teacher — только свои уроки).
+- **Метрики:** `get_organization_calendar_sync_metrics`, `get_team_calendar_sync_metrics` (owner/director, для Prompt 8).

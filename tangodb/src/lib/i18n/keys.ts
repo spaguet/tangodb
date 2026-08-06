@@ -384,6 +384,7 @@ export type I18nKey =
   | "integrations.googleCalendar.verify"
   | "integrations.googleCalendar.verifySuccess"
   | "integrations.googleCalendar.syncFuture"
+  | "integrations.googleCalendar.syncFutureSuccess"
   | "integrations.googleCalendar.syncFutureSoon"
   | "integrations.googleCalendar.disconnect"
   | "integrations.googleCalendar.disconnectLeaveEvents"
