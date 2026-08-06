@@ -1,8 +1,9 @@
 /**
- * Google Calendar API client — list/create calendars, access token from stored credential.
+ * Google Calendar API client — list/create calendars, events CRUD, access token from stored credential.
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { GoogleCalendarEventResource } from "./calendarSyncPayload.ts";
 import {
   byteaToUint8Array,
   decryptRefreshToken,
@@ -54,27 +55,12 @@ type GoogleAccountRow = {
   encrypted_refresh_token: unknown;
 };
 
-export async function obtainAccessTokenForAccount(
+async function refreshAccessTokenForAccountRow(
   admin: SupabaseClient,
   config: GoogleOAuthConfig,
   googleAccountId: string,
-  userId: string
+  row: GoogleAccountRow
 ): Promise<string> {
-  const { data: account, error } = await admin
-    .from("user_google_accounts")
-    .select("id, user_id, status, encrypted_refresh_token")
-    .eq("id", googleAccountId)
-    .maybeSingle();
-
-  if (error || !account) {
-    throw new GoogleCalendarApiError(404, "google_account_not_found", "Google account not found");
-  }
-
-  const row = account as GoogleAccountRow;
-  if (row.user_id !== userId) {
-    throw new GoogleCalendarApiError(403, "forbidden", "Google account does not belong to user");
-  }
-
   if (row.status === "revoked") {
     throw new GoogleCalendarApiError(401, "token_revoked", "Google account requires reconnection");
   }
@@ -122,6 +108,54 @@ export async function obtainAccessTokenForAccount(
     }
     throw err;
   }
+}
+
+export async function obtainAccessTokenForAccount(
+  admin: SupabaseClient,
+  config: GoogleOAuthConfig,
+  googleAccountId: string,
+  userId: string
+): Promise<string> {
+  const { data: account, error } = await admin
+    .from("user_google_accounts")
+    .select("id, user_id, status, encrypted_refresh_token")
+    .eq("id", googleAccountId)
+    .maybeSingle();
+
+  if (error || !account) {
+    throw new GoogleCalendarApiError(404, "google_account_not_found", "Google account not found");
+  }
+
+  const row = account as GoogleAccountRow;
+  if (row.user_id !== userId) {
+    throw new GoogleCalendarApiError(403, "forbidden", "Google account does not belong to user");
+  }
+
+  return refreshAccessTokenForAccountRow(admin, config, googleAccountId, row);
+}
+
+/** Service-role worker path — no end-user ownership check. */
+export async function obtainAccessTokenForGoogleAccount(
+  admin: SupabaseClient,
+  config: GoogleOAuthConfig,
+  googleAccountId: string
+): Promise<string> {
+  const { data: account, error } = await admin
+    .from("user_google_accounts")
+    .select("id, user_id, status, encrypted_refresh_token")
+    .eq("id", googleAccountId)
+    .maybeSingle();
+
+  if (error || !account) {
+    throw new GoogleCalendarApiError(404, "google_account_not_found", "Google account not found");
+  }
+
+  return refreshAccessTokenForAccountRow(
+    admin,
+    config,
+    googleAccountId,
+    account as GoogleAccountRow
+  );
 }
 
 async function parseGoogleApiError(res: Response): Promise<GoogleCalendarApiError> {
@@ -239,4 +273,117 @@ export async function loadGoogleOAuthConfigOrThrow(): Promise<GoogleOAuthConfig>
     throw new GoogleCalendarApiError(503, "service_unavailable", "Google OAuth not configured");
   }
   return config;
+}
+
+export type GoogleCalendarEventResponse = {
+  id: string;
+  etag: string;
+};
+
+function parseEventResponse(payload: Record<string, unknown>): GoogleCalendarEventResponse {
+  const id = typeof payload.id === "string" ? payload.id : "";
+  const etag = typeof payload.etag === "string" ? payload.etag : "";
+  if (!id) {
+    throw new GoogleCalendarApiError(500, "event_missing_id", "Google event response missing id");
+  }
+  return { id, etag };
+}
+
+export async function getCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  eventId: string
+): Promise<GoogleCalendarEventResponse> {
+  const res = await fetch(
+    `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!res.ok) {
+    throw await parseGoogleApiError(res);
+  }
+
+  const payload = await res.json() as Record<string, unknown>;
+  return parseEventResponse(payload);
+}
+
+export async function insertCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  payload: GoogleCalendarEventResource,
+  eventId?: string
+): Promise<GoogleCalendarEventResponse> {
+  const query = eventId ? `?eventId=${encodeURIComponent(eventId)}` : "";
+  const res = await fetch(
+    `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events${query}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!res.ok) {
+    throw await parseGoogleApiError(res);
+  }
+
+  const body = await res.json() as Record<string, unknown>;
+  return parseEventResponse(body);
+}
+
+export async function updateCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  eventId: string,
+  payload: GoogleCalendarEventResource,
+  etag?: string | null
+): Promise<GoogleCalendarEventResponse> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+  };
+  if (etag) {
+    headers["If-Match"] = etag;
+  }
+
+  const res = await fetch(
+    `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!res.ok) {
+    throw await parseGoogleApiError(res);
+  }
+
+  const body = await res.json() as Record<string, unknown>;
+  return parseEventResponse(body);
+}
+
+export async function deleteCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  eventId: string
+): Promise<void> {
+  const res = await fetch(
+    `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  if (res.status === 404 || res.status === 410) {
+    return;
+  }
+
+  if (!res.ok) {
+    throw await parseGoogleApiError(res);
+  }
 }

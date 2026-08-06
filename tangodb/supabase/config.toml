@@ -422,6 +422,9 @@ verify_jwt = true
 [functions.google-calendar-set-binding]
 verify_jwt = true
 
+[functions.calendar-sync-worker]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

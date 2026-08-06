@@ -47,7 +47,7 @@ TangoDB — Google Calendar: этапы и промты
 
 [✅]  5   Outbox + event links + enqueue для personal lessons — 2026-08-06
          (можно начать после этапа 1, параллельно с 2–4)
-[ ]  6   Worker calendar-sync-worker: ядро upsert/delete
+[✅]  6   Worker calendar-sync-worker: ядро upsert/delete — 2026-08-06
 [ ]  7   Cron, retry/backoff, reconciliation (персональные)
 [ ]  8   UI статуса синхронизации (урок / настройки / команда)
 
@@ -75,7 +75,7 @@ TangoDB — Google Calendar: этапы и промты
 СЛЕДУЮЩИЙ ШАГ
 =======================================================
 
-Сейчас: этап 6 — Worker calendar-sync-worker: ядро upsert/delete.
+Сейчас: этап 7 — Cron, retry/backoff, reconciliation (персональные).
 
 =======================================================
 СПРАВКА: ЧТО ЗА ЧТО ОТВЕЧАЕТ

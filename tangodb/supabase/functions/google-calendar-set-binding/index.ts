@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
       timezone,
       enabled: true,
       sync_group: false,
-      sync_personal: false,
+      sync_personal: true,
       sync_events: false,
       privacy_mode: "initials",
       cleanup_pending: false,

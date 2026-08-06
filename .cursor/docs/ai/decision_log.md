@@ -48,6 +48,18 @@
 - **Альтернативы:** Supabase Vault `refresh_token_secret_id`; мягкая политика duplicate `google_subject` с переносом привязки.
 - **Почему так:** Vault не развёрнут в текущем стеке; жёсткий UNIQUE предотвращает split-brain credential; defense in depth через отсутствие PostgREST grants на секретные таблицы.
 
+### GCAL-2 — Детерминированный Google event ID и worker lease (2026-08-06)
+
+- **Дата:** 2026-08-06
+- **Решение:**
+  1. **Google event ID:** при `events.insert` передаём `eventId` = UUID урока без дефисов (32 hex-символа, допустимый base32hex для Google Calendar API). Это даёт идемпотентный insert и восстановление после 404 без дубля. Возвращённый Google `id` и `etag` всё равно сохраняются в `google_calendar_event_links`.
+  2. **Claim очереди:** RPC `claim_calendar_sync_jobs(batch_size, worker_id, lease_seconds)` — одна транзакция: просроченные `processing` → `retry`, затем `FOR UPDATE SKIP LOCKED` + lease; не выдаёт задачу, если тот же `(organization_id, dedupe_key)` уже в непросроченном `processing`.
+  3. **Worker auth:** Edge Function `calendar-sync-worker` — `verify_jwt = false`, доступ по `CRON_SECRET` (как `purge-expired-demo-orgs`).
+  4. **sync_personal при подключении:** `google-calendar-set-binding` выставляет `sync_personal: true` (этап 2 — персональные уроки); worker пропускает upsert при `sync_personal = false`.
+- **Контекст:** Промпт 6 `tangodb_google_calendar_integration.md` — ядро upsert/delete для `personal_lesson`.
+- **Альтернативы:** полностью доверять серверной генерации Google ID (хуже для reconciliation при падении после insert); отдельные PostgREST SELECT+UPDATE вместо RPC claim (гонки между worker).
+- **Почему так:** Соответствует §7 (детерминированный ID), §10 (атомарный claim, desired_hash, `events.update` + `If-Match`), §12 (credential только на backend).
+
 ### REFUND-2 — Возврат с удержанием по тарифу разового посещения (2026-08-05)
 
 - **Решение:** В UI «Завершить с возвратом» для `lesson_count` добавить режим `single_visit_rate`: `refund = min(available, sale_price − used × single_visit_rate)`, где `used = lessons_total − lessons_left`. Тариф из прайса `single_visit` (фильтр по дисциплине) или ручной ввод. Сумма уходит в существующий `finish_subscription_with_refund`. Режим `pro_rata` остаётся умолчанием.
