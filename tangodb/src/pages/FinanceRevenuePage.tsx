@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, TrendingUp, Clock3 } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
+import FinanceMonthExportButton from "../components/finance/FinanceMonthExportButton";
 import { usePayments, getPaymentMethodLabel } from "../hooks/usePayments";
 import {
   useCompleteSubscriptionRefund,
@@ -18,6 +20,7 @@ import {
   shiftMonth,
 } from "../lib/financeReports";
 import { currentYearMonth, formatCurrency, formatMonthTitle } from "../lib/utils";
+import { isFutureYearMonth, readFinanceMonthFromSearch } from "../lib/financeMonthUrl";
 import { useToast } from "../App";
 import { resolveMutationError } from "../lib/resolveMutationError";
 import { btnAddCls } from "../components/ui/buttonStyles";
@@ -26,7 +29,11 @@ export default function FinanceRevenuePage() {
   const { t, locale, plural, formatDate } = useI18n();
   const toast = useToast();
   const completeRefund = useCompleteSubscriptionRefund();
-  const [yearMonth, setYearMonth] = useState(currentYearMonth());
+  const [searchParams] = useSearchParams();
+  const [yearMonth, setYearMonth] = useState(
+    () => readFinanceMonthFromSearch(searchParams) ?? currentYearMonth()
+  );
+  const canGoNextMonth = !isFutureYearMonth(shiftMonth(yearMonth, 1));
   const range = monthDateRange(yearMonth);
   const paymentsQuery = usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
   const refundsQuery = useSubscriptionRefunds();
@@ -76,7 +83,9 @@ export default function FinanceRevenuePage() {
             <TrendingUp className="w-4 h-4 text-indigo-500" />
             <h2 className="font-sans text-sm font-semibold text-slate-800">{t("finance.revenue.title")}</h2>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <FinanceMonthExportButton yearMonth={yearMonth} />
+            <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setYearMonth((m) => shiftMonth(m, -1))}
@@ -100,11 +109,13 @@ export default function FinanceRevenuePage() {
             <button
               type="button"
               onClick={() => setYearMonth((m) => shiftMonth(m, 1))}
-              className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              disabled={!canGoNextMonth}
+              className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
+            </div>
           </div>
         </div>
 

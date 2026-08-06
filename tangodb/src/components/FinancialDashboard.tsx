@@ -18,12 +18,10 @@ import {
   RefreshCw,
 } from "lucide-react";
 import {
-  aggregatePaymentStats,
-  aggregatePaymentsByDay,
-  aggregatePaymentsByMonth,
   buildClassLocationMap,
   buildClassTeacherMap,
   buildDaySeries,
+  buildExtendedTrendPoints,
   buildMonthSeries,
   buildRevenueSplit,
   buildTopClientsByRevenue,
@@ -32,7 +30,10 @@ import {
   computeMomChangePercent,
   computeOccupancyStats,
   countNewClientsInMonth,
+  extendedNetTotalForMonth,
+  otherIncomeInMonth,
   refundsInMonth,
+  rentalEntriesInMonth,
   formatMomPercent,
   formatOccupancyPercent,
   paymentsInMonth,
@@ -40,12 +41,14 @@ import {
   shiftMonth,
   sumDebtorAmounts,
   monthDateRange,
+  monthTrendRange,
   type MonthlyRevenuePoint,
   type RevenueRankEntry,
   type RevenueSplitKey,
   type RevenueSplitSegment,
   type RevenueTrendPeriod,
 } from "../lib/financeReports";
+import { financePathWithMonth, isFutureYearMonth } from "../lib/financeMonthUrl";
 import {
   currentYearMonth,
   formatCurrency,
@@ -66,19 +69,21 @@ import { useOtherIncome } from "../hooks/useOtherIncome";
 import { useRentalPayments } from "../hooks/useRentalPayments";
 import { usePermissions } from "../hooks/usePermissions";
 import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
-import { useRecalculateTeacherSettlement, useTeacherSettlements } from "../hooks/usePayroll";
+import { useTeacherSettlements } from "../hooks/usePayroll";
 import { useSchedule } from "../hooks/useSchedule";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useSubscriptions } from "../hooks/useSubscriptions";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import { useSingleVisits } from "../hooks/useSingleVisits";
 import AppSelect from "./ui/AppSelect";
+import QueryErrorState from "./ui/QueryErrorState";
 
 const SPLIT_COLORS: Record<RevenueSplitKey, string> = {
   subscription: "bg-indigo-500",
   personal: "bg-indigo-700",
   single_visit: "bg-indigo-400",
   other: "bg-slate-400",
+  rental: "bg-violet-500",
 };
 
 function formatShortMonth(yearMonth: string, locale: string | null): string {
@@ -427,42 +432,49 @@ export default function FinancialDashboard() {
   const { t, locale, plural } = useI18n();
   const { can } = usePermissions();
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
-  const canWritePayroll = can("payroll.write");
   const canReadFinance = can("finance.read");
+  const canShowOperationalAnalytics = can("reports.operational");
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
   const [trendPeriod, setTrendPeriod] = useState<RevenueTrendPeriod>("6months");
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
+  const canGoNextMonth = !isFutureYearMonth(shiftMonth(statsMonth, 1));
 
   const trendFetchMonths = revenueTrendMonthCount(trendPeriod);
+  const trendDataRange = useMemo(() => {
+    if (trendPeriod === "month") return monthDateRange(statsMonth);
+    return monthTrendRange(statsMonth, trendFetchMonths);
+  }, [statsMonth, trendPeriod, trendFetchMonths]);
   const paymentsQuery = usePaymentsTrend(statsMonth, trendFetchMonths);
   const refundsQuery = useSubscriptionRefunds();
   const expensesQuery = useExpensesForMonth(statsMonth);
   const monthRange = useMemo(() => monthDateRange(statsMonth), [statsMonth]);
   const financeCostsQuery = useFinanceCosts(monthRange.dateFrom, monthRange.dateTo);
   const otherIncomeQuery = useOtherIncome({
-    dateFrom: monthRange.dateFrom,
-    dateTo: monthRange.dateTo,
+    dateFrom: trendDataRange.dateFrom,
+    dateTo: trendDataRange.dateTo,
   });
   const rentalPaymentsQuery = useRentalPayments({
-    dateFrom: monthRange.dateFrom,
-    dateTo: monthRange.dateTo,
+    dateFrom: trendDataRange.dateFrom,
+    dateTo: trendDataRange.dateTo,
   });
   const payrollQuery = useTeacherSettlements(statsMonth);
-  const recalculatePayroll = useRecalculateTeacherSettlement();
   const recalculateVenueCosts = useRecalculatePendingVenueCosts();
   const venueRecalcIdempotencyKey = useMemo(() => crypto.randomUUID(), [statsMonth]);
   const debtorsQuery = useFinancialDebtors();
-  const clientsQuery = useClients();
-  const attendanceQuery = useAttendanceRecords(statsMonth);
+  const clientsQuery = useClients({ enabled: canShowOperationalAnalytics });
+  const attendanceQuery = useAttendanceRecords(statsMonth, { enabled: canShowOperationalAnalytics });
   const personalLessonsQuery = usePersonalLessons({
     yearMonth: statsMonth,
-    enabled: personalLessonsEnabled,
+    enabled: personalLessonsEnabled && canShowOperationalAnalytics,
   });
-  const scheduleQuery = useSchedule();
-  const subscriptionGroupsQuery = useSubscriptionGroups();
-  const subscriptionsQuery = useSubscriptions();
-  const teamQuery = useTeamMembers();
-  const singleVisitsQuery = useSingleVisits({ yearMonth: statsMonth });
+  const scheduleQuery = useSchedule({ enabled: canShowOperationalAnalytics });
+  const subscriptionGroupsQuery = useSubscriptionGroups({ enabled: canShowOperationalAnalytics });
+  const subscriptionsQuery = useSubscriptions({ enabled: canShowOperationalAnalytics });
+  const teamQuery = useTeamMembers({ enabled: canShowOperationalAnalytics });
+  const singleVisitsQuery = useSingleVisits({
+    yearMonth: statsMonth,
+    enabled: canShowOperationalAnalytics,
+  });
 
   const financialStatsLoading =
     paymentsQuery.isLoading ||
@@ -472,45 +484,40 @@ export default function FinancialDashboard() {
 
   const receivablesLoading = debtorsQuery.isLoading;
 
-  const expensesLoading =
-    expensesQuery.isLoading ||
-    (financeCostsQuery.isLoading && !financeCostsQuery.isError) ||
-    recalculateVenueCosts.isPending;
+  const financialStatsError =
+    paymentsQuery.isError ||
+    refundsQuery.isError ||
+    otherIncomeQuery.isError ||
+    rentalPaymentsQuery.isError;
 
-  const profitLoading =
-    financialStatsLoading ||
-    expensesLoading ||
-    payrollQuery.isLoading ||
-    recalculatePayroll.isPending;
+  const expensesLoading =
+    expensesQuery.isLoading || (financeCostsQuery.isLoading && !financeCostsQuery.isError);
+
+  const profitLoading = financialStatsLoading || expensesLoading || payrollQuery.isLoading;
 
   const analyticsLoading =
-    clientsQuery.isLoading ||
-    attendanceQuery.isLoading ||
-    (personalLessonsEnabled && personalLessonsQuery.isLoading) ||
-    scheduleQuery.isLoading ||
-    subscriptionGroupsQuery.isLoading ||
-    teamQuery.isLoading ||
-    singleVisitsQuery.isLoading;
+    canShowOperationalAnalytics &&
+    (clientsQuery.isLoading ||
+      attendanceQuery.isLoading ||
+      subscriptionsQuery.isLoading ||
+      (personalLessonsEnabled && personalLessonsQuery.isLoading) ||
+      scheduleQuery.isLoading ||
+      subscriptionGroupsQuery.isLoading ||
+      teamQuery.isLoading ||
+      singleVisitsQuery.isLoading);
 
-  useEffect(() => {
-    const queries = [
-      paymentsQuery,
-      expensesQuery,
-      financeCostsQuery,
-      otherIncomeQuery,
-      rentalPaymentsQuery,
-      payrollQuery,
-      debtorsQuery,
-      clientsQuery,
-      attendanceQuery,
-      scheduleQuery,
-      subscriptionGroupsQuery,
-      teamQuery,
-      singleVisitsQuery,
-      ...(personalLessonsEnabled ? [personalLessonsQuery] : []),
-    ];
-    void Promise.all(queries.map((query) => query.refetch()));
-  }, []);
+  const trendContext = useMemo(
+    () => ({
+      payments: paymentsQuery.data ?? [],
+      refunds: refundsQuery.data ?? [],
+      otherIncome: (otherIncomeQuery.data ?? []).map((row) => ({
+        amount: row.amount,
+        createdAt: row.createdAt,
+      })),
+      rentalEntries: rentalPaymentsQuery.data ?? [],
+    }),
+    [paymentsQuery.data, refundsQuery.data, otherIncomeQuery.data, rentalPaymentsQuery.data]
+  );
 
   const monthSeries = useMemo(() => {
     if (trendPeriod === "month") return buildDaySeries(statsMonth);
@@ -518,21 +525,22 @@ export default function FinancialDashboard() {
   }, [statsMonth, trendPeriod, trendFetchMonths]);
 
   const trendPoints = useMemo(() => {
-    const payments = paymentsQuery.data ?? [];
-    if (trendPeriod === "month") {
-      return aggregatePaymentsByDay(payments, monthSeries);
-    }
-    return aggregatePaymentsByMonth(payments, monthSeries);
-  }, [paymentsQuery.data, monthSeries, trendPeriod]);
+    const mode = trendPeriod === "month" ? ("day" as const) : ("month" as const);
+    return buildExtendedTrendPoints(monthSeries, trendContext, mode);
+  }, [monthSeries, trendContext, trendPeriod]);
 
   const stats = useMemo(() => {
     const monthPayments = paymentsInMonth(paymentsQuery.data ?? [], statsMonth);
     const monthRefunds = refundsInMonth(refundsQuery.data ?? [], statsMonth);
-    const otherFromTable = (otherIncomeQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
+    const otherFromTable = otherIncomeInMonth(
+      (otherIncomeQuery.data ?? []).map((row) => ({ amount: row.amount, createdAt: row.createdAt })),
+      statsMonth
+    );
+    const rentalForMonth = rentalEntriesInMonth(rentalPaymentsQuery.data ?? [], statsMonth);
     const allPending = (refundsQuery.data ?? []).filter((refund) => refund.status === "pending");
     const base = buildExtendedRevenueStats(monthPayments, monthRefunds, {
       otherIncomeAmount: otherFromTable,
-      rentalRegisterEntries: rentalPaymentsQuery.data ?? [],
+      rentalRegisterEntries: rentalForMonth,
     });
     return {
       ...base,
@@ -548,17 +556,13 @@ export default function FinancialDashboard() {
   ]);
 
   const financeCostsUnavailable = financeCostsQuery.isError;
+  const teacherExpenseTotal = financeCostsQuery.data?.teacherExpenseTotal ?? 0;
   const expensesTotal = useMemo(() => {
     if (financeCostsQuery.data) return financeCostsQuery.data.total;
     return sumExpenses(expensesQuery.data ?? []);
   }, [financeCostsQuery.data, expensesQuery.data]);
   const venueCostsTotal = financeCostsQuery.data?.venueTotal ?? 0;
   const manualExpensesTotal = financeCostsQuery.data?.manualTotal ?? sumExpenses(expensesQuery.data ?? []);
-
-  useEffect(() => {
-    if (!canWritePayroll) return;
-    void recalculatePayroll.mutateAsync(statsMonth);
-  }, [statsMonth, canWritePayroll]);
 
   const handleRecalculateVenueCosts = async () => {
     if (!canReadFinance) return;
@@ -586,14 +590,14 @@ export default function FinancialDashboard() {
     [payrollQuery.data]
   );
 
-  const profit = stats.netTotal - expensesTotal - payrollAccrued;
+  const profit =
+    financeCostsUnavailable ? null : stats.netTotal - expensesTotal - payrollAccrued;
 
   const momPercent = useMemo(() => {
     const previousMonth = shiftMonth(statsMonth, -1);
-    const previousTotal =
-      trendPoints.find((point) => point.month === previousMonth)?.total ?? 0;
+    const previousTotal = extendedNetTotalForMonth(previousMonth, trendContext);
     return computeMomChangePercent(stats.netTotal, previousTotal);
-  }, [stats.netTotal, statsMonth, trendPoints]);
+  }, [stats.netTotal, statsMonth, trendContext]);
 
   const revenueSplit = useMemo(() => {
     const segments = buildRevenueSplit(stats);
@@ -672,6 +676,7 @@ export default function FinancialDashboard() {
     if (key === "subscription") return t("dashboard.subscriptions");
     if (key === "personal") return t("dashboard.personal");
     if (key === "single_visit") return t("dashboard.singleVisits");
+    if (key === "rental") return t("finance.revenue.rental");
     return t("finance.revenue.other");
   };
 
@@ -693,6 +698,17 @@ export default function FinancialDashboard() {
 
   return (
     <div id="panel-dashboard" className="panel-page-stack">
+      {financialStatsError ? (
+        <QueryErrorState
+          message={t("dashboard.financialStatsError")}
+          onRetry={() => {
+            void paymentsQuery.refetch();
+            void refundsQuery.refetch();
+            void otherIncomeQuery.refetch();
+            void rentalPaymentsQuery.refetch();
+          }}
+        />
+      ) : null}
       <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-3">
         <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
           <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
@@ -723,7 +739,8 @@ export default function FinancialDashboard() {
             <button
               type="button"
               onClick={() => setStatsMonth((m) => shiftMonth(m, 1))}
-              className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              disabled={!canGoNextMonth}
+              className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
@@ -837,6 +854,12 @@ export default function FinancialDashboard() {
                 ) : (
                   <> · {t("venueCosts.finance.venueTotal")}: {formatCurrency(venueCostsTotal)}</>
                 )}
+                {!financeCostsUnavailable && teacherExpenseTotal > 0 ? (
+                  <>
+                    {" "}
+                    · {t("venueCosts.finance.teacherExpenseTotal")}: {formatCurrency(teacherExpenseTotal)}
+                  </>
+                ) : null}
               </p>
             ) : null}
           </div>
@@ -845,7 +868,7 @@ export default function FinancialDashboard() {
               {t("dashboard.payrollAccrued")}
             </p>
             <DashboardStatValue
-              loading={payrollQuery.isLoading || recalculatePayroll.isPending}
+              loading={payrollQuery.isLoading}
               className="text-xl font-semibold text-slate-700 mt-0.5"
             >
               {formatCurrency(payrollAccrued)}
@@ -859,12 +882,14 @@ export default function FinancialDashboard() {
             <DashboardStatValue
               loading={profitLoading}
               className={`text-xl font-semibold mt-0.5 ${
-                profit >= 0 ? "text-indigo-700" : "text-rose-700"
+                profit === null ? "text-slate-500" : profit >= 0 ? "text-indigo-700" : "text-rose-700"
               }`}
             >
-              {formatCurrency(profit)}
+              {profit === null ? "—" : formatCurrency(profit)}
             </DashboardStatValue>
-            <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.profitHint")}</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              {financeCostsUnavailable ? t("dashboard.profitUnavailable") : t("dashboard.profitHint")}
+            </p>
           </div>
         </div>
 
@@ -926,6 +951,8 @@ export default function FinancialDashboard() {
           </div>
         </div>
 
+        {canShowOperationalAnalytics ? (
+          <>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1 border-t border-slate-100">
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider flex items-center gap-1">
@@ -976,13 +1003,15 @@ export default function FinancialDashboard() {
             loading={analyticsLoading || paymentsQuery.isLoading}
           />
         </div>
+          </>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <motion.button
           type="button"
           whileHover={{ y: -2 }}
-          onClick={() => navigate("/finance/revenue")}
+          onClick={() => navigate(financePathWithMonth("/finance/revenue", statsMonth))}
           className="bg-white rounded-xl px-3 py-3 border border-slate-200/90 shadow-xs text-left hover:shadow-sm transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between">
@@ -1016,7 +1045,7 @@ export default function FinancialDashboard() {
         <motion.button
           type="button"
           whileHover={{ y: -2 }}
-          onClick={() => navigate("/finance/payments")}
+          onClick={() => navigate(financePathWithMonth("/finance/payments", statsMonth))}
           className="bg-white rounded-xl px-3 py-3 border border-slate-200/90 shadow-xs text-left hover:shadow-sm transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between">

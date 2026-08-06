@@ -6,6 +6,8 @@ export interface Expense {
   category: ExpenseCategory;
   description: string;
   expenseDate: string;
+  payee: string;
+  documentNumber: string;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -16,4 +18,6 @@ export interface ExpenseInput {
   category: ExpenseCategory;
   description: string;
   expenseDate: string;
+  payee?: string;
+  documentNumber?: string;
 }

@@ -6,7 +6,8 @@ import DatePickerField from "../components/ui/DatePickerField";
 import { searchFieldCls } from "../components/ui/AppSelect";
 import { useCorrectionsReport } from "../hooks/usePaymentCorrections";
 import { useI18n } from "../hooks/useI18n";
-import { formatCurrency } from "../lib/utils";
+import { formatCurrency, currentYearMonth } from "../lib/utils";
+import { monthDateRange } from "../lib/financeReports";
 import { getPaymentMethodLabel } from "../hooks/usePayments";
 import {
   filterVisibleCorrectionPayments,
@@ -126,8 +127,9 @@ function PaymentCorrectionRow({
 
 export default function FinanceCorrectionsPage() {
   const { t, formatDateTime, formatDate, plural } = useI18n();
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const defaultRange = monthDateRange(currentYearMonth());
+  const [dateFrom, setDateFrom] = useState(defaultRange.dateFrom);
+  const [dateTo, setDateTo] = useState(defaultRange.dateTo);
   const [search, setSearch] = useState("");
 
   const reportQuery = useCorrectionsReport(dateFrom || undefined, dateTo || undefined);

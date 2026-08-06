@@ -631,6 +631,7 @@ export interface FinanceCostsSummary {
   entries: FinanceCostEntry[];
   manualTotal: number;
   venueTotal: number;
+  teacherExpenseTotal: number;
   total: number;
 }
 
@@ -667,6 +668,7 @@ export function useFinanceCosts(dateFrom: string, dateTo: string, enabled = true
         entries,
         manualTotal: Number(result.manual_total) || 0,
         venueTotal: Number(result.venue_total) || 0,
+        teacherExpenseTotal: Number(result.teacher_expense_total) || 0,
         total: Number(result.total) || 0,
       };
     },

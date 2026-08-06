@@ -227,13 +227,14 @@ export function computeSubscriptionAttendanceStats(
   return stats;
 }
 
-export function useAttendanceRecords(yearMonth?: string) {
+export function useAttendanceRecords(yearMonth?: string, options?: { enabled?: boolean }) {
   const { enabled, withOrgId } = useOrgQueryScope();
   const baseKey = yearMonth ? [...attendanceQueryKey, yearMonth] : attendanceQueryKey;
+  const queryEnabled = enabled && (options?.enabled ?? true);
 
   return useQuery({
     queryKey: withOrgId(baseKey),
-    enabled,
+    enabled: queryEnabled,
     queryFn: async () => {
       let query = supabase
         .from("attendance")

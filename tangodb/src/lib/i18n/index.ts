@@ -21,4 +21,4 @@ export {
   getWeekStartOptions,
   getTeamRolePresets,
 } from "./navHelpers";
-export type { NavItem, NavSection, MobileTabItem } from "./navHelpers";
+export type { NavItem, NavSection, MobileTabItem, FinanceNavItem, FinanceNavSection } from "./navHelpers";

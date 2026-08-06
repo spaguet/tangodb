@@ -17,16 +17,55 @@ import {
 } from "../hooks/useExpenses";
 import { useFinanceCosts, useVenueCostRuleStatus } from "../hooks/useVenueCosts";
 import VenueRuleExpiryNotice from "../components/venue-costs/VenueRuleExpiryNotice";
+import FinanceMonthExportButton from "../components/finance/FinanceMonthExportButton";
 import { usePermissions } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
 import { EXPENSE_CATEGORIES, expenseCategoryKey } from "../lib/expenseCategories";
 import { canManageVenueCostRules } from "../lib/permissions";
 import { resolveMutationError } from "../lib/resolveMutationError";
-import { formatCurrency } from "../lib/utils";
+import { currentYearMonth, formatCurrency } from "../lib/utils";
+import { monthDateRange } from "../lib/financeReports";
 import { toISODateLocal } from "../lib/scheduleWeek";
 import type { Expense, ExpenseCategory, ExpenseInput } from "../types/expense";
+import type { FinanceCostEntry } from "../hooks/useVenueCosts";
 
 type CategoryFilter = "all" | ExpenseCategory;
+
+function isExpenseCategory(value: string): value is ExpenseCategory {
+  return value === "rent" || value === "utilities" || value === "marketing" || value === "salary" || value === "other";
+}
+
+function FinanceCostEntryRow({
+  entry,
+  fallbackTitle,
+  formatDate,
+  categoryLabel,
+}: {
+  entry: FinanceCostEntry;
+  fallbackTitle: string;
+  formatDate: ReturnType<typeof useI18n>["formatDate"];
+  categoryLabel: (category: ExpenseCategory) => string;
+}) {
+  const categorySuffix = isExpenseCategory(entry.category) ? ` · ${categoryLabel(entry.category)}` : null;
+
+  return (
+    <div className="grid grid-cols-[1fr_auto] gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-800 truncate">
+          {entry.description || fallbackTitle}
+        </p>
+        <p className="text-[10px] text-slate-400 mt-0.5">
+          {formatDate(entry.entryDate, { day: "numeric", month: "short", year: "numeric" })}
+          {categorySuffix}
+          {entry.payee ? ` · ${entry.payee}` : null}
+        </p>
+      </div>
+      <p className="text-sm font-semibold text-rose-700 whitespace-nowrap">
+        {formatCurrency(entry.amount)}
+      </p>
+    </div>
+  );
+}
 
 const inputCls =
   "w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 font-sans";
@@ -38,6 +77,8 @@ function emptyForm(): ExpenseInput {
     category: "other",
     description: "",
     expenseDate: toISODateLocal(new Date()),
+    payee: "",
+    documentNumber: "",
   };
 }
 
@@ -102,9 +143,10 @@ export default function FinanceExpensesPage() {
   const canManageVenueRules = canManageVenueCostRules(role);
 
   const todayIso = toISODateLocal(new Date());
+  const defaultMonthRange = useMemo(() => monthDateRange(currentYearMonth()), []);
 
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(defaultMonthRange.dateFrom);
+  const [dateTo, setDateTo] = useState(defaultMonthRange.dateTo);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
@@ -126,6 +168,13 @@ export default function FinanceExpensesPage() {
   const venueEntries = useMemo(() => {
     const all = (financeCostsQuery.data?.entries ?? []).filter(
       (entry) => entry.sourceType === "venue_cost"
+    );
+    if (categoryFilter === "all") return all;
+    return all.filter((entry) => entry.category === categoryFilter);
+  }, [financeCostsQuery.data, categoryFilter]);
+  const teacherExpenseEntries = useMemo(() => {
+    const all = (financeCostsQuery.data?.entries ?? []).filter(
+      (entry) => entry.sourceType === "teacher_expense"
     );
     if (categoryFilter === "all") return all;
     return all.filter((entry) => entry.category === categoryFilter);
@@ -158,6 +207,8 @@ export default function FinanceExpensesPage() {
       category: expense.category,
       description: expense.description,
       expenseDate: expense.expenseDate,
+      payee: expense.payee,
+      documentNumber: expense.documentNumber,
     });
     setModalOpen(true);
   };
@@ -201,34 +252,50 @@ export default function FinanceExpensesPage() {
     setDeleteTarget(null);
   };
 
-  if (expensesQuery.isLoading || financeCostsQuery.isLoading || venueStatusQuery.isLoading) {
+  if (expensesQuery.isLoading || (financeCostsQuery.isLoading && Boolean(dateFrom && dateTo)) || venueStatusQuery.isLoading) {
     return <LoadingState label={t("finance.expenses.loading")} />;
   }
-  if (expensesQuery.isError || financeCostsQuery.isError || venueStatusQuery.isError) {
-    return <QueryErrorState error={expensesQuery.error ?? financeCostsQuery.error ?? venueStatusQuery.error} />;
+  if (expensesQuery.isError || venueStatusQuery.isError) {
+    return <QueryErrorState error={expensesQuery.error ?? venueStatusQuery.error} />;
   }
+
+  const financeCostsUnavailable = financeCostsQuery.isError;
 
   const items = expensesQuery.data ?? [];
   const venueStatus = venueStatusQuery.data;
   const hasVenueRules = venueStatus?.status !== "not_configured";
   const venueRulesLink = hasVenueRules ? "/settings/hall-rent" : "/settings/hall-rent?new=1";
   const manualTotal = items.reduce((sum, e) => sum + e.amount, 0);
-  const venueTotal = venueEntries.reduce((sum, e) => sum + e.amount, 0);
+  const venueTotal = financeCostsUnavailable
+    ? 0
+    : (financeCostsQuery.data?.venueTotal ?? venueEntries.reduce((sum, e) => sum + e.amount, 0));
+  const teacherExpenseTotal = financeCostsUnavailable
+    ? 0
+    : (financeCostsQuery.data?.teacherExpenseTotal ??
+      teacherExpenseEntries.reduce((sum, e) => sum + e.amount, 0));
   const combinedTotal =
     categoryFilter === "all"
-      ? (financeCostsQuery.data?.total ?? manualTotal + venueTotal)
-      : manualTotal + venueTotal;
-  const hasActiveFilters = Boolean(dateFrom || dateTo || categoryFilter !== "all");
+      ? financeCostsUnavailable
+        ? manualTotal
+        : (financeCostsQuery.data?.total ?? manualTotal + venueTotal + teacherExpenseTotal)
+      : manualTotal + venueTotal + teacherExpenseTotal;
+  const hasActiveFilters = Boolean(
+    dateFrom !== defaultMonthRange.dateFrom ||
+      dateTo !== defaultMonthRange.dateTo ||
+      categoryFilter !== "all"
+  );
   const pending = createExpense.isPending || updateExpense.isPending;
 
   return (
     <div className="panel-page-stack">
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Receipt className="w-4 h-4 text-indigo-500" />
             <h2 className="font-sans text-sm font-semibold text-slate-800">{t("finance.expenses.title")}</h2>
           </div>
+          <div className="flex items-center gap-2">
+            <FinanceMonthExportButton yearMonth={dateFrom.slice(0, 7)} />
           {canWrite && (
             <button
               type="button"
@@ -239,6 +306,7 @@ export default function FinanceExpensesPage() {
               {t("finance.expenses.add")}
             </button>
           )}
+          </div>
         </div>
 
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/40">
@@ -338,7 +406,7 @@ export default function FinanceExpensesPage() {
               </Link>
             )}
             <p className="text-sm font-semibold text-slate-800 whitespace-nowrap">
-              {formatCurrency(venueTotal)}
+              {financeCostsUnavailable ? "—" : formatCurrency(venueTotal)}
             </p>
           </div>
         </div>
@@ -358,29 +426,48 @@ export default function FinanceExpensesPage() {
         ) : (
           <div>
             {venueEntries.map((entry) => (
-              <div
+              <FinanceCostEntryRow
                 key={entry.id}
-                className="grid grid-cols-[1fr_auto] gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">
-                    {entry.description || t("venueCosts.finance.autoRow")}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    {formatDate(entry.entryDate, { day: "numeric", month: "short", year: "numeric" })}
-                    {entry.category === "rent" ||
-                    entry.category === "utilities" ||
-                    entry.category === "marketing" ||
-                    entry.category === "other"
-                      ? ` · ${categoryLabel(entry.category)}`
-                      : null}
-                    {entry.payee ? ` · ${entry.payee}` : null}
-                  </p>
-                </div>
-                <p className="text-sm font-semibold text-rose-700 whitespace-nowrap">
-                  {formatCurrency(entry.amount)}
-                </p>
-              </div>
+                entry={entry}
+                fallbackTitle={t("venueCosts.finance.autoRow")}
+                formatDate={formatDate}
+                categoryLabel={categoryLabel}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/40">
+          <div>
+            <h2 className="font-sans text-sm font-semibold text-slate-800">
+              {t("venueCosts.finance.teacherExpenseTotal")}
+            </h2>
+            <p className="text-[11px] text-slate-500 mt-0.5">{t("teacherPayRules.externalRentHint")}</p>
+          </div>
+          <p className="text-sm font-semibold text-slate-800 whitespace-nowrap">
+            {financeCostsUnavailable ? "—" : formatCurrency(teacherExpenseTotal)}
+          </p>
+        </div>
+        {financeCostsUnavailable ? (
+          <div className="px-4 py-8 text-center">
+            <p className="text-sm text-slate-500">{t("venueCosts.finance.teacherExpenseEmpty")}</p>
+          </div>
+        ) : teacherExpenseEntries.length === 0 ? (
+          <div className="px-4 py-8 text-center">
+            <p className="text-sm text-slate-500">{t("venueCosts.finance.teacherExpenseEmpty")}</p>
+          </div>
+        ) : (
+          <div>
+            {teacherExpenseEntries.map((entry) => (
+              <FinanceCostEntryRow
+                key={entry.id}
+                entry={entry}
+                fallbackTitle={t("venueCosts.finance.teacherExpenseRow")}
+                formatDate={formatDate}
+                categoryLabel={categoryLabel}
+              />
             ))}
           </div>
         )}
@@ -394,7 +481,14 @@ export default function FinanceExpensesPage() {
           </p>
           <p className="text-[10px] text-slate-500 mt-0.5">
             {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualTotal)} ·{" "}
-            {t("venueCosts.finance.venueTotal")}: {formatCurrency(venueTotal)}
+            {t("venueCosts.finance.venueTotal")}: {financeCostsUnavailable ? "—" : formatCurrency(venueTotal)}
+            {teacherExpenseTotal > 0 || financeCostsUnavailable ? (
+              <>
+                {" "}
+                · {t("venueCosts.finance.teacherExpenseTotal")}:{" "}
+                {financeCostsUnavailable ? "—" : formatCurrency(teacherExpenseTotal)}
+              </>
+            ) : null}
           </p>
         </div>
       </div>
@@ -461,6 +555,26 @@ export default function FinanceExpensesPage() {
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                     className={inputCls}
                     placeholder={t("finance.expenses.descriptionPlaceholder")}
+                  />
+                </div>
+                <div className="field-stack">
+                  <label className={labelCls}>{t("finance.expenses.payeeLabel")}</label>
+                  <input
+                    type="text"
+                    value={form.payee ?? ""}
+                    onChange={(e) => setForm((f) => ({ ...f, payee: e.target.value }))}
+                    className={inputCls}
+                    placeholder={t("finance.expenses.payeePlaceholder")}
+                  />
+                </div>
+                <div className="field-stack">
+                  <label className={labelCls}>{t("finance.expenses.documentNumberLabel")}</label>
+                  <input
+                    type="text"
+                    value={form.documentNumber ?? ""}
+                    onChange={(e) => setForm((f) => ({ ...f, documentNumber: e.target.value }))}
+                    className={inputCls}
+                    placeholder={t("finance.expenses.documentNumberPlaceholder")}
                   />
                 </div>
                 <DatePickerField

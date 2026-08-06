@@ -4,11 +4,12 @@ import { supabase } from "../lib/supabase";
 import type { Expense, ExpenseCategory, ExpenseInput } from "../types/expense";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { financeCostsQueryKey } from "./useVenueCosts";
 
 export const expensesQueryKey = ["expenses"] as const;
 
 const EXPENSES_SELECT =
-  "id, amount, category, description, expense_date, created_by, created_at, updated_at";
+  "id, amount, category, description, expense_date, payee, document_number, created_by, created_at, updated_at";
 
 const mapExpense = (row: Record<string, unknown>): Expense => ({
   id: row.id as string,
@@ -16,6 +17,8 @@ const mapExpense = (row: Record<string, unknown>): Expense => ({
   category: row.category as ExpenseCategory,
   description: (row.description as string) || "",
   expenseDate: String(row.expense_date ?? ""),
+  payee: (row.payee as string) || "",
+  documentNumber: (row.document_number as string) || "",
   createdBy: row.created_by != null ? (row.created_by as string) : null,
   createdAt: String(row.created_at ?? ""),
   updatedAt: String(row.updated_at ?? ""),
@@ -81,6 +84,8 @@ export function useCreateExpense() {
         category: input.category,
         description: input.description.trim() || null,
         expense_date: input.expenseDate,
+        payee: input.payee?.trim() || null,
+        document_number: input.documentNumber?.trim() || null,
         created_by: memberId ?? null,
       });
 
@@ -90,6 +95,7 @@ export function useCreateExpense() {
     onSuccess: (result) => {
       if (result.success) {
         void queryClient.invalidateQueries({ queryKey: expensesQueryKey });
+        void queryClient.invalidateQueries({ queryKey: financeCostsQueryKey });
       }
     },
   });
@@ -107,6 +113,8 @@ export function useUpdateExpense() {
           category: input.category,
           description: input.description.trim() || null,
           expense_date: input.expenseDate,
+          payee: input.payee?.trim() || null,
+          document_number: input.documentNumber?.trim() || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", input.id);
@@ -117,6 +125,7 @@ export function useUpdateExpense() {
     onSuccess: (result) => {
       if (result.success) {
         void queryClient.invalidateQueries({ queryKey: expensesQueryKey });
+        void queryClient.invalidateQueries({ queryKey: financeCostsQueryKey });
       }
     },
   });
@@ -134,6 +143,7 @@ export function useDeleteExpense() {
     onSuccess: (result) => {
       if (result.success) {
         void queryClient.invalidateQueries({ queryKey: expensesQueryKey });
+        void queryClient.invalidateQueries({ queryKey: financeCostsQueryKey });
       }
     },
   });

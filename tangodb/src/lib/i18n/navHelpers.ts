@@ -169,16 +169,24 @@ export function getSettingsNav(t: TranslateFn): { id: string; label: string; pat
   ];
 }
 
-export function getFinanceNav(t: TranslateFn): { label: string; path: string }[] {
+export type FinanceNavSection = "income" | "expenses" | "operations";
+
+export interface FinanceNavItem {
+  label: string;
+  path: string;
+  section: FinanceNavSection;
+}
+
+export function getFinanceNav(t: TranslateFn): FinanceNavItem[] {
   return [
-    { label: t("finance.nav.payments"), path: "/finance/payments" },
-    { label: t("finance.nav.revenue"), path: "/finance/revenue" },
-    { label: t("finance.nav.debtors"), path: "/finance/debtors" },
-    { label: t("finance.nav.expenses"), path: "/finance/expenses" },
-    { label: t("finance.nav.corrections"), path: "/finance/corrections" },
-    { label: t("finance.nav.rentalAccruals"), path: "/finance/rental-accruals" },
-    { label: t("finance.nav.rentalInbox"), path: "/finance/rental-inbox" },
-    { label: t("finance.nav.payroll"), path: "/finance/payroll" },
+    { label: t("finance.nav.payments"), path: "/finance/payments", section: "income" },
+    { label: t("finance.nav.revenue"), path: "/finance/revenue", section: "income" },
+    { label: t("finance.nav.debtors"), path: "/finance/debtors", section: "income" },
+    { label: t("finance.nav.expenses"), path: "/finance/expenses", section: "expenses" },
+    { label: t("finance.nav.payroll"), path: "/finance/payroll", section: "expenses" },
+    { label: t("finance.nav.corrections"), path: "/finance/corrections", section: "operations" },
+    { label: t("finance.nav.rentalAccruals"), path: "/finance/rental-accruals", section: "operations" },
+    { label: t("finance.nav.rentalInbox"), path: "/finance/rental-inbox", section: "operations" },
   ];
 }
 

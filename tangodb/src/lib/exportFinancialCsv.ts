@@ -105,7 +105,8 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
   const manualExpenseRows = params.expenses.map((e) => ({
     date: labels.formatDate(e.expenseDate),
     category: t(locale, expenseCategoryKey(e.category)),
-    payee: "—",
+    payee: e.payee?.trim() || "—",
+    documentNumber: e.documentNumber?.trim() || "—",
     description: e.description || "—",
     amount: e.amount,
     source: t(locale, "venueCosts.finance.manualTotal"),
@@ -138,6 +139,7 @@ export async function exportAllFinancialCsv(params: FinancialExportParams): Prom
       filename: `tangodb_expenses_${statsMonth}_${dateStr}.csv`,
       columnLabels: {
         ...labels.expenses,
+        documentNumber: t(locale, "finance.expenses.documentNumberLabel"),
         source: t(locale, "csv.column.source"),
       },
     });

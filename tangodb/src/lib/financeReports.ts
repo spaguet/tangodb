@@ -11,7 +11,18 @@ import type {
 } from "../types";
 import type { SubscriptionRefundRecord } from "../lib/subscriptionRefund";
 import { groupSubscriptionParticipantCount } from "../lib/subscriptionMembers";
-import { aggregateEffectivePaymentTotal, type PaymentWithCorrectionMeta } from "../lib/paymentCorrection";
+import {
+  aggregateEffectivePaymentTotal,
+  paymentEffectiveAmount,
+  type PaymentWithCorrectionMeta,
+} from "../lib/paymentCorrection";
+
+function rankPaymentAmount(payment: Payment | PaymentWithCorrectionMeta): number {
+  if ("operationKind" in payment && payment.operationKind) {
+    return paymentEffectiveAmount(payment as PaymentWithCorrectionMeta);
+  }
+  return payment.amount;
+}
 
 export function monthDateRange(yearMonth: string): { dateFrom: string; dateTo: string } {
   const [y, m] = yearMonth.split("-").map(Number);
@@ -140,7 +151,10 @@ export function mergePaymentStatsWithRentals<T extends PaymentStats>(
 }
 
 export interface ExtendedRevenueStats extends RevenueStats {
+  /** Gross rental inflow (positive payments only). */
   rentalTotal: number;
+  /** Signed rental register total (includes returns/adjustments). */
+  rentalNetTotal: number;
 }
 
 export function buildExtendedRevenueStats(
@@ -168,9 +182,10 @@ export function buildExtendedRevenueStats(
     ...withRentals,
     otherTotal: base.otherTotal + otherFromTable,
     rentalTotal: rentalStats.grossInflow,
+    rentalNetTotal: rentalStats.total,
     grossTotal: base.grossTotal + otherFromTable + rentalStats.grossInflow,
-    netTotal: base.netTotal + otherFromTable + rentalStats.grossInflow,
-    total: base.netTotal + otherFromTable + rentalStats.grossInflow,
+    netTotal: base.netTotal + otherFromTable + rentalStats.total,
+    total: base.netTotal + otherFromTable + rentalStats.total,
   };
 }
 
@@ -185,6 +200,7 @@ export function combineRevenueStats(
 
   return {
     ...paymentStats,
+    subscriptionTotal: paymentStats.subscriptionTotal - refundStats.completedTotal,
     grossTotal,
     refundsTotal: refundStats.completedTotal,
     pendingRefundsTotal: refundStats.pendingTotal,
@@ -386,6 +402,103 @@ export function aggregatePaymentsByMonth(
   });
 }
 
+export interface ExtendedRevenueTrendContext {
+  payments: Payment[];
+  refunds: SubscriptionRefundRecord[];
+  otherIncome: Array<{ amount: number; createdAt: string }>;
+  rentalEntries: Array<Pick<RentalMoneyRegisterEntry, "signedAmount" | "method" | "operationDate">>;
+}
+
+export function otherIncomeOnDay(
+  items: ExtendedRevenueTrendContext["otherIncome"],
+  day: string
+): number {
+  const from = `${day}T00:00:00`;
+  const to = `${day}T23:59:59`;
+  return items
+    .filter((item) => item.createdAt >= from && item.createdAt <= to)
+    .reduce((sum, item) => sum + item.amount, 0);
+}
+
+export function otherIncomeInMonth(
+  items: ExtendedRevenueTrendContext["otherIncome"],
+  yearMonth: string
+): number {
+  const { dateFrom, dateTo } = monthDateRange(yearMonth);
+  const from = `${dateFrom}T00:00:00`;
+  const to = `${dateTo}T23:59:59`;
+  return items
+    .filter((item) => item.createdAt >= from && item.createdAt <= to)
+    .reduce((sum, item) => sum + item.amount, 0);
+}
+
+export function rentalEntriesOnDay(
+  entries: ExtendedRevenueTrendContext["rentalEntries"],
+  day: string
+): ExtendedRevenueTrendContext["rentalEntries"] {
+  return entries.filter((entry) => entry.operationDate === day);
+}
+
+export function rentalEntriesInMonth(
+  entries: ExtendedRevenueTrendContext["rentalEntries"],
+  yearMonth: string
+): ExtendedRevenueTrendContext["rentalEntries"] {
+  const { dateFrom, dateTo } = monthDateRange(yearMonth);
+  return entries.filter(
+    (entry) => entry.operationDate >= dateFrom && entry.operationDate <= dateTo
+  );
+}
+
+export function buildExtendedTrendPoints(
+  series: string[],
+  ctx: ExtendedRevenueTrendContext,
+  mode: "day" | "month"
+): MonthlyRevenuePoint[] {
+  return series.map((key) => {
+    const payments =
+      mode === "day" ? paymentsOnDay(ctx.payments, key) : paymentsInMonth(ctx.payments, key);
+    const monthRefunds =
+      mode === "day"
+        ? ctx.refunds.filter(
+            (refund) => refund.status === "completed" && refund.operationDate === key
+          )
+        : refundsInMonth(ctx.refunds, key);
+    const otherAmount =
+      mode === "day"
+        ? otherIncomeOnDay(ctx.otherIncome, key)
+        : otherIncomeInMonth(ctx.otherIncome, key);
+    const rentalSlice =
+      mode === "day"
+        ? rentalEntriesOnDay(ctx.rentalEntries, key)
+        : rentalEntriesInMonth(ctx.rentalEntries, key);
+    const stats = buildExtendedRevenueStats(payments, monthRefunds, {
+      otherIncomeAmount: otherAmount,
+      rentalRegisterEntries: rentalSlice,
+    });
+    return {
+      month: key,
+      total: stats.netTotal,
+      subscriptionTotal: stats.subscriptionTotal,
+      personalTotal: stats.personalTotal,
+      singleVisitTotal: stats.singleVisitTotal,
+    };
+  });
+}
+
+export function extendedNetTotalForMonth(
+  yearMonth: string,
+  ctx: ExtendedRevenueTrendContext
+): number {
+  const payments = paymentsInMonth(ctx.payments, yearMonth);
+  const monthRefunds = refundsInMonth(ctx.refunds, yearMonth);
+  const otherAmount = otherIncomeInMonth(ctx.otherIncome, yearMonth);
+  const rentalSlice = rentalEntriesInMonth(ctx.rentalEntries, yearMonth);
+  return buildExtendedRevenueStats(payments, monthRefunds, {
+    otherIncomeAmount: otherAmount,
+    rentalRegisterEntries: rentalSlice,
+  }).netTotal;
+}
+
 /** MoM % change; null when previous month had zero revenue (avoid misleading ∞%). */
 export function computeMomChangePercent(current: number, previous: number): number | null {
   if (previous === 0) return null;
@@ -398,7 +511,7 @@ export function formatMomPercent(value: number | null): string {
   return `${sign}${value.toFixed(1)}%`;
 }
 
-export type RevenueSplitKey = "subscription" | "personal" | "single_visit" | "other";
+export type RevenueSplitKey = "subscription" | "personal" | "single_visit" | "other" | "rental";
 
 export interface RevenueSplitSegment {
   key: RevenueSplitKey;
@@ -406,9 +519,10 @@ export interface RevenueSplitSegment {
   percent: number;
 }
 
-export function buildRevenueSplit(stats: PaymentStats): RevenueSplitSegment[] {
-  if (stats.total <= 0) return [];
-
+export function buildRevenueSplit(
+  stats: PaymentStats & { rentalTotal?: number; rentalNetTotal?: number; netTotal?: number }
+): RevenueSplitSegment[] {
+  const rentalAmount = stats.rentalNetTotal ?? stats.rentalTotal ?? 0;
   const segments: Array<{ key: RevenueSplitKey; amount: number }> = [
     { key: "subscription", amount: stats.subscriptionTotal },
     { key: "personal", amount: stats.personalTotal },
@@ -417,13 +531,18 @@ export function buildRevenueSplit(stats: PaymentStats): RevenueSplitSegment[] {
   if (stats.otherTotal > 0) {
     segments.push({ key: "other", amount: stats.otherTotal });
   }
+  if (rentalAmount > 0) {
+    segments.push({ key: "rental", amount: rentalAmount });
+  }
 
-  return segments
-    .filter((segment) => segment.amount > 0)
-    .map((segment) => ({
-      ...segment,
-      percent: (segment.amount / stats.total) * 100,
-    }));
+  const positive = segments.filter((segment) => segment.amount > 0);
+  const denom = positive.reduce((sum, segment) => sum + segment.amount, 0);
+  if (denom <= 0) return [];
+
+  return positive.map((segment) => ({
+    ...segment,
+    percent: (segment.amount / denom) * 100,
+  }));
 }
 
 export function recordsInMonth(
@@ -457,10 +576,11 @@ export function buildTopClientsByRevenue(
     const key = payment.clientId || payment.clientDisplay;
     if (!key) continue;
     const existing = totals.get(key);
+    const amount = rankPaymentAmount(payment);
     if (existing) {
-      existing.amount += payment.amount;
+      existing.amount += amount;
     } else {
-      totals.set(key, { label: payment.clientDisplay || key, amount: payment.amount });
+      totals.set(key, { label: payment.clientDisplay || key, amount });
     }
   }
 
@@ -552,7 +672,7 @@ export function buildTopTeachersByRevenue(
   for (const payment of payments) {
     const teacherId = resolvePaymentTeacherId(payment, ctx);
     if (!teacherId) continue;
-    totals.set(teacherId, (totals.get(teacherId) ?? 0) + payment.amount);
+    totals.set(teacherId, (totals.get(teacherId) ?? 0) + rankPaymentAmount(payment));
   }
 
   return [...totals.entries()]

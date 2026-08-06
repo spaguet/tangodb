@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ChevronDown, Landmark, Pencil, Search } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
@@ -39,7 +40,9 @@ import {
   rentalPaymentCanCorrect,
   type RentalPaymentWithCorrectionMeta,
 } from "../lib/rentalPaymentCorrection";
-import { formatCurrency, formatMonthTitle } from "../lib/utils";
+import { formatCurrency, formatMonthTitle, currentYearMonth } from "../lib/utils";
+import { monthDateRange } from "../lib/financeReports";
+import { readFinanceMonthFromSearch } from "../lib/financeMonthUrl";
 import type { PaymentMethod, RentalMoneyRegisterEntry } from "../types";
 
 type PaymentSourceFilter = "all" | "subscription" | "personal_lesson" | "single_visit" | "rental";
@@ -502,9 +505,12 @@ export default function FinancePaymentsPage() {
   const { t, locale, formatDateTime, formatDate, plural } = useI18n();
   const { can } = usePermissions();
   const canCorrectPayments = can("finance.read");
+  const [searchParams] = useSearchParams();
+  const initialMonth = readFinanceMonthFromSearch(searchParams) ?? currentYearMonth();
+  const initialRange = monthDateRange(initialMonth);
   const [search, setSearch] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(initialRange.dateFrom);
+  const [dateTo, setDateTo] = useState(initialRange.dateTo);
   const [sourceFilter, setSourceFilter] = useState<PaymentSourceFilter>("all");
   const [methodFilter, setMethodFilter] = useState<PaymentMethodFilter>("all");
   const [teacherFilter, setTeacherFilter] = useState("all");
@@ -522,15 +528,12 @@ export default function FinancePaymentsPage() {
     window.setTimeout(() => setToastMsg(null), 4000);
   };
 
-  const paymentsQuery = usePaymentsWithCorrections(
-    dateFrom || dateTo ? { dateFrom: dateFrom || undefined, dateTo: dateTo || undefined } : undefined
-  );
-  const rentalPaymentsQuery = useRentalPayments(
-    dateFrom || dateTo ? { dateFrom: dateFrom || undefined, dateTo: dateTo || undefined } : undefined
-  );
+  const paymentsQuery = usePaymentsWithCorrections({ dateFrom, dateTo });
+  const rentalPaymentsQuery = useRentalPayments({ dateFrom, dateTo });
+  const filterMonth = dateFrom.slice(0, 7);
   const teamQuery = useTeamMembers();
-  const personalLessonsQuery = usePersonalLessons();
-  const singleVisitsQuery = useSingleVisits();
+  const personalLessonsQuery = usePersonalLessons({ yearMonth: filterMonth });
+  const singleVisitsQuery = useSingleVisits({ yearMonth: filterMonth });
   const scheduleQuery = useSchedule();
   const subscriptionGroupsQuery = useSubscriptionGroups();
   const locationsQuery = useAccessibleLocations();

@@ -1,10 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, Fragment } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { Landmark, TrendingUp, AlertCircle, Wallet, Receipt, History, FileBarChart, Inbox } from "lucide-react";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { isRentalInboxOnly } from "../lib/permissions";
-import { getFinanceNav } from "../lib/i18n";
+import { getFinanceNav, type FinanceNavSection } from "../lib/i18n";
+import type { I18nKey } from "../lib/i18n/keys";
+
+const FINANCE_SECTION_LABEL: Record<FinanceNavSection, I18nKey> = {
+  income: "finance.nav.section.income",
+  expenses: "finance.nav.section.expenses",
+  operations: "finance.nav.section.operations",
+};
 
 const FINANCE_NAV_ICONS: Record<string, typeof Landmark> = {
   "/finance/payments": Landmark,
@@ -56,23 +63,33 @@ export default function FinanceLayout() {
             {t("finance.nav.title")}
           </p>
           <div className="flex gap-1 overflow-x-auto pb-1">
-            {financeNav.map((item) => {
+            {financeNav.map((item, index) => {
               const Icon = item.icon;
+              const prev = financeNav[index - 1];
+              const showSectionDivider = index > 0 && prev?.section !== item.section;
               return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                      isActive
-                        ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
-                        : "text-slate-600 hover:bg-slate-50 border border-transparent"
-                    }`
-                  }
-                >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  {item.label}
-                </NavLink>
+                <Fragment key={item.path}>
+                  {showSectionDivider ? (
+                    <div
+                      className="w-px h-6 bg-slate-200 shrink-0 self-center mx-0.5"
+                      role="separator"
+                      aria-label={t(FINANCE_SECTION_LABEL[item.section])}
+                    />
+                  ) : null}
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                        isActive
+                          ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
+                          : "text-slate-600 hover:bg-slate-50 border border-transparent"
+                      }`
+                    }
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    {item.label}
+                  </NavLink>
+                </Fragment>
               );
             })}
           </div>

@@ -25,12 +25,13 @@ export interface TeamMemberRow {
 
 export const teamMembersQueryKey = ["organization-team"] as const;
 
-export function useTeamMembers() {
+export function useTeamMembers(options?: { enabled?: boolean }) {
   const { enabled, organizationId, withOrgId } = useOrgQueryScope();
+  const queryEnabled = enabled && !!organizationId && (options?.enabled ?? true);
 
   return useQuery({
     queryKey: withOrgId(teamMembersQueryKey),
-    enabled: enabled && !!organizationId,
+    enabled: queryEnabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organization_members")
