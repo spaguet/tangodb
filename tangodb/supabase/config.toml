@@ -413,6 +413,15 @@ verify_jwt = false
 [functions.google-calendar-disconnect]
 verify_jwt = true
 
+[functions.google-calendar-list-calendars]
+verify_jwt = true
+
+[functions.google-calendar-create-calendar]
+verify_jwt = true
+
+[functions.google-calendar-set-binding]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
