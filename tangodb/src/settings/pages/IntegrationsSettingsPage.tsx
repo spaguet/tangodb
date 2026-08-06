@@ -14,15 +14,18 @@ import { btnAddCls, btnDestructiveCls, btnOpenCls, btnRefreshCls } from "../../c
 import LoadingState from "../../components/ui/LoadingState";
 import { useToast } from "../../App";
 import { useGoogleCalendarIntegration } from "../../hooks/useGoogleCalendarIntegration";
+import { usePermissions } from "../../hooks/usePermissions";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError, isI18nKey } from "../../lib/resolveMutationError";
 import type { I18nKey } from "../../lib/i18n/keys";
 import type { GoogleCalendarListEntry } from "../../lib/googleCalendarApi";
+import TeamGoogleSyncSection from "../components/TeamGoogleSyncSection";
 
 type DisconnectMode = "leave" | "delete" | "revoke" | null;
 
 export default function IntegrationsSettingsPage() {
   const { t, formatDateTime } = useI18n();
+  const { role } = usePermissions();
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
@@ -268,9 +271,10 @@ export default function IntegrationsSettingsPage() {
         : "text-rose-700 bg-rose-50 border-rose-100";
 
   const writableCalendars = calendars.filter((c) => c.selectable);
+  const showTeamSection = role === "owner" || role === "director";
 
   return (
-    <div className="panel-card-stack max-w-xl">
+    <div className={`panel-card-stack space-y-6 ${showTeamSection ? "max-w-3xl" : "max-w-xl"}`}>
       <div className="flex items-start gap-3">
         <CalendarDays className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
         <div>
@@ -521,6 +525,8 @@ export default function IntegrationsSettingsPage() {
           </div>
         </div>
       )}
+
+      {showTeamSection && <TeamGoogleSyncSection />}
     </div>
   );
 }

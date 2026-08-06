@@ -28,6 +28,8 @@ import RequirePermission from "../RequirePermission";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
 import MoveGroupLessonDialog from "./MoveGroupLessonDialog";
 import CancelGroupLessonDialog from "./CancelGroupLessonDialog";
+import GoogleCalendarSyncStatusBadge from "../integrations/GoogleCalendarSyncStatusBadge";
+import { useGoogleCalendarSyncStatus } from "../../hooks/useGoogleCalendarSyncStatus";
 import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
 
 interface LessonInfoPopupProps {
@@ -96,6 +98,9 @@ export default function LessonInfoPopup({
   const personalClosureQuery = useActivePersonalLessonClosure(
     lesson?.kind === "personal" ? lesson.lessonId : null,
     lesson?.kind === "personal"
+  );
+  const googleSyncStatus = useGoogleCalendarSyncStatus(
+    lesson?.kind === "personal" ? lesson.lessonId : null
   );
   const activePersonalClosure = personalClosureQuery.data ?? null;
 
@@ -407,6 +412,13 @@ export default function LessonInfoPopup({
                       </dd>
                     </div>
                   </div>
+                )}
+
+                {lesson.kind === "personal" && googleSyncStatus.uiStatus && (
+                  <GoogleCalendarSyncStatusBadge
+                    status={googleSyncStatus.uiStatus}
+                    lastError={googleSyncStatus.row?.last_error}
+                  />
                 )}
               </dl>
 

@@ -198,3 +198,65 @@ export async function fetchOrganizationCalendarSyncMetrics(): Promise<CalendarSy
   if (!row) return null;
   return row as CalendarSyncMetrics;
 }
+
+export type LessonGoogleSyncUiStatus =
+  | "synced"
+  | "pending"
+  | "error"
+  | "not_connected";
+
+export interface PersonalLessonGoogleSyncStatus {
+  sync_status: string | null;
+  last_synced_at: string | null;
+  last_error: string | null;
+  has_pending_job: boolean;
+  teacher_has_binding: boolean;
+}
+
+export function resolveLessonGoogleSyncUiStatus(
+  row: PersonalLessonGoogleSyncStatus | null | undefined
+): LessonGoogleSyncUiStatus | null {
+  if (!row) return null;
+  if (!row.teacher_has_binding) return "not_connected";
+  if (row.has_pending_job || row.sync_status === "pending") return "pending";
+  if (row.sync_status === "failed" || Boolean(row.last_error)) return "error";
+  if (row.sync_status === "synced") return "synced";
+  return "pending";
+}
+
+export async function fetchPersonalLessonGoogleSyncStatus(
+  lessonId: string
+): Promise<PersonalLessonGoogleSyncStatus | null> {
+  const { data, error } = await supabase.rpc("get_personal_lesson_google_sync_status", {
+    p_lesson_id: lessonId,
+  });
+  if (error) throw new Error(error.message);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return row as PersonalLessonGoogleSyncStatus;
+}
+
+export interface TeamCalendarSyncMemberMetrics {
+  organization_member_id: string;
+  member_name: string;
+  has_active_binding: boolean;
+  binding_last_success_at: string | null;
+  binding_last_error_code: string | null;
+  pending_jobs_count: number;
+  dead_jobs_count: number;
+  failed_links_count: number;
+}
+
+export async function fetchTeamCalendarSyncMetrics(): Promise<TeamCalendarSyncMemberMetrics[]> {
+  const { data, error } = await supabase.rpc("get_team_calendar_sync_metrics");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as TeamCalendarSyncMemberMetrics[];
+}
+
+export async function remindGoogleCalendarConnect(
+  organizationMemberId: string
+): Promise<void> {
+  await invokeFunction("google-calendar-remind-connect", {
+    organization_member_id: organizationMemberId,
+  });
+}

@@ -42,6 +42,8 @@ import LocationSelect from "../ui/LocationSelect";
 import RequirePermission from "../RequirePermission";
 import TimeSelect from "../ui/TimeSelect";
 import GroupLessonRepeatFields from "./GroupLessonRepeatFields";
+import GoogleCalendarSyncStatusBadge from "../integrations/GoogleCalendarSyncStatusBadge";
+import { useGoogleCalendarSyncStatus } from "../../hooks/useGoogleCalendarSyncStatus";
 
 interface EditLessonPopupProps {
   lesson: GroupDisplayLesson | PersonalDisplayLesson | null;
@@ -151,6 +153,10 @@ export default function EditLessonPopup({
   const updatePersonalLesson = useUpdatePersonalLesson();
   const updateClassMaxCapacity = useUpdateClassMaxCapacity();
   const { data: scheduleGroups = [] } = useScheduleGroups();
+  const googleSyncStatus = useGoogleCalendarSyncStatus(
+    lesson?.kind === "personal" ? lesson.lessonId : null,
+    { enabled: lesson?.kind === "personal" }
+  );
 
   const isTeacher = role === "teacher";
   const todayISO = toISODateLocal(new Date());
@@ -789,6 +795,14 @@ export default function EditLessonPopup({
               </p>
             ) : (
               <div className="panel-form-stack">
+                {lesson.kind === "personal" && googleSyncStatus.uiStatus && (
+                  <GoogleCalendarSyncStatusBadge
+                    status={googleSyncStatus.uiStatus}
+                    lastError={googleSyncStatus.row?.last_error}
+                    compact
+                  />
+                )}
+
                 {lesson.kind === "group" && locationName && showLocationInForm && (
                   <div className="field-stack">
                     <label className={labelCls}>{t("schedule.form.location")}</label>

@@ -2,7 +2,7 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
-2026-08-06 — Google Calendar интеграция, Этап 2 (Промпт 7): cron reconciliation — миграция `20260894000001_google_calendar_cron_reconcile.sql` (RPC `execute_member_personal_lessons_reconcile`, `request_member_calendar_reconcile`, `run_personal_lessons_calendar_reconciliation`, `retry_calendar_sync_dead_job`, метрики org/team); Edge Function `calendar-reconcile-personal`; worker обрабатывает `reconcile_member`; кнопка «Синхронизировать будущие уроки» в Integrations; deployment checklist в `architecture.md` (GCAL-3).
+2026-08-06 — Google Calendar интеграция, Этап 2 (Промпт 8): UI статуса синхронизации — `GoogleCalendarSyncStatusBadge` в `LessonInfoPopup` / `EditLessonPopup` (personal); хуки `useGoogleCalendarSyncStatus`, `useTeamGoogleSyncStatus`; секция команды `TeamGoogleSyncSection` на Integrations (owner/director, метрики org/участников, «Напомнить подключить»); Edge Function `google-calendar-remind-connect`; миграция `20260895000001` (RPC `get_personal_lesson_google_sync_status` + `teacher_has_binding`, outbox SELECT для teacher).
 
 2026-08-06 — Google Calendar интеграция, Этап 2 (Промпт 6): Edge Function `calendar-sync-worker` (claim через RPC `claim_calendar_sync_jobs`, upsert/delete `personal_lesson`, retry/backoff, desired_hash, deterministic `eventId`); миграция `20260893000001_claim_calendar_sync_jobs.sql`; модули `_shared/calendarSyncPayload.ts`, `_shared/calendarSyncPersonalLesson.ts`; расширен `_shared/googleCalendarClient.ts` (events insert/update/delete/get, `obtainAccessTokenForGoogleAccount`); fix `sync_personal: true` при set-binding.
 
