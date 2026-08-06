@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-06 — «Дебиторская задолженность»: сортировка списка (дата, имя, сумма долга) с локализацией RU/EN; по умолчанию — от прошлой даты к будущей (`FinanceDebtorsPage`, `sortDebtors` в `financeReports`).
+
 2026-08-06 — audit finance (обзор + финансы): формулы `financeReports` (rental net в netTotal, возвраты в subscription/MoM/trend, storno в топах, split + rental); `FinancialDashboard` — ошибки запросов, extended trend/MoM, profit при ошибке RPC, teacher_expense в разбивке, gate operational analytics, drill-down `?month=`, без auto payroll/refetch; платежи/корректировки — дефолтный месяц; расходы — payee/№ документа + миграция `20260889000001`; экспорт CSV на страницах выручки/расходов; nav finance по секциям; `test:finance-reports`.
 
 2026-08-06 — audit fixes (финансы / возвраты): серверный расчёт «разовое посещение» в `preview_subscription_refund` / `finish_subscription_with_refund` с audit-полями (`calc_mode`, rate, tariff, retained, `amount_override`); фильтр категории расходов применяется к venue accruals и сумме; CSV расходов — колонка payee; дашборд — явная кнопка «Пересчитать аренду» вместо silent recalc; режим single-visit только для групповых абонементов с тарифами разового посещения; `venue_cost_rules_are_valid` требует `expense_category`. Миграция `20260888000001`.

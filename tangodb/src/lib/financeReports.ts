@@ -305,6 +305,57 @@ export function sumDebtorAmounts(entries: DebtorEntry[]): number {
   return entries.reduce((sum, e) => sum + e.amount, 0);
 }
 
+export type DebtorSortKey = "dateAsc" | "dateDesc" | "nameAsc" | "nameDesc" | "amountDesc";
+
+function compareNullableDate(
+  a: string | null | undefined,
+  b: string | null | undefined,
+  ascending: boolean
+): number {
+  const aEmpty = !a;
+  const bEmpty = !b;
+  if (aEmpty && bEmpty) return 0;
+  if (aEmpty) return 1;
+  if (bEmpty) return -1;
+  const cmp = a.localeCompare(b);
+  return ascending ? cmp : -cmp;
+}
+
+export function sortDebtors(
+  entries: DebtorEntry[],
+  sortKey: DebtorSortKey,
+  locale: string
+): DebtorEntry[] {
+  const sorted = [...entries];
+  sorted.sort((a, b) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case "dateAsc":
+      case "dateDesc": {
+        const ascending = sortKey === "dateAsc";
+        cmp = compareNullableDate(a.lessonDate, b.lessonDate, ascending);
+        if (cmp === 0 && a.lessonDate && b.lessonDate) {
+          const timeCmp = (a.lessonTimeStart ?? "").localeCompare(b.lessonTimeStart ?? "");
+          cmp = ascending ? timeCmp : -timeCmp;
+        }
+        break;
+      }
+      case "nameAsc":
+        cmp = a.clientDisplay.localeCompare(b.clientDisplay, locale);
+        break;
+      case "nameDesc":
+        cmp = b.clientDisplay.localeCompare(a.clientDisplay, locale);
+        break;
+      case "amountDesc":
+        cmp = b.amount - a.amount;
+        break;
+    }
+    if (cmp !== 0) return cmp;
+    return a.clientDisplay.localeCompare(b.clientDisplay, locale);
+  });
+  return sorted;
+}
+
 export const FINANCIAL_TREND_MONTH_COUNT = 6;
 
 export function monthTrendRange(

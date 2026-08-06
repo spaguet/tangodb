@@ -8,12 +8,27 @@ import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { useToast } from "../App";
 import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
-import { sumDebtorAmounts, formatDebtorDetail, type DebtorEntry } from "../lib/financeReports";
+import {
+  sortDebtors,
+  sumDebtorAmounts,
+  formatDebtorDetail,
+  type DebtorEntry,
+  type DebtorSortKey,
+} from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "../components/schedule/PayPersonalLessonModal";
 import { btnAddCls } from "../components/ui/buttonStyles";
+import AppSelect from "../components/ui/AppSelect";
 
 type DebtorTab = "all" | "clients" | "rentals";
+
+const DEBTOR_SORT_OPTIONS: DebtorSortKey[] = [
+  "dateAsc",
+  "dateDesc",
+  "nameAsc",
+  "nameDesc",
+  "amountDesc",
+];
 
 function debtorKindLabel(kind: DebtorEntry["kind"], t: ReturnType<typeof useI18n>["t"]): string | null {
   if (kind === "rental") return t("finance.debtors.kind.rental");
@@ -21,12 +36,13 @@ function debtorKindLabel(kind: DebtorEntry["kind"], t: ReturnType<typeof useI18n
 }
 
 export default function FinanceDebtorsPage() {
-  const { t, plural, formatDate } = useI18n();
+  const { t, plural, formatDate, locale } = useI18n();
   const toast = useToast();
   const { can, isReadOnly } = usePermissions();
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
   const [tab, setTab] = useState<DebtorTab>("all");
+  const [sortKey, setSortKey] = useState<DebtorSortKey>("dateAsc");
 
   const debtorsQuery = useFinancialDebtors();
   const allDebtors = useMemo(() => {
@@ -35,10 +51,11 @@ export default function FinanceDebtorsPage() {
   }, [debtorsQuery.data, personalLessonsEnabled]);
 
   const debtors = useMemo(() => {
-    if (tab === "clients") return allDebtors.filter((e) => e.kind !== "rental");
-    if (tab === "rentals") return allDebtors.filter((e) => e.kind === "rental");
-    return allDebtors;
-  }, [allDebtors, tab]);
+    let rows = allDebtors;
+    if (tab === "clients") rows = rows.filter((e) => e.kind !== "rental");
+    else if (tab === "rentals") rows = rows.filter((e) => e.kind === "rental");
+    return sortDebtors(rows, sortKey, locale);
+  }, [allDebtors, tab, sortKey, locale]);
 
   const totalDebt = useMemo(() => sumDebtorAmounts(debtors), [debtors]);
   const rentalDebtTotal = useMemo(
@@ -85,24 +102,39 @@ export default function FinanceDebtorsPage() {
           </span>
         </div>
 
-        <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap gap-2">
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setTab(item.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${
-                tab === item.id
-                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                  : "text-slate-600 hover:bg-slate-50 border border-transparent"
-              }`}
+        <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap items-end justify-between gap-2">
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${
+                  tab === item.id
+                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                    : "text-slate-600 hover:bg-slate-50 border border-transparent"
+                }`}
+              >
+                {item.label}
+                {item.id === "rentals" && rentalDebtTotal > 0 ? (
+                  <span className="ml-1 text-rose-600">({formatCurrency(rentalDebtTotal)})</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+          <div className="w-full sm:w-auto sm:min-w-[15rem]">
+            <AppSelect
+              label={t("finance.debtors.sort.label")}
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as DebtorSortKey)}
             >
-              {item.label}
-              {item.id === "rentals" && rentalDebtTotal > 0 ? (
-                <span className="ml-1 text-rose-600">({formatCurrency(rentalDebtTotal)})</span>
-              ) : null}
-            </button>
-          ))}
+              {DEBTOR_SORT_OPTIONS.map((key) => (
+                <option key={key} value={key}>
+                  {t(`finance.debtors.sort.${key}`)}
+                </option>
+              ))}
+            </AppSelect>
+          </div>
         </div>
 
         {debtors.length === 0 ? (
