@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-06 — Google Calendar интеграция, регрессия (Промпт 14): `npm run lint` + `npm run build` OK; миграция `20260901000001` — пересинхронизация будущих links при смене `organization_settings.timezone`; fix stale links для `event_session` (смена org/member binding, `removeStaleRecipientLinks`); SQL-тест `google_calendar_security_test.sql` (RLS/credential isolation); `test:db:google-calendar`.
+
 2026-08-06 — Google Calendar интеграция, Этап 5 (Промпт 13): free/busy при записи урока — миграция `20260900000001` (`freebusy_calendar_ids` на member binding); Edge Functions `google-calendar-freebusy`, `google-calendar-set-freebusy-config`; incremental OAuth consent (`consent_purpose` в auth-start); UI `GoogleCalendarFreebusySection` + предупреждение в формах урока (`useGoogleCalendarFreebusy`); fix merge `granted_scopes` при incremental consent в auth-callback.
 
 2026-08-06 — Google Calendar интеграция, Этап 5 (Промпт 12): webhook-наблюдение и incremental sync — миграция `20260899000001` (`google_calendar_watch_channels`, outbox `incremental_sync`, RPC `enqueue_binding_incremental_sync`); Edge Functions `google-calendar-webhook` (публичный, constant-time проверка channel headers), `google-calendar-renew-watches` (cron); модуль `_shared/googleCalendarWatch.ts` (events.watch, syncToken, detach `user_deleted`); расширен `googleCalendarClient.ts` (list/watch/stop); watch register/stop при set-binding/disconnect; env `GOOGLE_CALENDAR_WEBHOOK_URL`.

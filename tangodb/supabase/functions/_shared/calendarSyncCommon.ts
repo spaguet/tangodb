@@ -393,11 +393,53 @@ export async function removeStaleLinks(
   currentBindingId: string,
   currentOccurrenceDate: string
 ): Promise<void> {
+  await removeStaleRecipientLinks(admin, config, links, {
+    occurrenceDate: currentOccurrenceDate,
+    memberBindingId: currentBindingId,
+    organizationBindingId: null,
+  });
+}
+
+function linkMatchesCurrentRecipient(
+  link: EventLinkRow,
+  current: {
+    occurrenceDate: string;
+    memberBindingId: string | null;
+    organizationBindingId: string | null;
+  }
+): boolean {
+  if (link.occurrence_date !== current.occurrenceDate) return false;
+
+  if (link.member_binding_id != null) {
+    return (
+      current.memberBindingId != null &&
+      link.member_binding_id === current.memberBindingId
+    );
+  }
+
+  if (link.organization_binding_id != null) {
+    return (
+      current.organizationBindingId != null &&
+      link.organization_binding_id === current.organizationBindingId
+    );
+  }
+
+  return false;
+}
+
+/** Removes Google events/links that no longer match the current recipient(s). */
+export async function removeStaleRecipientLinks(
+  admin: SupabaseClient,
+  config: GoogleOAuthConfig,
+  links: EventLinkRow[],
+  current: {
+    occurrenceDate: string;
+    memberBindingId: string | null;
+    organizationBindingId: string | null;
+  }
+): Promise<void> {
   for (const link of links) {
-    const stale =
-      link.occurrence_date !== currentOccurrenceDate ||
-      link.member_binding_id !== currentBindingId;
-    if (!stale) continue;
+    if (linkMatchesCurrentRecipient(link, current)) continue;
 
     await deleteGoogleEventForLink(admin, config, link);
     await deleteLinkRow(admin, link.id);

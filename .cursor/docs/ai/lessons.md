@@ -11,6 +11,13 @@
 
 ## Записи
 
+### 2026-08-06 — event_session: дубли в Google при смене org/member binding
+
+- **Дата:** 2026-08-06
+- **Ошибка:** при смене `created_by` или org-level календаря мероприятия старый Google event и link оставались в прежнем binding
+- **Причина:** `upsertEventSession` не вызывал очистку stale links (в отличие от personal/group, где есть `removeStaleLinks`)
+- **Как избежать:** для multi-recipient sync использовать `removeStaleRecipientLinks` с актуальными member/org binding id перед upsert
+
 ### 2026-08-06 — Расходы: column expenses.payee does not exist
 
 - **Дата:** 2026-08-06

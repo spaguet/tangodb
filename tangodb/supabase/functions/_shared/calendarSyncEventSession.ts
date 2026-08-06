@@ -22,6 +22,7 @@ import {
   deleteLinkRow,
   maybeClearBindingCleanup,
   maybeClearOrgBindingCleanup,
+  removeStaleRecipientLinks,
   upsertLinkRow,
   upsertOrgLinkRow,
   recordBindingSuccess,
@@ -304,6 +305,30 @@ export async function upsertEventSession(
   );
 
   const orgBinding = await loadActiveOrgBinding(admin, job.organization_id);
+  let memberBinding: MemberBindingRow | null = null;
+
+  const event = nestedEvent(session.calendar_events);
+  if (event?.created_by) {
+    const creatorActive = await isTeacherActive(
+      admin,
+      job.organization_id,
+      event.created_by
+    );
+    if (creatorActive) {
+      memberBinding = await loadActiveMemberEventsBinding(
+        admin,
+        job.organization_id,
+        event.created_by
+      );
+    }
+  }
+
+  await removeStaleRecipientLinks(admin, config, allLinks, {
+    occurrenceDate,
+    memberBindingId: memberBinding?.id ?? null,
+    organizationBindingId: orgBinding?.id ?? null,
+  });
+
   let firstFailure:
     | {
         err: unknown;
@@ -333,38 +358,23 @@ export async function upsertEventSession(
     }
   }
 
-  const event = nestedEvent(session.calendar_events);
-  if (event?.created_by && !firstFailure) {
-    const creatorActive = await isTeacherActive(
+  if (memberBinding && !firstFailure) {
+    const result = await syncToBinding(
       admin,
-      job.organization_id,
-      event.created_by
+      config,
+      session,
+      "member",
+      memberBinding,
+      allLinks,
+      occurrenceDate
     );
-    if (creatorActive) {
-      const memberBinding = await loadActiveMemberEventsBinding(
-        admin,
-        job.organization_id,
-        event.created_by
-      );
-      if (memberBinding) {
-        const result = await syncToBinding(
-          admin,
-          config,
-          session,
-          "member",
-          memberBinding,
-          allLinks,
-          occurrenceDate
-        );
-        if (!result.ok) {
-          firstFailure = {
-            err: result.err,
-            memberBindingId: result.bindingId,
-            orgBindingId: null,
-            currentLink: result.currentLink,
-          };
-        }
-      }
+    if (!result.ok) {
+      firstFailure = {
+        err: result.err,
+        memberBindingId: result.bindingId,
+        orgBindingId: null,
+        currentLink: result.currentLink,
+      };
     }
   }
 

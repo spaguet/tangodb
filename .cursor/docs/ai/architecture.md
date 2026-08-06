@@ -104,3 +104,5 @@
 - **Метрики:** `get_organization_calendar_sync_metrics`, `get_team_calendar_sync_metrics` (owner/director, для Prompt 8).
 - **UI статуса (Prompt 8):** `get_personal_lesson_google_sync_status` (урок), `useGoogleCalendarSyncStatus`, `TeamGoogleSyncSection`, `google-calendar-remind-connect`.
 - **Free/busy (Prompt 13):** `member_google_calendar_bindings.freebusy_calendar_ids`; incremental OAuth scopes (`calendar.freebusy` / `calendar.events.freebusy`); Edge Functions `google-calendar-freebusy` (только busy-интервалы, calendar IDs server-side), `google-calendar-set-freebusy-config`; UI `GoogleCalendarFreebusySection` + неблокирующее предупреждение в формах записи урока.
+- **Timezone resync (Prompt 14):** триггер на `organization_settings.timezone` → `enqueue_calendar_timezone_resync` (upsert всех будущих links org без удаления link-строк).
+- **Regression (Prompt 14):** `npm run lint` + `npm run build`; `test:db:google-calendar` — RLS/credential isolation; worker batch `batch_size` ≤ 100 (default 20), exponential backoff + jitter на 429/5xx; логи через `logEvent` без token/payload клиентов.

@@ -27,6 +27,7 @@
     "test:db:move-lesson": "psql \"%DATABASE_URL%\" -f supabase/tests/move_group_lesson_occurrence_test.sql",
     "test:db:cancel-batch": "psql \"%DATABASE_URL%\" -f supabase/tests/cancel_group_lesson_occurrences_test.sql",
     "test:db:calendar-events": "psql \"%DATABASE_URL%\" -f supabase/tests/calendar_events_test.sql",
+    "test:db:google-calendar": "psql \"%DATABASE_URL%\" -f supabase/tests/google_calendar_security_test.sql",
     "test:db:conducted-lessons": "psql \"%DATABASE_URL%\" -f supabase/tests/conducted_lessons_report_test.sql",
     "test:db:subscription-freeze": "psql \"%DATABASE_URL%\" -f supabase/tests/subscription_freeze_periods_test.sql",
     "test:db:group-capacity": "psql \"%DATABASE_URL%\" -f supabase/tests/group_capacity_waitlist_test.sql",
