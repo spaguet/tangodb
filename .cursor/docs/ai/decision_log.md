@@ -36,6 +36,18 @@
 - **Почему так:** Решения согласованы с существующей схемой (`personal_lessons`, версионируемые `schedule_slots`, `calendar_event_sessions`, `organization_settings`), RBAC и паттерном transactional outbox + server worker (§8, §19). Минимальный MVP закрывает основной сценарий «урок в CRM → событие у преподавателя» без блокировки CRM при ошибках Google.
 - **Следующие шаги:** Этап 1 (OAuth-таблицы + RLS) → Этап 2 (Edge Functions OAuth) → … (см. `steps`).
 
+### GCAL-1 — Хранение Google OAuth credential и уникальность subject (2026-08-06)
+
+- **Дата:** 2026-08-06
+- **Решение:**
+  1. **Credential storage:** `user_google_accounts.encrypted_refresh_token BYTEA` (AES-GCM ciphertext из Edge Function, ключ `GOOGLE_TOKEN_ENCRYPTION_KEY` в secrets). Supabase Vault в проекте не используется; `token_version` зарезервирован для смены схемы шифрования.
+  2. **Уникальность Google identity:** глобальный `UNIQUE (google_subject)` + `UNIQUE (user_id, google_subject)`. Попытка подключить тот же Google-аккаунт другим пользователем TangoDB — явная ошибка на callback (Промпт 2), без тихого переноса.
+  3. **Доступ к credential:** `authenticated` без grants на `user_google_accounts` и `google_oauth_states`; UI читает безопасные поля через `list_my_google_accounts()`. Bindings — только `SELECT` для участника и owner/director; `INSERT`/`UPDATE` — `service_role` (Edge Functions).
+  4. **Аудит connect/disconnect:** не generic DB trigger — запись в `audit_log` на этапе 2 (Edge Functions).
+- **Контекст:** Промпт 1 `tangodb_google_calendar_integration.md` — схема OAuth/bindings до outbox и worker.
+- **Альтернативы:** Supabase Vault `refresh_token_secret_id`; мягкая политика duplicate `google_subject` с переносом привязки.
+- **Почему так:** Vault не развёрнут в текущем стеке; жёсткий UNIQUE предотвращает split-brain credential; defense in depth через отсутствие PostgREST grants на секретные таблицы.
+
 ### REFUND-2 — Возврат с удержанием по тарифу разового посещения (2026-08-05)
 
 - **Решение:** В UI «Завершить с возвратом» для `lesson_count` добавить режим `single_visit_rate`: `refund = min(available, sale_price − used × single_visit_rate)`, где `used = lessons_total − lessons_left`. Тариф из прайса `single_visit` (фильтр по дисциплине) или ручной ввод. Сумма уходит в существующий `finish_subscription_with_refund`. Режим `pro_rata` остаётся умолчанием.

@@ -38,7 +38,7 @@ TangoDB — Google Calendar: этапы и промты
 
 ── Блок 1. OAuth и подключение (§16 Этап 1) ──
 
-[ ]  1   OAuth-таблицы + RLS
+[✅]  1   OAuth-таблицы + RLS — 2026-08-06
 [ ]  2   Edge Functions: OAuth start/callback/disconnect
 [ ]  3   Edge Function: список/создание календарей + binding
 [ ]  4   UI: Настройки → Интеграции → Google Calendar
@@ -75,7 +75,7 @@ TangoDB — Google Calendar: этапы и промты
 СЛЕДУЮЩИЙ ШАГ
 =======================================================
 
-Сейчас: этап 1 — OAuth-таблицы + RLS.
+Сейчас: этап 2 — Edge Functions: OAuth start/callback/disconnect.
 
 =======================================================
 СПРАВКА: ЧТО ЗА ЧТО ОТВЕЧАЕТ
