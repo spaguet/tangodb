@@ -404,6 +404,15 @@ verify_jwt = true
 [functions.landing-track-event]
 verify_jwt = false
 
+[functions.google-calendar-auth-start]
+verify_jwt = true
+
+[functions.google-calendar-auth-callback]
+verify_jwt = false
+
+[functions.google-calendar-disconnect]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

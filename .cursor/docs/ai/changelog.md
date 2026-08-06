@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-06 — Google Calendar интеграция, Этап 2 (Промпт 2): Edge Functions `google-calendar-auth-start`, `google-calendar-auth-callback`, `google-calendar-disconnect`; общий модуль `_shared/googleOAuth.ts` (PKCE S256, OIDC id_token/JWKS, AES-GCM шифрование refresh token, offline scopes `calendar.app.created` + `calendar.calendarlist.readonly`). Callback — атомарный consume `google_oauth_states`, upsert `user_google_accounts`, redirect с `?gcal=success|error`. Disconnect — org/member binding (`cleanup_pending`), account-level revoke без отзыва при org-only disconnect; `audit_log` на disconnect.
+
 2026-08-06 — Google Calendar интеграция, Этап 1 (Промпт 1): миграция `20260891000001_google_calendar_accounts.sql` — `user_google_accounts` (encrypted refresh token, backend-only), `google_oauth_states`, `member_google_calendar_bindings`, `organization_google_calendar_bindings`; RLS SELECT для участника/owner/director; RPC `list_my_google_accounts()`; guard-триггеры на соответствие Google-аккаунта участнику; GCAL-1 в `decision_log.md`.
 
 2026-08-06 — Google Calendar интеграция, Этап 0: зафиксированы MVP-решения (GCAL-0 в `decision_log.md`) — CRM outbound-only, отдельный календарь TangoDB, personal + group occurrence в MVP, `privacy_mode: initials`, отмена `delete`, горизонт 7/90 дней, reuse `organization_settings.timezone`, без sync аренды.
