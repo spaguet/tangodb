@@ -43,6 +43,7 @@ import LocationsSettingsPage from "./settings/pages/LocationsSettingsPage";
 import DataExportPage from "./settings/pages/DataExportPage";
 import TeamSettingsPage from "./settings/pages/TeamSettingsPage";
 import LicenseSettingsPage from "./settings/pages/LicenseSettingsPage";
+import IntegrationsSettingsPage from "./settings/pages/IntegrationsSettingsPage";
 import OrgSwitcher from "./organization/OrgSwitcher";
 import { useUIStore } from "./store/ui";
 import DashboardPage from "./pages/DashboardPage";
@@ -592,6 +593,7 @@ export default function App() {
                     <Route path="rental-tariffs" element={<Navigate to="/settings/hall-rent" replace />} />
                     <Route path="venue-costs" element={<VenueCostsLegacyRedirect />} />
                     <Route path="data" element={<ErrorBoundary><DataExportPage /></ErrorBoundary>} />
+                    <Route path="integrations" element={<ErrorBoundary><IntegrationsSettingsPage /></ErrorBoundary>} />
                     <Route path="license" element={<ErrorBoundary><LicenseSettingsPage /></ErrorBoundary>} />
                   </Route>
                   <Route path="*" element={<Navigate to="/" replace />} />

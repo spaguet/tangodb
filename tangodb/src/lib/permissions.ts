@@ -40,7 +40,8 @@ export type SettingsSectionId =
   | "hall-rent"
   | "data"
   | "team"
-  | "license";
+  | "license"
+  | "integrations";
 
 export type PermissionAction =
   | "clients.read"
@@ -626,6 +627,7 @@ export function settingsSectionFromPath(pathname: string): SettingsSectionId | n
     "data",
     "team",
     "license",
+    "integrations",
   ];
   return valid.includes(section) ? section : null;
 }
@@ -682,6 +684,8 @@ export function canAccessSettingsSection(
       return can(role, "team.manage", options);
     case "license":
       return can(role, "license.view", options);
+    case "integrations":
+      return role != null;
     default:
       return false;
   }
@@ -720,6 +724,7 @@ const SETTINGS_SECTION_ORDER: SettingsSectionId[] = [
   "locations",
   "hall-rent",
   "data",
+  "integrations",
   "license",
 ];
 

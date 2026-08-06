@@ -152,6 +152,7 @@ export function getPanelTitle(pathname: string, subscriptionsTab: string, t: Tra
   if (pathname.startsWith("/settings/data")) return t("nav.panel.settingsData");
   if (pathname.startsWith("/settings/team")) return t("nav.panel.team");
   if (pathname.startsWith("/settings/license")) return t("nav.panel.settingsLicense");
+  if (pathname.startsWith("/settings/integrations")) return t("nav.panel.settingsIntegrations");
   if (pathname.startsWith("/settings")) return t("nav.panel.settings");
   return "TangoDB";
 }
@@ -165,6 +166,7 @@ export function getSettingsNav(t: TranslateFn): { id: string; label: string; pat
     { id: "locations", label: t("settings.section.locations"), path: "/settings/locations" },
     { id: "hall-rent", label: t("settings.section.hallRent"), path: "/settings/hall-rent" },
     { id: "data", label: t("settings.section.data"), path: "/settings/data" },
+    { id: "integrations", label: t("settings.section.integrations"), path: "/settings/integrations" },
     { id: "license", label: t("settings.section.license"), path: "/settings/license" },
   ];
 }

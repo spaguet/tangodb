@@ -9,6 +9,7 @@ import {
   Users,
   KeyRound,
   Warehouse,
+  CalendarDays,
 } from "lucide-react";
 import { usePermissions } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
@@ -35,6 +36,7 @@ const SETTINGS_NAV_ICONS: Record<SettingsSectionId, typeof Settings> = {
   "hall-rent": Warehouse,
   data: Database,
   team: Users,
+  integrations: CalendarDays,
   license: KeyRound,
 };
 

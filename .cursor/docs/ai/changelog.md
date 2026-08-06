@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-06 — Google Calendar интеграция, Этап 1 (Промпт 4): UI «Настройки → Интеграции» (`/settings/integrations`) — `IntegrationsSettingsPage`, хук `useGoogleCalendarIntegration`, `lib/googleCalendarApi.ts`; OAuth connect (popup), выбор/создание календаря, статус binding, verify, disconnect (оставить/удалить будущие/revoke везде); пункт `integrations` в `SettingsSectionId` и навигации настроек.
+
 2026-08-06 — Google Calendar интеграция, Этап 1 (Промпт 3): Edge Functions `google-calendar-list-calendars`, `google-calendar-create-calendar`, `google-calendar-set-binding`; модуль `_shared/googleCalendarClient.ts` (refresh access token, calendarList, calendars.insert, коды `token_revoked` / `calendar_access_denied`). Set-binding — disable старого enabled binding, partial UNIQUE, `privacy_mode: initials`, audit_log.
 
 2026-08-06 — Google Calendar интеграция, Этап 2 (Промпт 2): Edge Functions `google-calendar-auth-start`, `google-calendar-auth-callback`, `google-calendar-disconnect`; общий модуль `_shared/googleOAuth.ts` (PKCE S256, OIDC id_token/JWKS, AES-GCM шифрование refresh token, offline scopes `calendar.app.created` + `calendar.calendarlist.readonly`). Callback — атомарный consume `google_oauth_states`, upsert `user_google_accounts`, redirect с `?gcal=success|error`. Disconnect — org/member binding (`cleanup_pending`), account-level revoke без отзыва при org-only disconnect; `audit_log` на disconnect.
