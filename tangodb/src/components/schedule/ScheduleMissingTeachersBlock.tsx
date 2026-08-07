@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { motion } from "motion/react";
-import { Loader2, UserRoundSearch } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { ChevronDown, Loader2, UserRoundSearch } from "lucide-react";
 import AppSelect from "../ui/AppSelect";
 import { btnAddCls } from "../ui/buttonStyles";
 import LoadingState from "../ui/LoadingState";
@@ -47,6 +47,7 @@ export default function ScheduleMissingTeachersBlock({
 
   const [selectedTeacherByKey, setSelectedTeacherByKey] = useState<Record<string, string>>({});
   const [assigningKey, setAssigningKey] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const rows = useMemo(() => {
     return (missingQuery.data ?? []).map((entry) => {
@@ -188,7 +189,14 @@ export default function ScheduleMissingTeachersBlock({
       animate={{ opacity: 1, y: 0 }}
       className="bg-white rounded-xl border border-violet-200/80 shadow-xs overflow-hidden"
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-b border-violet-100 bg-violet-50/60">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className={`w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 bg-violet-50/60 text-left cursor-pointer hover:bg-violet-50 transition-colors ${
+          expanded ? "border-b border-violet-100" : ""
+        }`}
+      >
         <div className="flex items-center gap-2 min-w-0">
           <UserRoundSearch className="w-4 h-4 text-violet-700 shrink-0" />
           <div className="min-w-0">
@@ -198,10 +206,27 @@ export default function ScheduleMissingTeachersBlock({
             <p className="text-[11px] text-slate-500">{t("schedule.missingTeachers.subtitle")}</p>
           </div>
         </div>
-        <span className="text-sm font-semibold text-violet-700 tabular-nums shrink-0">{countLabel}</span>
-      </div>
+        <div className="flex items-center justify-end gap-2 shrink-0">
+          <span className="text-sm font-semibold text-violet-700 tabular-nums">{countLabel}</span>
+          <ChevronDown
+            className={`w-4 h-4 text-violet-400 shrink-0 transition-transform duration-200 ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+      </button>
 
-      <ul className="divide-y divide-slate-100">
+      <AnimatePresence initial={false}>
+        {expanded ? (
+          <motion.div
+            key="missing-teachers-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <ul className="divide-y divide-slate-100">
         {rows.map((row) => {
           const key = entryKey(row.entry);
           const isAssigning = assigningKey === key;
@@ -266,7 +291,10 @@ export default function ScheduleMissingTeachersBlock({
             </li>
           );
         })}
-      </ul>
+            </ul>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </motion.section>
   );
 }
