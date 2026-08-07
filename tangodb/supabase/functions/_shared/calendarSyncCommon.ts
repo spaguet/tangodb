@@ -5,6 +5,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { GoogleCalendarEventResource } from "./calendarSyncPayload.ts";
 import {
+  createGoogleCalendar,
   deleteCalendarEvent,
   getCalendarEvent,
   GoogleCalendarApiError,
@@ -194,6 +195,88 @@ export async function loadActiveBinding(
     .maybeSingle();
 
   return (data as MemberBindingRow | null) ?? null;
+}
+
+export async function recreateMemberBindingCalendar(
+  admin: SupabaseClient,
+  config: GoogleOAuthConfig,
+  binding: MemberBindingRow
+): Promise<MemberBindingRow | null> {
+  const { data: account } = await admin
+    .from("user_google_accounts")
+    .select("granted_scopes")
+    .eq("id", binding.google_account_id)
+    .maybeSingle();
+  const scopes = (account?.granted_scopes as string[] | null | undefined) ?? [];
+  if (!scopes.includes("https://www.googleapis.com/auth/calendar.app.created")) {
+    return null;
+  }
+
+  const repairCode = "calendar_auto_repairing";
+  const nowIso = new Date().toISOString();
+  const { data: claimed, error: claimError } = await admin
+    .from("member_google_calendar_bindings")
+    .update({
+      last_error_code: repairCode,
+      last_error_at: nowIso,
+      updated_at: nowIso,
+    })
+    .eq("id", binding.id)
+    .eq("calendar_id", binding.calendar_id)
+    .or(`last_error_code.is.null,last_error_code.neq.${repairCode}`)
+    .select("id")
+    .maybeSingle();
+  if (claimError) throw claimError;
+
+  if (!claimed) {
+    const latest = await loadBindingById(admin, binding.organization_id, binding.id);
+    return latest?.calendar_id !== binding.calendar_id ? latest : null;
+  }
+
+  try {
+    const org = await loadOrgContext(admin, binding.organization_id);
+    const accessToken = await obtainAccessTokenForGoogleAccount(
+      admin,
+      config,
+      binding.google_account_id
+    );
+    const calendar = await createGoogleCalendar(
+      accessToken,
+      `TangoDB / ${org.organizationName}`,
+      org.timezone
+    );
+    const repairedAt = new Date().toISOString();
+    const { data: updated, error: updateError } = await admin
+      .from("member_google_calendar_bindings")
+      .update({
+        calendar_id: calendar.id,
+        calendar_name: calendar.summary,
+        timezone: calendar.timeZone,
+        last_error_code: null,
+        last_error_at: null,
+        updated_at: repairedAt,
+      })
+      .eq("id", binding.id)
+      .eq("calendar_id", binding.calendar_id)
+      .select(MEMBER_BINDING_SELECT)
+      .maybeSingle();
+    if (updateError || !updated) {
+      throw updateError ?? new Error("calendar_binding_repair_update_failed");
+    }
+    return updated as MemberBindingRow;
+  } catch (err) {
+    await admin
+      .from("member_google_calendar_bindings")
+      .update({
+        last_error_code: "calendar_auto_repair_failed",
+        last_error_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", binding.id)
+      .eq("calendar_id", binding.calendar_id)
+      .eq("last_error_code", repairCode);
+    throw err;
+  }
 }
 
 export async function loadActiveMemberEventsBinding(

@@ -11,6 +11,20 @@
 
 ## Записи
 
+### 2026-08-07 — `calendar.app.created` не даёт писать в основной календарь
+
+- **Дата:** 2026-08-07
+- **Ошибка:** worker получал Google API `404 Not Found` при вставке события в основной календарь пользователя.
+- **Причина:** binding указывал на primary calendar, а OAuth-аккаунт имел strict scope `calendar.app.created`, который разрешает управлять только календарями, созданными приложением.
+- **Как избежать:** в strict-scope режиме использовать выделенный календарь TangoDB; worker при 404 без существующего link создаёт такой календарь, атомарно обновляет binding и повторяет insert.
+
+### 2026-08-07 — Просроченный lease блокировал всю очередь Google Calendar
+
+- **Дата:** 2026-08-07
+- **Ошибка:** `calendar-sync-worker` возвращал `Claim failed`, и готовые `pending` задачи не обрабатывались.
+- **Причина:** пока задача была `processing`, повторный enqueue создавал отдельную `pending` строку с тем же `dedupe_key`; при истечении lease `claim_calendar_sync_jobs` пытался перевести старую строку в `retry` и нарушал partial unique index `idx_calendar_sync_outbox_pending_dedupe`.
+- **Как избежать:** перед возвратом просроченных lease в `retry` удалять устаревшую `processing` строку, если уже существует более новая `pending/retry` задача с тем же tenant-safe dedupe key.
+
 ### 2026-08-07 — pg_cron calendar-sync-worker: 403 при успешной обработке
 
 - **Дата:** 2026-08-07

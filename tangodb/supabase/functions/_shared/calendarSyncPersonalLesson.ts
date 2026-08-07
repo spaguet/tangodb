@@ -26,10 +26,12 @@ import {
   removeStaleLinks,
   upsertLinkRow,
   recordBindingSuccess,
+  recreateMemberBindingCalendar,
   syncEventToGoogle,
   handleSyncJobError,
 } from "./calendarSyncCommon.ts";
 import type { GoogleOAuthConfig } from "./googleOAuth.ts";
+import { GoogleCalendarApiError } from "./googleCalendarClient.ts";
 import { logEvent } from "./supabase.ts";
 import {
   deleteGroupOccurrence,
@@ -272,11 +274,12 @@ export async function upsertPersonalLesson(
     return;
   }
 
-  try {
+  let targetBinding = binding;
+  const syncAndSave = async () => {
     const { eventId, etag } = await syncEventToGoogle(
       admin,
       config,
-      binding,
+      targetBinding,
       payload,
       desiredHash,
       deterministicEventId,
@@ -285,7 +288,7 @@ export async function upsertPersonalLesson(
 
     await upsertLinkRow(admin, {
       organizationId: job.organization_id,
-      memberBindingId: binding.id,
+      memberBindingId: targetBinding.id,
       sourceType: "personal_lesson",
       sourceId: lesson.id,
       occurrenceDate,
@@ -293,7 +296,29 @@ export async function upsertPersonalLesson(
       googleEtag: etag,
       desiredHash,
     });
-    await recordBindingSuccess(admin, binding.id);
+  };
+
+  try {
+    try {
+      await syncAndSave();
+    } catch (err) {
+      const canRepairMissingCalendar =
+        !currentLink &&
+        err instanceof GoogleCalendarApiError &&
+        err.status === 404;
+      if (!canRepairMissingCalendar) throw err;
+
+      const repairedBinding = await recreateMemberBindingCalendar(
+        admin,
+        config,
+        targetBinding
+      );
+      if (!repairedBinding) throw err;
+      targetBinding = repairedBinding;
+      await syncAndSave();
+    }
+
+    await recordBindingSuccess(admin, targetBinding.id);
     await markJobDone(admin, job.id);
 
     logEvent("gcal_sync_upsert_done", {
@@ -304,7 +329,7 @@ export async function upsertPersonalLesson(
       link_status: "synced",
     });
   } catch (err) {
-    await handleSyncJobError(admin, job, binding.id, null, currentLink, err);
+    await handleSyncJobError(admin, job, targetBinding.id, null, currentLink, err);
 
     const apiErr = err instanceof Error ? err : null;
     logEvent("gcal_sync_job_error", {
