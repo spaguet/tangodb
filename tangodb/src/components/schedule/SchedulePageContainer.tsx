@@ -32,6 +32,7 @@ import AddGroupLessonForm from "./AddGroupLessonForm";
 import AddPersonalLessonForm from "./AddPersonalLessonForm";
 import EditLessonPopup from "./EditLessonPopup";
 import ScheduleDebtorsBlock from "./ScheduleDebtorsBlock";
+import ScheduleMissingTeachersBlock from "./ScheduleMissingTeachersBlock";
 import ScheduleUpcomingCancellationsBlock from "./ScheduleUpcomingCancellationsBlock";
 import TeacherVacationDialog from "./TeacherVacationDialog";
 import CreateCalendarEventDialog from "./CreateCalendarEventDialog";
@@ -522,6 +523,13 @@ export default function SchedulePageContainer() {
         disciplineMap={disciplineMap}
         teamMap={teamMap}
         locationMap={locationMap}
+      />
+
+      <ScheduleMissingTeachersBlock
+        disciplineMap={disciplineMap}
+        locationMap={locationMap}
+        teacherOptions={teacherFilterOptions}
+        onAssigned={handleScheduleRefresh}
       />
 
       <ScheduleDebtorsBlock

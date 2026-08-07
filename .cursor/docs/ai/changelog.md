@@ -2,6 +2,10 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-07 — Расписание: блок «Записи без преподавателя» (`ScheduleMissingTeachersBlock`) — список персональных и групповых записей без `teacher_member_id`, быстрое назначение преподавателя.
+
+2026-08-07 — Fix calendar-sync-worker 403 for pg_cron: `jsonResponse` пропускает CORS-проверку для запросов с валидным `x-cron-secret` (pg_net без Origin больше не получает `origin_not_allowed` поверх успешного body).
+
 2026-08-07 — Fix Integrations infinite calendar load loop (React #185): `useEffect` для picker больше не зависит от нестабильного mutation-объекта; загрузка календарей через `listGoogleCalendars` + ref-guard на account id.
 
 2026-08-07 — Fix Integrations crash on Google Calendar Edge Function errors: `main.tsx` больше не показывает boot-overlay на любой `unhandledrejection`; `googleCalendarApi.invokeFunction` — проверка сессии + i18n-код `errorEdgeFunctionUnreachable` для сетевых сбоев; `GoogleCalendarFreebusySection` — загрузка календарей по кнопке (не при открытии страницы); redeploy Edge Functions `google-calendar-list-calendars`, `google-calendar-freebusy`, `google-calendar-set-freebusy-config`, `google-calendar-auth-start`.

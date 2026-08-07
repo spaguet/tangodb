@@ -26,6 +26,13 @@ export function jsonResponse(
 ): Response {
   const cors = corsHeadersFor(req);
   if (!cors) {
+    // pg_cron / pg_net callers send no Origin; they authenticate via x-cron-secret.
+    if (verifyCronSecret(req)) {
+      return new Response(JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     return new Response(
       JSON.stringify({ ...body, error: body.error ?? "origin_not_allowed" }),
       {

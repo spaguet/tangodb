@@ -11,6 +11,13 @@
 
 ## Записи
 
+### 2026-08-07 — pg_cron calendar-sync-worker: 403 при успешной обработке
+
+- **Дата:** 2026-08-07
+- **Ошибка:** `net._http_response.status_code = 403`, body содержит и `ok:true, processed:N`, и `error: origin_not_allowed`
+- **Причина:** `jsonResponse` требовал `Origin` из `ALLOWED_ORIGINS`; pg_cron/pg_net вызывают Edge Function без Origin, поэтому успешный ответ worker перезаписывался в 403
+- **Как избежать:** для server-to-server вызовов (cron secret) не применять browser CORS gate к телу ответа; проверять `net._http_response.content`, а не только HTTP status
+
 ### 2026-08-07 — Integrations: boot overlay при ошибке Edge Function
 
 - **Дата:** 2026-08-07
