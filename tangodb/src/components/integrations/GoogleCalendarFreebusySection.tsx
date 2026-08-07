@@ -7,6 +7,7 @@ import {
   resolveFreebusyConsentPurpose,
 } from "../../lib/googleCalendarFreebusy";
 import type { GoogleCalendarListEntry } from "../../lib/googleCalendarApi";
+import { listGoogleCalendars } from "../../lib/googleCalendarApi";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { useToast } from "../../App";
 import { btnAddCls, btnOpenCls } from "../ui/buttonStyles";
@@ -19,7 +20,6 @@ export default function GoogleCalendarFreebusySection() {
     binding,
     isConfigured,
     memberId,
-    listCalendars,
     connect,
     setFreebusyConfig,
     invalidateAll,
@@ -35,21 +35,17 @@ export default function GoogleCalendarFreebusySection() {
     []
   );
 
-  const savedIds = binding?.freebusy_calendar_ids ?? [];
-  const hasScopes = accountHasFreebusyScopes(primaryAccount?.granted_scopes, selectedIds);
+  const savedIdsKey = binding?.freebusy_calendar_ids?.join("|") ?? "";
 
   useEffect(() => {
-    setSelectedIds(savedIds);
-  }, [savedIds.join("|")]);
+    setSelectedIds(binding?.freebusy_calendar_ids ?? []);
+  }, [savedIdsKey, binding?.freebusy_calendar_ids]);
 
   const loadCalendars = useCallback(async () => {
     if (!primaryAccount) return;
     setLoadingCalendars(true);
     try {
-      const list = await listCalendars.mutateAsync({
-        googleAccountId: primaryAccount.id,
-        purpose: "freebusy",
-      });
+      const list = await listGoogleCalendars(primaryAccount.id, { purpose: "freebusy" });
       const readable = list.filter((c) => c.selectable);
       setCalendars(readable);
       setCalendarsLoaded(true);
@@ -65,11 +61,13 @@ export default function GoogleCalendarFreebusySection() {
     } finally {
       setLoadingCalendars(false);
     }
-  }, [listCalendars, primaryAccount, toast, t]);
+  }, [primaryAccount, toast, t]);
 
   if (!isConfigured || !primaryAccount || !memberId) {
     return null;
   }
+
+  const hasScopes = accountHasFreebusyScopes(primaryAccount?.granted_scopes, selectedIds);
 
   const syncCalendarId = binding?.calendar_id;
 

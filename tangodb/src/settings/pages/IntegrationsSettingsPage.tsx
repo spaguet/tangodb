@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
@@ -19,6 +19,7 @@ import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError, isI18nKey } from "../../lib/resolveMutationError";
 import type { I18nKey } from "../../lib/i18n/keys";
 import type { GoogleCalendarListEntry } from "../../lib/googleCalendarApi";
+import { listGoogleCalendars } from "../../lib/googleCalendarApi";
 import TeamGoogleSyncSection from "../components/TeamGoogleSyncSection";
 import OrgEventsGoogleSyncSection from "../components/OrgEventsGoogleSyncSection";
 import GoogleCalendarFreebusySection from "../../components/integrations/GoogleCalendarFreebusySection";
@@ -39,7 +40,6 @@ export default function IntegrationsSettingsPage() {
     organizationId,
     isMemberActive,
     connect,
-    listCalendars,
     createCalendar,
     setBinding,
     disconnect,
@@ -54,6 +54,7 @@ export default function IntegrationsSettingsPage() {
   const [deleteOldOnChange, setDeleteOldOnChange] = useState(false);
   const [disconnectMode, setDisconnectMode] = useState<DisconnectMode>(null);
   const [loadingCalendars, setLoadingCalendars] = useState(false);
+  const calendarsFetchedForRef = useRef<string | null>(null);
 
   const returnUrl = useMemo(
     () => `${window.location.origin}/settings/integrations`,
@@ -83,7 +84,7 @@ export default function IntegrationsSettingsPage() {
     async (googleAccountId: string) => {
       setLoadingCalendars(true);
       try {
-        const list = await listCalendars.mutateAsync(googleAccountId);
+        const list = await listGoogleCalendars(googleAccountId);
         setCalendars(list);
         const writable = list.filter((c) => c.selectable);
         if (writable.length > 0) {
@@ -106,12 +107,18 @@ export default function IntegrationsSettingsPage() {
         setLoadingCalendars(false);
       }
     },
-    [listCalendars, toast, t]
+    [toast, t]
   );
 
   useEffect(() => {
-    if (!pickerOpen || !primaryAccount) return;
-    void loadCalendars(primaryAccount.id);
+    if (!pickerOpen || !primaryAccount) {
+      calendarsFetchedForRef.current = null;
+      return;
+    }
+    const accountId = primaryAccount.id;
+    if (calendarsFetchedForRef.current === accountId) return;
+    calendarsFetchedForRef.current = accountId;
+    void loadCalendars(accountId);
   }, [pickerOpen, primaryAccount?.id, loadCalendars]);
 
   const needsCalendarSetup =
