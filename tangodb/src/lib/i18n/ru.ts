@@ -434,8 +434,11 @@ export const RU: Record<I18nKey, string> = {
   "integrations.googleCalendar.oauthErrorGeneric": "Не удалось подключить Google: {{reason}}",
   "integrations.googleCalendar.oauthError.google_account_in_use": "Этот Google-аккаунт уже связан с другим пользователем TangoDB",
   "integrations.googleCalendar.errorGeneric": "Ошибка интеграции с Google Calendar",
+  "integrations.googleCalendar.errorEdgeFunctionUnreachable":
+    "Не удалось связаться с сервером интеграций. Обновите страницу или попробуйте позже.",
   "integrations.googleCalendar.freebusy.title": "Проверка занятости",
   "integrations.googleCalendar.freebusy.subtitle": "При записи урока TangoDB может предупредить, если преподаватель занят в выбранных Google-календарях. Проверяется только занято/свободно — без названий и деталей событий.",
+  "integrations.googleCalendar.freebusy.loadCalendars": "Загрузить список календарей",
   "integrations.googleCalendar.freebusy.loadingCalendars": "Загрузка календарей…",
   "integrations.googleCalendar.freebusy.noCalendars": "Нет календарей для проверки занятости.",
   "integrations.googleCalendar.freebusy.syncCalendarBadge": "календарь синхронизации TangoDB",

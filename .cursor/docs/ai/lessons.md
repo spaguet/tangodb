@@ -11,6 +11,13 @@
 
 ## Записи
 
+### 2026-08-07 — Integrations: boot overlay при ошибке Edge Function
+
+- **Дата:** 2026-08-07
+- **Ошибка:** на `/settings/integrations` toast «Failed to send a request to the Edge Function» и полноэкранное «Не удалось загрузить TangoDB»
+- **Причина:** после GCAL Prompt 13 `GoogleCalendarFreebusySection` автоматически вызывала `google-calendar-list-calendars` при открытии страницы; любой сбой сети/функции давал `unhandledrejection`, а `main.tsx` трактовал **любой** rejection как фатальный boot error
+- **Как избежать:** не вешать глобальный boot-overlay на `unhandledrejection`; Edge Function вызывать по действию пользователя; маппить transport-ошибки Supabase в i18n-ключи
+
 ### 2026-08-06 — event_session: дубли в Google при смене org/member binding
 
 - **Дата:** 2026-08-06

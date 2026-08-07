@@ -28,6 +28,7 @@ export default function GoogleCalendarFreebusySection() {
   const [calendars, setCalendars] = useState<GoogleCalendarListEntry[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loadingCalendars, setLoadingCalendars] = useState(false);
+  const [calendarsLoaded, setCalendarsLoaded] = useState(false);
 
   const returnUrl = useMemo(
     () => `${window.location.origin}/settings/integrations`,
@@ -51,6 +52,7 @@ export default function GoogleCalendarFreebusySection() {
       });
       const readable = list.filter((c) => c.selectable);
       setCalendars(readable);
+      setCalendarsLoaded(true);
     } catch (err) {
       toast(
         resolveMutationError(
@@ -64,11 +66,6 @@ export default function GoogleCalendarFreebusySection() {
       setLoadingCalendars(false);
     }
   }, [listCalendars, primaryAccount, toast, t]);
-
-  useEffect(() => {
-    if (!isConfigured || !primaryAccount) return;
-    void loadCalendars();
-  }, [isConfigured, primaryAccount?.id, loadCalendars]);
 
   if (!isConfigured || !primaryAccount || !memberId) {
     return null;
@@ -138,7 +135,19 @@ export default function GoogleCalendarFreebusySection() {
         </div>
       </div>
 
-      {loadingCalendars ? (
+      {!calendarsLoaded ? (
+        <button
+          type="button"
+          onClick={() => void loadCalendars()}
+          disabled={loadingCalendars}
+          className={btnOpenCls}
+        >
+          {loadingCalendars ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : null}
+          {t("integrations.googleCalendar.freebusy.loadCalendars")}
+        </button>
+      ) : loadingCalendars ? (
         <p className="text-xs text-slate-500 flex items-center gap-2">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
           {t("integrations.googleCalendar.freebusy.loadingCalendars")}

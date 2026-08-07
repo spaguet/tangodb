@@ -69,6 +69,16 @@ export interface GoogleCalendarListEntry {
 
 type EdgePayload = { ok?: boolean; error?: string; code?: string };
 
+function isEdgeTransportError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("failed to send a request to the edge function") ||
+    normalized.includes("failed to fetch") ||
+    normalized.includes("networkerror") ||
+    normalized.includes("load failed")
+  );
+}
+
 async function parseFunctionError(error: unknown): Promise<string> {
   const fnError = error as { message?: string; context?: Response };
   if (fnError.context) {
@@ -80,13 +90,22 @@ async function parseFunctionError(error: unknown): Promise<string> {
       /* ignore parse failure */
     }
   }
-  return fnError.message ?? "request_failed";
+  const message = fnError.message ?? "request_failed";
+  if (isEdgeTransportError(message)) {
+    return "integrations.googleCalendar.errorEdgeFunctionUnreachable";
+  }
+  return message;
 }
 
 async function invokeFunction<T extends EdgePayload>(
   name: string,
   body?: Record<string, unknown>
 ): Promise<T> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
+    throw new Error("not_authenticated");
+  }
+
   const { data, error } = await supabase.functions.invoke(name, { body });
 
   if (error) {

@@ -437,8 +437,11 @@ export const EN: Record<I18nKey, string> = {
   "integrations.googleCalendar.oauthErrorGeneric": "Could not connect Google: {{reason}}",
   "integrations.googleCalendar.oauthError.google_account_in_use": "This Google account is already linked to another TangoDB user",
   "integrations.googleCalendar.errorGeneric": "Google Calendar integration error",
+  "integrations.googleCalendar.errorEdgeFunctionUnreachable":
+    "Could not reach the integration server. Refresh the page or try again later.",
   "integrations.googleCalendar.freebusy.title": "Busy-time check",
   "integrations.googleCalendar.freebusy.subtitle": "When booking lessons, TangoDB can warn if the teacher is busy in selected Google calendars. Only busy/free is checked — no event titles or details.",
+  "integrations.googleCalendar.freebusy.loadCalendars": "Load calendar list",
   "integrations.googleCalendar.freebusy.loadingCalendars": "Loading calendars…",
   "integrations.googleCalendar.freebusy.noCalendars": "No calendars available for busy-time check.",
   "integrations.googleCalendar.freebusy.syncCalendarBadge": "TangoDB sync calendar",
