@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
+import { APP_VERSION } from "./lib/appVersion";
 import { AuthProvider, useAuth } from "./auth/AuthProvider";
 import {
   AuthFlowRoute,
@@ -339,7 +340,8 @@ function AppLayout() {
           {renderNav()}
 
           <div className="p-4 border-t border-slate-100 text-center text-[10px] text-slate-400 font-sans">
-            © TangoDB Studio Controller
+            <p>v{APP_VERSION}</p>
+            <p>© TangoDB Studio Controller</p>
           </div>
         </aside>
 
