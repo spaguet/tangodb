@@ -153,6 +153,7 @@ export function useRecordSubscriptionPayment() {
         return {
           success: false as const,
           error: result?.error ?? "subscriptions.error.paymentFailed",
+          errorCode: result?.error_code,
         };
       }
       return {
@@ -212,7 +213,7 @@ export function useRecordPersonalLessonPayment() {
       if (!result?.success) {
         const ackFailure = venueRuleAckFailureFromRpc(result as Record<string, unknown> | null);
         if (ackFailure) return ackFailure;
-        return { success: false as const, error: result?.error ?? "subscriptions.error.paymentFailed" };
+        return { success: false as const, error: result?.error ?? "subscriptions.error.paymentFailed", errorCode: result?.error_code };
       }
       return {
         success: true as const,

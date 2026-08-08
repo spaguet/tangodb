@@ -139,6 +139,8 @@ export default function PersonalLessonSaleForm({
   const recordPersonalLessonPayment = useRecordPersonalLessonPayment();
   const venueStatusQuery = useVenueCostRuleStatus();
   const lessonPaymentIdempotencyKeys = useRef<Record<string, string>>({});
+  const bookingInFlightRef = useRef(false);
+  const pendingVenueBookingRef = useRef<{ immediatePaid: boolean } | null>(null);
 
   const getLessonPaymentIdempotencyKey = (lessonId: string): string => {
     const existing = lessonPaymentIdempotencyKeys.current[lessonId];
@@ -380,9 +382,18 @@ export default function PersonalLessonSaleForm({
   };
 
   const handleBook = async (immediatePaid: boolean, venueRuleAcknowledged = false) => {
+    if (bookingInFlightRef.current) return;
+
+    if (!immediatePaid) {
+      pendingVenueBookingRef.current = null;
+      setPendingVenuePayment(null);
+      setVenueConfirmStatus(null);
+    }
+
     if (immediatePaid && !venueRuleAcknowledged) {
       const currentStatus = (await venueStatusQuery.refetch()).data;
       if (currentStatus?.acknowledgementRequired) {
+        pendingVenueBookingRef.current = { immediatePaid: true };
         setVenueConfirmStatus(currentStatus);
         return;
       }
@@ -478,56 +489,76 @@ export default function PersonalLessonSaleForm({
     }
 
     const willRecordCashPayments =
-      immediatePaid && bookingPaymentMode !== "package" && priceNum > 0;
+      immediatePaid && bookingPaymentMode === "single" && priceNum > 0;
     const slotGroups = groupSlotsByTime(slots);
     const createdIds: string[] = [];
 
-    for (const group of slotGroups) {
-      const res = await addPersonalLessons.mutateAsync({
-        requireScope: true,
-        type: pType,
-        clientId1: bookingClients[0].id,
-        clientId2: bookingClients.length >= 2 ? bookingClients[1].id : "",
-        clientId3: bookingClients.length >= 3 ? bookingClients[2].id : "",
-        clientId4: bookingClients.length >= 4 ? bookingClients[3].id : "",
-        dates: group.dates,
-        timeStart: group.timeStart,
-        timeEnd: group.timeEnd,
-        price: priceNum,
-        // Keep unpaid until cash payments succeed — avoids "paid without payment" and ack-retry duplicates.
-        paid: willRecordCashPayments ? false : immediatePaid,
-        disciplineId,
-        locationId: effectiveLocationId,
-        teacherMemberId,
-        subscriptionId: bookingPaymentMode === "package" ? linkedSubscriptionId || undefined : undefined,
-      });
+    bookingInFlightRef.current = true;
+    try {
+      for (const group of slotGroups) {
+        const res = await addPersonalLessons.mutateAsync({
+          requireScope: true,
+          type: pType,
+          clientId1: bookingClients[0].id,
+          clientId2: bookingClients.length >= 2 ? bookingClients[1].id : "",
+          clientId3: bookingClients.length >= 3 ? bookingClients[2].id : "",
+          clientId4: bookingClients.length >= 4 ? bookingClients[3].id : "",
+          dates: group.dates,
+          timeStart: group.timeStart,
+          timeEnd: group.timeEnd,
+          price: priceNum,
+          // Keep unpaid until cash payments succeed — avoids "paid without payment" and ack-retry duplicates.
+          paid: willRecordCashPayments ? false : immediatePaid,
+          disciplineId,
+          locationId: effectiveLocationId,
+          teacherMemberId,
+          subscriptionId: bookingPaymentMode === "package" ? linkedSubscriptionId || undefined : undefined,
+        });
 
-      if (!res.success) {
-        toast(res.error ?? t("common.bookFailed"), "error");
+        if (!res.success) {
+          toast(res.error ?? t("common.bookFailed"), "error");
+          return;
+        }
+        if (res.ids) createdIds.push(...res.ids);
+      }
+
+      if (!immediatePaid) {
+        const countLabel =
+          createdIds.length > 1 ? t("personal.countSuffix", { count: createdIds.length }) : "";
+        toast(
+          linkedSubscriptionId && bookingPaymentMode === "package"
+            ? t("personal.success.bookedPackage", { count: countLabel })
+            : t("personal.success.bookedUnpaid", { count: countLabel }),
+          "success"
+        );
+        onSuccess();
+        onClose?.();
         return;
       }
-      if (res.ids) createdIds.push(...res.ids);
-    }
 
-    if (willRecordCashPayments && createdIds.length) {
-      const c1 = directoryClients.find((c) => c.id === bookingClients[0].id);
-      const clientDisplay = c1
-        ? formatClientName(c1.lastName, c1.firstName)
-        : bookingClients[0].query || t("common.client");
+      if (willRecordCashPayments && createdIds.length) {
+        const c1 = directoryClients.find((c) => c.id === bookingClients[0].id);
+        const clientDisplay = c1
+          ? formatClientName(c1.lastName, c1.firstName)
+          : bookingClients[0].query || t("common.client");
 
-      for (const lessonId of createdIds) {
-        const paymentRes = await recordPersonalLessonPayment.mutateAsync({
-          lessonId,
-          clientId: bookingClients[0].id,
-          clientDisplay,
-          amount: priceNum,
-          method: "cash",
-          markPaid: true,
-          idempotencyKey: getLessonPaymentIdempotencyKey(lessonId),
-          venueRuleAcknowledged,
-        });
-        if (!paymentRes.success) {
-          if ("errorCode" in paymentRes && paymentRes.errorCode === "venue_rule_ack_required") {
+        for (const lessonId of createdIds) {
+          const paymentRes = await recordPersonalLessonPayment.mutateAsync({
+            lessonId,
+            clientId: bookingClients[0].id,
+            clientDisplay,
+            amount: priceNum,
+            method: "cash",
+            markPaid: true,
+            idempotencyKey: getLessonPaymentIdempotencyKey(lessonId),
+            venueRuleAcknowledged,
+          });
+          if (!paymentRes.success) {
+          if (
+            "errorCode" in paymentRes &&
+            paymentRes.errorCode === "venue_rule_ack_required" &&
+            "venueRuleStatus" in paymentRes
+          ) {
             setPendingVenuePayment({
               lessonIds: createdIds,
               clientId: bookingClients[0].id,
@@ -537,12 +568,15 @@ export default function PersonalLessonSaleForm({
             setVenueConfirmStatus(paymentRes.venueRuleStatus);
             return;
           }
-          toast(paymentRes.error ?? t("common.bookedPaymentFailed"), "error");
-          onSuccess();
-          onClose?.();
-          return;
+            toast(paymentRes.error ?? t("common.bookedPaymentFailed"), "error");
+            onSuccess();
+            onClose?.();
+            return;
+          }
         }
       }
+    } finally {
+      bookingInFlightRef.current = false;
     }
 
     const countLabel =
@@ -561,7 +595,10 @@ export default function PersonalLessonSaleForm({
 
   const confirmVenuePayment = async () => {
     if (!pendingVenuePayment) {
+      const pendingBooking = pendingVenueBookingRef.current;
+      pendingVenueBookingRef.current = null;
       setVenueConfirmStatus(null);
+      if (!pendingBooking?.immediatePaid) return;
       void handleBook(true, true);
       return;
     }
@@ -1074,6 +1111,7 @@ export default function PersonalLessonSaleForm({
         onCancel={() => {
           setVenueConfirmStatus(null);
           setPendingVenuePayment(null);
+          pendingVenueBookingRef.current = null;
         }}
       />
     </>

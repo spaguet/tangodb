@@ -196,7 +196,11 @@ export default function PayPersonalLessonModal({
 
     if (!paymentRes.success) {
       paymentSubmit.reset();
-      if ("errorCode" in paymentRes && paymentRes.errorCode === "venue_rule_ack_required") {
+      if (
+        "errorCode" in paymentRes &&
+        paymentRes.errorCode === "venue_rule_ack_required" &&
+        "venueRuleStatus" in paymentRes
+      ) {
         setVenueConfirmStatus(paymentRes.venueRuleStatus);
         return;
       }

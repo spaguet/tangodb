@@ -111,7 +111,7 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
     timeStart: normalizeTime((row.time_start as string) || "14:00"),
     timeEnd: normalizeTime((row.time_end as string) || "15:00"),
     price: maskFinancial ? 0 : Number(row.price) || 0,
-    paid: (row.paid as "yes" | "no" | undefined) ?? "yes",
+    paid: (row.paid as "yes" | "no" | undefined) ?? "no",
     paidAmount: maskFinancial ? 0 : Number(row.paid_amount) || 0,
     disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
     subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
@@ -144,12 +144,17 @@ function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string,
   return hasFilter ? suffix : null;
 }
 
-function invalidatePersonalLessonRelatedQueries(queryClient: QueryClient, refetchType?: "active") {
-  const opts = refetchType ? { refetchType } : undefined;
+function invalidatePersonalLessonRelatedQueries(
+  queryClient: QueryClient,
+  options?: { refetchType?: "active"; includePayments?: boolean }
+) {
+  const opts = options?.refetchType ? { refetchType: options.refetchType } : undefined;
   void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: ["schedule"], ...opts });
   void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
-  void queryClient.invalidateQueries({ queryKey: paymentsQueryKey, ...opts });
+  if (options?.includePayments !== false) {
+    void queryClient.invalidateQueries({ queryKey: paymentsQueryKey, ...opts });
+  }
 }
 
 function resolveDeleteInput(input: DeletePersonalLessonInput): { id: string; lessonDate?: string } {
@@ -331,7 +336,9 @@ export function useAddPersonalLessons() {
       return { success: true as const, ids: rows.map((row) => row.id as string) };
     },
     onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient);
+      if (result.success) {
+        invalidatePersonalLessonRelatedQueries(queryClient, { includePayments: false });
+      }
     },
   });
 }
@@ -385,7 +392,7 @@ export function useDeletePersonalLesson() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, "active");
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, { refetchType: "active" });
     },
   });
 }
@@ -417,7 +424,7 @@ export function useDeletePersonalLessonSeriesFromDate() {
       return { success: true as const, deletedCount: result.deleted_count ?? 0 };
     },
     onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, "active");
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, { refetchType: "active" });
     },
   });
 }
