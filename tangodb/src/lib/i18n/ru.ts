@@ -2973,6 +2973,9 @@ export const RU: Record<I18nKey, string> = {
   "venueCosts.finance.teacherExpenseTotal": "Внешняя аренда (удержания)",
   "venueCosts.finance.teacherExpenseRow": "Удержание по правилу оплаты",
   "venueCosts.finance.teacherExpenseEmpty": "Нет начислений по удержаниям за выбранный период",
+  "venueCosts.finance.reason.correctionAfterRuleAccept": "Пересчёт аренды после принятия правила",
+  "venueCosts.finance.reason.correctedZeroAccrual": "Пересчёт нулевого начисления аренды",
+  "venueCosts.finance.reason.resolvedByRule": "Заменено правилом аренды",
 
   "teacherPayRules.title": "Правила удержаний и долей",
   "teacherPayRules.subtitle": "Укажите, какую часть выручки студия удерживает или фиксированную сумму за урок. Выплата преподавателю = выручка минус удержание.",

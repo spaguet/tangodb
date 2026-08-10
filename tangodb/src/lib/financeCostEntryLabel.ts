@@ -1,5 +1,6 @@
 import type { FinanceCostEntry } from "../hooks/useVenueCosts";
 import type { I18nKey } from "./i18n/keys";
+import { formatVenueCostAccrualReason } from "./venueCostAccrualReason";
 
 function joinParts(parts: Array<string | null | undefined>, separator = " · "): string {
   return parts.map((part) => part?.trim()).filter(Boolean).join(separator);
@@ -68,8 +69,15 @@ export function formatFinanceCostEntryTitle(
     ]);
   }
 
-  if (kind === "venue_adjustment" && entry.reason?.trim()) {
-    return entry.reason.trim();
+  if (kind === "venue_adjustment") {
+    const reasonLabel = formatVenueCostAccrualReason(entry.reason, t);
+    return joinParts([
+      reasonLabel,
+      title || discipline,
+      timeRange,
+      attendees,
+      location,
+    ]);
   }
 
   return entry.description?.trim() || title || t("venueCosts.finance.autoRow");

@@ -2975,6 +2975,9 @@ export const EN: Record<I18nKey, string> = {
   "venueCosts.finance.teacherExpenseTotal": "External rent (deductions)",
   "venueCosts.finance.teacherExpenseRow": "Deduction from pay rule",
   "venueCosts.finance.teacherExpenseEmpty": "No deduction accruals for the selected period",
+  "venueCosts.finance.reason.correctionAfterRuleAccept": "Rent recalculated after rule acceptance",
+  "venueCosts.finance.reason.correctedZeroAccrual": "Zero rent accrual corrected",
+  "venueCosts.finance.reason.resolvedByRule": "Replaced by rent rule",
 
   "teacherPayRules.title": "Share and deduction rules",
   "teacherPayRules.subtitle": "Define the studio's share of revenue or a fixed amount per lesson. Teacher pay = revenue minus deduction.",
