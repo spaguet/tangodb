@@ -116,6 +116,7 @@ export default function PayPersonalLessonModal({
   const lessonId = lesson?.lessonId;
 
   useEffect(() => {
+    paymentSubmit.reset();
     if (!lessonId || !lesson) {
       setBookingPaymentMode(null);
       return;
