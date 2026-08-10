@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Pencil, Plus, Receipt, Trash2, X } from "lucide-react";
+import { ChevronDown, Pencil, Plus, Receipt, Trash2, X } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect from "../components/ui/AppSelect";
@@ -155,6 +155,8 @@ export default function FinanceExpensesPage() {
   const [editing, setEditing] = useState<Expense | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
   const [form, setForm] = useState<ExpenseInput>(emptyForm);
+  const [venueExpanded, setVenueExpanded] = useState(false);
+  const [teacherExpenseExpanded, setTeacherExpenseExpanded] = useState(false);
 
   const expensesFilter = useMemo(
     () => ({
@@ -182,6 +184,16 @@ export default function FinanceExpensesPage() {
     if (categoryFilter === "all") return all;
     return all.filter((entry) => entry.category === categoryFilter);
   }, [financeCostsQuery.data, categoryFilter]);
+  const sortCostEntries = (entries: FinanceCostEntry[]) =>
+    [...entries].sort(
+      (a, b) =>
+        b.entryDate.localeCompare(a.entryDate) || b.createdAt.localeCompare(a.createdAt)
+    );
+  const sortedVenueEntries = useMemo(() => sortCostEntries(venueEntries), [venueEntries]);
+  const sortedTeacherExpenseEntries = useMemo(
+    () => sortCostEntries(teacherExpenseEntries),
+    [teacherExpenseEntries]
+  );
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
@@ -345,8 +357,8 @@ export default function FinanceExpensesPage() {
         </div>
 
         {items.length === 0 ? (
-          <div className="py-20 text-center">
-            <Receipt className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+          <div className="py-8 text-center">
+            <Receipt className="w-6 h-6 text-slate-300 mx-auto mb-2" />
             <p className="text-sm text-slate-500">
               {hasActiveFilters ? t("finance.expenses.emptyFiltered") : t("finance.expenses.empty")}
             </p>
@@ -393,17 +405,40 @@ export default function FinanceExpensesPage() {
       )}
 
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/40">
-          <div>
-            <h2 className="font-sans text-sm font-semibold text-slate-800">{t("venueCosts.finance.venueTotal")}</h2>
-            <p className="text-[11px] text-slate-500 mt-0.5">{t("venueCosts.finance.autoRow")}</p>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
+        <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/40">
+          <button
+            type="button"
+            onClick={() => setVenueExpanded((open) => !open)}
+            aria-expanded={venueExpanded}
+            className="flex items-start gap-2 min-w-0 text-left cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <ChevronDown
+              className={`w-4 h-4 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+                venueExpanded ? "rotate-180" : ""
+              }`}
+            />
+            <div className="min-w-0">
+              <h2 className="font-sans text-sm font-semibold text-slate-800">
+                {t("venueCosts.finance.venueTotal")}
+              </h2>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                {t("venueCosts.finance.autoRow")}
+                {sortedVenueEntries.length > 0 ? (
+                  <>
+                    {" · "}
+                    {plural(sortedVenueEntries.length, [
+                      t("common.records.one", { count: sortedVenueEntries.length }),
+                      t("common.records.few", { count: sortedVenueEntries.length }),
+                      t("common.records.many", { count: sortedVenueEntries.length }),
+                    ])}
+                  </>
+                ) : null}
+              </p>
+            </div>
+          </button>
+          <div className="flex items-center gap-3 shrink-0 sm:pl-6">
             {canManageVenueRules && (
-              <Link
-                to={venueRulesLink}
-                className={btnAddCls}
-              >
+              <Link to={venueRulesLink} className={btnAddCls}>
                 <Plus className="w-4 h-4" />
                 {t(hasVenueRules ? "venueCosts.finance.manageRules" : "venueCosts.finance.createRules")}
               </Link>
@@ -413,69 +448,88 @@ export default function FinanceExpensesPage() {
             </p>
           </div>
         </div>
-        {venueEntries.length === 0 ? (
-          <div className="px-4 py-8 text-center">
-            <p className="text-sm text-slate-500">{t("venueCosts.empty")}</p>
-            {canManageVenueRules && (
-              <Link
-                to={venueRulesLink}
-                className={`${btnAddCls} mt-4`}
-              >
-                <Plus className="w-4 h-4" />
-                {t(hasVenueRules ? "venueCosts.finance.manageRules" : "venueCosts.finance.createRules")}
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div>
-            {venueEntries.map((entry) => (
-              <FinanceCostEntryRow
-                key={entry.id}
-                entry={entry}
-                fallbackTitle={t("venueCosts.finance.autoRow")}
-                title={formatFinanceCostEntryTitle(entry, t)}
-                formatDate={formatDate}
-                categoryLabel={categoryLabel}
-              />
-            ))}
-          </div>
-        )}
+        {venueExpanded ? (
+          sortedVenueEntries.length === 0 ? (
+            <div className="px-4 py-6 text-center border-t border-slate-100">
+              <p className="text-sm text-slate-500">{t("venueCosts.empty")}</p>
+            </div>
+          ) : (
+            <div className="border-t border-slate-100">
+              {sortedVenueEntries.map((entry) => (
+                <FinanceCostEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  fallbackTitle={t("venueCosts.finance.autoRow")}
+                  title={formatFinanceCostEntryTitle(entry, t)}
+                  formatDate={formatDate}
+                  categoryLabel={categoryLabel}
+                />
+              ))}
+            </div>
+          )
+        ) : null}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/40">
-          <div>
-            <h2 className="font-sans text-sm font-semibold text-slate-800">
-              {t("venueCosts.finance.teacherExpenseTotal")}
-            </h2>
-            <p className="text-[11px] text-slate-500 mt-0.5">{t("teacherPayRules.externalRentHint")}</p>
-          </div>
-          <p className="text-sm font-semibold text-slate-800 whitespace-nowrap">
+        <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/40">
+          <button
+            type="button"
+            onClick={() => setTeacherExpenseExpanded((open) => !open)}
+            aria-expanded={teacherExpenseExpanded}
+            className="flex items-start gap-2 min-w-0 text-left cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <ChevronDown
+              className={`w-4 h-4 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+                teacherExpenseExpanded ? "rotate-180" : ""
+              }`}
+            />
+            <div className="min-w-0">
+              <h2 className="font-sans text-sm font-semibold text-slate-800">
+                {t("venueCosts.finance.teacherExpenseTotal")}
+              </h2>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                {t("teacherPayRules.externalRentHint")}
+                {!financeCostsUnavailable && sortedTeacherExpenseEntries.length > 0 ? (
+                  <>
+                    {" · "}
+                    {plural(sortedTeacherExpenseEntries.length, [
+                      t("common.records.one", { count: sortedTeacherExpenseEntries.length }),
+                      t("common.records.few", { count: sortedTeacherExpenseEntries.length }),
+                      t("common.records.many", { count: sortedTeacherExpenseEntries.length }),
+                    ])}
+                  </>
+                ) : null}
+              </p>
+            </div>
+          </button>
+          <p className="text-sm font-semibold text-slate-800 whitespace-nowrap sm:pl-6">
             {financeCostsUnavailable ? "—" : formatCurrency(teacherExpenseTotal)}
           </p>
         </div>
-        {financeCostsUnavailable ? (
-          <div className="px-4 py-8 text-center">
-            <p className="text-sm text-slate-500">{t("venueCosts.finance.teacherExpenseEmpty")}</p>
-          </div>
-        ) : teacherExpenseEntries.length === 0 ? (
-          <div className="px-4 py-8 text-center">
-            <p className="text-sm text-slate-500">{t("venueCosts.finance.teacherExpenseEmpty")}</p>
-          </div>
-        ) : (
-          <div>
-            {teacherExpenseEntries.map((entry) => (
-              <FinanceCostEntryRow
-                key={entry.id}
-                entry={entry}
-                fallbackTitle={t("venueCosts.finance.teacherExpenseRow")}
-                title={formatFinanceCostEntryTitle(entry, t)}
-                formatDate={formatDate}
-                categoryLabel={categoryLabel}
-              />
-            ))}
-          </div>
-        )}
+        {teacherExpenseExpanded ? (
+          financeCostsUnavailable ? (
+            <div className="px-4 py-6 text-center border-t border-slate-100">
+              <p className="text-sm text-slate-500">{t("venueCosts.finance.teacherExpenseEmpty")}</p>
+            </div>
+          ) : sortedTeacherExpenseEntries.length === 0 ? (
+            <div className="px-4 py-6 text-center border-t border-slate-100">
+              <p className="text-sm text-slate-500">{t("venueCosts.finance.teacherExpenseEmpty")}</p>
+            </div>
+          ) : (
+            <div className="border-t border-slate-100">
+              {sortedTeacherExpenseEntries.map((entry) => (
+                <FinanceCostEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  fallbackTitle={t("venueCosts.finance.teacherExpenseRow")}
+                  title={formatFinanceCostEntryTitle(entry, t)}
+                  formatDate={formatDate}
+                  categoryLabel={categoryLabel}
+                />
+              ))}
+            </div>
+          )
+        ) : null}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs px-4 py-3 flex justify-between items-center">
