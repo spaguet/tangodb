@@ -139,6 +139,10 @@ export interface PersonalDisplayLesson {
   disciplineId: string | null;
   locationId: string | null;
   teacherMemberId: string | null;
+  clientId1?: string;
+  clientId2?: string;
+  clientId3?: string;
+  clientId4?: string;
   clientDisplay?: string;
 }
 

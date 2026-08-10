@@ -138,6 +138,10 @@ export function useScheduleForWeek(
       disciplineId: lesson.disciplineId ?? null,
       locationId: lesson.locationId ?? null,
       teacherMemberId: lesson.teacherMemberId ?? null,
+      clientId1: lesson.clientId1 || undefined,
+      clientId2: lesson.clientId2 || undefined,
+      clientId3: lesson.clientId3 || undefined,
+      clientId4: lesson.clientId4 || undefined,
       clientDisplay: lesson.clientDisplay,
     }));
 

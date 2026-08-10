@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Info, MapPin, Trash2, User, X } from "lucide-react";
+import { CalendarDays, Info, MapPin, Trash2, X } from "lucide-react";
 import {
   useAddGroupSchedule,
   useDeleteScheduleSlot,
@@ -9,6 +9,7 @@ import {
   useUpdateGroupScheduleValidity,
 } from "../../hooks/useSchedule";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
+import { useClients, useClientDirectory } from "../../hooks/useClients";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -34,9 +35,11 @@ import { addDays, getWeekRange, isScheduleDateLockedForWrite, nextOccurrenceOnOr
 import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
-import type { Discipline, DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot } from "../../types";
+import type { I18nKey } from "../../lib/i18n/keys";
+import type { Client, Discipline, DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
+import ClientAutocomplete from "../ui/ClientAutocomplete";
 import DisciplineSelect from "../ui/DisciplineSelect";
 import LocationSelect from "../ui/LocationSelect";
 import RequirePermission from "../RequirePermission";
@@ -74,6 +77,59 @@ const readOnlyCls =
 
 const addDayBtnCls =
   "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
+
+const addClientRowBtnCls =
+  "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
+
+const MAX_PERSONAL_CLIENTS = 4;
+
+interface BookingClientField {
+  query: string;
+  id: string;
+}
+
+function participantTypeFromCount(count: number): "solo" | "pair" | "trio" | "quad" {
+  if (count >= 4) return "quad";
+  if (count >= 3) return "trio";
+  if (count === 2) return "pair";
+  return "solo";
+}
+
+function validateBookingClients(
+  clients: BookingClientField[],
+  t: (key: I18nKey, params?: Record<string, string | number>) => string
+): string | null {
+  if (!clients[0]?.id) return t("common.selectClientError");
+  for (let i = 1; i < clients.length; i += 1) {
+    if (!clients[i]?.query || !clients[i]?.id) {
+      return t("common.selectClientN", { n: i + 1 });
+    }
+  }
+  return null;
+}
+
+function clientIdsFromLesson(lesson: PersonalDisplayLesson): string[] {
+  return [lesson.clientId1, lesson.clientId2, lesson.clientId3, lesson.clientId4].filter(
+    (id): id is string => Boolean(id)
+  );
+}
+
+function bookingClientsFromLesson(
+  lesson: PersonalDisplayLesson,
+  directoryClients: Client[]
+): BookingClientField[] {
+  const ids = clientIdsFromLesson(lesson);
+  if (ids.length === 0) {
+    return [{ query: lesson.clientDisplay ?? "", id: "" }];
+  }
+  return ids.map((id) => {
+    const client = directoryClients.find((item) => item.id === id);
+    return {
+      id,
+      query: client ? `${client.lastName} ${client.firstName}` : lesson.clientDisplay ?? "",
+    };
+  });
+}
 
 interface GroupSlotRow {
   key: string;
@@ -154,6 +210,8 @@ export default function EditLessonPopup({
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const updatePersonalLesson = useUpdatePersonalLesson();
   const updateClassMaxCapacity = useUpdateClassMaxCapacity();
+  const { data: activeClients = [] } = useClients();
+  const { data: directoryClients = [] } = useClientDirectory();
   const { data: scheduleGroups = [] } = useScheduleGroups();
   const googleSyncStatus = useGoogleCalendarSyncStatus(
     lesson?.kind === "personal" ? lesson.lessonId : null,
@@ -171,6 +229,7 @@ export default function EditLessonPopup({
   const [timeEnd, setTimeEnd] = useState("20:00");
   const [personalDate, setPersonalDate] = useState("");
   const [locationId, setLocationId] = useState("");
+  const [bookingClients, setBookingClients] = useState<BookingClientField[]>([{ query: "", id: "" }]);
   const [groupSlotRows, setGroupSlotRows] = useState<GroupSlotRow[]>([]);
   const [originalGroupSlots, setOriginalGroupSlots] = useState<GroupSlotRow[]>([]);
   const [repeatConfig, setRepeatConfig] = useState<GroupRepeatConfig>(() =>
@@ -228,8 +287,22 @@ export default function EditLessonPopup({
       setTeacherMemberId(initialTeacherMemberId);
       setTimeStart(lesson.timeStart);
       setTimeEnd(lesson.timeEnd);
+      setBookingClients(bookingClientsFromLesson(lesson, directoryClients));
     }
-  }, [editLessonKey, lesson, scheduleSlots, teacherOptions, memberId, isTeacher, todayISO]);
+  }, [editLessonKey, lesson, scheduleSlots, teacherOptions, memberId, isTeacher, todayISO, directoryClients]);
+
+  useEffect(() => {
+    if (!lesson || lesson.kind !== "personal") return;
+    setBookingClients((prev) =>
+      prev.map((client) => {
+        if (!client.id || client.query) return client;
+        const directoryClient = directoryClients.find((item) => item.id === client.id);
+        return directoryClient
+          ? { ...client, query: `${directoryClient.lastName} ${directoryClient.firstName}` }
+          : client;
+      })
+    );
+  }, [lesson, directoryClients]);
 
   useEffect(() => {
     if (!lesson) return;
@@ -334,7 +407,7 @@ export default function EditLessonPopup({
 
   const canReadClients = lesson ? canReadLessonClients(role, lesson, can) : false;
 
-  const clientLabel =
+  const maskedClientLabel =
     lesson?.kind === "personal"
       ? maskClientDisplay(lesson.clientDisplay, canReadClients)
       : "";
@@ -739,6 +812,30 @@ export default function EditLessonPopup({
       return;
     }
 
+    let clientPayload: {
+      type: "solo" | "pair" | "trio" | "quad";
+      clientId1: string;
+      clientId2: string;
+      clientId3: string;
+      clientId4: string;
+    } | null = null;
+
+    if (canReadClients) {
+      const clientError = validateBookingClients(bookingClients, t);
+      if (clientError) {
+        toast(clientError, "error");
+        return;
+      }
+      const selectedIds = bookingClients.map((client) => client.id);
+      clientPayload = {
+        type: participantTypeFromCount(selectedIds.length),
+        clientId1: selectedIds[0] ?? "",
+        clientId2: selectedIds[1] ?? "",
+        clientId3: selectedIds[2] ?? "",
+        clientId4: selectedIds[3] ?? "",
+      };
+    }
+
     const res = await updatePersonalLesson.mutateAsync({
       id: lesson.lessonId,
       lessonDate: lesson.date,
@@ -748,6 +845,7 @@ export default function EditLessonPopup({
       disciplineId,
       teacherMemberId: resolvedTeacherMemberId,
       locationId: personalListEdit ? locationId : lesson.locationId,
+      ...(clientPayload ?? {}),
     });
 
     if (!res.success) {
@@ -1000,31 +1098,85 @@ export default function EditLessonPopup({
                   </>
                 ) : (
                   <>
-                    {!personalListEdit && (
-                      <>
-                        <div className="field-stack">
+                    <div className="field-stack">
+                      {canReadClients ? (
+                        <>
+                          {bookingClients.map((client, idx) => (
+                            <div key={idx} className="flex items-start gap-2">
+                              <div className="flex-1 min-w-0">
+                                <ClientAutocomplete
+                                  label={idx === 0 ? t("common.client") : t("common.clientN", { n: idx + 1 })}
+                                  clients={activeClients}
+                                  query={client.query}
+                                  selectedId={client.id}
+                                  showAddClientButton
+                                  addClientLinkLabel={t("common.newClient")}
+                                  toast={toast}
+                                  onQueryChange={(query) => {
+                                    setBookingClients((prev) => {
+                                      const next = [...prev];
+                                      next[idx] = { query, id: "" };
+                                      return next;
+                                    });
+                                  }}
+                                  onSelect={(selectedClient: Client) => {
+                                    setBookingClients((prev) => {
+                                      const next = [...prev];
+                                      next[idx] = {
+                                        query: `${selectedClient.lastName} ${selectedClient.firstName}`,
+                                        id: selectedClient.id,
+                                      };
+                                      return next;
+                                    });
+                                  }}
+                                />
+                              </div>
+                              {idx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setBookingClients((prev) => prev.filter((_, i) => i !== idx))}
+                                  className="mt-6 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0"
+                                  title={t("common.removeClient")}
+                                  aria-label={t("common.removeClient")}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          {bookingClients.length < MAX_PERSONAL_CLIENTS && (
+                            <button
+                              type="button"
+                              onClick={() => setBookingClients((prev) => [...prev, { query: "", id: "" }])}
+                              className={addClientRowBtnCls}
+                            >
+                              {t("common.addClient")}
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <>
                           <label className={labelCls}>{t("common.clientsLabel")}</label>
-                          <div className={readOnlyCls}>
-                            <User className="w-4 h-4 text-slate-400 shrink-0" />
-                            {clientLabel}
-                          </div>
-                        </div>
+                          <div className={readOnlyCls}>{maskedClientLabel}</div>
+                        </>
+                      )}
+                    </div>
 
-                        <div className="field-stack">
-                          <label className={labelCls} htmlFor="edit-lesson-date">
-                            {t("common.date")}
-                          </label>
-                          <input
-                            id="edit-lesson-date"
-                            type="date"
-                            required
-                            min={todayISO}
-                            value={personalDate}
-                            onChange={(e) => setPersonalDate(e.target.value)}
-                            className={fieldCls}
-                          />
-                        </div>
-                      </>
+                    {!personalListEdit && (
+                      <div className="field-stack">
+                        <label className={labelCls} htmlFor="edit-lesson-date">
+                          {t("common.date")}
+                        </label>
+                        <input
+                          id="edit-lesson-date"
+                          type="date"
+                          required
+                          min={todayISO}
+                          value={personalDate}
+                          onChange={(e) => setPersonalDate(e.target.value)}
+                          className={fieldCls}
+                        />
+                      </div>
                     )}
 
                     {personalListEdit && (
