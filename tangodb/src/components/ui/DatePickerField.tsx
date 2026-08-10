@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { jsDayToIsoDow } from "../../lib/utils";
 import { toISODateLocal } from "../../lib/scheduleWeek";
@@ -17,6 +18,9 @@ interface DatePickerFieldProps {
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 const triggerCls = `${fieldCls} flex items-center gap-2 hover:border-indigo-300 text-left cursor-pointer`;
+const CALENDAR_MIN_WIDTH = 280;
+const CALENDAR_ESTIMATED_HEIGHT = 300;
+const MENU_GAP = 4;
 
 function buildMonthGrid(viewMonth: Date): (Date | null)[] {
   const year = viewMonth.getFullYear();
@@ -55,6 +59,11 @@ export default function DatePickerField({
   const { t, locale, formatDate } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelStyle, setPanelStyle] = useState<{ top: number; left: number; width: number } | null>(
+    null
+  );
 
   const parsedValue = value ? new Date(`${value}T12:00:00`) : null;
   const [viewMonth, setViewMonth] = useState(() => {
@@ -83,16 +92,55 @@ export default function DatePickerField({
     t("utils.dow.short.sun"),
   ];
 
+  const updatePanelPosition = useCallback(() => {
+    const button = buttonRef.current;
+    if (!button) return;
+
+    const rect = button.getBoundingClientRect();
+    const width = Math.max(rect.width, CALENDAR_MIN_WIDTH);
+    const spaceBelow = window.innerHeight - rect.bottom - MENU_GAP;
+    const spaceAbove = rect.top - MENU_GAP;
+    const openUp = spaceBelow < CALENDAR_ESTIMATED_HEIGHT && spaceAbove > spaceBelow;
+    const panelHeight = panelRef.current?.offsetHeight ?? CALENDAR_ESTIMATED_HEIGHT;
+
+    let left = rect.left;
+    if (left + width > window.innerWidth - MENU_GAP) {
+      left = Math.max(MENU_GAP, window.innerWidth - width - MENU_GAP);
+    }
+
+    setPanelStyle({
+      top: openUp ? rect.top - MENU_GAP - panelHeight : rect.bottom + MENU_GAP,
+      left,
+      width,
+    });
+  }, []);
+
   useEffect(() => {
     if (!open) return;
+    updatePanelPosition();
+
     const onPointerDown = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (!rootRef.current?.contains(target) && !panelRef.current?.contains(target)) {
         setOpen(false);
       }
     };
+
     document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
-  }, [open]);
+    window.addEventListener("scroll", updatePanelPosition, true);
+    window.addEventListener("resize", updatePanelPosition);
+
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("scroll", updatePanelPosition, true);
+      window.removeEventListener("resize", updatePanelPosition);
+    };
+  }, [open, updatePanelPosition]);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePanelPosition();
+  }, [open, viewMonth, updatePanelPosition]);
 
   useEffect(() => {
     if (!value) return;
@@ -115,6 +163,85 @@ export default function DatePickerField({
     setOpen(false);
   };
 
+  const calendarPanel =
+    open && panelStyle ? (
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-label={t("common.selectDate")}
+        style={{
+          top: panelStyle.top,
+          left: panelStyle.left,
+          width: panelStyle.width,
+        }}
+        className="fixed z-[100] rounded-xl border border-slate-200 bg-white shadow-lg p-3"
+      >
+        <div className="flex items-center justify-between mb-3">
+          <button
+            type="button"
+            onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+            aria-label={t("ui.datePicker.prevMonth")}
+            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-xs font-semibold text-slate-800 capitalize">{monthLabel}</span>
+          <button
+            type="button"
+            onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+            aria-label={t("ui.datePicker.nextMonth")}
+            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-7 gap-0.5 mb-1">
+          {weekdayHeaders.map((d) => (
+            <div
+              key={d}
+              className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 py-1"
+            >
+              {d}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7 gap-0.5">
+          {cells.map((day, idx) => {
+            if (!day) {
+              return <div key={`empty-${idx}`} className="h-8" />;
+            }
+
+            const iso = toISODateLocal(day);
+            const selected = value === iso;
+            const isToday = isSameDay(day, today);
+            const disabled = isDisabled(day);
+
+            return (
+              <button
+                key={iso}
+                type="button"
+                disabled={disabled}
+                onClick={() => handleSelect(day)}
+                className={`h-8 rounded-md text-xs font-semibold transition-colors ${
+                  disabled
+                    ? "text-slate-300 cursor-not-allowed"
+                    : selected
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
+                      : isToday
+                        ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 cursor-pointer"
+                        : "text-slate-700 hover:bg-slate-100 cursor-pointer"
+                }`}
+              >
+                {day.getDate()}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    ) : null;
+
   return (
     <div ref={rootRef} className={`field-stack relative ${className ?? ""}`}>
       {label && (
@@ -124,6 +251,7 @@ export default function DatePickerField({
         </label>
       )}
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
@@ -134,77 +262,7 @@ export default function DatePickerField({
         <span>{value ? formatDate(value, { day: "numeric", month: "long", year: "numeric" }) : t("ui.datePicker.selectDate")}</span>
       </button>
 
-      {open && (
-        <div
-          role="dialog"
-          aria-label={t("common.selectDate")}
-          className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-slate-200 bg-white shadow-lg p-3"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <button
-              type="button"
-              onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-              aria-label={t("ui.datePicker.prevMonth")}
-              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-xs font-semibold text-slate-800 capitalize">{monthLabel}</span>
-            <button
-              type="button"
-              onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-              aria-label={t("ui.datePicker.nextMonth")}
-              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-0.5 mb-1">
-            {weekdayHeaders.map((d) => (
-              <div
-                key={d}
-                className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 py-1"
-              >
-                {d}
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-0.5">
-            {cells.map((day, idx) => {
-              if (!day) {
-                return <div key={`empty-${idx}`} className="h-8" />;
-              }
-
-              const iso = toISODateLocal(day);
-              const selected = value === iso;
-              const isToday = isSameDay(day, today);
-              const disabled = isDisabled(day);
-
-              return (
-                <button
-                  key={iso}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => handleSelect(day)}
-                  className={`h-8 rounded-md text-xs font-semibold transition-colors ${
-                    disabled
-                      ? "text-slate-300 cursor-not-allowed"
-                      : selected
-                        ? "bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
-                        : isToday
-                          ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 cursor-pointer"
-                          : "text-slate-700 hover:bg-slate-100 cursor-pointer"
-                  }`}
-                >
-                  {day.getDate()}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {calendarPanel ? createPortal(calendarPanel, document.body) : null}
     </div>
   );
 }
