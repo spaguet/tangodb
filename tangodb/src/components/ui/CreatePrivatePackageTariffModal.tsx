@@ -56,7 +56,7 @@ export default function CreatePrivatePackageTariffModal({
   const [bindToLocation, setBindToLocation] = useState(false);
   const [formLocationId, setFormLocationId] = useState("");
   const [bindToDiscipline, setBindToDiscipline] = useState(false);
-  const [formDisciplineId, setFormDisciplineId] = useState("");
+  const [formDisciplineIds, setFormDisciplineIds] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function CreatePrivatePackageTariffModal({
       return;
     }
     setFormLocationId(locations[0]?.id ?? "");
-    setFormDisciplineId(disciplines[0]?.id ?? "");
+    setFormDisciplineIds(disciplines[0]?.id ? [disciplines[0].id] : []);
   }, [open, locations, disciplines]);
 
   const handleSubmit = async () => {
@@ -105,7 +105,7 @@ export default function CreatePrivatePackageTariffModal({
       toast(t("prices.error.locationRequired"), "error");
       return;
     }
-    if (bindToDiscipline && !formDisciplineId) {
+    if (bindToDiscipline && formDisciplineIds.length === 0) {
       toast(t("prices.error.disciplineRequired"), "error");
       return;
     }
@@ -119,7 +119,7 @@ export default function CreatePrivatePackageTariffModal({
       description: form.description,
       category: "private",
       locationId: bindToLocation ? formLocationId : null,
-      disciplineId: bindToDiscipline ? formDisciplineId : null,
+      disciplineIds: bindToDiscipline ? formDisciplineIds : [],
       billingModel: "lesson_count",
     });
     setPending(false);
@@ -239,8 +239,8 @@ export default function CreatePrivatePackageTariffModal({
               <DisciplineTariffField
                 bindToDiscipline={bindToDiscipline}
                 onBindChange={setBindToDiscipline}
-                disciplineId={formDisciplineId}
-                onDisciplineChange={setFormDisciplineId}
+                disciplineIds={formDisciplineIds}
+                onDisciplineIdsChange={setFormDisciplineIds}
                 disciplines={disciplines}
               />
             </div>

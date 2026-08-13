@@ -41,6 +41,7 @@ import {
   getPrivateLessonTariffs,
   getPrivatePackageTariffs,
   getSingleVisitTariffs,
+  getPriceDisciplineIds,
   isGlobalTeacherTariff,
   isMonthlyUnlimitedTariff,
 } from "../lib/utils";
@@ -171,11 +172,11 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const [bindToLocation, setBindToLocation] = useState(false);
   const [formLocationId, setFormLocationId] = useState("");
   const [bindToDiscipline, setBindToDiscipline] = useState(false);
-  const [formDisciplineId, setFormDisciplineId] = useState("");
+  const [formDisciplineIds, setFormDisciplineIds] = useState<string[]>([]);
   const [editBindToLocation, setEditBindToLocation] = useState(false);
   const [editLocationId, setEditLocationId] = useState("");
   const [editBindToDiscipline, setEditBindToDiscipline] = useState(false);
-  const [editDisciplineId, setEditDisciplineId] = useState("");
+  const [editDisciplineIds, setEditDisciplineIds] = useState<string[]>([]);
   const [formTeacherMemberIds, setFormTeacherMemberIds] = useState<string[]>([]);
   const [editTeacherMemberIds, setEditTeacherMemberIds] = useState<string[]>([]);
   const [syncingTeacherRows, setSyncingTeacherRows] = useState<Record<string, boolean>>({});
@@ -266,7 +267,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     setBindToLocation(false);
     setFormLocationId(locations[0]?.id ?? "");
     setBindToDiscipline(false);
-    setFormDisciplineId(disciplines[0]?.id ?? "");
+    setFormDisciplineIds(disciplines[0]?.id ? [disciplines[0].id] : []);
     setFormTeacherMemberIds([]);
   }, [createModalStep, locations, disciplines]);
 
@@ -324,8 +325,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     setEditDescription(getPriceDescription(p, t));
     setEditBindToLocation(!!p.locationId);
     setEditLocationId(p.locationId ?? locations[0]?.id ?? "");
-    setEditBindToDiscipline(!!p.disciplineId);
-    setEditDisciplineId(p.disciplineId ?? disciplines[0]?.id ?? "");
+    setEditBindToDiscipline(getPriceDisciplineIds(p).length > 0);
+    setEditDisciplineIds(getPriceDisciplineIds(p));
     setEditTeacherMemberIds(p.teacherMemberIds ?? []);
   };
 
@@ -343,7 +344,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       toast(t("prices.error.locationRequired"), "error");
       return;
     }
-    if (editBindToDiscipline && !editDisciplineId) {
+    if (editBindToDiscipline && editDisciplineIds.length === 0) {
       toast(t("prices.error.disciplineRequired"), "error");
       return;
     }
@@ -353,7 +354,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       label: editLabel,
       description: editDescription,
       locationId: editBindToLocation ? editLocationId : null,
-      disciplineId: editBindToDiscipline ? editDisciplineId : null,
+      disciplineIds: editBindToDiscipline ? editDisciplineIds : [],
       teacherMemberIds: editTeacherMemberIds,
     });
 
@@ -457,7 +458,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       toast(t("prices.error.locationRequired"), "error");
       return;
     }
-    if (bindToDiscipline && !formDisciplineId) {
+    if (bindToDiscipline && formDisciplineIds.length === 0) {
       toast(t("prices.error.disciplineRequired"), "error");
       return;
     }
@@ -490,7 +491,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       description: form.description,
       category: section === "group" ? "group" : section === "singleVisit" ? "single_visit" : "private",
       locationId: bindToLocation ? formLocationId : null,
-      disciplineId: bindToDiscipline ? formDisciplineId : null,
+      disciplineIds: bindToDiscipline ? formDisciplineIds : [],
       billingModel,
       teacherMemberIds: formTeacherMemberIds,
     });
@@ -543,8 +544,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     <DisciplineTariffField
       bindToDiscipline={bindToDiscipline}
       onBindChange={setBindToDiscipline}
-      disciplineId={formDisciplineId}
-      onDisciplineChange={setFormDisciplineId}
+      disciplineIds={formDisciplineIds}
+      onDisciplineIdsChange={setFormDisciplineIds}
       disciplines={disciplines}
     />
   );
@@ -635,7 +636,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
             {formatCurrency(p.price)}
           </p>
           <p className="text-[10px] font-sans mt-1 space-x-2">
-            {!p.locationId && !p.disciplineId ? (
+            {!p.locationId && getPriceDisciplineIds(p).length === 0 ? (
               <span className="text-slate-400">{t("prices.globalTariff")}</span>
             ) : (
               <>
@@ -644,9 +645,12 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     {t("prices.localTariff")} · {locationMap[p.locationId] ?? t("prices.fallbackLocation")}
                   </span>
                 ) : null}
-                {p.disciplineId ? (
+                {getPriceDisciplineIds(p).length > 0 ? (
                   <span className="text-indigo-500 font-semibold">
-                    {t("prices.disciplineLabel")} · {disciplineMap[p.disciplineId] ?? t("prices.fallbackDiscipline")}
+                    {t("prices.disciplineLabel")} ·{" "}
+                    {getPriceDisciplineIds(p)
+                      .map((id) => disciplineMap[id] ?? t("prices.fallbackDiscipline"))
+                      .join(", ")}
                   </span>
                 ) : null}
               </>
@@ -935,8 +939,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 <DisciplineTariffField
                   bindToDiscipline={editBindToDiscipline}
                   onBindChange={setEditBindToDiscipline}
-                  disciplineId={editDisciplineId}
-                  onDisciplineChange={setEditDisciplineId}
+                  disciplineIds={editDisciplineIds}
+                  onDisciplineIdsChange={setEditDisciplineIds}
                   disciplines={disciplines}
                 />
                 <TeacherTariffDropdown

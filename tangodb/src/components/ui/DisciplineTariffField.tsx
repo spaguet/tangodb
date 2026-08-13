@@ -1,4 +1,5 @@
-import AppSelect from "./AppSelect";
+import { useMemo } from "react";
+import GroupCheckboxDropdown from "./GroupCheckboxDropdown";
 import { useI18n } from "../../hooks/useI18n";
 import type { Discipline } from "../../types";
 
@@ -7,19 +8,24 @@ const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-
 interface DisciplineTariffFieldProps {
   bindToDiscipline: boolean;
   onBindChange: (checked: boolean) => void;
-  disciplineId: string;
-  onDisciplineChange: (id: string) => void;
+  disciplineIds: string[];
+  onDisciplineIdsChange: (ids: string[]) => void;
   disciplines: Discipline[];
 }
 
 export default function DisciplineTariffField({
   bindToDiscipline,
   onBindChange,
-  disciplineId,
-  onDisciplineChange,
+  disciplineIds,
+  onDisciplineIdsChange,
   disciplines,
 }: DisciplineTariffFieldProps) {
   const { t } = useI18n();
+  const disciplineOptions = useMemo(
+    () => disciplines.map((disc) => ({ key: disc.id, label: disc.name })),
+    [disciplines]
+  );
+
   return (
     <div className="space-y-2">
       <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
@@ -39,18 +45,14 @@ export default function DisciplineTariffField({
               {t("ui.tariff.noDisciplinesHint")}
             </p>
           ) : (
-            <AppSelect
+            <GroupCheckboxDropdown
               label={t("common.discipline")}
-              value={disciplineId}
-              onChange={(e) => onDisciplineChange(e.target.value)}
-            >
-              <option value="">{t("ui.tariff.selectDiscipline")}</option>
-              {disciplines.map((disc) => (
-                <option key={disc.id} value={disc.id}>
-                  {disc.name}
-                </option>
-              ))}
-            </AppSelect>
+              options={disciplineOptions}
+              selectedKeys={disciplineIds}
+              onChange={onDisciplineIdsChange}
+              placeholder={t("ui.tariff.selectDiscipline")}
+              emptyMessage={t("ui.tariff.noDisciplinesHint")}
+            />
           )}
         </div>
       )}

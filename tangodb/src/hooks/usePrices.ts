@@ -6,6 +6,7 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 export const pricesQueryKey = ["prices"] as const;
 
 type PriceTeacherRow = { member_id: string };
+type PriceDisciplineRow = { discipline_id: string };
 
 const mapPrice = (row: Record<string, unknown>): Price => {
   const teacherRows = (row.price_teacher_members as PriceTeacherRow[] | null | undefined) ?? [];
@@ -14,6 +15,20 @@ const mapPrice = (row: Record<string, unknown>): Price => {
     : teacherRows
         .map((item) => item.member_id)
         .filter((id): id is string => typeof id === "string" && id.length > 0);
+
+  const disciplineRows = (row.price_disciplines as PriceDisciplineRow[] | null | undefined) ?? [];
+  const disciplineIdsFromJunction = Array.isArray(row.discipline_ids)
+    ? row.discipline_ids.map(String)
+    : disciplineRows
+        .map((item) => item.discipline_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0);
+  const legacyDisciplineId = row.discipline_id != null ? String(row.discipline_id) : null;
+  const disciplineIds =
+    disciplineIdsFromJunction.length > 0
+      ? disciplineIdsFromJunction
+      : legacyDisciplineId
+        ? [legacyDisciplineId]
+        : [];
 
   return {
     id: String(row.id),
@@ -24,7 +39,8 @@ const mapPrice = (row: Record<string, unknown>): Price => {
     description: (row.description as string) || undefined,
     category: row.category as PriceCategory,
     locationId: row.location_id != null ? String(row.location_id) : null,
-    disciplineId: row.discipline_id != null ? String(row.discipline_id) : null,
+    disciplineId: disciplineIds.length === 1 ? disciplineIds[0] : legacyDisciplineId,
+    disciplineIds,
     teacherMemberIds,
     billingModel: (row.billing_model as Price["billingModel"]) || "lesson_count",
     freezeMaxCount: row.freeze_max_count != null ? Number(row.freeze_max_count) : null,
@@ -45,7 +61,7 @@ export function usePrices() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("prices")
-        .select("*, price_teacher_members(member_id)")
+        .select("*, price_teacher_members(member_id), price_disciplines(discipline_id)")
         .eq("status", "active")
         .order("type")
         .order("lessons");
@@ -98,14 +114,14 @@ export function useUpdatePriceMeta() {
       label,
       description,
       locationId,
-      disciplineId,
+      disciplineIds,
       teacherMemberIds,
     }: {
       id: string;
       label: string;
       description: string;
       locationId?: string | null;
-      disciplineId?: string | null;
+      disciplineIds?: string[];
       teacherMemberIds?: string[];
     }) => {
       const payload: Record<string, unknown> = {
@@ -113,10 +129,19 @@ export function useUpdatePriceMeta() {
         description: description.trim(),
       };
       if (locationId !== undefined) payload.location_id = locationId;
-      if (disciplineId !== undefined) payload.discipline_id = disciplineId;
+      if (disciplineIds !== undefined) {
+        payload.discipline_id = disciplineIds.length === 1 ? disciplineIds[0] : null;
+      }
 
       const { error } = await supabase.from("prices").update(payload).eq("id", id);
       if (error) return { success: false as const, error: error.message };
+
+      if (disciplineIds !== undefined) {
+        const disciplineResult = await syncPriceDisciplines(id, disciplineIds);
+        if (disciplineResult.success === false) {
+          return { success: false as const, error: disciplineResult.error };
+        }
+      }
 
       if (teacherMemberIds !== undefined) {
         const teacherResult = await syncPriceTeacherMembers(id, teacherMemberIds);
@@ -167,6 +192,40 @@ async function syncPriceTeacherMembers(
   return { success: true as const };
 }
 
+async function syncPriceDisciplines(
+  priceId: string,
+  disciplineIds: string[]
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { error: deleteError } = await supabase
+    .from("price_disciplines")
+    .delete()
+    .eq("price_id", priceId);
+  if (deleteError) return { success: false as const, error: deleteError.message };
+
+  if (disciplineIds.length === 0) {
+    return { success: true as const };
+  }
+
+  const { data: priceRow, error: priceError } = await supabase
+    .from("prices")
+    .select("organization_id")
+    .eq("id", priceId)
+    .maybeSingle();
+  if (priceError) return { success: false as const, error: priceError.message };
+  if (!priceRow?.organization_id) return { success: false as const, error: "Price not found" };
+
+  const { error: insertError } = await supabase.from("price_disciplines").insert(
+    disciplineIds.map((disciplineId) => ({
+      organization_id: priceRow.organization_id,
+      price_id: priceId,
+      discipline_id: disciplineId,
+    }))
+  );
+  if (insertError) return { success: false as const, error: insertError.message };
+
+  return { success: true as const };
+}
+
 export function useUpdatePriceTeachers() {
   const queryClient = useQueryClient();
 
@@ -201,7 +260,7 @@ export function useCreatePrice() {
       description,
       category,
       locationId,
-      disciplineId,
+      disciplineIds,
       billingModel,
       teacherMemberIds,
     }: {
@@ -212,7 +271,7 @@ export function useCreatePrice() {
       description: string;
       category: PriceCategory;
       locationId?: string | null;
-      disciplineId?: string | null;
+      disciplineIds?: string[];
       billingModel?: Price["billingModel"];
       teacherMemberIds?: string[];
     }) => {
@@ -231,13 +290,20 @@ export function useCreatePrice() {
           description: description.trim(),
           category,
           location_id: locationId ?? null,
-          discipline_id: disciplineId ?? null,
+          discipline_id: disciplineIds?.length === 1 ? disciplineIds[0] : null,
           billing_model: billingModel ?? "lesson_count",
         })
         .select("*")
         .single();
 
       if (error) return { success: false as const, error: error.message };
+
+      if (disciplineIds && disciplineIds.length > 0) {
+        const disciplineResult = await syncPriceDisciplines(String(data.id), disciplineIds);
+        if (disciplineResult.success === false) {
+          return { success: false as const, error: disciplineResult.error };
+        }
+      }
 
       if (teacherMemberIds && teacherMemberIds.length > 0) {
         const teacherResult = await syncPriceTeacherMembers(String(data.id), teacherMemberIds);

@@ -362,6 +362,7 @@ export interface Price {
   category: PriceCategory;
   locationId?: string | null;
   disciplineId?: string | null;
+  disciplineIds?: string[];
   teacherMemberIds?: string[];
   billingModel?: BillingModel;
   freezeMaxCount?: number | null;

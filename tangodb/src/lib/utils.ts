@@ -252,6 +252,7 @@ export interface PriceTariffRef {
   category?: PriceCategory;
   locationId?: string | null;
   disciplineId?: string | null;
+  disciplineIds?: string[];
   teacherMemberIds?: string[];
   billingModel?: import("../types").BillingModel;
 }
@@ -354,11 +355,23 @@ export function isGlobalTariff(price: Pick<PriceTariffRef, "locationId">): boole
   return isGlobalLocationTariff(price);
 }
 
-export function isGlobalDisciplineTariff(price: Pick<PriceTariffRef, "disciplineId">): boolean {
-  return !price.disciplineId;
+export function getPriceDisciplineIds(
+  price: Pick<PriceTariffRef, "disciplineId" | "disciplineIds">
+): string[] {
+  if (price.disciplineIds && price.disciplineIds.length > 0) return price.disciplineIds;
+  if (price.disciplineId) return [price.disciplineId];
+  return [];
 }
 
-export function isFullyGlobalTariff(price: Pick<PriceTariffRef, "locationId" | "disciplineId">): boolean {
+export function isGlobalDisciplineTariff(
+  price: Pick<PriceTariffRef, "disciplineId" | "disciplineIds">
+): boolean {
+  return getPriceDisciplineIds(price).length === 0;
+}
+
+export function isFullyGlobalTariff(
+  price: Pick<PriceTariffRef, "locationId" | "disciplineId" | "disciplineIds">
+): boolean {
   return isGlobalLocationTariff(price) && isGlobalDisciplineTariff(price);
 }
 
@@ -379,12 +392,14 @@ function matchesLocationBinding<T extends Pick<PriceTariffRef, "locationId">>(
   return isGlobalLocationTariff(price);
 }
 
-function matchesDisciplineBinding<T extends Pick<PriceTariffRef, "disciplineId">>(
+function matchesDisciplineBinding<T extends Pick<PriceTariffRef, "disciplineId" | "disciplineIds">>(
   price: T,
   disciplineId?: string | null
 ): boolean {
   if (!disciplineId) return isGlobalDisciplineTariff(price);
-  return isGlobalDisciplineTariff(price) || price.disciplineId === disciplineId;
+  const boundIds = getPriceDisciplineIds(price);
+  if (boundIds.length === 0) return true;
+  return boundIds.includes(disciplineId);
 }
 
 export function isGlobalTeacherTariff(price: Pick<PriceTariffRef, "teacherMemberIds">): boolean {
