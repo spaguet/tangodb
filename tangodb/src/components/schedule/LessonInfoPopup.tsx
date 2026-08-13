@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, X, XCircle, ArrowRightLeft, CheckCircle2 } from "lucide-react";
+import { useClientDirectory } from "../../hooks/useClients";
 import { useDeleteScheduleSlot } from "../../hooks/useSchedule";
 import { useDeletePersonalLesson, useDeletePersonalLessonSeriesFromDate, usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { useClosePersonalLessonOccurrence, useActivePersonalLessonClosure, useReopenLessonOccurrenceClosure } from "../../hooks/useVenueCosts";
@@ -21,7 +22,10 @@ import { personalLessonsInSeriesFromDate } from "../../lib/personalLessonSeries"
 import { toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
 import { formatReopenLessonError } from "../../lib/venueCostDraftErrors";
+import { personalLessonClientEntries } from "../../lib/personalLessonClients";
 import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from "../../types";
+import type { Client } from "../../types";
+import ClientCardModal from "../ClientCardModal";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import { btnAddCls, btnCancelCls, btnDestructiveCls, btnOpenCls } from "../ui/buttonStyles";
 import RequirePermission from "../RequirePermission";
@@ -90,7 +94,11 @@ export default function LessonInfoPopup({
   const [cancelOneConfirmOpen, setCancelOneConfirmOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
+  const [profileClient, setProfileClient] = useState<Client | null>(null);
   const [reopenReason, setReopenReason] = useState("");
+  const { data: directoryClients = [] } = useClientDirectory({
+    enabled: lesson?.kind === "personal",
+  });
   const personalLessonsQuery = usePersonalLessons({
     enabled: lesson?.kind === "personal",
     yearMonth: lesson?.kind === "personal" ? lesson.date.slice(0, 7) : undefined,
@@ -127,6 +135,26 @@ export default function LessonInfoPopup({
     lesson?.kind === "personal"
       ? maskClientDisplay(lesson.clientDisplay, canReadClients)
       : "";
+
+  const personalClientEntries =
+    lesson?.kind === "personal"
+      ? personalLessonClientEntries(
+          lesson,
+          directoryClients,
+          canReadClients,
+          t("schedule.lessonInfo.clientNotSpecified")
+        )
+      : [];
+
+  const openClientProfile = (entry: { id: string | null; client?: Client }) => {
+    if (!entry.id || !canReadClients) return;
+    const client = entry.client ?? directoryClients.find((c) => c.id === entry.id);
+    if (client) setProfileClient(client);
+  };
+
+  const resolvedProfileClient = profileClient
+    ? directoryClients.find((c) => c.id === profileClient.id) ?? profileClient
+    : null;
 
   const canEdit =
     lesson &&
@@ -337,9 +365,26 @@ export default function LessonInfoPopup({
                 {lesson.kind === "personal" && (
                   <div className="flex items-start gap-2.5">
                     <User className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                    <div>
+                    <div className="min-w-0">
                       <dt className={detailLabelCls}>{t("common.clientsLabel")}</dt>
-                      <dd className={detailValueCls}>{clientLabel}</dd>
+                      <dd className={`${detailValueCls} space-y-0.5`}>
+                        {personalClientEntries.map((entry, index) =>
+                          entry.id && canReadClients ? (
+                            <button
+                              key={entry.id}
+                              type="button"
+                              onClick={() => openClientProfile(entry)}
+                              className="block text-left text-indigo-600 hover:text-indigo-700 hover:underline underline-offset-2 cursor-pointer transition-colors"
+                            >
+                              {entry.label}
+                            </button>
+                          ) : (
+                            <span key={`${entry.label}-${index}`} className="block">
+                              {entry.label}
+                            </span>
+                          )
+                        )}
+                      </dd>
                     </div>
                   </div>
                 )}
@@ -630,6 +675,13 @@ export default function LessonInfoPopup({
           onSuccess?.();
           onClose();
         }}
+      />
+
+      <ClientCardModal
+        client={resolvedProfileClient}
+        onClose={() => setProfileClient(null)}
+        toast={toast}
+        stackLayer="above"
       />
     </>
   );
