@@ -329,6 +329,56 @@ export function getPriceLabel(
   return price.type;
 }
 
+type LabelScriptGroup = "cyrillic" | "latin" | "digit" | "other";
+
+const CYRILLIC_FIRST_RE = /[\u0400-\u04FF]/;
+const LATIN_FIRST_RE = /[A-Za-z]/;
+const DIGIT_FIRST_RE = /\d/;
+
+const LABEL_SCRIPT_GROUP_ORDER: Record<LabelScriptGroup, number> = {
+  cyrillic: 0,
+  latin: 1,
+  digit: 2,
+  other: 3,
+};
+
+function getLabelScriptGroup(label: string): LabelScriptGroup {
+  const trimmed = label.trim();
+  if (!trimmed) return "other";
+  const ch = trimmed[0]!;
+  if (CYRILLIC_FIRST_RE.test(ch)) return "cyrillic";
+  if (LATIN_FIRST_RE.test(ch)) return "latin";
+  if (DIGIT_FIRST_RE.test(ch)) return "digit";
+  return "other";
+}
+
+/** Sort labels: Cyrillic А–Я, then Latin A–Z, then digits, then other. */
+export function compareLabelsCyrillicFirst(a: string, b: string): number {
+  const groupDiff =
+    LABEL_SCRIPT_GROUP_ORDER[getLabelScriptGroup(a)] -
+    LABEL_SCRIPT_GROUP_ORDER[getLabelScriptGroup(b)];
+  if (groupDiff !== 0) return groupDiff;
+
+  const group = getLabelScriptGroup(a);
+  if (group === "cyrillic") return a.localeCompare(b, "ru", { sensitivity: "base" });
+  if (group === "latin") return a.localeCompare(b, "en", { sensitivity: "base" });
+  if (group === "digit") return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+  return a.localeCompare(b, undefined, { sensitivity: "base" });
+}
+
+export function sortPricesByLabel<T extends PriceTariffRef>(
+  prices: T[],
+  translate?: TranslateFn,
+  locale?: string | null
+): T[] {
+  return [...prices].sort((a, b) =>
+    compareLabelsCyrillicFirst(
+      getPriceLabel(a, translate, locale),
+      getPriceLabel(b, translate, locale)
+    )
+  );
+}
+
 export function getPriceDescription(
   price: PriceTariffRef,
   translate?: TranslateFn,

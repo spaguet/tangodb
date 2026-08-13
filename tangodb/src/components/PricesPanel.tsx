@@ -44,6 +44,7 @@ import {
   getPriceDisciplineIds,
   isGlobalTeacherTariff,
   isMonthlyUnlimitedTariff,
+  sortPricesByLabel,
 } from "../lib/utils";
 import { useSettings } from "../settings/SettingsProvider";
 import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "./ui/AppSelect";
@@ -514,19 +515,26 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     }
   };
 
-  const groupItems = filterGroupTariffsByModules(
-    prices.filter((p) => getPriceCategory(p) === "group" && !isLegacyPairCycleTariff(p.type)),
-    modules
+  const groupItems = sortPricesByLabel(
+    filterGroupTariffsByModules(
+      prices.filter((p) => getPriceCategory(p) === "group" && !isLegacyPairCycleTariff(p.type)),
+      modules
+    ),
+    t
   ).map((priceObj) => ({ priceObj }));
   const privateLessonItems = personalLessonsEnabled
-    ? getPrivateLessonTariffs(prices).map((priceObj) => ({ priceObj }))
+    ? sortPricesByLabel(getPrivateLessonTariffs(prices), t).map((priceObj) => ({ priceObj }))
     : [];
-  const singleVisitItems = getSingleVisitTariffs(prices).map((priceObj) => ({ priceObj }));
+  const singleVisitItems = sortPricesByLabel(getSingleVisitTariffs(prices), t).map((priceObj) => ({
+    priceObj,
+  }));
   const privatePackageItems = personalLessonsEnabled
-    ? filterPrivatePackageTariffsByModules(getPrivatePackageTariffs(prices), modules).map((priceObj) => ({
-        priceObj,
-      }))
+    ? sortPricesByLabel(
+        filterPrivatePackageTariffsByModules(getPrivatePackageTariffs(prices), modules),
+        t
+      ).map((priceObj) => ({ priceObj }))
     : [];
+  const archivedPrices = sortPricesByLabel(archivedPricesQuery.data ?? [], t);
 
   const activeCreateTabMeta = CREATE_TABS.find((tab) => tab.id === activeCreateTab)!;
 
@@ -818,14 +826,14 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
             <LoadingState label={t("prices.archive.loading")} />
           ) : archivedPricesQuery.isError ? (
             <QueryErrorState error={archivedPricesQuery.error} />
-          ) : (archivedPricesQuery.data ?? []).length === 0 ? (
+          ) : archivedPrices.length === 0 ? (
             <div className="text-center py-20 text-slate-400 space-y-3">
               <Archive className="w-8 h-8 mx-auto text-slate-300" />
               <p className="text-sm">{t("prices.archive.empty")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {(archivedPricesQuery.data ?? []).map((price) => {
+              {archivedPrices.map((price) => {
                 const title = getPriceLabel(price, t);
                 const createdAt = price.createdAt ? formatDate(price.createdAt.slice(0, 10)) : "—";
                 const archivedAt = price.archivedAt ? formatDate(price.archivedAt.slice(0, 10)) : "—";
