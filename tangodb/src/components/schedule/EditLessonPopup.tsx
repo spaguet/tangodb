@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Info, MapPin, Trash2, X } from "lucide-react";
+import { CalendarDays, Info, MapPin, RotateCcw, Trash2, X } from "lucide-react";
 import {
   useAddGroupSchedule,
   useDeleteScheduleSlot,
@@ -32,13 +32,14 @@ import {
 } from "../../lib/groupLessonRepeat";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { addDays, getWeekRange, isScheduleDateLockedForWrite, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
-import { canReadLessonClients, maskClientDisplay } from "../../lib/scheduleLessonAccess";
+import { canReadLessonClients, canShowPaidStatus, maskClientDisplay } from "../../lib/scheduleLessonAccess";
+import { useVoidPersonalLessonPayment } from "../../hooks/usePayments";
 import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import type { I18nKey } from "../../lib/i18n/keys";
 import type { Client, Discipline, DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
-import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
+import { btnAddCls, btnCancelCls, btnOpenCls } from "../ui/buttonStyles";
 import ClientAutocomplete from "../ui/ClientAutocomplete";
 import DisciplineSelect from "../ui/DisciplineSelect";
 import LocationSelect from "../ui/LocationSelect";
@@ -209,6 +210,7 @@ export default function EditLessonPopup({
   const addGroupSchedule = useAddGroupSchedule();
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const updatePersonalLesson = useUpdatePersonalLesson();
+  const voidPersonalLessonPayment = useVoidPersonalLessonPayment();
   const updateClassMaxCapacity = useUpdateClassMaxCapacity();
   const { data: activeClients = [] } = useClients();
   const { data: directoryClients = [] } = useClientDirectory();
@@ -867,6 +869,27 @@ export default function EditLessonPopup({
     ? t("schedule.hint.personalEditSchedule")
     : t("schedule.hint.personalEditCalendar");
 
+  const handleCancelPersonalPayment = async () => {
+    if (!lesson || lesson.kind !== "personal") return;
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
+
+    const res = await voidPersonalLessonPayment.mutateAsync(lesson.lessonId);
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "corrections.error.stornoFailed", t), "error");
+      return;
+    }
+
+    toast(
+      res.alreadyVoid ? t("personal.edit.cancelPaymentAlready") : t("personal.edit.cancelPaymentSuccess"),
+      res.alreadyVoid ? "info" : "success"
+    );
+    onSuccess();
+    onClose();
+  };
+
   const savePending =
     editGroupSchedule.isPending ||
     updateGroupScheduleMetadata.isPending ||
@@ -874,8 +897,14 @@ export default function EditLessonPopup({
     addGroupSchedule.isPending ||
     deleteScheduleSlot.isPending ||
     updatePersonalLesson.isPending ||
-    updateClassMaxCapacity.isPending;
+    updateClassMaxCapacity.isPending ||
+    voidPersonalLessonPayment.isPending;
   const readOnly = lesson ? isScheduleDateLockedForWrite(lesson.date, canEditPastSchedule) : false;
+  const canCancelPersonalPayment =
+    lesson?.kind === "personal" &&
+    lesson.paid === "yes" &&
+    canShowPaidStatus(role) &&
+    !readOnly;
 
   return (
     <AnimatePresence>
@@ -1238,6 +1267,23 @@ export default function EditLessonPopup({
               visible={hasGoogleFreebusyOverlap}
               checking={isCheckingGoogleFreebusy}
             />
+
+            {canCancelPersonalPayment ? (
+              <RequirePermission action="personal_lessons.write" context={permissionContext}>
+                <button
+                  type="button"
+                  onClick={() => void handleCancelPersonalPayment()}
+                  disabled={connectionState !== "online" || savePending}
+                  title={translateConnectionBlockReason(connectionState, t)}
+                  className={`w-full ${btnOpenCls}`}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  {voidPersonalLessonPayment.isPending
+                    ? t("common.saving")
+                    : t("personal.edit.cancelPayment")}
+                </button>
+              </RequirePermission>
+            ) : null}
 
             <div className="flex items-center gap-2 pt-1">
               {!readOnly && (

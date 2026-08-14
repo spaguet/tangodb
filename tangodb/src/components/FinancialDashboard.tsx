@@ -214,24 +214,28 @@ function RevenueTrendChart({
           strokeDasharray="3 3"
         />
 
-        <text
-          x={plotLeft - 4}
-          y={maxY + 3}
-          textAnchor="end"
-          className="fill-slate-400"
-          fontSize="8"
-        >
-          {maxLabel}
-        </text>
-        <text
-          x={plotLeft - 4}
-          y={avgY + 3}
-          textAnchor="end"
-          className="fill-slate-400"
-          fontSize="8"
-        >
-          {avgLabel}
-        </text>
+        {containerWidth >= 640 ? (
+          <>
+            <text
+              x={plotLeft - 4}
+              y={maxY + 3}
+              textAnchor="end"
+              className="fill-slate-400"
+              fontSize="8"
+            >
+              {maxLabel}
+            </text>
+            <text
+              x={plotLeft - 4}
+              y={avgY + 3}
+              textAnchor="end"
+              className="fill-slate-400"
+              fontSize="8"
+            >
+              {avgLabel}
+            </text>
+          </>
+        ) : null}
 
         <path d={areaPath} fill={`url(#${gradientId})`} />
         <polyline
@@ -259,6 +263,7 @@ function RevenueTrendChart({
                 className="cursor-crosshair"
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
+                onClick={() => setHoveredIndex((prev) => (prev === index ? null : index))}
               />
               <circle
                 cx={point.x}
@@ -834,12 +839,14 @@ export default function FinancialDashboard() {
                   type="button"
                   onClick={() => void handleRecalculateVenueCosts()}
                   disabled={recalculateVenueCosts.isPending}
+                  aria-label={t("dashboard.venueCostsRecalculate")}
+                  title={t("dashboard.venueCostsRecalculate")}
                   className="inline-flex items-center gap-1 text-[10px] font-sans font-semibold text-indigo-600 hover:text-indigo-800 disabled:opacity-50 shrink-0"
                 >
                   <RefreshCw
                     className={`w-3 h-3 ${recalculateVenueCosts.isPending ? "animate-spin" : ""}`}
                   />
-                  {t("dashboard.venueCostsRecalculate")}
+                  <span className="hidden sm:inline">{t("dashboard.venueCostsRecalculate")}</span>
                 </button>
               ) : null}
             </div>

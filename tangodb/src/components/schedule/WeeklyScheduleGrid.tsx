@@ -51,9 +51,9 @@ export default function WeeklyScheduleGrid({
   return (
     <div className="isolate overflow-auto max-h-[70dvh] sm:max-h-none sm:overflow-x-auto sm:overflow-y-auto [-webkit-overflow-scrolling:touch]">
       <div className="flex min-w-[640px]">
-        <div className="sticky left-0 z-[1] w-10 sm:w-12 shrink-0 border-r border-slate-100 bg-white shadow-[2px_0_4px_-2px_rgba(15,23,42,0.08)]">
+        <div className="sticky left-0 z-20 w-10 sm:w-12 shrink-0 border-r border-slate-100 bg-white shadow-[2px_0_4px_-2px_rgba(15,23,42,0.08)]">
           <div
-            className="sticky top-0 z-[2] h-9 sm:h-11 border-b border-slate-100 bg-slate-50/95 backdrop-blur-[2px]"
+            className="sticky top-0 z-30 h-9 sm:h-11 border-b border-slate-100 bg-slate-50/95 backdrop-blur-[2px]"
             aria-hidden
           />
           <div className="relative" style={{ height: gridHeight }}>
@@ -67,7 +67,7 @@ export default function WeeklyScheduleGrid({
             {timeLabels.map(({ top, label }) => (
               <div
                 key={label}
-                className="absolute right-0.5 sm:right-1 z-[1] bg-white pl-0.5 text-[10px] font-semibold text-slate-400 tabular-nums leading-none -translate-y-full"
+                className="absolute right-0.5 sm:right-1 z-10 bg-white pl-0.5 text-[10px] font-semibold text-slate-400 tabular-nums leading-none -translate-y-full"
                 style={{ top }}
               >
                 {label}
