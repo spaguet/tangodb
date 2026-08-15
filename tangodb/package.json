@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.7.21",
+  "version": "2.7.22",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -61,6 +61,7 @@
     "test:rental-billing-profile": "tsx scripts/rental-billing-profile-check.mjs",
     "test:hall-rent-integration": "node scripts/hall-rent-integration-check.mjs",
     "test:rbac": "tsx scripts/rbac-regression-check.mjs",
+    "test:attendance-subs": "node scripts/attendance-subs-for-date-check.mjs",
     "db:reset-test": "node scripts/reset-for-test-run.mjs",
     "db:push": "supabase db push",
     "db:link": "supabase link"

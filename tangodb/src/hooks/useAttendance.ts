@@ -2,7 +2,9 @@ import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { reportClientError } from "../lib/reportClientError";
-import { formatClientName, getSubscriptionDaysLeft, isMonthlyUnlimitedSubscription, jsDayToIsoDow, subscriptionIsActiveForDate } from "../lib/utils";
+import { formatClientName, isMonthlyUnlimitedSubscription, jsDayToIsoDow } from "../lib/utils";
+import { computeSubsForDate } from "../lib/attendanceSubs";
+export { computeSubsForDate } from "../lib/attendanceSubs";
 import {
   canApplyFreeze,
   DEFAULT_FREEZE_POLICY,
@@ -10,7 +12,6 @@ import {
   wouldExceedFreezeLimit,
 } from "../lib/freezePolicy";
 import { groupSubscriptionParticipantCount } from "../lib/subscriptionMembers";
-import { subscriptionMatchesScheduleGroup } from "../lib/scheduleGroups";
 import type {
   AttendanceRecord,
   Client,
@@ -26,10 +27,7 @@ import { useSchedule } from "./useSchedule";
 import { subscriptionsQueryKey, useSubscriptions } from "./useSubscriptions";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { useSettings } from "../settings/SettingsProvider";
-import {
-  buildMemberChangesBySubId,
-  resolveSubscriptionMemberNamesAtDate,
-} from "../lib/subscriptionMembers";
+import { buildMemberChangesBySubId } from "../lib/subscriptionMembers";
 import { useAllSubscriptionMemberChanges } from "./useSubscriptionMemberChanges";
 
 export const attendanceQueryKey = ["attendance"] as const;
@@ -109,79 +107,6 @@ export function computeScheduleDatesForMonth(
   }
 
   return dates.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
-}
-
-export function computeSubsForDate(
-  dateStr: string,
-  subscriptions: Subscription[],
-  clients: Client[],
-  attendance: AttendanceRecord[],
-  options?: {
-    category?: "group" | "private";
-    subscriptionIds?: string[];
-    disciplineId?: string | null;
-    scheduleGroupId?: string | null;
-    groupsBySubId?: Record<string, SubscriptionGroupLink[]>;
-    memberChangesBySubId?: Record<string, SubscriptionMemberChange[]>;
-  },
-  freezePolicy: FreezePolicy = DEFAULT_FREEZE_POLICY
-): SubForDate[] {
-  const clientMap = Object.fromEntries(clients.map((c) => [c.id, c]));
-  const idFilter = options?.subscriptionIds ? new Set(options.subscriptionIds) : null;
-  const disciplineFilter = options?.disciplineId ?? null;
-  const scheduleGroupId = options?.scheduleGroupId ?? null;
-  const memberChangesBySubId = options?.memberChangesBySubId ?? {};
-
-  return subscriptions
-    .filter((s) => {
-      if (!subscriptionIsActiveForDate(s, dateStr)) return false;
-      if (options?.category && s.category !== options.category) return false;
-      if (idFilter && !idFilter.has(s.id)) return false;
-      if (disciplineFilter != null && s.disciplineId !== disciplineFilter) return false;
-      if (
-        scheduleGroupId &&
-        !subscriptionMatchesScheduleGroup(s.id, scheduleGroupId, options?.groupsBySubId ?? {})
-      ) {
-        return false;
-      }
-      return true;
-    })
-    .map((s) => {
-      const subChanges = memberChangesBySubId[s.id] ?? [];
-      const { client1, client2, client3 } = resolveSubscriptionMemberNamesAtDate(
-        s,
-        subChanges,
-        clientMap,
-        dateStr
-      );
-      const existing = attendance.find(
-        (a) =>
-          a.date === dateStr &&
-          a.subscriptionId === s.id &&
-          (!scheduleGroupId || a.scheduleGroupId === scheduleGroupId)
-      );
-      const isMonthly = isMonthlyUnlimitedSubscription(s);
-
-      return {
-        subId: s.id,
-        type: s.type,
-        pairMonth: s.pairMonth,
-        client1,
-        client2,
-        client3,
-        lessonsLeft: s.lessonsLeft,
-        lessonsTotal: s.lessonsTotal,
-        freezeUsed: s.freezeUsed,
-        activationDate: s.activationDate,
-        billingModel: s.billingModel,
-        expiresAt: s.expiresAt ?? null,
-        daysLeft: isMonthly ? getSubscriptionDaysLeft(s.expiresAt, dateStr) : undefined,
-        currentStatus: (existing?.attendanceStatus ?? null) as SubForDate["currentStatus"],
-        canFreeze: canApplyFreeze(s.lessonsTotal, s.freezeUsed, freezePolicy, s.billingModel),
-        priceId: s.priceId,
-        category: s.category,
-      };
-    });
 }
 
 export function countPresentAttendeesFromSubs(
