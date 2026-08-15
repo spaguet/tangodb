@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertCircle, Coins } from "lucide-react";
+import { AlertCircle, CalendarDays, ChevronDown, Coins } from "lucide-react";
 import { Link } from "react-router-dom";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
@@ -8,16 +8,23 @@ import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { useToast } from "../App";
 import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
+import { useLocations } from "../hooks/useLocations";
+import { useDisciplines } from "../hooks/useDisciplines";
+import { memberDisplayName, useTeamMembers } from "../hooks/useTeamMembers";
 import {
   sortDebtors,
   sumDebtorAmounts,
   formatDebtorDetail,
+  formatDebtorClock,
+  debtorAgingDays,
+  debtorSchedulePath,
   type DebtorEntry,
   type DebtorSortKey,
 } from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
+import { toISODateLocal } from "../lib/scheduleWeek";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "../components/schedule/PayPersonalLessonModal";
-import { btnAddCls } from "../components/ui/buttonStyles";
+import { btnAddCls, btnOpenCls } from "../components/ui/buttonStyles";
 import AppSelect from "../components/ui/AppSelect";
 
 type DebtorTab = "all" | "clients" | "rentals";
@@ -30,9 +37,159 @@ const DEBTOR_SORT_OPTIONS: DebtorSortKey[] = [
   "amountDesc",
 ];
 
-function debtorKindLabel(kind: DebtorEntry["kind"], t: ReturnType<typeof useI18n>["t"]): string | null {
+const MISSING = "—";
+
+function debtorKindLabel(kind: DebtorEntry["kind"], t: ReturnType<typeof useI18n>["t"]): string {
   if (kind === "rental") return t("finance.debtors.kind.rental");
-  return null;
+  if (kind === "personal") return t("finance.debtors.kind.personal");
+  return t("finance.debtors.kind.subscription");
+}
+
+function DebtorDetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">{label}</dt>
+      <dd className="text-xs text-slate-700 font-sans mt-0.5 break-words">{value}</dd>
+    </div>
+  );
+}
+
+function DebtorRow({
+  entry,
+  expanded,
+  onToggle,
+  kindLabel,
+  locationName,
+  disciplineName,
+  teacherName,
+  agingLabel,
+  schedulePath,
+  canPayPersonal,
+  onPay,
+  formatDate,
+  t,
+}: {
+  entry: DebtorEntry;
+  expanded: boolean;
+  onToggle: () => void;
+  kindLabel: string;
+  locationName: string;
+  disciplineName: string;
+  teacherName: string;
+  agingLabel: string;
+  schedulePath: string | null;
+  canPayPersonal: boolean;
+  onPay: () => void;
+  formatDate: ReturnType<typeof useI18n>["formatDate"];
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  const timeStart = formatDebtorClock(entry.lessonTimeStart) ?? MISSING;
+  const timeEnd = formatDebtorClock(entry.lessonTimeEnd) ?? MISSING;
+  const serviceDate = entry.lessonDate ? formatDate(entry.lessonDate) : MISSING;
+  const amountLabel = entry.amount > 0 ? formatCurrency(entry.amount) : MISSING;
+
+  return (
+    <div className="border-b border-slate-100 last:border-b-0">
+      <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
+        <button type="button" onClick={onToggle} className="min-w-0 text-left cursor-pointer" aria-expanded={expanded}>
+          <div className="flex items-start gap-2">
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+                expanded ? "rotate-180" : ""
+              }`}
+            />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-800 truncate">{entry.clientDisplay}</p>
+              <p className="text-[10px] font-semibold text-slate-500 mt-0.5">{kindLabel}</p>
+            </div>
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
+        >
+          {entry.contact}
+        </button>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
+        >
+          {formatDebtorDetail(entry, t, formatDate)}
+        </button>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="text-sm font-sans font-semibold text-right whitespace-nowrap text-rose-700 cursor-pointer"
+        >
+          {amountLabel}
+        </button>
+        <div className="text-right">
+          {canPayPersonal ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPay();
+              }}
+              className={btnAddCls}
+            >
+              <Coins className="w-3.5 h-3.5" />
+              {t("common.pay")}
+            </button>
+          ) : entry.kind === "rental" && entry.renterId ? (
+            <Link
+              to={`/renters/${entry.renterId}`}
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-lg"
+            >
+              {t("finance.debtors.openRenter")}
+            </Link>
+          ) : null}
+        </div>
+      </div>
+
+      {expanded ? (
+        <div className="px-3 pb-3 pt-0 ml-5 sm:ml-6">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 p-3 rounded-lg bg-slate-50/80 border border-slate-100">
+            <DebtorDetailItem label={t("finance.debtors.documentType")} value={kindLabel} />
+            <DebtorDetailItem label={t("common.date")} value={serviceDate} />
+            <DebtorDetailItem label={t("common.timeStart")} value={timeStart} />
+            <DebtorDetailItem label={t("common.timeEnd")} value={timeEnd} />
+            <DebtorDetailItem label={t("schedule.form.location")} value={locationName} />
+            {entry.kind === "personal" ? (
+              <DebtorDetailItem label={t("schedule.form.teacher")} value={teacherName} />
+            ) : null}
+            {entry.kind !== "rental" ? (
+              <DebtorDetailItem label={t("common.discipline")} value={disciplineName} />
+            ) : null}
+            <DebtorDetailItem label={t("finance.debtors.outstanding")} value={amountLabel} />
+            <DebtorDetailItem label={t("finance.debtors.dueStatus")} value={agingLabel} />
+            <DebtorDetailItem label={t("common.client")} value={entry.clientDisplay || MISSING} />
+            <DebtorDetailItem label="Telegram" value={entry.contact || MISSING} />
+            {entry.kind === "subscription" ? (
+              <DebtorDetailItem
+                label={t("common.details")}
+                value={formatDebtorDetail(entry, t, formatDate)}
+              />
+            ) : null}
+          </dl>
+          {entry.kind === "subscription" ? (
+            <p className="mt-2 text-[11px] text-slate-500 font-sans">{t("finance.debtors.subscriptionNote")}</p>
+          ) : null}
+          {schedulePath ? (
+            <div className="mt-3">
+              <Link to={schedulePath} className={btnOpenCls}>
+                <CalendarDays className="w-3.5 h-3.5" />
+                {t("finance.debtors.openSchedule")}
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export default function FinanceDebtorsPage() {
@@ -40,9 +197,13 @@ export default function FinanceDebtorsPage() {
   const toast = useToast();
   const { can, isReadOnly } = usePermissions();
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
+  const locationsQuery = useLocations();
+  const disciplinesQuery = useDisciplines();
+  const teamQuery = useTeamMembers();
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
   const [tab, setTab] = useState<DebtorTab>("all");
   const [sortKey, setSortKey] = useState<DebtorSortKey>("dateAsc");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const debtorsQuery = useFinancialDebtors();
   const allDebtors = useMemo(() => {
@@ -63,6 +224,33 @@ export default function FinanceDebtorsPage() {
     [allDebtors]
   );
 
+  const locationNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const loc of locationsQuery.data ?? []) {
+      map.set(loc.id, loc.name);
+    }
+    return map;
+  }, [locationsQuery.data]);
+
+  const disciplineNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const d of disciplinesQuery.data ?? []) {
+      map.set(d.id, d.name);
+    }
+    return map;
+  }, [disciplinesQuery.data]);
+
+  const teacherNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const member of teamQuery.data ?? []) {
+      const name = memberDisplayName(member);
+      if (name) map.set(member.id, name);
+    }
+    return map;
+  }, [teamQuery.data]);
+
+  const todayISO = toISODateLocal(new Date());
+
   if (debtorsQuery.isLoading) return <LoadingState label={t("finance.debtors.loading")} />;
   if (debtorsQuery.isError) return <QueryErrorState error={debtorsQuery.error} />;
 
@@ -81,6 +269,16 @@ export default function FinanceDebtorsPage() {
       locationId: entry.locationId ?? null,
       disciplineId: entry.disciplineId ?? null,
     });
+  };
+
+  const agingLabelFor = (entry: DebtorEntry): string => {
+    const days = debtorAgingDays(entry.lessonDate, todayISO);
+    if (days == null) return t("finance.debtors.aging.none");
+    if (days === 0) return t("finance.debtors.aging.dueToday");
+    const count = Math.abs(days);
+    const unit = plural(count, [t("common.day.one"), t("common.day.few"), t("common.day.many")]);
+    if (days > 0) return t("finance.debtors.aging.overdue", { count, unit });
+    return t("finance.debtors.aging.upcoming", { count, unit });
   };
 
   const tabs: { id: DebtorTab; label: string }[] = [
@@ -153,7 +351,6 @@ export default function FinanceDebtorsPage() {
             </div>
             <div>
               {debtors.map((entry) => {
-                const kindLabel = debtorKindLabel(entry.kind, t);
                 const canPayPersonal =
                   entry.kind === "personal" &&
                   !!entry.personalLessonId &&
@@ -165,43 +362,26 @@ export default function FinanceDebtorsPage() {
                   });
 
                 return (
-                  <div
+                  <DebtorRow
                     key={entry.id}
-                    className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{entry.clientDisplay}</p>
-                      {kindLabel ? (
-                        <p className="text-[10px] font-semibold text-amber-700 mt-0.5">{kindLabel}</p>
-                      ) : null}
-                    </div>
-                    <p className="text-xs text-slate-500 font-sans hidden sm:block">{entry.contact}</p>
-                    <p className="text-xs text-slate-500 font-sans hidden sm:block">
-                      {formatDebtorDetail(entry, t, formatDate)}
-                    </p>
-                    <p className="text-sm font-sans font-semibold text-right whitespace-nowrap text-rose-700">
-                      {entry.amount > 0 ? formatCurrency(entry.amount) : "—"}
-                    </p>
-                    <div className="text-right">
-                      {canPayPersonal ? (
-                        <button
-                          type="button"
-                          onClick={() => openPersonalPayment(entry)}
-                          className={btnAddCls}
-                        >
-                          <Coins className="w-3.5 h-3.5" />
-                          {t("common.pay")}
-                        </button>
-                      ) : entry.kind === "rental" && entry.renterId ? (
-                        <Link
-                          to={`/renters/${entry.renterId}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-lg"
-                        >
-                          {t("finance.debtors.openRenter")}
-                        </Link>
-                      ) : null}
-                    </div>
-                  </div>
+                    entry={entry}
+                    expanded={expandedId === entry.id}
+                    onToggle={() => setExpandedId((prev) => (prev === entry.id ? null : entry.id))}
+                    kindLabel={debtorKindLabel(entry.kind, t)}
+                    locationName={entry.locationId ? locationNameById.get(entry.locationId) ?? MISSING : MISSING}
+                    disciplineName={
+                      entry.disciplineId ? disciplineNameById.get(entry.disciplineId) ?? MISSING : MISSING
+                    }
+                    teacherName={
+                      entry.teacherMemberId ? teacherNameById.get(entry.teacherMemberId) ?? MISSING : MISSING
+                    }
+                    agingLabel={agingLabelFor(entry)}
+                    schedulePath={debtorSchedulePath(entry)}
+                    canPayPersonal={canPayPersonal}
+                    onPay={() => openPersonalPayment(entry)}
+                    formatDate={formatDate}
+                    t={t}
+                  />
                 );
               })}
             </div>

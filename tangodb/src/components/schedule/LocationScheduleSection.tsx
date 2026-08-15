@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import WeeklyScheduleGrid from "./WeeklyScheduleGrid";
@@ -14,6 +14,7 @@ interface LocationScheduleSectionProps {
   onLessonClick?: (lesson: DisplayLesson) => void;
   onEmptyCellClick?: (dateISO: string, dayOfWeek: number, timeStart: string) => void;
   canClickEmpty?: boolean;
+  forceExpanded?: boolean;
 }
 
 export default function LocationScheduleSection({
@@ -26,9 +27,15 @@ export default function LocationScheduleSection({
   onLessonClick,
   onEmptyCellClick,
   canClickEmpty = false,
+  forceExpanded = false,
 }: LocationScheduleSectionProps) {
   const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (forceExpanded) setIsExpanded(true);
+  }, [forceExpanded]);
+
   const showGrid = lessons.length > 0 || (canClickEmpty && locationId);
 
   return (

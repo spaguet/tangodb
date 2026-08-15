@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useScheduleForWeek, useSchedule } from "../../hooks/useSchedule";
@@ -19,7 +19,7 @@ import {
   canClickEmptyCell,
   canOfferGroupLessonAdd,
 } from "../../lib/scheduleLessonAccess";
-import { getWeekRange, isPastDate } from "../../lib/scheduleWeek";
+import { getWeekRange, isPastDate, toISODateLocal } from "../../lib/scheduleWeek";
 import type { DisplayLesson, EventDisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, RentalDisplayLesson } from "../../types";
 import LoadingState from "../ui/LoadingState";
 import AddLocationsInSettingsHint from "../ui/AddLocationsInSettingsHint";
@@ -69,6 +69,12 @@ export default function SchedulePageContainer() {
   const [preselectedRenterId, setPreselectedRenterId] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventDisplayLesson | null>(null);
   const [selectedRental, setSelectedRental] = useState<RentalDisplayLesson | null>(null);
+  const [focusLocationId, setFocusLocationId] = useState<string | null>(null);
+  const pendingScheduleFocusRef = useRef<{
+    date: string | null;
+    lesson: string | null;
+    rental: string | null;
+  } | null>(null);
 
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
 
@@ -183,6 +189,18 @@ export default function SchedulePageContainer() {
       { replace: true }
     );
   }, [searchParams, setSearchParams, canAddRental]);
+
+  useEffect(() => {
+    const date = searchParams.get("date");
+    const lesson = searchParams.get("lesson");
+    const rental = searchParams.get("rental");
+    if (!date && !lesson && !rental) return;
+
+    pendingScheduleFocusRef.current = { date, lesson, rental };
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      setSelectedWeekStart(getWeekRange(new Date(`${date}T12:00:00`)).weekStart);
+    }
+  }, [searchParams]);
 
   const handleTeacherFilterChange = useCallback(
     (teacherId: string) => {
@@ -363,6 +381,51 @@ export default function SchedulePageContainer() {
     setSelectedRental(null);
   }, []);
 
+  useEffect(() => {
+    const pending = pendingScheduleFocusRef.current;
+    if (!pending?.lesson && !pending?.rental) return;
+    if (scheduleQuery.isFetching || scheduleQuery.data === undefined) return;
+
+    if (pending.date && /^\d{4}-\d{2}-\d{2}$/.test(pending.date)) {
+      const { weekStart, weekEnd } = getWeekRange(selectedWeekStart);
+      const start = toISODateLocal(weekStart);
+      const end = toISODateLocal(weekEnd);
+      if (pending.date < start || pending.date > end) return;
+    }
+
+    const lessons = scheduleQuery.data.lessons ?? [];
+    const found = pending.lesson
+      ? lessons.find((item) => item.kind === "personal" && item.lessonId === pending.lesson)
+      : lessons.find((item) => item.kind === "rental" && item.rentalId === pending.rental);
+
+    if (found) {
+      handleLessonClick(found);
+      setFocusLocationId(found.locationId ?? NO_LOCATION_KEY);
+    } else {
+      toast(t("schedule.error.focusNotFound"), "error");
+    }
+
+    pendingScheduleFocusRef.current = null;
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("date");
+        next.delete("lesson");
+        next.delete("rental");
+        return next;
+      },
+      { replace: true }
+    );
+  }, [
+    scheduleQuery.isFetching,
+    scheduleQuery.data,
+    selectedWeekStart,
+    handleLessonClick,
+    setSearchParams,
+    toast,
+    t,
+  ]);
+
   const closeAddFlow = useCallback(() => setAddFlow(null), []);
 
   const handleScheduleRefresh = useCallback(() => {
@@ -500,6 +563,7 @@ export default function SchedulePageContainer() {
               getLessonSubtitle={getLessonSubtitle}
               onLessonClick={handleLessonClick}
               canClickEmpty={canClickEmpty}
+              forceExpanded={focusLocationId === location.id}
               onEmptyCellClick={(dateISO, dayOfWeek, timeStart) =>
                 handleEmptyCellClick(location.id, location.name, dateISO, dayOfWeek, timeStart)
               }
@@ -514,6 +578,7 @@ export default function SchedulePageContainer() {
               getLessonTitle={getLessonTitle}
               getLessonSubtitle={getLessonSubtitle}
               onLessonClick={handleLessonClick}
+              forceExpanded={focusLocationId === NO_LOCATION_KEY}
             />
           )}
         </div>

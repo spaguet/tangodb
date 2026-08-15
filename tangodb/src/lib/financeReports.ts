@@ -267,6 +267,7 @@ export interface DebtorEntry {
   lessonTimeEnd?: string | null;
   locationId?: string | null;
   disciplineId?: string | null;
+  teacherMemberId?: string | null;
   rentalId?: string | null;
   renterId?: string | null;
   clientDisplay: string;
@@ -303,6 +304,45 @@ export function formatDebtorDetail(
 
 export function sumDebtorAmounts(entries: DebtorEntry[]): number {
   return entries.reduce((sum, e) => sum + e.amount, 0);
+}
+
+export function formatDebtorClock(value?: string | null): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  return trimmed.length >= 5 ? trimmed.slice(0, 5) : trimmed;
+}
+
+export function formatDebtorTimeRange(
+  timeStart?: string | null,
+  timeEnd?: string | null
+): string | null {
+  const start = formatDebtorClock(timeStart);
+  if (!start) return null;
+  const end = formatDebtorClock(timeEnd);
+  return end ? `${start}–${end}` : start;
+}
+
+/** Calendar days from service date to today. Positive = overdue, 0 = due today, negative = not yet due. */
+export function debtorAgingDays(lessonDate: string | null | undefined, todayISO: string): number | null {
+  if (!lessonDate) return null;
+  const service = Date.parse(`${lessonDate.slice(0, 10)}T12:00:00`);
+  const today = Date.parse(`${todayISO.slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(service) || Number.isNaN(today)) return null;
+  return Math.round((today - service) / 86_400_000);
+}
+
+export function debtorSchedulePath(
+  entry: Pick<DebtorEntry, "kind" | "lessonDate" | "personalLessonId" | "rentalId">
+): string | null {
+  if (!entry.lessonDate) return null;
+  const date = entry.lessonDate.slice(0, 10);
+  if (entry.kind === "personal" && entry.personalLessonId) {
+    return `/schedule?date=${encodeURIComponent(date)}&lesson=${encodeURIComponent(entry.personalLessonId)}`;
+  }
+  if (entry.kind === "rental" && entry.rentalId) {
+    return `/schedule?date=${encodeURIComponent(date)}&rental=${encodeURIComponent(entry.rentalId)}`;
+  }
+  return null;
 }
 
 export type DebtorSortKey = "dateAsc" | "dateDesc" | "nameAsc" | "nameDesc" | "amountDesc";
