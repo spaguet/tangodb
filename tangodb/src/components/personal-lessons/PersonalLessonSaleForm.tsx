@@ -97,6 +97,36 @@ function participantTypeFromCount(count: number): "solo" | "pair" | "trio" | "qu
   return "solo";
 }
 
+const WEEK_COUNT_OPTIONS = [2, 3, 4, 6, 8, 12] as const;
+
+function expandScheduleCellWeeklySlots(
+  startDate: string,
+  timeStart: string,
+  timeEnd: string,
+  repeatWeekly: boolean,
+  weeklyEndMode: "date" | "weeks",
+  weeklyWeekCount: number,
+  weeklyEndDate: string
+): PersonalLessonSlot[] {
+  if (!repeatWeekly) {
+    return [{ date: startDate, timeStart, timeEnd }];
+  }
+
+  const rows = uniqueWeeklyRecurrenceRows([
+    {
+      dayOfWeek: jsDayToIsoDow(new Date(`${startDate}T12:00:00`).getDay()),
+      timeStart,
+      timeEnd,
+    },
+  ]);
+
+  if (weeklyEndMode === "weeks") {
+    return expandWeeklyRecurrenceByWeekCount(startDate, weeklyWeekCount, rows);
+  }
+
+  return expandWeeklyRecurrence(startDate, weeklyEndDate, rows);
+}
+
 function validateBookingClients(
   clients: BookingClientField[],
   t: (key: I18nKey, params?: Record<string, string | number>) => string
@@ -179,14 +209,32 @@ export default function PersonalLessonSaleForm({
 
   const effectiveLocationId = isScheduleCell ? (prefill?.locationId ?? "") : locationId;
 
-  const freebusySlots = useMemo(
-    () =>
-      (isScheduleCell
-        ? [{ date: prefill?.date ?? todayISO, timeStart, timeEnd }]
-        : lessonEntries
-      ).filter((slot) => slot.date && slot.timeStart && slot.timeEnd),
-    [isScheduleCell, prefill?.date, todayISO, timeStart, timeEnd, lessonEntries]
-  );
+  const freebusySlots = useMemo(() => {
+    if (isScheduleCell) {
+      if (!prefill?.date) return [];
+      return expandScheduleCellWeeklySlots(
+        prefill.date,
+        timeStart,
+        timeEnd,
+        repeatWeekly,
+        weeklyEndMode,
+        weeklyWeekCount,
+        weeklyEndDate
+      ).filter((slot) => slot.date && slot.timeStart && slot.timeEnd);
+    }
+
+    return lessonEntries.filter((slot) => slot.date && slot.timeStart && slot.timeEnd);
+  }, [
+    isScheduleCell,
+    prefill?.date,
+    timeStart,
+    timeEnd,
+    repeatWeekly,
+    weeklyEndMode,
+    weeklyWeekCount,
+    weeklyEndDate,
+    lessonEntries,
+  ]);
 
   const { hasOverlap: hasGoogleFreebusyOverlap, isChecking: isCheckingGoogleFreebusy } =
     useGoogleCalendarFreebusy({
@@ -226,6 +274,10 @@ export default function PersonalLessonSaleForm({
       setSelectedLessonTariffId("");
       setLinkedSubscriptionId("");
       setBookingPaymentMode(null);
+      setRepeatWeekly(false);
+      setWeeklyEndMode("weeks");
+      setWeeklyEndDate("");
+      setWeeklyWeekCount(4);
       if (disciplines.length > 0) setDisciplineId(disciplines[0].id);
       if (isTeacher && memberId) {
         setTeacherMemberId(memberId);
@@ -312,7 +364,40 @@ export default function PersonalLessonSaleForm({
   const resolveLessonSlots = (): PersonalLessonSlot[] | null => {
     if (isScheduleCell) {
       if (!prefill) return null;
-      return [{ date: prefill.date, timeStart, timeEnd }];
+
+      if (repeatWeekly) {
+        if (weeklyEndMode === "weeks" && weeklyWeekCount < 1) {
+          toast(t("personal.error.weekCount"), "error");
+          return null;
+        }
+        if (weeklyEndMode === "date") {
+          if (!weeklyEndDate) {
+            toast(t("personal.error.endDate"), "error");
+            return null;
+          }
+          if (weeklyEndDate < prefill.date) {
+            toast(t("personal.error.endBeforeStart"), "error");
+            return null;
+          }
+        }
+      }
+
+      const slots = expandScheduleCellWeeklySlots(
+        prefill.date,
+        timeStart,
+        timeEnd,
+        repeatWeekly,
+        weeklyEndMode,
+        weeklyWeekCount,
+        weeklyEndDate
+      );
+
+      if (repeatWeekly && slots.length === 0) {
+        toast(t("personal.error.noDatesGenerated"), "error");
+        return null;
+      }
+
+      return slots;
     }
 
     const filteredEntries = lessonEntries.filter((e) => e.date);
@@ -713,11 +798,15 @@ export default function PersonalLessonSaleForm({
     );
   };
 
-  const startDate = lessonEntries.filter((e) => e.date).map((e) => e.date).sort()[0] ?? todayISO;
+  const startDate =
+    isScheduleCell && prefill
+      ? prefill.date
+      : lessonEntries
+          .filter((e) => e.date)
+          .map((e) => e.date)
+          .sort()[0] ?? todayISO;
 
   const renderWeeklyRepeatSection = () => {
-    if (isScheduleCell) return null;
-
     return (
       <>
         <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
@@ -765,7 +854,7 @@ export default function PersonalLessonSaleForm({
                 value={String(weeklyWeekCount)}
                 onChange={(e) => setWeeklyWeekCount(Number(e.target.value) || 2)}
               >
-                {[2, 3, 4].map((n) => (
+                {WEEK_COUNT_OPTIONS.map((n) => (
                   <option key={n} value={n}>
                     {n}{" "}
                     {plural(n, [t("common.week.one"), t("common.week.few"), t("common.week.many")])}
