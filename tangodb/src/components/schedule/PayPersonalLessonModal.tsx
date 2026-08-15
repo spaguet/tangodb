@@ -46,6 +46,8 @@ export interface PayPersonalLessonTarget {
   clientDisplay: string;
   price: number;
   paidAmount?: number;
+  /** When set, pre-fills the payment amount field (e.g. outstanding debt from debtors list). */
+  presetPaymentAmount?: number;
   locationId?: string | null;
   disciplineId?: string | null;
 }
@@ -121,14 +123,20 @@ export default function PayPersonalLessonModal({
       setBookingPaymentMode(null);
       return;
     }
-    setBookingPaymentMode(null);
     setLinkedSubscriptionId("");
     setPaymentMethod("cash");
-    const remainingDebt = Math.max(lesson.price - (lesson.paidAmount ?? 0), 0);
-    const initialPrice = lesson.price > 0 ? remainingDebt.toString() : "";
-    setCustomPrice(initialPrice);
+    const presetAmount = lesson.presetPaymentAmount;
+    if (presetAmount != null && presetAmount > 0) {
+      setBookingPaymentMode("single");
+      setCustomPrice(presetAmount.toString());
+    } else {
+      setBookingPaymentMode(null);
+      const remainingDebt = Math.max(lesson.price - (lesson.paidAmount ?? 0), 0);
+      const initialPrice = lesson.price > 0 ? remainingDebt.toString() : "";
+      setCustomPrice(initialPrice);
+    }
     setSelectedLessonTariffId("");
-  }, [lessonId, lesson?.price, lesson?.paidAmount]);
+  }, [lessonId, lesson?.price, lesson?.paidAmount, lesson?.presetPaymentAmount]);
 
   useEffect(() => {
     if (!lesson || lessonTariffs.length === 0) return;
@@ -137,6 +145,7 @@ export default function PayPersonalLessonModal({
       const matched = lessonTariffs.find((t) => t.price === lesson.price) ?? lessonTariffs[0];
       return matched.id!;
     });
+    if (lesson.presetPaymentAmount != null) return;
     setCustomPrice((prev) => {
       if (prev) return prev;
       const matched = lessonTariffs.find((t) => t.price === lesson.price) ?? lessonTariffs[0];

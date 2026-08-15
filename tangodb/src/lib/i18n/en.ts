@@ -2162,6 +2162,8 @@ export const EN: Record<I18nKey, string> = {
   "finance.debtors.kind.subscription": "Subscription",
   "finance.debtors.openRenter": "Open profile",
   "finance.debtors.openSchedule": "Open in schedule",
+  "finance.debtors.payByTariff": "Pay by tariff",
+  "finance.debtors.payOutstanding": "Pay outstanding amount",
   "finance.debtors.documentType": "Document type",
   "finance.debtors.outstanding": "Outstanding amount",
   "finance.debtors.dueStatus": "Due status",

@@ -2160,6 +2160,8 @@ export const RU: Record<I18nKey, string> = {
   "finance.debtors.kind.subscription": "Абонемент",
   "finance.debtors.openRenter": "Карточка",
   "finance.debtors.openSchedule": "Открыть в расписании",
+  "finance.debtors.payByTariff": "Оплата по тарифу",
+  "finance.debtors.payOutstanding": "Оплата текущей суммы",
   "finance.debtors.documentType": "Вид документа",
   "finance.debtors.outstanding": "Сумма задолженности",
   "finance.debtors.dueStatus": "Срок",

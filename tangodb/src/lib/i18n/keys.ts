@@ -2098,6 +2098,8 @@ export type I18nKey =
   | "finance.debtors.kind.subscription"
   | "finance.debtors.openRenter"
   | "finance.debtors.openSchedule"
+  | "finance.debtors.payByTariff"
+  | "finance.debtors.payOutstanding"
   | "finance.debtors.documentType"
   | "finance.debtors.outstanding"
   | "finance.debtors.dueStatus"

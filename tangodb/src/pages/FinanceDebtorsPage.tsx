@@ -67,7 +67,8 @@ function DebtorRow({
   schedulePath,
   canPayPersonal,
   canAdjust,
-  onPay,
+  onPayByTariff,
+  onPayOutstanding,
   onAdjust,
   formatDate,
   t,
@@ -83,7 +84,8 @@ function DebtorRow({
   schedulePath: string | null;
   canPayPersonal: boolean;
   canAdjust: boolean;
-  onPay: () => void;
+  onPayByTariff: () => void;
+  onPayOutstanding: () => void;
   onAdjust: () => void;
   formatDate: ReturnType<typeof useI18n>["formatDate"];
   t: ReturnType<typeof useI18n>["t"];
@@ -130,19 +132,32 @@ function DebtorRow({
         >
           {amountLabel}
         </button>
-        <div className="text-right">
+        <div className="flex flex-col items-end gap-1.5 sm:items-end">
           {canPayPersonal ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPay();
-              }}
-              className={btnAddCls}
-            >
-              <Coins className="w-3.5 h-3.5" />
-              {t("common.pay")}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPayByTariff();
+                }}
+                className={btnAddCls}
+              >
+                <Coins className="w-3.5 h-3.5" />
+                {t("finance.debtors.payByTariff")}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPayOutstanding();
+                }}
+                className={btnOpenCls}
+              >
+                <Coins className="w-3.5 h-3.5" />
+                {t("finance.debtors.payOutstanding")}
+              </button>
+            </>
           ) : entry.kind === "rental" && entry.renterId ? (
             <Link
               to={`/renters/${entry.renterId}`}
@@ -280,7 +295,7 @@ export default function FinanceDebtorsPage() {
   if (debtorsQuery.isLoading) return <LoadingState label={t("finance.debtors.loading")} />;
   if (debtorsQuery.isError) return <QueryErrorState error={debtorsQuery.error} />;
 
-  const openPersonalPayment = (entry: DebtorEntry) => {
+  const openPersonalPayment = (entry: DebtorEntry, mode: "tariff" | "outstanding") => {
     if (!entry.personalLessonId || !entry.clientId1 || !entry.lessonDate) return;
     setPayTarget({
       lessonId: entry.personalLessonId,
@@ -293,6 +308,7 @@ export default function FinanceDebtorsPage() {
       clientDisplay: entry.clientDisplay,
       price: entry.billedAmount ?? entry.amount,
       paidAmount: entry.paidAmount ?? 0,
+      presetPaymentAmount: mode === "outstanding" ? entry.amount : undefined,
       locationId: entry.locationId ?? null,
       disciplineId: entry.disciplineId ?? null,
     });
@@ -411,7 +427,8 @@ export default function FinanceDebtorsPage() {
                     schedulePath={debtorSchedulePath(entry)}
                     canPayPersonal={canPayPersonal}
                     canAdjust={canAdjust}
-                    onPay={() => openPersonalPayment(entry)}
+                    onPayByTariff={() => openPersonalPayment(entry, "tariff")}
+                    onPayOutstanding={() => openPersonalPayment(entry, "outstanding")}
                     onAdjust={() => setAdjustTarget(entry)}
                     formatDate={formatDate}
                     t={t}
