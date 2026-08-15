@@ -24,7 +24,7 @@
 - `src/store/` — локальное UI-состояние (Zustand)
 - `src/components/` — UI без прямых вызовов Supabase
 - `src/components/schedule/` — недельная сетка расписания (Промпты 2–8):
-  - **Контейнер:** `SchedulePageContainer` — state недели, фильтр `?teacher=`, deep link `?action=sell` (только `SellPackageModal`), deep link из дебиторки `?date=YYYY-MM-DD&lesson=<id>` / `&rental=<id>` (неделя + popup записи), CRUD-потоки
+  - **Контейнер:** `SchedulePageContainer` — state недели, фильтр `?teacher=`, deep link `?action=sell` (только `SellPackageModal`), deep link из финансов `/schedule?date=YYYY-MM-DD&lesson=<id>&location=<id>` / `&rental=` (неделя, раскрытая сетка зала, подсветка записи без popup), CRUD-потоки
   - **Сетка:** `WeeklyScheduleGrid`, `LocationScheduleSection`, `DayColumn`, `LessonBlock`, `TimeGutter`
   - **Toolbar:** `ScheduleToolbar`, `WeekPickerPopover`
   - **CRUD UI:** `LessonInfoPopup`, `AddLessonTypePopup`, `AddGroupLessonForm`, `AddPersonalLessonForm` (обёртка над `PersonalLessonSaleForm`), `EditLessonPopup`

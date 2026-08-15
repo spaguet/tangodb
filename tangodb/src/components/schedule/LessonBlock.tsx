@@ -16,9 +16,10 @@ interface LessonBlockProps {
   title: string;
   subtitle?: string;
   onClick?: (lesson: DisplayLesson) => void;
+  highlighted?: boolean;
 }
 
-export default function LessonBlock({ item, rangeStartMin, title, subtitle, onClick }: LessonBlockProps) {
+export default function LessonBlock({ item, rangeStartMin, title, subtitle, onClick, highlighted = false }: LessonBlockProps) {
   const { lesson, column, columnCount } = item;
   const isPast = isPastDate(lesson.date);
   const personalDebt = lesson.kind === "personal" && lesson.paid === "no";
@@ -65,13 +66,19 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
       onKeyDown={onClick ? handleKeyDown : undefined}
       className={`absolute overflow-hidden rounded-md border px-1 py-0.5 text-[10px] leading-tight font-semibold shadow-xs transition-opacity ${
         onClick ? "cursor-pointer hover:brightness-95" : ""
-      } ${isPast ? "opacity-50 grayscale" : ""} ${colors.bg} ${colors.text} ${hasDebt ? "ring-2 ring-rose-500 ring-inset" : colors.border}`}
+      } ${isPast ? "opacity-50 grayscale" : ""} ${colors.bg} ${colors.text} ${
+        highlighted
+          ? "ring-2 ring-indigo-600 ring-offset-1"
+          : hasDebt
+            ? "ring-2 ring-rose-500 ring-inset"
+            : colors.border
+      }`}
       style={{
         top: topPx,
         height: heightPx,
         left: `${leftPct}%`,
         width: `${widthPct}%`,
-        zIndex: column + 1,
+        zIndex: highlighted ? 8 : column + 1,
       }}
       title={`${title}${subtitle ? ` · ${subtitle}` : ""}`}
     >

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertCircle, CalendarDays, ChevronDown, Coins } from "lucide-react";
+import { AlertCircle, CalendarDays, ChevronDown, Coins, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
@@ -24,6 +24,7 @@ import {
 import { formatCurrency } from "../lib/utils";
 import { toISODateLocal } from "../lib/scheduleWeek";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "../components/schedule/PayPersonalLessonModal";
+import AdjustDebtorAmountDialog from "../components/finance/AdjustDebtorAmountDialog";
 import { btnAddCls, btnOpenCls } from "../components/ui/buttonStyles";
 import AppSelect from "../components/ui/AppSelect";
 
@@ -65,7 +66,9 @@ function DebtorRow({
   agingLabel,
   schedulePath,
   canPayPersonal,
+  canAdjust,
   onPay,
+  onAdjust,
   formatDate,
   t,
 }: {
@@ -79,7 +82,9 @@ function DebtorRow({
   agingLabel: string;
   schedulePath: string | null;
   canPayPersonal: boolean;
+  canAdjust: boolean;
   onPay: () => void;
+  onAdjust: () => void;
   formatDate: ReturnType<typeof useI18n>["formatDate"];
   t: ReturnType<typeof useI18n>["t"];
 }) {
@@ -164,6 +169,18 @@ function DebtorRow({
             {entry.kind !== "rental" ? (
               <DebtorDetailItem label={t("common.discipline")} value={disciplineName} />
             ) : null}
+            {entry.billedAmount != null ? (
+              <DebtorDetailItem
+                label={t("finance.debtors.adjustBilled")}
+                value={formatCurrency(entry.billedAmount)}
+              />
+            ) : null}
+            {entry.paidAmount != null && entry.paidAmount > 0 ? (
+              <DebtorDetailItem
+                label={t("finance.debtors.adjustPaid")}
+                value={formatCurrency(entry.paidAmount)}
+              />
+            ) : null}
             <DebtorDetailItem label={t("finance.debtors.outstanding")} value={amountLabel} />
             <DebtorDetailItem label={t("finance.debtors.dueStatus")} value={agingLabel} />
             <DebtorDetailItem label={t("common.client")} value={entry.clientDisplay || MISSING} />
@@ -178,12 +195,20 @@ function DebtorRow({
           {entry.kind === "subscription" ? (
             <p className="mt-2 text-[11px] text-slate-500 font-sans">{t("finance.debtors.subscriptionNote")}</p>
           ) : null}
-          {schedulePath ? (
-            <div className="mt-3">
-              <Link to={schedulePath} className={btnOpenCls}>
-                <CalendarDays className="w-3.5 h-3.5" />
-                {t("finance.debtors.openSchedule")}
-              </Link>
+          {schedulePath || canAdjust ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {schedulePath ? (
+                <Link to={schedulePath} className={btnOpenCls}>
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  {t("finance.debtors.openSchedule")}
+                </Link>
+              ) : null}
+              {canAdjust ? (
+                <button type="button" onClick={onAdjust} className={btnOpenCls}>
+                  <Pencil className="w-3.5 h-3.5" />
+                  {t("finance.debtors.adjustAmount")}
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -201,6 +226,7 @@ export default function FinanceDebtorsPage() {
   const disciplinesQuery = useDisciplines();
   const teamQuery = useTeamMembers();
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
+  const [adjustTarget, setAdjustTarget] = useState<DebtorEntry | null>(null);
   const [tab, setTab] = useState<DebtorTab>("all");
   const [sortKey, setSortKey] = useState<DebtorSortKey>("dateAsc");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -265,7 +291,8 @@ export default function FinanceDebtorsPage() {
       clientId2: entry.clientId2 ?? "",
       clientId3: entry.clientId3 ?? "",
       clientDisplay: entry.clientDisplay,
-      price: entry.amount,
+      price: entry.billedAmount ?? entry.amount,
+      paidAmount: entry.paidAmount ?? 0,
       locationId: entry.locationId ?? null,
       disciplineId: entry.disciplineId ?? null,
     });
@@ -360,6 +387,11 @@ export default function FinanceDebtorsPage() {
                     disciplineId: entry.disciplineId ?? null,
                     locationId: entry.locationId ?? null,
                   });
+                const canAdjust =
+                  !isReadOnly &&
+                  can("finance.read") &&
+                  ((entry.kind === "personal" && !!entry.personalLessonId) ||
+                    (entry.kind === "rental" && !!entry.rentalId));
 
                 return (
                   <DebtorRow
@@ -378,7 +410,9 @@ export default function FinanceDebtorsPage() {
                     agingLabel={agingLabelFor(entry)}
                     schedulePath={debtorSchedulePath(entry)}
                     canPayPersonal={canPayPersonal}
+                    canAdjust={canAdjust}
                     onPay={() => openPersonalPayment(entry)}
+                    onAdjust={() => setAdjustTarget(entry)}
                     formatDate={formatDate}
                     t={t}
                   />
@@ -402,6 +436,12 @@ export default function FinanceDebtorsPage() {
         toast={toast}
         onClose={() => setPayTarget(null)}
         onSuccess={() => setPayTarget(null)}
+      />
+      <AdjustDebtorAmountDialog
+        entry={adjustTarget}
+        toast={toast}
+        onClose={() => setAdjustTarget(null)}
+        onSuccess={() => setAdjustTarget(null)}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { ChevronDown, Landmark, Pencil, Search } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { CalendarDays, ChevronDown, Landmark, Pencil, Search } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect, { searchFieldCls } from "../components/ui/AppSelect";
@@ -43,6 +43,8 @@ import {
 import { formatCurrency, formatMonthTitle, currentYearMonth } from "../lib/utils";
 import { monthDateRange } from "../lib/financeReports";
 import { readFinanceMonthFromSearch } from "../lib/financeMonthUrl";
+import { paymentSchedulePath } from "../lib/scheduleFocus";
+import { btnOpenCls } from "../components/ui/buttonStyles";
 import type { PaymentMethod, RentalMoneyRegisterEntry } from "../types";
 
 type PaymentSourceFilter = "all" | "subscription" | "personal_lesson" | "single_visit" | "rental";
@@ -199,6 +201,14 @@ function PaymentRow({
     payment.correctionComment?.trim() || null,
   ].filter(Boolean);
   const reasonLabel = reasonParts.length > 0 ? reasonParts.join(" · ") : "—";
+  const lesson = payment.personalLessonId
+    ? teacherCtx.personalLessonById.get(payment.personalLessonId)
+    : undefined;
+  const schedulePath = paymentSchedulePath({
+    personalLessonId: payment.personalLessonId,
+    lessonDate: lesson?.date,
+    locationId: lesson?.locationId ?? locationId,
+  });
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
@@ -321,6 +331,14 @@ function PaymentRow({
               </>
             )}
           </dl>
+          {schedulePath ? (
+            <div className="mt-3">
+              <Link to={schedulePath} className={btnOpenCls}>
+                <CalendarDays className="w-3.5 h-3.5" />
+                {translate("finance.debtors.openSchedule")}
+              </Link>
+            </div>
+          ) : null}
         </div>
       )}
     </div>
@@ -406,6 +424,11 @@ function RentalPaymentRow({
     canCorrect &&
     payment.entryType === "direct_booking_payment" &&
     rentalPaymentCanCorrect(correctionTarget);
+  const schedulePath = paymentSchedulePath({
+    rentalId: payment.rentalId,
+    rentalDate: payment.rentalDate,
+    locationId: payment.locationId,
+  });
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
@@ -488,6 +511,14 @@ function RentalPaymentRow({
               />
             ) : null}
           </dl>
+          {schedulePath ? (
+            <div className="mt-3 px-8">
+              <Link to={schedulePath} className={btnOpenCls}>
+                <CalendarDays className="w-3.5 h-3.5" />
+                {translate("finance.debtors.openSchedule")}
+              </Link>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

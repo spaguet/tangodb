@@ -6,7 +6,7 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 export const financialDebtorsQueryKey = ["financialDebtors"] as const;
 
 const FINANCIAL_DEBTORS_SELECT =
-  "organization_id, id, personal_lesson_id, client_id1, client_id2, client_id3, lesson_time_start, lesson_time_end, location_id, discipline_id, teacher_member_id, rental_id, renter_id, kind, client_display, contact, detail, amount, lessons_left, lessons_total, lesson_date";
+  "organization_id, id, personal_lesson_id, client_id1, client_id2, client_id3, lesson_time_start, lesson_time_end, location_id, discipline_id, teacher_member_id, rental_id, renter_id, kind, client_display, contact, detail, amount, billed_amount, paid_amount, lessons_left, lessons_total, lesson_date";
 
 function mapFinancialDebtor(row: Record<string, unknown>): DebtorEntry {
   const kind =
@@ -29,6 +29,8 @@ function mapFinancialDebtor(row: Record<string, unknown>): DebtorEntry {
     kind,
     detail: String(row.detail ?? ""),
     amount: Number(row.amount) || 0,
+    billedAmount: row.billed_amount != null ? Number(row.billed_amount) : null,
+    paidAmount: row.paid_amount != null ? Number(row.paid_amount) : null,
     lessonsLeft: row.lessons_left != null ? Number(row.lessons_left) : null,
     lessonsTotal: row.lessons_total != null ? Number(row.lessons_total) : null,
     lessonDate: row.lesson_date != null ? String(row.lesson_date) : null,

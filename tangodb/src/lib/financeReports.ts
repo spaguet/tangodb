@@ -16,6 +16,7 @@ import {
   paymentEffectiveAmount,
   type PaymentWithCorrectionMeta,
 } from "../lib/paymentCorrection";
+import { buildScheduleFocusPath } from "./scheduleFocus";
 
 function rankPaymentAmount(payment: Payment | PaymentWithCorrectionMeta): number {
   if ("operationKind" in payment && payment.operationKind) {
@@ -275,6 +276,8 @@ export interface DebtorEntry {
   kind: "subscription" | "personal" | "rental";
   detail: string;
   amount: number;
+  billedAmount?: number | null;
+  paidAmount?: number | null;
   lessonsLeft?: number | null;
   lessonsTotal?: number | null;
   lessonDate?: string | null;
@@ -332,15 +335,22 @@ export function debtorAgingDays(lessonDate: string | null | undefined, todayISO:
 }
 
 export function debtorSchedulePath(
-  entry: Pick<DebtorEntry, "kind" | "lessonDate" | "personalLessonId" | "rentalId">
+  entry: Pick<DebtorEntry, "kind" | "lessonDate" | "personalLessonId" | "rentalId" | "locationId">
 ): string | null {
   if (!entry.lessonDate) return null;
-  const date = entry.lessonDate.slice(0, 10);
   if (entry.kind === "personal" && entry.personalLessonId) {
-    return `/schedule?date=${encodeURIComponent(date)}&lesson=${encodeURIComponent(entry.personalLessonId)}`;
+    return buildScheduleFocusPath({
+      date: entry.lessonDate,
+      lessonId: entry.personalLessonId,
+      locationId: entry.locationId,
+    });
   }
   if (entry.kind === "rental" && entry.rentalId) {
-    return `/schedule?date=${encodeURIComponent(date)}&rental=${encodeURIComponent(entry.rentalId)}`;
+    return buildScheduleFocusPath({
+      date: entry.lessonDate,
+      rentalId: entry.rentalId,
+      locationId: entry.locationId,
+    });
   }
   return null;
 }
@@ -704,7 +714,7 @@ export function buildClassLocationMap(slots: ScheduleSlot[]): Map<string, string
 }
 
 export interface TeacherRevenueContext {
-  personalLessonById: Map<string, Pick<PersonalLesson, "teacherMemberId" | "locationId">>;
+  personalLessonById: Map<string, Pick<PersonalLesson, "teacherMemberId" | "locationId" | "date">>;
   singleVisitById: Map<string, Pick<SingleVisit, "teacherMemberId" | "locationId">>;
   groupsBySubId: Record<string, SubscriptionGroupLink[]>;
   classTeacherByGroupId: Map<string, string>;

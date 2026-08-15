@@ -24,6 +24,7 @@ interface DayColumnProps {
   onLessonClick?: (lesson: DisplayLesson) => void;
   onEmptyCellClick?: (dateISO: string, dayOfWeek: number, timeStart: string) => void;
   canClickEmpty?: boolean;
+  highlightedLesson?: DisplayLesson | null;
 }
 
 function isMinuteOccupied(minute: number, lessons: DisplayLesson[]): boolean {
@@ -45,6 +46,7 @@ export default function DayColumn({
   onLessonClick,
   onEmptyCellClick,
   canClickEmpty = false,
+  highlightedLesson = null,
 }: DayColumnProps) {
   const { t, locale } = useI18n();
   const positioned = useMemo(() => layoutDayLessons(lessons), [lessons]);
@@ -138,6 +140,15 @@ export default function DayColumn({
             title={getLessonTitle(item.lesson)}
             subtitle={getLessonSubtitle(item.lesson)}
             onClick={onLessonClick}
+            highlighted={
+              highlightedLesson != null &&
+              ((highlightedLesson.kind === "personal" &&
+                item.lesson.kind === "personal" &&
+                item.lesson.lessonId === highlightedLesson.lessonId) ||
+                (highlightedLesson.kind === "rental" &&
+                  item.lesson.kind === "rental" &&
+                  item.lesson.rentalId === highlightedLesson.rentalId))
+            }
           />
         ))}
       </div>

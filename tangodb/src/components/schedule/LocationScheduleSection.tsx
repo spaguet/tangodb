@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import WeeklyScheduleGrid from "./WeeklyScheduleGrid";
@@ -15,6 +15,7 @@ interface LocationScheduleSectionProps {
   onEmptyCellClick?: (dateISO: string, dayOfWeek: number, timeStart: string) => void;
   canClickEmpty?: boolean;
   forceExpanded?: boolean;
+  highlightedLesson?: DisplayLesson | null;
 }
 
 export default function LocationScheduleSection({
@@ -28,18 +29,26 @@ export default function LocationScheduleSection({
   onEmptyCellClick,
   canClickEmpty = false,
   forceExpanded = false,
+  highlightedLesson = null,
 }: LocationScheduleSectionProps) {
   const { t } = useI18n();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isExpanded, setIsExpanded] = useState(forceExpanded);
 
   useEffect(() => {
-    if (forceExpanded) setIsExpanded(true);
+    if (!forceExpanded) return;
+    setIsExpanded(true);
+    const node = sectionRef.current;
+    if (!node) return;
+    window.requestAnimationFrame(() => {
+      node.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }, [forceExpanded]);
 
   const showGrid = lessons.length > 0 || (canClickEmpty && locationId);
 
   return (
-    <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs">
+    <section ref={sectionRef} className="bg-white rounded-xl border border-slate-200/90 shadow-xs">
       <button
         type="button"
         onClick={() => setIsExpanded((prev) => !prev)}
@@ -73,6 +82,7 @@ export default function LocationScheduleSection({
             onLessonClick={onLessonClick}
             onEmptyCellClick={onEmptyCellClick}
             canClickEmpty={canClickEmpty && !!locationId}
+            highlightedLesson={highlightedLesson}
           />
         ))}
     </section>

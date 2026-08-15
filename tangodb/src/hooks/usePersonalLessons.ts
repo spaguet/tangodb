@@ -9,6 +9,7 @@ import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { paymentsQueryKey } from "./usePayments";
 import { subscriptionsQueryKey } from "./useSubscriptions";
+import { financialDebtorsQueryKey } from "./useFinancialDebtors";
 
 export const personalLessonsQueryKey = ["personalLessons"] as const;
 
@@ -152,6 +153,7 @@ function invalidatePersonalLessonRelatedQueries(
   void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: ["schedule"], ...opts });
   void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
+  void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey, ...opts });
   if (options?.includePayments !== false) {
     void queryClient.invalidateQueries({ queryKey: paymentsQueryKey, ...opts });
   }
@@ -516,6 +518,31 @@ export function useUpdatePersonalLesson() {
       const result = data as { success?: boolean; error?: string } | null;
       if (!result?.success) {
         return { success: false as const, error: result?.error ?? "common.saveFailed" };
+      }
+
+      return { success: true as const };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient);
+    },
+  });
+}
+
+export function useRestatePersonalLessonAmount() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { lessonId: string; newAmount: number }) => {
+      const { data, error } = await supabase.rpc("restate_personal_lesson_amount", {
+        p_lesson_id: input.lessonId,
+        p_new_amount: input.newAmount,
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as { success?: boolean; error?: string } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "finance.debtors.adjustFailed" };
       }
 
       return { success: true as const };

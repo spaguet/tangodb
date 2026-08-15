@@ -8,6 +8,7 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 import { scheduleQueryKey } from "./useSchedule";
 import { rentalPaymentsQueryKey } from "./useRentalPayments";
 import { rentalPaymentInboxQueryKey } from "./useRentalPaymentInbox";
+import { financialDebtorsQueryKey } from "./useFinancialDebtors";
 import type { RentalCancelFinancialAction } from "./useRentalSeries";
 
 export const rentalsQueryKey = ["rentals"] as const;
@@ -318,6 +319,7 @@ function invalidateRentalQueries(queryClient: ReturnType<typeof useQueryClient>)
   void queryClient.invalidateQueries({ queryKey: ["payments"], refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: ["renterFinance"], refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: rentalPaymentInboxQueryKey, refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey, refetchType: "active" });
 }
 
 export function useCreateRental() {

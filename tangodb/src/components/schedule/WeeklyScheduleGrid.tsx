@@ -16,6 +16,7 @@ interface WeeklyScheduleGridProps {
   onLessonClick?: (lesson: DisplayLesson) => void;
   onEmptyCellClick?: (dateISO: string, dayOfWeek: number, timeStart: string) => void;
   canClickEmpty?: boolean;
+  highlightedLesson?: DisplayLesson | null;
 }
 
 export default function WeeklyScheduleGrid({
@@ -26,6 +27,7 @@ export default function WeeklyScheduleGrid({
   onLessonClick,
   onEmptyCellClick,
   canClickEmpty = false,
+  highlightedLesson = null,
 }: WeeklyScheduleGridProps) {
   const { start: rangeStartMin, end: rangeEndMin } = useMemo(
     () => computeDisplayRange(lessons),
@@ -92,6 +94,7 @@ export default function WeeklyScheduleGrid({
               onLessonClick={onLessonClick}
               onEmptyCellClick={onEmptyCellClick}
               canClickEmpty={canClickEmpty}
+              highlightedLesson={highlightedLesson}
             />
           ))}
         </div>
