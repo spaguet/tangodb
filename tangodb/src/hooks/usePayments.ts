@@ -194,6 +194,12 @@ export function useRecordPersonalLessonPayment() {
       markPaid?: boolean;
       idempotencyKey?: string;
       venueRuleAcknowledged?: boolean;
+      priceId?: string | null;
+      tariffUnits?: number | null;
+      tariffDurationMinutes?: number | null;
+      tariffPrice?: number | null;
+      tariffLabel?: string | null;
+      lessonDurationMinutes?: number | null;
     }) => {
       const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false, {
         queryClient,
@@ -206,6 +212,13 @@ export function useRecordPersonalLessonPayment() {
         p_method: input.method,
         p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
         p_venue_rule_acknowledged: input.venueRuleAcknowledged ?? false,
+        p_client_id: input.clientId,
+        p_price_id: input.priceId ?? null,
+        p_tariff_units: input.tariffUnits ?? null,
+        p_tariff_duration_minutes: input.tariffDurationMinutes ?? null,
+        p_tariff_price: input.tariffPrice ?? null,
+        p_tariff_label: input.tariffLabel ?? null,
+        p_lesson_duration_minutes: input.lessonDurationMinutes ?? null,
       });
 
       if (error) return { success: false as const, error: error.message };

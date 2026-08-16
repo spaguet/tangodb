@@ -17,7 +17,7 @@
 | 0 | Decision log `PL-TARIFF-0` | 0 | — | ✅ |
 | 1 | `personalTariffPricing.ts` + типы + unit-тесты | 1 | 0 | ✅ |
 | 2 | SQL: duration / `price_id` / снимок платежа / `payer_client_id` / дебиторка | 1 | 0 | ✅ |
-| 3 | RPC: одна сигнатура + хук оплаты + restate сбрасывает `price_id` | 1 | 2 | |
+| 3 | RPC: одна сигнатура + хук оплаты + restate сбрасывает `price_id` | 1 | 2 | ✅ |
 | 4 | UI прайса: длительность тарифа | 1 | 1, 2 | |
 | 5 | Продажа / запись: billed, `price_id`, плательщик, фильтр педагога, warn | 1 | 1, 2, 3 | |
 | 6 | Касса: режимы `tariff \| outstanding \| package` | 1 | 1, 3, 5 | |
