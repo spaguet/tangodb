@@ -13,13 +13,15 @@ import { useDisciplines } from "../hooks/useDisciplines";
 import { memberDisplayName, useTeamMembers } from "../hooks/useTeamMembers";
 import {
   sortDebtors,
-  sumDebtorAmounts,
+  sumDebtorListAmounts,
+  groupPersonalLessonDebtors,
   formatDebtorDetail,
   formatDebtorClock,
   formatDebtorLessonDuration,
   debtorAgingDays,
   debtorSchedulePath,
   type DebtorEntry,
+  type DebtorListItem,
   type DebtorSortKey,
 } from "../lib/financeReports";
 import { formatCurrency } from "../lib/utils";
@@ -57,7 +59,7 @@ function DebtorDetailItem({ label, value }: { label: string; value: string }) {
 }
 
 function DebtorRow({
-  entry,
+  item,
   expanded,
   onToggle,
   kindLabel,
@@ -74,7 +76,7 @@ function DebtorRow({
   formatDate,
   t,
 }: {
-  entry: DebtorEntry;
+  item: DebtorListItem;
   expanded: boolean;
   onToggle: () => void;
   kindLabel: string;
@@ -91,6 +93,9 @@ function DebtorRow({
   formatDate: ReturnType<typeof useI18n>["formatDate"];
   t: ReturnType<typeof useI18n>["t"];
 }) {
+  const entry = item.entry;
+  const members = item.members;
+  const isGroup = members.length > 1;
   const timeStart = formatDebtorClock(entry.lessonTimeStart) ?? MISSING;
   const timeEnd = formatDebtorClock(entry.lessonTimeEnd) ?? MISSING;
   const serviceDate = entry.lessonDate ? formatDate(entry.lessonDate) : MISSING;
@@ -211,14 +216,40 @@ function DebtorRow({
             ) : null}
             <DebtorDetailItem label={t("finance.debtors.outstanding")} value={amountLabel} />
             <DebtorDetailItem label={t("finance.debtors.dueStatus")} value={agingLabel} />
-            <DebtorDetailItem label={t("common.client")} value={entry.clientDisplay || MISSING} />
-            {otherParticipants ? (
-              <DebtorDetailItem
-                label={t("finance.debtors.otherParticipants")}
-                value={otherParticipants}
-              />
-            ) : null}
-            <DebtorDetailItem label="Telegram" value={entry.contact || MISSING} />
+            {isGroup ? (
+              <div className="sm:col-span-2 lg:col-span-3">
+                <dt className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
+                  {t("finance.debtors.chargePerMember")}
+                </dt>
+                <dd className="mt-1.5 space-y-2">
+                  {members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-lg border border-slate-100 bg-white px-2.5 py-2"
+                    >
+                      <span className="text-xs font-medium text-slate-800">{member.clientDisplay}</span>
+                      <span className="text-xs font-semibold text-rose-700 tabular-nums">
+                        {formatCurrency(member.amount)}
+                      </span>
+                      {member.contact && member.contact !== "—" ? (
+                        <span className="w-full text-[11px] text-slate-500">Telegram: {member.contact}</span>
+                      ) : null}
+                    </div>
+                  ))}
+                </dd>
+              </div>
+            ) : (
+              <>
+                <DebtorDetailItem label={t("common.client")} value={entry.clientDisplay || MISSING} />
+                {otherParticipants ? (
+                  <DebtorDetailItem
+                    label={t("finance.debtors.otherParticipants")}
+                    value={otherParticipants}
+                  />
+                ) : null}
+                <DebtorDetailItem label="Telegram" value={entry.contact || MISSING} />
+              </>
+            )}
             {entry.kind === "subscription" ? (
               <DebtorDetailItem
                 label={t("common.details")}
@@ -280,10 +311,11 @@ export default function FinanceDebtorsPage() {
     let rows = allDebtors;
     if (tab === "clients") rows = rows.filter((e) => e.kind !== "rental");
     else if (tab === "rentals") rows = rows.filter((e) => e.kind === "rental");
-    return sortDebtors(rows, sortKey, locale);
+    const sorted = sortDebtors(rows, sortKey, locale);
+    return groupPersonalLessonDebtors(sorted);
   }, [allDebtors, tab, sortKey, locale]);
 
-  const totalDebt = useMemo(() => sumDebtorAmounts(debtors), [debtors]);
+  const totalDebt = useMemo(() => sumDebtorListAmounts(debtors), [debtors]);
   const rentalDebtTotal = useMemo(
     () => sumDebtorAmounts(allDebtors.filter((e) => e.kind === "rental")),
     [allDebtors]
@@ -319,7 +351,8 @@ export default function FinanceDebtorsPage() {
   if (debtorsQuery.isLoading) return <LoadingState label={t("finance.debtors.loading")} />;
   if (debtorsQuery.isError) return <QueryErrorState error={debtorsQuery.error} />;
 
-  const openPersonalPayment = (entry: DebtorEntry, mode: "tariff" | "outstanding") => {
+  const openPersonalPayment = (item: DebtorListItem, mode: "tariff" | "outstanding") => {
+    const entry = item.entry;
     if (!entry.personalLessonId || !entry.lessonDate) return;
     setPayTarget({
       lessonId: entry.personalLessonId,
@@ -331,9 +364,9 @@ export default function FinanceDebtorsPage() {
       clientId3: entry.clientId3 ?? "",
       clientId4: entry.clientId4 ?? "",
       clientDisplay: entry.clientDisplay,
-      payerClientId: entry.payerClientId,
+      payerClientId: item.members.length === 1 ? entry.payerClientId : null,
       priceId: entry.priceId,
-      chargeId: entry.personalLessonChargeId,
+      chargeId: item.members.length === 1 ? entry.personalLessonChargeId : null,
       price: entry.billedAmount ?? entry.amount,
       paidAmount: entry.paidAmount ?? 0,
       locationId: entry.locationId ?? null,
@@ -423,11 +456,12 @@ export default function FinanceDebtorsPage() {
               <span className="text-right">{t("clients.table.actions")}</span>
             </div>
             <div>
-              {debtors.map((entry) => {
+              {debtors.map((item) => {
+                const entry = item.entry;
                 const canPayPersonal =
                   entry.kind === "personal" &&
                   !!entry.personalLessonId &&
-                  !!(entry.payerClientId ?? entry.clientId1) &&
+                  !!(entry.payerClientId ?? entry.clientId1 ?? item.members.length > 1) &&
                   !isReadOnly &&
                   can("payments.write", {
                     disciplineId: entry.disciplineId ?? null,
@@ -441,10 +475,10 @@ export default function FinanceDebtorsPage() {
 
                 return (
                   <DebtorRow
-                    key={entry.id}
-                    entry={entry}
-                    expanded={expandedId === entry.id}
-                    onToggle={() => setExpandedId((prev) => (prev === entry.id ? null : entry.id))}
+                    key={item.id}
+                    item={item}
+                    expanded={expandedId === item.id}
+                    onToggle={() => setExpandedId((prev) => (prev === item.id ? null : item.id))}
                     kindLabel={debtorKindLabel(entry.kind, t)}
                     locationName={entry.locationId ? locationNameById.get(entry.locationId) ?? MISSING : MISSING}
                     disciplineName={
@@ -457,8 +491,8 @@ export default function FinanceDebtorsPage() {
                     schedulePath={debtorSchedulePath(entry)}
                     canPayPersonal={canPayPersonal}
                     canAdjust={canAdjust}
-                    onPayByTariff={() => openPersonalPayment(entry, "tariff")}
-                    onPayOutstanding={() => openPersonalPayment(entry, "outstanding")}
+                    onPayByTariff={() => openPersonalPayment(item, "tariff")}
+                    onPayOutstanding={() => openPersonalPayment(item, "outstanding")}
                     onAdjust={() => setAdjustTarget(entry)}
                     formatDate={formatDate}
                     t={t}

@@ -349,6 +349,75 @@ export function sumDebtorAmounts(entries: DebtorEntry[]): number {
   return entries.reduce((sum, e) => sum + e.amount, 0);
 }
 
+/** One or more charge rows for the same personal lesson, shown as a single list row. */
+export interface DebtorListItem {
+  id: string;
+  entry: DebtorEntry;
+  members: DebtorEntry[];
+}
+
+function mergePersonalLessonDebtorGroup(members: DebtorEntry[]): DebtorEntry {
+  const base = members[0];
+  const names = [...members]
+    .sort((a, b) => a.clientDisplay.localeCompare(b.clientDisplay))
+    .map((m) => m.clientDisplay)
+    .filter(Boolean);
+  const contacts = members
+    .map((m) => m.contact)
+    .filter((c) => c && c !== "—");
+  const uniqueContacts = [...new Set(contacts)];
+
+  return {
+    ...base,
+    id: `grp-${base.personalLessonId}`,
+    clientDisplay: names.join(" & "),
+    contact: uniqueContacts.length > 0 ? uniqueContacts.join(", ") : base.contact,
+    amount: sumDebtorAmounts(members),
+    billedAmount: members.reduce((sum, m) => sum + (m.billedAmount ?? 0), 0),
+    paidAmount: members.reduce((sum, m) => sum + (m.paidAmount ?? 0), 0),
+    otherParticipants: null,
+    payerClientId: null,
+    personalLessonChargeId: null,
+  };
+}
+
+/** Merge personal-lesson charge rows that belong to the same lesson (pair/trio/quad). */
+export function groupPersonalLessonDebtors(entries: DebtorEntry[]): DebtorListItem[] {
+  const result: DebtorListItem[] = [];
+  const seenLessonIds = new Set<string>();
+
+  for (const entry of entries) {
+    const lessonId = entry.personalLessonId;
+    if (entry.kind !== "personal" || !lessonId) {
+      result.push({ id: entry.id, entry, members: [entry] });
+      continue;
+    }
+
+    if (seenLessonIds.has(lessonId)) continue;
+    seenLessonIds.add(lessonId);
+
+    const members = entries.filter(
+      (row) => row.kind === "personal" && row.personalLessonId === lessonId
+    );
+
+    if (members.length > 1) {
+      result.push({
+        id: `grp-${lessonId}`,
+        entry: mergePersonalLessonDebtorGroup(members),
+        members,
+      });
+    } else {
+      result.push({ id: entry.id, entry: members[0], members });
+    }
+  }
+
+  return result;
+}
+
+export function sumDebtorListAmounts(items: DebtorListItem[]): number {
+  return items.reduce((sum, item) => sum + item.entry.amount, 0);
+}
+
 export function formatDebtorLessonDuration(
   entry: Pick<DebtorEntry, "kind" | "lessonTimeStart" | "lessonTimeEnd">,
   translate: LessonDurationTranslate

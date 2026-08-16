@@ -2193,6 +2193,7 @@ export const RU: Record<I18nKey, string> = {
   "finance.debtors.detail.withParticipantsShort": "с {{participants}}",
   "finance.debtors.lessonDuration": "Длительность урока",
   "finance.debtors.otherParticipants": "Участники",
+  "finance.debtors.chargePerMember": "Долг по участникам",
   "finance.debtors.detail.rental": "Аренда зала · {{date}}",
   "finance.debtors.tab.all": "Все",
   "finance.debtors.tab.clients": "Клиенты",

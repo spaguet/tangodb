@@ -2125,6 +2125,7 @@ export type I18nKey =
   | "finance.debtors.detail.withParticipantsShort"
   | "finance.debtors.lessonDuration"
   | "finance.debtors.otherParticipants"
+  | "finance.debtors.chargePerMember"
   | "finance.debtors.detail.rental"
   | "finance.debtors.tab.all"
   | "finance.debtors.tab.clients"

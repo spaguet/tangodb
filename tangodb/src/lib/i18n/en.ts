@@ -2195,6 +2195,7 @@ export const EN: Record<I18nKey, string> = {
   "finance.debtors.detail.withParticipantsShort": "with {{participants}}",
   "finance.debtors.lessonDuration": "Lesson duration",
   "finance.debtors.otherParticipants": "Participants",
+  "finance.debtors.chargePerMember": "Debt per participant",
   "finance.debtors.detail.rental": "Hall rental · {{date}}",
   "finance.debtors.tab.all": "All",
   "finance.debtors.tab.clients": "Clients",
