@@ -13,6 +13,7 @@ import { useDisciplines } from "../hooks/useDisciplines";
 import { memberDisplayName, useTeamMembers } from "../hooks/useTeamMembers";
 import {
   sortDebtors,
+  sumDebtorAmounts,
   sumDebtorListAmounts,
   groupPersonalLessonDebtors,
   formatDebtorDetail,
