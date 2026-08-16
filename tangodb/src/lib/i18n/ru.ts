@@ -2585,6 +2585,17 @@ export const RU: Record<I18nKey, string> = {
   "prices.form.cost": "Стоимость",
   "prices.form.format": "Формат",
   "prices.form.monthlyUnlimited": "Месячный безлимит",
+  "prices.form.tariffDuration": "Длительность тарифа",
+  "prices.form.tariffDurationUnset": "Указать длительность…",
+  "prices.form.tariffDurationPreset": "{{minutes}} мин",
+  "prices.form.tariffDurationCustom": "Своя длительность",
+  "prices.form.tariffDurationCustomPlaceholder": "Минуты",
+  "prices.form.tariffDurationLegacyHint":
+    "У тарифа ещё не задана длительность (legacy). Укажите её, чтобы суммы уроков считались автоматически.",
+  "prices.error.tariffDurationRequired": "Укажите длительность тарифа (целое число минут больше 0).",
+  "prices.warn.unpaidLessonsByTariff":
+    "{{count}} неоплаченных уроков с этим тарифом. Платежи и начисления при правке не пересчитываются.",
+  "prices.tariffDurationLegacy": "legacy (без длительности)",
 
   "disciplines.title": "Дисциплины",
   "disciplines.loading": "Загрузка дисциплин...",

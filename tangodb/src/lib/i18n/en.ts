@@ -2587,6 +2587,16 @@ export const EN: Record<I18nKey, string> = {
   "prices.form.cost": "Price",
   "prices.form.format": "Format",
   "prices.form.monthlyUnlimited": "Monthly unlimited",
+  "prices.form.tariffDuration": "Tariff duration",
+  "prices.form.tariffDurationUnset": "Set duration…",
+  "prices.form.tariffDurationPreset": "{{minutes}} min",
+  "prices.form.tariffDurationCustom": "Custom duration",
+  "prices.form.tariffDurationCustomPlaceholder": "Minutes",
+  "prices.form.tariffDurationLegacyHint":
+    "This tariff has no duration yet (legacy). Set duration so lesson amounts can be calculated automatically.",
+  "prices.error.tariffDurationRequired": "Enter tariff duration (whole number of minutes greater than 0).",
+  "prices.warn.unpaidLessonsByTariff": "{{count}} unpaid lessons use this tariff. Payments and billed amounts will not be recalculated.",
+  "prices.tariffDurationLegacy": "legacy (no duration)",
 
   "disciplines.title": "Disciplines",
   "disciplines.loading": "Loading disciplines...",

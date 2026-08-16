@@ -13,6 +13,7 @@ import {
   useCreatePrice,
   usePrices,
   useRestorePrice,
+  useUnpaidPersonalLessonsCountByPrice,
   useUpdatePrice,
   useUpdatePriceMeta,
   useUpdatePriceTeachers,
@@ -46,6 +47,7 @@ import {
   isMonthlyUnlimitedTariff,
   sortPricesByLabel,
 } from "../lib/utils";
+import { formatLessonDuration } from "../lib/personalTariffPricing";
 import { useSettings } from "../settings/SettingsProvider";
 import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "./ui/AppSelect";
 import { btnAddCls, btnCancelCls } from "./ui/buttonStyles";
@@ -57,6 +59,12 @@ import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
 import QueryErrorState from "./ui/QueryErrorState";
+import PersonalTariffDurationField, {
+  isValidPersonalTariffDuration,
+  minutesToDurationSelect,
+  resolvePersonalTariffDurationMinutes,
+  type PersonalTariffDurationSelect,
+} from "./ui/PersonalTariffDurationField";
 import { usePermissions } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
 import { translateMutationBlockedMessage, useOnlineStatus } from "../hooks/useOnlineStatus";
@@ -161,7 +169,13 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     price: "",
     format: "solo" as GroupParticipantFormat,
   });
-  const [privateLessonForm, setPrivateLessonForm] = useState({ label: "", description: "", price: "" });
+  const [privateLessonForm, setPrivateLessonForm] = useState({
+    label: "",
+    description: "",
+    price: "",
+    durationSelect: "" as PersonalTariffDurationSelect,
+    durationCustom: "",
+  });
   const [singleVisitForm, setSingleVisitForm] = useState({ label: "", description: "", price: "" });
   const [privatePackageForm, setPrivatePackageForm] = useState({
     label: "",
@@ -169,6 +183,8 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     lessons: "4",
     price: "",
     format: "solo" as PrivatePackageFormat,
+    durationSelect: "" as PersonalTariffDurationSelect,
+    durationCustom: "",
   });
   const [bindToLocation, setBindToLocation] = useState(false);
   const [formLocationId, setFormLocationId] = useState("");
@@ -180,9 +196,12 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const [editDisciplineIds, setEditDisciplineIds] = useState<string[]>([]);
   const [formTeacherMemberIds, setFormTeacherMemberIds] = useState<string[]>([]);
   const [editTeacherMemberIds, setEditTeacherMemberIds] = useState<string[]>([]);
+  const [editDurationSelect, setEditDurationSelect] = useState<PersonalTariffDurationSelect>("");
+  const [editDurationCustom, setEditDurationCustom] = useState("");
   const [syncingTeacherRows, setSyncingTeacherRows] = useState<Record<string, boolean>>({});
   const [creatingSection, setCreatingSection] = useState<CreateTabId | null>(null);
   const [activeCreateTab, setActiveCreateTab] = useState<CreateTabId>("group");
+  const unpaidByPriceQuery = useUnpaidPersonalLessonsCountByPrice(editingPrice?.id);
 
   const CREATE_TABS = [
     { id: "group" as const, label: t("prices.tab.group"), formTitle: t("prices.form.groupTitle") },
@@ -260,9 +279,23 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   useEffect(() => {
     if (createModalStep !== null) return;
     setGroupForm({ label: "", description: "", lessons: "8", price: "", format: "solo" });
-    setPrivateLessonForm({ label: "", description: "", price: "" });
+    setPrivateLessonForm({
+      label: "",
+      description: "",
+      price: "",
+      durationSelect: "",
+      durationCustom: "",
+    });
     setSingleVisitForm({ label: "", description: "", price: "" });
-    setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "", format: "solo" });
+    setPrivatePackageForm({
+      label: "",
+      description: "",
+      lessons: "4",
+      price: "",
+      format: "solo",
+      durationSelect: "",
+      durationCustom: "",
+    });
     setCreatingSection(null);
     setActiveCreateTab("group");
     setBindToLocation(false);
@@ -329,6 +362,12 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     setEditBindToDiscipline(getPriceDisciplineIds(p).length > 0);
     setEditDisciplineIds(getPriceDisciplineIds(p));
     setEditTeacherMemberIds(p.teacherMemberIds ?? []);
+    setEditDurationSelect(minutesToDurationSelect(p.durationMinutes));
+    setEditDurationCustom(
+      p.durationMinutes != null && minutesToDurationSelect(p.durationMinutes) === "custom"
+        ? String(p.durationMinutes)
+        : ""
+    );
   };
 
   const handleSaveMeta = async () => {
@@ -350,6 +389,21 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       return;
     }
 
+    const isPrivateTariff = getPriceCategory(editingPrice) === "private";
+    const editDurationMinutes = isPrivateTariff
+      ? resolvePersonalTariffDurationMinutes(editDurationSelect, editDurationCustom)
+      : undefined;
+    const isLegacyPrivate = isPrivateTariff && editingPrice.durationMinutes == null;
+
+    if (
+      isPrivateTariff &&
+      !isLegacyPrivate &&
+      !isValidPersonalTariffDuration(editDurationMinutes, true)
+    ) {
+      toast(t("prices.error.tariffDurationRequired"), "error");
+      return;
+    }
+
     const res = await updatePriceMeta.mutateAsync({
       id: editingPrice.id,
       label: editLabel,
@@ -357,6 +411,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       locationId: editBindToLocation ? editLocationId : null,
       disciplineIds: editBindToDiscipline ? editDisciplineIds : [],
       teacherMemberIds: editTeacherMemberIds,
+      durationMinutes: isPrivateTariff ? editDurationMinutes : undefined,
     });
 
     if (!res.success) {
@@ -464,6 +519,23 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       return;
     }
 
+    let durationMinutes: number | null | undefined;
+    if (section === "privateLesson" || section === "privatePackage") {
+      const durationSelect =
+        section === "privateLesson"
+          ? privateLessonForm.durationSelect
+          : privatePackageForm.durationSelect;
+      const durationCustom =
+        section === "privateLesson"
+          ? privateLessonForm.durationCustom
+          : privatePackageForm.durationCustom;
+      durationMinutes = resolvePersonalTariffDurationMinutes(durationSelect, durationCustom);
+      if (!isValidPersonalTariffDuration(durationMinutes, true)) {
+        toast(t("prices.error.tariffDurationRequired"), "error");
+        return;
+      }
+    }
+
     setCreatingSection(section);
     let priceType: string;
 
@@ -495,6 +567,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       disciplineIds: bindToDiscipline ? formDisciplineIds : [],
       billingModel,
       teacherMemberIds: formTeacherMemberIds,
+      durationMinutes,
     });
     setCreatingSection(null);
 
@@ -506,11 +579,25 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       if (section === "group") {
         setGroupForm({ label: "", description: "", lessons: "8", price: "", format: "solo" });
       } else if (section === "privateLesson") {
-        setPrivateLessonForm({ label: "", description: "", price: "" });
+        setPrivateLessonForm({
+          label: "",
+          description: "",
+          price: "",
+          durationSelect: "",
+          durationCustom: "",
+        });
       } else if (section === "singleVisit") {
         setSingleVisitForm({ label: "", description: "", price: "" });
       } else {
-        setPrivatePackageForm({ label: "", description: "", lessons: "4", price: "", format: "solo" });
+        setPrivatePackageForm({
+          label: "",
+          description: "",
+          lessons: "4",
+          price: "",
+          format: "solo",
+          durationSelect: "",
+          durationCustom: "",
+        });
       }
     }
   };
@@ -599,6 +686,13 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     const isTouched = editedPrices[priceId] !== undefined && editedPrices[priceId] !== p.price.toString();
     const title = getPriceLabel(p, t);
     const description = getPriceDescription(p, t);
+    const isPrivateCategory = getPriceCategory(p) === "private";
+    const durationSuffix =
+      isPrivateCategory && p.durationMinutes != null
+        ? ` · ${formatLessonDuration(p.durationMinutes, t)}`
+        : isPrivateCategory && p.durationMinutes == null
+          ? ` · ${t("prices.tariffDurationLegacy")}`
+          : "";
 
     return (
       <div
@@ -640,6 +734,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               : getPriceCategory(p) === "group" || p.lessons > 1
                 ? ` · ${t(lessonCountKey(p.lessons), { count: p.lessons })}`
                 : ""}
+            {durationSuffix}
             {" · "}
             {formatCurrency(p.price)}
           </p>
@@ -957,6 +1052,22 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                   selectedTeacherIds={editTeacherMemberIds}
                   onChange={setEditTeacherMemberIds}
                 />
+                {editingPrice && getPriceCategory(editingPrice) === "private" && (
+                  <>
+                    <PersonalTariffDurationField
+                      select={editDurationSelect}
+                      onSelectChange={setEditDurationSelect}
+                      customValue={editDurationCustom}
+                      onCustomValueChange={setEditDurationCustom}
+                      legacyOptional={editingPrice.durationMinutes == null}
+                    />
+                    {(unpaidByPriceQuery.data ?? 0) > 0 && (
+                      <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
+                        {t("prices.warn.unpaidLessonsByTariff", { count: unpaidByPriceQuery.data ?? 0 })}
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="flex items-center gap-3 pt-1 text-xs">
@@ -1189,6 +1300,16 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{currencySuffix}</span>
                       </div>
                     </div>
+                    <PersonalTariffDurationField
+                      select={privateLessonForm.durationSelect}
+                      onSelectChange={(durationSelect) =>
+                        setPrivateLessonForm({ ...privateLessonForm, durationSelect })
+                      }
+                      customValue={privateLessonForm.durationCustom}
+                      onCustomValueChange={(durationCustom) =>
+                        setPrivateLessonForm({ ...privateLessonForm, durationCustom })
+                      }
+                    />
                     {locationTariffField}
                     {disciplineTariffField}
                     {teacherTariffField}
@@ -1303,6 +1424,16 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{currencySuffix}</span>
                       </div>
                     </div>
+                    <PersonalTariffDurationField
+                      select={privatePackageForm.durationSelect}
+                      onSelectChange={(durationSelect) =>
+                        setPrivatePackageForm({ ...privatePackageForm, durationSelect })
+                      }
+                      customValue={privatePackageForm.durationCustom}
+                      onCustomValueChange={(durationCustom) =>
+                        setPrivatePackageForm({ ...privatePackageForm, durationCustom })
+                      }
+                    />
                     {locationTariffField}
                     {disciplineTariffField}
                     {teacherTariffField}

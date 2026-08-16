@@ -106,6 +106,27 @@ export function useUpdatePrice() {
   });
 }
 
+export function useUnpaidPersonalLessonsCountByPrice(priceId: string | null | undefined) {
+  const { enabled, withOrgId } = useOrgQueryScope();
+
+  return useQuery({
+    queryKey: withOrgId([...pricesQueryKey, "unpaidByPrice", priceId]),
+    enabled: enabled && !!priceId,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("personal_lessons")
+        .select("id", { count: "exact", head: true })
+        .eq("price_id", priceId!)
+        .is("subscription_id", null)
+        .gt("price", 0)
+        .neq("paid", "yes");
+      if (error) throw error;
+      return count ?? 0;
+    },
+    staleTime: 30_000,
+  });
+}
+
 export function useUpdatePriceMeta() {
   const queryClient = useQueryClient();
 
@@ -117,6 +138,7 @@ export function useUpdatePriceMeta() {
       locationId,
       disciplineIds,
       teacherMemberIds,
+      durationMinutes,
     }: {
       id: string;
       label: string;
@@ -124,11 +146,13 @@ export function useUpdatePriceMeta() {
       locationId?: string | null;
       disciplineIds?: string[];
       teacherMemberIds?: string[];
+      durationMinutes?: number | null;
     }) => {
       const payload: Record<string, unknown> = {
         label: label.trim(),
         description: description.trim(),
       };
+      if (durationMinutes !== undefined) payload.duration_minutes = durationMinutes;
       if (locationId !== undefined) payload.location_id = locationId;
       if (disciplineIds !== undefined) {
         payload.discipline_id = disciplineIds.length === 1 ? disciplineIds[0] : null;
@@ -264,6 +288,7 @@ export function useCreatePrice() {
       disciplineIds,
       billingModel,
       teacherMemberIds,
+      durationMinutes,
     }: {
       type: string;
       lessons: number;
@@ -275,25 +300,31 @@ export function useCreatePrice() {
       disciplineIds?: string[];
       billingModel?: Price["billingModel"];
       teacherMemberIds?: string[];
+      durationMinutes?: number | null;
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
+      const insertPayload: Record<string, unknown> = {
+        organization_id: organizationId,
+        type: type.trim(),
+        lessons,
+        price,
+        label: label.trim(),
+        description: description.trim(),
+        category,
+        location_id: locationId ?? null,
+        discipline_id: disciplineIds?.length === 1 ? disciplineIds[0] : null,
+        billing_model: billingModel ?? "lesson_count",
+      };
+      if (durationMinutes != null && durationMinutes > 0) {
+        insertPayload.duration_minutes = durationMinutes;
+      }
+
       const { data, error } = await supabase
         .from("prices")
-        .insert({
-          organization_id: organizationId,
-          type: type.trim(),
-          lessons,
-          price,
-          label: label.trim(),
-          description: description.trim(),
-          category,
-          location_id: locationId ?? null,
-          discipline_id: disciplineIds?.length === 1 ? disciplineIds[0] : null,
-          billing_model: billingModel ?? "lesson_count",
-        })
+        .insert(insertPayload)
         .select("*")
         .single();
 

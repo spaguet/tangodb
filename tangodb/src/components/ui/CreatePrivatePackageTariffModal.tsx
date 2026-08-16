@@ -15,6 +15,11 @@ import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "./AppSelec
 import { btnAddCls, btnCancelCls } from "./buttonStyles";
 import LocationTariffField from "./LocationTariffField";
 import DisciplineTariffField from "./DisciplineTariffField";
+import PersonalTariffDurationField, {
+  isValidPersonalTariffDuration,
+  resolvePersonalTariffDurationMinutes,
+  type PersonalTariffDurationSelect,
+} from "./PersonalTariffDurationField";
 import type { ToastType } from "../../App";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
@@ -52,6 +57,8 @@ export default function CreatePrivatePackageTariffModal({
     lessons: "4",
     price: "",
     format: "solo" as PrivatePackageFormat,
+    durationSelect: "" as PersonalTariffDurationSelect,
+    durationCustom: "",
   });
   const [bindToLocation, setBindToLocation] = useState(false);
   const [formLocationId, setFormLocationId] = useState("");
@@ -70,7 +77,15 @@ export default function CreatePrivatePackageTariffModal({
 
   useEffect(() => {
     if (!open) {
-      setForm({ label: "", description: "", lessons: "4", price: "", format: "solo" });
+      setForm({
+        label: "",
+        description: "",
+        lessons: "4",
+        price: "",
+        format: "solo",
+        durationSelect: "",
+        durationCustom: "",
+      });
       setBindToLocation(false);
       setBindToDiscipline(false);
       return;
@@ -110,6 +125,15 @@ export default function CreatePrivatePackageTariffModal({
       return;
     }
 
+    const durationMinutes = resolvePersonalTariffDurationMinutes(
+      form.durationSelect,
+      form.durationCustom
+    );
+    if (!isValidPersonalTariffDuration(durationMinutes, true)) {
+      toast(t("prices.error.tariffDurationRequired"), "error");
+      return;
+    }
+
     setPending(true);
     const res = await createPrice.mutateAsync({
       type: resolvePrivatePackagePriceType(form.format),
@@ -121,6 +145,7 @@ export default function CreatePrivatePackageTariffModal({
       locationId: bindToLocation ? formLocationId : null,
       disciplineIds: bindToDiscipline ? formDisciplineIds : [],
       billingModel: "lesson_count",
+      durationMinutes,
     });
     setPending(false);
 
@@ -229,6 +254,12 @@ export default function CreatePrivatePackageTariffModal({
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{currencySuffix}</span>
                 </div>
               </div>
+              <PersonalTariffDurationField
+                select={form.durationSelect}
+                onSelectChange={(durationSelect) => setForm({ ...form, durationSelect })}
+                customValue={form.durationCustom}
+                onCustomValueChange={(durationCustom) => setForm({ ...form, durationCustom })}
+              />
               <LocationTariffField
                 bindToLocation={bindToLocation}
                 onBindChange={setBindToLocation}
