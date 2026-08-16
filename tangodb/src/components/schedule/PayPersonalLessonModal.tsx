@@ -104,7 +104,8 @@ export default function PayPersonalLessonModal({
   const needsArchivedLookup = Boolean(
     lesson?.priceId && !prices.some((p) => p.id === lesson.priceId)
   );
-  const { data: archivedPrices = [] } = useArchivedPrices(needsArchivedLookup);
+  const { data: archivedPrices = [], isFetched: archivedPricesFetched } =
+    useArchivedPrices(needsArchivedLookup);
   const { data: subscriptions = [] } = useSubscriptions();
   const { data: directoryClients = [] } = useClientDirectory();
   const { data: activeClients = [] } = useClients();
@@ -188,13 +189,20 @@ export default function PayPersonalLessonModal({
     [prices, lesson?.locationId, lesson?.disciplineId, lesson?.teacherMemberId]
   );
 
+  const bookedTariff = useMemo(() => {
+    if (!lesson?.priceId) return undefined;
+    return (
+      prices.find((p) => p.id === lesson.priceId) ??
+      archivedPrices.find((p) => p.id === lesson.priceId)
+    );
+  }, [lesson?.priceId, prices, archivedPrices]);
+
   const lessonTariffs = useMemo(() => {
-    if (!lesson?.priceId) return activeLessonTariffs;
-    if (activeLessonTariffs.some((t) => t.id === lesson.priceId)) return activeLessonTariffs;
-    const archived = archivedPrices.find((p) => p.id === lesson.priceId);
-    if (archived) return [archived, ...activeLessonTariffs];
-    return activeLessonTariffs;
-  }, [activeLessonTariffs, archivedPrices, lesson?.priceId]);
+    const base = activeLessonTariffs;
+    if (!lesson?.priceId || !bookedTariff) return base;
+    if (base.some((t) => t.id === lesson.priceId)) return base;
+    return [bookedTariff, ...base];
+  }, [activeLessonTariffs, lesson?.priceId, bookedTariff]);
 
   const clientMap = useMemo(
     () => Object.fromEntries(directoryClients.map((c) => [c.id, c])),
@@ -291,12 +299,27 @@ export default function PayPersonalLessonModal({
     if (!lesson || bookingPaymentMode !== "tariff") return;
     setSelectedLessonTariffId((current) => {
       if (tariffSelectLocked && lesson.priceId) return lesson.priceId;
+      if (lesson.priceId) {
+        if (current === lesson.priceId) return current;
+        if (lessonTariffs.some((t) => t.id === lesson.priceId)) return lesson.priceId;
+        if (bookedTariff) return lesson.priceId;
+        if (needsArchivedLookup && !archivedPricesFetched) return lesson.priceId;
+      }
       if (current && lessonTariffs.some((t) => t.id === current)) return current;
-      if (lesson.priceId && lessonTariffs.some((t) => t.id === lesson.priceId)) return lesson.priceId;
       return lessonTariffs[0]?.id ?? "";
     });
     setPaymentAmount(remainingDebt > 0 ? remainingDebt.toString() : "");
-  }, [lesson, bookingPaymentMode, lessonTariffs, lesson?.priceId, remainingDebt, tariffSelectLocked]);
+  }, [
+    lesson,
+    bookingPaymentMode,
+    lessonTariffs,
+    lesson?.priceId,
+    remainingDebt,
+    tariffSelectLocked,
+    bookedTariff,
+    needsArchivedLookup,
+    archivedPricesFetched,
+  ]);
 
   useEffect(() => {
     if (!lesson || bookingPaymentMode !== "outstanding") return;
