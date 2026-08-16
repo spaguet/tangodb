@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-16 — feat: персональный тариф — продажа/запись урока: `billedFromTariff` + `price_id` при создании, select плательщика при 2+ клиентах, баннер `durationWarning`, фильтр тарифов по педагогу (`filterPrivateLessonTariffsForSale` + `teacherMemberId`), `useAddPersonalLessons` пишет `price_id` / `payer_client_id`, пересчёт суммы при смене слота до сохранения. Этап 1, Промпт 5; версия без bump (2.8.0 — Промпт 9).
+
 2026-08-16 — feat: персональный тариф — UI прайса: поле «Длительность тарифа» (пресеты 30/45/60/90 + своё) при создании/правке персонального и пакетного private-тарифа; `useCreatePrice` / `useUpdatePriceMeta` пишут `duration_minutes`; предупреждение о неоплаченных уроках при правке; длительность в списке тарифов через i18n. Этап 1, Промпт 4; версия без bump (2.8.0 — Промпт 9).
 
 2026-08-16 — feat: персональный тариф — миграция `20260918000001`: единая `record_personal_lesson_payment` (venue ack + partial + снимок тарифа + плательщик + кап остатка), `restate_personal_lesson_amount` обнуляет `price_id`, `update_personal_lesson` — `price_id`/`payer_client_id` и пересчёт billed по §3.3, `_storno_payment_impl` / `correct_payment` копируют снимок; хук `useRecordPersonalLessonPayment` передаёт `p_client_id` и поля тарифа. Этап 1, Промпт 3; версия без bump (2.8.0 — Промпт 9).

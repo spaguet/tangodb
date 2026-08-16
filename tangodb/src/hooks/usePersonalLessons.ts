@@ -282,6 +282,8 @@ export function useAddPersonalLessons() {
       locationId,
       teacherMemberId,
       subscriptionId,
+      priceId,
+      payerClientId,
     }: {
       requireScope?: boolean;
       type: string;
@@ -298,6 +300,8 @@ export function useAddPersonalLessons() {
       locationId?: string;
       teacherMemberId?: string;
       subscriptionId?: string;
+      priceId?: string | null;
+      payerClientId?: string | null;
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
@@ -329,6 +333,8 @@ export function useAddPersonalLessons() {
         location_id: locationId ?? null,
         teacher_member_id: teacherMemberId ?? null,
         subscription_id: subscriptionId || null,
+        price_id: subscriptionId ? null : (priceId ?? null),
+        payer_client_id: payerClientId ?? null,
       }));
 
       const { error } = await supabase.from("personal_lessons").insert(rows);

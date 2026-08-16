@@ -50,6 +50,7 @@ export interface PayPersonalLessonTarget {
   presetPaymentAmount?: number;
   locationId?: string | null;
   disciplineId?: string | null;
+  teacherMemberId?: string | null;
 }
 
 interface PayPersonalLessonModalProps {
@@ -92,8 +93,9 @@ export default function PayPersonalLessonModal({
       filterPrivateLessonTariffsForSale(prices, {
         locationId: lesson?.locationId ?? null,
         disciplineId: lesson?.disciplineId ?? null,
+        teacherMemberId: lesson?.teacherMemberId ?? null,
       }),
-    [prices, lesson?.locationId, lesson?.disciplineId]
+    [prices, lesson?.locationId, lesson?.disciplineId, lesson?.teacherMemberId]
   );
 
   const clientMap = useMemo(

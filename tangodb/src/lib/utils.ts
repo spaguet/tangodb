@@ -496,7 +496,11 @@ export function filterGroupTariffsForSale<T extends PriceTariffRef>(
 
 export function filterPrivateLessonTariffsForSale<T extends PriceTariffRef>(
   prices: T[],
-  options: { locationId?: string | null; disciplineId?: string | null }
+  options: {
+    locationId?: string | null;
+    disciplineId?: string | null;
+    teacherMemberId?: string | null;
+  }
 ): T[] {
   return filterTariffsForSale(getPrivateLessonTariffs(prices), options);
 }

@@ -1477,6 +1477,16 @@ export const EN: Record<I18nKey, string> = {
   "personalTariff.duration.hoursOnly": "{{hours}}h",
   "personalTariff.duration.minutesOnly": "{{minutes}} min",
   "personalTariff.duration.hoursAndMinutes": "{{hours}}h {{minutes}}min",
+  "personalTariff.warn.legacyNoDuration":
+    "This tariff has no duration set. The lesson price equals the flat tariff price regardless of slot length. Set duration in Prices.",
+  "personalTariff.warn.shorter":
+    "Lesson is shorter than the tariff ({{lessonDuration}} vs {{tariffDuration}}). Amount recalculated.",
+  "personalTariff.warn.longerNotMultiple":
+    "Lesson is longer than the tariff and not a whole multiple ({{lessonDuration}} vs {{tariffDuration}}). Amount recalculated — please verify.",
+  "personalTariff.warn.longerMultiple":
+    "Lesson is longer than the tariff: {{multiple}} × {{tariffDuration}} (slot {{lessonDuration}}). Amount recalculated.",
+  "personalTariff.payer.label": "Payer",
+  "personalTariff.payer.required": "Select who pays",
   "schedule.title": "Schedule",
   "schedule.empty": "Schedule is empty",
   "schedule.error.loadFailed": "Failed to load schedule",

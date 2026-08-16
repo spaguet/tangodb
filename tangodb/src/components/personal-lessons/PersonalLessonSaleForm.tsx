@@ -29,6 +29,15 @@ import {
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { toISODateLocal, addDays } from "../../lib/scheduleWeek";
 import {
+  billedFromTariff,
+  durationHardBlock,
+  durationWarning,
+  formatLessonDuration,
+  lessonDurationMinutes,
+  tariffUnitsSnapshot,
+  type DurationWarningCode,
+} from "../../lib/personalTariffPricing";
+import {
   bookingClientsMatchSubscription,
   jsDayToIsoDow,
   formatClientName,
@@ -40,7 +49,7 @@ import {
 } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import type { I18nKey } from "../../lib/i18n/keys";
-import type { Client, Subscription } from "../../types";
+import type { Client, Price, Subscription } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import ClientAutocomplete from "../ui/ClientAutocomplete";
@@ -140,6 +149,63 @@ function validateBookingClients(
   return null;
 }
 
+interface TariffBilling {
+  billed: number;
+  lessonMinutes: number;
+  warning: DurationWarningCode | null;
+  tariffUnits: number | null;
+}
+
+function computeTariffBilling(
+  tariff: Pick<Price, "price" | "durationMinutes">,
+  timeStart: string,
+  timeEnd: string
+): TariffBilling {
+  const lessonMinutes = lessonDurationMinutes(timeStart, timeEnd);
+  const billed = billedFromTariff(tariff.price, lessonMinutes, tariff.durationMinutes);
+  const warning = durationWarning({
+    lessonMinutes,
+    tariffDurationMinutes: tariff.durationMinutes,
+  });
+  const tariffUnits =
+    tariff.durationMinutes != null && lessonMinutes > 0
+      ? tariffUnitsSnapshot(lessonMinutes, tariff.durationMinutes)
+      : null;
+  return { billed, lessonMinutes, warning, tariffUnits };
+}
+
+function translateDurationWarningCode(
+  code: DurationWarningCode,
+  t: (key: I18nKey, params?: Record<string, string | number>) => string,
+  tariffDurationMinutes: number | null | undefined,
+  lessonMinutes: number
+): string {
+  const tariffDuration =
+    tariffDurationMinutes != null ? formatLessonDuration(tariffDurationMinutes, t) : "";
+  const lessonDuration = formatLessonDuration(lessonMinutes, t);
+  switch (code) {
+    case "legacy_no_duration":
+      return t("personalTariff.warn.legacyNoDuration");
+    case "shorter":
+      return t("personalTariff.warn.shorter", { lessonDuration, tariffDuration });
+    case "longer_not_multiple":
+      return t("personalTariff.warn.longerNotMultiple", { lessonDuration, tariffDuration });
+    case "longer_multiple": {
+      const multiple =
+        tariffDurationMinutes != null && tariffDurationMinutes > 0
+          ? Math.floor(lessonMinutes / tariffDurationMinutes)
+          : 0;
+      return t("personalTariff.warn.longerMultiple", {
+        multiple,
+        tariffDuration,
+        lessonDuration,
+      });
+    }
+    default:
+      return "";
+  }
+}
+
 export default function PersonalLessonSaleForm({
   mode,
   prefill = null,
@@ -181,10 +247,10 @@ export default function PersonalLessonSaleForm({
   };
   const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
   const [pendingVenuePayment, setPendingVenuePayment] = useState<{
-    lessonIds: string[];
+    payments: Array<{ lessonId: string; amount: number; billing: TariffBilling | null }>;
     clientId: string;
     clientDisplay: string;
-    amount: number;
+    tariff: Price | null;
   } | null>(null);
 
   const isTeacher = role === "teacher";
@@ -192,7 +258,8 @@ export default function PersonalLessonSaleForm({
   const [bookingClients, setBookingClients] = useState<BookingClientField[]>([{ query: "", id: "" }]);
   const [timeStart, setTimeStart] = useState("14:00");
   const [timeEnd, setTimeEnd] = useState("15:00");
-  const [customPrice, setCustomPrice] = useState("");
+  const [manualLessonPrice, setManualLessonPrice] = useState("");
+  const [payerClientId, setPayerClientId] = useState("");
   const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<string | "">("");
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
   const [disciplineId, setDisciplineId] = useState<string>("");
@@ -249,9 +316,40 @@ export default function PersonalLessonSaleForm({
       filterPrivateLessonTariffsForSale(prices, {
         locationId: effectiveLocationId || null,
         disciplineId: disciplineId || null,
+        teacherMemberId: teacherMemberId || null,
       }),
-    [prices, effectiveLocationId, disciplineId]
+    [prices, effectiveLocationId, disciplineId, teacherMemberId]
   );
+
+  const selectedClientIds = useMemo(
+    () => bookingClients.map((c) => c.id).filter(Boolean),
+    [bookingClients]
+  );
+
+  const showPayerSelect = selectedClientIds.length >= 2;
+
+  const selectedTariff = useMemo(
+    () => lessonTariffs.find((tariff) => tariff.id === selectedLessonTariffId) ?? null,
+    [lessonTariffs, selectedLessonTariffId]
+  );
+
+  const primaryTimeStart = isScheduleCell ? timeStart : (lessonEntries[0]?.timeStart ?? timeStart);
+  const primaryTimeEnd = isScheduleCell ? timeEnd : (lessonEntries[0]?.timeEnd ?? timeEnd);
+
+  const primaryBilling = useMemo(() => {
+    if (!selectedTariff) return null;
+    return computeTariffBilling(selectedTariff, primaryTimeStart, primaryTimeEnd);
+  }, [selectedTariff, primaryTimeStart, primaryTimeEnd]);
+
+  const durationWarningMessage = useMemo(() => {
+    if (!selectedTariff || !primaryBilling?.warning) return null;
+    return translateDurationWarningCode(
+      primaryBilling.warning,
+      t,
+      selectedTariff.durationMinutes,
+      primaryBilling.lessonMinutes
+    );
+  }, [selectedTariff, primaryBilling, t]);
 
   const clientMap = useMemo(
     () => Object.fromEntries(directoryClients.map((c) => [c.id, c])),
@@ -265,12 +363,27 @@ export default function PersonalLessonSaleForm({
   const packageLocked = bookingPaymentMode === "package" && !!linkedSubscriptionId;
 
   useEffect(() => {
+    if (selectedClientIds.length === 0) {
+      setPayerClientId("");
+      return;
+    }
+    if (selectedClientIds.length === 1) {
+      setPayerClientId(selectedClientIds[0]);
+      return;
+    }
+    if (!payerClientId || !selectedClientIds.includes(payerClientId)) {
+      setPayerClientId(selectedClientIds[0]);
+    }
+  }, [selectedClientIds, payerClientId]);
+
+  useEffect(() => {
     if (isScheduleCell) {
       if (!prefill) return;
       setBookingClients([{ query: "", id: "" }]);
       setTimeStart(prefill.timeStart);
       setTimeEnd(computeAutoTimeEnd(prefill.timeStart, []));
-      setCustomPrice("");
+      setManualLessonPrice("");
+      setPayerClientId("");
       setSelectedLessonTariffId("");
       setLinkedSubscriptionId("");
       setBookingPaymentMode(null);
@@ -306,16 +419,13 @@ export default function PersonalLessonSaleForm({
 
   useEffect(() => {
     if (lessonTariffs.length > 0 && selectedLessonTariffId === "") {
-      const first = lessonTariffs[0];
-      setSelectedLessonTariffId(first.id!);
-      setCustomPrice(first.price.toString());
+      setSelectedLessonTariffId(lessonTariffs[0].id!);
     }
   }, [lessonTariffs, selectedLessonTariffId]);
 
   useEffect(() => {
-    if (selectedLessonTariffId && !lessonTariffs.some((t) => t.id === selectedLessonTariffId)) {
+    if (selectedLessonTariffId && !lessonTariffs.some((tariff) => tariff.id === selectedLessonTariffId)) {
       setSelectedLessonTariffId("");
-      setCustomPrice("");
     }
   }, [lessonTariffs, selectedLessonTariffId]);
 
@@ -334,10 +444,9 @@ export default function PersonalLessonSaleForm({
   };
 
   const applyLessonTariff = (tariffId: string) => {
-    const tariff = lessonTariffs.find((t) => t.id === tariffId);
+    const tariff = lessonTariffs.find((item) => item.id === tariffId);
     if (!tariff) return;
     setSelectedLessonTariffId(tariffId);
-    setCustomPrice(tariff.price.toString());
     if (packageLocked) return;
     const participant = tariffParticipantType(tariff);
     const neededFields =
@@ -514,8 +623,43 @@ export default function PersonalLessonSaleForm({
       return;
     }
 
+    if (showPayerSelect && !payerClientId) {
+      toast(t("personalTariff.payer.required"), "error");
+      return;
+    }
+
     const slots = resolveLessonSlots();
     if (!slots?.length) return;
+
+    const manualPriceNum = parseFloat(manualLessonPrice);
+    const isPackageBooking = bookingPaymentMode === "package";
+
+    if (!isPackageBooking) {
+      if (selectedTariff) {
+        for (const slot of slots) {
+          const billing = computeTariffBilling(selectedTariff, slot.timeStart, slot.timeEnd);
+          const hardBlock = durationHardBlock({
+            lessonMinutes: billing.lessonMinutes,
+            tariffDurationMinutes: selectedTariff.durationMinutes,
+            tariffFound: true,
+            billed: billing.billed,
+            tariffPaymentMode: true,
+          });
+          if (hardBlock) {
+            toast(`${formatDate(slot.date)}: ${t("common.invalidLessonCost")}`, "error");
+            return;
+          }
+        }
+      } else if (lessonTariffs.length === 0) {
+        if (Number.isNaN(manualPriceNum) || manualPriceNum < 0) {
+          toast(t("common.invalidLessonCost"), "error");
+          return;
+        }
+      } else {
+        toast(t("subscriptions.error.selectTariff"), "error");
+        return;
+      }
+    }
 
     for (const slot of slots) {
       const rangeError = validateTimeRange(slot.timeStart, slot.timeEnd);
@@ -527,12 +671,6 @@ export default function PersonalLessonSaleForm({
         toast(`${formatDate(slot.date)}: ${msg}`, "error");
         return;
       }
-    }
-
-    const priceNum = bookingPaymentMode === "package" ? 0 : parseFloat(customPrice);
-    if (bookingPaymentMode !== "package" && (Number.isNaN(priceNum) || priceNum < 0)) {
-      toast(t("common.invalidLessonCost"), "error");
-      return;
     }
 
     if (linkedSubscriptionId) {
@@ -573,14 +711,31 @@ export default function PersonalLessonSaleForm({
       }
     }
 
+    const payerId = payerClientId || bookingClients[0].id;
+    const payerClient = directoryClients.find((c) => c.id === payerId);
+    const payerDisplay = payerClient
+      ? formatClientName(payerClient.lastName, payerClient.firstName)
+      : bookingClients.find((c) => c.id === payerId)?.query || t("common.client");
+
     const willRecordCashPayments =
-      immediatePaid && bookingPaymentMode === "single" && priceNum > 0;
+      immediatePaid && bookingPaymentMode === "single" && !isPackageBooking;
     const slotGroups = groupSlotsByTime(slots);
-    const createdIds: string[] = [];
+    const createdPaymentPlans: Array<{
+      lessonId: string;
+      amount: number;
+      billing: TariffBilling | null;
+    }> = [];
 
     bookingInFlightRef.current = true;
     try {
       for (const group of slotGroups) {
+        const groupBilling = selectedTariff
+          ? computeTariffBilling(selectedTariff, group.timeStart, group.timeEnd)
+          : null;
+        const groupPrice = isPackageBooking
+          ? 0
+          : groupBilling?.billed ?? manualPriceNum;
+
         const res = await addPersonalLessons.mutateAsync({
           requireScope: true,
           type: pType,
@@ -591,27 +746,38 @@ export default function PersonalLessonSaleForm({
           dates: group.dates,
           timeStart: group.timeStart,
           timeEnd: group.timeEnd,
-          price: priceNum,
-          // Keep unpaid until cash payments succeed — avoids "paid without payment" and ack-retry duplicates.
+          price: groupPrice,
           paid: willRecordCashPayments ? false : immediatePaid,
           disciplineId,
           locationId: effectiveLocationId,
           teacherMemberId,
-          subscriptionId: bookingPaymentMode === "package" ? linkedSubscriptionId || undefined : undefined,
+          subscriptionId: isPackageBooking ? linkedSubscriptionId || undefined : undefined,
+          priceId: isPackageBooking ? null : selectedTariff?.id ?? null,
+          payerClientId: payerId,
         });
 
         if (!res.success) {
           toast(res.error ?? t("common.bookFailed"), "error");
           return;
         }
-        if (res.ids) createdIds.push(...res.ids);
+        if (res.ids) {
+          for (const lessonId of res.ids) {
+            createdPaymentPlans.push({
+              lessonId,
+              amount: groupPrice,
+              billing: groupBilling,
+            });
+          }
+        }
       }
 
       if (!immediatePaid) {
         const countLabel =
-          createdIds.length > 1 ? t("personal.countSuffix", { count: createdIds.length }) : "";
+          createdPaymentPlans.length > 1
+            ? t("personal.countSuffix", { count: createdPaymentPlans.length })
+            : "";
         toast(
-          linkedSubscriptionId && bookingPaymentMode === "package"
+          linkedSubscriptionId && isPackageBooking
             ? t("personal.success.bookedPackage", { count: countLabel })
             : t("personal.success.bookedUnpaid", { count: countLabel }),
           "success"
@@ -621,38 +787,40 @@ export default function PersonalLessonSaleForm({
         return;
       }
 
-      if (willRecordCashPayments && createdIds.length) {
-        const c1 = directoryClients.find((c) => c.id === bookingClients[0].id);
-        const clientDisplay = c1
-          ? formatClientName(c1.lastName, c1.firstName)
-          : bookingClients[0].query || t("common.client");
-
-        for (const lessonId of createdIds) {
+      if (willRecordCashPayments && createdPaymentPlans.length) {
+        for (const plan of createdPaymentPlans) {
+          if (plan.amount <= 0) continue;
           const paymentRes = await recordPersonalLessonPayment.mutateAsync({
-            lessonId,
-            clientId: bookingClients[0].id,
-            clientDisplay,
-            amount: priceNum,
+            lessonId: plan.lessonId,
+            clientId: payerId,
+            clientDisplay: payerDisplay,
+            amount: plan.amount,
             method: "cash",
             markPaid: true,
-            idempotencyKey: getLessonPaymentIdempotencyKey(lessonId),
+            idempotencyKey: getLessonPaymentIdempotencyKey(plan.lessonId),
             venueRuleAcknowledged,
+            priceId: selectedTariff?.id ?? null,
+            tariffUnits: plan.billing?.tariffUnits ?? null,
+            tariffDurationMinutes: selectedTariff?.durationMinutes ?? null,
+            tariffPrice: selectedTariff?.price ?? null,
+            tariffLabel: selectedTariff ? getPriceLabel(selectedTariff, t) : null,
+            lessonDurationMinutes: plan.billing?.lessonMinutes ?? null,
           });
           if (!paymentRes.success) {
-          if (
-            "errorCode" in paymentRes &&
-            paymentRes.errorCode === "venue_rule_ack_required" &&
-            "venueRuleStatus" in paymentRes
-          ) {
-            setPendingVenuePayment({
-              lessonIds: createdIds,
-              clientId: bookingClients[0].id,
-              clientDisplay,
-              amount: priceNum,
-            });
-            setVenueConfirmStatus(paymentRes.venueRuleStatus);
-            return;
-          }
+            if (
+              "errorCode" in paymentRes &&
+              paymentRes.errorCode === "venue_rule_ack_required" &&
+              "venueRuleStatus" in paymentRes
+            ) {
+              setPendingVenuePayment({
+                payments: createdPaymentPlans.filter((p) => p.amount > 0),
+                clientId: payerId,
+                clientDisplay: payerDisplay,
+                tariff: selectedTariff,
+              });
+              setVenueConfirmStatus(paymentRes.venueRuleStatus);
+              return;
+            }
             toast(paymentRes.error ?? t("common.bookedPaymentFailed"), "error");
             onSuccess();
             onClose?.();
@@ -665,9 +833,11 @@ export default function PersonalLessonSaleForm({
     }
 
     const countLabel =
-      createdIds.length > 1 ? t("personal.countSuffix", { count: createdIds.length }) : "";
+      createdPaymentPlans.length > 1
+        ? t("personal.countSuffix", { count: createdPaymentPlans.length })
+        : "";
     toast(
-      linkedSubscriptionId && bookingPaymentMode === "package"
+      linkedSubscriptionId && isPackageBooking
         ? t("personal.success.bookedPackage", { count: countLabel })
         : immediatePaid
           ? t("personal.success.bookedPaid", { count: countLabel })
@@ -688,16 +858,22 @@ export default function PersonalLessonSaleForm({
       return;
     }
     const pending = pendingVenuePayment;
-    for (const lessonId of pending.lessonIds) {
+    for (const plan of pending.payments) {
       const paymentRes = await recordPersonalLessonPayment.mutateAsync({
-        lessonId,
+        lessonId: plan.lessonId,
         clientId: pending.clientId,
         clientDisplay: pending.clientDisplay,
-        amount: pending.amount,
+        amount: plan.amount,
         method: "cash",
         markPaid: true,
-        idempotencyKey: getLessonPaymentIdempotencyKey(lessonId),
+        idempotencyKey: getLessonPaymentIdempotencyKey(plan.lessonId),
         venueRuleAcknowledged: true,
+        priceId: pending.tariff?.id ?? null,
+        tariffUnits: plan.billing?.tariffUnits ?? null,
+        tariffDurationMinutes: pending.tariff?.durationMinutes ?? null,
+        tariffPrice: pending.tariff?.price ?? null,
+        tariffLabel: pending.tariff ? getPriceLabel(pending.tariff, t) : null,
+        lessonDurationMinutes: plan.billing?.lessonMinutes ?? null,
       });
       if (!paymentRes.success) {
         toast(paymentRes.error ?? t("common.bookedPaymentFailed"), "error");
@@ -707,7 +883,9 @@ export default function PersonalLessonSaleForm({
     setPendingVenuePayment(null);
     setVenueConfirmStatus(null);
     const countLabel =
-      pending.lessonIds.length > 1 ? t("personal.countSuffix", { count: pending.lessonIds.length }) : "";
+      pending.payments.length > 1
+        ? t("personal.countSuffix", { count: pending.payments.length })
+        : "";
     toast(t("personal.success.bookedPaid", { count: countLabel }), "success");
     onSuccess();
     onClose?.();
@@ -1027,6 +1205,23 @@ export default function PersonalLessonSaleForm({
           checking={isCheckingGoogleFreebusy}
         />
 
+        {showPayerSelect && bookingPaymentMode === "single" && (
+          <AppSelect
+            label={t("personalTariff.payer.label")}
+            value={payerClientId}
+            onChange={(e) => setPayerClientId(e.target.value)}
+            required
+          >
+            {bookingClients
+              .filter((client) => client.id)
+              .map((client, idx) => (
+                <option key={client.id} value={client.id}>
+                  {client.query || t("common.clientN", { n: idx + 1 })}
+                </option>
+              ))}
+          </AppSelect>
+        )}
+
         <div className="field-stack">
           <label className={labelCls}>{t("common.paymentMethod")}</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1067,6 +1262,11 @@ export default function PersonalLessonSaleForm({
 
         {bookingPaymentMode === "single" && (
           <>
+            {durationWarningMessage && (
+              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2 leading-relaxed">
+                {durationWarningMessage}
+              </p>
+            )}
             {lessonTariffs.length > 0 && (
               <div className="flex flex-nowrap items-end gap-3 w-full">
                 <div className="min-w-0 flex-1">
@@ -1087,13 +1287,14 @@ export default function PersonalLessonSaleForm({
                 </div>
                 <div className="field-stack w-[7.5rem] shrink-0">
                   <label className={labelCls}>{t("common.lessonCost")}</label>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    value={customPrice}
-                    onChange={(e) => setCustomPrice(e.target.value)}
-                    className={`${fieldCls} font-semibold`}
-                  />
+                  <div
+                    className={`${fieldCls} font-semibold bg-slate-50 text-slate-800 cursor-default`}
+                    aria-readonly
+                  >
+                    {primaryBilling != null
+                      ? formatCurrency(primaryBilling.billed)
+                      : "—"}
+                  </div>
                 </div>
               </div>
             )}
@@ -1103,8 +1304,8 @@ export default function PersonalLessonSaleForm({
                 <input
                   type="number"
                   placeholder="0"
-                  value={customPrice}
-                  onChange={(e) => setCustomPrice(e.target.value)}
+                  value={manualLessonPrice}
+                  onChange={(e) => setManualLessonPrice(e.target.value)}
                   className={`${fieldCls} font-semibold`}
                 />
               </div>

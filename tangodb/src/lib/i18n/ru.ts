@@ -1475,6 +1475,16 @@ export const RU: Record<I18nKey, string> = {
   "personalTariff.duration.hoursOnly": "{{hours}}ч.",
   "personalTariff.duration.minutesOnly": "{{minutes}} мин.",
   "personalTariff.duration.hoursAndMinutes": "{{hours}}ч. {{minutes}}мин.",
+  "personalTariff.warn.legacyNoDuration":
+    "У тарифа не задана длительность. Сумма = цена тарифа независимо от времени урока. Рекомендуется указать длительность в прайсе.",
+  "personalTariff.warn.shorter":
+    "Урок короче тарифа ({{lessonDuration}} при {{tariffDuration}}). Сумма пересчитана.",
+  "personalTariff.warn.longerNotMultiple":
+    "Урок длиннее тарифа и не кратен ему ({{lessonDuration}} при {{tariffDuration}}). Сумма пересчитана — проверьте.",
+  "personalTariff.warn.longerMultiple":
+    "Урок длиннее тарифа: {{multiple}} × {{tariffDuration}} (слот {{lessonDuration}}). Сумма пересчитана.",
+  "personalTariff.payer.label": "Плательщик",
+  "personalTariff.payer.required": "Выберите плательщика",
   "schedule.title": "Расписание",
   "schedule.empty": "Расписание пусто",
   "schedule.error.loadFailed": "Не удалось загрузить расписание",
