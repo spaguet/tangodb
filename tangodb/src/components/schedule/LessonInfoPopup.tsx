@@ -220,11 +220,15 @@ export default function LessonInfoPopup({
       clientId1: fullLesson.clientId1,
       clientId2: fullLesson.clientId2,
       clientId3: fullLesson.clientId3,
+      clientId4: fullLesson.clientId4,
       clientDisplay: fullLesson.clientDisplay,
+      payerClientId: fullLesson.payerClientId,
+      priceId: fullLesson.priceId,
       price: fullLesson.price,
       paidAmount: fullLesson.paidAmount,
       locationId: fullLesson.locationId ?? null,
       disciplineId: fullLesson.disciplineId ?? null,
+      teacherMemberId: fullLesson.teacherMemberId ?? null,
     });
   };
 

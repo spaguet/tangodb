@@ -296,21 +296,25 @@ export default function FinanceDebtorsPage() {
   if (debtorsQuery.isError) return <QueryErrorState error={debtorsQuery.error} />;
 
   const openPersonalPayment = (entry: DebtorEntry, mode: "tariff" | "outstanding") => {
-    if (!entry.personalLessonId || !entry.clientId1 || !entry.lessonDate) return;
+    if (!entry.personalLessonId || !entry.lessonDate) return;
     setPayTarget({
       lessonId: entry.personalLessonId,
       date: entry.lessonDate,
       timeStart: entry.lessonTimeStart ?? "",
       timeEnd: entry.lessonTimeEnd ?? "",
-      clientId1: entry.clientId1,
+      clientId1: entry.clientId1 ?? "",
       clientId2: entry.clientId2 ?? "",
       clientId3: entry.clientId3 ?? "",
+      clientId4: entry.clientId4 ?? "",
       clientDisplay: entry.clientDisplay,
+      payerClientId: entry.payerClientId,
       price: entry.billedAmount ?? entry.amount,
       paidAmount: entry.paidAmount ?? 0,
-      presetPaymentAmount: mode === "outstanding" ? entry.amount : undefined,
       locationId: entry.locationId ?? null,
       disciplineId: entry.disciplineId ?? null,
+      teacherMemberId: entry.teacherMemberId ?? null,
+      paymentMode: mode,
+      hidePackage: true,
     });
   };
 

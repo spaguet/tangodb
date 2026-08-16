@@ -243,10 +243,15 @@ export default function ScheduleDebtorsBlock({
       clientId1: entry.clientId1,
       clientId2: entry.clientId2,
       clientId3: entry.clientId3,
+      clientId4: entry.clientId4,
       clientDisplay: entry.clientDisplay,
-      price: entry.amount ?? 0,
+      payerClientId: entry.payerClientId,
+      priceId: entry.priceId,
+      price: entry.billedAmount,
+      paidAmount: entry.paidAmount,
       locationId: entry.locationId,
       disciplineId: entry.disciplineId,
+      teacherMemberId: entry.teacherMemberId,
     });
   };
 

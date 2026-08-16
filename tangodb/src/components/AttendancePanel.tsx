@@ -1168,11 +1168,15 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       clientId1: lesson.clientId1,
       clientId2: lesson.clientId2,
       clientId3: lesson.clientId3,
+      clientId4: lesson.clientId4,
       clientDisplay: lesson.clientDisplay,
+      payerClientId: lesson.payerClientId,
+      priceId: lesson.priceId,
       price: lesson.price,
       paidAmount: lesson.paidAmount,
       locationId: lesson.locationId ?? null,
       disciplineId: lesson.disciplineId ?? null,
+      teacherMemberId: lesson.teacherMemberId ?? null,
     });
   };
 

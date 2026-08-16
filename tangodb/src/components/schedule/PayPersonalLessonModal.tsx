@@ -8,7 +8,7 @@ import {
   useRecordPersonalLessonPayment,
 } from "../../hooks/usePayments";
 import { usePaymentFormIdempotency, usePaymentSubmitState } from "../../hooks/usePaymentFormIdempotency";
-import { usePrices } from "../../hooks/usePrices";
+import { useArchivedPrices, usePrices } from "../../hooks/usePrices";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
 import {
@@ -24,16 +24,22 @@ import {
   filterPrivateLessonTariffsForSale,
   getSubscriptionClientIds,
 } from "../../lib/utils";
-import type { PaymentMethod, Subscription } from "../../types";
+import {
+  durationWarning,
+  lessonDurationMinutes,
+  tariffUnitsSnapshot,
+  translateDurationWarning,
+} from "../../lib/personalTariffPricing";
+import type { PaymentMethod, Price, Subscription } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import { btnAddCls } from "../ui/buttonStyles";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useI18n } from "../../hooks/useI18n";
 import SellPackageModal from "../ui/SellPackageModal";
 import VenueRulePaymentConfirmDialog from "../venue-costs/VenueRulePaymentConfirmDialog";
-import {
-  type VenueCostRuleStatus,
-} from "../../hooks/useVenueCosts";
+import { type VenueCostRuleStatus } from "../../hooks/useVenueCosts";
+
+export type PersonalLessonPaymentMode = "tariff" | "outstanding" | "package";
 
 export interface PayPersonalLessonTarget {
   lessonId: string;
@@ -43,14 +49,20 @@ export interface PayPersonalLessonTarget {
   clientId1: string;
   clientId2: string;
   clientId3: string;
+  clientId4?: string;
   clientDisplay: string;
+  payerClientId?: string | null;
+  priceId?: string | null;
+  /** Billed amount (document total), not outstanding debt. */
   price: number;
   paidAmount?: number;
-  /** When set, pre-fills the payment amount field (e.g. outstanding debt from debtors list). */
-  presetPaymentAmount?: number;
   locationId?: string | null;
   disciplineId?: string | null;
   teacherMemberId?: string | null;
+  /** Pre-selected mode; omit to let the operator choose. */
+  paymentMode?: PersonalLessonPaymentMode;
+  /** Hide package option (e.g. opened from financial debtors). */
+  hidePackage?: boolean;
 }
 
 interface PayPersonalLessonModalProps {
@@ -62,6 +74,21 @@ interface PayPersonalLessonModalProps {
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
+function participantIds(lesson: PayPersonalLessonTarget): string[] {
+  return [lesson.clientId1, lesson.clientId2, lesson.clientId3, lesson.clientId4].filter(
+    Boolean
+  ) as string[];
+}
+
+function resolveTariffById(
+  tariffId: string | null | undefined,
+  activeTariffs: Price[],
+  archivedTariffs: Price[]
+): Price | undefined {
+  if (!tariffId) return undefined;
+  return activeTariffs.find((t) => t.id === tariffId) ?? archivedTariffs.find((t) => t.id === tariffId);
+}
+
 export default function PayPersonalLessonModal({
   lesson,
   toast,
@@ -71,6 +98,10 @@ export default function PayPersonalLessonModal({
   const { t, locale, formatDate } = useI18n();
   const { connectionState } = useOnlineStatus();
   const { data: prices = [] } = usePrices();
+  const needsArchivedLookup = Boolean(
+    lesson?.priceId && !prices.some((p) => p.id === lesson.priceId)
+  );
+  const { data: archivedPrices = [] } = useArchivedPrices(needsArchivedLookup);
   const { data: subscriptions = [] } = useSubscriptions();
   const { data: directoryClients = [] } = useClientDirectory();
   const { data: activeClients = [] } = useClients();
@@ -80,15 +111,23 @@ export default function PayPersonalLessonModal({
   const paymentIdempotencyKey = usePaymentFormIdempotency(lesson != null);
   const paymentSubmit = usePaymentSubmitState();
 
-  const [bookingPaymentMode, setBookingPaymentMode] = useState<"single" | "package" | null>(null);
-  const [customPrice, setCustomPrice] = useState("");
+  const [bookingPaymentMode, setBookingPaymentMode] = useState<PersonalLessonPaymentMode | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
   const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<string | "">("");
+  const [payerClientId, setPayerClientId] = useState("");
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
   const [packageModalOpen, setPackageModalOpen] = useState(false);
   const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
 
-  const lessonTariffs = useMemo(
+  const billedAmount = lesson?.price ?? 0;
+  const paidSoFar = lesson?.paidAmount ?? 0;
+  const remainingDebt = Math.max(billedAmount - paidSoFar, 0);
+  const hasPayments = paidSoFar > 0;
+  const lessonPriceId = lesson?.priceId ?? null;
+  const tariffModeBlocked = !lessonPriceId && hasPayments;
+
+  const activeLessonTariffs = useMemo(
     () =>
       filterPrivateLessonTariffsForSale(prices, {
         locationId: lesson?.locationId ?? null,
@@ -98,10 +137,21 @@ export default function PayPersonalLessonModal({
     [prices, lesson?.locationId, lesson?.disciplineId, lesson?.teacherMemberId]
   );
 
+  const lessonTariffs = useMemo(() => {
+    if (!lesson?.priceId) return activeLessonTariffs;
+    if (activeLessonTariffs.some((t) => t.id === lesson.priceId)) return activeLessonTariffs;
+    const archived = archivedPrices.find((p) => p.id === lesson.priceId);
+    if (archived) return [archived, ...activeLessonTariffs];
+    return activeLessonTariffs;
+  }, [activeLessonTariffs, archivedPrices, lesson?.priceId]);
+
   const clientMap = useMemo(
     () => Object.fromEntries(directoryClients.map((c) => [c.id, c])),
     [directoryClients]
   );
+
+  const participants = useMemo(() => (lesson ? participantIds(lesson) : []), [lesson]);
+  const showPayerSelect = participants.length >= 2;
 
   const availablePrivateSubs = useMemo(() => {
     if (!lesson) return [];
@@ -113,9 +163,29 @@ export default function PayPersonalLessonModal({
         clientId1: lesson.clientId1,
         clientId2: lesson.clientId2,
         clientId3: lesson.clientId3,
+        clientId4: lesson.clientId4,
       });
     });
   }, [subscriptions, lesson]);
+
+  const selectedTariff = useMemo(
+    () => resolveTariffById(selectedLessonTariffId || lessonPriceId, lessonTariffs, archivedPrices),
+    [selectedLessonTariffId, lessonPriceId, lessonTariffs, archivedPrices]
+  );
+
+  const lessonMinutes = lesson ? lessonDurationMinutes(lesson.timeStart, lesson.timeEnd) : 0;
+
+  const durationWarningMessage = useMemo(() => {
+    if (bookingPaymentMode !== "tariff" || !selectedTariff || lessonMinutes <= 0) return null;
+    const code = durationWarning({
+      lessonMinutes,
+      tariffDurationMinutes: selectedTariff.durationMinutes,
+    });
+    if (!code) return null;
+    return translateDurationWarning(code, t, selectedTariff.durationMinutes, lessonMinutes);
+  }, [bookingPaymentMode, selectedTariff, lessonMinutes, t]);
+
+  const tariffSelectLocked = hasPayments;
 
   const lessonId = lesson?.lessonId;
 
@@ -125,35 +195,64 @@ export default function PayPersonalLessonModal({
       setBookingPaymentMode(null);
       return;
     }
+
     setLinkedSubscriptionId("");
     setPaymentMethod("cash");
-    const presetAmount = lesson.presetPaymentAmount;
-    if (presetAmount != null && presetAmount > 0) {
-      setBookingPaymentMode("single");
-      setCustomPrice(presetAmount.toString());
+
+    const initialMode = lesson.paymentMode ?? null;
+    if (initialMode === "tariff" && tariffModeBlocked) {
+      setBookingPaymentMode("outstanding");
     } else {
-      setBookingPaymentMode(null);
-      const remainingDebt = Math.max(lesson.price - (lesson.paidAmount ?? 0), 0);
-      const initialPrice = lesson.price > 0 ? remainingDebt.toString() : "";
-      setCustomPrice(initialPrice);
+      setBookingPaymentMode(initialMode);
     }
-    setSelectedLessonTariffId("");
-  }, [lessonId, lesson?.price, lesson?.paidAmount, lesson?.presetPaymentAmount]);
+
+    const defaultPayer = lesson.payerClientId ?? lesson.clientId1;
+    setPayerClientId(
+      defaultPayer && participants.includes(defaultPayer) ? defaultPayer : participants[0] ?? ""
+    );
+
+    if (lesson.priceId) {
+      setSelectedLessonTariffId(lesson.priceId);
+    } else {
+      setSelectedLessonTariffId("");
+    }
+
+    const mode = initialMode === "tariff" && tariffModeBlocked ? "outstanding" : initialMode;
+    if (mode === "outstanding") {
+      setPaymentAmount(remainingDebt > 0 ? remainingDebt.toString() : "");
+    } else if (mode === "tariff") {
+      setPaymentAmount(remainingDebt > 0 ? remainingDebt.toString() : "");
+    } else {
+      setPaymentAmount("");
+    }
+  }, [
+    lessonId,
+    lesson?.paymentMode,
+    lesson?.priceId,
+    lesson?.payerClientId,
+    lesson?.clientId1,
+    lesson?.price,
+    lesson?.paidAmount,
+    participants,
+    remainingDebt,
+    tariffModeBlocked,
+  ]);
 
   useEffect(() => {
-    if (!lesson || lessonTariffs.length === 0) return;
+    if (!lesson || bookingPaymentMode !== "tariff") return;
     setSelectedLessonTariffId((current) => {
+      if (tariffSelectLocked && lesson.priceId) return lesson.priceId;
       if (current && lessonTariffs.some((t) => t.id === current)) return current;
-      const matched = lessonTariffs.find((t) => t.price === lesson.price) ?? lessonTariffs[0];
-      return matched.id!;
+      if (lesson.priceId && lessonTariffs.some((t) => t.id === lesson.priceId)) return lesson.priceId;
+      return lessonTariffs[0]?.id ?? "";
     });
-    if (lesson.presetPaymentAmount != null) return;
-    setCustomPrice((prev) => {
-      if (prev) return prev;
-      const matched = lessonTariffs.find((t) => t.price === lesson.price) ?? lessonTariffs[0];
-      return matched.price.toString();
-    });
-  }, [lesson, lessonTariffs]);
+    setPaymentAmount(remainingDebt > 0 ? remainingDebt.toString() : "");
+  }, [lesson, bookingPaymentMode, lessonTariffs, lesson?.priceId, remainingDebt, tariffSelectLocked]);
+
+  useEffect(() => {
+    if (!lesson || bookingPaymentMode !== "outstanding") return;
+    setPaymentAmount(remainingDebt > 0 ? remainingDebt.toString() : "");
+  }, [lesson, bookingPaymentMode, remainingDebt]);
 
   useEffect(() => {
     if (!lesson) return;
@@ -164,12 +263,10 @@ export default function PayPersonalLessonModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [lesson, onClose]);
 
-  const applyLessonTariff = (tariffId: string) => {
-    const tariff = lessonTariffs.find((t) => t.id === tariffId);
-    if (!tariff) return;
-    setSelectedLessonTariffId(tariffId);
-    setCustomPrice(tariff.price.toString());
-  };
+  const payerDisplay = useMemo(() => {
+    const client = clientMap[payerClientId];
+    return client ? formatClientName(client.lastName, client.firstName) : lesson?.clientDisplay ?? "";
+  }, [clientMap, payerClientId, lesson?.clientDisplay]);
 
   const subscriptionOwnerLabel = (sub: Subscription): string =>
     getSubscriptionClientIds(sub)
@@ -179,31 +276,63 @@ export default function PayPersonalLessonModal({
       })
       .join(" & ");
 
-  const pending = recordPersonalLessonPayment.isPending || updatePersonalLesson.isPending || paymentSubmit.phase === "saving";
+  const pending =
+    recordPersonalLessonPayment.isPending || updatePersonalLesson.isPending || paymentSubmit.phase === "saving";
 
-  const handlePaySingle = async (venueRuleAcknowledged = false) => {
+  const validatePaymentAmount = (amount: number, maxAmount: number): string | null => {
+    if (Number.isNaN(amount) || amount <= 0) return t("personal.pay.amountRequired");
+    if (amount > maxAmount) return t("personal.pay.exceedsRemaining");
+    return null;
+  };
+
+  const handlePayCash = async (venueRuleAcknowledged = false) => {
     if (!lesson) return;
     if (connectionState !== "online") {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
     }
     if (paymentSubmit.phase === "saved") return;
+    if (!bookingPaymentMode || bookingPaymentMode === "package") return;
 
-    const priceNum = parseFloat(customPrice);
-    if (Number.isNaN(priceNum) || priceNum < 0) {
-      toast(t("common.invalidLessonCost"), "error");
+    if (showPayerSelect && !payerClientId) {
+      toast(t("personalTariff.payer.required"), "error");
+      return;
+    }
+
+    const amountNum = parseFloat(paymentAmount);
+    const validationError = validatePaymentAmount(amountNum, remainingDebt);
+    if (validationError) {
+      toast(validationError, "error");
+      return;
+    }
+
+    if (bookingPaymentMode === "tariff" && !selectedTariff) {
+      toast(t("subscriptions.error.selectTariff"), "error");
       return;
     }
 
     paymentSubmit.begin();
+
+    const payerId = payerClientId || lesson.clientId1;
+    const isTariffMode = bookingPaymentMode === "tariff";
+
     const paymentRes = await recordPersonalLessonPayment.mutateAsync({
       lessonId: lesson.lessonId,
-      clientId: lesson.clientId1,
-      clientDisplay: lesson.clientDisplay,
-      amount: priceNum,
+      clientId: payerId,
+      clientDisplay: payerDisplay,
+      amount: amountNum,
       method: paymentMethod,
       idempotencyKey: paymentIdempotencyKey || crypto.randomUUID(),
       venueRuleAcknowledged,
+      priceId: isTariffMode ? (selectedTariff?.id ?? null) : null,
+      tariffUnits:
+        isTariffMode && selectedTariff?.durationMinutes != null && lessonMinutes > 0
+          ? tariffUnitsSnapshot(lessonMinutes, selectedTariff.durationMinutes)
+          : null,
+      tariffDurationMinutes: isTariffMode ? (selectedTariff?.durationMinutes ?? null) : null,
+      tariffPrice: isTariffMode ? (selectedTariff?.price ?? null) : null,
+      tariffLabel: isTariffMode && selectedTariff ? getPriceLabel(selectedTariff, t, locale) : null,
+      lessonDurationMinutes: isTariffMode && lessonMinutes > 0 ? lessonMinutes : null,
     });
 
     if (!paymentRes.success) {
@@ -265,6 +394,24 @@ export default function PayPersonalLessonModal({
     onClose();
   };
 
+  const selectMode = (mode: PersonalLessonPaymentMode) => {
+    setBookingPaymentMode(mode);
+    setLinkedSubscriptionId("");
+    if (mode === "tariff") {
+      if (lesson?.priceId) {
+        setSelectedLessonTariffId(lesson.priceId);
+      } else if (lessonTariffs.length > 0) {
+        setSelectedLessonTariffId(lessonTariffs[0].id!);
+      }
+      setPaymentAmount(remainingDebt > 0 ? remainingDebt.toString() : "");
+    } else if (mode === "outstanding") {
+      setPaymentAmount(remainingDebt > 0 ? remainingDebt.toString() : "");
+    }
+  };
+
+  const showModePicker = lesson != null && lesson.paymentMode == null;
+  const showPackageOption = lesson != null && !lesson.hidePackage;
+
   return (
     <>
       <AnimatePresence>
@@ -314,98 +461,139 @@ export default function PayPersonalLessonModal({
                 </span>
               </div>
 
-              <div className="field-stack">
-                <label className={labelCls}>{t("common.paymentLabel")}</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBookingPaymentMode("single");
-                      setLinkedSubscriptionId("");
-                      if (lessonTariffs.length > 0) {
-                        const tariffId = selectedLessonTariffId || lessonTariffs[0].id!;
-                        applyLessonTariff(tariffId);
-                      }
-                    }}
-                    className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
-                      bookingPaymentMode === "single"
-                        ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-xs"
-                        : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
-                    }`}
-                  >
-                    {t("common.singleLessonOption")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBookingPaymentMode("package");
-                      setLinkedSubscriptionId("");
-                    }}
-                    className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider leading-snug transition-colors cursor-pointer ${
-                      bookingPaymentMode === "package"
-                        ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-xs"
-                        : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
-                    }`}
-                  >
-                    {t("common.chargePackage")}
-                  </button>
+              {showModePicker && (
+                <div className="field-stack">
+                  <label className={labelCls}>{t("common.paymentLabel")}</label>
+                  <div className={`grid gap-3 ${showPackageOption ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}>
+                    {!tariffModeBlocked && (
+                      <button
+                        type="button"
+                        onClick={() => selectMode("tariff")}
+                        className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
+                          bookingPaymentMode === "tariff"
+                            ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-xs"
+                            : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                        }`}
+                      >
+                        {t("finance.debtors.payByTariff")}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => selectMode("outstanding")}
+                      className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider leading-snug transition-colors cursor-pointer ${
+                        bookingPaymentMode === "outstanding"
+                          ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-xs"
+                          : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                      }`}
+                    >
+                      {t("finance.debtors.payOutstanding")}
+                    </button>
+                    {showPackageOption && (
+                      <button
+                        type="button"
+                        onClick={() => selectMode("package")}
+                        className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider leading-snug transition-colors cursor-pointer ${
+                          bookingPaymentMode === "package"
+                            ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-xs"
+                            : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                        }`}
+                      >
+                        {t("common.chargePackage")}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {bookingPaymentMode === "single" && (
+              {(bookingPaymentMode === "tariff" || bookingPaymentMode === "outstanding") && (
                 <>
-                  {lesson.price > 0 && (lesson.paidAmount ?? 0) > 0 && (
+                  {billedAmount > 0 && paidSoFar > 0 && (
                     <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 text-xs font-sans">
                       <span className="text-slate-500">
-                        {t("personal.pay.paidSoFar")}: {formatCurrency(lesson.paidAmount ?? 0)}
+                        {t("personal.pay.paidSoFar")}: {formatCurrency(paidSoFar)}
                       </span>
                       <span className="text-rose-600 font-semibold">
-                        {t("common.debt")}: {formatCurrency(Math.max(lesson.price - (lesson.paidAmount ?? 0), 0))}
+                        {t("common.debt")}: {formatCurrency(remainingDebt)}
                       </span>
                     </div>
                   )}
-                  {lessonTariffs.length > 0 && (
-                    <div className="flex flex-nowrap items-end gap-3 w-full">
-                      <div className="min-w-0 flex-1">
+
+                  {showPayerSelect && (
+                    <AppSelect
+                      label={t("personalTariff.payer.label")}
+                      value={payerClientId}
+                      onChange={(e) => setPayerClientId(e.target.value)}
+                    >
+                      {participants.map((id) => {
+                        const client = clientMap[id];
+                        const label = client
+                          ? formatClientName(client.lastName, client.firstName)
+                          : id;
+                        return (
+                          <option key={id} value={id}>
+                            {label}
+                          </option>
+                        );
+                      })}
+                    </AppSelect>
+                  )}
+
+                  {bookingPaymentMode === "tariff" && (
+                    <>
+                      {lessonTariffs.length > 0 ? (
                         <AppSelect
                           label={t("common.tariffPerLesson")}
                           value={selectedLessonTariffId}
-                          onChange={(e) => {
-                            const id = e.target.value;
-                            if (id) applyLessonTariff(id);
-                          }}
+                          onChange={(e) => setSelectedLessonTariffId(e.target.value)}
+                          disabled={tariffSelectLocked}
                         >
                           {lessonTariffs.map((tariff) => (
                             <option key={tariff.id} value={tariff.id!}>
-                              {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
+                              {getPriceLabel(tariff, t, locale)} — {formatCurrency(tariff.price)}
+                              {tariff.status === "archived" ? ` (${t("prices.status.archived")})` : ""}
                             </option>
                           ))}
                         </AppSelect>
-                      </div>
-                      <div className="field-stack w-[7.5rem] shrink-0">
+                      ) : (
+                        <p className="text-xs text-slate-500">{t("attendance.singleVisit.noTariffs")}</p>
+                      )}
+                      {tariffSelectLocked && (
+                        <p className="text-[11px] text-slate-500">{t("personal.pay.tariffChangeLocked")}</p>
+                      )}
+                      {durationWarningMessage && (
+                        <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
+                          {durationWarningMessage}
+                        </p>
+                      )}
+                      <div className="field-stack">
                         <label className={labelCls}>{t("common.cost")}</label>
                         <input
                           type="number"
-                          placeholder="0"
-                          value={customPrice}
-                          onChange={(e) => setCustomPrice(e.target.value)}
-                          className={`${fieldCls} font-semibold`}
+                          readOnly
+                          value={paymentAmount}
+                          className={`${fieldCls} font-semibold bg-slate-50 text-slate-700`}
                         />
                       </div>
-                    </div>
+                    </>
                   )}
-                  {lessonTariffs.length === 0 && (
+
+                  {bookingPaymentMode === "outstanding" && (
                     <div className="field-stack">
-                      <label className={labelCls}>{t("common.cost")}</label>
+                      <label className={labelCls}>{t("finance.debtors.outstanding")}</label>
                       <input
                         type="number"
                         placeholder="0"
-                        value={customPrice}
-                        onChange={(e) => setCustomPrice(e.target.value)}
+                        min={0}
+                        max={remainingDebt}
+                        step="0.01"
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(e.target.value)}
                         className={`${fieldCls} font-semibold`}
                       />
                     </div>
                   )}
+
                   <AppSelect
                     label={t("common.paymentMethod")}
                     value={paymentMethod}
@@ -419,8 +607,8 @@ export default function PayPersonalLessonModal({
                   </AppSelect>
                   <button
                     type="button"
-                    onClick={() => void handlePaySingle()}
-                    disabled={connectionState !== "online" || pending}
+                    onClick={() => void handlePayCash()}
+                    disabled={connectionState !== "online" || pending || remainingDebt <= 0}
                     title={translateConnectionBlockReason(connectionState, t)}
                     className={`w-full ${btnAddCls}`}
                   >
@@ -478,10 +666,8 @@ export default function PayPersonalLessonModal({
                 </>
               )}
 
-              {bookingPaymentMode === null ? (
-                <p className="text-xs text-slate-400 text-center py-2">
-                  {t("common.selectPaymentMethod")}
-                </p>
+              {bookingPaymentMode === null && showModePicker ? (
+                <p className="text-xs text-slate-400 text-center py-2">{t("common.selectPaymentMethod")}</p>
               ) : null}
             </motion.div>
           </div>
@@ -500,7 +686,7 @@ export default function PayPersonalLessonModal({
       <VenueRulePaymentConfirmDialog
         status={venueConfirmStatus}
         pending={recordPersonalLessonPayment.isPending}
-        onConfirm={() => void handlePaySingle(true)}
+        onConfirm={() => void handlePayCash(true)}
         onCancel={() => setVenueConfirmStatus(null)}
       />
     </>

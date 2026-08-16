@@ -205,11 +205,15 @@ export default function PersonalLessonsPageContainer({
       clientId1: lesson.clientId1,
       clientId2: lesson.clientId2,
       clientId3: lesson.clientId3,
+      clientId4: lesson.clientId4,
       clientDisplay: lesson.clientDisplay,
+      payerClientId: lesson.payerClientId,
+      priceId: lesson.priceId,
       price: lesson.price,
       paidAmount: lesson.paidAmount,
       locationId: lesson.locationId,
       disciplineId: lesson.disciplineId,
+      teacherMemberId: lesson.teacherMemberId ?? null,
     });
   };
 

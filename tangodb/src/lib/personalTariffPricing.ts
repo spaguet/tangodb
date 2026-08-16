@@ -144,6 +144,39 @@ export function durationHardBlock(params: {
   return null;
 }
 
+/** i18n message for a single duration warn code (§3.4). */
+export function translateDurationWarning(
+  code: DurationWarningCode,
+  translate: LessonDurationTranslate,
+  tariffDurationMinutes: number | null | undefined,
+  lessonMinutes: number
+): string {
+  const tariffDuration =
+    tariffDurationMinutes != null ? formatLessonDuration(tariffDurationMinutes, translate) : "";
+  const lessonDuration = formatLessonDuration(lessonMinutes, translate);
+  switch (code) {
+    case "legacy_no_duration":
+      return translate("personalTariff.warn.legacyNoDuration");
+    case "shorter":
+      return translate("personalTariff.warn.shorter", { lessonDuration, tariffDuration });
+    case "longer_not_multiple":
+      return translate("personalTariff.warn.longerNotMultiple", { lessonDuration, tariffDuration });
+    case "longer_multiple": {
+      const multiple =
+        tariffDurationMinutes != null && tariffDurationMinutes > 0
+          ? Math.floor(lessonMinutes / tariffDurationMinutes)
+          : 0;
+      return translate("personalTariff.warn.longerMultiple", {
+        multiple,
+        tariffDuration,
+        lessonDuration,
+      });
+    }
+    default:
+      return "";
+  }
+}
+
 /** Equal split with remainder cents on index 0 (stage 2). */
 export function splitBilledEqually(total: number, count: number): number[] {
   if (count <= 0) {

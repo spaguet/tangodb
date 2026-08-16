@@ -15,9 +15,15 @@ export interface ScheduleDebtorEntry {
   clientId1: string;
   clientId2: string;
   clientId3: string;
+  clientId4?: string;
+  payerClientId?: string | null;
+  priceId?: string | null;
   disciplineId: string | null;
   locationId: string | null;
   teacherMemberId: string | null;
+  /** Billed amount (document total). */
+  billedAmount: number;
+  paidAmount: number;
   /** Only for owner/director — never shown to teacher/admin in UI. */
   amount?: number;
 }
@@ -51,9 +57,14 @@ export function useScheduleDebtors(options?: { enabled?: boolean }) {
         clientId1: lesson.clientId1,
         clientId2: lesson.clientId2,
         clientId3: lesson.clientId3,
+        clientId4: lesson.clientId4,
+        payerClientId: lesson.payerClientId,
+        priceId: lesson.priceId,
         disciplineId: lesson.disciplineId ?? null,
         locationId: lesson.locationId ?? null,
         teacherMemberId: lesson.teacherMemberId ?? null,
+        billedAmount: lesson.price,
+        paidAmount: lesson.paidAmount,
         amount: includeAmount ? Math.max(lesson.price - lesson.paidAmount, 0) : undefined,
       }));
   }, [lessonsQuery.data, includeAmount, role, memberId]);
