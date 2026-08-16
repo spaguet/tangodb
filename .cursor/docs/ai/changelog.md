@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-16 — feat: персональный тариф — миграция `20260917000001` (`prices.duration_minutes`, `personal_lessons.price_id` / `payer_client_id`, снимок тарифа на `payments`, `financial_debtors_v` по плательщику + `client_id4`), хуки `usePersonalLessons` / `usePayments` / `useFinancialDebtors`, `DebtorEntry`. Этап 1, Промпт 2; версия без bump (2.8.0 — Промпт 9).
+
 2026-08-16 — feat: персональный тариф — слой расчёта `personalTariffPricing.ts` (multiply-first billed, warn-коды длительности, splitBilledEqually), типы `Price.durationMinutes` / `PersonalLesson.priceId` / `payerClientId` / снимок на `Payment`, `mapPrice`, i18n длительности, скрипт `test:personal-tariff-pricing`. Этап 1, Промпт 1; версия без bump (2.8.0 — Промпт 9).
 
 2026-08-15 — feat: дебиторская задолженность — кнопка «Оплатить» переименована в «Оплата по тарифу»; добавлена «Оплата текущей суммы» (предзаполняет сумму задолженности записи). Версия `2.7.26`.

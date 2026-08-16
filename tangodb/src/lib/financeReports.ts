@@ -264,6 +264,8 @@ export interface DebtorEntry {
   clientId1?: string | null;
   clientId2?: string | null;
   clientId3?: string | null;
+  clientId4?: string | null;
+  payerClientId?: string | null;
   lessonTimeStart?: string | null;
   lessonTimeEnd?: string | null;
   locationId?: string | null;

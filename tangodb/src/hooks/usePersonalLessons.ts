@@ -119,11 +119,13 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
     locationId: row.location_id != null ? String(row.location_id) : null,
     teacherMemberId: row.teacher_member_id != null ? String(row.teacher_member_id) : null,
     attendanceStatus: (row.attendance_status as "present" | "absent" | "excused" | null) ?? null,
+    priceId: row.price_id != null ? String(row.price_id) : null,
+    payerClientId: row.payer_client_id != null ? String(row.payer_client_id) : null,
   };
 };
 
 const personalLessonsSelect =
-  "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, price, paid, paid_amount, subscription_id, location_id, teacher_member_id, attendance_status";
+  "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, price, paid, paid_amount, subscription_id, location_id, teacher_member_id, attendance_status, price_id, payer_client_id";
 
 const personalLessonsSelectTeacher =
   "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status";

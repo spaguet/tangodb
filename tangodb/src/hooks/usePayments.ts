@@ -19,7 +19,7 @@ import {
 export const paymentsQueryKey = ["payments"] as const;
 
 const PAYMENTS_SELECT =
-  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, single_visit_id, created_by, created_at, operation_kind";
+  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, single_visit_id, created_by, created_at, operation_kind, price_id, tariff_duration_minutes, tariff_units, tariff_price, tariff_label, lesson_duration_minutes";
 
 const mapPayment = (row: Record<string, unknown>): PaymentWithCorrectionMeta => ({
   id: row.id as string,
@@ -34,6 +34,14 @@ const mapPayment = (row: Record<string, unknown>): PaymentWithCorrectionMeta => 
   createdBy: row.created_by != null ? (row.created_by as string) : null,
   createdAt: String(row.created_at ?? ""),
   operationKind: (row.operation_kind as PaymentWithCorrectionMeta["operationKind"]) ?? "payment",
+  priceId: row.price_id != null ? String(row.price_id) : null,
+  tariffDurationMinutes:
+    row.tariff_duration_minutes != null ? Number(row.tariff_duration_minutes) : null,
+  tariffUnits: row.tariff_units != null ? Number(row.tariff_units) : null,
+  tariffPrice: row.tariff_price != null ? Number(row.tariff_price) : null,
+  tariffLabel: row.tariff_label != null ? String(row.tariff_label) : null,
+  lessonDurationMinutes:
+    row.lesson_duration_minutes != null ? Number(row.lesson_duration_minutes) : null,
 });
 
 export interface PaymentsFilter {
