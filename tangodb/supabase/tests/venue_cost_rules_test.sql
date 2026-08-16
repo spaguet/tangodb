@@ -588,14 +588,17 @@ BEGIN
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public'
-    AND p.proname IN (
-      'record_subscription_payment', 'record_personal_lesson_payment', 'record_single_visit'
-    )
-    AND p.proargnames[array_length(p.proargnames, 1)] = 'p_venue_rule_acknowledged'
     AND (
-      (p.proname = 'record_subscription_payment' AND p.pronargs = 6)
-      OR (p.proname = 'record_personal_lesson_payment' AND p.pronargs = 5)
-      OR (p.proname = 'record_single_visit' AND p.pronargs = 8)
+      (p.proname = 'record_subscription_payment'
+        AND p.pronargs = 6
+        AND p.proargnames[array_length(p.proargnames, 1)] = 'p_venue_rule_acknowledged')
+      OR (p.proname = 'record_personal_lesson_payment'
+        AND p.pronargs = 12
+        AND p.proargnames[5] = 'p_venue_rule_acknowledged'
+        AND p.proargnames[array_length(p.proargnames, 1)] = 'p_client_id')
+      OR (p.proname = 'record_single_visit'
+        AND p.pronargs = 8
+        AND p.proargnames[array_length(p.proargnames, 1)] = 'p_venue_rule_acknowledged')
     );
   PERFORM _venue_test_assert(v_count = 3, 'canonical PostgREST payment signatures are unambiguous');
   SELECT count(*) INTO v_count

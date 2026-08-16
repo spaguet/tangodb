@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.7.26",
+  "version": "2.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -36,6 +36,7 @@
     "test:db:subscription-refund": "psql \"%DATABASE_URL%\" -f supabase/tests/subscription_refund_finish_test.sql",
     "test:db:payment-corrections": "psql \"%DATABASE_URL%\" -f supabase/tests/payment_attendance_corrections_test.sql",
     "test:db:personal-stage1": "psql \"%DATABASE_URL%\" -f supabase/tests/personal_lessons_stage1_test.sql",
+    "test:db:personal-tariff": "psql \"%DATABASE_URL%\" -f supabase/tests/personal_tariff_payment_test.sql",
     "test:db:rental-series": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_series_tariffs_test.sql",
     "test:db:rental-effective-amount": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_effective_amount_test.sql",
     "test:db:rental-amount-adjustment": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_amount_adjustment_test.sql",
