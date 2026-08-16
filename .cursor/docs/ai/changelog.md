@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-16 — release: микропатч **2.8.2** — этап 3 персонального тарифа: блок «Персональные: по тарифам» на Финансы → Выручка (`personalTariffSales.ts` / re-export из `financeReports`, ключ `price_id` ?? снимок, нетто count/sum), скрипт `test:personal-tariff-sales`. Промпт 11.
+
 2026-08-16 — release: микропатч **2.8.1** — этап 2 персонального тарифа: `personal_lesson_charges`, режим «поровну» (`billing_split_mode`), дебиторка по charge, оплата с `p_charge_id`, restate только при одном charge, backfill legacy платежей. Миграция `20260920000001`. Промпт 10.
 
 2026-08-16 — release: подверсия **2.8.0** — персональный тариф с длительностью, автосумма billed (multiply-first), два режима кассы (`tariff` / `outstanding`), плательщик на уроке и в дебиторке, снимок тарифа на платеже, журнал и edit-popup. SQL-тесты `personal_tariff_payment_test.sql`, JS `test:personal-tariff-pricing`. Этап 1 закрыт (Промпт 9). Критерии §9 п.1–9: ✅.

@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.8.1",
+  "version": "2.8.2",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -58,6 +58,7 @@
     "test:rental-tariff-pricing": "node scripts/rental-tariff-pricing-check.mjs",
     "test:rental-tariff-archive": "tsx scripts/rental-tariff-archive-check.mjs",
     "test:personal-tariff-pricing": "tsx scripts/personal-tariff-pricing-check.mjs",
+    "test:personal-tariff-sales": "tsx scripts/personal-tariff-sales-check.mjs",
     "test:rental-tariff-rules": "tsx scripts/rental-tariff-rules-check.mjs",
     "test:rental-payment-inbox": "node scripts/rental-payment-inbox-check.mjs",
     "test:rental-billing-profile": "tsx scripts/rental-billing-profile-check.mjs",

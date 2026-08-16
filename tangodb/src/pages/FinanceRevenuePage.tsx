@@ -14,7 +14,9 @@ import { useRentalPayments } from "../hooks/useRentalPayments";
 import type { PaymentMethod } from "../types";
 import { useI18n } from "../hooks/useI18n";
 import {
+  aggregatePersonalTariffSales,
   buildExtendedRevenueStats,
+  formatPersonalTariffSalesRowLabel,
   monthDateRange,
   refundsInMonth,
   shiftMonth,
@@ -41,13 +43,19 @@ export default function FinanceRevenuePage() {
   const rentalPaymentsQuery = useRentalPayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
 
   const stats = useMemo(() => {
+    const monthPayments = paymentsQuery.data ?? [];
     const monthRefunds = refundsInMonth(refundsQuery.data ?? [], yearMonth);
     const otherFromTable = (otherIncomeQuery.data ?? []).reduce((sum, row) => sum + row.amount, 0);
-    return buildExtendedRevenueStats(paymentsQuery.data ?? [], monthRefunds, {
+    return buildExtendedRevenueStats(monthPayments, monthRefunds, {
       otherIncomeAmount: otherFromTable,
       rentalRegisterEntries: rentalPaymentsQuery.data ?? [],
     });
   }, [paymentsQuery.data, refundsQuery.data, otherIncomeQuery.data, rentalPaymentsQuery.data, yearMonth]);
+
+  const personalTariffRows = useMemo(
+    () => aggregatePersonalTariffSales(paymentsQuery.data ?? []),
+    [paymentsQuery.data]
+  );
 
   const pendingRefunds = useMemo(
     () => (refundsQuery.data ?? []).filter((refund) => refund.status === "pending"),
@@ -197,6 +205,45 @@ export default function FinanceRevenuePage() {
           )}
         </div>
       </div>
+
+      {personalTariffRows.length > 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100">
+            <h3 className="font-sans text-sm font-semibold text-slate-800">
+              {t("finance.revenue.personalTariffs.title")}
+            </h3>
+          </div>
+          <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.4fr)_auto_auto] gap-3 px-4 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
+            <span>{t("finance.revenue.personalTariffs.tariffColumn")}</span>
+            <span className="text-right">{t("finance.revenue.personalTariffs.countColumn")}</span>
+            <span className="text-right min-w-[6rem]">{t("finance.revenue.personalTariffs.sumColumn")}</span>
+          </div>
+          <ul className="divide-y divide-slate-100">
+            {personalTariffRows.map((row) => (
+              <li
+                key={row.rowKey}
+                className="px-4 py-3 grid grid-cols-1 sm:grid-cols-[minmax(0,1.4fr)_auto_auto] gap-1 sm:gap-3 sm:items-center text-sm font-sans"
+              >
+                <span className="font-semibold text-slate-800">
+                  {formatPersonalTariffSalesRowLabel(row, t)}
+                </span>
+                <span className="text-slate-600 sm:text-right">
+                  <span className="sm:hidden text-[10px] uppercase tracking-wider text-slate-400 font-semibold mr-2">
+                    {t("finance.revenue.personalTariffs.countColumn")}
+                  </span>
+                  {row.countPaymentsNet}
+                </span>
+                <span className="font-semibold text-slate-800 sm:text-right min-w-[6rem]">
+                  <span className="sm:hidden text-[10px] uppercase tracking-wider text-slate-400 font-semibold mr-2">
+                    {t("finance.revenue.personalTariffs.sumColumn")}
+                  </span>
+                  {formatCurrency(row.sumNet)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {pendingRefunds.length > 0 ? (
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
