@@ -10,6 +10,7 @@ import {
 import { usePaymentFormIdempotency, usePaymentSubmitState } from "../../hooks/usePaymentFormIdempotency";
 import { useArchivedPrices, usePrices } from "../../hooks/usePrices";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
+import { usePersonalLessonChargeBalances } from "../../hooks/usePersonalLessonCharges";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
 import {
   translateConnectionBlockReason,
@@ -120,11 +121,59 @@ export default function PayPersonalLessonModal({
   const [packageModalOpen, setPackageModalOpen] = useState(false);
   const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [payAllParticipants, setPayAllParticipants] = useState(false);
 
-  const billedAmount = lesson?.price ?? 0;
-  const paidSoFar = lesson?.paidAmount ?? 0;
-  const remainingDebt = Math.max(billedAmount - paidSoFar, 0);
-  const hasPayments = paidSoFar > 0;
+  const lessonId = lesson?.lessonId;
+  const { data: chargeBalances = [] } = usePersonalLessonChargeBalances(lessonId ? [lessonId] : [], {
+    enabled: Boolean(lessonId),
+  });
+
+  const participants = useMemo(() => (lesson ? participantIds(lesson) : []), [lesson]);
+
+  const lessonCharges = useMemo(() => {
+    if (!lesson) return [];
+    if (chargeBalances.length > 0) {
+      return chargeBalances
+        .filter((c) => participants.includes(c.clientId))
+        .sort((a, b) => participants.indexOf(a.clientId) - participants.indexOf(b.clientId));
+    }
+    const payer = lesson.payerClientId ?? lesson.clientId1;
+    const paid = lesson.paidAmount ?? 0;
+    const billed = lesson.price ?? 0;
+    return [
+      {
+        id: lesson.chargeId ?? "",
+        personalLessonId: lesson.lessonId,
+        clientId: payer,
+        billedAmount: billed,
+        paidAmount: paid,
+        remainingAmount: Math.max(billed - paid, 0),
+      },
+    ];
+  }, [chargeBalances, lesson, participants]);
+
+  const unpaidCharges = useMemo(
+    () => lessonCharges.filter((c) => c.remainingAmount > 0),
+    [lessonCharges]
+  );
+
+  const hasMultipleUnpaidCharges = unpaidCharges.length > 1;
+
+  const selectedCharge = useMemo(() => {
+    const byPayer = lessonCharges.find((c) => c.clientId === payerClientId);
+    if (byPayer) return byPayer;
+    if (lesson?.chargeId) {
+      const byId = lessonCharges.find((c) => c.id === lesson.chargeId);
+      if (byId) return byId;
+    }
+    return unpaidCharges[0] ?? lessonCharges[0] ?? null;
+  }, [lessonCharges, payerClientId, lesson?.chargeId, unpaidCharges]);
+
+  const billedAmount = selectedCharge?.billedAmount ?? lesson?.price ?? 0;
+  const paidSoFar = selectedCharge?.paidAmount ?? lesson?.paidAmount ?? 0;
+  const remainingDebt = selectedCharge?.remainingAmount ?? Math.max(billedAmount - paidSoFar, 0);
+  const totalRemainingAll = unpaidCharges.reduce((sum, c) => sum + c.remainingAmount, 0);
+  const hasPayments = lessonCharges.some((c) => c.paidAmount > 0);
   const lessonPriceId = lesson?.priceId ?? null;
   const tariffModeBlocked = !lessonPriceId && hasPayments;
 
@@ -151,8 +200,7 @@ export default function PayPersonalLessonModal({
     [directoryClients]
   );
 
-  const participants = useMemo(() => (lesson ? participantIds(lesson) : []), [lesson]);
-  const showPayerSelect = participants.length >= 2;
+  const showPayerSelect = participants.length >= 2 && !hasMultipleUnpaidCharges;
 
   const availablePrivateSubs = useMemo(() => {
     if (!lesson) return [];
@@ -188,8 +236,6 @@ export default function PayPersonalLessonModal({
 
   const tariffSelectLocked = hasPayments;
 
-  const lessonId = lesson?.lessonId;
-
   useEffect(() => {
     paymentSubmit.reset();
     if (!lessonId || !lesson) {
@@ -199,6 +245,7 @@ export default function PayPersonalLessonModal({
 
     setLinkedSubscriptionId("");
     setPaymentMethod("cash");
+    setPayAllParticipants(false);
 
     const initialMode = lesson.paymentMode ?? null;
     if (initialMode === "tariff" && tariffModeBlocked) {
@@ -252,8 +299,21 @@ export default function PayPersonalLessonModal({
 
   useEffect(() => {
     if (!lesson || bookingPaymentMode !== "outstanding") return;
+    if (payAllParticipants) {
+      setPaymentAmount(totalRemainingAll > 0 ? totalRemainingAll.toString() : "");
+      return;
+    }
     setPaymentAmount(remainingDebt > 0 ? remainingDebt.toString() : "");
-  }, [lesson, bookingPaymentMode, remainingDebt]);
+  }, [lesson, bookingPaymentMode, remainingDebt, payAllParticipants, totalRemainingAll]);
+
+  useEffect(() => {
+    if (!lesson || payAllParticipants) return;
+    const charge = lessonCharges.find((c) => c.clientId === payerClientId);
+    if (!charge) return;
+    if (bookingPaymentMode === "outstanding" || bookingPaymentMode === "tariff") {
+      setPaymentAmount(charge.remainingAmount > 0 ? charge.remainingAmount.toString() : "");
+    }
+  }, [payerClientId, lessonCharges, bookingPaymentMode, payAllParticipants, lesson]);
 
   useEffect(() => {
     if (!lesson) return;
@@ -295,15 +355,19 @@ export default function PayPersonalLessonModal({
     if (paymentSubmit.phase === "saved") return;
     if (!bookingPaymentMode || bookingPaymentMode === "package") return;
 
-    if (showPayerSelect && !payerClientId) {
-      toast(t("personalTariff.payer.required"), "error");
+    const chargesToPay = payAllParticipants
+      ? unpaidCharges
+      : selectedCharge
+        ? [selectedCharge]
+        : [];
+
+    if (chargesToPay.length === 0) {
+      toast(t("personal.pay.amountRequired"), "error");
       return;
     }
 
-    const amountNum = parseFloat(paymentAmount);
-    const validationError = validatePaymentAmount(amountNum, remainingDebt);
-    if (validationError) {
-      toast(validationError, "error");
+    if (!payAllParticipants && showPayerSelect && !payerClientId) {
+      toast(t("personalTariff.payer.required"), "error");
       return;
     }
 
@@ -312,52 +376,73 @@ export default function PayPersonalLessonModal({
       return;
     }
 
-    paymentSubmit.begin();
-
-    const payerId = payerClientId || lesson.clientId1;
     const isTariffMode = bookingPaymentMode === "tariff";
 
-    const paymentRes = await recordPersonalLessonPayment.mutateAsync({
-      lessonId: lesson.lessonId,
-      clientId: payerId,
-      clientDisplay: payerDisplay,
-      amount: amountNum,
-      method: paymentMethod,
-      idempotencyKey: paymentIdempotencyKey || crypto.randomUUID(),
-      venueRuleAcknowledged,
-      priceId: isTariffMode ? (selectedTariff?.id ?? null) : null,
-      tariffUnits:
-        isTariffMode && selectedTariff?.durationMinutes != null && lessonMinutes > 0
-          ? tariffUnitsSnapshot(lessonMinutes, selectedTariff.durationMinutes)
-          : null,
-      tariffDurationMinutes: isTariffMode ? (selectedTariff?.durationMinutes ?? null) : null,
-      tariffPrice: isTariffMode ? (selectedTariff?.price ?? null) : null,
-      tariffLabel: isTariffMode && selectedTariff ? getPriceLabel(selectedTariff, t, locale) : null,
-      lessonDurationMinutes: isTariffMode && lessonMinutes > 0 ? lessonMinutes : null,
-      chargeId: lesson.chargeId ?? null,
-    });
-
-    if (!paymentRes.success) {
-      paymentSubmit.reset();
-      if (
-        "errorCode" in paymentRes &&
-        paymentRes.errorCode === "venue_rule_ack_required" &&
-        "venueRuleStatus" in paymentRes
-      ) {
-        setVenueConfirmStatus(paymentRes.venueRuleStatus);
+    if (!payAllParticipants) {
+      const amountNum = parseFloat(paymentAmount);
+      const validationError = validatePaymentAmount(amountNum, remainingDebt);
+      if (validationError) {
+        toast(validationError, "error");
         return;
       }
-      toast(paymentRes.error ?? t("common.paymentChargeFailed"), "error");
-      return;
     }
 
-    paymentSubmit.complete(paymentRes.operationNumber);
-    setVenueConfirmStatus(null);
-    if (paymentRes.alreadyApplied) {
-      toast(t("personal.pay.alreadyApplied"), "info");
-    } else {
-      toast(t("personal.pay.success"), "success");
+    paymentSubmit.begin();
+
+    for (let i = 0; i < chargesToPay.length; i++) {
+      const charge = chargesToPay[i];
+      const payerId = charge.clientId;
+      const client = clientMap[payerId];
+      const display = client
+        ? formatClientName(client.lastName, client.firstName)
+        : lesson.clientDisplay;
+      const amountNum = payAllParticipants ? charge.remainingAmount : parseFloat(paymentAmount);
+
+      if (Number.isNaN(amountNum) || amountNum <= 0) {
+        paymentSubmit.reset();
+        toast(t("personal.pay.amountRequired"), "error");
+        return;
+      }
+
+      const paymentRes = await recordPersonalLessonPayment.mutateAsync({
+        lessonId: lesson.lessonId,
+        clientId: payerId,
+        clientDisplay: display,
+        amount: amountNum,
+        method: paymentMethod,
+        idempotencyKey:
+          i === 0 ? paymentIdempotencyKey || crypto.randomUUID() : crypto.randomUUID(),
+        venueRuleAcknowledged,
+        priceId: isTariffMode ? (selectedTariff?.id ?? null) : null,
+        tariffUnits:
+          isTariffMode && selectedTariff?.durationMinutes != null && lessonMinutes > 0
+            ? tariffUnitsSnapshot(lessonMinutes, selectedTariff.durationMinutes)
+            : null,
+        tariffDurationMinutes: isTariffMode ? (selectedTariff?.durationMinutes ?? null) : null,
+        tariffPrice: isTariffMode ? (selectedTariff?.price ?? null) : null,
+        tariffLabel: isTariffMode && selectedTariff ? getPriceLabel(selectedTariff, t, locale) : null,
+        lessonDurationMinutes: isTariffMode && lessonMinutes > 0 ? lessonMinutes : null,
+        chargeId: charge.id || null,
+      });
+
+      if (!paymentRes.success) {
+        paymentSubmit.reset();
+        if (
+          "errorCode" in paymentRes &&
+          paymentRes.errorCode === "venue_rule_ack_required" &&
+          "venueRuleStatus" in paymentRes
+        ) {
+          setVenueConfirmStatus(paymentRes.venueRuleStatus);
+          return;
+        }
+        toast(paymentRes.error ?? t("common.paymentChargeFailed"), "error");
+        return;
+      }
     }
+
+    paymentSubmit.complete(undefined);
+    setVenueConfirmStatus(null);
+    toast(t("personal.pay.success"), "success");
     onSuccess();
     onClose();
   };
@@ -521,6 +606,75 @@ export default function PayPersonalLessonModal({
                     </div>
                   )}
 
+                  {hasMultipleUnpaidCharges && (
+                    <div className="field-stack">
+                      <label className={labelCls}>{t("personal.pay.chargeSplit")}</label>
+                      <ul className="rounded-lg border border-slate-100 divide-y divide-slate-100 overflow-hidden">
+                        {lessonCharges.map((charge) => {
+                          const client = clientMap[charge.clientId];
+                          const name = client
+                            ? formatClientName(client.lastName, client.firstName)
+                            : charge.clientId;
+                          const isSelected =
+                            !payAllParticipants && charge.clientId === payerClientId;
+                          return (
+                            <li key={charge.id || charge.clientId}>
+                              <button
+                                type="button"
+                                disabled={charge.remainingAmount <= 0}
+                                onClick={() => {
+                                  setPayAllParticipants(false);
+                                  setPayerClientId(charge.clientId);
+                                  setPaymentAmount(
+                                    charge.remainingAmount > 0
+                                      ? charge.remainingAmount.toString()
+                                      : ""
+                                  );
+                                }}
+                                className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left text-xs font-sans transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                                  isSelected ? "bg-indigo-50 text-indigo-900" : "hover:bg-slate-50"
+                                }`}
+                              >
+                                <span className="font-medium truncate">{name}</span>
+                                <span
+                                  className={`shrink-0 font-semibold ${
+                                    charge.remainingAmount > 0 ? "text-rose-700" : "text-slate-400"
+                                  }`}
+                                >
+                                  {formatCurrency(charge.remainingAmount)}
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <label className="flex items-center gap-2 text-xs text-slate-600 font-sans cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={payAllParticipants}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setPayAllParticipants(checked);
+                            if (checked) {
+                              setPaymentAmount(
+                                totalRemainingAll > 0 ? totalRemainingAll.toString() : ""
+                              );
+                            } else {
+                              const charge = lessonCharges.find((c) => c.clientId === payerClientId);
+                              setPaymentAmount(
+                                charge && charge.remainingAmount > 0
+                                  ? charge.remainingAmount.toString()
+                                  : ""
+                              );
+                            }
+                          }}
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        {t("personal.pay.payAllParticipants")}
+                      </label>
+                    </div>
+                  )}
+
                   {showPayerSelect && (
                     <AppSelect
                       label={t("personalTariff.payer.label")}
@@ -587,11 +741,12 @@ export default function PayPersonalLessonModal({
                         type="number"
                         placeholder="0"
                         min={0}
-                        max={remainingDebt}
+                        max={payAllParticipants ? totalRemainingAll : remainingDebt}
                         step="0.01"
                         value={paymentAmount}
                         onChange={(e) => setPaymentAmount(e.target.value)}
-                        className={`${fieldCls} font-semibold`}
+                        readOnly={payAllParticipants}
+                        className={`${fieldCls} font-semibold${payAllParticipants ? " bg-slate-50 text-slate-700" : ""}`}
                       />
                     </div>
                   )}
@@ -610,7 +765,11 @@ export default function PayPersonalLessonModal({
                   <button
                     type="button"
                     onClick={() => void handlePayCash()}
-                    disabled={connectionState !== "online" || pending || remainingDebt <= 0}
+                    disabled={
+                      connectionState !== "online" ||
+                      pending ||
+                      (payAllParticipants ? totalRemainingAll <= 0 : remainingDebt <= 0)
+                    }
                     title={translateConnectionBlockReason(connectionState, t)}
                     className={`w-full ${btnAddCls}`}
                   >

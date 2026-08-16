@@ -1469,6 +1469,8 @@ export const RU: Record<I18nKey, string> = {
   "personal.pay.exceedsRemaining": "Сумма не может превышать остаток долга",
   "personal.pay.amountRequired": "Введите сумму больше нуля",
   "personal.pay.tariffChangeLocked": "Тариф зафиксирован — по уроку уже есть платежи",
+  "personal.pay.chargeSplit": "Долг по участникам",
+  "personal.pay.payAllParticipants": "Оплатить за всех участников",
   "personal.edit.cancelPayment": "Отменить оплату",
   "personal.edit.cancelPaymentSuccess": "Оплата урока отменена",
   "personal.edit.cancelPaymentAlready": "Оплата уже была отменена",

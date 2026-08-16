@@ -1408,6 +1408,8 @@ export type I18nKey =
   | "personal.pay.exceedsRemaining"
   | "personal.pay.amountRequired"
   | "personal.pay.tariffChangeLocked"
+  | "personal.pay.chargeSplit"
+  | "personal.pay.payAllParticipants"
   | "personal.edit.cancelPayment"
   | "personal.edit.cancelPaymentSuccess"
   | "personal.edit.cancelPaymentAlready"

@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-16 — fix: микропатч **2.8.3** — оплата персонального урока с несколькими участниками: `sync_personal_lesson_charges` upsert (сохраняет UUID charge, устраняет «Начисление не найдено»), backfill `billing_split_mode=equal` для неоплаченных duo+, fallback lookup charge по `client_id` в RPC; `PayPersonalLessonModal` — долг по каждому участнику, оплата одного или всех сразу. Миграция `20260921000001`.
+
 2026-08-16 — release: микропатч **2.8.2** — этап 3 персонального тарифа: блок «Персональные: по тарифам» на Финансы → Выручка (`personalTariffSales.ts` / re-export из `financeReports`, ключ `price_id` ?? снимок, нетто count/sum), скрипт `test:personal-tariff-sales`. Промпт 11.
 
 2026-08-16 — release: микропатч **2.8.1** — этап 2 персонального тарифа: `personal_lesson_charges`, режим «поровну» (`billing_split_mode`), дебиторка по charge, оплата с `p_charge_id`, restate только при одном charge, backfill legacy платежей. Миграция `20260920000001`. Промпт 10.

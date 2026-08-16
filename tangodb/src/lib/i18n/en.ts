@@ -1471,6 +1471,8 @@ export const EN: Record<I18nKey, string> = {
   "personal.pay.exceedsRemaining": "Amount cannot exceed the remaining debt",
   "personal.pay.amountRequired": "Enter an amount greater than zero",
   "personal.pay.tariffChangeLocked": "Tariff is locked — this lesson already has payments",
+  "personal.pay.chargeSplit": "Debt per participant",
+  "personal.pay.payAllParticipants": "Pay for all participants",
   "personal.edit.cancelPayment": "Cancel payment",
   "personal.edit.cancelPaymentSuccess": "Lesson payment cancelled",
   "personal.edit.cancelPaymentAlready": "Payment was already cancelled",
