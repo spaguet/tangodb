@@ -267,6 +267,7 @@ export function aggregatePaymentStats(
 export interface DebtorEntry {
   id: string;
   personalLessonId?: string | null;
+  personalLessonChargeId?: string | null;
   clientId1?: string | null;
   clientId2?: string | null;
   clientId3?: string | null;

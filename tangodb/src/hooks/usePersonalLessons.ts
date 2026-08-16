@@ -10,6 +10,7 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 import { paymentsQueryKey } from "./usePayments";
 import { subscriptionsQueryKey } from "./useSubscriptions";
 import { financialDebtorsQueryKey } from "./useFinancialDebtors";
+import { personalLessonChargesQueryKey } from "./usePersonalLessonCharges";
 
 export const personalLessonsQueryKey = ["personalLessons"] as const;
 
@@ -121,11 +122,15 @@ const mapPersonalLesson = (row: Record<string, unknown>, maskFinancial: boolean)
     attendanceStatus: (row.attendance_status as "present" | "absent" | "excused" | null) ?? null,
     priceId: row.price_id != null ? String(row.price_id) : null,
     payerClientId: row.payer_client_id != null ? String(row.payer_client_id) : null,
+    billingSplitMode:
+      row.billing_split_mode === "equal"
+        ? "equal"
+        : "single_payer",
   };
 };
 
 const personalLessonsSelect =
-  "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, price, paid, paid_amount, subscription_id, location_id, teacher_member_id, attendance_status, price_id, payer_client_id";
+  "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, price, paid, paid_amount, subscription_id, location_id, teacher_member_id, attendance_status, price_id, payer_client_id, billing_split_mode";
 
 const personalLessonsSelectTeacher =
   "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status";
@@ -156,6 +161,7 @@ function invalidatePersonalLessonRelatedQueries(
   void queryClient.invalidateQueries({ queryKey: ["schedule"], ...opts });
   void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey, ...opts });
+  void queryClient.invalidateQueries({ queryKey: personalLessonChargesQueryKey, ...opts });
   if (options?.includePayments !== false) {
     void queryClient.invalidateQueries({ queryKey: paymentsQueryKey, ...opts });
   }
@@ -284,6 +290,7 @@ export function useAddPersonalLessons() {
       subscriptionId,
       priceId,
       payerClientId,
+      billingSplitMode,
     }: {
       requireScope?: boolean;
       type: string;
@@ -302,6 +309,7 @@ export function useAddPersonalLessons() {
       subscriptionId?: string;
       priceId?: string | null;
       payerClientId?: string | null;
+      billingSplitMode?: "single_payer" | "equal";
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
@@ -335,6 +343,7 @@ export function useAddPersonalLessons() {
         subscription_id: subscriptionId || null,
         price_id: subscriptionId ? null : (priceId ?? null),
         payer_client_id: payerClientId ?? null,
+        billing_split_mode: billingSplitMode ?? "single_payer",
       }));
 
       const { error } = await supabase.from("personal_lessons").insert(rows);

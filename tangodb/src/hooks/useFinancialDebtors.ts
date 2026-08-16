@@ -6,7 +6,7 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 export const financialDebtorsQueryKey = ["financialDebtors"] as const;
 
 const FINANCIAL_DEBTORS_SELECT =
-  "organization_id, id, personal_lesson_id, client_id1, client_id2, client_id3, client_id4, payer_client_id, price_id, other_participants, lesson_time_start, lesson_time_end, location_id, discipline_id, teacher_member_id, rental_id, renter_id, kind, client_display, contact, detail, amount, billed_amount, paid_amount, lessons_left, lessons_total, lesson_date";
+  "organization_id, id, personal_lesson_id, personal_lesson_charge_id, client_id1, client_id2, client_id3, client_id4, payer_client_id, price_id, other_participants, lesson_time_start, lesson_time_end, location_id, discipline_id, teacher_member_id, rental_id, renter_id, kind, client_display, contact, detail, amount, billed_amount, paid_amount, lessons_left, lessons_total, lesson_date";
 
 function mapFinancialDebtor(row: Record<string, unknown>): DebtorEntry {
   const kind =
@@ -14,6 +14,8 @@ function mapFinancialDebtor(row: Record<string, unknown>): DebtorEntry {
   return {
     id: String(row.id),
     personalLessonId: row.personal_lesson_id != null ? String(row.personal_lesson_id) : null,
+    personalLessonChargeId:
+      row.personal_lesson_charge_id != null ? String(row.personal_lesson_charge_id) : null,
     clientId1: row.client_id1 != null ? String(row.client_id1) : null,
     clientId2: row.client_id2 != null ? String(row.client_id2) : null,
     clientId3: row.client_id3 != null ? String(row.client_id3) : null,

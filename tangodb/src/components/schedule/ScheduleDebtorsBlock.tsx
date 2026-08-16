@@ -251,7 +251,7 @@ export default function ScheduleDebtorsBlock({
 
   const openPayModal = (entry: ScheduleDebtorEntry) => {
     setPayTarget({
-      lessonId: entry.id,
+      lessonId: entry.personalLessonId,
       date: entry.date,
       timeStart: entry.timeStart,
       timeEnd: entry.timeEnd,
@@ -262,6 +262,7 @@ export default function ScheduleDebtorsBlock({
       clientDisplay: entry.clientDisplay,
       payerClientId: entry.payerClientId,
       priceId: entry.priceId,
+      chargeId: entry.chargeId,
       price: entry.billedAmount,
       paidAmount: entry.paidAmount,
       locationId: entry.locationId,

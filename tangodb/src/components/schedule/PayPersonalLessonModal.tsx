@@ -53,6 +53,7 @@ export interface PayPersonalLessonTarget {
   clientDisplay: string;
   payerClientId?: string | null;
   priceId?: string | null;
+  chargeId?: string | null;
   /** Billed amount (document total), not outstanding debt. */
   price: number;
   paidAmount?: number;
@@ -333,6 +334,7 @@ export default function PayPersonalLessonModal({
       tariffPrice: isTariffMode ? (selectedTariff?.price ?? null) : null,
       tariffLabel: isTariffMode && selectedTariff ? getPriceLabel(selectedTariff, t, locale) : null,
       lessonDurationMinutes: isTariffMode && lessonMinutes > 0 ? lessonMinutes : null,
+      chargeId: lesson.chargeId ?? null,
     });
 
     if (!paymentRes.success) {

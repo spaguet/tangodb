@@ -333,6 +333,7 @@ export default function FinanceDebtorsPage() {
       clientDisplay: entry.clientDisplay,
       payerClientId: entry.payerClientId,
       priceId: entry.priceId,
+      chargeId: entry.personalLessonChargeId,
       price: entry.billedAmount ?? entry.amount,
       paidAmount: entry.paidAmount ?? 0,
       locationId: entry.locationId ?? null,

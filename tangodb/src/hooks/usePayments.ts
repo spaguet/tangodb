@@ -10,6 +10,7 @@ import type { Payment, PaymentMethod } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { personalLessonsQueryKey } from "./usePersonalLessons";
 import { financialDebtorsQueryKey } from "./useFinancialDebtors";
+import { personalLessonChargesQueryKey } from "./usePersonalLessonCharges";
 import {
   checkVenueRuleBeforePayment,
   venueCostStatusQueryKey,
@@ -200,6 +201,7 @@ export function useRecordPersonalLessonPayment() {
       tariffPrice?: number | null;
       tariffLabel?: string | null;
       lessonDurationMinutes?: number | null;
+      chargeId?: string | null;
     }) => {
       const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false, {
         queryClient,
@@ -213,6 +215,7 @@ export function useRecordPersonalLessonPayment() {
         p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
         p_venue_rule_acknowledged: input.venueRuleAcknowledged ?? false,
         p_client_id: input.clientId,
+        p_charge_id: input.chargeId ?? null,
         p_price_id: input.priceId ?? null,
         p_tariff_units: input.tariffUnits ?? null,
         p_tariff_duration_minutes: input.tariffDurationMinutes ?? null,
@@ -248,6 +251,7 @@ export function useRecordPersonalLessonPayment() {
         void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
         void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
         void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey });
+        void queryClient.invalidateQueries({ queryKey: personalLessonChargesQueryKey });
       }
     },
   });
@@ -279,6 +283,7 @@ export function useVoidPersonalLessonPayment() {
         void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
         void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
         void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey });
+        void queryClient.invalidateQueries({ queryKey: personalLessonChargesQueryKey });
       }
     },
   });

@@ -69,6 +69,10 @@ DECLARE
   v_units numeric;
   v_count int;
   v_lesson_dur int;
+  v_lesson_split uuid := 'e1aaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  v_charge_a uuid;
+  v_charge_b uuid;
+  v_debtor_rows int;
 BEGIN
   SELECT id INTO v_version_id FROM crm_product_versions WHERE code = 'v2' LIMIT 1;
 
@@ -186,6 +190,13 @@ BEGIN
   )
   ON CONFLICT (id) DO UPDATE SET price = 400, paid = 'no', paid_amount = 0;
 
+  PERFORM sync_personal_lesson_charges(v_org, v_lesson_pay);
+  PERFORM sync_personal_lesson_charges(v_org, v_lesson_cap);
+  PERFORM sync_personal_lesson_charges(v_org, v_lesson_paid);
+  PERFORM sync_personal_lesson_charges(v_org, v_lesson_pair);
+  PERFORM sync_personal_lesson_charges(v_org, v_lesson_quad);
+  PERFORM sync_personal_lesson_charges(v_org, v_lesson_venue);
+
   PERFORM _pt_tariff_test_set_jwt(v_user, v_org, v_member, 'owner');
   PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
   PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
@@ -285,7 +296,76 @@ BEGIN
     'quad debtor detail includes 4th participant'
   );
 
-  -- single canonical overload (12 params)
+  -- equal split: two debtor rows; payment on A does not close B
+  INSERT INTO personal_lessons (
+    id, organization_id, type, client_id1, client_id2, payer_client_id,
+    billing_split_mode, date, discipline_id, location_id,
+    time_start, time_end, price, price_id, paid, paid_amount
+  )
+  VALUES (
+    v_lesson_split, v_org, 'pair', v_client1, v_client2, v_client1,
+    'equal', current_date + 8, v_disc, v_loc,
+    '10:00', '11:30', 600, v_price, 'no', 0
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    billing_split_mode = 'equal',
+    payer_client_id = v_client1,
+    price = 600,
+    price_id = v_price,
+    paid = 'no',
+    paid_amount = 0;
+
+  PERFORM sync_personal_lesson_charges(v_org, v_lesson_split);
+
+  SELECT COUNT(*)::integer INTO v_debtor_rows
+  FROM financial_debtors_v
+  WHERE personal_lesson_id = v_lesson_split;
+
+  PERFORM _pt_tariff_test_assert(v_debtor_rows = 2, 'equal split yields two debtor rows');
+
+  SELECT id INTO v_charge_a
+  FROM personal_lesson_charges
+  WHERE organization_id = v_org
+    AND personal_lesson_id = v_lesson_split
+    AND client_id = v_client1;
+
+  SELECT id INTO v_charge_b
+  FROM personal_lesson_charges
+  WHERE organization_id = v_org
+    AND personal_lesson_id = v_lesson_split
+    AND client_id = v_client2;
+
+  v_result := record_personal_lesson_payment(
+    v_lesson_split,
+    300,
+    'cash',
+    gen_random_uuid(),
+    false,
+    v_price,
+    2.0000,
+    45,
+    300,
+    'T45/300',
+    90,
+    v_client1,
+    v_charge_a
+  );
+  PERFORM _pt_tariff_test_assert((v_result ->> 'success')::boolean, 'payment on charge A succeeds');
+
+  SELECT COUNT(*)::integer INTO v_debtor_rows
+  FROM financial_debtors_v
+  WHERE personal_lesson_id = v_lesson_split;
+
+  PERFORM _pt_tariff_test_assert(v_debtor_rows = 1, 'after A pays, only charge B remains');
+
+  SELECT payer_client_id INTO v_client_id
+  FROM financial_debtors_v
+  WHERE personal_lesson_id = v_lesson_split
+  LIMIT 1;
+
+  PERFORM _pt_tariff_test_assert(v_client_id = v_client2, 'remaining debtor is client B');
+
+  -- single canonical overload
   SELECT count(*) INTO v_count
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace

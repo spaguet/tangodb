@@ -260,6 +260,7 @@ export default function PersonalLessonSaleForm({
   const [timeEnd, setTimeEnd] = useState("15:00");
   const [manualLessonPrice, setManualLessonPrice] = useState("");
   const [payerClientId, setPayerClientId] = useState("");
+  const [billingSplitMode, setBillingSplitMode] = useState<"single_payer" | "equal">("single_payer");
   const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<string | "">("");
   const [linkedSubscriptionId, setLinkedSubscriptionId] = useState("");
   const [disciplineId, setDisciplineId] = useState<string>("");
@@ -754,6 +755,7 @@ export default function PersonalLessonSaleForm({
           subscriptionId: isPackageBooking ? linkedSubscriptionId || undefined : undefined,
           priceId: isPackageBooking ? null : selectedTariff?.id ?? null,
           payerClientId: payerId,
+          billingSplitMode: showPayerSelect ? billingSplitMode : "single_payer",
         });
 
         if (!res.success) {
@@ -1206,20 +1208,36 @@ export default function PersonalLessonSaleForm({
         />
 
         {showPayerSelect && bookingPaymentMode === "single" && (
-          <AppSelect
-            label={t("personalTariff.payer.label")}
-            value={payerClientId}
-            onChange={(e) => setPayerClientId(e.target.value)}
-            required
-          >
-            {bookingClients
-              .filter((client) => client.id)
-              .map((client, idx) => (
-                <option key={client.id} value={client.id}>
-                  {client.query || t("common.clientN", { n: idx + 1 })}
-                </option>
-              ))}
-          </AppSelect>
+          <>
+            <AppSelect
+              label={t("personalTariff.billing.label")}
+              value={billingSplitMode}
+              onChange={(e) =>
+                setBillingSplitMode(e.target.value === "equal" ? "equal" : "single_payer")
+              }
+            >
+              <option value="single_payer">{t("personalTariff.billing.singlePayer")}</option>
+              <option value="equal">{t("personalTariff.billing.equalSplit")}</option>
+            </AppSelect>
+            <AppSelect
+              label={
+                billingSplitMode === "equal"
+                  ? t("personalTariff.billing.firstPayer")
+                  : t("personalTariff.payer.label")
+              }
+              value={payerClientId}
+              onChange={(e) => setPayerClientId(e.target.value)}
+              required
+            >
+              {bookingClients
+                .filter((client) => client.id)
+                .map((client, idx) => (
+                  <option key={client.id} value={client.id}>
+                    {client.query || t("common.clientN", { n: idx + 1 })}
+                  </option>
+                ))}
+            </AppSelect>
+          </>
         )}
 
         <div className="field-stack">

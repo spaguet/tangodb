@@ -481,6 +481,16 @@ export interface PersonalLesson {
   attendanceStatus?: "present" | "absent" | "excused" | null;
   priceId?: string | null;
   payerClientId?: string | null;
+  billingSplitMode?: "single_payer" | "equal";
+}
+
+export type PersonalLessonBillingSplitMode = "single_payer" | "equal";
+
+export interface PersonalLessonCharge {
+  id: string;
+  personalLessonId: string;
+  clientId: string;
+  billedAmount: number;
 }
 
 export type PaymentMethod = "cash" | "transfer" | "card" | "other";
@@ -494,6 +504,7 @@ export interface Payment {
   methodComment?: string | null;
   subscriptionId: string | null;
   personalLessonId: string | null;
+  personalLessonChargeId?: string | null;
   singleVisitId: string | null;
   createdBy: string | null;
   createdAt: string;

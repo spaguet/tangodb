@@ -2,11 +2,13 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-16 — release: микропатч **2.8.1** — этап 2 персонального тарифа: `personal_lesson_charges`, режим «поровну» (`billing_split_mode`), дебиторка по charge, оплата с `p_charge_id`, restate только при одном charge, backfill legacy платежей. Миграция `20260920000001`. Промпт 10.
+
 2026-08-16 — release: подверсия **2.8.0** — персональный тариф с длительностью, автосумма billed (multiply-first), два режима кассы (`tariff` / `outstanding`), плательщик на уроке и в дебиторке, снимок тарифа на платеже, журнал и edit-popup. SQL-тесты `personal_tariff_payment_test.sql`, JS `test:personal-tariff-pricing`. Этап 1 закрыт (Промпт 9). Критерии §9 п.1–9: ✅.
 
-
 2026-08-16 — feat: персональный тариф — дебиторка по плательщику: `financial_debtors_v` + `price_id` / `other_participants`, строка и детали с длительностью слота (i18n), участники «с …»; `openPersonalPayment` — `priceId`, billed + `paidAmount`, payer без требования `client_id1`; `ScheduleDebtorsBlock` — payer в строке, длительность, `hidePackage`. Этап 1, Промпт 7; версия без bump (2.8.0 — Промпт 9).
- режимы `tariff` / `outstanding` / `package` (пакет скрыт из дебиторки); `PayPersonalLessonTarget` — `priceId`, `payerClientId`, `clientId4`, `teacherMemberId`, `paymentMode`, billed + `paidAmount`; тариф по `price_id` (включая архивный), lock тарифа при платежах, сумма lock = остаток в режиме tariff, снимок на RPC, select плательщика, баннер длительности; callers: дебиторка, расписание, журнал, `/personal`. Этап 1, Промпт 6; версия без bump (2.8.0 — Промпт 9).
+
+2026-08-16 — feat: персональный тариф — касса: режимы `tariff` / `outstanding` / `package` (пакет скрыт из дебиторки); `PayPersonalLessonTarget` — `priceId`, `payerClientId`, `clientId4`, `teacherMemberId`, `paymentMode`, billed + `paidAmount`; тариф по `price_id` (включая архивный), lock тарифа при платежах, сумма lock = остаток в режиме tariff, снимок на RPC, select плательщика, баннер длительности; callers: дебиторка, расписание, журнал, `/personal`. Этап 1, Промпт 6; версия без bump (2.8.0 — Промпт 9).
 
 2026-08-16 — feat: персональный тариф — продажа/запись урока: `billedFromTariff` + `price_id` при создании, select плательщика при 2+ клиентах, баннер `durationWarning`, фильтр тарифов по педагогу (`filterPrivateLessonTariffsForSale` + `teacherMemberId`), `useAddPersonalLessons` пишет `price_id` / `payer_client_id`, пересчёт суммы при смене слота до сохранения. Этап 1, Промпт 5; версия без bump (2.8.0 — Промпт 9).
 
