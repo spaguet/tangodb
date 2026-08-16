@@ -11,6 +11,9 @@ import {
   canReadLessonClients,
   maskClientDisplay,
 } from "../../lib/scheduleLessonAccess";
+import {
+  formatDebtorLessonDuration,
+} from "../../lib/financeReports";
 import { formatCurrency } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import type { ScheduleDebtorEntry } from "../../hooks/useScheduleDebtors";
@@ -92,6 +95,8 @@ function DebtorRow({
   canPay,
   onPay,
   unpaidLabel,
+  lessonDurationLabel,
+  otherParticipants,
   formatDate,
   payLabel,
 }: {
@@ -103,6 +108,8 @@ function DebtorRow({
   canPay: boolean;
   onPay: () => void;
   unpaidLabel: string;
+  lessonDurationLabel?: string | null;
+  otherParticipants?: string | null;
   formatDate: (iso: string | Date) => string;
   payLabel: string;
 }) {
@@ -123,7 +130,15 @@ function DebtorRow({
             <Clock className="w-3 h-3 shrink-0" />
             {entry.timeStart}–{entry.timeEnd}
           </span>
+          {lessonDurationLabel ? (
+            <span>{lessonDurationLabel}</span>
+          ) : null}
         </p>
+        {otherParticipants ? (
+          <p className="text-[11px] text-slate-400 truncate">
+            {otherParticipants}
+          </p>
+        ) : null}
         {metaParts.length > 0 ? (
           <p className="text-[11px] text-slate-400 truncate">{metaParts.join(" · ")}</p>
         ) : null}
@@ -252,6 +267,7 @@ export default function ScheduleDebtorsBlock({
       locationId: entry.locationId,
       disciplineId: entry.disciplineId,
       teacherMemberId: entry.teacherMemberId,
+      hidePackage: true,
     });
   };
 
@@ -329,6 +345,21 @@ export default function ScheduleDebtorsBlock({
                           canPay={canPay}
                           onPay={() => openPayModal(entry)}
                           unpaidLabel={t("common.unpaidShort")}
+                          lessonDurationLabel={formatDebtorLessonDuration(
+                            {
+                              kind: "personal",
+                              lessonTimeStart: entry.timeStart,
+                              lessonTimeEnd: entry.timeEnd,
+                            },
+                            t
+                          )}
+                          otherParticipants={
+                            entry.otherParticipants
+                              ? t("finance.debtors.detail.withParticipantsShort", {
+                                  participants: entry.otherParticipants,
+                                })
+                              : null
+                          }
                           formatDate={formatDate}
                           payLabel={t("common.pay")}
                         />

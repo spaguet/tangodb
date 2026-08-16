@@ -17,6 +17,11 @@ import {
   type PaymentWithCorrectionMeta,
 } from "../lib/paymentCorrection";
 import { buildScheduleFocusPath } from "./scheduleFocus";
+import {
+  formatLessonDuration,
+  lessonDurationMinutes,
+  type LessonDurationTranslate,
+} from "./personalTariffPricing";
 
 function rankPaymentAmount(payment: Payment | PaymentWithCorrectionMeta): number {
   if ("operationKind" in payment && payment.operationKind) {
@@ -258,6 +263,7 @@ export function aggregatePaymentStats(
   };
 }
 
+
 export interface DebtorEntry {
   id: string;
   personalLessonId?: string | null;
@@ -266,6 +272,8 @@ export interface DebtorEntry {
   clientId3?: string | null;
   clientId4?: string | null;
   payerClientId?: string | null;
+  priceId?: string | null;
+  otherParticipants?: string | null;
   lessonTimeStart?: string | null;
   lessonTimeEnd?: string | null;
   locationId?: string | null;
@@ -298,6 +306,27 @@ export function formatDebtorDetail(
   }
   if (entry.kind === "personal" && entry.lessonDate) {
     const dateLabel = formatDate ? formatDate(entry.lessonDate) : entry.lessonDate;
+    const duration = formatDebtorLessonDuration(entry, translate);
+    const participants = entry.otherParticipants?.trim() ?? "";
+    if (duration && participants) {
+      return translate("finance.debtors.detail.personalFull", {
+        date: dateLabel,
+        duration,
+        participants,
+      });
+    }
+    if (duration) {
+      return translate("finance.debtors.detail.personalWithDuration", {
+        date: dateLabel,
+        duration,
+      });
+    }
+    if (participants) {
+      return translate("finance.debtors.detail.personalWithParticipants", {
+        date: dateLabel,
+        participants,
+      });
+    }
     return translate("finance.debtors.detail.personal", { date: dateLabel });
   }
   if (entry.kind === "rental" && entry.lessonDate) {
@@ -309,6 +338,19 @@ export function formatDebtorDetail(
 
 export function sumDebtorAmounts(entries: DebtorEntry[]): number {
   return entries.reduce((sum, e) => sum + e.amount, 0);
+}
+
+export function formatDebtorLessonDuration(
+  entry: Pick<DebtorEntry, "kind" | "lessonTimeStart" | "lessonTimeEnd">,
+  translate: LessonDurationTranslate
+): string | null {
+  if (entry.kind !== "personal") return null;
+  const start = formatDebtorClock(entry.lessonTimeStart);
+  const end = formatDebtorClock(entry.lessonTimeEnd);
+  if (!start || !end) return null;
+  const minutes = lessonDurationMinutes(start, end);
+  if (minutes <= 0) return null;
+  return formatLessonDuration(minutes, translate);
 }
 
 export function formatDebtorClock(value?: string | null): string | null {

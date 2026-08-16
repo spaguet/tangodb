@@ -16,6 +16,7 @@ import {
   sumDebtorAmounts,
   formatDebtorDetail,
   formatDebtorClock,
+  formatDebtorLessonDuration,
   debtorAgingDays,
   debtorSchedulePath,
   type DebtorEntry,
@@ -94,6 +95,12 @@ function DebtorRow({
   const timeEnd = formatDebtorClock(entry.lessonTimeEnd) ?? MISSING;
   const serviceDate = entry.lessonDate ? formatDate(entry.lessonDate) : MISSING;
   const amountLabel = entry.amount > 0 ? formatCurrency(entry.amount) : MISSING;
+  const lessonDuration =
+    entry.kind === "personal" ? formatDebtorLessonDuration(entry, t) ?? MISSING : null;
+  const otherParticipants =
+    entry.kind === "personal" && entry.otherParticipants?.trim()
+      ? entry.otherParticipants.trim()
+      : null;
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
@@ -177,6 +184,12 @@ function DebtorRow({
             <DebtorDetailItem label={t("common.date")} value={serviceDate} />
             <DebtorDetailItem label={t("common.timeStart")} value={timeStart} />
             <DebtorDetailItem label={t("common.timeEnd")} value={timeEnd} />
+            {entry.kind === "personal" && lessonDuration ? (
+              <DebtorDetailItem
+                label={t("finance.debtors.lessonDuration")}
+                value={lessonDuration}
+              />
+            ) : null}
             <DebtorDetailItem label={t("schedule.form.location")} value={locationName} />
             {entry.kind === "personal" ? (
               <DebtorDetailItem label={t("schedule.form.teacher")} value={teacherName} />
@@ -199,8 +212,19 @@ function DebtorRow({
             <DebtorDetailItem label={t("finance.debtors.outstanding")} value={amountLabel} />
             <DebtorDetailItem label={t("finance.debtors.dueStatus")} value={agingLabel} />
             <DebtorDetailItem label={t("common.client")} value={entry.clientDisplay || MISSING} />
+            {otherParticipants ? (
+              <DebtorDetailItem
+                label={t("finance.debtors.otherParticipants")}
+                value={otherParticipants}
+              />
+            ) : null}
             <DebtorDetailItem label="Telegram" value={entry.contact || MISSING} />
             {entry.kind === "subscription" ? (
+              <DebtorDetailItem
+                label={t("common.details")}
+                value={formatDebtorDetail(entry, t, formatDate)}
+              />
+            ) : entry.kind === "personal" ? (
               <DebtorDetailItem
                 label={t("common.details")}
                 value={formatDebtorDetail(entry, t, formatDate)}
@@ -308,6 +332,7 @@ export default function FinanceDebtorsPage() {
       clientId4: entry.clientId4 ?? "",
       clientDisplay: entry.clientDisplay,
       payerClientId: entry.payerClientId,
+      priceId: entry.priceId,
       price: entry.billedAmount ?? entry.amount,
       paidAmount: entry.paidAmount ?? 0,
       locationId: entry.locationId ?? null,
@@ -401,7 +426,7 @@ export default function FinanceDebtorsPage() {
                 const canPayPersonal =
                   entry.kind === "personal" &&
                   !!entry.personalLessonId &&
-                  !!entry.clientId1 &&
+                  !!(entry.payerClientId ?? entry.clientId1) &&
                   !isReadOnly &&
                   can("payments.write", {
                     disciplineId: entry.disciplineId ?? null,
