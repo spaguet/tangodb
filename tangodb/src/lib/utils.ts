@@ -1,6 +1,8 @@
 import type { PriceCategory } from "../types";
 import { t, resolveLocale } from "./i18n";
 import type { I18nKey } from "./i18n/keys";
+import { formatCurrencyActive } from "./format";
+import { formatLessonDuration } from "./personalTariffPricing";
 
 const DOW_SHORT_KEYS: Record<number, I18nKey> = {
   1: "utils.dow.short.mon",
@@ -313,6 +315,15 @@ export function getPriceCategory(
   return "group";
 }
 
+/** Private/personal tariffs that support `duration_minutes` (billing by slot length). */
+export function isPrivateTariffWithDuration(
+  price: Pick<PriceTariffRef, "type" | "category" | "lessons">
+): boolean {
+  const normalizedType = price.type.trim();
+  if (normalizedType.startsWith("personal_")) return true;
+  return getPriceCategory(price) === "private";
+}
+
 export function generateTariffTypeKey(): string {
   const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
   return `tariff_${id}`;
@@ -327,6 +338,20 @@ export function getPriceLabel(
   const meta = PRICE_CATALOG_KEYS[getPriceCatalogKey(price)];
   if (meta) return translate ? translate(meta.labelKey) : t(locale, meta.labelKey);
   return price.type;
+}
+
+/** Tariff label for selects: name, price, optional duration for private tariffs. */
+export function getPrivateTariffOptionLabel(
+  price: PriceTariffRef & { durationMinutes?: number | null },
+  translate: TranslateFn,
+  locale?: string | null
+): string {
+  let label = `${getPriceLabel(price, translate, locale)} — ${formatCurrencyActive(price.price)}`;
+  if (!isPrivateTariffWithDuration(price)) return label;
+  if (price.durationMinutes != null && price.durationMinutes > 0) {
+    label += ` · ${formatLessonDuration(price.durationMinutes, translate)}`;
+  }
+  return label;
 }
 
 type LabelScriptGroup = "cyrillic" | "latin" | "digit" | "other";

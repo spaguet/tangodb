@@ -22,6 +22,7 @@ import {
   formatClientName,
   formatCurrency,
   getPriceLabel,
+  getPrivateTariffOptionLabel,
   filterPrivateLessonTariffsForSale,
   getSubscriptionClientIds,
 } from "../../lib/utils";
@@ -706,7 +707,7 @@ export default function PayPersonalLessonModal({
                         >
                           {lessonTariffs.map((tariff) => (
                             <option key={tariff.id} value={tariff.id!}>
-                              {getPriceLabel(tariff, t, locale)} — {formatCurrency(tariff.price)}
+                              {getPrivateTariffOptionLabel(tariff, t, locale)}
                               {tariff.status === "archived" ? ` (${t("prices.status.archived")})` : ""}
                             </option>
                           ))}

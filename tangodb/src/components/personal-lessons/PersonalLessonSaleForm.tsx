@@ -43,6 +43,7 @@ import {
   formatClientName,
   formatCurrency,
   getPriceLabel,
+  getPrivateTariffOptionLabel,
   filterPrivateLessonTariffsForSale,
   getSubscriptionClientIds,
   tariffParticipantType,
@@ -1298,7 +1299,7 @@ export default function PersonalLessonSaleForm({
                   >
                     {lessonTariffs.map((tariff) => (
                       <option key={tariff.id} value={tariff.id!}>
-                        {getPriceLabel(tariff)} — {formatCurrency(tariff.price)}
+                        {getPrivateTariffOptionLabel(tariff, t)}
                       </option>
                     ))}
                   </AppSelect>

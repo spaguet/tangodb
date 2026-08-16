@@ -45,6 +45,7 @@ import {
   getPriceDisciplineIds,
   isGlobalTeacherTariff,
   isMonthlyUnlimitedTariff,
+  isPrivateTariffWithDuration,
   sortPricesByLabel,
 } from "../lib/utils";
 import { formatLessonDuration } from "../lib/personalTariffPricing";
@@ -389,7 +390,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       return;
     }
 
-    const isPrivateTariff = getPriceCategory(editingPrice) === "private";
+    const isPrivateTariff = isPrivateTariffWithDuration(editingPrice);
     const editDurationMinutes = isPrivateTariff
       ? resolvePersonalTariffDurationMinutes(editDurationSelect, editDurationCustom)
       : undefined;
@@ -686,7 +687,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     const isTouched = editedPrices[priceId] !== undefined && editedPrices[priceId] !== p.price.toString();
     const title = getPriceLabel(p, t);
     const description = getPriceDescription(p, t);
-    const isPrivateCategory = getPriceCategory(p) === "private";
+    const isPrivateCategory = isPrivateTariffWithDuration(p);
     const durationSuffix =
       isPrivateCategory && p.durationMinutes != null
         ? ` · ${formatLessonDuration(p.durationMinutes, t)}`
@@ -953,6 +954,15 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400">{getPriceDescription(price, t)}</p>
+                      {isPrivateTariffWithDuration(price) && (
+                        <p className="text-[11px] text-slate-400">
+                          {price.durationMinutes != null
+                            ? formatLessonDuration(price.durationMinutes, t)
+                            : t("prices.tariffDurationLegacy")}
+                          {" · "}
+                          {formatCurrency(price.price)}
+                        </p>
+                      )}
                     </div>
                     <dl className="grid grid-cols-2 gap-2 text-[11px]">
                       <div>
@@ -1004,7 +1014,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 sticky top-0 bg-white z-10">
                 <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("prices.editTitle")}</h3>
@@ -1032,6 +1042,22 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     className={descriptionFieldCls}
                   />
                 </div>
+                {editingPrice && isPrivateTariffWithDuration(editingPrice) && (
+                  <>
+                    <PersonalTariffDurationField
+                      select={editDurationSelect}
+                      onSelectChange={setEditDurationSelect}
+                      customValue={editDurationCustom}
+                      onCustomValueChange={setEditDurationCustom}
+                      legacyOptional={editingPrice.durationMinutes == null}
+                    />
+                    {(unpaidByPriceQuery.data ?? 0) > 0 && (
+                      <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
+                        {t("prices.warn.unpaidLessonsByTariff", { count: unpaidByPriceQuery.data ?? 0 })}
+                      </p>
+                    )}
+                  </>
+                )}
                 <LocationTariffField
                   bindToLocation={editBindToLocation}
                   onBindChange={setEditBindToLocation}
@@ -1052,22 +1078,6 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                   selectedTeacherIds={editTeacherMemberIds}
                   onChange={setEditTeacherMemberIds}
                 />
-                {editingPrice && getPriceCategory(editingPrice) === "private" && (
-                  <>
-                    <PersonalTariffDurationField
-                      select={editDurationSelect}
-                      onSelectChange={setEditDurationSelect}
-                      customValue={editDurationCustom}
-                      onCustomValueChange={setEditDurationCustom}
-                      legacyOptional={editingPrice.durationMinutes == null}
-                    />
-                    {(unpaidByPriceQuery.data ?? 0) > 0 && (
-                      <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
-                        {t("prices.warn.unpaidLessonsByTariff", { count: unpaidByPriceQuery.data ?? 0 })}
-                      </p>
-                    )}
-                  </>
-                )}
               </div>
 
               <div className="flex items-center gap-3 pt-1 text-xs">

@@ -12,6 +12,7 @@ import {
   tariffNeedsSecondClient,
   tariffNeedsThirdClient,
 } from "../../lib/utils";
+import { formatLessonDuration } from "../../lib/personalTariffPricing";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
@@ -254,7 +255,10 @@ export default function SellPackageModal({
                     {packageTariffs.map((tariff) => (
                       <option key={tariff.id} value={tariff.id!}>
                         {t("subscriptions.package.tariffOption", {
-                          label: getPriceLabel(tariff, t),
+                          label:
+                            tariff.durationMinutes != null && tariff.durationMinutes > 0
+                              ? `${getPriceLabel(tariff, t)} · ${formatLessonDuration(tariff.durationMinutes, t)}`
+                              : getPriceLabel(tariff, t),
                           lessons: tariff.lessons,
                           price: formatCurrency(tariff.price),
                         })}
