@@ -371,6 +371,7 @@ export interface Price {
   createdAt?: string;
   archivedAt?: string | null;
   salesCount?: number;
+  durationMinutes?: number | null;
 }
 
 export interface SubscriptionGroupLink {
@@ -473,6 +474,8 @@ export interface PersonalLesson {
   locationId?: string | null;
   teacherMemberId?: string | null;
   attendanceStatus?: "present" | "absent" | "excused" | null;
+  priceId?: string | null;
+  payerClientId?: string | null;
 }
 
 export type PaymentMethod = "cash" | "transfer" | "card" | "other";
@@ -489,6 +492,12 @@ export interface Payment {
   singleVisitId: string | null;
   createdBy: string | null;
   createdAt: string;
+  priceId?: string | null;
+  tariffDurationMinutes?: number | null;
+  tariffUnits?: number | null;
+  tariffPrice?: number | null;
+  tariffLabel?: string | null;
+  lessonDurationMinutes?: number | null;
 }
 
 export interface OtherIncome {

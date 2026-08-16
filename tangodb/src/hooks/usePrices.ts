@@ -49,6 +49,7 @@ const mapPrice = (row: Record<string, unknown>): Price => {
     createdAt: row.created_at != null ? String(row.created_at) : undefined,
     archivedAt: row.archived_at != null ? String(row.archived_at) : null,
     salesCount: row.sales_count != null ? Number(row.sales_count) : undefined,
+    durationMinutes: row.duration_minutes != null ? Number(row.duration_minutes) : null,
   };
 };
 
