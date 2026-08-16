@@ -1490,6 +1490,15 @@ export const EN: Record<I18nKey, string> = {
     "Lesson is longer than the tariff: {{multiple}} × {{tariffDuration}} (slot {{lessonDuration}}). Amount recalculated.",
   "personalTariff.payer.label": "Payer",
   "personalTariff.payer.required": "Select who pays",
+  "personalTariff.journal.lessonDuration": "Lesson duration",
+  "personalTariff.journal.tariff": "Tariff",
+  "personalTariff.journal.noTariff": "No tariff",
+  "personalTariff.journal.tariffFallback": "Tariff",
+  "personalTariff.journal.units": "Units",
+  "personalTariff.journal.unitsTooltip":
+    "How many tariff quanta fit in the lesson duration; set by the tariff duration in prices, not manually.",
+  "personal.edit.slotChangedWithPayments":
+    "The lesson already has payments — the billed amount will not change when you adjust the time slot.",
   "schedule.title": "Schedule",
   "schedule.empty": "Schedule is empty",
   "schedule.error.loadFailed": "Failed to load schedule",

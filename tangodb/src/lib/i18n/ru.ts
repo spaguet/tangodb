@@ -1488,6 +1488,15 @@ export const RU: Record<I18nKey, string> = {
     "Урок длиннее тарифа: {{multiple}} × {{tariffDuration}} (слот {{lessonDuration}}). Сумма пересчитана.",
   "personalTariff.payer.label": "Плательщик",
   "personalTariff.payer.required": "Выберите плательщика",
+  "personalTariff.journal.lessonDuration": "Длительность урока",
+  "personalTariff.journal.tariff": "Тариф",
+  "personalTariff.journal.noTariff": "Без тарифа",
+  "personalTariff.journal.tariffFallback": "Тариф",
+  "personalTariff.journal.units": "Единицы",
+  "personalTariff.journal.unitsTooltip":
+    "Сколько квантов тарифа в длительности урока; задаётся длительностью тарифа в прайсе, не вручную.",
+  "personal.edit.slotChangedWithPayments":
+    "По уроку уже есть платежи — начисленная сумма не изменится при смене времени слота.",
   "schedule.title": "Расписание",
   "schedule.empty": "Расписание пусто",
   "schedule.error.loadFailed": "Не удалось загрузить расписание",

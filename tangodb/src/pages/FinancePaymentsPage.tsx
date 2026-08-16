@@ -45,6 +45,11 @@ import { monthDateRange } from "../lib/financeReports";
 import { readFinanceMonthFromSearch } from "../lib/financeMonthUrl";
 import { paymentSchedulePath } from "../lib/scheduleFocus";
 import { btnOpenCls } from "../components/ui/buttonStyles";
+import {
+  formatPersonalPaymentLessonDuration,
+  resolvePersonalPaymentTariffLabel,
+  resolvePersonalPaymentUnitsLabel,
+} from "../lib/personalPaymentJournal";
 import type { PaymentMethod, RentalMoneyRegisterEntry } from "../types";
 
 type PaymentSourceFilter = "all" | "subscription" | "personal_lesson" | "single_visit" | "rental";
@@ -137,6 +142,41 @@ function PaymentDetailItem({ label, value }: { label: string; value: string }) {
   );
 }
 
+function TariffUnitsHint({
+  label,
+  unitsLabel,
+  tooltip,
+}: {
+  label: string;
+  unitsLabel: string;
+  tooltip: string;
+}) {
+  const [pinned, setPinned] = useState(false);
+
+  return (
+    <div className="min-w-0">
+      <dt className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">{label}</dt>
+      <dd className="text-xs text-slate-700 font-sans mt-0.5">
+        <button
+          type="button"
+          className="font-semibold text-indigo-700 underline decoration-dotted decoration-indigo-300 underline-offset-2 cursor-help"
+          title={tooltip}
+          aria-label={tooltip}
+          onClick={(e) => {
+            e.stopPropagation();
+            setPinned((prev) => !prev);
+          }}
+        >
+          {unitsLabel}
+        </button>
+        {pinned ? (
+          <p className="mt-1 text-[10px] text-slate-500 leading-snug max-w-xs">{tooltip}</p>
+        ) : null}
+      </dd>
+    </div>
+  );
+}
+
 function resolveDisplayPayment(
   payment: PaymentWithCorrectionMeta,
   paymentById: Map<string, PaymentWithCorrectionMeta>
@@ -149,6 +189,12 @@ function resolveDisplayPayment(
     subscriptionId: payment.subscriptionId ?? original.subscriptionId,
     personalLessonId: payment.personalLessonId ?? original.personalLessonId,
     singleVisitId: payment.singleVisitId ?? original.singleVisitId,
+    priceId: payment.priceId ?? original.priceId,
+    tariffDurationMinutes: payment.tariffDurationMinutes ?? original.tariffDurationMinutes,
+    tariffUnits: payment.tariffUnits ?? original.tariffUnits,
+    tariffPrice: payment.tariffPrice ?? original.tariffPrice,
+    tariffLabel: payment.tariffLabel ?? original.tariffLabel,
+    lessonDurationMinutes: payment.lessonDurationMinutes ?? original.lessonDurationMinutes,
   };
 }
 
@@ -209,6 +255,15 @@ function PaymentRow({
     lessonDate: lesson?.date,
     locationId: lesson?.locationId ?? locationId,
   });
+  const isPersonalPayment = Boolean(payment.personalLessonId);
+  const personalDurationLabel = isPersonalPayment
+    ? formatPersonalPaymentLessonDuration(payment, lesson ?? null, translate)
+    : null;
+  const personalTariffLabel = isPersonalPayment
+    ? resolvePersonalPaymentTariffLabel(payment, translate)
+    : null;
+  const personalUnitsLabel = isPersonalPayment ? resolvePersonalPaymentUnitsLabel(payment) : null;
+  const personalUnitsTooltip = translate("personalTariff.journal.unitsTooltip");
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
@@ -309,6 +364,25 @@ function PaymentRow({
                   label={translate("common.clientDate")}
                   value={`${payment.clientDisplay || "—"} · ${acceptedAt}`}
                 />
+                {isPersonalPayment ? (
+                  <>
+                    <PaymentDetailItem
+                      label={translate("personalTariff.journal.lessonDuration")}
+                      value={personalDurationLabel ?? "—"}
+                    />
+                    <PaymentDetailItem
+                      label={translate("personalTariff.journal.tariff")}
+                      value={personalTariffLabel ?? "—"}
+                    />
+                    {personalUnitsLabel ? (
+                      <TariffUnitsHint
+                        label={translate("personalTariff.journal.units")}
+                        unitsLabel={personalUnitsLabel}
+                        tooltip={personalUnitsTooltip}
+                      />
+                    ) : null}
+                  </>
+                ) : null}
                 <PaymentDetailItem label={translate("common.source")} value={sourceLabel} />
                 <PaymentDetailItem label={translate("common.method")} value={methodLabel} />
                 <PaymentDetailItem label={translate("common.amount")} value={amountLabel} />

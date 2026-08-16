@@ -10,6 +10,7 @@ import {
 } from "../../hooks/useSchedule";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
+import { usePrices } from "../../hooks/usePrices";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -31,6 +32,7 @@ import {
   type GroupRepeatConfig,
 } from "../../lib/groupLessonRepeat";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
+import { durationWarning, lessonDurationMinutes, translateDurationWarning } from "../../lib/personalTariffPricing";
 import { addDays, getWeekRange, isScheduleDateLockedForWrite, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, canShowPaidStatus, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { useVoidPersonalLessonPayment } from "../../hooks/usePayments";
@@ -232,6 +234,7 @@ export default function EditLessonPopup({
   const [personalDate, setPersonalDate] = useState("");
   const [locationId, setLocationId] = useState("");
   const [bookingClients, setBookingClients] = useState<BookingClientField[]>([{ query: "", id: "" }]);
+  const [payerClientId, setPayerClientId] = useState("");
   const [groupSlotRows, setGroupSlotRows] = useState<GroupSlotRow[]>([]);
   const [originalGroupSlots, setOriginalGroupSlots] = useState<GroupSlotRow[]>([]);
   const [repeatConfig, setRepeatConfig] = useState<GroupRepeatConfig>(() =>
@@ -290,6 +293,12 @@ export default function EditLessonPopup({
       setTimeStart(lesson.timeStart);
       setTimeEnd(lesson.timeEnd);
       setBookingClients(bookingClientsFromLesson(lesson, directoryClients));
+      const initialPayer =
+        lesson.payerClientId ??
+        lesson.clientId1 ??
+        clientIdsFromLesson(lesson)[0] ??
+        "";
+      setPayerClientId(initialPayer);
     }
   }, [editLessonKey, lesson, scheduleSlots, teacherOptions, memberId, isTeacher, todayISO, directoryClients]);
 
@@ -469,6 +478,75 @@ export default function EditLessonPopup({
     setTimeStart(next);
     setTimeEnd(computeAutoTimeEnd(next, sameDayLessons));
   };
+
+  const personalLessonContext =
+    lesson?.kind === "personal"
+      ? {
+          priceId: lesson.priceId ?? null,
+          subscriptionId: lesson.subscriptionId ?? null,
+          paidAmount: lesson.paidAmount ?? 0,
+          initialTimeStart: lesson.timeStart,
+          initialTimeEnd: lesson.timeEnd,
+        }
+      : null;
+
+  const selectedClientIds = useMemo(
+    () => bookingClients.map((client) => client.id).filter(Boolean),
+    [bookingClients]
+  );
+
+  const { data: prices = [] } = usePrices();
+
+  const personalTariff = useMemo(() => {
+    if (!personalLessonContext?.priceId) return null;
+    return prices.find((price) => price.id === personalLessonContext.priceId) ?? null;
+  }, [personalLessonContext?.priceId, prices]);
+
+  const personalLessonMinutes = useMemo(() => {
+    if (lesson?.kind !== "personal") return 0;
+    return lessonDurationMinutes(timeStart, timeEnd);
+  }, [lesson, timeStart, timeEnd]);
+
+  const personalHasPayments = (personalLessonContext?.paidAmount ?? 0) > 0;
+
+  const personalSlotChanged =
+    lesson?.kind === "personal" &&
+    (timeStart !== lesson.timeStart || timeEnd !== lesson.timeEnd);
+
+  const personalDurationWarnMessage = useMemo(() => {
+    if (lesson?.kind !== "personal") return null;
+    if (personalLessonContext?.subscriptionId) return null;
+    if (!personalLessonContext?.priceId || personalHasPayments) return null;
+    if (!personalTariff) return null;
+    const code = durationWarning(
+      personalLessonMinutes,
+      personalTariff.durationMinutes ?? null
+    );
+    if (!code) return null;
+    return translateDurationWarning(
+      code,
+      t,
+      personalTariff.durationMinutes ?? null,
+      personalLessonMinutes
+    );
+  }, [
+    lesson,
+    personalLessonContext,
+    personalHasPayments,
+    personalTariff,
+    personalLessonMinutes,
+    t,
+  ]);
+
+  useEffect(() => {
+    if (lesson?.kind !== "personal") return;
+    if (selectedClientIds.length < 2) {
+      if (selectedClientIds[0]) setPayerClientId(selectedClientIds[0]);
+      return;
+    }
+    if (payerClientId && selectedClientIds.includes(payerClientId)) return;
+    setPayerClientId("");
+  }, [lesson, selectedClientIds, payerClientId]);
 
   const handleSaveGroup = async () => {
     if (!lesson || lesson.kind !== "group") return;
@@ -836,7 +914,31 @@ export default function EditLessonPopup({
         clientId3: selectedIds[2] ?? "",
         clientId4: selectedIds[3] ?? "",
       };
+
+      const resolvedPayerId =
+        selectedIds.length >= 2
+          ? payerClientId
+          : selectedIds[0] ?? "";
+
+      if (selectedIds.length >= 2 && !resolvedPayerId) {
+        toast(t("personalTariff.payer.required"), "error");
+        return;
+      }
+      if (resolvedPayerId && !selectedIds.includes(resolvedPayerId)) {
+        toast(t("personalTariff.payer.required"), "error");
+        return;
+      }
     }
+
+    const payerPayload =
+      canReadClients && clientPayload
+        ? {
+            payerClientId:
+              clientPayload.type === "solo"
+                ? clientPayload.clientId1
+                : payerClientId || clientPayload.clientId1,
+          }
+        : {};
 
     const res = await updatePersonalLesson.mutateAsync({
       id: lesson.lessonId,
@@ -848,6 +950,8 @@ export default function EditLessonPopup({
       teacherMemberId: resolvedTeacherMemberId,
       locationId: personalListEdit ? locationId : lesson.locationId,
       ...(clientPayload ?? {}),
+      ...(lesson.priceId != null ? { priceId: lesson.priceId } : {}),
+      ...payerPayload,
     });
 
     if (!res.success) {
@@ -1182,6 +1286,27 @@ export default function EditLessonPopup({
                               {t("common.addClient")}
                             </button>
                           )}
+                          {selectedClientIds.length >= 2 && (
+                            <AppSelect
+                              label={t("personalTariff.payer.label")}
+                              value={payerClientId}
+                              onChange={(e) => setPayerClientId(e.target.value)}
+                              required
+                            >
+                              <option value="">{t("personalTariff.payer.required")}</option>
+                              {selectedClientIds.map((clientId) => {
+                                const client = directoryClients.find((item) => item.id === clientId);
+                                const label = client
+                                  ? `${client.lastName} ${client.firstName}`
+                                  : clientId;
+                                return (
+                                  <option key={clientId} value={clientId}>
+                                    {label}
+                                  </option>
+                                );
+                              })}
+                            </AppSelect>
+                          )}
                         </>
                       ) : (
                         <>
@@ -1256,6 +1381,20 @@ export default function EditLessonPopup({
                         <TimeSelect label={t("common.timeEnd")} value={timeEnd} onChange={setTimeEnd} required />
                       </div>
                     )}
+
+                    {personalHasPayments && personalSlotChanged ? (
+                      <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
+                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                        <p>{t("personal.edit.slotChangedWithPayments")}</p>
+                      </div>
+                    ) : null}
+
+                    {personalDurationWarnMessage ? (
+                      <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
+                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                        <p>{personalDurationWarnMessage}</p>
+                      </div>
+                    ) : null}
 
                     <p className="text-xs text-slate-500 leading-relaxed">{personalEditNote}</p>
                   </>

@@ -462,6 +462,8 @@ export function useUpdatePersonalLesson() {
       price,
       paid,
       subscriptionId,
+      priceId,
+      payerClientId,
     }: {
       id: string;
       lessonDate?: string;
@@ -479,6 +481,8 @@ export function useUpdatePersonalLesson() {
       price?: number;
       paid?: boolean;
       subscriptionId?: string | null;
+      priceId?: string | null;
+      payerClientId?: string | null;
     }) => {
       const currentDate = lessonDate;
       if (currentDate && isPersonalLessonLockedForWrite(currentDate, canEditPastSchedule)) {
@@ -507,6 +511,8 @@ export function useUpdatePersonalLesson() {
       if (price !== undefined) payload.price = price;
       if (paid !== undefined) payload.paid = paid ? "yes" : "no";
       if (subscriptionId !== undefined) payload.subscription_id = subscriptionId;
+      if (priceId !== undefined) payload.price_id = priceId;
+      if (payerClientId !== undefined) payload.payer_client_id = payerClientId;
 
       if (Object.keys(payload).length === 0) {
         return { success: false as const, error: "hooks.error.noUpdateData" };

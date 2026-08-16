@@ -60,6 +60,11 @@ function toDisplayLesson(lesson: PersonalLesson): PersonalDisplayLesson {
     clientId3: lesson.clientId3 || undefined,
     clientId4: lesson.clientId4 || undefined,
     clientDisplay: lesson.clientDisplay,
+    priceId: lesson.priceId ?? null,
+    payerClientId: lesson.payerClientId ?? null,
+    subscriptionId: lesson.subscriptionId ?? null,
+    price: lesson.price,
+    paidAmount: lesson.paidAmount,
   };
 }
 

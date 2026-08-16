@@ -144,6 +144,11 @@ export interface PersonalDisplayLesson {
   clientId3?: string;
   clientId4?: string;
   clientDisplay?: string;
+  priceId?: string | null;
+  payerClientId?: string | null;
+  subscriptionId?: string | null;
+  price?: number;
+  paidAmount?: number;
 }
 
 export type CalendarEventType = "master_class" | "open_lesson";
