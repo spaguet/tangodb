@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-18 — fix: микропатч **2.8.16** — Google Calendar: массовый retry dead-letter (`token_revoked` после reconnect); OAuth callback автоматически requeue dead + `refresh_member`; кнопка «Повторить failed» в блоке синхронизации команды.
+
 2026-08-17 — fix: микропатч **2.8.15** — Google Calendar: заголовок события начинается с имени клиента (`Богдан · Бальные танцы`); локация в описании (без поля `location` — меньше иллюстраций Google); дедупликация orphan/пересекающихся групповых событий; «Синхронизировать будущие уроки» — полный refresh (`refresh_member`); повторное создание календаря с тем же именем возвращает существующий.
 
 2026-08-17 — fix: микропатч **2.8.14** — Google Calendar reconnect: OAuth callback требует новый refresh token при `revoked`/`error`, не помечает аккаунт active со старым токеном; после reconnect — reconcile outbox и сброс binding errors; worker снова пробует refresh вместо мгновенного `token_revoked`; Integrations auto-sync после OAuth success.

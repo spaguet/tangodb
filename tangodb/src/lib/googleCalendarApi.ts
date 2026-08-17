@@ -286,6 +286,26 @@ export async function retryCalendarSyncDeadJob(jobId: string): Promise<void> {
   }
 }
 
+export async function retryOrganizationCalendarSyncDeadJobs(): Promise<{
+  deleted_duplicates: number;
+  requeued: number;
+}> {
+  const { data, error } = await supabase.rpc("retry_organization_calendar_sync_dead_jobs");
+  if (error) throw new Error(error.message);
+  const payload = data as {
+    ok?: boolean;
+    deleted_duplicates?: number;
+    requeued?: number;
+  } | null;
+  if (!payload?.ok) {
+    throw new Error("retry_failed");
+  }
+  return {
+    deleted_duplicates: payload.deleted_duplicates ?? 0,
+    requeued: payload.requeued ?? 0,
+  };
+}
+
 export async function fetchOrganizationCalendarSyncMetrics(): Promise<CalendarSyncMetrics | null> {
   const { data, error } = await supabase.rpc("get_organization_calendar_sync_metrics");
   if (error) throw new Error(error.message);

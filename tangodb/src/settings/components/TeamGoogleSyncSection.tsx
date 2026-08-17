@@ -10,7 +10,7 @@ import { resolveMutationError, isI18nKey } from "../../lib/resolveMutationError"
 export default function TeamGoogleSyncSection() {
   const { t, formatDateTime } = useI18n();
   const toast = useToast();
-  const { canViewTeam, members, orgMetrics, isLoading, isError, remind, refetch } =
+  const { canViewTeam, members, orgMetrics, isLoading, isError, remind, retryDead, refetch } =
     useTeamGoogleSyncStatus();
 
   if (!canViewTeam) return null;
@@ -35,6 +35,22 @@ export default function TeamGoogleSyncSection() {
     }
   };
 
+  const handleRetryDead = async () => {
+    try {
+      const result = await retryDead.mutateAsync();
+      toast(
+        t("integrations.googleCalendar.team.retryDeadSuccess", {
+          count: String(result.requeued),
+        }),
+        "success"
+      );
+    } catch {
+      toast(t("integrations.googleCalendar.team.retryDeadError"), "error");
+    }
+  };
+
+  const deadCount = Number(orgMetrics?.dead_count ?? 0);
+
   return (
     <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -49,14 +65,30 @@ export default function TeamGoogleSyncSection() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => void refetch()}
-          className={btnRefreshCls}
-          aria-label={t("common.refresh")}
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {deadCount > 0 && (
+            <button
+              type="button"
+              onClick={() => void handleRetryDead()}
+              disabled={retryDead.isPending}
+              className={btnOpenCls}
+            >
+              {retryDead.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                t("integrations.googleCalendar.team.retryDead")
+              )}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className={btnRefreshCls}
+            aria-label={t("common.refresh")}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {orgMetrics && (

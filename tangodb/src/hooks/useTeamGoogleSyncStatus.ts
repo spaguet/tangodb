@@ -4,6 +4,7 @@ import {
   fetchOrganizationCalendarSyncMetrics,
   fetchTeamCalendarSyncMetrics,
   remindGoogleCalendarConnect,
+  retryOrganizationCalendarSyncDeadJobs,
 } from "../lib/googleCalendarApi";
 
 export const teamGoogleSyncQueryKeys = {
@@ -37,6 +38,13 @@ export function useTeamGoogleSyncStatus() {
     },
   });
 
+  const retryDeadMutation = useMutation({
+    mutationFn: retryOrganizationCalendarSyncDeadJobs,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["google-calendar"] });
+    },
+  });
+
   return {
     canViewTeam,
     members: membersQuery.data ?? [],
@@ -44,6 +52,7 @@ export function useTeamGoogleSyncStatus() {
     isLoading: membersQuery.isLoading || orgMetricsQuery.isLoading,
     isError: membersQuery.isError || orgMetricsQuery.isError,
     remind: remindMutation,
+    retryDead: retryDeadMutation,
     refetch: async () => {
       await Promise.all([membersQuery.refetch(), orgMetricsQuery.refetch()]);
     },

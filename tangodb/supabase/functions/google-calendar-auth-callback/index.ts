@@ -173,13 +173,32 @@ Deno.serve(async (req) => {
         .eq("google_account_id", savedAccountId)
         .eq("enabled", true);
 
+      const organizationIds = [
+        ...new Set(
+          (bindings ?? []).map((binding) => binding.organization_id as string).filter(Boolean)
+        ),
+      ];
+
+      if (organizationIds.length > 0) {
+        const { error: retryDeadError } = await admin.rpc(
+          "service_retry_calendar_sync_dead_jobs_for_orgs",
+          { p_organization_ids: organizationIds }
+        );
+        if (retryDeadError) {
+          logEvent("gcal_auth_retry_dead_enqueue_error", {
+            google_account_id: savedAccountId,
+            message: retryDeadError.message,
+          });
+        }
+      }
+
       for (const binding of bindings ?? []) {
         const { error: reconcileError } = await admin.rpc("enqueue_calendar_sync", {
           p_organization_id: binding.organization_id,
           p_source_type: "personal_lesson",
           p_source_id: binding.organization_member_id,
           p_occurrence_date: null,
-          p_operation: "reconcile_member",
+          p_operation: "refresh_member",
         });
         if (reconcileError) {
           logEvent("gcal_auth_reconcile_enqueue_error", {
