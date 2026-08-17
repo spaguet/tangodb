@@ -17,7 +17,7 @@ import { resolveMutationError } from "../lib/resolveMutationError";
 import type { ToastType } from "../App";
 import type { Discipline } from "../types";
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 interface DisciplinesPanelProps {
   toast: (msg: string, type?: ToastType) => void;
@@ -83,20 +83,20 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
 
   return (
     <>
-      <div className="bg-white rounded-xl p-3.5 border border-ink-200 shadow-xs space-y-2">
-        <div className="flex items-center justify-between border-b border-ink-100 pb-2">
-          <h2 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-gold-500" />
+      <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-indigo-500" />
             {t("disciplines.title")}
           </h2>
-          <span className="text-[10px] bg-ink-100 text-ink-500 font-sans px-2 py-0.5 rounded-full font-semibold">
+          <span className="text-[10px] bg-slate-100 text-slate-500 font-sans px-2 py-0.5 rounded-full font-semibold">
             {disciplines.length}
           </span>
         </div>
 
         {disciplines.length === 0 ? (
-          <div className="text-center py-20 text-ink-500 space-y-3">
-            <BookOpen className="w-8 h-8 mx-auto text-ink-300" />
+          <div className="text-center py-20 text-slate-400 space-y-3">
+            <BookOpen className="w-8 h-8 mx-auto text-slate-300" />
             <p className="text-sm">
               {t("disciplines.empty")}
               {t("disciplines.emptyHint")}
@@ -107,17 +107,17 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
             {disciplines.map((d) => (
               <div
                 key={d.id}
-                className="flex items-start justify-between gap-3 p-2.5 bg-ink-50 rounded-lg border border-ink-100 group"
+                className="flex items-start justify-between gap-3 p-2.5 bg-slate-50 rounded-lg border border-slate-100 group"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink-800">{d.name}</p>
+                  <p className="text-sm font-semibold text-slate-800">{d.name}</p>
                   {d.description ? (
-                    <p className="text-[11px] text-ink-500 mt-0.5 leading-snug">{d.description}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{d.description}</p>
                   ) : (
-                    <p className="text-[11px] text-ink-300 italic mt-0.5">{t("disciplines.noDescription")}</p>
+                    <p className="text-[11px] text-slate-300 italic mt-0.5">{t("disciplines.noDescription")}</p>
                   )}
                   {d.category ? (
-                    <p className="text-[10px] text-gold-700 mt-0.5 font-semibold">{d.category}</p>
+                    <p className="text-[10px] text-indigo-600 mt-0.5 font-semibold">{d.category}</p>
                   ) : null}
                 </div>
                 <RequirePermission action="disciplines.write" context={{ disciplineId: String(d.id) }}>
@@ -125,7 +125,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                   <button
                     type="button"
                     onClick={() => startEdit(d)}
-                    className="p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-all cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
                     title={t("common.edit")}
                     aria-label={`${t("common.edit")} ${d.name}`}
                   >
@@ -134,7 +134,7 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
                   <button
                     type="button"
                     onClick={() => setDeleteTarget(d)}
-                    className="p-1.5 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 rounded-lg transition-all cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
                     title={t("common.delete")}
                     aria-label={`${t("common.delete")} ${d.name}`}
                   >
@@ -156,22 +156,22 @@ export default function DisciplinesPanel({ toast }: DisciplinesPanelProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setEditing(null)}
-              className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
             />
             <motion.div
               initial={{ scale: 0.97, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
             >
-              <div className="flex items-center justify-between border-b border-ink-100 pb-3">
-                <h3 className="text-base font-semibold tracking-tight text-ink-900">{t("disciplines.editTitle")}</h3>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("disciplines.editTitle")}</h3>
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
                   aria-label={t("common.close")}
-                  className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors"
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>

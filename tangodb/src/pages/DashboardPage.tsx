@@ -167,8 +167,8 @@ function DashboardNoAccess() {
 
   return (
     <div className="panel-page-stack">
-      <div className="bg-white rounded-xl border border-ink-200 shadow-xs py-20 text-center px-6">
-        <p className="text-sm text-ink-500">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs py-20 text-center px-6">
+        <p className="text-sm text-slate-500">
           {role === "teacher" ? t("dashboard.noAccessTeacher") : t("dashboard.noAccess")}
         </p>
       </div>
@@ -192,7 +192,7 @@ function DashboardWithTabs({
       <PageTabs tabs={dashboardTabs} activeTab={activeTab} onChange={(tab) => onTabChange(tab as DashboardTab)} />
       <div
         role="tabpanel"
-        className={`bg-white p-4 border border-ink-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "operational")}`}
+        className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "operational")}`}
       >
         {children}
       </div>
@@ -298,7 +298,7 @@ function OperationalDashboardView({
       <PageTabs tabs={dashboardTabs} activeTab={activeTab} onChange={(tab) => onTabChange(tab as DashboardTab)} />
       <div
         role="tabpanel"
-        className={`bg-white p-4 border border-ink-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "operational")}`}
+        className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "operational")}`}
       >
         {content}
       </div>

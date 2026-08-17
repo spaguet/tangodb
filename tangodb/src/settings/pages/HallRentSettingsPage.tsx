@@ -29,8 +29,8 @@ export default function HallRentSettingsPage() {
   return (
     <div className="panel-card-stack max-w-4xl">
       <div>
-        <h2 className="text-base font-semibold text-ink-900">{t("hallRent.pageTitle")}</h2>
-        <p className="text-xs text-ink-500 mt-1">
+        <h2 className="text-base font-semibold text-slate-900">{t("hallRent.pageTitle")}</h2>
+        <p className="text-xs text-slate-500 mt-1">
           {canReadTariffs && !canReadVenue
             ? t("hallRent.pageSubtitleLookupOnly")
             : t("hallRent.pageSubtitle")}
@@ -38,17 +38,17 @@ export default function HallRentSettingsPage() {
       </div>
 
       {!hasAnyBlock && (
-        <div className="rounded-xl border border-ink-200 bg-ink-50/10 px-4 py-6 text-center space-y-2">
-          <p className="text-sm text-ink-600">{t("hallRent.emptyNoAccess")}</p>
-          <p className="text-xs text-ink-500">{t("hallRent.emptyNoAccessHint")}</p>
+        <div className="rounded-xl border border-slate-200/90 bg-slate-50/80 px-4 py-6 text-center space-y-2">
+          <p className="text-sm text-slate-600">{t("hallRent.emptyNoAccess")}</p>
+          <p className="text-xs text-slate-500">{t("hallRent.emptyNoAccessHint")}</p>
         </div>
       )}
 
       {canReadTariffs && (
-        <section className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-3">
+        <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
           <div>
-            <h3 className="text-sm font-semibold text-ink-900">{t("hallRent.rentersTitle")}</h3>
-            <p className="text-xs text-ink-500 mt-1">
+            <h3 className="text-sm font-semibold text-slate-900">{t("hallRent.rentersTitle")}</h3>
+            <p className="text-xs text-slate-500 mt-1">
               {canWriteTariffs ? t("hallRent.rentersSubtitle") : t("hallRent.rentersSubtitleLookup")}
             </p>
           </div>
@@ -57,20 +57,20 @@ export default function HallRentSettingsPage() {
       )}
 
       {canReadVenue && (
-        <section className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-3">
+        <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
           <div>
-            <h3 className="text-sm font-semibold text-ink-900">{t("hallRent.studioTitle")}</h3>
-            <p className="text-xs text-ink-500 mt-1">{t("hallRent.studioSubtitle")}</p>
+            <h3 className="text-sm font-semibold text-slate-900">{t("hallRent.studioTitle")}</h3>
+            <p className="text-xs text-slate-500 mt-1">{t("hallRent.studioSubtitle")}</p>
           </div>
           <VenueCostsSettingsPage embedded canManage={canManageVenue} />
         </section>
       )}
 
       {canReadVenue && (
-        <section className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-3">
+        <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
           <div>
-            <h3 className="text-sm font-semibold text-ink-900">{t("rentalBilling.sectionTitle")}</h3>
-            <p className="text-xs text-ink-500 mt-1">{t("rentalBilling.sectionSubtitle")}</p>
+            <h3 className="text-sm font-semibold text-slate-900">{t("rentalBilling.sectionTitle")}</h3>
+            <p className="text-xs text-slate-500 mt-1">{t("rentalBilling.sectionSubtitle")}</p>
           </div>
           <RentalBillingProfileSection embedded />
         </section>

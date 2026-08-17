@@ -50,23 +50,23 @@ export default function PurchaseRequestPanel({ contacts }: PurchaseRequestPanelP
   };
 
   return (
-    <div className="rounded-lg border border-ink-200 bg-white px-3 py-3 space-y-3">
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3 space-y-3">
       <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wider text-ink-600 flex items-center gap-1.5">
-          <FileText className="w-3.5 h-3.5 text-gold-700" />
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5 text-indigo-600" />
           {t("license.purchase.request.title")}
         </p>
-        <p className="text-xs text-ink-600 leading-relaxed">{t("license.purchase.request.description")}</p>
+        <p className="text-xs text-slate-600 leading-relaxed">{t("license.purchase.request.description")}</p>
       </div>
 
-      <p className="text-xs text-ink-500 bg-ink-50 border border-ink-200 rounded-lg px-3 py-2 leading-relaxed">
+      <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 leading-relaxed">
         {t("license.purchase.request.receiptHint")}
       </p>
       <DeveloperContacts contacts={contacts} embedded />
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <label className="block space-y-1">
-          <span className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
+          <span className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
             {t("license.purchase.request.commentLabel")}
           </span>
           <textarea
@@ -74,13 +74,13 @@ export default function PurchaseRequestPanel({ contacts }: PurchaseRequestPanelP
             onChange={(event) => setPaymentComment(event.target.value)}
             rows={5}
             placeholder={t("license.purchase.request.commentPlaceholder")}
-            className="w-full min-h-[7rem] resize-none bg-ink-50 border border-ink-200 focus:border-gold-400 focus:bg-white focus:ring-2 focus:ring-gold-100 outline-none rounded-lg px-3.5 py-2.5 text-xs transition-all"
+            className="w-full min-h-[7rem] resize-none bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-xs transition-all"
           />
         </label>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="block space-y-1">
-            <span className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
+            <span className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
               {t("license.purchase.request.emailLabel")}
             </span>
             <input
@@ -92,7 +92,7 @@ export default function PurchaseRequestPanel({ contacts }: PurchaseRequestPanelP
             />
           </label>
           <label className="block space-y-1">
-            <span className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
+            <span className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
               {t("license.purchase.request.telegramLabel")}
             </span>
             <input
@@ -105,7 +105,7 @@ export default function PurchaseRequestPanel({ contacts }: PurchaseRequestPanelP
         </div>
 
         {error && (
-          <p className="text-xs text-garnet-600 bg-garnet-50 border border-garnet-100 rounded-lg px-3 py-2">
+          <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
             {error}
           </p>
         )}

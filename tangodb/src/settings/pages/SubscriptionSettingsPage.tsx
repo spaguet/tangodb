@@ -51,12 +51,12 @@ export default function SubscriptionSettingsPage() {
   return (
     <div className="panel-card-stack max-w-xl">
       <div>
-        <h2 className="text-base font-semibold text-ink-900">{t("settings.subscriptions.title")}</h2>
-        <p className="text-xs text-ink-500 mt-1">{t("settings.subscriptions.subtitle")}</p>
+        <h2 className="text-base font-semibold text-slate-900">{t("settings.subscriptions.title")}</h2>
+        <p className="text-xs text-slate-500 mt-1">{t("settings.subscriptions.subtitle")}</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4 font-sans">
-        <label className="flex items-start gap-2 text-sm text-ink-700 cursor-pointer">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4 font-sans">
+        <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
           <input
             type="checkbox"
             checked={freezeEnabled}
@@ -64,11 +64,11 @@ export default function SubscriptionSettingsPage() {
               setFreezeEnabled(e.target.checked);
               setDirty(true);
             }}
-            className="mt-0.5 rounded border-ink-300 text-gold-700 focus:ring-gold-500"
+            className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
           />
           <span>
             <span className="font-medium">{t("settings.subscriptions.freezeEnabled")}</span>
-            <p className="text-xs text-ink-500 mt-1 leading-relaxed">
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
               {t("settings.subscriptions.freezeEnabledDescription")}
             </p>
           </span>
@@ -79,7 +79,7 @@ export default function SubscriptionSettingsPage() {
           aria-disabled={!freezeEnabled}
         >
           <div className="field-stack">
-            <label className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block">
+            <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
               {t("settings.subscriptions.freezeMax")}
             </label>
             <input
@@ -91,12 +91,12 @@ export default function SubscriptionSettingsPage() {
                 setFreezeMaxCount(Number(e.target.value));
                 setDirty(true);
               }}
-              className="w-full bg-ink-50 border border-ink-200 rounded-lg px-3 py-2 text-sm disabled:cursor-not-allowed"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm disabled:cursor-not-allowed"
             />
           </div>
 
           <div className="field-stack">
-            <label className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block">
+            <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
               {t("settings.subscriptions.freezeMin")}
             </label>
             <input
@@ -108,12 +108,12 @@ export default function SubscriptionSettingsPage() {
                 setFreezeMinLessons(Number(e.target.value));
                 setDirty(true);
               }}
-              className="w-full bg-ink-50 border border-ink-200 rounded-lg px-3 py-2 text-sm disabled:cursor-not-allowed"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm disabled:cursor-not-allowed"
             />
           </div>
         </div>
 
-        <p className="text-xs text-ink-500 bg-ink-50 rounded-lg px-3 py-2 leading-relaxed">
+        <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2 leading-relaxed">
           {policySummary}
         </p>
 

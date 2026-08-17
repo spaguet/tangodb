@@ -63,7 +63,7 @@ export default function BillingPage() {
   return (
     <div className="space-y-4 max-w-5xl">
       <h2 className="text-2xl font-bold text-white">Billing</h2>
-      <p className="text-sm text-ink-400">
+      <p className="text-sm text-slate-400">
         Subscription status, lifetime grandfathering, manual corrections with audit.
       </p>
 
@@ -72,12 +72,12 @@ export default function BillingPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search name or slug"
-          className="flex-1 min-w-[200px] px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm"
+          className="flex-1 min-w-[200px] px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm"
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm"
+          className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm"
         >
           <option value="">All billing</option>
           <option value="lifetime">Lifetime only</option>
@@ -90,17 +90,17 @@ export default function BillingPage() {
           type="button"
           onClick={() => void search()}
           disabled={loading}
-          className="px-4 py-2 bg-gold-700 hover:bg-gold-800 text-white rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
         >
           {loading ? "Loading..." : "Search"}
         </button>
       </div>
 
-      {error && <p className="text-sm text-garnet-400">{error}</p>}
+      {error && <p className="text-sm text-rose-400">{error}</p>}
 
-      <div className="overflow-x-auto rounded-lg border border-ink-800">
+      <div className="overflow-x-auto rounded-lg border border-slate-800">
         <table className="w-full text-sm text-left">
-          <thead className="bg-ink-900 text-ink-400 uppercase text-xs">
+          <thead className="bg-slate-900 text-slate-400 uppercase text-xs">
             <tr>
               <th className="px-3 py-2">Organization</th>
               <th className="px-3 py-2">Org status</th>
@@ -110,17 +110,17 @@ export default function BillingPage() {
               <th className="px-3 py-2">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-ink-800">
+          <tbody className="divide-y divide-slate-800">
             {rows.map((row) => (
-              <tr key={row.id} className="hover:bg-ink-900/70">
+              <tr key={row.id} className="hover:bg-slate-900/50">
                 <td className="px-3 py-2 text-white">{row.name}</td>
-                <td className="px-3 py-2 text-ink-300">{row.status}</td>
-                <td className="px-3 py-2 text-ink-300">{row.license_type ?? "—"}</td>
-                <td className="px-3 py-2 text-ink-300">
+                <td className="px-3 py-2 text-slate-300">{row.status}</td>
+                <td className="px-3 py-2 text-slate-300">{row.license_type ?? "—"}</td>
+                <td className="px-3 py-2 text-slate-300">
                   {row.subscription?.status ?? "—"}
                   {row.subscription?.billing_period ? ` (${row.subscription.billing_period})` : ""}
                 </td>
-                <td className="px-3 py-2 text-ink-400 text-xs">
+                <td className="px-3 py-2 text-slate-400 text-xs">
                   {row.subscription?.current_period_end
                     ? new Date(row.subscription.current_period_end).toLocaleDateString()
                     : "—"}
@@ -134,7 +134,7 @@ export default function BillingPage() {
                           type="button"
                           disabled={adjusting === row.id || row.subscription?.status === s}
                           onClick={() => void adjustStatus(row.id, s)}
-                          className="px-2 py-1 text-xs rounded bg-ink-800 hover:bg-ink-700 disabled:opacity-40 cursor-pointer"
+                          className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 cursor-pointer"
                         >
                           {s}
                         </button>
@@ -142,14 +142,14 @@ export default function BillingPage() {
                     </div>
                   )}
                   {row.license_type === "lifetime" && (
-                    <span className="text-xs text-sage-400">grandfathered</span>
+                    <span className="text-xs text-emerald-400">grandfathered</span>
                   )}
                 </td>
               </tr>
             ))}
             {!rows.length && !loading && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-ink-500">
+                <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
                   No results — run search
                 </td>
               </tr>

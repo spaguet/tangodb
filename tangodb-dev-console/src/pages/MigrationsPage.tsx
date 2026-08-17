@@ -100,18 +100,18 @@ export default function MigrationsPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <h2 className="text-2xl font-bold text-white">Version migrations</h2>
-      <p className="text-sm text-ink-500">
+      <p className="text-sm text-slate-500">
         Migrate an organization between major CRM versions. Always run dry-run first.
       </p>
 
-      <div className="bg-ink-900 border border-ink-800 rounded-xl p-4 space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block space-y-1">
-            <span className="text-xs text-ink-500 uppercase">Organization</span>
+            <span className="text-xs text-slate-500 uppercase">Organization</span>
             <select
               value={orgId}
               onChange={(e) => setOrgId(e.target.value)}
-              className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
             >
               <option value="">Select org…</option>
               {orgs.map((o) => (
@@ -124,11 +124,11 @@ export default function MigrationsPage() {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-xs text-ink-500 uppercase">Target version</span>
+            <span className="text-xs text-slate-500 uppercase">Target version</span>
             <select
               value={targetVersionId}
               onChange={(e) => setTargetVersionId(e.target.value)}
-              className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
             >
               <option value="">Select version…</option>
               {versions.map((v) => (
@@ -142,18 +142,18 @@ export default function MigrationsPage() {
         </div>
 
         {selectedOrg && (
-          <p className="text-xs text-ink-500">
+          <p className="text-xs text-slate-500">
             Current: {selectedOrg.crm_version_code ?? "unknown"} · status {selectedOrg.status}
             {selectedOrg.schema_version_locked ? " · migration lock active" : ""}
           </p>
         )}
 
-        <label className="flex items-center gap-2 text-sm text-ink-300 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
           <input
             type="checkbox"
             checked={dryRun}
             onChange={(e) => setDryRun(e.target.checked)}
-            className="rounded border-ink-600"
+            className="rounded border-slate-600"
           />
           Dry run (preview only, no changes)
         </label>
@@ -162,33 +162,33 @@ export default function MigrationsPage() {
           type="button"
           onClick={runMigration}
           disabled={loading}
-          className="px-4 py-2 bg-gold-700 hover:bg-gold-800 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
         >
           {loading ? "Running…" : dryRun ? "Run dry-run" : "Apply migration"}
         </button>
 
-        {error && <p className="text-sm text-garnet-400">{error}</p>}
+        {error && <p className="text-sm text-rose-400">{error}</p>}
 
         {result != null && (
-          <pre className="text-xs bg-ink-950 border border-ink-800 rounded-lg p-3 overflow-x-auto text-ink-300">
+          <pre className="text-xs bg-slate-950 border border-slate-800 rounded-lg p-3 overflow-x-auto text-slate-300">
             {JSON.stringify(result, null, 2)}
           </pre>
         )}
       </div>
 
-      <div className="border border-ink-800 rounded-xl overflow-hidden">
-        <div className="px-4 py-2 bg-ink-900 border-b border-ink-800 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-ink-300">Migration history</h3>
+      <div className="border border-slate-800 rounded-xl overflow-hidden">
+        <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-300">Migration history</h3>
           <button
             type="button"
             onClick={() => loadMigrations()}
-            className="text-xs text-gold-400 hover:text-gold-300 cursor-pointer"
+            className="text-xs text-indigo-400 hover:text-indigo-300 cursor-pointer"
           >
             Refresh
           </button>
         </div>
         <table className="w-full text-sm">
-          <thead className="bg-ink-900/70 text-ink-500 text-left">
+          <thead className="bg-slate-900/50 text-slate-500 text-left">
             <tr>
               <th className="px-4 py-2 font-medium">When</th>
               <th className="px-4 py-2 font-medium">Path</th>
@@ -198,37 +198,37 @@ export default function MigrationsPage() {
           </thead>
           <tbody>
             {migrations.map((m) => (
-              <tr key={m.id} className="border-t border-ink-800">
-                <td className="px-4 py-2 text-ink-500">
+              <tr key={m.id} className="border-t border-slate-800">
+                <td className="px-4 py-2 text-slate-500">
                   {new Date(m.started_at).toLocaleString()}
                 </td>
-                <td className="px-4 py-2 text-ink-200">
+                <td className="px-4 py-2 text-slate-200">
                   {m.metadata?.from_code ?? "?"} → {m.metadata?.to_code ?? "?"}
                 </td>
                 <td className="px-4 py-2">
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full ${
                       m.status === "completed"
-                        ? "bg-sage-900/70 text-sage-300"
+                        ? "bg-emerald-900/40 text-emerald-300"
                         : m.status === "failed"
-                          ? "bg-garnet-900/70 text-garnet-300"
-                          : "bg-ink-800 text-ink-300"
+                          ? "bg-rose-900/40 text-rose-300"
+                          : "bg-slate-800 text-slate-300"
                     }`}
                   >
                     {m.status}
                   </span>
                   {m.error_message && (
-                    <p className="text-xs text-garnet-400 mt-1 truncate max-w-xs" title={m.error_message}>
+                    <p className="text-xs text-rose-400 mt-1 truncate max-w-xs" title={m.error_message}>
                       {m.error_message}
                     </p>
                   )}
                 </td>
-                <td className="px-4 py-2 text-ink-500">{m.dry_run ? "dry-run" : "apply"}</td>
+                <td className="px-4 py-2 text-slate-500">{m.dry_run ? "dry-run" : "apply"}</td>
               </tr>
             ))}
             {migrations.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-ink-500">
+                <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
                   No migrations yet
                 </td>
               </tr>
@@ -237,7 +237,7 @@ export default function MigrationsPage() {
         </table>
       </div>
 
-      <div className="text-xs text-ink-600 space-y-1">
+      <div className="text-xs text-slate-600 space-y-1">
         <p>Available paths: v2 ↔ v3 (stub transforms until v3 schema ships).</p>
         <p>Apply sets org status to licensed and updates organization_licenses.crm_version_id.</p>
       </div>

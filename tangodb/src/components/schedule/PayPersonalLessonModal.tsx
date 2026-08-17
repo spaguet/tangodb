@@ -75,7 +75,7 @@ interface PayPersonalLessonModalProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 function participantIds(lesson: PayPersonalLessonTarget): string[] {
   return [lesson.clientId1, lesson.clientId2, lesson.clientId3, lesson.clientId4].filter(
@@ -533,21 +533,21 @@ export default function PayPersonalLessonModal({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
             />
             <motion.div
               initial={{ scale: 0.97, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
             >
-              <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-3">
+              <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gold-500">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
                     {t("schedule.lessonInfo.payment")}
                   </p>
-                  <h3 className="text-base font-semibold tracking-tight text-ink-900 break-words">
+                  <h3 className="text-base font-semibold tracking-tight text-slate-900 break-words">
                     {lesson.clientDisplay}
                   </h3>
                 </div>
@@ -555,13 +555,13 @@ export default function PayPersonalLessonModal({
                   type="button"
                   onClick={onClose}
                   aria-label={t("common.close")}
-                  className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors shrink-0"
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                 <span className="inline-flex items-center gap-1">
                   <CalendarDays className="w-3.5 h-3.5 shrink-0" />
                   {formatDate(lesson.date)}
@@ -582,8 +582,8 @@ export default function PayPersonalLessonModal({
                         onClick={() => selectMode("tariff")}
                         className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
                           bookingPaymentMode === "tariff"
-                            ? "bg-gold-700 hover:bg-gold-800 text-white border-gold-700 shadow-xs"
-                            : "bg-gold-50 text-gold-700 border-gold-200 hover:bg-gold-100"
+                            ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-xs"
+                            : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
                         }`}
                       >
                         {t("finance.debtors.payByTariff")}
@@ -594,8 +594,8 @@ export default function PayPersonalLessonModal({
                       onClick={() => selectMode("outstanding")}
                       className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider leading-snug transition-colors cursor-pointer ${
                         bookingPaymentMode === "outstanding"
-                          ? "bg-gold-700 hover:bg-gold-800 text-white border-gold-700 shadow-xs"
-                          : "bg-gold-50 text-gold-700 border-gold-200 hover:bg-gold-100"
+                          ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-xs"
+                          : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
                       }`}
                     >
                       {t("finance.debtors.payOutstanding")}
@@ -606,8 +606,8 @@ export default function PayPersonalLessonModal({
                         onClick={() => selectMode("package")}
                         className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider leading-snug transition-colors cursor-pointer ${
                           bookingPaymentMode === "package"
-                            ? "bg-gold-700 hover:bg-gold-800 text-white border-gold-700 shadow-xs"
-                            : "bg-gold-50 text-gold-700 border-gold-200 hover:bg-gold-100"
+                            ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-xs"
+                            : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
                         }`}
                       >
                         {t("common.chargePackage")}
@@ -620,11 +620,11 @@ export default function PayPersonalLessonModal({
               {(bookingPaymentMode === "tariff" || bookingPaymentMode === "outstanding") && (
                 <>
                   {billedAmount > 0 && paidSoFar > 0 && (
-                    <div className="flex items-center justify-between gap-3 rounded-lg bg-ink-50 border border-ink-100 px-3 py-2 text-xs font-sans">
-                      <span className="text-ink-500">
+                    <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 text-xs font-sans">
+                      <span className="text-slate-500">
                         {t("personal.pay.paidSoFar")}: {formatCurrency(paidSoFar)}
                       </span>
-                      <span className="text-garnet-600 font-semibold">
+                      <span className="text-rose-600 font-semibold">
                         {t("common.debt")}: {formatCurrency(remainingDebt)}
                       </span>
                     </div>
@@ -633,7 +633,7 @@ export default function PayPersonalLessonModal({
                   {hasMultipleUnpaidCharges && (
                     <div className="field-stack">
                       <label className={labelCls}>{t("personal.pay.chargeSplit")}</label>
-                      <ul className="rounded-lg border border-ink-100 divide-y divide-ink-100 overflow-hidden">
+                      <ul className="rounded-lg border border-slate-100 divide-y divide-slate-100 overflow-hidden">
                         {lessonCharges.map((charge) => {
                           const client = clientMap[charge.clientId];
                           const name = client
@@ -656,13 +656,13 @@ export default function PayPersonalLessonModal({
                                   );
                                 }}
                                 className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left text-xs font-sans transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                                  isSelected ? "bg-gold-50 text-gold-900" : "hover:bg-ink-50"
+                                  isSelected ? "bg-indigo-50 text-indigo-900" : "hover:bg-slate-50"
                                 }`}
                               >
                                 <span className="font-medium truncate">{name}</span>
                                 <span
                                   className={`shrink-0 font-semibold ${
-                                    charge.remainingAmount > 0 ? "text-garnet-700" : "text-ink-400"
+                                    charge.remainingAmount > 0 ? "text-rose-700" : "text-slate-400"
                                   }`}
                                 >
                                   {formatCurrency(charge.remainingAmount)}
@@ -672,7 +672,7 @@ export default function PayPersonalLessonModal({
                           );
                         })}
                       </ul>
-                      <label className="flex items-center gap-2 text-xs text-ink-600 font-sans cursor-pointer">
+                      <label className="flex items-center gap-2 text-xs text-slate-600 font-sans cursor-pointer">
                         <input
                           type="checkbox"
                           checked={payAllParticipants}
@@ -692,7 +692,7 @@ export default function PayPersonalLessonModal({
                               );
                             }
                           }}
-                          className="rounded border-ink-300 text-gold-700 focus:ring-gold-500"
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                         />
                         {t("personal.pay.payAllParticipants")}
                       </label>
@@ -736,13 +736,13 @@ export default function PayPersonalLessonModal({
                           ))}
                         </AppSelect>
                       ) : (
-                        <p className="text-xs text-ink-500">{t("attendance.singleVisit.noTariffs")}</p>
+                        <p className="text-xs text-slate-500">{t("attendance.singleVisit.noTariffs")}</p>
                       )}
                       {tariffSelectLocked && (
-                        <p className="text-[11px] text-ink-500">{t("personal.pay.tariffChangeLocked")}</p>
+                        <p className="text-[11px] text-slate-500">{t("personal.pay.tariffChangeLocked")}</p>
                       )}
                       {durationWarningMessage && (
-                        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                        <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
                           {durationWarningMessage}
                         </p>
                       )}
@@ -752,7 +752,7 @@ export default function PayPersonalLessonModal({
                           type="number"
                           readOnly
                           value={paymentAmount}
-                          className={`${fieldCls} font-semibold bg-ink-50 text-ink-700`}
+                          className={`${fieldCls} font-semibold bg-slate-50 text-slate-700`}
                         />
                       </div>
                     </>
@@ -770,7 +770,7 @@ export default function PayPersonalLessonModal({
                         value={paymentAmount}
                         onChange={(e) => setPaymentAmount(e.target.value)}
                         readOnly={payAllParticipants}
-                        className={`${fieldCls} font-semibold${payAllParticipants ? " bg-ink-50 text-ink-700" : ""}`}
+                        className={`${fieldCls} font-semibold${payAllParticipants ? " bg-slate-50 text-slate-700" : ""}`}
                       />
                     </div>
                   )}
@@ -809,12 +809,12 @@ export default function PayPersonalLessonModal({
               {bookingPaymentMode === "package" && (
                 <>
                   {availablePrivateSubs.length === 0 ? (
-                    <p className="text-xs text-ink-500 font-sans leading-relaxed">
+                    <p className="text-xs text-slate-500 font-sans leading-relaxed">
                       {t("common.noPackages")}{" "}
                       <button
                         type="button"
                         onClick={() => setPackageModalOpen(true)}
-                        className="text-gold-700 hover:text-gold-800 font-semibold underline-offset-2 hover:underline cursor-pointer"
+                        className="text-indigo-600 hover:text-indigo-700 font-semibold underline-offset-2 hover:underline cursor-pointer"
                       >
                         {t("common.packageSale")}
                       </button>
@@ -852,7 +852,7 @@ export default function PayPersonalLessonModal({
               )}
 
               {bookingPaymentMode === null && showModePicker ? (
-                <p className="text-xs text-ink-500 text-center py-2">{t("common.selectPaymentMethod")}</p>
+                <p className="text-xs text-slate-400 text-center py-2">{t("common.selectPaymentMethod")}</p>
               ) : null}
             </motion.div>
           </div>

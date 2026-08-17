@@ -94,10 +94,10 @@ export interface PersonalLessonSaleFormProps {
   onClose?: () => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
-const checkboxCls = "rounded border-ink-300 text-gold-700 focus:ring-gold-500";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
 const addRowBtnCls =
-  "w-full py-2 bg-ink-50 border border-dashed border-ink-300 hover:border-ink-400 rounded-lg text-ink-600 hover:bg-ink-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
+  "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
 const MAX_CLIENTS = 4;
 
 function participantTypeFromCount(count: number): "solo" | "pair" | "trio" | "quad" {
@@ -914,8 +914,8 @@ export default function PersonalLessonSaleForm({
       return (
         <div className="field-stack">
           <label className={labelCls}>{t("common.date")}</label>
-          <div className="flex items-center gap-2 h-8 px-3 bg-ink-100 border border-ink-200 rounded-lg text-xs text-ink-700">
-            <CalendarDays className="w-4 h-4 text-ink-400 shrink-0" />
+          <div className="flex items-center gap-2 h-8 px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
+            <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
             {formatDate(prefill.date)}
           </div>
         </div>
@@ -960,7 +960,7 @@ export default function PersonalLessonSaleForm({
                 type="button"
                 onClick={() => setLessonEntries((prev) => prev.filter((_, i) => i !== idx))}
                 aria-label={t("common.removeDate")}
-                className="mb-0.5 p-2 rounded-lg border border-ink-200 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 transition-colors cursor-pointer shrink-0"
+                className="mb-0.5 p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -990,7 +990,7 @@ export default function PersonalLessonSaleForm({
   const renderWeeklyRepeatSection = () => {
     return (
       <>
-        <label className="flex items-start gap-2 text-sm text-ink-700 cursor-pointer">
+        <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
           <input
             type="checkbox"
             checked={repeatWeekly}
@@ -1010,8 +1010,8 @@ export default function PersonalLessonSaleForm({
                   onClick={() => setWeeklyEndMode("weeks")}
                   className={`py-2 rounded-lg border font-sans text-[10px] font-semibold uppercase tracking-wider cursor-pointer ${
                     weeklyEndMode === "weeks"
-                      ? "bg-gold-700 text-white border-gold-700"
-                      : "bg-ink-50 text-ink-600 border-ink-200"
+                      ? "bg-indigo-600 text-white border-indigo-600"
+                      : "bg-slate-50 text-slate-600 border-slate-200"
                   }`}
                 >
                   {t("common.nWeeks")}
@@ -1021,8 +1021,8 @@ export default function PersonalLessonSaleForm({
                   onClick={() => setWeeklyEndMode("date")}
                   className={`py-2 rounded-lg border font-sans text-[10px] font-semibold uppercase tracking-wider cursor-pointer ${
                     weeklyEndMode === "date"
-                      ? "bg-gold-700 text-white border-gold-700"
-                      : "bg-ink-50 text-ink-600 border-ink-200"
+                      ? "bg-indigo-600 text-white border-indigo-600"
+                      : "bg-slate-50 text-slate-600 border-slate-200"
                   }`}
                 >
                   {t("common.untilDate")}
@@ -1064,7 +1064,7 @@ export default function PersonalLessonSaleForm({
           <button
             type="button"
             onClick={() => setPackageModalOpen(true)}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gold-50 hover:bg-gold-100 text-gold-700 border border-gold-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
           >
             <Ticket className="w-3.5 h-3.5" />
             {t("personal.sell.packageLink")}
@@ -1074,8 +1074,8 @@ export default function PersonalLessonSaleForm({
         {isScheduleCell && showLocationInForm ? (
           <div className="field-stack">
             <label className={labelCls}>{t("schedule.form.location")}</label>
-            <div className="flex items-center gap-2 h-8 px-3 bg-ink-100 border border-ink-200 rounded-lg text-xs text-ink-700">
-              <MapPin className="w-4 h-4 text-ink-400 shrink-0" />
+            <div className="flex items-center gap-2 h-8 px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700">
+              <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
               {selectedLocationName}
             </div>
           </div>
@@ -1148,7 +1148,7 @@ export default function PersonalLessonSaleForm({
                       type="text"
                       readOnly
                       value={client.query}
-                      className={`${fieldCls} bg-ink-100 text-ink-600 cursor-not-allowed`}
+                      className={`${fieldCls} bg-slate-100 text-slate-600 cursor-not-allowed`}
                     />
                   </div>
                 ) : (
@@ -1183,7 +1183,7 @@ export default function PersonalLessonSaleForm({
                 <button
                   type="button"
                   onClick={() => setBookingClients((prev) => prev.filter((_, i) => i !== idx))}
-                  className="mt-6 p-1.5 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 rounded-lg transition-all cursor-pointer shrink-0"
+                  className="mt-6 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0"
                   title={t("common.removeClient")}
                   aria-label={t("common.removeClient")}
                 >
@@ -1256,8 +1256,8 @@ export default function PersonalLessonSaleForm({
               }}
               className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
                 bookingPaymentMode === "single"
-                  ? "bg-gold-700 hover:bg-gold-800 text-white border-gold-700 shadow-xs"
-                  : "bg-gold-50 text-gold-700 border-gold-200 hover:bg-gold-100"
+                  ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-xs"
+                  : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
               }`}
             >
               {t("common.singleLessonOption")}
@@ -1270,8 +1270,8 @@ export default function PersonalLessonSaleForm({
               }}
               className={`py-3 px-4 rounded-lg border font-sans text-xs font-semibold uppercase tracking-wider leading-snug transition-colors cursor-pointer ${
                 bookingPaymentMode === "package"
-                  ? "bg-gold-700 hover:bg-gold-800 text-white border-gold-700 shadow-xs"
-                  : "bg-gold-50 text-gold-700 border-gold-200 hover:bg-gold-100"
+                  ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-xs"
+                  : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
               }`}
             >
               {t("common.chargePackage")}
@@ -1282,7 +1282,7 @@ export default function PersonalLessonSaleForm({
         {bookingPaymentMode === "single" && (
           <>
             {durationWarningMessage && (
-              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 leading-relaxed">
+              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2 leading-relaxed">
                 {durationWarningMessage}
               </p>
             )}
@@ -1307,7 +1307,7 @@ export default function PersonalLessonSaleForm({
                 <div className="field-stack w-[7.5rem] shrink-0">
                   <label className={labelCls}>{t("common.lessonCost")}</label>
                   <div
-                    className={`${fieldCls} font-semibold bg-ink-50 text-ink-800 cursor-default`}
+                    className={`${fieldCls} font-semibold bg-slate-50 text-slate-800 cursor-default`}
                     aria-readonly
                   >
                     {primaryBilling != null
@@ -1355,12 +1355,12 @@ export default function PersonalLessonSaleForm({
         {bookingPaymentMode === "package" && (
           <>
             {availablePrivateSubs.length === 0 ? (
-              <p className="text-xs text-ink-500 font-sans leading-relaxed">
+              <p className="text-xs text-slate-500 font-sans leading-relaxed">
                 {t("common.noPackages")}{" "}
                 <button
                   type="button"
                   onClick={() => setPackageModalOpen(true)}
-                  className="text-gold-700 hover:text-gold-800 font-semibold underline-offset-2 hover:underline cursor-pointer"
+                  className="text-indigo-600 hover:text-indigo-700 font-semibold underline-offset-2 hover:underline cursor-pointer"
                 >
                   {t("common.packageSale")}
                 </button>

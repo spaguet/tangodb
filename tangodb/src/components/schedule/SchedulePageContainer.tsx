@@ -538,9 +538,9 @@ export default function SchedulePageContainer() {
 
   return (
     <div className="panel-page-stack">
-      <div className="bg-white rounded-xl p-4 border border-ink-200 shadow-xs panel-card-stack">
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="panel-card-stack">
-          <h2 className="text-base font-semibold tracking-tight text-ink-800">{t("schedule.title")}</h2>
+          <h2 className="text-base font-semibold tracking-tight text-slate-800">{t("schedule.title")}</h2>
         </div>
         <ScheduleToolbar
           weekStart={selectedWeekStart}
@@ -558,8 +558,8 @@ export default function SchedulePageContainer() {
       </div>
 
       {!hasLocations && noLocationLessons.length === 0 && !hasAnyLessons ? (
-        <div className="bg-white rounded-xl border border-ink-200 shadow-xs text-center py-20 text-ink-500 space-y-3">
-          <CalendarDays className="w-8 h-8 mx-auto text-ink-300" />
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs text-center py-20 text-slate-400 space-y-3">
+          <CalendarDays className="w-8 h-8 mx-auto text-slate-300" />
           <p className="text-sm">{t("schedule.empty")}</p>
           <AddLocationsInSettingsHint />
         </div>

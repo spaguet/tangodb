@@ -38,8 +38,8 @@ interface ClientsPanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
-const checkboxCls = "rounded border-ink-300 text-gold-700 focus:ring-gold-500";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
 
 type ClientTab = "active" | "archive";
 
@@ -322,14 +322,14 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
       <RequirePermission
         action="clients.write"
         fallback={
-          <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-ink-200 shadow-xs text-xs text-ink-500">
+          <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
             {t("clients.readOnlyHint")}
           </div>
         }
       >
-      <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-ink-200 shadow-xs panel-card-stack">
-        <div className="flex items-center gap-2.5 text-ink-800 border-b border-ink-100 pb-3">
-          <UserPlus className="w-4.5 h-4.5 text-gold-500" />
+      <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+        <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
+          <UserPlus className="w-4.5 h-4.5 text-indigo-500" />
           <h2 className="text-base font-semibold tracking-tight">{t("clients.form.addTitle")}</h2>
         </div>
 
@@ -383,7 +383,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
           <div className="field-stack">
             <label className={labelCls}>Telegram</label>
             <div className="relative">
-              <span className="absolute left-3.5 top-3 text-xs text-ink-500 font-sans pointer-events-none">t.me/</span>
+              <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
               <input
                 type="text"
                 value={telegram.replace(/https?:\/\/t\.me\//, "")}
@@ -399,12 +399,12 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 className={`${inputCls} pl-12 font-sans`}
               />
             </div>
-            <p className="text-[10px] text-ink-500 leading-normal">
+            <p className="text-[10px] text-slate-400 leading-normal">
               {t("clients.form.telegramHint")}
             </p>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
             <input
               type="checkbox"
               checked={isMinor}
@@ -415,8 +415,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
           </label>
 
           {isMinor ? (
-            <div className="space-y-4 border border-ink-100 rounded-lg p-3">
-              <p className="text-xs font-semibold text-ink-600">{t("clients.form.guardian1")}</p>
+            <div className="space-y-4 border border-slate-100 rounded-lg p-3">
+              <p className="text-xs font-semibold text-slate-600">{t("clients.form.guardian1")}</p>
               <div className="field-stack">
                 <label className={labelCls}>{t("clients.form.guardianName")}</label>
                 <input type="text" value={guardian1Name} onChange={(e) => setGuardian1Name(e.target.value)} className={inputCls} />
@@ -428,7 +428,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               <div className="field-stack">
                 <label className={labelCls}>Telegram</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-3 text-xs text-ink-500 font-sans pointer-events-none">t.me/</span>
+                  <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
                   <input
                     type="text"
                     value={guardian1Telegram.replace(/https?:\/\/t\.me\//, "")}
@@ -446,7 +446,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 <input type="text" value={guardian1Address} onChange={(e) => setGuardian1Address(e.target.value)} className={inputCls} />
               </div>
 
-              <p className="text-xs font-semibold text-ink-600 pt-1">{t("clients.form.guardian2")}</p>
+              <p className="text-xs font-semibold text-slate-600 pt-1">{t("clients.form.guardian2")}</p>
               <div className="field-stack">
                 <label className={labelCls}>{t("clients.form.guardianName")}</label>
                 <input type="text" value={guardian2Name} onChange={(e) => setGuardian2Name(e.target.value)} className={inputCls} />
@@ -458,7 +458,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               <div className="field-stack">
                 <label className={labelCls}>Telegram</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-3 text-xs text-ink-500 font-sans pointer-events-none">t.me/</span>
+                  <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
                   <input
                     type="text"
                     value={guardian2Telegram.replace(/https?:\/\/t\.me\//, "")}
@@ -495,22 +495,22 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
         <PageTabs tabs={[...clientTabs]} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as ClientTab)} />
 
         <div
-          className={`bg-white p-4 border border-ink-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
+          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
         >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-ink-100 pb-4">
-            <div className="flex items-center gap-2.5 text-ink-800">
-              <FileText className="w-4.5 h-4.5 text-gold-500" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2.5 text-slate-800">
+              <FileText className="w-4.5 h-4.5 text-indigo-500" />
               <h2 className="text-base font-semibold tracking-tight">
                 {activeTab === "active" ? t("clients.list.activeTitle") : t("clients.list.archiveTitle")}
               </h2>
-              <span className="text-[10px] font-sans bg-ink-100 text-ink-500 px-2 py-0.5 rounded-full font-semibold">
+              <span className="text-[10px] font-sans bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">
                 {activeTab === "active" ? clients.length : archivedClients.length}
               </span>
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto font-sans">
               <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   placeholder={t("clients.search.placeholder")}
@@ -525,7 +525,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
           <div className="overflow-x-auto min-h-[300px]">
             {activeTab === "active" ? (
               filteredClients.length === 0 ? (
-                <div className="text-center py-20 text-ink-500 space-y-1">
+                <div className="text-center py-20 text-slate-400 space-y-1">
                   <p className="text-sm">
                     {search.trim()
                       ? t("clients.search.noResults", { query: search })
@@ -533,9 +533,9 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                   </p>
                 </div>
               ) : (
-                <table className="w-full font-sans text-ink-700 text-left">
+                <table className="w-full font-sans text-slate-700 text-left">
                   <thead>
-                    <tr className="border-b border-ink-100 text-[10px] font-sans uppercase text-ink-400 tracking-wider">
+                    <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
                       <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
                       <th className="pb-3 font-semibold">{t("clients.table.clientName")}</th>
                       <th className="pb-3 font-semibold text-center">{t("clients.table.contact")}</th>
@@ -546,15 +546,15 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                     {filteredClients.map((c, i) => (
                       <tr
                         key={c.id}
-                        className="border-b border-ink-50 hover:bg-ink-50 transition-colors text-sm group"
+                        className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
                       >
-                        <td className="py-3 pl-2 pr-8 font-sans text-xs text-ink-500">{i + 1}</td>
-                        <td className="py-3 font-normal text-ink-800">
+                        <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
+                        <td className="py-3 font-normal text-slate-800">
                           {canOpenClientCard ? (
                             <button
                               type="button"
                               onClick={() => openClientCard(c)}
-                              className="text-left hover:text-gold-800 transition-colors cursor-pointer"
+                              className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
                             >
                               {c.lastName} {c.firstName}
                             </button>
@@ -580,7 +580,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                               {formatTelegramDisplay(c.telegram)}
                             </a>
                           ) : (
-                            <span className="text-xs text-ink-300 italic font-sans">{t("clients.contact.notSet")}</span>
+                            <span className="text-xs text-slate-300 italic font-sans">{t("clients.contact.notSet")}</span>
                           )}
                         </td>
                         <td className="py-3 text-right pr-2">
@@ -588,7 +588,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                           <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => startEdit(c)}
-                              className="p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-all cursor-pointer"
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
                               title={t("clients.action.edit")}
                               aria-label={`${t("clients.action.edit")} ${c.lastName} ${c.firstName}`}
                             >
@@ -596,7 +596,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                             </button>
                             <button
                               onClick={() => setDeleteTarget(c)}
-                              className="p-1.5 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 rounded-lg transition-all cursor-pointer"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
                               title={t("clients.action.archive")}
                               aria-label={`${t("clients.action.archive")} ${c.lastName} ${c.firstName}`}
                             >
@@ -611,7 +611,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 </table>
               )
             ) : filteredArchivedClients.length === 0 ? (
-              <div className="text-center py-20 text-ink-500 space-y-1">
+              <div className="text-center py-20 text-slate-400 space-y-1">
                 <p className="text-sm">
                   {search.trim()
                     ? t("clients.search.noResults", { query: search })
@@ -619,9 +619,9 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 </p>
               </div>
             ) : (
-              <table className="w-full font-sans text-ink-700 text-left">
+              <table className="w-full font-sans text-slate-700 text-left">
                 <thead>
-                  <tr className="border-b border-ink-100 text-[10px] font-sans uppercase text-ink-400 tracking-wider">
+                  <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
                     <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
                     <th className="pb-3 font-semibold">{t("clients.table.lastName")}</th>
                     <th className="pb-3 font-semibold">{t("clients.table.firstName")}</th>
@@ -634,15 +634,15 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                   {filteredArchivedClients.map((c, i) => (
                     <tr
                       key={c.id}
-                      className="border-b border-ink-50 hover:bg-ink-50 transition-colors text-sm group"
+                      className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
                     >
-                      <td className="py-3 pl-2 pr-8 font-sans text-xs text-ink-500">{i + 1}</td>
-                      <td className="py-3 font-normal text-ink-800">
+                      <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
+                      <td className="py-3 font-normal text-slate-800">
                         {canOpenClientCard ? (
                           <button
                             type="button"
                             onClick={() => openClientCard(c)}
-                            className="text-left hover:text-gold-800 transition-colors cursor-pointer"
+                            className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
                           >
                             {c.lastName}
                           </button>
@@ -650,12 +650,12 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                           c.lastName
                         )}
                       </td>
-                      <td className="py-3 font-normal text-ink-800">
+                      <td className="py-3 font-normal text-slate-800">
                         {canOpenClientCard ? (
                           <button
                             type="button"
                             onClick={() => openClientCard(c)}
-                            className="text-left hover:text-gold-800 transition-colors cursor-pointer"
+                            className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
                           >
                             {c.firstName}
                           </button>
@@ -679,10 +679,10 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                             {formatTelegramDisplay(c.telegram)}
                           </a>
                         ) : (
-                          <span className="text-xs text-ink-300 italic font-sans">{t("clients.contact.notSet")}</span>
+                          <span className="text-xs text-slate-300 italic font-sans">{t("clients.contact.notSet")}</span>
                         )}
                       </td>
-                      <td className="py-3 text-ink-600 text-xs font-sans">
+                      <td className="py-3 text-slate-600 text-xs font-sans">
                         {c.archivedAt ? formatArchivedAt(c.archivedAt) : "—"}
                       </td>
                       <td className="py-3 text-right pr-2">
@@ -692,7 +692,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                             onClick={() => setRestoreTarget(c)}
                             disabled={connectionState !== "online"}
                             title={translateConnectionBlockReason(connectionState, t) ?? t("clients.action.restore")}
-                            className="p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                             aria-label={`${t("clients.action.restore")} ${c.lastName} ${c.firstName}`}
                           >
                             <RotateCcw className="w-4 h-4" />
@@ -718,21 +718,21 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setEditingClient(null)}
-              className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
             />
             <motion.div
               initial={{ scale: 0.97, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-y-auto max-h-[90vh] max-w-lg w-full p-4 panel-card-stack"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-y-auto max-h-[90vh] max-w-lg w-full p-4 panel-card-stack"
             >
-              <div className="flex items-center justify-between border-b border-ink-100 pb-3">
-                <h3 className="text-base font-semibold tracking-tight text-ink-900">{t("clients.modal.editTitle")}</h3>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("clients.modal.editTitle")}</h3>
                 <button
                   onClick={() => setEditingClient(null)}
                   aria-label={t("common.close")}
-                  className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors"
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -782,7 +782,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                   />
                 </div>
 
-                <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={editIsMinor}
@@ -793,8 +793,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 </label>
 
                 {editIsMinor ? (
-                  <div className="space-y-4 border border-ink-100 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-ink-600">{t("clients.form.guardian1")}</p>
+                  <div className="space-y-4 border border-slate-100 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-slate-600">{t("clients.form.guardian1")}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="field-stack">
                         <label className={labelCls}>{t("clients.form.guardianName")}</label>
@@ -808,7 +808,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                     <div className="field-stack">
                       <label className={labelCls}>Telegram</label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-3 text-xs text-ink-500 font-sans pointer-events-none">t.me/</span>
+                        <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
                         <input
                           type="text"
                           value={editGuardian1Telegram.replace(/https?:\/\/t\.me\//, "")}
@@ -826,7 +826,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                       <input type="text" value={editGuardian1Address} onChange={(e) => setEditGuardian1Address(e.target.value)} className={inputCls} />
                     </div>
 
-                    <p className="text-xs font-semibold text-ink-600 pt-1">{t("clients.form.guardian2")}</p>
+                    <p className="text-xs font-semibold text-slate-600 pt-1">{t("clients.form.guardian2")}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="field-stack">
                         <label className={labelCls}>{t("clients.form.guardianName")}</label>
@@ -840,7 +840,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                     <div className="field-stack">
                       <label className={labelCls}>Telegram</label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-3 text-xs text-ink-500 font-sans pointer-events-none">t.me/</span>
+                        <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
                         <input
                           type="text"
                           value={editGuardian2Telegram.replace(/https?:\/\/t\.me\//, "")}
@@ -872,7 +872,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                 </button>
                 <button
                   onClick={() => setEditingClient(null)}
-                  className="flex-1 py-2.5 bg-ink-100 hover:bg-ink-200 text-ink-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans rounded-lg transition-colors cursor-pointer"
                 >
                   {t("common.cancel")}
                 </button>
@@ -890,7 +890,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
         description={
           <>
             {t("clients.confirm.archiveBody")}{" "}
-            <strong className="font-semibold text-ink-800">
+            <strong className="font-semibold text-slate-800">
               {deleteTarget?.lastName} {deleteTarget?.firstName}
             </strong>
           </>
@@ -908,7 +908,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
         description={
           <>
             {t("clients.confirm.restoreBody")}{" "}
-            <strong className="font-semibold text-ink-800">
+            <strong className="font-semibold text-slate-800">
               {restoreTarget?.lastName} {restoreTarget?.firstName}
             </strong>
           </>

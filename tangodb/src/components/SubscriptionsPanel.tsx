@@ -90,14 +90,14 @@ import type { Client, Discipline, Price, Subscription } from "../types";
 import type { I18nKey } from "../lib/i18n/keys";
 
 const NO_DISCIPLINE_KEY = "__none__";
-const checkboxCls = "rounded border-ink-300 text-gold-700 focus:ring-gold-500";
+const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
 
 interface SubscriptionsPanelProps {
   initialTab?: "active" | "sell" | "history";
   toast: (msg: string, type?: ToastType) => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 export default function SubscriptionsPanel({
   initialTab = "active",
@@ -800,19 +800,19 @@ export default function SubscriptionsPanel({
       {activeTab === "active" ? (
         /* PANEL 1: VIEW ACTIVE MEMBERSHIPS */
         <div
-          className={`bg-white p-4 border border-ink-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
+          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight text-ink-800">{t("subscriptions.activeTitle")}</h2>
-              <p className="text-xs text-ink-500 mt-1">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-800">{t("subscriptions.activeTitle")}</h2>
+              <p className="text-xs text-slate-400 mt-1">
                 {t("subscriptions.activeHint")}
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={search}
@@ -824,7 +824,7 @@ export default function SubscriptionsPanel({
             </div>
           </div>
 
-          <div className="bg-ink-50 rounded-xl border border-ink-200 p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {showLocationFilter && (
             <AppSelect
               label={t("subscriptions.filter.location")}
@@ -870,7 +870,7 @@ export default function SubscriptionsPanel({
               </AppSelect>
             ) : null}
 
-            <label className="flex items-center gap-2 text-xs text-ink-700 cursor-pointer sm:col-span-2 lg:col-span-1 lg:self-end lg:pb-2">
+            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer sm:col-span-2 lg:col-span-1 lg:self-end lg:pb-2">
               <input
                 type="checkbox"
                 checked={endingOnlyFilter}
@@ -883,8 +883,8 @@ export default function SubscriptionsPanel({
 
           <div className="space-y-3">
             {filteredActiveRecords.length === 0 ? (
-              <div className="text-center py-20 text-ink-500 space-y-3">
-                <Ticket className="w-8 h-8 mx-auto text-ink-300" />
+              <div className="text-center py-20 text-slate-400 space-y-3">
+                <Ticket className="w-8 h-8 mx-auto text-slate-300" />
                 <p className="text-sm">
                   {search.trim() || activeLocationFilter || activeDisciplineFilter || activeGroupFilter || endingOnlyFilter
                     ? t("subscriptions.empty.filtered")
@@ -893,7 +893,7 @@ export default function SubscriptionsPanel({
                 {!search.trim() && !activeLocationFilter && !activeDisciplineFilter && !activeGroupFilter && !endingOnlyFilter && (
                   <button
                     onClick={() => switchTab("sell")}
-                    className="text-xs font-semibold text-gold-700 hover:text-gold-800 hover:underline cursor-pointer"
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
                   >
                     {t("subscriptions.sellFirstLink")}
                   </button>
@@ -910,29 +910,29 @@ export default function SubscriptionsPanel({
                 return (
                   <div
                     key={disciplineKey}
-                    className="border border-ink-200 rounded-xl overflow-hidden bg-white"
+                    className="border border-slate-200 rounded-xl overflow-hidden bg-white"
                   >
                     <button
                       type="button"
                       onClick={() => toggleDiscipline(disciplineKey)}
-                      className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-ink-50 hover:bg-ink-100 transition-colors cursor-pointer text-left"
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer text-left"
                       aria-expanded={isDisciplineExpanded}
                     >
                       <div className="min-w-0">
-                        <h3 className="text-sm font-semibold text-ink-800 truncate">{disciplineName}</h3>
-                        <p className="text-[11px] text-ink-500 font-sans mt-0.5">
+                        <h3 className="text-sm font-semibold text-slate-800 truncate">{disciplineName}</h3>
+                        <p className="text-[11px] text-slate-400 font-sans mt-0.5">
                           {t(subscriptionCountKey(subsInGroup.length), { count: subsInGroup.length })}
                         </p>
                       </div>
                       <ChevronDown
-                        className={`w-4 h-4 text-ink-400 shrink-0 transition-transform duration-200 ${
+                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
                           isDisciplineExpanded ? "rotate-180" : ""
                         }`}
                       />
                     </button>
 
                     {isDisciplineExpanded && (
-                      <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-ink-100">
+                      <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-100">
                         {subsInGroup.map((sub) => {
                 const c1 = clientMap[sub.clientId1];
                 const c2 = sub.clientId2 ? clientMap[sub.clientId2] : null;
@@ -996,8 +996,8 @@ export default function SubscriptionsPanel({
                     key={sub.id}
                     className={`border rounded-xl bg-white transition-all ${
                       isExpanded
-                        ? "border-gold-200 shadow-sm p-5"
-                        : "border-ink-200 p-4 hover:border-gold-200 hover:shadow-sm"
+                        ? "border-indigo-200 shadow-sm p-5"
+                        : "border-slate-200 p-4 hover:border-indigo-200 hover:shadow-sm"
                     }`}
                   >
                     <button
@@ -1007,11 +1007,11 @@ export default function SubscriptionsPanel({
                       aria-expanded={isExpanded}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-sm font-semibold text-ink-800 leading-tight min-w-0">
+                        <h3 className="text-sm font-semibold text-slate-800 leading-tight min-w-0">
                           {clientNameStr}
                         </h3>
                         <ChevronDown
-                          className={`w-4 h-4 text-ink-400 shrink-0 transition-transform duration-200 ${
+                          className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
                             isExpanded ? "rotate-180" : ""
                           }`}
                         />
@@ -1019,14 +1019,14 @@ export default function SubscriptionsPanel({
 
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-ink-400">
+                          <span className="text-slate-400">
                             {isMonthly ? t("subscriptions.remaining.days") : t("subscriptions.remaining.lessons")}
                           </span>
-                          <span className="font-sans font-semibold text-ink-800">
+                          <span className="font-sans font-semibold text-slate-800">
                             {isMonthly ? (
                               <>
                                 {daysLeft ?? 0}{" "}
-                                <span className="text-ink-400 font-normal">
+                                <span className="text-slate-400 font-normal">
                                   {t(
                                     plural(daysLeft ?? 0, ["common.day.one", "common.day.few", "common.day.many"]) as I18nKey
                                   )}
@@ -1035,17 +1035,17 @@ export default function SubscriptionsPanel({
                             ) : (
                               <>
                                 {sub.lessonsLeft}{" "}
-                                <span className="text-ink-400 font-normal">
+                                <span className="text-slate-400 font-normal">
                                   {t("common.of")} {sub.lessonsTotal}
                                 </span>
                               </>
                             )}
                           </span>
                         </div>
-                        <div className="w-full bg-ink-100 h-2 rounded-full overflow-hidden">
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-300 ${
-                              isAlarm ? "bg-garnet-500" : "bg-gold-500"
+                              isAlarm ? "bg-rose-500" : "bg-indigo-500"
                             }`}
                             style={{ width: `${progressPct}%` }}
                           />
@@ -1057,7 +1057,7 @@ export default function SubscriptionsPanel({
                           {linkedGroupNames.map((groupName) => (
                             <span
                               key={groupName}
-                              className="text-[10px] font-sans font-semibold tracking-wide text-gold-700 bg-gold-50 px-2 py-0.5 rounded border border-gold-100"
+                              className="text-[10px] font-sans font-semibold tracking-wide text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100"
                             >
                               {groupName}
                             </span>
@@ -1067,26 +1067,26 @@ export default function SubscriptionsPanel({
                     </button>
 
                     {isExpanded && (
-                      <div className="mt-4 pt-4 border-t border-ink-100 space-y-4 animate-fade-in">
+                      <div className="mt-4 pt-4 border-t border-slate-100 space-y-4 animate-fade-in">
                         <div className="space-y-3">
                           <div className="space-y-1">
-                            <p className="text-[11px] font-sans font-semibold text-gold-700 leading-snug">
+                            <p className="text-[11px] font-sans font-semibold text-indigo-700 leading-snug">
                               {tariffLabel}
                             </p>
                             <div className="flex items-center gap-2 flex-wrap">
                               {sub.category === "private" ? (
-                                <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-gold-700 bg-gold-50 px-2 py-0.5 rounded border border-gold-100">
+                                <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
                                   {t("subscriptions.card.personal")}
                                 </span>
                               ) : disciplineName ? (
-                                <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-ink-500">
+                                <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-slate-500">
                                   {disciplineName}
                                 </span>
                               ) : null}
                               {linkedGroupNames.map((groupName) => (
                                 <span
                                   key={`${sub.id}-${groupName}`}
-                                  className="text-[10px] font-sans font-semibold tracking-wide text-gold-700 bg-gold-50 px-2 py-0.5 rounded border border-gold-100"
+                                  className="text-[10px] font-sans font-semibold tracking-wide text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100"
                                 >
                                   {groupName}
                                 </span>
@@ -1095,10 +1095,10 @@ export default function SubscriptionsPanel({
                           </div>
 
                           <div className="space-y-1.5">
-                            <p className="text-[11px] text-ink-500 font-sans">
+                            <p className="text-[11px] text-slate-400 font-sans">
                               {t("subscriptions.card.activated", { date: sub.activationDate || "—" })}
                             </p>
-                            <p className="text-[11px] text-ink-500 font-sans">
+                            <p className="text-[11px] text-slate-400 font-sans">
                               {t("subscriptions.card.visits", {
                                 visits: attendanceStats.visits,
                                 absences: attendanceStats.absences,
@@ -1107,16 +1107,16 @@ export default function SubscriptionsPanel({
 
                             {subFreezePolicy.freezeEnabled && sub.category === "group" && !isMonthly ? (
                               sub.freezeUsed >= subFreezePolicy.freezeMaxCount ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-sans text-ink-400 bg-ink-50 px-2 py-0.5 rounded border border-ink-200">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-sans text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
                                   <Snowflake className="w-3 h-3" /> {t("subscriptions.card.freezeUsed")}
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-sans text-lavender-600 bg-lavender-50 px-2 py-0.5 rounded border border-lavender-100">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
                                   <Snowflake className="w-3 h-3" /> {t("subscriptions.card.freezeAvailable")}
                                 </span>
                               )
                             ) : subFreezePolicy.freezeEnabled && isMonthly ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-sans text-lavender-600 bg-lavender-50 px-2 py-0.5 rounded border border-lavender-100">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-sans text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
                                 <Snowflake className="w-3 h-3" /> {t("subscriptions.card.freezeAvailableMonthly")}
                               </span>
                             ) : null}
@@ -1200,11 +1200,11 @@ export default function SubscriptionsPanel({
 
                         <div className="flex flex-col gap-2 pt-1 text-xs sm:flex-row sm:items-center sm:justify-between">
                           {isMonthly ? (
-                            <span className="text-ink-400 min-w-0">{t("subscriptions.card.expiresAt", { date: sub.expiresAt || "—" })}</span>
+                            <span className="text-slate-400 min-w-0">{t("subscriptions.card.expiresAt", { date: sub.expiresAt || "—" })}</span>
                           ) : isAlarm ? (
-                            <span className="text-garnet-600 font-semibold min-w-0">{t("subscriptions.card.suggestRenewal")}</span>
+                            <span className="text-rose-600 font-semibold min-w-0">{t("subscriptions.card.suggestRenewal")}</span>
                           ) : (
-                            <span className="text-ink-400 min-w-0">{t("subscriptions.card.balanceOk")}</span>
+                            <span className="text-slate-400 min-w-0">{t("subscriptions.card.balanceOk")}</span>
                           )}
 
                           <div className="flex flex-col gap-2 w-full min-w-0 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:justify-end">
@@ -1214,7 +1214,7 @@ export default function SubscriptionsPanel({
                                 onClick={() => setPartnerReplaceTarget(sub)}
                                 disabled={connectionState !== "online"}
                                 title={translateConnectionBlockReason(connectionState, t)}
-                                className="inline-flex items-center gap-1 text-gold-700 hover:text-gold-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                                className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
                               >
                                 <RefreshCw className="w-3 h-3" />
                                 {t("subscriptions.partnerReplace.action")}
@@ -1226,7 +1226,7 @@ export default function SubscriptionsPanel({
                                 onClick={() => setFreezeTarget(sub)}
                                 disabled={connectionState !== "online"}
                                 title={translateConnectionBlockReason(connectionState, t)}
-                                className="inline-flex items-center gap-1 text-lavender-600 hover:text-lavender-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                                className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
                               >
                                 <Snowflake className="w-3 h-3" />
                                 {t("freeze.action.openDialog")}
@@ -1239,7 +1239,7 @@ export default function SubscriptionsPanel({
                                   onClick={() => setPartialRefundTarget(sub)}
                                   disabled={connectionState !== "online"}
                                   title={translateConnectionBlockReason(connectionState, t)}
-                                  className="inline-flex items-center gap-1 text-gold-700 hover:text-gold-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                                  className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
                                 >
                                   <Coins className="w-3 h-3" />
                                   {t("subscriptions.refund.partialAction")}
@@ -1249,7 +1249,7 @@ export default function SubscriptionsPanel({
                                   onClick={() => setRefundTarget(sub)}
                                   disabled={connectionState !== "online"}
                                   title={translateConnectionBlockReason(connectionState, t)}
-                                  className="inline-flex items-center gap-1 text-gold-700 hover:text-gold-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                                  className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
                                 >
                                   <Banknote className="w-3 h-3" />
                                   {t("subscriptions.refund.action")}
@@ -1262,7 +1262,7 @@ export default function SubscriptionsPanel({
                                 onClick={() => setFinishTarget({ id: sub.id, name: clientNameStr })}
                                 disabled={connectionState !== "online"}
                                 title={translateConnectionBlockReason(connectionState, t)}
-                                className="text-ink-400 hover:text-garnet-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                                className="text-slate-400 hover:text-rose-600 hover:underline cursor-pointer transition-colors uppercase text-[10px] font-sans font-semibold disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
                               >
                                 {t("subscriptions.confirm.finishConfirm")}
                               </button>
@@ -1284,11 +1284,11 @@ export default function SubscriptionsPanel({
         </div>
       ) : activeTab === "history" ? (
         <div
-          className={`bg-white p-4 border border-ink-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
+          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
         >
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-ink-800">{t("subscriptions.historyTitle")}</h2>
-            <p className="text-xs text-ink-500 mt-1">
+            <h2 className="text-lg font-semibold tracking-tight text-slate-800">{t("subscriptions.historyTitle")}</h2>
+            <p className="text-xs text-slate-400 mt-1">
               {t("subscriptions.historyHint")}
             </p>
           </div>
@@ -1344,22 +1344,22 @@ export default function SubscriptionsPanel({
           </div>
 
           {hasHistoryFilter && !historyClientId && (
-            <div className="flex items-center justify-between px-3 py-2.5 border border-ink-200 rounded-xl bg-ink-50/10 gap-2">
+            <div className="flex items-center justify-between px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 gap-2">
               <button
                 type="button"
                 onClick={() => setHistoryMonth((m) => shiftMonth(m, -1))}
-                className="p-1.5 rounded-lg hover:bg-white text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 aria-label={t("subscriptions.aria.prevMonth")}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex flex-col items-center gap-0.5 min-w-0">
-                <span className="text-sm font-semibold text-ink-800">{formatMonthTitle(historyMonth, locale)}</span>
+                <span className="text-sm font-semibold text-slate-800">{formatMonthTitle(historyMonth, locale)}</span>
                 {!isViewingCurrentHistoryMonth && (
                   <button
                     type="button"
                     onClick={() => setHistoryMonth(currentYearMonth())}
-                    className="text-[10px] font-semibold text-gold-700 hover:text-gold-800 hover:underline cursor-pointer"
+                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
                   >
                     {t("subscriptions.history.currentMonth")}
                   </button>
@@ -1368,7 +1368,7 @@ export default function SubscriptionsPanel({
               <button
                 type="button"
                 onClick={() => setHistoryMonth((m) => shiftMonth(m, 1))}
-                className="p-1.5 rounded-lg hover:bg-white text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 aria-label={t("subscriptions.aria.nextMonth")}
               >
                 <ChevronRight className="w-4 h-4" />
@@ -1377,17 +1377,17 @@ export default function SubscriptionsPanel({
           )}
 
           {hasHistoryFilter && historyClientId && (
-            <div className="flex items-center justify-between px-3 py-2.5 border border-ink-200 rounded-xl bg-ink-50/10 gap-2">
+            <div className="flex items-center justify-between px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 gap-2">
               <button
                 type="button"
                 onClick={() => setHistoryYear((y) => y - 1)}
-                className="p-1.5 rounded-lg hover:bg-white text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 aria-label={t("subscriptions.aria.prevYear")}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex flex-col items-center gap-0.5 min-w-0">
-                <span className="text-sm font-semibold text-ink-800">
+                <span className="text-sm font-semibold text-slate-800">
                   {historyYear}
                   {t("common.yearSuffix")}
                 </span>
@@ -1395,7 +1395,7 @@ export default function SubscriptionsPanel({
                   <button
                     type="button"
                     onClick={() => setHistoryYear(currentYear())}
-                    className="text-[10px] font-semibold text-gold-700 hover:text-gold-800 hover:underline cursor-pointer"
+                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
                   >
                     {t("subscriptions.history.currentYear")}
                   </button>
@@ -1404,7 +1404,7 @@ export default function SubscriptionsPanel({
               <button
                 type="button"
                 onClick={() => setHistoryYear((y) => y + 1)}
-                className="p-1.5 rounded-lg hover:bg-white text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 aria-label={t("subscriptions.aria.nextYear")}
               >
                 <ChevronRight className="w-4 h-4" />
@@ -1414,15 +1414,15 @@ export default function SubscriptionsPanel({
 
           <div className="space-y-2">
             {!hasHistoryFilter ? (
-              <div className="text-center py-16 text-ink-500 space-y-2">
-                <History className="w-8 h-8 mx-auto text-ink-300" />
+              <div className="text-center py-16 text-slate-400 space-y-2">
+                <History className="w-8 h-8 mx-auto text-slate-300" />
                 <p className="text-sm max-w-md mx-auto leading-relaxed">
                   {t("subscriptions.history.selectFilter")}
                 </p>
               </div>
             ) : historyRecords.length === 0 ? (
-              <div className="text-center py-16 text-ink-500 space-y-2">
-                <Ticket className="w-8 h-8 mx-auto text-ink-300" />
+              <div className="text-center py-16 text-slate-400 space-y-2">
+                <Ticket className="w-8 h-8 mx-auto text-slate-300" />
                 <p className="text-sm">{t("subscriptions.empty.filtered")}</p>
               </div>
             ) : (
@@ -1442,23 +1442,23 @@ export default function SubscriptionsPanel({
                 return (
                   <div
                     key={sub.id}
-                    className="border border-ink-200 rounded-xl p-4 bg-white hover:border-gold-200 transition-colors"
+                    className="border border-slate-200 rounded-xl p-4 bg-white hover:border-indigo-200 transition-colors"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                       <div className="min-w-0 space-y-1">
-                        <h3 className="text-sm font-semibold text-ink-800">{clientNameStr}</h3>
-                        <p className="text-[11px] font-sans font-semibold text-gold-700">{tariffLabel}</p>
+                        <h3 className="text-sm font-semibold text-slate-800">{clientNameStr}</h3>
+                        <p className="text-[11px] font-sans font-semibold text-indigo-700">{tariffLabel}</p>
                         <div className="flex items-center gap-2 flex-wrap">
                           {disciplineName && (
-                            <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-ink-500">
+                            <span className="text-[10px] font-sans font-semibold tracking-wider uppercase text-slate-500">
                               {disciplineName}
                             </span>
                           )}
                           <span
                             className={`text-[10px] font-sans font-semibold px-2 py-0.5 rounded border ${
                               isFinished
-                                ? "text-ink-500 bg-ink-50 border-ink-200"
-                                : "text-gold-700 bg-gold-50 border-gold-100"
+                                ? "text-slate-500 bg-slate-50 border-slate-200"
+                                : "text-indigo-700 bg-indigo-50 border-indigo-100"
                             }`}
                           >
                             {isFinished ? t("subscriptions.status.finished") : t("subscriptions.status.active")}
@@ -1466,10 +1466,10 @@ export default function SubscriptionsPanel({
                         </div>
                       </div>
                       <div className="text-right shrink-0 space-y-0.5">
-                        <p className="text-[11px] text-ink-500 font-sans">
+                        <p className="text-[11px] text-slate-400 font-sans">
                           {t("subscriptions.card.activated", { date: sub.activationDate || "—" })}
                         </p>
-                        <p className="text-xs font-sans font-semibold text-ink-700">
+                        <p className="text-xs font-sans font-semibold text-slate-700">
                           {t("subscriptions.card.lessonsOf", { left: sub.lessonsLeft, total: sub.lessonsTotal })}
                         </p>
                       </div>
@@ -1482,14 +1482,14 @@ export default function SubscriptionsPanel({
         </div>
       ) : (
         /* PANEL 2: SELL NEW SUBSCRIPTION */
-        <div className="bg-white p-4 border border-ink-200 shadow-xs panel-card-stack panel-sell-under-tabs">
+        <div className="bg-white p-4 border border-slate-200 shadow-xs panel-card-stack panel-sell-under-tabs">
           <div className="panel-form-header panel-form-header-wide-md">
             <div className="panel-form-header-icon">
-              <Ticket className="w-5 h-5 text-gold-700" />
+              <Ticket className="w-5 h-5 text-indigo-600" />
             </div>
             <div className="panel-form-header-text">
-              <h2 className="text-base font-semibold tracking-tight text-ink-900">{t("subscriptions.sellTitle")}</h2>
-              <p className="text-ink-400 text-[11px] leading-snug">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("subscriptions.sellTitle")}</h2>
+              <p className="text-slate-400 text-[11px] leading-snug">
                 {t("subscriptions.sellSubtitle")}
               </p>
             </div>
@@ -1498,13 +1498,13 @@ export default function SubscriptionsPanel({
           <GroupSpotNotificationBanner toast={toast} />
 
           {locations.length === 0 ? (
-            <div className="text-center py-20 text-ink-500 space-y-3">
-              <Ticket className="w-8 h-8 mx-auto text-ink-300" />
+            <div className="text-center py-20 text-slate-400 space-y-3">
+              <Ticket className="w-8 h-8 mx-auto text-slate-300" />
               <AddLocationsInSettingsHint />
             </div>
           ) : (
           <div className="panel-form-stack panel-form-stack-wide-md panel-form-stack-compact">
-            <label className="flex items-start gap-2 text-sm text-ink-700 cursor-pointer panel-form-full-row-md">
+            <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer panel-form-full-row-md">
               <input
                 type="checkbox"
                 checked={localPriceList}
@@ -1520,7 +1520,7 @@ export default function SubscriptionsPanel({
             {localPriceList && (
               <div className="field-stack panel-form-full-row-md animate-fade-in">
                 {locations.length === 0 ? (
-                  <AddLocationsInSettingsHint className="text-xs text-ink-500 font-sans leading-relaxed" />
+                  <AddLocationsInSettingsHint className="text-xs text-slate-400 font-sans leading-relaxed" />
                 ) : (
                   <LocationSelect
                     label={t("subscriptions.filter.location")}
@@ -1539,7 +1539,7 @@ export default function SubscriptionsPanel({
             <div className="field-stack">
               <label className={labelCls}>{t("subscriptions.sell.tariffLabel")}</label>
               {groupTariffs.length === 0 ? (
-                <p className="text-xs text-ink-500 font-sans leading-relaxed">
+                <p className="text-xs text-slate-400 font-sans leading-relaxed">
                   {localPriceList
                     ? t("subscriptions.sell.noTariffs")
                     : t("subscriptions.sell.noGlobalTariffs")}
@@ -1575,7 +1575,7 @@ export default function SubscriptionsPanel({
             )}
 
             {disciplines.length === 0 ? (
-              <AddDisciplinesInSettingsHint className="text-xs text-ink-500 font-sans leading-relaxed" />
+              <AddDisciplinesInSettingsHint className="text-xs text-slate-400 font-sans leading-relaxed" />
             ) : (
               <DisciplineSelect
                 disciplines={disciplines}
@@ -1602,21 +1602,21 @@ export default function SubscriptionsPanel({
             />
 
             {capacityPreviewLines.length > 0 && (
-              <div className="rounded-xl border border-ink-100 bg-ink-50/10 px-3 py-2 space-y-1 panel-form-full-row-md">
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2 space-y-1 panel-form-full-row-md">
                 <p className={labelCls}>{t("groupCapacity.previewTitle")}</p>
                 {capacityPreviewLines.map((line) => (
-                  <p key={line.groupId} className="text-xs text-ink-600">
+                  <p key={line.groupId} className="text-xs text-slate-600">
                     {line.text}
                   </p>
                 ))}
-                <p className="text-[10px] text-ink-500 leading-relaxed">{t("groupCapacity.frozenKeepsSeat")}</p>
+                <p className="text-[10px] text-slate-400 leading-relaxed">{t("groupCapacity.frozenKeepsSeat")}</p>
               </div>
             )}
 
             {capacityConflict && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 space-y-2 panel-form-full-row-md">
-                <p className="text-sm text-amber-700 font-semibold">{t("subscriptions.error.groupCapacityExceeded")}</p>
-                <p className="text-xs text-amber-700 leading-relaxed">{t("groupWaitlist.suggestQueue")}</p>
+              <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-3 space-y-2 panel-form-full-row-md">
+                <p className="text-sm text-amber-900 font-semibold">{t("subscriptions.error.groupCapacityExceeded")}</p>
+                <p className="text-xs text-amber-800 leading-relaxed">{t("groupWaitlist.suggestQueue")}</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -1630,7 +1630,7 @@ export default function SubscriptionsPanel({
                     <button
                       type="button"
                       onClick={() => setOverrideDialogOpen(true)}
-                      className="px-3 py-2 bg-white border border-amber-300 text-amber-700 text-xs font-semibold uppercase tracking-wider rounded-lg hover:bg-amber-50 cursor-pointer"
+                      className="px-3 py-2 bg-white border border-amber-300 text-amber-800 text-xs font-semibold uppercase tracking-wider rounded-lg hover:bg-amber-100 cursor-pointer"
                     >
                       {t("groupCapacity.override.action")}
                     </button>
@@ -1688,7 +1688,7 @@ export default function SubscriptionsPanel({
               </div>
             )}
 
-            <div className="border-t border-ink-100 pt-1 -mt-0.5 panel-form-full-row-md" />
+            <div className="border-t border-slate-100 pt-1 -mt-0.5 panel-form-full-row-md" />
 
             <div className="panel-form-full-row-md grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl md:max-w-none">
               <AppSelect
@@ -1716,27 +1716,27 @@ export default function SubscriptionsPanel({
                     required
                     rows={2}
                     placeholder={t("subscriptions.sell.paymentCommentPlaceholder")}
-                    className="w-full bg-ink-50 border border-ink-200 rounded-lg px-3 py-2 text-sm resize-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none"
                   />
                 </div>
               )}
 
               <div className="field-stack">
                 <span className={labelCls}>{t("subscriptions.sell.totalDue")}</span>
-                <div className="flex items-center justify-between h-8 px-3 bg-gold-50/10 rounded-lg border border-gold-100">
-                  <span className="text-lg font-sans font-semibold text-gold-700">
+                <div className="flex items-center justify-between h-8 px-3 bg-indigo-50/60 rounded-lg border border-indigo-100">
+                  <span className="text-lg font-sans font-semibold text-indigo-700">
                     {getSubPrice() > 0 ? formatCurrency(getSubPrice()) : "—"}
                   </span>
                 </div>
               </div>
             </div>
             {role !== "teacher" && (
-            <p className="text-ink-400 text-xs font-sans text-center -mt-1 panel-form-full-row-md">
+            <p className="text-slate-400 text-xs font-sans text-center -mt-1 panel-form-full-row-md">
               {t("subscriptions.sell.priceHint")}{" "}
               <button
                 type="button"
                 onClick={() => navigate("/prices")}
-                className="text-gold-700 hover:text-gold-800 hover:underline cursor-pointer font-semibold"
+                className="text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer font-semibold"
               >
                 {t("subscriptions.sell.priceListLink")}
               </button>

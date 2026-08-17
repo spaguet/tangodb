@@ -3,71 +3,6 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-
-  /* Atelier palette (DS v2) — parallel to legacy slate/indigo/… until Prompt 8 */
-  --color-ink-25: #faf9f7;
-  --color-ink-50: #f5f3ef;
-  --color-ink-100: #e8e4dc;
-  --color-ink-200: #d6d0c4;
-  --color-ink-300: #b5ac9c;
-  --color-ink-400: #8c8272;
-  --color-ink-500: #6b6255;
-  --color-ink-600: #4f473d;
-  --color-ink-700: #39332b;
-  --color-ink-800: #241f1a;
-  --color-ink-900: #171310;
-  --color-ink-950: #0d0b09;
-
-  --color-gold-50: #fbf3e3;
-  --color-gold-100: #f5e4c0;
-  --color-gold-200: #edd096;
-  --color-gold-300: #e2b665;
-  --color-gold-400: #d49f42;
-  --color-gold-500: #c4902e;
-  --color-gold-600: #a97522;
-  --color-gold-700: #8a5d1b;
-  --color-gold-800: #6b4715;
-  --color-gold-900: #4a3110;
-
-  --color-lavender-50: #f3f0fa;
-  --color-lavender-100: #e4dcf3;
-  --color-lavender-200: #cfc0e8;
-  --color-lavender-300: #b39fd9;
-  --color-lavender-400: #9578c7;
-  --color-lavender-500: #7a5cb0;
-  --color-lavender-600: #634995;
-  --color-lavender-700: #4c3874;
-  --color-lavender-800: #3a2a58;
-  --color-lavender-900: #2a1e40;
-
-  --color-sage-50: #f4f8f4;
-  --color-sage-100: #e2ede2;
-  --color-sage-200: #c5dbc5;
-  --color-sage-300: #9fc19f;
-  --color-sage-400: #75a375;
-  --color-sage-500: #5c8a5c;
-  --color-sage-600: #4a734a;
-  --color-sage-700: #3a5c3a;
-  --color-sage-800: #2d462d;
-  --color-sage-900: #1f311f;
-  --color-sage-950: #141f14;
-
-  --color-garnet-50: #fdf2f4;
-  --color-garnet-100: #f9e0e5;
-  --color-garnet-200: #f2c2cc;
-  --color-garnet-300: #e899a8;
-  --color-garnet-400: #d9667a;
-  --color-garnet-500: #c04d62;
-  --color-garnet-600: #a8394a;
-  --color-garnet-700: #8b2d3c;
-  --color-garnet-800: #6e2430;
-  --color-garnet-900: #551b25;
-  --color-garnet-950: #3a1219;
-
-  --color-amber-50: #fffbeb;
-  --color-amber-200: #fde68a;
-  --color-amber-700: #b45309;
-
   --animate-fade-in: fade-in 0.25s ease-out;
   --animate-slide-up: slide-up 0.35s ease-out;
 
@@ -88,11 +23,11 @@
   }
 
   body {
-    @apply bg-ink-50 text-ink-800 antialiased;
+    @apply bg-slate-50 text-slate-800 antialiased;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-gold-500);
+    outline: 2px solid #6366f1;
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -100,27 +35,27 @@
 
 @layer components {
   .demo-card {
-    @apply bg-white rounded-lg border border-ink-200 shadow-xs;
+    @apply bg-white rounded-lg border border-slate-200/90 shadow-xs;
   }
 
   .demo-stat {
-    @apply bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100;
+    @apply bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100;
   }
 
   .demo-label {
-    @apply text-[10px] text-ink-500 uppercase font-semibold tracking-wider;
+    @apply text-[10px] text-slate-400 uppercase font-semibold tracking-wider;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gold-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gold-800 cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 cursor-pointer;
   }
 
   .btn-cta {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gold-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gold-800 cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 cursor-pointer;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-ink-200 bg-white px-5 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:bg-ink-50 cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer;
   }
 
   .panel-page-stack {
@@ -132,15 +67,15 @@
   }
 
   .panel-form-header {
-    @apply text-center space-y-1 border-b border-ink-100 pb-3;
+    @apply text-center space-y-1 border-b border-slate-100 pb-3;
   }
 
   .panel-form-header-icon {
-    @apply w-9 h-9 bg-gold-50 rounded-lg flex items-center justify-center mx-auto;
+    @apply w-9 h-9 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto;
   }
 
   .panel-form-header-wide-md {
-    @apply text-center space-y-1 border-b border-ink-100 pb-3 md:text-left md:flex md:items-start md:gap-3 md:space-y-0;
+    @apply text-center space-y-1 border-b border-slate-100 pb-3 md:text-left md:flex md:items-start md:gap-3 md:space-y-0;
   }
 
   .panel-form-header-wide-md .panel-form-header-icon {
@@ -156,7 +91,7 @@
   }
 
   .panel-sell-under-tabs {
-    @apply max-w-xl mx-auto rounded-b-xl rounded-t-xl border-t border-ink-200 md:max-w-none md:mx-0 md:border-t-0 md:-mt-px md:rounded-t-none;
+    @apply max-w-xl mx-auto rounded-b-xl rounded-t-xl border-t border-slate-200 md:max-w-none md:mx-0 md:border-t-0 md:-mt-px md:rounded-t-none;
   }
 
   .demo-field-disabled {

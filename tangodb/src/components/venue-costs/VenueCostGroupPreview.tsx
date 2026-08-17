@@ -40,11 +40,11 @@ export default function VenueCostGroupPreview({
   const preview = computeGroupPreviewPair(rules, scope);
   const wrapperCls = compact
     ? "mt-1 space-y-1.5"
-    : "rounded-lg bg-ink-50 border border-ink-100 p-3 space-y-2";
+    : "rounded-lg bg-slate-50 border border-slate-100 p-3 space-y-2";
 
   return (
     <div className={wrapperCls}>
-      <p className={compact ? "text-[11px] text-ink-500" : "text-[11px] text-ink-500"}>
+      <p className={compact ? "text-[11px] text-slate-400" : "text-[11px] text-slate-500"}>
         {t("venueCosts.preview.scopeHint")}
       </p>
       <div className={compact ? "grid gap-1.5 sm:grid-cols-3" : "grid gap-2 sm:grid-cols-3"}>
@@ -101,14 +101,14 @@ export default function VenueCostGroupPreview({
         </AppSelect>
       </div>
       {preview ? (
-        <p className={compact ? "text-[11px] text-ink-500" : "text-xs text-ink-600"}>
+        <p className={compact ? "text-[11px] text-slate-400" : "text-xs text-slate-600"}>
           {t("venueCosts.preview", {
             four: formatCurrency(preview.four),
             five: formatCurrency(preview.five),
           })}
         </p>
       ) : (
-        <p className={compact ? "text-[11px] text-ink-500 italic" : "text-xs text-ink-500 italic"}>
+        <p className={compact ? "text-[11px] text-slate-400 italic" : "text-xs text-slate-500 italic"}>
           {t("venueCosts.preview.selectTeacher")}
         </p>
       )}

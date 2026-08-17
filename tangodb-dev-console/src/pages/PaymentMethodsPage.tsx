@@ -44,28 +44,28 @@ function QrImageUpload({
   return (
     <div className="space-y-2">
       <label className="block space-y-1">
-        <span className="text-xs text-ink-500 uppercase">QR изображение</span>
+        <span className="text-xs text-slate-500 uppercase">QR изображение</span>
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
-          className="w-full text-xs text-ink-400 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-800 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-ink-100 hover:file:bg-ink-700"
+          className="w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-100 hover:file:bg-slate-700"
         />
       </label>
       {value && (
         <div className="flex items-center gap-3">
-          <img src={value} alt="QR preview" className="h-20 w-20 rounded-lg border border-ink-800 bg-white object-contain p-1" />
+          <img src={value} alt="QR preview" className="h-20 w-20 rounded-lg border border-slate-800 bg-white object-contain p-1" />
           <button
             type="button"
             onClick={() => onChange("")}
-            className="inline-flex items-center gap-1 text-xs text-garnet-400 hover:text-garnet-300 cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
             Удалить QR
           </button>
         </div>
       )}
-      {error && <p className="text-xs text-garnet-400">{error}</p>}
+      {error && <p className="text-xs text-rose-400">{error}</p>}
     </div>
   );
 }
@@ -126,30 +126,30 @@ export default function PaymentMethodsPage() {
     <div className="max-w-3xl space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-white">Payment methods</h2>
-        <p className="text-xs text-ink-500 mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           Публичные реквизиты для страницы покупки в CRM. QR хранится как небольшое изображение в конфиге.
         </p>
         {updatedAt && (
-          <p className="text-xs text-ink-600 mt-2">Обновлено: {new Date(updatedAt).toLocaleString("ru-RU")}</p>
+          <p className="text-xs text-slate-600 mt-2">Обновлено: {new Date(updatedAt).toLocaleString("ru-RU")}</p>
         )}
       </div>
 
       {supabaseEnvError && (
-        <p className="text-sm text-amber-700 bg-amber-50/10 border border-amber-200 rounded-lg px-3 py-2">
+        <p className="text-sm text-amber-400 bg-amber-950/40 border border-amber-900 rounded-lg px-3 py-2">
           {supabaseEnvError}
         </p>
       )}
 
       {loading ? (
-        <p className="text-sm text-ink-400">Загрузка…</p>
+        <p className="text-sm text-slate-400">Загрузка…</p>
       ) : (
         <div className="space-y-4">
           <Section title="Криптовалюта" description="Один блок = одна монета/сеть. QR строится из адреса или URI template.">
             <div className="space-y-4">
               {form.crypto.map((row, index) => (
-                <div key={index} className="rounded-lg border border-ink-800 bg-ink-950/40 p-3 space-y-3">
+                <div key={index} className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold text-ink-400">Кошелёк {index + 1}</p>
+                    <p className="text-xs font-semibold text-slate-400">Кошелёк {index + 1}</p>
                     {form.crypto.length > 1 && (
                       <button
                         type="button"
@@ -159,7 +159,7 @@ export default function PaymentMethodsPage() {
                             crypto: prev.crypto.filter((_, i) => i !== index),
                           }))
                         }
-                        className="inline-flex items-center gap-1 text-xs text-garnet-400 hover:text-garnet-300 cursor-pointer"
+                        className="inline-flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         Удалить
@@ -218,7 +218,7 @@ export default function PaymentMethodsPage() {
                     crypto: [...prev.crypto, emptyCryptoRow()],
                   }))
                 }
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-gold-400 hover:text-gold-300 cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-400 hover:text-indigo-300 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Добавить кошелёк
@@ -454,7 +454,7 @@ export default function PaymentMethodsPage() {
             type="button"
             onClick={() => void save()}
             disabled={saving || !!supabaseEnvError}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gold-700 hover:bg-gold-800 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             {saving ? "Сохранение…" : "Сохранить реквизиты"}
@@ -462,8 +462,8 @@ export default function PaymentMethodsPage() {
         </div>
       )}
 
-      {error && <p className="text-sm text-garnet-400">{error}</p>}
-      {success && <p className="text-sm text-sage-400">{success}</p>}
+      {error && <p className="text-sm text-rose-400">{error}</p>}
+      {success && <p className="text-sm text-emerald-400">{success}</p>}
     </div>
   );
 }

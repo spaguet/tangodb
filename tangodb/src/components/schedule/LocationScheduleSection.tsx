@@ -48,22 +48,22 @@ export default function LocationScheduleSection({
   const showGrid = lessons.length > 0 || (canClickEmpty && locationId);
 
   return (
-    <section ref={sectionRef} className="bg-white rounded-xl border border-ink-200 shadow-xs">
+    <section ref={sectionRef} className="bg-white rounded-xl border border-slate-200/90 shadow-xs">
       <button
         type="button"
         onClick={() => setIsExpanded((prev) => !prev)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-ink-100 bg-ink-50/10 text-left cursor-pointer hover:bg-ink-50 transition-colors rounded-t-xl"
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 bg-slate-50/60 text-left cursor-pointer hover:bg-slate-50 transition-colors rounded-t-xl"
         aria-expanded={isExpanded}
       >
-        <h3 className="text-sm font-semibold text-ink-800 tracking-tight min-w-0 truncate">
+        <h3 className="text-sm font-semibold text-slate-800 tracking-tight min-w-0 truncate">
           {locationName}
         </h3>
         <div className="flex items-center gap-2 shrink-0">
           {lessons.length > 0 ? (
-            <span className="text-xs text-ink-500 tabular-nums">{lessons.length}</span>
+            <span className="text-xs text-slate-500 tabular-nums">{lessons.length}</span>
           ) : null}
           <ChevronDown
-            className={`w-4 h-4 text-ink-400 transition-transform duration-200 ${
+            className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
               isExpanded ? "rotate-180" : ""
             }`}
           />
@@ -72,7 +72,7 @@ export default function LocationScheduleSection({
 
       {isExpanded &&
         (!showGrid ? (
-          <div className="text-center py-12 text-ink-400 text-sm">{t("common.noLessonsWeek")}</div>
+          <div className="text-center py-12 text-slate-400 text-sm">{t("common.noLessonsWeek")}</div>
         ) : (
           <WeeklyScheduleGrid
             weekStart={weekStart}

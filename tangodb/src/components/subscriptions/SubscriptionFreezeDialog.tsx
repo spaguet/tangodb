@@ -25,7 +25,7 @@ interface SubscriptionFreezeDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 export default function SubscriptionFreezeDialog({
   subscription,
@@ -125,29 +125,29 @@ export default function SubscriptionFreezeDialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !applyFreeze.isPending && onClose()}
-            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-ink-200 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-4 space-y-4"
+            className="relative bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-4 space-y-4"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
-                <div className="flex items-center gap-2 text-gold-700">
+                <div className="flex items-center gap-2 text-indigo-700">
                   <Snowflake className="w-4 h-4" />
-                  <h2 className="text-base font-semibold text-ink-900">{t("freeze.dialog.title")}</h2>
+                  <h2 className="text-base font-semibold text-slate-900">{t("freeze.dialog.title")}</h2>
                 </div>
-                <p className="text-xs text-ink-500 mt-1">{t("freeze.dialog.subtitle")}</p>
+                <p className="text-xs text-slate-500 mt-1">{t("freeze.dialog.subtitle")}</p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={applyFreeze.isPending}
                 aria-label={t("common.close")}
-                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer"
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -179,8 +179,8 @@ export default function SubscriptionFreezeDialog({
               />
             </div>
 
-            <div className="rounded-lg border border-ink-100 bg-ink-50/10 p-3 space-y-2 text-xs text-ink-600">
-              <div className="flex items-center gap-2 text-ink-700 font-semibold">
+            <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-3 space-y-2 text-xs text-slate-600">
+              <div className="flex items-center gap-2 text-slate-700 font-semibold">
                 <CalendarDays className="w-3.5 h-3.5" />
                 {t("freeze.dialog.previewTitle")}
               </div>
@@ -215,7 +215,7 @@ export default function SubscriptionFreezeDialog({
                       })}
                     </p>
                   ) : (
-                    <p className="text-ink-400">{t("freeze.dialog.noExpiryExtension")}</p>
+                    <p className="text-slate-400">{t("freeze.dialog.noExpiryExtension")}</p>
                   )}
                 </>
               ) : null}
@@ -226,7 +226,7 @@ export default function SubscriptionFreezeDialog({
                 type="button"
                 onClick={onClose}
                 disabled={applyFreeze.isPending}
-                className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-ink-500 hover:text-ink-700 cursor-pointer"
+                className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-700 cursor-pointer"
               >
                 {t("common.cancel")}
               </button>

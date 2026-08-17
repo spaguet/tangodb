@@ -6,7 +6,7 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import type { Location } from "../../hooks/useLocations";
 
-const checkboxCls = "rounded border-ink-300 text-gold-700 focus:ring-gold-500";
+const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
 
 interface LocationTariffFieldProps {
   bindToLocation: boolean;
@@ -41,7 +41,7 @@ export default function LocationTariffField({
 
   return (
     <div className="space-y-2">
-      <label className="flex items-start gap-2 text-sm text-ink-700 cursor-pointer">
+      <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
         <input
           type="checkbox"
           checked={bindToLocation}
@@ -56,7 +56,7 @@ export default function LocationTariffField({
       {bindToLocation && (
         <div className="animate-fade-in">
           {locations.length === 0 ? (
-            <AddLocationsInSettingsHint className="text-xs text-ink-500 font-sans leading-relaxed" />
+            <AddLocationsInSettingsHint className="text-xs text-slate-400 font-sans leading-relaxed" />
           ) : (
             <AppSelect
               label={t("subscriptions.filter.location")}

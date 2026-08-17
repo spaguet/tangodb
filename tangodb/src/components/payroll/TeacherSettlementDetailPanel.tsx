@@ -53,26 +53,26 @@ function SettlementLineRow({
     line.timeStart && line.timeEnd ? `${line.timeStart}–${line.timeEnd}` : line.timeStart ?? "";
 
   return (
-    <li className="rounded-lg border border-ink-100 bg-white px-3 py-2.5 space-y-1.5 text-xs font-sans">
+    <li className="rounded-lg border border-slate-100 bg-white px-3 py-2.5 space-y-1.5 text-xs font-sans">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
-          <p className="font-semibold text-ink-800">
+          <p className="font-semibold text-slate-800">
             {t(CATEGORY_LABEL_KEYS[line.lineCategory])}
             {showClientTitle && line.title ? ` · ${line.title}` : line.title ? ` · ${line.title}` : ""}
           </p>
-          <p className="text-ink-500">
+          <p className="text-slate-500">
             {dateLabel}
             {timeLabel ? ` · ${timeLabel}` : ""}
           </p>
           {(line.disciplineName || line.locationName) && (
-            <p className="text-ink-400">
+            <p className="text-slate-400">
               {[line.disciplineName, line.locationName].filter(Boolean).join(" · ")}
             </p>
           )}
         </div>
-        <p className="font-semibold text-gold-700 whitespace-nowrap">{formatCurrency(line.accrualAmount)}</p>
+        <p className="font-semibold text-indigo-700 whitespace-nowrap">{formatCurrency(line.accrualAmount)}</p>
       </div>
-      <p className="text-[10px] text-ink-500">{formatLineFormula(line, t)}</p>
+      <p className="text-[10px] text-slate-400">{formatLineFormula(line, t)}</p>
     </li>
   );
 }
@@ -84,7 +84,7 @@ function ExcludedLineRow({ line }: { line: TeacherSettlementLineItem }) {
     : "—";
 
   return (
-    <li className="rounded-lg border border-amber-200 bg-amber-50/10 px-3 py-2 text-xs font-sans text-amber-700">
+    <li className="rounded-lg border border-amber-100 bg-amber-50/60 px-3 py-2 text-xs font-sans text-amber-900">
       <p className="font-semibold">
         {line.title ?? t(CATEGORY_LABEL_KEYS[line.lineCategory])} · {dateLabel}
       </p>
@@ -120,7 +120,7 @@ export default function TeacherSettlementDetailPanel({
   const detail = detailQuery.data;
   if (!detail) {
     return (
-      <p className="text-xs text-ink-500 py-3 text-center">{t("finance.payroll.detail.empty")}</p>
+      <p className="text-xs text-slate-400 py-3 text-center">{t("finance.payroll.detail.empty")}</p>
     );
   }
 
@@ -128,12 +128,12 @@ export default function TeacherSettlementDetailPanel({
   const { reconciliation } = detail;
 
   return (
-    <div className="mt-3 pt-3 border-t border-ink-200 space-y-3">
+    <div className="mt-3 pt-3 border-t border-slate-200 space-y-3">
       <div
         className={`rounded-lg px-3 py-2 text-xs font-sans ${
           reconciliation.matches
-            ? "bg-gold-50 border border-gold-100 text-gold-800"
-            : "bg-amber-50 border border-amber-200 text-amber-700"
+            ? "bg-indigo-50 border border-indigo-100 text-indigo-800"
+            : "bg-amber-50 border border-amber-100 text-amber-900"
         }`}
       >
         <div className="flex items-start gap-2">
@@ -158,7 +158,7 @@ export default function TeacherSettlementDetailPanel({
       </div>
 
       {!hasLines ? (
-        <p className="text-xs text-ink-500 py-2 text-center">{t("finance.payroll.detail.noLines")}</p>
+        <p className="text-xs text-slate-400 py-2 text-center">{t("finance.payroll.detail.noLines")}</p>
       ) : (
         sections.map((section) => {
           if (section.lines.length === 0) return null;
@@ -166,16 +166,16 @@ export default function TeacherSettlementDetailPanel({
             <section key={section.key} className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <h4 className="text-xs font-semibold text-ink-800">
+                  <h4 className="text-xs font-semibold text-slate-800">
                     {t(SECTION_LABEL_KEYS[section.key])}
                   </h4>
                   {section.payModes.length > 0 && (
-                    <p className="text-[10px] text-ink-500 mt-0.5">
+                    <p className="text-[10px] text-slate-400 mt-0.5">
                       {section.payModes.map((mode) => payModeLabel(mode, t)).join(" · ")}
                     </p>
                   )}
                 </div>
-                <p className="text-xs font-semibold text-ink-700">
+                <p className="text-xs font-semibold text-slate-700">
                   {formatCurrency(section.subtotal)}
                 </p>
               </div>
@@ -195,7 +195,7 @@ export default function TeacherSettlementDetailPanel({
 
       {detail.excludedLines.length > 0 && (
         <section className="space-y-2">
-          <h4 className="text-xs font-semibold text-amber-700">
+          <h4 className="text-xs font-semibold text-amber-800">
             {t("finance.payroll.detail.excludedTitle")}
           </h4>
           <ul className="space-y-1.5">
@@ -206,7 +206,7 @@ export default function TeacherSettlementDetailPanel({
         </section>
       )}
 
-      <p className="text-[10px] text-ink-500">
+      <p className="text-[10px] text-slate-400">
         {t("finance.payroll.detail.computedAt", {
           date: formatDate(reconciliation.computedAt.slice(0, 10), {
             day: "numeric",

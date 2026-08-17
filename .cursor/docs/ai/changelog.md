@@ -2,24 +2,6 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
-2026-08-17 — release: подверсия **2.9.0** — Design System v2 Atelier (Промпт 9): закрытие этапа 1 — `design_system.md` на палитре ink/gold/lavender/sage/garnet/amber; DS-ATELIER-0 «реализовано»; `project_colors.md` deprecated notice; версия CRM `2.9.0`.
-
-2026-08-17 — design: Design System v2 Atelier — Промпт 8: grep-чистка legacy — 0 вхождений `(slate|indigo|sky|violet|emerald|rose|red|blue)-[0-9]` в `src/` CRM, dev-console, landing; единственные ложные срабатывания наивного паттерна — `-translate-*-1/2`, Cloudflare `expired-callback` в `TurnstileWidget.tsx`; правило «не использовать legacy» в `design_system.md`.
-
-2026-08-17 — design: Design System v2 Atelier — Промпт 7: WCAG AA контраст — filled CTA `gold-600`→`gold-700` (+ hover `gold-800`); метки полей на светлом `ink-400`→`ink-500`; расписание: групповой `text-ink-900` на `gold-500`, персональный `lavender-500` bg; CRM + landing + dev-console CTA. Скрипт: `tangodb/scripts/_wcag-contrast-fix.mjs`.
-
-2026-08-17 — design: Design System v2 Atelier — Промпт 6: убран хардкод hex вне `@theme` (CRM `index.css` body/focus/scrollbar → `var(--color-*)`; boot screen `index.html` → ink-50/700/500; landing/dev-console `:focus-visible` → gold-500); нормализация opacity в dev-console (`ink-950/40` backdrop, `gold-900/70`/`/40`, `sage-950/40`; убраны `black/60`, `gold-950/*`).
-
-2026-08-17 — design: Design System v2 Atelier — Промпт 5: миграция палитры Atelier в `tangodb-landing/` (светлая тема: `ink-50` фон, `gold-600` CTA, `lavender` вторичный акцент; demo CRM preview + компонентные классы `btn-primary`/`btn-cta`/`demo-*` в `index.css`). Скрипт: `tangodb-landing/scripts/migrate-atelier-prompt5.mjs`.
-
-2026-08-17 — design: Design System v2 Atelier — Промпт 4: миграция палитры Atelier в `tangodb-dev-console/` (тёмная тема: `ink-950` фон, `ink-900` карточки; `gold` primary CTA, `lavender` Subscription badge, `garnet-600` emergency/destructive CTA; warning — `amber-50/200/700`). Скрипт: `tangodb-dev-console/scripts/migrate-atelier-prompt4.mjs`.
-
-2026-08-17 — design: Design System v2 Atelier — Промпт 3: расписание на палитре Atelier (`scheduleColors.ts`: gold/lavender/ink по §4) + иконки типа занятия в `LessonBlock` (`Users`, `User`, `CalendarPlus`, `Building2`); ring highlight/debt — `gold-600` / `garnet-500`.
-
-2026-08-17 — design: Design System v2 Atelier — Промпт 2: замена legacy Tailwind-классов (`slate`/`indigo`/…) на палитру Atelier (`ink`/`gold`/`lavender`/`sage`/`garnet`) во всём `tangodb/src/` (~170 файлов); нормализация opacity по §3; `buttonStyles.ts`, `AppSelect`, `App.tsx`, auth, `@layer components` в `index.css`. Скрипт: `tangodb/scripts/migrate-atelier-prompt2.mjs`.
-
-2026-08-17 — design: Design System v2 Atelier — токены палитры (`ink`, `gold`, `lavender`, `sage`, `garnet`, `amber`) в `@theme` для `tangodb/`, `tangodb-dev-console/`, `tangodb-landing/` (Промпт 1; legacy-классы без изменений).
-
 2026-08-17 — fix/ui: микропатч **2.8.8** — мобильная вёрстка Финансы (платежи: квадратная «Редактировать» справа; дебиторы: кнопки оплаты справа; аренды к оплате: «Новая аренда» справа); действующие абонементы — кнопки действий в колонку на мобильном; i18n: убраны «нетто», перевод effective amount, фикс «На {{date}}».
 
 2026-08-16 — fix: микропатч **2.8.7** — оплата персонального урока: автоподстановка тарифа записи (`price_id`) в `PayPersonalLessonModal` — тариф урока всегда в списке (в т.ч. вне фильтра продажи / архивный), без fallback на первый тариф прайса при загрузке.

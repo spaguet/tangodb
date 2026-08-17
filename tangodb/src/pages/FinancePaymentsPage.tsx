@@ -136,8 +136,8 @@ function groupPaymentsByMonth(items: PaymentWithCorrectionMeta[]): MonthPaymentG
 function PaymentDetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[10px] uppercase tracking-wider font-semibold text-ink-500 font-sans">{label}</dt>
-      <dd className="text-xs text-ink-700 font-sans mt-0.5 break-words">{value}</dd>
+      <dt className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">{label}</dt>
+      <dd className="text-xs text-slate-700 font-sans mt-0.5 break-words">{value}</dd>
     </div>
   );
 }
@@ -155,11 +155,11 @@ function TariffUnitsHint({
 
   return (
     <div className="min-w-0">
-      <dt className="text-[10px] uppercase tracking-wider font-semibold text-ink-500 font-sans">{label}</dt>
-      <dd className="text-xs text-ink-700 font-sans mt-0.5">
+      <dt className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">{label}</dt>
+      <dd className="text-xs text-slate-700 font-sans mt-0.5">
         <button
           type="button"
-          className="font-semibold text-gold-700 underline decoration-dotted decoration-gold-300 underline-offset-2 cursor-help"
+          className="font-semibold text-indigo-700 underline decoration-dotted decoration-indigo-300 underline-offset-2 cursor-help"
           title={tooltip}
           aria-label={tooltip}
           onClick={(e) => {
@@ -170,7 +170,7 @@ function TariffUnitsHint({
           {unitsLabel}
         </button>
         {pinned ? (
-          <p className="mt-1 text-[10px] text-ink-500 leading-snug max-w-xs">{tooltip}</p>
+          <p className="mt-1 text-[10px] text-slate-500 leading-snug max-w-xs">{tooltip}</p>
         ) : null}
       </dd>
     </div>
@@ -266,7 +266,7 @@ function PaymentRow({
   const personalUnitsTooltip = translate("personalTariff.journal.unitsTooltip");
 
   return (
-    <div className="border-b border-ink-100 last:border-b-0">
+    <div className="border-b border-slate-100 last:border-b-0">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
         <button
           type="button"
@@ -276,19 +276,19 @@ function PaymentRow({
         >
           <div className="flex items-start gap-2">
             <ChevronDown
-              className={`w-3.5 h-3.5 text-ink-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+              className={`w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
                 expanded ? "rotate-180" : ""
               }`}
             />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink-800 truncate">{payment.clientDisplay || "—"}</p>
-              <p className="text-[10px] text-ink-500 font-sans mt-0.5">{acceptedAt}</p>
+              <p className="text-sm font-semibold text-slate-800 truncate">{payment.clientDisplay || "—"}</p>
+              <p className="text-[10px] text-slate-400 font-sans mt-0.5">{acceptedAt}</p>
               {isRefund ? (
-                <p className="text-[10px] text-garnet-600 mt-0.5 font-semibold">
+                <p className="text-[10px] text-rose-600 mt-0.5 font-semibold">
                   {translate("finance.payments.refundBadge")}
                 </p>
               ) : statusKey ? (
-                <p className="text-[10px] text-ink-500 mt-0.5">
+                <p className="text-[10px] text-slate-500 mt-0.5">
                   {translate(statusKey as Parameters<typeof translate>[0])}
                 </p>
               ) : null}
@@ -298,14 +298,14 @@ function PaymentRow({
         <button
           type="button"
           onClick={onToggle}
-          className="text-xs text-ink-500 font-sans hidden sm:block text-left cursor-pointer"
+          className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
         >
           {isRefund ? translate("finance.payments.refundBadge") : sourceLabel}
         </button>
         <button
           type="button"
           onClick={onToggle}
-          className="text-xs text-ink-500 font-sans hidden sm:block text-left cursor-pointer"
+          className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
         >
           {methodLabel}
         </button>
@@ -314,7 +314,7 @@ function PaymentRow({
             type="button"
             onClick={onToggle}
             className={`text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer ${
-              isRefund ? "text-garnet-600" : "text-gold-700"
+              isRefund ? "text-rose-600" : "text-indigo-700"
             }`}
           >
             {amountLabel}
@@ -331,7 +331,7 @@ function PaymentRow({
                 }}
                 aria-label={translate("common.edit")}
                 title={translate("common.edit")}
-                className="w-8 h-8 shrink-0 flex items-center justify-center text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg border border-ink-200 bg-white cursor-pointer transition-colors"
+                className="w-8 h-8 shrink-0 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 bg-white cursor-pointer transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
@@ -340,7 +340,7 @@ function PaymentRow({
       </div>
       {expanded && (
         <div className="px-3 pb-3 pt-0 ml-5 sm:ml-6">
-          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 p-3 rounded-lg bg-ink-50/10 border border-ink-100">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 p-3 rounded-lg bg-slate-50/80 border border-slate-100">
             {isRefund ? (
               <>
                 <PaymentDetailItem
@@ -507,34 +507,34 @@ function RentalPaymentRow({
   });
 
   return (
-    <div className="border-b border-ink-100 last:border-b-0">
+    <div className="border-b border-slate-100 last:border-b-0">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
         <button type="button" onClick={onToggle} className="min-w-0 text-left cursor-pointer" aria-expanded={expanded}>
           <div className="flex items-start gap-2">
             <ChevronDown
-              className={`w-3.5 h-3.5 text-ink-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+              className={`w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
                 expanded ? "rotate-180" : ""
               }`}
             />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink-800 truncate">{payment.renterDisplay || "—"}</p>
-              <p className="text-[10px] text-ink-500 font-sans mt-0.5">{operationDay}</p>
+              <p className="text-sm font-semibold text-slate-800 truncate">{payment.renterDisplay || "—"}</p>
+              <p className="text-[10px] text-slate-400 font-sans mt-0.5">{operationDay}</p>
               {isStorno ? (
-                <p className="text-[10px] text-garnet-600 mt-0.5 font-semibold">
+                <p className="text-[10px] text-rose-600 mt-0.5 font-semibold">
                   {translate("finance.payments.refundBadge")}
                 </p>
               ) : statusKey ? (
-                <p className="text-[10px] text-ink-500 mt-0.5">
+                <p className="text-[10px] text-slate-500 mt-0.5">
                   {translate(statusKey as Parameters<typeof translate>[0])}
                 </p>
               ) : null}
             </div>
           </div>
         </button>
-        <button type="button" onClick={onToggle} className="text-xs text-ink-500 font-sans hidden sm:block text-left cursor-pointer">
+        <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer">
           {sourceLabel}
         </button>
-        <button type="button" onClick={onToggle} className="text-xs text-ink-500 font-sans hidden sm:block text-left cursor-pointer">
+        <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer">
           {methodLabel}
         </button>
         <div className="flex items-center justify-end gap-2 col-start-2 sm:contents">
@@ -542,7 +542,7 @@ function RentalPaymentRow({
             type="button"
             onClick={onToggle}
             className={`text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer ${
-              isOutflow ? "text-garnet-600" : "text-amber-700"
+              isOutflow ? "text-rose-600" : "text-amber-700"
             }`}
           >
             {isOutflow ? "−" : ""}
@@ -552,7 +552,7 @@ function RentalPaymentRow({
             <button
               type="button"
               onClick={() => onCorrect(correctionTarget)}
-              className="w-8 h-8 shrink-0 flex items-center justify-center text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg border border-ink-200 bg-white cursor-pointer"
+              className="w-8 h-8 shrink-0 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 bg-white cursor-pointer"
               aria-label={translate("corrections.payment.title")}
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -563,7 +563,7 @@ function RentalPaymentRow({
         </div>
       </div>
       {expanded ? (
-        <div className="px-3 pb-3 pt-0 border-t border-ink-50 bg-ink-50/40">
+        <div className="px-3 pb-3 pt-0 border-t border-slate-50 bg-slate-50/40">
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-8 py-2">
             <PaymentDetailItem label={translate("finance.operationDate.label")} value={operationDay} />
             <PaymentDetailItem label={translate("finance.operationDate.recordedAt")} value={recordedAt} />
@@ -801,14 +801,14 @@ export default function FinancePaymentsPage() {
 
   return (
     <div className="panel-page-stack">
-      <div className="bg-white rounded-xl border border-ink-200 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-ink-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Landmark className="w-4 h-4 text-gold-500" />
-            <h2 className="font-sans text-sm font-semibold text-ink-800">{t("finance.payments.title")}</h2>
+            <Landmark className="w-4 h-4 text-indigo-500" />
+            <h2 className="font-sans text-sm font-semibold text-slate-800">{t("finance.payments.title")}</h2>
           </div>
           <div className="relative max-w-xs w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="search"
               value={search}
@@ -819,7 +819,7 @@ export default function FinancePaymentsPage() {
           </div>
         </div>
 
-        <div className="px-4 py-3 border-b border-ink-100 bg-ink-50/40">
+        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/40">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <DatePickerField
               label={t("common.dateFrom")}
@@ -874,8 +874,8 @@ export default function FinancePaymentsPage() {
 
         {visibleCount === 0 ? (
           <div className="py-20 text-center">
-            <Landmark className="w-8 h-8 text-ink-300 mx-auto mb-3" />
-            <p className="text-sm text-ink-500">
+            <Landmark className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+            <p className="text-sm text-slate-500">
               {hasAnyPayments && hasActiveFilters
                 ? t("finance.payments.emptyFiltered")
                 : sourceFilter === "rental"
@@ -905,23 +905,23 @@ export default function FinancePaymentsPage() {
                 ])}`;
 
                 return (
-                  <section key={group.yearMonth} className="border-b border-ink-100 last:border-b-0">
+                  <section key={group.yearMonth} className="border-b border-slate-100 last:border-b-0">
                     <button
                       type="button"
                       onClick={() => toggleMonth(group.yearMonth)}
                       aria-expanded={open}
-                      className="w-full flex items-start sm:items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer hover:bg-ink-50/10 transition-colors"
+                      className="w-full flex items-start sm:items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer hover:bg-slate-50/80 transition-colors"
                     >
                       <div className="min-w-0 space-y-1">
-                        <p className="text-sm font-semibold text-ink-800">{monthTitle}</p>
-                        <p className="text-[11px] text-ink-500 font-sans">
+                        <p className="text-sm font-semibold text-slate-800">{monthTitle}</p>
+                        <p className="text-[11px] text-slate-500 font-sans">
                           <span>
                             {paymentCountLabel}
                             {" · "}
                             {formatCurrency(group.paymentSum)}
                           </span>
                           {group.refundCount > 0 ? (
-                            <span className="text-garnet-600">
+                            <span className="text-rose-600">
                               {" · "}
                               {refundCountLabel}
                               {" · −"}
@@ -931,15 +931,15 @@ export default function FinancePaymentsPage() {
                         </p>
                       </div>
                       <ChevronDown
-                        className={`w-4 h-4 text-ink-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+                        className={`w-4 h-4 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
                           open ? "rotate-180" : ""
                         }`}
                       />
                     </button>
 
                     {open ? (
-                      <div className="border-t border-ink-100">
-                        <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-ink-50 border-b border-ink-100 text-[10px] uppercase tracking-wider font-semibold text-ink-500 font-sans">
+                      <div className="border-t border-slate-100">
+                        <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
                           <span>{t("common.clientDate")}</span>
                           <span>{t("common.source")}</span>
                           <span>{t("common.method")}</span>
@@ -973,10 +973,10 @@ export default function FinancePaymentsPage() {
             ) : null}
 
             {showRentalPayments && filteredRentals.length > 0 ? (
-              <div className={showClientPayments && filtered.length > 0 ? "border-t border-ink-200" : ""}>
+              <div className={showClientPayments && filtered.length > 0 ? "border-t border-slate-200" : ""}>
                 {showClientPayments && filtered.length > 0 ? (
-                  <div className="px-4 py-2 bg-amber-50/10 border-b border-amber-200">
-                    <p className="text-xs font-semibold text-amber-700">{t("finance.payments.rentalSection")}</p>
+                  <div className="px-4 py-2 bg-amber-50/60 border-b border-amber-100">
+                    <p className="text-xs font-semibold text-amber-800">{t("finance.payments.rentalSection")}</p>
                   </div>
                 ) : null}
                 {rentalMonthGroups.map((group) => {
@@ -990,31 +990,31 @@ export default function FinancePaymentsPage() {
                   ])}`;
 
                   return (
-                    <section key={`rental-${group.yearMonth}`} className="border-b border-ink-100 last:border-b-0">
+                    <section key={`rental-${group.yearMonth}`} className="border-b border-slate-100 last:border-b-0">
                       <button
                         type="button"
                         onClick={() => toggleRentalMonth(group.yearMonth)}
                         aria-expanded={open}
-                        className="w-full flex items-start sm:items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer hover:bg-ink-50/10 transition-colors"
+                        className="w-full flex items-start sm:items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer hover:bg-slate-50/80 transition-colors"
                       >
                         <div className="min-w-0 space-y-1">
-                          <p className="text-sm font-semibold text-ink-800">{monthTitle}</p>
-                          <p className="text-[11px] text-ink-500 font-sans">
+                          <p className="text-sm font-semibold text-slate-800">{monthTitle}</p>
+                          <p className="text-[11px] text-slate-500 font-sans">
                             {paymentCountLabel}
                             {" · "}
                             {formatCurrency(group.paymentSum)}
                           </p>
                         </div>
                         <ChevronDown
-                          className={`w-4 h-4 text-ink-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+                          className={`w-4 h-4 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
                             open ? "rotate-180" : ""
                           }`}
                         />
                       </button>
 
                       {open ? (
-                        <div className="border-t border-ink-100">
-                          <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-ink-50 border-b border-ink-100 text-[10px] uppercase tracking-wider font-semibold text-ink-500 font-sans">
+                        <div className="border-t border-slate-100">
+                          <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
                             <span>{t("schedule.rental.renterLabel")}</span>
                             <span>{t("common.source")}</span>
                             <span>{t("common.method")}</span>
@@ -1047,21 +1047,21 @@ export default function FinancePaymentsPage() {
               </div>
             ) : null}
 
-            <div className="px-4 py-3 border-t border-ink-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-ink-50/10">
-              <span className="text-xs text-ink-500 font-sans">
+            <div className="px-4 py-3 border-t border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-slate-50/60">
+              <span className="text-xs text-slate-500 font-sans">
                 {plural(visibleCount, [
                   t("common.records.one", { count: visibleCount }),
                   t("common.records.few", { count: visibleCount }),
                   t("common.records.many", { count: visibleCount }),
                 ])}
               </span>
-              <div className="text-sm font-sans font-semibold text-ink-800 text-right space-y-0.5">
+              <div className="text-sm font-sans font-semibold text-slate-800 text-right space-y-0.5">
                 {showClientPayments && showRentalPayments && filtered.length > 0 && filteredRentals.length > 0 ? (
                   <>
-                    <p className="text-xs font-normal text-ink-500">
+                    <p className="text-xs font-normal text-slate-500">
                       {t("finance.payments.clientSubtotal", { amount: formatCurrency(clientTotal) })}
                     </p>
-                    <p className="text-xs font-normal text-ink-500">
+                    <p className="text-xs font-normal text-slate-500">
                       {t("finance.payments.rentalSubtotal", { amount: formatCurrency(rentalTotal) })}
                     </p>
                   </>
@@ -1076,10 +1076,10 @@ export default function FinancePaymentsPage() {
         <div
           className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[80] px-4 py-2 rounded-xl text-sm shadow-lg ${
             toastMsg.type === "error"
-              ? "bg-garnet-600 text-white"
+              ? "bg-rose-600 text-white"
               : toastMsg.type === "info"
-                ? "bg-ink-700 text-white"
-                : "bg-gold-700 text-white"
+                ? "bg-slate-700 text-white"
+                : "bg-indigo-600 text-white"
           }`}
         >
           {toastMsg.msg}

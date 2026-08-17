@@ -69,8 +69,8 @@ export default function PersonalLessonsList({
 
   if (lessons.length === 0) {
     return (
-      <div className="text-center py-20 text-ink-500 space-y-3 bg-white rounded-xl border border-ink-200">
-        <Sparkles className="w-8 h-8 mx-auto text-ink-300" />
+      <div className="text-center py-20 text-slate-400 space-y-3 bg-white rounded-xl border border-slate-200">
+        <Sparkles className="w-8 h-8 mx-auto text-slate-300" />
         <p className="text-sm">{t("personal.empty.filtered")}</p>
       </div>
     );
@@ -86,13 +86,13 @@ export default function PersonalLessonsList({
             className={`bg-white rounded-xl shadow-xs overflow-hidden ${
               isCurrentOrFuture
                 ? `border-2 ${PERSONAL_LESSON_COLOR.border}`
-                : "border border-ink-200"
+                : "border border-slate-200"
             }`}
           >
-            <div className="px-4 py-2.5 border-b border-ink-100 bg-ink-50/10 flex items-center gap-2">
-              <span className="text-xs font-semibold text-ink-800">{formatDate(date)}</span>
-              <span className="text-xs text-ink-500">·</span>
-              <span className="text-xs font-semibold text-gold-700">
+            <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-800">{formatDate(date)}</span>
+              <span className="text-xs text-slate-400">·</span>
+              <span className="text-xs font-semibold text-indigo-700">
                 {dateLessons.length}{" "}
                 {plural(dateLessons.length, [
                   t("common.lesson.one"),
@@ -104,7 +104,7 @@ export default function PersonalLessonsList({
             <div className="overflow-x-auto">
               <table className="w-full min-w-[960px] text-left">
                 <thead>
-                  <tr className="border-b border-ink-100 text-[10px] uppercase tracking-wider text-ink-500 font-semibold">
+                  <tr className="border-b border-slate-100 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
                     <th className="py-2 px-3">{t("common.time")}</th>
                     <th className="py-2 px-3">{t("schedule.form.location")}</th>
                     <th className="py-2 px-3">{t("common.discipline")}</th>

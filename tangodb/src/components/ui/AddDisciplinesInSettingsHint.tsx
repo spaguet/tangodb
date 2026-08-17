@@ -15,7 +15,7 @@ export default function AddDisciplinesInSettingsHint({
       {t("subscriptions.sell.noDisciplinesHint")}{" "}
       <Link
         to="/settings/disciplines"
-        className="text-gold-700 hover:text-gold-800 font-semibold underline-offset-2 hover:underline"
+        className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline"
       >
         {t("nav.panel.settingsDisciplines")}
       </Link>

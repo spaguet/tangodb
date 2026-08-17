@@ -101,10 +101,10 @@ export default function PurchaseInboxPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Inbox className="w-6 h-6 text-gold-300" />
+            <Inbox className="w-6 h-6 text-indigo-300" />
             Inbox
           </h2>
-          <p className="text-sm text-ink-400">
+          <p className="text-sm text-slate-400">
             Входящие заявки из CRM на проверку ручной оплаты и активацию lifetime-доступа.
           </p>
         </div>
@@ -112,7 +112,7 @@ export default function PurchaseInboxPage() {
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-ink-700 rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -126,7 +126,7 @@ export default function PurchaseInboxPage() {
             type="button"
             onClick={() => setStatus(value)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer ${
-              status === value ? "bg-gold-700 text-white" : "bg-ink-800 text-ink-400 hover:text-ink-200"
+              status === value ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400 hover:text-slate-200"
             }`}
           >
             {value}
@@ -134,29 +134,29 @@ export default function PurchaseInboxPage() {
         ))}
       </div>
 
-      {error && <p className="text-sm text-garnet-400">{error}</p>}
+      {error && <p className="text-sm text-rose-400">{error}</p>}
 
       <div className="space-y-3">
         {rows.map((row) => (
-          <article key={row.id} className="bg-ink-900 border border-ink-800 rounded-xl p-4 space-y-3">
+          <article key={row.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
               <div className="space-y-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-base font-semibold text-white">{row.organization_name}</h3>
-                  <span className="text-xs px-2 py-0.5 rounded bg-ink-800 text-ink-300">
+                  <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300">
                     CRM: {orgStatus(row)}
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-gold-900/70 text-gold-300">
+                  <span className="text-xs px-2 py-0.5 rounded bg-indigo-950/60 text-indigo-300">
                     {row.status}
                   </span>
                   {row.email_sent && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-ink-800 text-ink-300">email sent</span>
+                    <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300">email sent</span>
                   )}
                 </div>
-                <p className="text-xs text-ink-500">
+                <p className="text-xs text-slate-500">
                   {new Date(row.created_at).toLocaleString()} · {row.organization_id}
                 </p>
-                <p className="text-sm text-ink-300">
+                <p className="text-sm text-slate-300">
                   Contact: {row.contact_email ?? row.requester_email ?? "no email"}
                   {row.contact_telegram ? ` · ${row.contact_telegram}` : ""}
                 </p>
@@ -168,7 +168,7 @@ export default function PurchaseInboxPage() {
                     type="button"
                     onClick={() => void activate(row)}
                     disabled={busyId === row.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-gold-700 hover:bg-gold-800 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
                   >
                     <KeyRound className="w-4 h-4" />
                     Activate full access
@@ -179,7 +179,7 @@ export default function PurchaseInboxPage() {
                     type="button"
                     onClick={() => void close(row)}
                     disabled={busyId === row.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-ink-800 hover:bg-ink-700 rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
                   >
                     <XCircle className="w-4 h-4" />
                     Close
@@ -188,26 +188,26 @@ export default function PurchaseInboxPage() {
               </div>
             </div>
 
-            <div className="rounded-lg bg-ink-950 border border-ink-800 px-3 py-2">
-              <p className="text-xs uppercase tracking-wider font-semibold text-ink-500 mb-1">
+            <div className="rounded-lg bg-slate-950 border border-slate-800 px-3 py-2">
+              <p className="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">
                 Payment comment
               </p>
-              <p className="text-sm text-ink-200 whitespace-pre-wrap">{row.payment_comment}</p>
+              <p className="text-sm text-slate-200 whitespace-pre-wrap">{row.payment_comment}</p>
             </div>
 
             {generatedKeys[row.id] && (
-              <div className="rounded-lg bg-gold-900/40 border border-gold-800 px-3 py-2 space-y-2">
-                <p className="text-xs uppercase tracking-wider font-semibold text-gold-300">
+              <div className="rounded-lg bg-indigo-950/50 border border-indigo-800 px-3 py-2 space-y-2">
+                <p className="text-xs uppercase tracking-wider font-semibold text-indigo-300">
                   Generated key — copy now
                 </p>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-sm font-mono text-gold-100 break-all">
+                  <code className="flex-1 text-sm font-mono text-indigo-100 break-all">
                     {generatedKeys[row.id]}
                   </code>
                   <button
                     type="button"
                     onClick={() => void copyKey(row.id)}
-                    className="p-2 text-gold-300 hover:bg-gold-900/70 rounded cursor-pointer"
+                    className="p-2 text-indigo-300 hover:bg-indigo-900/50 rounded cursor-pointer"
                   >
                     {copiedId === row.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </button>
@@ -218,7 +218,7 @@ export default function PurchaseInboxPage() {
         ))}
 
         {!rows.length && !loading && (
-          <div className="text-center py-12 text-ink-500 bg-ink-900 border border-ink-800 rounded-xl">
+          <div className="text-center py-12 text-slate-500 bg-slate-900 border border-slate-800 rounded-xl">
             No purchase requests in this status.
           </div>
         )}

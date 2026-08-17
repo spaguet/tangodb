@@ -19,13 +19,13 @@ const NAV_LINKS = [
 
 export function Footer({ locale, t }: Props) {
   return (
-    <footer className="border-t border-ink-800 bg-ink-900 text-ink-300">
+    <footer className="border-t border-slate-800 bg-slate-900 text-slate-300">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <p className="font-semibold text-white">TangoDB</p>
-            <p className="mt-2 max-w-xs text-sm text-ink-500">{t("footer.tagline")}</p>
-            <p className="mt-3 max-w-xs text-sm text-ink-500">{t("footer.byTeacher")}</p>
+            <p className="mt-2 max-w-xs text-sm text-slate-400">{t("footer.tagline")}</p>
+            <p className="mt-3 max-w-xs text-sm text-slate-400">{t("footer.byTeacher")}</p>
             <a
               href={CRM_REGISTER_URL}
               className="btn-cta mt-5 text-sm"
@@ -37,7 +37,7 @@ export function Footer({ locale, t }: Props) {
           </div>
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               {t("footer.navigation")}
             </p>
             <ul className="mt-3 space-y-2">
@@ -45,7 +45,7 @@ export function Footer({ locale, t }: Props) {
                 <li key={key}>
                   <a
                     href={href}
-                    className="text-sm text-ink-500 transition-colors hover:text-gold-400"
+                    className="text-sm text-slate-400 transition-colors hover:text-indigo-400"
                     {...(href === "#demo"
                       ? { onClick: onLandingCtaClick(LANDING_EVENTS.CTA_DEMO, locale) }
                       : {})}
@@ -58,17 +58,17 @@ export function Footer({ locale, t }: Props) {
           </div>
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               {t("footer.support")}
             </p>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-400">
+            <p className="mt-3 max-w-xs text-sm leading-relaxed text-slate-400">
               {t("footer.supportHint")}
             </p>
             <a
               href={getTelegramSetupUrl(locale)}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-block text-sm font-semibold text-gold-400 transition-colors hover:text-gold-300"
+              className="mt-4 inline-block text-sm font-semibold text-indigo-400 transition-colors hover:text-indigo-300"
               onClick={onLandingCtaClick(LANDING_EVENTS.CTA_TELEGRAM, locale)}
             >
               {t("cta.getInstructions")} →
@@ -76,16 +76,16 @@ export function Footer({ locale, t }: Props) {
           </div>
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               {t("footer.contact")}
             </p>
             <ul className="mt-3 space-y-2">
               <li>
                 <a
                   href={`mailto:${CONTACTS.email}`}
-                  className="inline-flex items-center gap-2 text-sm text-ink-500 transition-colors hover:text-gold-400"
+                  className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-indigo-400"
                 >
-                  <Mail className="h-4 w-4 text-gold-400" />
+                  <Mail className="h-4 w-4 text-indigo-400" />
                   {CONTACTS.email}
                 </a>
               </li>
@@ -94,10 +94,10 @@ export function Footer({ locale, t }: Props) {
                   href={CONTACTS.telegramUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-ink-500 transition-colors hover:text-gold-400"
+                  className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-indigo-400"
                   onClick={onLandingCtaClick(LANDING_EVENTS.CTA_TELEGRAM, locale)}
                 >
-                  <Send className="h-4 w-4 text-gold-400" />
+                  <Send className="h-4 w-4 text-indigo-400" />
                   {CONTACTS.telegramHandle}
                 </a>
               </li>
@@ -105,12 +105,12 @@ export function Footer({ locale, t }: Props) {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-ink-800 pt-6 text-xs text-ink-500">
+        <div className="mt-10 border-t border-slate-800 pt-6 text-xs text-slate-500">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span>© 2026 TangoDB</span>
             <span aria-hidden="true">·</span>
             {/* Privacy policy page */}
-            <a href={PRIVACY_PATH} className="transition-colors hover:text-gold-400">
+            <a href={PRIVACY_PATH} className="transition-colors hover:text-indigo-400">
               {t("footer.privacy")}
             </a>
             <span aria-hidden="true">·</span>

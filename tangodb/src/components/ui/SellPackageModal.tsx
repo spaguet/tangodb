@@ -31,7 +31,7 @@ import DatePickerField from "./DatePickerField";
 import DisciplineSelect from "./DisciplineSelect";
 import CreatePrivatePackageTariffModal from "./CreatePrivatePackageTariffModal";
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 interface SellPackageModalProps {
   open: boolean;
@@ -200,22 +200,22 @@ export default function SellPackageModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
-            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-xl border border-ink-200 shadow-xl modal-wide-md"
+            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-xl modal-wide-md"
           >
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 p-4 border-b border-ink-100 bg-white md:items-center">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 p-4 border-b border-slate-100 bg-white md:items-center">
               <div className="flex items-start gap-3 min-w-0">
-                <div className="p-2 rounded-lg bg-gold-50 shrink-0">
-                  <Ticket className="w-5 h-5 text-gold-700" />
+                <div className="p-2 rounded-lg bg-indigo-50 shrink-0">
+                  <Ticket className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-base font-semibold tracking-tight text-ink-900">{t("subscriptions.package.title")}</h2>
-                  <p className="text-ink-400 text-[11px] leading-snug mt-0.5">
+                  <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("subscriptions.package.title")}</h2>
+                  <p className="text-slate-400 text-[11px] leading-snug mt-0.5">
                     {t("subscriptions.package.subtitle")}
                   </p>
                 </div>
@@ -224,7 +224,7 @@ export default function SellPackageModal({
                 type="button"
                 onClick={onClose}
                 aria-label={t("common.close")}
-                className="p-1.5 rounded-lg text-ink-400 hover:text-ink-700 hover:bg-ink-100 transition-colors cursor-pointer shrink-0"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -234,12 +234,12 @@ export default function SellPackageModal({
               <div className="field-stack">
                 <label className={labelCls}>{t("subscriptions.sell.tariffLabel")}</label>
                 {packageTariffs.length === 0 ? (
-                  <p className="text-xs text-ink-500 font-sans leading-relaxed">
+                  <p className="text-xs text-slate-400 font-sans leading-relaxed">
                     {t("subscriptions.package.noTariffs")}{" "}
                     <button
                       type="button"
                       onClick={() => setCreateTariffOpen(true)}
-                      className="text-gold-700 hover:text-gold-800 font-semibold underline-offset-2 hover:underline cursor-pointer"
+                      className="text-indigo-600 hover:text-indigo-700 font-semibold underline-offset-2 hover:underline cursor-pointer"
                     >
                       {t("subscriptions.package.createInPriceList")}
                     </button>
@@ -347,9 +347,9 @@ export default function SellPackageModal({
                 className="panel-form-full-row-md"
               />
 
-              <div className="flex items-center justify-between p-3 bg-gold-50/10 rounded-xl border border-gold-100 panel-form-full-row-md">
-                <span className="text-ink-600 font-semibold text-sm">{t("common.totalDue")}</span>
-                <span className="text-xl font-sans font-semibold text-gold-700">
+              <div className="flex items-center justify-between p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 panel-form-full-row-md">
+                <span className="text-slate-600 font-semibold text-sm">{t("common.totalDue")}</span>
+                <span className="text-xl font-sans font-semibold text-indigo-700">
                   {selectedPackageTariff ? formatCurrency(selectedPackageTariff.price) : "—"}
                 </span>
               </div>

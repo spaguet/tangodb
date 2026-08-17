@@ -37,8 +37,8 @@ export default function ClientSubscriptionParticipationPanel({
   const prices = pricesQuery.data ?? [];
 
   return (
-    <div className="space-y-2 border-t border-ink-100 pt-3">
-      <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold flex items-center gap-1.5">
+    <div className="space-y-2 border-t border-slate-100 pt-3">
+      <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold flex items-center gap-1.5">
         <Ticket className="w-3 h-3" />
         {t("clientCard.subscriptions.title")}
       </p>
@@ -52,13 +52,13 @@ export default function ClientSubscriptionParticipationPanel({
           return (
             <li
               key={subscription.id}
-              className="rounded-lg border border-ink-100 bg-ink-50/70 px-3 py-2 text-[11px] text-ink-600 space-y-1"
+              className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2 text-[11px] text-slate-600 space-y-1"
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="font-semibold text-ink-800">{tariffLabel}</p>
+                <p className="font-semibold text-slate-800">{tariffLabel}</p>
                 <span
                   className={`text-[10px] font-semibold uppercase tracking-wide shrink-0 ${
-                    isActive ? "text-gold-700" : "text-ink-400"
+                    isActive ? "text-indigo-600" : "text-slate-400"
                   }`}
                 >
                   {isActive
@@ -66,7 +66,7 @@ export default function ClientSubscriptionParticipationPanel({
                     : t("clientCard.subscriptions.historical")}
                 </span>
               </div>
-              <p className="text-ink-500">
+              <p className="text-slate-500">
                 {t("clientCard.subscriptions.period", {
                   from: formatDate(new Date(`${fromDate}T12:00:00`)),
                   to: toDate
@@ -75,7 +75,7 @@ export default function ClientSubscriptionParticipationPanel({
                 })}
               </p>
               {!isActive ? null : (
-                <p className="text-ink-500">
+                <p className="text-slate-500">
                   {t("clientCard.subscriptions.lessonsLeft", {
                     left: subscription.lessonsLeft,
                     total: subscription.lessonsTotal,

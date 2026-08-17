@@ -10,7 +10,7 @@ import type { TeacherScope } from "../../types/organization";
 import GroupCheckboxDropdown from "../../components/ui/GroupCheckboxDropdown";
 
 const labelCls =
-  "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+  "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 interface TeacherScopeFieldsProps {
   value: TeacherScope;
@@ -60,10 +60,10 @@ export default function TeacherScopeFields({ value, onChange, disabled = false }
   );
 
   return (
-    <div className="space-y-3 rounded-xl border border-ink-100 bg-ink-50/70 p-3">
+    <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
       <div>
-        <p className="text-xs font-semibold text-ink-700">{t("team.scope.title")}</p>
-        <p className="text-[11px] text-ink-500 mt-0.5">{t("team.scope.hint")}</p>
+        <p className="text-xs font-semibold text-slate-700">{t("team.scope.title")}</p>
+        <p className="text-[11px] text-slate-500 mt-0.5">{t("team.scope.hint")}</p>
       </div>
 
       <div className="space-y-2">
@@ -73,9 +73,9 @@ export default function TeacherScopeFields({ value, onChange, disabled = false }
             checked={value.all_groups}
             disabled={disabled}
             onChange={(e) => patch({ all_groups: e.target.checked })}
-            className="mt-0.5 rounded border-ink-300 text-gold-700 focus:ring-gold-500"
+            className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
           />
-          <span className="text-sm text-ink-700">{t("team.scope.allGroups")}</span>
+          <span className="text-sm text-slate-700">{t("team.scope.allGroups")}</span>
         </label>
 
         {!value.all_groups && (
@@ -97,9 +97,9 @@ export default function TeacherScopeFields({ value, onChange, disabled = false }
             checked={value.all_disciplines}
             disabled={disabled}
             onChange={(e) => patch({ all_disciplines: e.target.checked })}
-            className="mt-0.5 rounded border-ink-300 text-gold-700 focus:ring-gold-500"
+            className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
           />
-          <span className="text-sm text-ink-700">{t("team.scope.allSalesDisciplines")}</span>
+          <span className="text-sm text-slate-700">{t("team.scope.allSalesDisciplines")}</span>
         </label>
 
         {!value.all_disciplines && (
@@ -122,18 +122,18 @@ export default function TeacherScopeFields({ value, onChange, disabled = false }
               checked={value.all_locations}
               disabled={disabled}
               onChange={(e) => patch({ all_locations: e.target.checked })}
-              className="mt-0.5 rounded border-ink-300 text-gold-700 focus:ring-gold-500"
+              className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
             />
-            <span className="text-sm text-ink-700">{t("team.scope.allLocations")}</span>
+            <span className="text-sm text-slate-700">{t("team.scope.allLocations")}</span>
           </label>
 
           {!value.all_locations && (
             <div className="space-y-1.5 pl-1">
               <span className={labelCls}>{t("team.scope.locations")}</span>
               {locationsQuery.isLoading ? (
-                <p className="text-xs text-ink-500">{t("common.loading.default")}</p>
+                <p className="text-xs text-slate-400">{t("common.loading.default")}</p>
               ) : (locationsQuery.data ?? []).length === 0 ? (
-                <p className="text-xs text-ink-500">{t("team.scope.noLocations")}</p>
+                <p className="text-xs text-slate-400">{t("team.scope.noLocations")}</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {(locationsQuery.data ?? []).map((location) => {
@@ -143,8 +143,8 @@ export default function TeacherScopeFields({ value, onChange, disabled = false }
                         key={location.id}
                         className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs cursor-pointer ${
                           checked
-                            ? "border-gold-200 bg-gold-50 text-gold-800"
-                            : "border-ink-200 bg-white text-ink-600"
+                            ? "border-indigo-200 bg-indigo-50 text-indigo-800"
+                            : "border-slate-200 bg-white text-slate-600"
                         }`}
                       >
                         <input
@@ -157,7 +157,7 @@ export default function TeacherScopeFields({ value, onChange, disabled = false }
                               : [...value.location_ids, location.id];
                             patch({ location_ids: next });
                           }}
-                          className="rounded border-ink-300 text-gold-700 focus:ring-gold-500"
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                         />
                         {location.name}
                       </label>
@@ -176,13 +176,13 @@ export default function TeacherScopeFields({ value, onChange, disabled = false }
           checked={value.can_view_all_clients}
           disabled={disabled}
           onChange={(e) => patch({ can_view_all_clients: e.target.checked })}
-          className="mt-0.5 rounded border-ink-300 text-gold-700 focus:ring-gold-500"
+          className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
         />
-        <span className="text-sm text-ink-700">{t("team.scope.allClients")}</span>
+        <span className="text-sm text-slate-700">{t("team.scope.allClients")}</span>
       </label>
 
       {!isTeacherScopeConfigured(value) && (
-        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
           {t("team.scope.emptyWarning")}
         </p>
       )}

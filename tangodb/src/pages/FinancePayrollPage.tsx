@@ -52,8 +52,8 @@ import type { TeacherPayRate, TeacherSettlement } from "../types/payroll";
 import type { PaymentMethod, Payment } from "../types";
 
 const inputCls =
-  "w-full px-3 py-2 bg-ink-50 border border-ink-200 rounded-lg text-sm outline-none focus:border-gold-400 focus:ring-2 focus:ring-gold-100 font-sans";
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+  "w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 font-sans";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 function fixedSalaryDisplay(rate: TeacherPayRate | undefined): string {
   if (!rate) return "—";
@@ -93,7 +93,7 @@ function SettlementPaymentsList({
   const paymentsQuery = useSettlementPayments(settlementId);
 
   if (paymentsQuery.isLoading) {
-    return <p className="text-xs text-ink-500 py-2">{t("common.loading.default")}</p>;
+    return <p className="text-xs text-slate-400 py-2">{t("common.loading.default")}</p>;
   }
   if (paymentsQuery.isError) {
     return <QueryErrorState error={paymentsQuery.error} />;
@@ -105,7 +105,7 @@ function SettlementPaymentsList({
   }
 
   return (
-    <ul className="space-y-1.5 pt-2 border-t border-ink-100">
+    <ul className="space-y-1.5 pt-2 border-t border-slate-100">
       {payments.map((payment) => {
         const dateLabel = formatDate(payment.paidAt, { day: "numeric", month: "short", year: "numeric" });
         const issuer = payment.createdBy
@@ -113,11 +113,11 @@ function SettlementPaymentsList({
           : t("team.auditSystem");
         return (
           <li key={payment.id} className="flex items-center justify-between gap-2 text-xs font-sans">
-            <span className="text-ink-600">
+            <span className="text-slate-600">
               {t("finance.payroll.paymentIssuedBy", { date: dateLabel, issuer })}
               {payment.note ? ` · ${payment.note}` : ""}
             </span>
-            <span className="font-semibold text-gold-700 whitespace-nowrap">
+            <span className="font-semibold text-indigo-700 whitespace-nowrap">
               {formatCurrency(payment.amount)}
             </span>
           </li>
@@ -166,12 +166,12 @@ function MemberPayrollBreakdown({
   ];
 
   return (
-    <div className="px-3 py-3 bg-ink-50/10 rounded-lg border border-ink-100 space-y-2">
+    <div className="px-3 py-3 bg-slate-50/80 rounded-lg border border-slate-100 space-y-2">
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
         {rows.map((row) => (
           <div key={row.label} className="text-xs font-sans">
-            <p className="text-[10px] text-ink-500 uppercase font-semibold">{row.label}</p>
-            <p className="font-semibold text-ink-800 mt-0.5">{formatCurrency(row.amount)}</p>
+            <p className="text-[10px] text-slate-400 uppercase font-semibold">{row.label}</p>
+            <p className="font-semibold text-slate-800 mt-0.5">{formatCurrency(row.amount)}</p>
           </div>
         ))}
       </div>
@@ -234,25 +234,25 @@ function RecordPaymentModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
       />
       <motion.div
         initial={{ scale: 0.97, opacity: 0, y: 8 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.97, opacity: 0, y: 8 }}
-        className="relative bg-white rounded-xl border border-ink-200 shadow-xl max-w-md w-full p-4 panel-card-stack"
+        className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full p-4 panel-card-stack"
       >
-        <div className="flex items-center justify-between border-b border-ink-100 pb-3">
-          <h3 className="text-base font-semibold text-ink-900">{t("finance.payroll.recordTitle")}</h3>
-          <button type="button" onClick={onClose} aria-label={t("common.close")} className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 className="text-base font-semibold text-slate-900">{t("finance.payroll.recordTitle")}</h3>
+          <button type="button" onClick={onClose} aria-label={t("common.close")} className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="panel-form-stack font-sans">
-          <p className="text-xs text-ink-500">
+          <p className="text-xs text-slate-500">
             {t(balance < 0 ? "finance.payroll.advanceBalance" : "finance.payroll.balanceDue")}:{" "}
-            <span className="font-semibold text-ink-800">{formatCurrency(balance)}</span>
+            <span className="font-semibold text-slate-800">{formatCurrency(balance)}</span>
           </p>
           <label className="block space-y-1">
             <span className={labelCls}>{t("finance.payroll.amountLabel")}</span>
@@ -394,7 +394,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
 
   if (payrollMembers.length === 0) {
     return (
-      <p className="text-sm text-ink-500 py-8 text-center">{t("finance.payroll.noMembers")}</p>
+      <p className="text-sm text-slate-400 py-8 text-center">{t("finance.payroll.noMembers")}</p>
     );
   }
 
@@ -403,7 +403,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm font-sans">
           <thead>
-            <tr className="text-[10px] uppercase tracking-wider text-ink-500 border-b border-ink-100">
+            <tr className="text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
               <th className="text-left py-2 px-3 font-semibold">{t("finance.payroll.colMember")}</th>
               <th className="text-right py-2 px-3 font-semibold">{t("finance.payroll.colFixedSalary")}</th>
               <th className="text-right py-2 px-3 font-semibold">{t("finance.payroll.colRate")}</th>
@@ -424,7 +424,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
 
               return (
                 <Fragment key={member.id}>
-                  <tr className="border-b border-ink-50 hover:bg-ink-50/10">
+                  <tr className="border-b border-slate-50 hover:bg-slate-50/50">
                     <td className="py-2.5 px-3">
                       <button
                         type="button"
@@ -432,37 +432,37 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
                         className="text-left w-full group cursor-pointer"
                       >
                         <div className="flex items-start gap-1.5">
-                          <span className="mt-0.5 text-ink-400 group-hover:text-gold-500 transition-colors">
+                          <span className="mt-0.5 text-slate-400 group-hover:text-indigo-500 transition-colors">
                             {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                           </span>
                           <span>
-                            <p className="font-semibold text-ink-800 group-hover:text-gold-800 transition-colors">
+                            <p className="font-semibold text-slate-800 group-hover:text-indigo-700 transition-colors">
                               {memberListLabel(member, locale)}
                             </p>
-                            <p className="text-[10px] text-ink-500 mt-0.5">{memberRoleLabel(member.role, member.meta, locale)}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{memberRoleLabel(member.role, member.meta, locale)}</p>
                             {!rate && (
-                              <p className="text-[10px] text-amber-700 mt-0.5">{t("finance.payroll.noRate")}</p>
+                              <p className="text-[10px] text-amber-600 mt-0.5">{t("finance.payroll.noRate")}</p>
                             )}
                           </span>
                         </div>
                       </button>
                     </td>
-                    <td className="py-2.5 px-3 text-right text-ink-600 whitespace-nowrap">
+                    <td className="py-2.5 px-3 text-right text-slate-600 whitespace-nowrap">
                       {fixedSalaryDisplay(rate)}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-ink-600">
+                    <td className="py-2.5 px-3 text-right text-slate-600">
                       {payRatePercentLabel(rate, t, personalLessonsEnabled)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-ink-800">{formatCurrency(accrued)}</td>
-                    <td className="py-2.5 px-3 text-right text-gold-700">{formatCurrency(paid)}</td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-gold-700">{formatCurrency(balance)}</td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-slate-800">{formatCurrency(accrued)}</td>
+                    <td className="py-2.5 px-3 text-right text-indigo-700">{formatCurrency(paid)}</td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-indigo-700">{formatCurrency(balance)}</td>
                     {canWrite && settlement && (
                       <td className="py-2.5 px-3">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
                             onClick={() => setPaymentTarget(settlement)}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase text-gold-700 bg-gold-50 hover:bg-gold-100 rounded-lg cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg cursor-pointer"
                           >
                             <Plus className="w-3 h-3" />
                             {balance < 0 ? t("finance.payroll.recordAdvance") : t("finance.payroll.recordPayment")}
@@ -515,7 +515,7 @@ function TeacherOwnPayrollView() {
 
   if (settlements.length === 0) {
     return (
-      <p className="text-sm text-ink-500 py-8 text-center">{t("finance.payroll.ownEmpty")}</p>
+      <p className="text-sm text-slate-400 py-8 text-center">{t("finance.payroll.ownEmpty")}</p>
     );
   }
 
@@ -531,24 +531,24 @@ function TeacherOwnPayrollView() {
         return (
           <div
             key={settlement.id}
-            className="bg-ink-50 rounded-xl border border-ink-100 p-3.5 space-y-2"
+            className="bg-slate-50 rounded-xl border border-slate-100 p-3.5 space-y-2"
           >
-            <p className="text-sm font-semibold text-ink-800">{periodLabel}</p>
+            <p className="text-sm font-semibold text-slate-800">{periodLabel}</p>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
-                <p className="text-[10px] text-ink-500 uppercase font-semibold">{t("finance.payroll.colAccrued")}</p>
-                <p className="text-sm font-semibold text-ink-800 mt-0.5">{formatCurrency(settlement.amountAccrued)}</p>
+                <p className="text-[10px] text-slate-400 uppercase font-semibold">{t("finance.payroll.colAccrued")}</p>
+                <p className="text-sm font-semibold text-slate-800 mt-0.5">{formatCurrency(settlement.amountAccrued)}</p>
               </div>
               <div>
-                <p className="text-[10px] text-ink-500 uppercase font-semibold">{t("finance.payroll.colPaid")}</p>
-                <p className="text-sm font-semibold text-gold-700 mt-0.5">{formatCurrency(settlement.amountPaid)}</p>
+                <p className="text-[10px] text-slate-400 uppercase font-semibold">{t("finance.payroll.colPaid")}</p>
+                <p className="text-sm font-semibold text-indigo-700 mt-0.5">{formatCurrency(settlement.amountPaid)}</p>
               </div>
               <div>
-                <p className="text-[10px] text-ink-500 uppercase font-semibold">{t("finance.payroll.colBalance")}</p>
-                <p className="text-sm font-semibold text-gold-700 mt-0.5">{formatCurrency(balance)}</p>
+                <p className="text-[10px] text-slate-400 uppercase font-semibold">{t("finance.payroll.colBalance")}</p>
+                <p className="text-sm font-semibold text-indigo-700 mt-0.5">{formatCurrency(balance)}</p>
               </div>
             </div>
-            <p className="text-[10px] text-ink-500">
+            <p className="text-[10px] text-slate-400">
               {t("finance.payroll.computedAt", {
                 date: formatDate(settlement.computedAt.slice(0, 10), {
                   day: "numeric",
@@ -560,7 +560,7 @@ function TeacherOwnPayrollView() {
             <button
               type="button"
               onClick={() => setExpandedSettlementId(expanded ? null : settlement.id)}
-              className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gold-700 hover:text-gold-800 cursor-pointer"
+              className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-600 hover:text-indigo-700 cursor-pointer"
             >
               {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               {expanded ? t("finance.payroll.detail.hide") : t("finance.payroll.detail.view")}
@@ -582,29 +582,29 @@ export default function FinancePayrollPage() {
 
   return (
     <div className="panel-page-stack">
-      <div className="bg-white rounded-xl border border-ink-200 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-ink-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-gold-500" />
-            <h2 className="font-sans text-sm font-semibold text-ink-800">{t("finance.payroll.title")}</h2>
+            <Wallet className="w-4 h-4 text-indigo-500" />
+            <h2 className="font-sans text-sm font-semibold text-slate-800">{t("finance.payroll.title")}</h2>
           </div>
           {!isOwnView && (
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setYearMonth((m) => shiftMonth(m, -1))}
-                className="p-1 rounded-lg hover:bg-ink-50 text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 aria-label={t("subscriptions.aria.prevMonth")}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex flex-col items-center min-w-[8rem]">
-                <span className="text-xs font-semibold text-ink-800">{formatMonthTitle(yearMonth, locale)}</span>
+                <span className="text-xs font-semibold text-slate-800">{formatMonthTitle(yearMonth, locale)}</span>
                 {!isCurrentMonth && (
                   <button
                     type="button"
                     onClick={() => setYearMonth(currentYearMonth())}
-                    className="text-[10px] font-semibold text-gold-700 hover:text-gold-800 hover:underline cursor-pointer"
+                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
                   >
                     {t("common.currentMonth")}
                   </button>
@@ -613,7 +613,7 @@ export default function FinancePayrollPage() {
               <button
                 type="button"
                 onClick={() => setYearMonth((m) => shiftMonth(m, 1))}
-                className="p-1 rounded-lg hover:bg-ink-50 text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 aria-label={t("subscriptions.aria.nextMonth")}
               >
                 <ChevronRight className="w-4 h-4" />

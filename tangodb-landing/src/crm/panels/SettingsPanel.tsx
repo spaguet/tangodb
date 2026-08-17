@@ -39,7 +39,7 @@ export function SettingsPanel({ locale, initialSection }: Props) {
   return (
     <div className="flex flex-col lg:flex-row gap-5 lg:gap-8">
       <nav className="lg:w-52 shrink-0">
-        <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold px-1 mb-2">
+        <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold px-1 mb-2">
           {p.settingsNav}
         </p>
         <div className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0">
@@ -53,8 +53,8 @@ export function SettingsPanel({ locale, initialSection }: Props) {
                 onClick={() => setSection(item.id)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                   active
-                    ? "bg-gold-50 text-gold-700 border border-gold-100"
-                    : "text-ink-600 hover:bg-ink-50 border border-transparent"
+                    ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
+                    : "text-slate-600 hover:bg-slate-50 border border-transparent"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -69,10 +69,10 @@ export function SettingsPanel({ locale, initialSection }: Props) {
         {section === "general" && (
           <div className="panel-card-stack max-w-xl">
             <div>
-              <h2 className="text-base font-semibold text-ink-900">{p.generalTitle}</h2>
-              <p className="text-xs text-ink-500 mt-1">{p.generalSubtitle}</p>
+              <h2 className="text-base font-semibold text-slate-900">{p.generalTitle}</h2>
+              <p className="text-xs text-slate-500 mt-1">{p.generalSubtitle}</p>
             </div>
-            <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4 font-sans">
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4 font-sans">
               {(
                 [
                   [p.locale, settingsGeneral.locale],
@@ -85,11 +85,11 @@ export function SettingsPanel({ locale, initialSection }: Props) {
               ).map(([label, value]) => (
                 <div key={label} className="field-stack">
                   <label className={labelCls}>{label}</label>
-                  <div className={fieldCls + " bg-ink-50"}>{value}</div>
+                  <div className={fieldCls + " bg-slate-50"}>{value}</div>
                 </div>
               ))}
-              <p className="text-xs text-ink-500 bg-ink-50 rounded-lg px-3 py-2">{p.currencyPreview}</p>
-              <button type="button" disabled className="w-full py-2.5 bg-gold-600/40 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-not-allowed">
+              <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">{p.currencyPreview}</p>
+              <button type="button" disabled className="w-full py-2.5 bg-indigo-600/50 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-not-allowed">
                 {locale === "ru" ? "Сохранить" : "Save"}
               </button>
             </div>
@@ -99,13 +99,13 @@ export function SettingsPanel({ locale, initialSection }: Props) {
         {section === "organization" && (
           <div className="panel-card-stack max-w-xl">
             <div>
-              <h2 className="text-base font-semibold text-ink-900">{p.orgTitle}</h2>
-              <p className="text-xs text-ink-500 mt-1">{p.orgSubtitle}</p>
+              <h2 className="text-base font-semibold text-slate-900">{p.orgTitle}</h2>
+              <p className="text-xs text-slate-500 mt-1">{p.orgSubtitle}</p>
             </div>
-            <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-3">
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
               <div className="field-stack">
                 <label className={labelCls}>{p.orgName}</label>
-                <div className={fieldCls + " bg-ink-50"}>{STUDIO_NAME}</div>
+                <div className={fieldCls + " bg-slate-50"}>{STUDIO_NAME}</div>
               </div>
               <div className="space-y-2 pt-2">
                 {[
@@ -114,8 +114,8 @@ export function SettingsPanel({ locale, initialSection }: Props) {
                   locale === "ru" ? "Финансы" : "Finance",
                   locale === "ru" ? "Парные форматы" : "Pair formats",
                 ].map((mod) => (
-                  <label key={mod} className="flex items-center gap-2 text-sm text-ink-700">
-                    <input type="checkbox" checked disabled className="rounded border-ink-300 text-gold-700" />
+                  <label key={mod} className="flex items-center gap-2 text-sm text-slate-700">
+                    <input type="checkbox" checked disabled className="rounded border-slate-300 text-indigo-600" />
                     {mod}
                   </label>
                 ))}
@@ -127,31 +127,31 @@ export function SettingsPanel({ locale, initialSection }: Props) {
         {section === "subscriptions" && (
           <div className="panel-card-stack max-w-xl">
             <div>
-              <h2 className="text-base font-semibold text-ink-900">{p.subsTitle}</h2>
-              <p className="text-xs text-ink-500 mt-1">{p.subsSubtitle}</p>
+              <h2 className="text-base font-semibold text-slate-900">{p.subsTitle}</h2>
+              <p className="text-xs text-slate-500 mt-1">{p.subsSubtitle}</p>
             </div>
-            <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4 font-sans">
-              <label className="flex items-start gap-2 text-sm text-ink-700">
-                <input type="checkbox" checked disabled className="mt-0.5 rounded border-ink-300 text-gold-700" />
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4 font-sans">
+              <label className="flex items-start gap-2 text-sm text-slate-700">
+                <input type="checkbox" checked disabled className="mt-0.5 rounded border-slate-300 text-indigo-600" />
                 <span>
                   <span className="font-medium">{p.freezeEnabled}</span>
-                  <p className="text-xs text-ink-500 mt-1 leading-relaxed">{p.freezeEnabledDesc}</p>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">{p.freezeEnabledDesc}</p>
                 </span>
               </label>
               <div className="space-y-4">
                 <div className="field-stack">
                   <label className={labelCls}>{p.freezeMax}</label>
-                  <div className={fieldCls + " bg-ink-50"}>1</div>
+                  <div className={fieldCls + " bg-slate-50"}>1</div>
                 </div>
                 <div className="field-stack">
                   <label className={labelCls}>{p.freezeMin}</label>
-                  <div className={fieldCls + " bg-ink-50"}>8</div>
+                  <div className={fieldCls + " bg-slate-50"}>8</div>
                 </div>
-                <p className="text-xs text-ink-500 bg-ink-50 rounded-lg px-3 py-2">
+                <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
                   {p.policySummary.replace("{max}", "1").replace("{min}", "8")}
                 </p>
               </div>
-              <button type="button" disabled className="w-full py-2.5 bg-gold-600/40 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-not-allowed">
+              <button type="button" disabled className="w-full py-2.5 bg-indigo-600/50 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-not-allowed">
                 {locale === "ru" ? "Сохранить" : "Save"}
               </button>
             </div>
@@ -160,12 +160,12 @@ export function SettingsPanel({ locale, initialSection }: Props) {
 
         {section === "disciplines" && (
           <div className="panel-card-stack max-w-xl">
-            <h2 className="text-base font-semibold text-ink-900">{p.disciplinesTitle}</h2>
-            <div className="bg-white rounded-xl border border-ink-200 shadow-xs divide-y divide-ink-100">
+            <h2 className="text-base font-semibold text-slate-900">{p.disciplinesTitle}</h2>
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs divide-y divide-slate-100">
               {disciplines.map((d) => (
                 <div key={d} className="px-4 py-3 flex items-center justify-between text-sm">
-                  <span className="font-medium text-ink-800">{d}</span>
-                  <span className="text-[10px] text-ink-500 uppercase font-semibold">Active</span>
+                  <span className="font-medium text-slate-800">{d}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Active</span>
                 </div>
               ))}
             </div>
@@ -174,12 +174,12 @@ export function SettingsPanel({ locale, initialSection }: Props) {
 
         {section === "locations" && (
           <div className="panel-card-stack max-w-xl">
-            <h2 className="text-base font-semibold text-ink-900">{p.locationsTitle}</h2>
-            <div className="bg-white rounded-xl border border-ink-200 shadow-xs divide-y divide-ink-100">
+            <h2 className="text-base font-semibold text-slate-900">{p.locationsTitle}</h2>
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs divide-y divide-slate-100">
               {locations.map((loc) => (
                 <div key={loc.name} className="px-4 py-3">
-                  <p className="text-sm font-semibold text-ink-800">{loc.name}</p>
-                  <p className="text-xs text-ink-500 mt-0.5">{loc.address}</p>
+                  <p className="text-sm font-semibold text-slate-800">{loc.name}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{loc.address}</p>
                 </div>
               ))}
             </div>
@@ -188,10 +188,10 @@ export function SettingsPanel({ locale, initialSection }: Props) {
 
         {section === "data" && (
           <div className="panel-card-stack max-w-xl">
-            <h2 className="text-base font-semibold text-ink-900">{p.dataTitle}</h2>
-            <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-3">
-              <p className="text-sm text-ink-600">{p.dataHint}</p>
-              <button type="button" disabled className="px-4 py-2 bg-gold-600/40 text-white text-xs font-semibold rounded-lg cursor-not-allowed">
+            <h2 className="text-base font-semibold text-slate-900">{p.dataTitle}</h2>
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
+              <p className="text-sm text-slate-600">{p.dataHint}</p>
+              <button type="button" disabled className="px-4 py-2 bg-indigo-600/50 text-white text-xs font-semibold rounded-lg cursor-not-allowed">
                 {p.exportBtn}
               </button>
             </div>
@@ -200,9 +200,9 @@ export function SettingsPanel({ locale, initialSection }: Props) {
 
         {section === "license" && (
           <div className="panel-card-stack max-w-xl">
-            <h2 className="text-base font-semibold text-ink-900">{p.licenseTitle}</h2>
-            <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4">
-              <div className="flex items-center gap-2 text-gold-700">
+            <h2 className="text-base font-semibold text-slate-900">{p.licenseTitle}</h2>
+            <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4">
+              <div className="flex items-center gap-2 text-indigo-700">
                 <Ticket className="w-5 h-5" />
                 <p className="text-sm font-semibold">{p.licenseActive}</p>
               </div>

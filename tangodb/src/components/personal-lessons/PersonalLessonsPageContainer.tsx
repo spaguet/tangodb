@@ -287,8 +287,8 @@ export default function PersonalLessonsPageContainer({
   return (
     <div className="panel-page-stack">
       <div className="flex items-center gap-2">
-        <Sparkles className="w-5 h-5 text-gold-500 shrink-0" />
-        <h2 className="text-base font-semibold text-ink-800 tracking-tight">{t("personal.title")}</h2>
+        <Sparkles className="w-5 h-5 text-indigo-500 shrink-0" />
+        <h2 className="text-base font-semibold text-slate-800 tracking-tight">{t("personal.title")}</h2>
       </div>
 
       <div>
@@ -296,7 +296,7 @@ export default function PersonalLessonsPageContainer({
 
         {activeTab === "view" ? (
           <div
-            className={`bg-white p-4 border border-ink-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
+            className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
           >
             <PersonalLessonFilters
               filters={filters}

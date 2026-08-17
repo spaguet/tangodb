@@ -38,7 +38,7 @@ interface MoveGroupLessonDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 export default function MoveGroupLessonDialog({
   lesson,
@@ -156,62 +156,62 @@ export default function MoveGroupLessonDialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !moveOccurrence.isPending && onClose()}
-            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
+            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gold-500">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
                   {t("schedule.lessonInfo.moveOneTitle")}
                 </p>
-                <h3 className="text-base font-semibold tracking-tight text-ink-900 break-words">{groupLabel}</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900 break-words">{groupLabel}</h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={moveOccurrence.isPending}
                 aria-label={t("common.close")}
-                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors shrink-0 disabled:opacity-60"
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0 disabled:opacity-60"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-4 font-sans">
-              <div className="rounded-lg border border-ink-100 bg-ink-50/10 p-3 space-y-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-500">
+              <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-3 space-y-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                   {t("schedule.lessonInfo.moveSourceLabel")}
                 </p>
 
                 {disciplineName && (
                   <div className="flex items-start gap-2.5">
-                    <Layers className="w-4 h-4 text-ink-400 shrink-0 mt-0.5" />
+                    <Layers className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                     <div>
                       <p className={labelCls}>{t("common.discipline")}</p>
-                      <p className="text-sm text-ink-800">{disciplineName}</p>
+                      <p className="text-sm text-slate-800">{disciplineName}</p>
                     </div>
                   </div>
                 )}
 
                 <div className="flex items-start gap-2.5">
-                  <CalendarDays className="w-4 h-4 text-ink-400 shrink-0 mt-0.5" />
+                  <CalendarDays className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                   <div>
                     <p className={labelCls}>{t("common.date")}</p>
-                    <p className="text-sm text-ink-800">{formatDate(lesson.date)}</p>
+                    <p className="text-sm text-slate-800">{formatDate(lesson.date)}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-2.5">
-                  <Clock className="w-4 h-4 text-ink-400 shrink-0 mt-0.5" />
+                  <Clock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                   <div>
                     <p className={labelCls}>{t("common.time")}</p>
-                    <p className="text-sm text-ink-800">
+                    <p className="text-sm text-slate-800">
                       {lesson.timeStart} – {lesson.timeEnd}
                     </p>
                   </div>
@@ -219,27 +219,27 @@ export default function MoveGroupLessonDialog({
 
                 {locationName && (
                   <div className="flex items-start gap-2.5">
-                    <MapPin className="w-4 h-4 text-ink-400 shrink-0 mt-0.5" />
+                    <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                     <div>
                       <p className={labelCls}>{t("schedule.form.location")}</p>
-                      <p className="text-sm text-ink-800">{locationName}</p>
+                      <p className="text-sm text-slate-800">{locationName}</p>
                     </div>
                   </div>
                 )}
 
                 {teacherName && (
                   <div className="flex items-start gap-2.5">
-                    <User className="w-4 h-4 text-ink-400 shrink-0 mt-0.5" />
+                    <User className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                     <div>
                       <p className={labelCls}>{t("schedule.form.teacher")}</p>
-                      <p className="text-sm text-ink-800">{teacherName}</p>
+                      <p className="text-sm text-slate-800">{teacherName}</p>
                     </div>
                   </div>
                 )}
               </div>
 
               <div className="space-y-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-500">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                   {t("schedule.lessonInfo.moveTargetLabel")}
                 </p>
 
@@ -269,7 +269,7 @@ export default function MoveGroupLessonDialog({
                 </div>
 
                 {(timeRangeError || clientConflictPreview) && targetDate ? (
-                  <p className="text-xs text-garnet-600 leading-relaxed">
+                  <p className="text-xs text-rose-600 leading-relaxed">
                     {timeRangeError ??
                       formatScheduleConflictToast(targetDate, clientConflictPreview!, t, locale)}
                   </p>

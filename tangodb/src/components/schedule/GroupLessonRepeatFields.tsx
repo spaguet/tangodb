@@ -3,8 +3,8 @@ import DatePickerField from "../ui/DatePickerField";
 import { useI18n } from "../../hooks/useI18n";
 import type { GroupRepeatConfig, GroupRepeatEndMode } from "../../lib/groupLessonRepeat";
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
-const checkboxCls = "rounded border-ink-300 text-gold-700 focus:ring-gold-500";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
 
 interface GroupLessonRepeatFieldsProps {
   config: GroupRepeatConfig;
@@ -23,7 +23,7 @@ export default function GroupLessonRepeatFields({
 
   return (
     <>
-      <label className="flex items-start gap-2 text-sm text-ink-700 cursor-pointer">
+      <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
         <input
           type="checkbox"
           checked={config.repeatWeekly}
@@ -43,8 +43,8 @@ export default function GroupLessonRepeatFields({
                 onClick={() => setEndMode("weeks")}
                 className={`py-2 rounded-lg border font-sans text-[10px] font-semibold uppercase tracking-wider cursor-pointer ${
                   config.endMode === "weeks"
-                    ? "bg-gold-700 text-white border-gold-700"
-                    : "bg-ink-50 text-ink-600 border-ink-200"
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-slate-50 text-slate-600 border-slate-200"
                 }`}
               >
                 {t("common.nWeeks")}
@@ -54,8 +54,8 @@ export default function GroupLessonRepeatFields({
                 onClick={() => setEndMode("date")}
                 className={`py-2 rounded-lg border font-sans text-[10px] font-semibold uppercase tracking-wider cursor-pointer ${
                   config.endMode === "date"
-                    ? "bg-gold-700 text-white border-gold-700"
-                    : "bg-ink-50 text-ink-600 border-ink-200"
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-slate-50 text-slate-600 border-slate-200"
                 }`}
               >
                 {t("common.untilDate")}

@@ -73,30 +73,30 @@ export default function GroupCheckboxDropdown({
           type="button"
           disabled={disabled || options.length === 0}
           onClick={() => setOpen((prev) => !prev)}
-          className={`${selectFieldCls} text-left ${selectedLabels.length === 0 ? "text-ink-400" : "text-ink-800"} disabled:opacity-60 disabled:cursor-not-allowed`}
+          className={`${selectFieldCls} text-left ${selectedLabels.length === 0 ? "text-slate-400" : "text-slate-800"} disabled:opacity-60 disabled:cursor-not-allowed`}
         >
           {options.length === 0 ? resolvedEmptyMessage : summary}
         </button>
-        <ChevronDown className="w-4 h-4 text-ink-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
 
         {open && options.length > 0 && (
-          <div className="absolute z-30 mt-1 w-full rounded-lg border border-ink-200 bg-white shadow-lg max-h-56 overflow-y-auto p-2 space-y-1">
+          <div className="absolute z-30 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg max-h-56 overflow-y-auto p-2 space-y-1">
             {options.map((option) => (
               <label
                 key={option.key}
-                className={`flex items-start gap-2 px-2 py-1.5 rounded-md hover:bg-ink-50 cursor-pointer text-sm text-ink-700 ${option.disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+                className={`flex items-start gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 cursor-pointer text-sm text-slate-700 ${option.disabled ? "opacity-60 cursor-not-allowed" : ""}`}
               >
                 <input
                   type="checkbox"
                   checked={selectedKeys.includes(option.key)}
                   disabled={option.disabled}
                   onChange={() => !option.disabled && toggleKey(option.key)}
-                  className="rounded border-ink-300 text-gold-700 focus:ring-gold-500 mt-0.5"
+                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
                 />
                 <span className="min-w-0">
                   <span className="truncate block">{option.label}</span>
                   {option.hint && (
-                    <span className="block text-[10px] text-ink-500 mt-0.5">{option.hint}</span>
+                    <span className="block text-[10px] text-slate-400 mt-0.5">{option.hint}</span>
                   )}
                 </span>
               </label>

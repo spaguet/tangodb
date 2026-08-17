@@ -28,12 +28,12 @@ function KindBadge({
   tone?: "indigo" | "violet";
 }) {
   const opLabel = formatOperationNumber(operationNumber);
-  const toneClass = tone === "violet" ? "text-lavender-700" : "text-gold-700";
+  const toneClass = tone === "violet" ? "text-violet-700" : "text-indigo-700";
   return (
     <p className={`text-xs font-semibold uppercase whitespace-nowrap ${toneClass}`}>
       {kind}
       {operationNumber != null && (
-        <span className="text-ink-500 font-normal normal-case ml-1">{opLabel}</span>
+        <span className="text-slate-500 font-normal normal-case ml-1">{opLabel}</span>
       )}
     </p>
   );
@@ -58,13 +58,13 @@ function PaymentCorrectionRow({
   const contextDate = originalPayment?.createdAt;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-2 px-4 py-3 border-b border-ink-100 last:border-b-0">
+    <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-2 px-4 py-3 border-b border-slate-100 last:border-b-0">
       <div>
         <KindBadge kind={kindLabel ?? t("corrections.page.kindPayment")} operationNumber={row.operationNumber} />
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-medium text-ink-800 truncate">{row.clientDisplay}</p>
-        <p className="text-xs text-ink-500 mt-0.5">
+        <p className="text-sm font-medium text-slate-800 truncate">{row.clientDisplay}</p>
+        <p className="text-xs text-slate-500 mt-0.5">
           {t(actionKey as Parameters<typeof t>[0])} · {getPaymentMethodLabel(row.method, t)}
           {!isStorno && (
             <>
@@ -74,7 +74,7 @@ function PaymentCorrectionRow({
           )}
         </p>
         {isStorno && contextDate && (
-          <p className="text-xs text-ink-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             {t("corrections.page.stornoContext", {
               date: formatDateTime(contextDate, {
                 day: "numeric",
@@ -86,7 +86,7 @@ function PaymentCorrectionRow({
           </p>
         )}
         {row.replacesPaymentId && contextDate && (
-          <p className="text-xs text-ink-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             {t("corrections.page.replacementContext", {
               date: formatDateTime(contextDate, {
                 day: "numeric",
@@ -98,12 +98,12 @@ function PaymentCorrectionRow({
           </p>
         )}
         {reasonKey && (
-          <p className="text-xs text-ink-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             {t(reasonKey as Parameters<typeof t>[0])}
             {row.reasonComment ? ` — ${row.reasonComment}` : ""}
           </p>
         )}
-        <p className="text-[10px] text-ink-500 mt-1">
+        <p className="text-[10px] text-slate-400 mt-1">
           {row.authorName ?? "—"} ·{" "}
           {formatDateTime(row.createdAt, {
             day: "numeric",
@@ -115,7 +115,7 @@ function PaymentCorrectionRow({
       </div>
       <p
         className={`text-sm font-semibold text-right whitespace-nowrap ${
-          isStorno ? "text-garnet-600" : "text-ink-800"
+          isStorno ? "text-rose-600" : "text-slate-800"
         }`}
       >
         {isStorno ? "−" : ""}
@@ -200,20 +200,20 @@ export default function FinanceCorrectionsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <History size={18} className="text-gold-700" />
-        <h2 className="text-lg font-semibold text-ink-900">{t("corrections.page.title")}</h2>
+        <History size={18} className="text-indigo-600" />
+        <h2 className="text-lg font-semibold text-slate-900">{t("corrections.page.title")}</h2>
       </div>
-      <p className="text-sm text-ink-500">{t("corrections.page.subtitle")}</p>
+      <p className="text-sm text-slate-500">{t("corrections.page.subtitle")}</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <DatePickerField label={t("corrections.page.dateFrom")} value={dateFrom} onChange={setDateFrom} />
         <DatePickerField label={t("corrections.page.dateTo")} value={dateTo} onChange={setDateTo} />
         <div>
-          <label className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block mb-1">
+          <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block mb-1">
             {t("corrections.page.searchPlaceholder")}
           </label>
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -224,14 +224,14 @@ export default function FinanceCorrectionsPage() {
         </div>
       </div>
 
-      <p className="text-xs text-ink-500">{countLabel}</p>
+      <p className="text-xs text-slate-400">{countLabel}</p>
 
       {totalRows === 0 ? (
-        <div className="rounded-xl border border-dashed border-ink-200 p-8 text-center text-sm text-ink-500">
+        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
           {t("corrections.page.empty")}
         </div>
       ) : (
-        <div className="rounded-xl border border-ink-200 overflow-hidden bg-white">
+        <div className="rounded-xl border border-slate-200 overflow-hidden bg-white">
           {filtered.payments.map((row) => (
             <PaymentCorrectionRow
               key={`p-${row.id}`}
@@ -268,7 +268,7 @@ export default function FinanceCorrectionsPage() {
           {filtered.attendance.map((row) => (
             <div
               key={`a-${row.id}`}
-              className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-2 px-4 py-3 border-b border-ink-100 last:border-b-0"
+              className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-2 px-4 py-3 border-b border-slate-100 last:border-b-0"
             >
               <div>
                 <KindBadge
@@ -278,18 +278,18 @@ export default function FinanceCorrectionsPage() {
                 />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-ink-800 truncate">{row.clientDisplay}</p>
-                <p className="text-xs text-ink-500 mt-0.5">
+                <p className="text-sm font-medium text-slate-800 truncate">{row.clientDisplay}</p>
+                <p className="text-xs text-slate-500 mt-0.5">
                   {formatDate(row.occurrenceDate)} · {row.oldStatus ?? "—"} → {row.newStatus}
                   {row.isUndo ? ` · ${t("corrections.page.undo")}` : ""}
                 </p>
                 {row.reasonCode && (
-                  <p className="text-xs text-ink-500 mt-0.5">
+                  <p className="text-xs text-slate-400 mt-0.5">
                     {row.reasonCode}
                     {row.reasonComment ? ` — ${row.reasonComment}` : ""}
                   </p>
                 )}
-                <p className="text-[10px] text-ink-500 mt-1">
+                <p className="text-[10px] text-slate-400 mt-1">
                   {row.authorName ?? "—"} ·{" "}
                   {formatDateTime(row.createdAt, {
                     day: "numeric",

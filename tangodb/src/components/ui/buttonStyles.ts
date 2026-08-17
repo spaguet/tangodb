@@ -10,34 +10,34 @@ export const btnBaseCls =
 
 /** Добавление / создание / сохранение — indigo filled, регистр предложения (без uppercase). */
 export const btnAddCls =
-  `${btnBaseCls} bg-gold-700 hover:bg-gold-800 text-white shadow-xs`;
+  `${btnBaseCls} bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs`;
 
 /** Добавление — мягкий вариант (заголовок секции, вторичное создание). */
 export const btnAddSoftCls =
-  `${btnBaseCls} text-gold-700 bg-gold-50 border border-gold-100 hover:bg-gold-100`;
+  `${btnBaseCls} text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100`;
 
 /** Открытие popup / страницы / окна — outline indigo, регистр предложения (без uppercase). */
 export const btnOpenCls =
-  `${btnBaseCls} text-gold-700 bg-gold-50 hover:bg-gold-100 border border-gold-200`;
+  `${btnBaseCls} text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200`;
 
 /** Удаление и предупреждающие действия — rose, UPPERCASE. */
 export const btnDestructiveCls =
-  `${btnBaseCls} bg-garnet-600 hover:bg-garnet-700 text-white uppercase tracking-wider`;
+  `${btnBaseCls} bg-rose-600 hover:bg-rose-700 text-white uppercase tracking-wider`;
 
 /** Обновить / отмена — slate, UPPERCASE. */
 export const btnRefreshCls =
-  `${btnBaseCls} bg-ink-100 hover:bg-ink-200 text-ink-700 uppercase tracking-wider`;
+  `${btnBaseCls} bg-slate-100 hover:bg-slate-200 text-slate-700 uppercase tracking-wider`;
 
 export const btnCancelCls = btnRefreshCls;
 
 /** Header support links (Email, Telegram, WhatsApp) — outline, h-8 like sign out. */
 export const btnHeaderContactCls =
-  `${btnBaseCls} border border-ink-200 bg-white text-ink-700 font-medium hover:border-gold-200 hover:text-gold-800`;
+  `${btnBaseCls} border border-slate-200 bg-white text-slate-700 font-medium hover:border-indigo-200 hover:text-indigo-700`;
 
 /** Header sign out — outline slate, h-8. */
 export const btnHeaderSignOutCls =
-  `${btnBaseCls} text-ink-500 hover:text-ink-800 border border-ink-200 hover:bg-ink-50`;
+  `${btnBaseCls} text-slate-500 hover:text-slate-800 border border-slate-200 hover:bg-slate-50`;
 
 /** Текстовая ссылка «+ Добавить» внутри формы. */
 export const btnAddLinkCls =
-  "text-xs font-semibold text-gold-700 hover:text-gold-800 cursor-pointer";
+  "text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer";

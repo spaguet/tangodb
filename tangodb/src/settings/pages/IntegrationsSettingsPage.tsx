@@ -137,8 +137,8 @@ export default function IntegrationsSettingsPage() {
   if (!isMemberActive) {
     return (
       <div className="panel-card-stack max-w-xl">
-        <h2 className="text-base font-semibold text-ink-900">{t("integrations.title")}</h2>
-        <p className="text-xs text-ink-500">{t("integrations.googleCalendar.inactiveMember")}</p>
+        <h2 className="text-base font-semibold text-slate-900">{t("integrations.title")}</h2>
+        <p className="text-xs text-slate-500">{t("integrations.googleCalendar.inactiveMember")}</p>
       </div>
     );
   }
@@ -274,10 +274,10 @@ export default function IntegrationsSettingsPage() {
 
   const accountStatusTone =
     primaryAccount?.status === "active"
-      ? "text-gold-700 bg-gold-50 border-gold-100"
+      ? "text-indigo-700 bg-indigo-50 border-indigo-100"
       : primaryAccount?.status === "revoked"
-        ? "text-amber-700 bg-amber-50 border-amber-200"
-        : "text-garnet-700 bg-garnet-50 border-garnet-100";
+        ? "text-amber-800 bg-amber-50 border-amber-100"
+        : "text-rose-700 bg-rose-50 border-rose-100";
 
   const writableCalendars = calendars.filter((c) => c.selectable);
   const showTeamSection = role === "owner" || role === "director";
@@ -285,16 +285,16 @@ export default function IntegrationsSettingsPage() {
   return (
     <div className={`panel-card-stack space-y-6 ${showTeamSection ? "max-w-3xl" : "max-w-xl"}`}>
       <div className="flex items-start gap-3">
-        <CalendarDays className="w-5 h-5 text-gold-700 shrink-0 mt-0.5" />
+        <CalendarDays className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
         <div>
-          <h2 className="text-base font-semibold text-ink-900">{t("integrations.title")}</h2>
-          <p className="text-xs text-ink-500 mt-1">{t("integrations.googleCalendar.subtitle")}</p>
+          <h2 className="text-base font-semibold text-slate-900">{t("integrations.title")}</h2>
+          <p className="text-xs text-slate-500 mt-1">{t("integrations.googleCalendar.subtitle")}</p>
         </div>
       </div>
 
       {!primaryAccount || primaryAccount.status !== "active" ? (
-        <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4">
-          <p className="text-sm text-ink-600">{t("integrations.googleCalendar.notConnectedHint")}</p>
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
+          <p className="text-sm text-slate-600">{t("integrations.googleCalendar.notConnectedHint")}</p>
           {primaryAccount && primaryAccount.status !== "active" && (
             <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${accountStatusTone}`}>
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -316,12 +316,12 @@ export default function IntegrationsSettingsPage() {
           </button>
         </div>
       ) : pickerOpen ? (
-        <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4">
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
           <div>
-            <h3 className="text-sm font-semibold text-ink-800">
+            <h3 className="text-sm font-semibold text-slate-800">
               {binding ? t("integrations.googleCalendar.changeCalendar") : t("integrations.googleCalendar.selectCalendar")}
             </h3>
-            <p className="text-xs text-ink-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               {t("integrations.googleCalendar.selectCalendarHint", { email: primaryAccount.google_email })}
             </p>
           </div>
@@ -329,7 +329,7 @@ export default function IntegrationsSettingsPage() {
           {loadingCalendars ? (
             <LoadingState label={t("integrations.googleCalendar.loadingCalendars")} />
           ) : writableCalendars.length === 0 ? (
-            <p className="text-xs text-ink-500">{t("integrations.googleCalendar.noWritableCalendars")}</p>
+            <p className="text-xs text-slate-500">{t("integrations.googleCalendar.noWritableCalendars")}</p>
           ) : (
             <AppSelect
               label={t("integrations.googleCalendar.calendarLabel")}
@@ -358,10 +358,10 @@ export default function IntegrationsSettingsPage() {
               {t("integrations.googleCalendar.createCalendar")}
             </button>
           </div>
-          <p className="text-xs text-ink-500">{t("integrations.googleCalendar.createCalendarHint")}</p>
+          <p className="text-xs text-slate-500">{t("integrations.googleCalendar.createCalendarHint")}</p>
 
           {binding && (
-            <label className="flex items-start gap-2 text-xs text-ink-600">
+            <label className="flex items-start gap-2 text-xs text-slate-600">
               <input
                 type="checkbox"
                 className="mt-0.5"
@@ -372,7 +372,7 @@ export default function IntegrationsSettingsPage() {
             </label>
           )}
 
-          <div className="flex flex-wrap gap-2 pt-2 border-t border-ink-100">
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
             <button
               type="button"
               onClick={() => void handleSaveCalendar()}
@@ -394,7 +394,7 @@ export default function IntegrationsSettingsPage() {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4">
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
           <div className={`flex items-start gap-3 rounded-lg border px-3 py-3 ${accountStatusTone}`}>
             {isConfigured ? (
               <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
@@ -424,12 +424,12 @@ export default function IntegrationsSettingsPage() {
           </div>
 
           {binding?.last_success_at && (
-            <p className="text-xs text-ink-500">
+            <p className="text-xs text-slate-500">
               {t("integrations.googleCalendar.lastSuccess")}: {formatDateTime(binding.last_success_at)}
             </p>
           )}
           {binding?.last_error_code && (
-            <p className="text-xs text-garnet-600 bg-garnet-50 border border-garnet-100 rounded-lg px-3 py-2">
+            <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
               {t("integrations.googleCalendar.lastError")}: {binding.last_error_code}
             </p>
           )}
@@ -473,14 +473,14 @@ export default function IntegrationsSettingsPage() {
             </button>
           </div>
 
-          <div className="border-t border-ink-100 pt-4 space-y-3">
-            <h3 className="text-sm font-semibold text-ink-800 flex items-center gap-2">
-              <Unplug className="w-4 h-4 text-ink-500" />
+          <div className="border-t border-slate-100 pt-4 space-y-3">
+            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <Unplug className="w-4 h-4 text-slate-500" />
               {t("integrations.googleCalendar.disconnect")}
             </h3>
             {disconnectMode ? (
               <div className="space-y-3">
-                <p className="text-xs text-ink-600">
+                <p className="text-xs text-slate-600">
                   {disconnectMode === "revoke"
                     ? t("integrations.googleCalendar.revokeEverywhereHint")
                     : disconnectMode === "delete"

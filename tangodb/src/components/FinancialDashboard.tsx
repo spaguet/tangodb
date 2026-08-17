@@ -79,11 +79,11 @@ import AppSelect from "./ui/AppSelect";
 import QueryErrorState from "./ui/QueryErrorState";
 
 const SPLIT_COLORS: Record<RevenueSplitKey, string> = {
-  subscription: "bg-gold-500",
-  personal: "bg-gold-700",
-  single_visit: "bg-gold-400",
-  other: "bg-ink-400",
-  rental: "bg-lavender-500",
+  subscription: "bg-indigo-500",
+  personal: "bg-indigo-700",
+  single_visit: "bg-indigo-400",
+  other: "bg-slate-400",
+  rental: "bg-violet-500",
 };
 
 function formatShortMonth(yearMonth: string, locale: string | null): string {
@@ -220,7 +220,7 @@ function RevenueTrendChart({
               x={plotLeft - 4}
               y={maxY + 3}
               textAnchor="end"
-              className="fill-ink-400"
+              className="fill-slate-400"
               fontSize="8"
             >
               {maxLabel}
@@ -229,7 +229,7 @@ function RevenueTrendChart({
               x={plotLeft - 4}
               y={avgY + 3}
               textAnchor="end"
-              className="fill-ink-400"
+              className="fill-slate-400"
               fontSize="8"
             >
               {avgLabel}
@@ -286,7 +286,7 @@ function RevenueTrendChart({
               x={point.x}
               y={chartBottom + 14}
               textAnchor="middle"
-              className="fill-ink-400"
+              className="fill-slate-400"
               fontSize="9"
             >
               {formatTrendPointLabel(point.month, period, locale)}
@@ -297,16 +297,16 @@ function RevenueTrendChart({
 
       {hovered && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-md border border-ink-200 bg-white px-2 py-1 shadow-sm"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm"
           style={{
             left: (hovered.x / width) * 100 + "%",
             top: Math.max(hovered.y - 44, 0),
           }}
         >
-          <p className="text-[10px] text-ink-500 whitespace-nowrap">
+          <p className="text-[10px] text-slate-500 whitespace-nowrap">
             {formatTrendPointLabel(hovered.month, period, locale)}
           </p>
-          <p className="text-xs font-semibold text-ink-800 whitespace-nowrap">
+          <p className="text-xs font-semibold text-slate-800 whitespace-nowrap">
             {formatCurrency(hovered.total)}
           </p>
         </div>
@@ -328,7 +328,7 @@ function RevenueSplitChart({
 
   return (
     <div className="space-y-3">
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-ink-100">
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100">
         {segments.map((segment) => (
           <div
             key={segment.key}
@@ -343,11 +343,11 @@ function RevenueSplitChart({
           <div key={segment.key} className="flex items-center justify-between gap-2 text-xs font-sans">
             <div className="flex items-center gap-2 min-w-0">
               <span className={`w-2 h-2 rounded-full shrink-0 ${SPLIT_COLORS[segment.key]}`} />
-              <span className="text-ink-600 truncate">{labelForKey(segment.key)}</span>
+              <span className="text-slate-600 truncate">{labelForKey(segment.key)}</span>
             </div>
             <div className="text-right shrink-0">
-              <span className="font-semibold text-ink-800">{formatCurrency(segment.amount)}</span>
-              <span className="text-ink-400 ml-1.5">{segment.percent.toFixed(0)}%</span>
+              <span className="font-semibold text-slate-800">{formatCurrency(segment.amount)}</span>
+              <span className="text-slate-400 ml-1.5">{segment.percent.toFixed(0)}%</span>
             </div>
           </div>
         ))}
@@ -369,8 +369,8 @@ function DashboardStatValue({
 
   if (loading) {
     return (
-      <p className={`${className} text-ink-400 flex items-center gap-1.5`}>
-        <Loader2 className="w-4 h-4 animate-spin shrink-0 text-gold-400" aria-hidden />
+      <p className={`${className} text-slate-400 flex items-center gap-1.5`}>
+        <Loader2 className="w-4 h-4 animate-spin shrink-0 text-indigo-400" aria-hidden />
         <span>{t("common.loading.default")}</span>
       </p>
     );
@@ -397,29 +397,29 @@ function RevenueRankList({
   const maxAmount = Math.max(...entries.map((entry) => entry.amount), 1);
 
   return (
-    <div className="rounded-lg border border-ink-100 bg-ink-50/10 p-3 space-y-2">
-      <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider flex items-center gap-1.5">
+    <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+      <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider flex items-center gap-1.5">
         <Icon className="w-3.5 h-3.5" />
         {title}
       </p>
       {loading ? (
-        <p className="text-xs text-ink-500 py-6 text-center">{loadingLabel}</p>
+        <p className="text-xs text-slate-500 py-6 text-center">{loadingLabel}</p>
       ) : entries.length === 0 ? (
-        <p className="text-xs text-ink-500 py-6 text-center">{emptyLabel}</p>
+        <p className="text-xs text-slate-500 py-6 text-center">{emptyLabel}</p>
       ) : (
         <ol className="space-y-2">
           {entries.map((entry, index) => (
             <li key={entry.key} className="space-y-1">
               <div className="flex items-center justify-between gap-2 text-xs font-sans">
-                <span className="text-ink-600 truncate min-w-0">
-                  <span className="text-ink-400 mr-1.5">{index + 1}.</span>
+                <span className="text-slate-600 truncate min-w-0">
+                  <span className="text-slate-400 mr-1.5">{index + 1}.</span>
                   {entry.label}
                 </span>
-                <span className="font-semibold text-ink-800 shrink-0">{formatCurrency(entry.amount)}</span>
+                <span className="font-semibold text-slate-800 shrink-0">{formatCurrency(entry.amount)}</span>
               </div>
-              <div className="h-1.5 rounded-full bg-ink-100 overflow-hidden">
+              <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gold-500"
+                  className="h-full rounded-full bg-indigo-500"
                   style={{ width: `${(entry.amount / maxAmount) * 100}%` }}
                 />
               </div>
@@ -714,28 +714,28 @@ export default function FinancialDashboard() {
           }}
         />
       ) : null}
-      <div className="bg-white rounded-xl p-3.5 border border-ink-200 shadow-xs space-y-3">
-        <div className="flex items-center justify-between gap-2 border-b border-ink-100 pb-2">
-          <h2 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-gold-500" />
+      <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-3">
+        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+          <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-indigo-500" />
             {t("dashboard.financialOverview")}
           </h2>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setStatsMonth((m) => shiftMonth(m, -1))}
-              className="p-1 rounded-lg hover:bg-ink-50 text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
+              className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
               aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex flex-col items-center min-w-0">
-              <span className="text-xs font-semibold text-ink-800">{formatMonthTitle(statsMonth, locale)}</span>
+              <span className="text-xs font-semibold text-slate-800">{formatMonthTitle(statsMonth, locale)}</span>
               {!isViewingCurrentMonth && (
                 <button
                   type="button"
                   onClick={() => setStatsMonth(currentYearMonth())}
-                  className="text-[10px] font-semibold text-gold-700 hover:text-gold-800 hover:underline cursor-pointer whitespace-nowrap"
+                  className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer whitespace-nowrap"
                 >
                   {t("common.currentMonth")}
                 </button>
@@ -745,7 +745,7 @@ export default function FinancialDashboard() {
               type="button"
               onClick={() => setStatsMonth((m) => shiftMonth(m, 1))}
               disabled={!canGoNextMonth}
-              className="p-1 rounded-lg hover:bg-ink-50 text-ink-500 hover:text-ink-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
@@ -754,72 +754,72 @@ export default function FinancialDashboard() {
         </div>
 
         <div className={`grid gap-3 ${personalLessonsEnabled ? "grid-cols-2 lg:grid-cols-5" : "grid-cols-2 lg:grid-cols-4"}`}>
-          <div className="bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100">
-            <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider">{t("dashboard.revenue")}</p>
-            <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-ink-900 mt-0.5">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.revenue")}</p>
+            <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-slate-900 mt-0.5">
               {formatCurrency(stats.netTotal)}
             </DashboardStatValue>
             {!financialStatsLoading && stats.refundsTotal > 0 ? (
-              <p className="text-[10px] text-ink-500 mt-0.5">
+              <p className="text-[10px] text-slate-500 mt-0.5">
                 {t("finance.revenue.gross")}: {formatCurrency(stats.grossTotal)} · {t("finance.revenue.refunds")}: −
                 {formatCurrency(stats.refundsTotal)}
               </p>
             ) : null}
             {!financialStatsLoading && stats.pendingRefundsTotal > 0 ? (
-              <p className="text-[10px] text-ink-500 mt-0.5">
+              <p className="text-[10px] text-slate-500 mt-0.5">
                 {t("finance.revenue.pendingRefunds")}: {formatCurrency(stats.pendingRefundsTotal)}
               </p>
             ) : null}
             {!financialStatsLoading ? (
               <>
                 <div className="flex items-center gap-1 mt-0.5">
-                  {momPositive && <ArrowUp className="w-3 h-3 text-gold-700" />}
-                  {momNegative && <ArrowDown className="w-3 h-3 text-garnet-600" />}
+                  {momPositive && <ArrowUp className="w-3 h-3 text-indigo-600" />}
+                  {momNegative && <ArrowDown className="w-3 h-3 text-rose-600" />}
                   <p
                     className={`text-[10px] font-semibold ${
-                      momPositive ? "text-gold-700" : momNegative ? "text-garnet-600" : "text-ink-500"
+                      momPositive ? "text-indigo-600" : momNegative ? "text-rose-600" : "text-slate-500"
                     }`}
                   >
                     {momPercent === null ? t("dashboard.momUnavailable") : formatMomPercent(momPercent)}
                   </p>
                   {momPercent !== null && (
-                    <span className="text-[10px] text-ink-500">{t("dashboard.momVsPrevious")}</span>
+                    <span className="text-[10px] text-slate-400">{t("dashboard.momVsPrevious")}</span>
                   )}
                 </div>
-                <p className="text-[10px] text-ink-500 mt-0.5">
+                <p className="text-[10px] text-slate-500 mt-0.5">
                   {stats.count}{" "}
                   {plural(stats.count, [t("common.payment.one"), t("common.payment.few"), t("common.payment.many")])}
                 </p>
               </>
             ) : null}
           </div>
-          <div className="bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100">
-            <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider">{t("dashboard.subscriptions")}</p>
-            <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-gold-700 mt-0.5">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.subscriptions")}</p>
+            <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-indigo-700 mt-0.5">
               {formatCurrency(stats.subscriptionTotal)}
             </DashboardStatValue>
           </div>
           {personalLessonsEnabled ? (
-            <div className="bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100">
-              <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider">{t("dashboard.personal")}</p>
-              <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-gold-700 mt-0.5">
+            <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.personal")}</p>
+              <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-indigo-700 mt-0.5">
                 {formatCurrency(stats.personalTotal)}
               </DashboardStatValue>
             </div>
           ) : null}
-          <div className="bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100">
-            <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider">{t("dashboard.singleVisits")}</p>
-            <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-gold-700 mt-0.5">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.singleVisits")}</p>
+            <DashboardStatValue loading={financialStatsLoading} className="text-xl font-semibold text-indigo-700 mt-0.5">
               {formatCurrency(stats.singleVisitTotal)}
             </DashboardStatValue>
           </div>
-          <div className="bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100">
-            <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider">{t("dashboard.receivables")}</p>
-            <DashboardStatValue loading={receivablesLoading} className="text-xl font-semibold text-garnet-700 mt-0.5">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.receivables")}</p>
+            <DashboardStatValue loading={receivablesLoading} className="text-xl font-semibold text-rose-700 mt-0.5">
               {formatCurrency(totalDebt)}
             </DashboardStatValue>
             {!receivablesLoading ? (
-              <p className="text-[10px] text-ink-500 mt-0.5">
+              <p className="text-[10px] text-slate-500 mt-0.5">
                 {personalLessonsEnabled
                   ? t("dashboard.receivablesBreakdown", { subs: lowBalanceCount, personal: unpaidPersonalCount })
                   : t("dashboard.receivablesBreakdownSubsOnly", { subs: lowBalanceCount })}
@@ -828,10 +828,10 @@ export default function FinancialDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pt-1 border-t border-ink-100">
-          <div className="bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pt-1 border-t border-slate-100">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
                 {t("dashboard.expensesMonth")}
               </p>
               {canReadFinance ? (
@@ -841,7 +841,7 @@ export default function FinancialDashboard() {
                   disabled={recalculateVenueCosts.isPending}
                   aria-label={t("dashboard.venueCostsRecalculate")}
                   title={t("dashboard.venueCostsRecalculate")}
-                  className="inline-flex items-center gap-1 text-[10px] font-sans font-semibold text-gold-700 hover:text-gold-800 disabled:opacity-50 shrink-0"
+                  className="inline-flex items-center gap-1 text-[10px] font-sans font-semibold text-indigo-600 hover:text-indigo-800 disabled:opacity-50 shrink-0"
                 >
                   <RefreshCw
                     className={`w-3 h-3 ${recalculateVenueCosts.isPending ? "animate-spin" : ""}`}
@@ -850,11 +850,11 @@ export default function FinancialDashboard() {
                 </button>
               ) : null}
             </div>
-            <DashboardStatValue loading={expensesLoading} className="text-xl font-semibold text-garnet-700 mt-0.5">
+            <DashboardStatValue loading={expensesLoading} className="text-xl font-semibold text-rose-700 mt-0.5">
               {formatCurrency(expensesTotal)}
             </DashboardStatValue>
             {!expensesLoading ? (
-              <p className="text-[10px] text-ink-500 mt-0.5">
+              <p className="text-[10px] text-slate-500 mt-0.5">
                 {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualExpensesTotal)}
                 {financeCostsUnavailable ? (
                   <> · {t("venueCosts.finance.venueTotal")}: —</>
@@ -870,31 +870,31 @@ export default function FinancialDashboard() {
               </p>
             ) : null}
           </div>
-          <div className="bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100">
-            <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
               {t("dashboard.payrollAccrued")}
             </p>
             <DashboardStatValue
               loading={payrollQuery.isLoading}
-              className="text-xl font-semibold text-ink-700 mt-0.5"
+              className="text-xl font-semibold text-slate-700 mt-0.5"
             >
               {formatCurrency(payrollAccrued)}
             </DashboardStatValue>
-            <p className="text-[10px] text-ink-500 mt-0.5">{t("dashboard.payrollAccruedHint")}</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.payrollAccruedHint")}</p>
           </div>
-          <div className="bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100">
-            <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
               {t("dashboard.profit")}
             </p>
             <DashboardStatValue
               loading={profitLoading}
               className={`text-xl font-semibold mt-0.5 ${
-                profit === null ? "text-ink-500" : profit >= 0 ? "text-gold-700" : "text-garnet-700"
+                profit === null ? "text-slate-500" : profit >= 0 ? "text-indigo-700" : "text-rose-700"
               }`}
             >
               {profit === null ? "—" : formatCurrency(profit)}
             </DashboardStatValue>
-            <p className="text-[10px] text-ink-500 mt-0.5">
+            <p className="text-[10px] text-slate-500 mt-0.5">
               {financeCostsUnavailable ? t("dashboard.profitUnavailable") : t("dashboard.profitHint")}
             </p>
           </div>
@@ -905,21 +905,21 @@ export default function FinancialDashboard() {
             {Object.entries(stats.byMethod).map(([method, amount]) => (
               <div
                 key={method}
-                className="flex items-center justify-between px-3 py-2 rounded-lg border border-ink-100 text-xs font-sans"
+                className="flex items-center justify-between px-3 py-2 rounded-lg border border-slate-100 text-xs font-sans"
               >
-                <span className="text-ink-500">
+                <span className="text-slate-500">
                   {getPaymentMethodLabel(method as PaymentMethod, t) ?? method}
                 </span>
-                <span className="font-semibold text-ink-800">{formatCurrency(amount)}</span>
+                <span className="font-semibold text-slate-800">{formatCurrency(amount)}</span>
               </div>
             ))}
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-3 pt-1 border-t border-ink-100 lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
-          <div className="rounded-lg border border-ink-100 bg-ink-50/10 p-3 space-y-2 min-w-0">
+        <div className="grid grid-cols-1 gap-3 pt-1 border-t border-slate-100 lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
+          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider">
+              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
                 {t("dashboard.revenueTrend")}
               </p>
               <div className="w-[7.5rem] shrink-0">
@@ -936,51 +936,51 @@ export default function FinancialDashboard() {
               </div>
             </div>
             {paymentsQuery.isLoading ? (
-              <p className="text-xs text-ink-500 py-8 text-center">{t("dashboard.loading")}</p>
+              <p className="text-xs text-slate-500 py-8 text-center">{t("dashboard.loading")}</p>
             ) : (
               <RevenueTrendChart points={trendPoints} locale={locale} period={trendPeriod} />
             )}
           </div>
-          <div className="rounded-lg border border-ink-100 bg-ink-50/10 p-3 space-y-2">
-            <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider">
+          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
               {t("dashboard.revenueSplit")}
             </p>
             {financialStatsLoading ? (
-              <p className="text-xs text-ink-500 py-8 text-center flex items-center justify-center gap-1.5">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-gold-400" aria-hidden />
+              <p className="text-xs text-slate-500 py-8 text-center flex items-center justify-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" aria-hidden />
                 {t("common.loading.default")}
               </p>
             ) : stats.netTotal > 0 ? (
               <RevenueSplitChart segments={revenueSplit} labelForKey={splitLabel} />
             ) : (
-              <p className="text-xs text-ink-500 py-8 text-center">{t("dashboard.noRevenueInMonth")}</p>
+              <p className="text-xs text-slate-500 py-8 text-center">{t("dashboard.noRevenueInMonth")}</p>
             )}
           </div>
         </div>
 
         {canShowOperationalAnalytics ? (
           <>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1 border-t border-ink-100">
-          <div className="bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100">
-            <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider flex items-center gap-1">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1 border-t border-slate-100">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider flex items-center gap-1">
               <UserPlus className="w-3 h-3" />
               {t("dashboard.newClients")}
             </p>
-            <DashboardStatValue loading={analyticsLoading} className="text-xl font-semibold text-ink-900 mt-0.5">
+            <DashboardStatValue loading={analyticsLoading} className="text-xl font-semibold text-slate-900 mt-0.5">
               {newClientsCount}
             </DashboardStatValue>
-            <p className="text-[10px] text-ink-500 mt-0.5">{t("dashboard.newClientsInMonth")}</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.newClientsInMonth")}</p>
           </div>
-          <div className="bg-ink-50 rounded-lg px-3 py-2.5 border border-ink-100 col-span-1 lg:col-span-1">
-            <p className="text-[10px] text-ink-500 uppercase font-semibold tracking-wider flex items-center gap-1">
+          <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100 col-span-1 lg:col-span-1">
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider flex items-center gap-1">
               <ClipboardCheck className="w-3 h-3" />
               {t("dashboard.occupancy")}
             </p>
-            <DashboardStatValue loading={analyticsLoading} className="text-xl font-semibold text-gold-700 mt-0.5">
+            <DashboardStatValue loading={analyticsLoading} className="text-xl font-semibold text-indigo-700 mt-0.5">
               {formatOccupancyPercent(occupancyStats.rate)}
             </DashboardStatValue>
             {!analyticsLoading ? (
-              <p className="text-[10px] text-ink-500 mt-0.5">
+              <p className="text-[10px] text-slate-500 mt-0.5">
                 {occupancyStats.marked > 0
                   ? t("dashboard.occupancyDetail", {
                       present: occupancyStats.present,
@@ -992,7 +992,7 @@ export default function FinancialDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1 border-t border-ink-100">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
           <RevenueRankList
             title={t("dashboard.topClients")}
             icon={Users}
@@ -1019,28 +1019,28 @@ export default function FinancialDashboard() {
           type="button"
           whileHover={{ y: -2 }}
           onClick={() => navigate(financePathWithMonth("/finance/revenue", statsMonth))}
-          className="bg-white rounded-xl px-3 py-3 border border-ink-200 shadow-xs text-left hover:shadow-sm transition-all cursor-pointer"
+          className="bg-white rounded-xl px-3 py-3 border border-slate-200/90 shadow-xs text-left hover:shadow-sm transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between">
-            <TrendingUp className="w-4 h-4 text-gold-500" />
-            <ArrowRight className="w-3.5 h-3.5 text-ink-400" />
+            <TrendingUp className="w-4 h-4 text-indigo-500" />
+            <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <p className="text-xs font-semibold text-ink-800 mt-2">{t("dashboard.revenue")}</p>
-          <p className="text-[10px] text-ink-500 mt-0.5">{t("dashboard.revenueDetail")}</p>
+          <p className="text-xs font-semibold text-slate-800 mt-2">{t("dashboard.revenue")}</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.revenueDetail")}</p>
         </motion.button>
 
         <motion.button
           type="button"
           whileHover={{ y: -2 }}
           onClick={() => navigate("/finance/debtors")}
-          className="bg-white rounded-xl px-3 py-3 border border-ink-200 shadow-xs text-left hover:shadow-sm transition-all cursor-pointer"
+          className="bg-white rounded-xl px-3 py-3 border border-slate-200/90 shadow-xs text-left hover:shadow-sm transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between">
-            <AlertCircle className="w-4 h-4 text-garnet-600" />
-            <ArrowRight className="w-3.5 h-3.5 text-ink-400" />
+            <AlertCircle className="w-4 h-4 text-rose-600" />
+            <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <p className="text-xs font-semibold text-ink-800 mt-2">{t("dashboard.debtors")}</p>
-          <p className="text-[10px] text-ink-500 mt-0.5">
+          <p className="text-xs font-semibold text-slate-800 mt-2">{t("dashboard.debtors")}</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">
             {plural(debtors.length, [
               t("common.records.one", { count: debtors.length }),
               t("common.records.few", { count: debtors.length }),
@@ -1053,14 +1053,14 @@ export default function FinancialDashboard() {
           type="button"
           whileHover={{ y: -2 }}
           onClick={() => navigate(financePathWithMonth("/finance/payments", statsMonth))}
-          className="bg-white rounded-xl px-3 py-3 border border-ink-200 shadow-xs text-left hover:shadow-sm transition-all cursor-pointer"
+          className="bg-white rounded-xl px-3 py-3 border border-slate-200/90 shadow-xs text-left hover:shadow-sm transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between">
-            <Landmark className="w-4 h-4 text-gold-500" />
-            <ArrowRight className="w-3.5 h-3.5 text-ink-400" />
+            <Landmark className="w-4 h-4 text-indigo-500" />
+            <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <p className="text-xs font-semibold text-ink-800 mt-2">{t("dashboard.paymentJournal")}</p>
-          <p className="text-[10px] text-ink-500 mt-0.5">{t("dashboard.fullHistory")}</p>
+          <p className="text-xs font-semibold text-slate-800 mt-2">{t("dashboard.paymentJournal")}</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">{t("dashboard.fullHistory")}</p>
         </motion.button>
       </div>
     </div>

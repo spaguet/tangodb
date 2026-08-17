@@ -11,17 +11,17 @@ export default function QueryErrorState({ message, error, onRetry }: QueryErrorS
   const { t } = useI18n();
 
   return (
-    <div className="p-6 text-center text-garnet-600">
+    <div className="p-6 text-center text-rose-600">
       <AlertCircle className="w-8 h-8 mx-auto mb-2" />
       <p className="font-semibold">{message ?? t("common.error.loadFailed")}</p>
       {error?.message ? (
-        <p className="text-xs text-ink-500 mt-1">{error.message}</p>
+        <p className="text-xs text-slate-500 mt-1">{error.message}</p>
       ) : null}
       {onRetry ? (
         <button
           type="button"
           onClick={onRetry}
-          className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-gold-700 bg-gold-50 hover:bg-gold-100 rounded-lg cursor-pointer transition-colors"
+          className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg cursor-pointer transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           {t("common.retryLoad")}

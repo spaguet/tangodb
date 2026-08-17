@@ -244,7 +244,7 @@ export function CrmDemoApp({ locale }: Props) {
     <nav className="h-full overflow-y-auto px-3 py-4 space-y-4">
       {nav.map((section) => (
         <div key={section.label} className="space-y-0.5">
-          <p className="text-[11px] text-ink-500 font-sans tracking-wider uppercase font-semibold px-3 mb-1">
+          <p className="text-[11px] text-slate-400 font-sans tracking-wider uppercase font-semibold px-3 mb-1">
             {section.label}
           </p>
           {section.items.map((item) => {
@@ -260,8 +260,8 @@ export function CrmDemoApp({ locale }: Props) {
                 }}
                 className={`w-full flex items-center justify-start gap-3 px-3 py-2 rounded-md text-xs font-semibold tracking-wide text-left transition-all cursor-pointer ${
                   active
-                    ? "bg-gold-50 text-gold-700 font-semibold border-l-2 border-gold-600 pl-2.5"
-                    : "text-ink-600 hover:bg-ink-50 hover:text-ink-950"
+                    ? "bg-indigo-50 text-indigo-700 font-semibold border-l-2 border-indigo-600 pl-2.5"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
@@ -275,43 +275,43 @@ export function CrmDemoApp({ locale }: Props) {
   );
 
   return (
-    <div className="crm-demo relative flex flex-col md:flex-row bg-ink-50 text-ink-800 antialiased font-sans h-[min(780px,88vh)] min-h-[560px] overflow-hidden rounded-xl border border-ink-200 shadow-xl">
-      <aside className="hidden md:flex flex-col w-64 shrink-0 bg-white text-ink-700 border-r border-ink-200 shadow-xs">
+    <div className="crm-demo relative flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased font-sans h-[min(780px,88vh)] min-h-[560px] overflow-hidden rounded-xl border border-slate-200 shadow-xl">
+      <aside className="hidden md:flex flex-col w-64 shrink-0 bg-white text-slate-700 border-r border-slate-200 shadow-xs">
         <button
           type="button"
           onClick={() => go("dashboard")}
-          className="px-5 py-4.5 border-b border-ink-100 flex items-center gap-3.5 text-left cursor-pointer hover:bg-ink-50 transition-colors"
+          className="px-5 py-4.5 border-b border-slate-100 flex items-center gap-3.5 text-left cursor-pointer hover:bg-slate-50 transition-colors"
         >
           <TdbLogo />
           <div className="min-w-0">
-            <h1 className="text-base font-semibold tracking-tight text-ink-800 leading-tight">TangoDB</h1>
-            <p className="text-[11px] font-sans tracking-widest text-ink-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
+            <h1 className="text-base font-semibold tracking-tight text-slate-800 leading-tight">TangoDB</h1>
+            <p className="text-[11px] font-sans tracking-widest text-slate-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
           </div>
         </button>
         <div className="flex-1 min-h-0">{renderNav()}</div>
-        <div className="p-4 border-t border-ink-100 text-center text-[10px] text-ink-500 font-sans">
+        <div className="p-4 border-t border-slate-100 text-center text-[10px] text-slate-400 font-sans">
           © TangoDB Studio Controller
         </div>
       </aside>
 
       <main className="relative flex-1 flex flex-col min-w-0 min-h-0 pb-14 md:pb-0">
-        <header className="sticky top-0 bg-white border-b border-ink-200 px-4 sm:px-6 py-3 flex items-center justify-between z-20 shadow-xs">
+        <header className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between z-20 shadow-xs">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="md:hidden p-1.5 text-ink-600 hover:text-ink-900 hover:bg-ink-50 rounded-lg cursor-pointer transition-all"
+              className="md:hidden p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg cursor-pointer transition-all"
               aria-label="Menu"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <h2 className="text-base font-semibold text-ink-800 tracking-tight leading-tight truncate">{title}</h2>
+            <h2 className="text-base font-semibold text-slate-800 tracking-tight leading-tight truncate">{title}</h2>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               disabled
-              className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-ink-500 px-3 py-1.5 rounded-lg border border-ink-200 cursor-not-allowed opacity-60"
+              className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-500 px-3 py-1.5 rounded-lg border border-slate-200 cursor-not-allowed opacity-60"
             >
               <LogOut className="w-3.5 h-3.5" />
               {s.nav.signOut}
@@ -323,7 +323,7 @@ export function CrmDemoApp({ locale }: Props) {
           <div key={panel}>{renderPanelContent(panel, locale, go, settingsSection)}</div>
         </section>
 
-        <div className="md:hidden absolute bottom-0 left-0 right-0 h-14 bg-white border-t border-ink-200 z-40 flex justify-around items-center px-0.5 shadow-md">
+        <div className="md:hidden absolute bottom-0 left-0 right-0 h-14 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-0.5 shadow-md">
           {mobileTabs.map((item) => {
             const active = isMobileTabActive(panel, item.id);
             const Icon = item.icon;
@@ -333,7 +333,7 @@ export function CrmDemoApp({ locale }: Props) {
                 type="button"
                 onClick={() => go(item.id)}
                 className={`flex flex-col items-center justify-center gap-0.5 px-0.5 py-0 min-w-0 flex-1 cursor-pointer transition-colors ${
-                  active ? "text-gold-700" : "text-ink-400"
+                  active ? "text-indigo-600" : "text-slate-400"
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
@@ -353,34 +353,34 @@ export function CrmDemoApp({ locale }: Props) {
         <div className="absolute inset-0 z-50 flex md:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
             onClick={() => setDrawerOpen(false)}
             aria-label="Close"
           />
-          <div className="relative flex flex-col w-72 max-w-[85vw] bg-white text-ink-700 h-full border-r border-ink-200 shadow-xl">
-            <div className="flex justify-between items-start px-5 py-4 border-b border-ink-100">
+          <div className="relative flex flex-col w-72 max-w-[85vw] bg-white text-slate-700 h-full border-r border-slate-200 shadow-xl">
+            <div className="flex justify-between items-start px-5 py-4 border-b border-slate-100">
               <div className="flex items-start gap-3 min-w-0">
                 <TdbLogo size="sm" />
                 <div className="min-w-0">
-                  <h3 className="text-sm font-semibold tracking-tight text-ink-800 leading-tight">TangoDB</h3>
-                  <p className="text-[11px] font-sans tracking-widest text-ink-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
+                  <h3 className="text-sm font-semibold tracking-tight text-slate-800 leading-tight">TangoDB</h3>
+                  <p className="text-[11px] font-sans tracking-widest text-slate-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
-                className="p-1.5 text-ink-400 hover:text-ink-600 rounded-lg bg-ink-50 cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg bg-slate-50 cursor-pointer"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="flex-1 min-h-0 overflow-hidden">{renderNav(() => setDrawerOpen(false))}</div>
-            <div className="p-3 border-t border-ink-100">
+            <div className="p-3 border-t border-slate-100">
               <button
                 type="button"
                 disabled
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-semibold text-garnet-600 opacity-60 cursor-not-allowed"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-semibold text-rose-600 opacity-60 cursor-not-allowed"
               >
                 <LogOut className="w-3.5 h-3.5" /> {s.nav.signOut}
               </button>

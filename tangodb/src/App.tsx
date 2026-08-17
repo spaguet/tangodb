@@ -101,9 +101,9 @@ export function useToast() {
 }
 
 const TOAST_STYLES: Record<ToastType, { icon: typeof Info; accent: string }> = {
-  success: { icon: CheckCircle2, accent: "text-gold-700" },
-  error: { icon: AlertTriangle, accent: "text-garnet-600" },
-  info: { icon: Info, accent: "text-gold-500" },
+  success: { icon: CheckCircle2, accent: "text-indigo-600" },
+  error: { icon: AlertTriangle, accent: "text-rose-600" },
+  info: { icon: Info, accent: "text-indigo-500" },
 };
 
 function ScrollableNav({ children, refreshKey }: { children: React.ReactNode; refreshKey?: unknown }) {
@@ -164,7 +164,7 @@ function ScrollableNav({ children, refreshKey }: { children: React.ReactNode; re
           type="button"
           onClick={scrollDown}
           aria-label={t("nav.aria.scrollMenuDown")}
-          className="absolute bottom-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white border border-ink-200 shadow-md text-ink-600 hover:text-gold-800 hover:border-gold-200 cursor-pointer transition-colors"
+          className="absolute bottom-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 shadow-md text-slate-600 hover:text-indigo-600 hover:border-indigo-200 cursor-pointer transition-colors"
         >
           <ChevronDown className="w-4 h-4" />
         </button>
@@ -269,7 +269,7 @@ function AppLayout() {
   const renderNav = (refreshKey?: unknown, closeDrawer?: () => void) => (
     <ScrollableNav refreshKey={refreshKey ?? showPurchaseCta}>
       {showPurchaseCta && (
-        <div className="px-3 pb-3 border-b border-ink-100 mb-1">
+        <div className="px-3 pb-3 border-b border-slate-100 mb-1">
           <DemoPurchaseCta variant="nav" onNavigate={closeDrawer} />
         </div>
       )}
@@ -288,7 +288,7 @@ function AppLayout() {
 
         return (
         <div key={section.label} className="space-y-0.5">
-          <p className="text-[11px] text-ink-500 font-sans tracking-wider uppercase font-semibold px-3 mb-1">
+          <p className="text-[11px] text-slate-400 font-sans tracking-wider uppercase font-semibold px-3 mb-1">
             {section.label}
           </p>
           {visibleItems.map((item) => {
@@ -300,8 +300,8 @@ function AppLayout() {
                 onClick={() => go(item)}
                 className={`w-full flex items-center justify-start gap-3 px-3 py-2 rounded-md text-xs font-semibold tracking-wide text-left transition-all cursor-pointer ${
                   active
-                    ? "bg-gold-50 text-gold-700 font-semibold border-l-2 border-gold-600 pl-2.5"
-                    : "text-ink-600 hover:bg-ink-50 hover:text-ink-950"
+                    ? "bg-indigo-50 text-indigo-700 font-semibold border-l-2 border-indigo-600 pl-2.5"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -321,32 +321,32 @@ function AppLayout() {
     <ToastContext.Provider value={showToast}>
       <LocaleDocumentSync />
       <RouteSync />
-      <div className="min-h-screen flex flex-col md:flex-row bg-ink-50 text-ink-800 antialiased font-sans">
-        <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white text-ink-700 border-r border-ink-200 flex-shrink-0 relative z-30 shadow-xs">
+      <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased font-sans">
+        <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white text-slate-700 border-r border-slate-200 flex-shrink-0 relative z-30 shadow-xs">
           <div
             onClick={() => go({ icon: LayoutDashboard, label: t("nav.item.dashboard"), path: "/" })}
-            className="relative px-5 py-4.5 border-b border-ink-100 cursor-pointer hover:bg-ink-50 transition-colors flex items-center gap-3.5"
+            className="relative px-5 py-4.5 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors flex items-center gap-3.5"
           >
-            <div className="w-8 h-8 bg-gold-700 rounded flex items-center justify-center text-white font-sans font-semibold text-[11px] tracking-tight leading-none shadow-xs">
+            <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[11px] tracking-tight leading-none shadow-xs">
               TDB
             </div>
             <div className="min-w-0">
-              <h1 className="text-base font-semibold tracking-tight text-ink-800 leading-tight">TangoDB</h1>
-              <p className="text-[11px] font-sans tracking-widest text-ink-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
+              <h1 className="text-base font-semibold tracking-tight text-slate-800 leading-tight">TangoDB</h1>
+              <p className="text-[11px] font-sans tracking-widest text-slate-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
               <DemoBrandBadge />
             </div>
           </div>
 
           {renderNav()}
 
-          <div className="p-4 border-t border-ink-100 text-center text-[10px] text-ink-500 font-sans">
+          <div className="p-4 border-t border-slate-100 text-center text-[10px] text-slate-400 font-sans">
             <p>v{APP_VERSION}</p>
             <p>© TangoDB Studio Controller</p>
           </div>
         </aside>
 
         {/* Mobile bottom tab bar: most frequent daily actions */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-ink-200 z-40 flex justify-around items-center px-0.5 shadow-md pb-[env(safe-area-inset-bottom)]">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-0.5 shadow-md pb-[env(safe-area-inset-bottom)]">
           {mobileTabs.filter((item) => {
             if (item.moduleKey && !orgModules[item.moduleKey]) return false;
             return canAccessPanel(panelIdFromPath(item.path));
@@ -361,7 +361,7 @@ function AppLayout() {
                 key={`${item.path}-${item.line1}`}
                 onClick={() => go(item)}
                 className={`flex flex-col items-center justify-center gap-0.5 px-0.5 py-0 min-w-0 flex-1 cursor-pointer transition-colors ${
-                  active ? "text-gold-700" : "text-ink-400"
+                  active ? "text-indigo-600" : "text-slate-400"
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
@@ -377,21 +377,21 @@ function AppLayout() {
         </div>
 
         <main className="flex-1 flex flex-col min-h-screen pb-14 md:pb-0 font-sans">
-          <header className="sticky top-0 bg-white border-b border-ink-200 px-4 sm:px-6 py-3 flex items-center justify-between z-20 shadow-xs">
+          <header className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between z-20 shadow-xs">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setMobileDrawerOpen(true)}
                 aria-label={t("nav.aria.openMenu")}
-                className="md:hidden p-1.5 text-ink-600 hover:text-ink-900 hover:bg-ink-50 rounded-lg cursor-pointer transition-all"
+                className="md:hidden p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg cursor-pointer transition-all"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <h2 className="text-base font-semibold text-ink-800 tracking-tight leading-tight">{panelTitle}</h2>
+              <h2 className="text-base font-semibold text-slate-800 tracking-tight leading-tight">{panelTitle}</h2>
             </div>
             <div className="flex items-center gap-2">
               <OrgSwitcher />
               <div className="hidden lg:flex items-center gap-2">
-                <span className="text-[10px] text-ink-500 font-semibold uppercase tracking-wider">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
                   {t("nav.supportLabel")}
                 </span>
                 <DeveloperContacts contacts={paymentConfig.contacts} embedded />
@@ -436,29 +436,29 @@ function AppLayout() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setMobileDrawerOpen(false)}
-                className="fixed inset-0 bg-ink-950/40 backdrop-blur-xs"
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
               />
               <motion.div
                 initial={{ x: -288 }}
                 animate={{ x: 0 }}
                 exit={{ x: -288 }}
                 transition={{ type: "tween", duration: 0.2 }}
-                className="relative flex flex-col w-72 max-w-[85vw] bg-white text-ink-700 h-full border-r border-ink-200 shadow-xl"
+                className="relative flex flex-col w-72 max-w-[85vw] bg-white text-slate-700 h-full border-r border-slate-200 shadow-xl"
               >
-                <div className="flex justify-between items-start px-5 py-4 border-b border-ink-100">
+                <div className="flex justify-between items-start px-5 py-4 border-b border-slate-100">
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-7 h-7 bg-gold-700 rounded flex items-center justify-center text-white font-sans font-semibold text-[10px] tracking-tight leading-none shrink-0">
+                    <div className="w-7 h-7 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[10px] tracking-tight leading-none shrink-0">
                       TDB
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-semibold tracking-tight text-ink-800 leading-tight">TangoDB</h3>
+                      <h3 className="text-sm font-semibold tracking-tight text-slate-800 leading-tight">TangoDB</h3>
                       <DemoBrandBadge compact />
                     </div>
                   </div>
                   <button
                     onClick={() => setMobileDrawerOpen(false)}
                     aria-label={t("nav.aria.closeMenu")}
-                    className="p-1.5 text-ink-400 hover:text-ink-600 rounded-lg bg-ink-50 cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg bg-slate-50 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -466,10 +466,10 @@ function AppLayout() {
 
                 {renderNav(mobileDrawerOpen, () => setMobileDrawerOpen(false))}
 
-                <div className="p-3 border-t border-ink-100">
+                <div className="p-3 border-t border-slate-100">
                   <button
                     onClick={() => signOut()}
-                    className="w-full inline-flex items-center gap-3 h-8 box-border px-3 rounded-md text-xs font-semibold text-garnet-600 hover:bg-garnet-50 transition-colors cursor-pointer"
+                    className="w-full inline-flex items-center gap-3 h-8 box-border px-3 rounded-md text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" /> {t("nav.signOut")}
                   </button>
@@ -486,7 +486,7 @@ function AppLayout() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="fixed bottom-[3.75rem] md:bottom-8 right-4 left-4 md:left-auto max-w-sm md:w-96 bg-white border border-ink-200 text-ink-800 text-xs font-normal rounded-xl px-4 py-3 shadow-lg z-[60] flex items-center gap-3"
+              className="fixed bottom-[3.75rem] md:bottom-8 right-4 left-4 md:left-auto max-w-sm md:w-96 bg-white border border-slate-200 text-slate-800 text-xs font-normal rounded-xl px-4 py-3 shadow-lg z-[60] flex items-center gap-3"
               role="status"
             >
               <ToastIcon className={`w-4.5 h-4.5 shrink-0 ${TOAST_STYLES[toast.type].accent}`} />
@@ -494,7 +494,7 @@ function AppLayout() {
               <button
                 onClick={() => setToast(null)}
                 aria-label={t("nav.aria.closeToast")}
-                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors"
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

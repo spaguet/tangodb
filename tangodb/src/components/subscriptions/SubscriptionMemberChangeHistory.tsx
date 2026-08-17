@@ -26,8 +26,8 @@ export default function SubscriptionMemberChangeHistory({
   };
 
   return (
-    <div className="space-y-2 border-t border-ink-100 pt-3">
-      <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold flex items-center gap-1.5">
+    <div className="space-y-2 border-t border-slate-100 pt-3">
+      <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold flex items-center gap-1.5">
         <RefreshCw className="w-3 h-3" />
         {t("subscriptions.partnerReplace.history.title")}
       </p>
@@ -45,22 +45,22 @@ export default function SubscriptionMemberChangeHistory({
           return (
             <li
               key={change.id}
-              className="rounded-lg border border-ink-100 bg-ink-50/70 px-3 py-2 text-[11px] text-ink-600 space-y-1"
+              className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2 text-[11px] text-slate-600 space-y-1"
             >
-              <p className="font-semibold text-ink-800">
+              <p className="font-semibold text-slate-800">
                 {clientLabel(change.outgoingClientId)}
                 {" → "}
                 {clientLabel(change.incomingClientId)}
               </p>
-              <p className="text-ink-500">
+              <p className="text-slate-500">
                 {t("subscriptions.partnerReplace.history.effective", {
                   date: formatDate(new Date(`${change.effectiveDate}T12:00:00`)),
                 })}
                 {" · "}
                 {t(`subscriptions.partnerReplace.history.status.${displayStatus}`)}
               </p>
-              {change.reason ? <p className="text-ink-500">{change.reason}</p> : null}
-              <p className="text-ink-400">
+              {change.reason ? <p className="text-slate-500">{change.reason}</p> : null}
+              <p className="text-slate-400">
                 {t("subscriptions.partnerReplace.history.createdAt", {
                   date: formatDateTime(new Date(change.createdAt)),
                 })}

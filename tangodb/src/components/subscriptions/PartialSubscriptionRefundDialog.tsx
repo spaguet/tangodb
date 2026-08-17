@@ -28,8 +28,8 @@ interface PartialSubscriptionRefundDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
-const checkboxCls = "rounded border-ink-300 text-gold-700 focus:ring-gold-500";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
 
 export default function PartialSubscriptionRefundDialog({
   subscription,
@@ -152,7 +152,7 @@ export default function PartialSubscriptionRefundDialog({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-ink-950/40"
+        className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/40"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -161,40 +161,40 @@ export default function PartialSubscriptionRefundDialog({
         <motion.div
           role="dialog"
           aria-modal="true"
-          className="bg-white rounded-xl shadow-xl border border-ink-200 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg max-h-[90vh] overflow-y-auto"
           initial={{ scale: 0.96, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.96, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-start justify-between px-4 py-3 border-b border-ink-100">
+          <div className="flex items-start justify-between px-4 py-3 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <Coins className="w-4 h-4 text-gold-700" />
-              <h2 className="font-sans text-sm font-semibold text-ink-800">
+              <Coins className="w-4 h-4 text-indigo-600" />
+              <h2 className="font-sans text-sm font-semibold text-slate-800">
                 {t("subscriptions.refund.partialTitle")}
               </h2>
             </div>
-            <button type="button" onClick={onClose} disabled={createRefund.isPending} className="p-1 rounded-lg text-ink-400 hover:text-ink-700 cursor-pointer">
+            <button type="button" onClick={onClose} disabled={createRefund.isPending} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer">
               <X className="w-4 h-4" />
             </button>
           </div>
 
           <div className="p-4 space-y-4">
-            <p className="text-xs text-ink-500">{t("subscriptions.refund.partialSummary")}</p>
+            <p className="text-xs text-slate-500">{t("subscriptions.refund.partialSummary")}</p>
 
             {previewQuery.isLoading ? <LoadingState label={t("subscriptions.refund.error.previewFailed")} /> : null}
             {previewQuery.isError ? <QueryErrorState error={previewQuery.error} /> : null}
 
             {preview && formula ? (
               <>
-                <div className="rounded-lg border border-ink-100 bg-ink-50 p-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <span className="text-ink-400">{t("subscriptions.refund.available")}</span>
-                    <p className="font-semibold text-gold-700">{formatCurrency(formula.availableAmount)}</p>
+                    <span className="text-slate-400">{t("subscriptions.refund.available")}</span>
+                    <p className="font-semibold text-indigo-700">{formatCurrency(formula.availableAmount)}</p>
                   </div>
                   <div>
-                    <span className="text-ink-400">{t("subscriptions.refund.lessonsLeft")}</span>
-                    <p className="font-semibold text-ink-800">
+                    <span className="text-slate-400">{t("subscriptions.refund.lessonsLeft")}</span>
+                    <p className="font-semibold text-slate-800">
                       {t("subscriptions.refund.lessonsLeft", {
                         left: preview.lessonsLeft,
                         total: preview.lessonsTotal,
@@ -203,7 +203,7 @@ export default function PartialSubscriptionRefundDialog({
                   </div>
                   {(formula.pendingRefunds ?? 0) > 0 ? (
                     <div className="col-span-2">
-                      <span className="text-ink-400">{t("subscriptions.refund.pendingRefunds")}</span>
+                      <span className="text-slate-400">{t("subscriptions.refund.pendingRefunds")}</span>
                       <p className="font-semibold text-amber-700">{formatCurrency(formula.pendingRefunds ?? 0)}</p>
                     </div>
                   ) : null}
@@ -221,7 +221,7 @@ export default function PartialSubscriptionRefundDialog({
                 </div>
 
                 {!formula.requiresManualAmount && formula.perLessonPrice != null ? (
-                  <label className="flex items-start gap-2 text-xs text-ink-600 cursor-pointer">
+                  <label className="flex items-start gap-2 text-xs text-slate-600 cursor-pointer">
                     <input type="checkbox" checked={deductLessons} onChange={(e) => setDeductLessons(e.target.checked)} className={`${checkboxCls} mt-0.5`} />
                     <span>{t("subscriptions.refund.deductLessons")}</span>
                   </label>
@@ -232,7 +232,7 @@ export default function PartialSubscriptionRefundDialog({
                     <label className={labelCls}>{t("subscriptions.refund.lessonsToDeduct")}</label>
                     <input type="number" min={0} max={preview.lessonsLeft} value={lessonsInput} onChange={(e) => setLessonsInput(e.target.value)} className={fieldCls} />
                     {suggestedLessons > 0 ? (
-                      <p className="text-[10px] text-ink-500 mt-1">
+                      <p className="text-[10px] text-slate-400 mt-1">
                         {t("subscriptions.refund.lessonsSuggested", { count: suggestedLessons })}
                       </p>
                     ) : null}
@@ -258,8 +258,8 @@ export default function PartialSubscriptionRefundDialog({
             ) : null}
           </div>
 
-          <div className="px-4 py-3 border-t border-ink-100 flex justify-end gap-2">
-            <button type="button" onClick={onClose} disabled={createRefund.isPending} className="px-3 py-2 text-xs font-semibold uppercase text-ink-600 hover:bg-ink-50 rounded-lg cursor-pointer">
+          <div className="px-4 py-3 border-t border-slate-100 flex justify-end gap-2">
+            <button type="button" onClick={onClose} disabled={createRefund.isPending} className="px-3 py-2 text-xs font-semibold uppercase text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer">
               {t("common.cancel")}
             </button>
             <button type="button" onClick={handleSubmit} disabled={!canSubmit || createRefund.isPending || previewQuery.isLoading} className={btnAddCls}>

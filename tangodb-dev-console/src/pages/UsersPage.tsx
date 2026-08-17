@@ -123,10 +123,10 @@ export default function UsersPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Users className="w-6 h-6 text-gold-400" />
+            <Users className="w-6 h-6 text-indigo-400" />
             Registered users
           </h2>
-          <p className="text-sm text-ink-400 mt-1">
+          <p className="text-sm text-slate-400 mt-1">
             All auth accounts and their organization memberships. Orphans have no active org.
           </p>
         </div>
@@ -135,7 +135,7 @@ export default function UsersPage() {
             type="button"
             onClick={() => void loadUsers()}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-ink-800 text-ink-200 hover:bg-ink-700 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -144,7 +144,7 @@ export default function UsersPage() {
             type="button"
             onClick={() => void handlePreviewCleanup()}
             disabled={cleanupLoading || orphanCount === 0}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-garnet-950 text-garnet-200 border border-garnet-900 hover:bg-garnet-900 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-rose-950 text-rose-200 border border-rose-900 hover:bg-rose-900 disabled:opacity-50"
           >
             <Trash2 className="w-4 h-4" />
             Clean orphans ({orphanCount})
@@ -153,7 +153,7 @@ export default function UsersPage() {
       </div>
 
       {cleanupMessage && (
-        <p className="text-sm text-sage-400 bg-sage-950/40 border border-sage-900 rounded-lg px-3 py-2">
+        <p className="text-sm text-emerald-400 bg-emerald-950/40 border border-emerald-900 rounded-lg px-3 py-2">
           {cleanupMessage}
         </p>
       )}
@@ -164,27 +164,27 @@ export default function UsersPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filter by email…"
-          className="flex-1 max-w-md bg-ink-900 border border-ink-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-ink-500"
+          className="flex-1 max-w-md bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500"
         />
         <button
           type="button"
           onClick={() => void loadUsers()}
-          className="px-3 py-2 rounded-lg text-sm bg-gold-700 text-white hover:bg-gold-500"
+          className="px-3 py-2 rounded-lg text-sm bg-indigo-600 text-white hover:bg-indigo-500"
         >
           Search
         </button>
       </div>
 
-      {error && <p className="text-garnet-400">{error}</p>}
+      {error && <p className="text-rose-400">{error}</p>}
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-2 border-gold-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-ink-800">
+        <div className="overflow-x-auto rounded-xl border border-slate-800">
           <table className="min-w-full text-sm">
-            <thead className="bg-ink-900 text-ink-400 uppercase text-xs tracking-wider">
+            <thead className="bg-slate-900 text-slate-400 uppercase text-xs tracking-wider">
               <tr>
                 <th className="px-4 py-3 text-left">Email</th>
                 <th className="px-4 py-3 text-left">Created</th>
@@ -193,32 +193,32 @@ export default function UsersPage() {
                 <th className="px-4 py-3 text-left">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ink-800 bg-ink-950">
+            <tbody className="divide-y divide-slate-800 bg-slate-950">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-ink-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
                     No users found
                   </td>
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.user_id} className="hover:bg-ink-950/40">
+                  <tr key={user.user_id} className="hover:bg-slate-900/60">
                     <td className="px-4 py-3 text-white font-medium">{user.email ?? "—"}</td>
-                    <td className="px-4 py-3 text-ink-300">{formatDate(user.created_at)}</td>
-                    <td className="px-4 py-3 text-ink-300">{formatDate(user.last_sign_in_at)}</td>
-                    <td className="px-4 py-3 text-ink-300">
+                    <td className="px-4 py-3 text-slate-300">{formatDate(user.created_at)}</td>
+                    <td className="px-4 py-3 text-slate-300">{formatDate(user.last_sign_in_at)}</td>
+                    <td className="px-4 py-3 text-slate-300">
                       {user.memberships.length === 0 ? (
-                        <span className="text-ink-500">No memberships</span>
+                        <span className="text-slate-500">No memberships</span>
                       ) : (
                         <ul className="space-y-1">
                           {user.memberships.map((m) => (
                             <li key={`${user.user_id}-${m.organization_id}`}>
                               <span className="text-white">{m.organization_name}</span>
-                              <span className="text-ink-500"> · </span>
+                              <span className="text-slate-500"> · </span>
                               <span>{roleBadge(m.role)}</span>
-                              <span className="text-ink-500"> · </span>
+                              <span className="text-slate-500"> · </span>
                               <span>{m.organization_status}</span>
-                              {!m.is_active && <span className="text-amber-700"> · inactive</span>}
+                              {!m.is_active && <span className="text-amber-400"> · inactive</span>}
                             </li>
                           ))}
                         </ul>
@@ -226,11 +226,11 @@ export default function UsersPage() {
                     </td>
                     <td className="px-4 py-3">
                       {user.is_developer ? (
-                        <span className="text-gold-300 text-xs font-semibold uppercase">Developer</span>
+                        <span className="text-indigo-300 text-xs font-semibold uppercase">Developer</span>
                       ) : user.is_orphan ? (
-                        <span className="text-garnet-300 text-xs font-semibold uppercase">Orphan</span>
+                        <span className="text-rose-300 text-xs font-semibold uppercase">Orphan</span>
                       ) : (
-                        <span className="text-sage-300 text-xs font-semibold uppercase">Active</span>
+                        <span className="text-emerald-300 text-xs font-semibold uppercase">Active</span>
                       )}
                     </td>
                   </tr>
@@ -242,13 +242,13 @@ export default function UsersPage() {
       )}
 
       {showCleanupModal && cleanupPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/40 p-4">
-          <div className="w-full max-w-lg bg-ink-900 border border-ink-700 rounded-xl p-5 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-xl p-5 space-y-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-lg font-semibold text-white">Delete orphan accounts</h3>
-                <p className="text-sm text-ink-400 mt-1">
+                <p className="text-sm text-slate-400 mt-1">
                   Select orphan accounts to remove permanently. Selected accounts will be deleted along with
                   demo keys and retention records for their emails.
                 </p>
@@ -257,7 +257,7 @@ export default function UsersPage() {
 
             {cleanupPreview.users.length > 0 && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-ink-400">
+                <div className="flex items-center justify-between text-xs text-slate-400">
                   <span>
                     {selectedUserIds.size} of {cleanupPreview.users.length} selected
                   </span>
@@ -267,25 +267,25 @@ export default function UsersPage() {
                       onClick={() =>
                         setSelectedUserIds(new Set(cleanupPreview.users.map((u) => u.user_id)))
                       }
-                      className="text-gold-400 hover:text-gold-300"
+                      className="text-indigo-400 hover:text-indigo-300"
                     >
                       Select all
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedUserIds(new Set())}
-                      className="text-ink-400 hover:text-ink-300"
+                      className="text-slate-400 hover:text-slate-300"
                     >
                       Clear
                     </button>
                   </div>
                 </div>
-                <ul className="max-h-48 overflow-y-auto text-sm text-ink-300 bg-ink-950 rounded-lg divide-y divide-ink-800">
+                <ul className="max-h-48 overflow-y-auto text-sm text-slate-300 bg-slate-950 rounded-lg divide-y divide-slate-800">
                   {cleanupPreview.users.map((u) => {
                     const checked = selectedUserIds.has(u.user_id);
                     return (
                       <li key={u.user_id}>
-                        <label className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-ink-950/40">
+                        <label className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-900/60">
                           <input
                             type="checkbox"
                             checked={checked}
@@ -300,7 +300,7 @@ export default function UsersPage() {
                                 return next;
                               });
                             }}
-                            className="rounded border-ink-600 bg-ink-900 text-garnet-600 focus:ring-garnet-500"
+                            className="rounded border-slate-600 bg-slate-900 text-rose-600 focus:ring-rose-500"
                           />
                           <span className="text-white">{u.email ?? "—"}</span>
                         </label>
@@ -311,13 +311,13 @@ export default function UsersPage() {
               </div>
             )}
 
-            <label className="block text-sm text-ink-400">
+            <label className="block text-sm text-slate-400">
               Type <span className="text-white font-mono">DELETE ORPHAN USERS</span> to confirm
               <input
                 type="text"
                 value={confirmPhrase}
                 onChange={(e) => setConfirmPhrase(e.target.value)}
-                className="mt-2 w-full bg-ink-950 border border-ink-700 rounded-lg px-3 py-2 text-sm text-white"
+                className="mt-2 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
               />
             </label>
 
@@ -329,7 +329,7 @@ export default function UsersPage() {
                   setCleanupPreview(null);
                   setSelectedUserIds(new Set());
                 }}
-                className="px-3 py-2 rounded-lg text-sm text-ink-300 hover:bg-ink-800"
+                className="px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800"
               >
                 Cancel
               </button>
@@ -341,7 +341,7 @@ export default function UsersPage() {
                   confirmPhrase !== "DELETE ORPHAN USERS" ||
                   selectedUserIds.size === 0
                 }
-                className="px-3 py-2 rounded-lg text-sm bg-garnet-600 text-white hover:bg-garnet-500 disabled:opacity-50"
+                className="px-3 py-2 rounded-lg text-sm bg-rose-600 text-white hover:bg-rose-500 disabled:opacity-50"
               >
                 {cleanupLoading
                   ? "Deleting…"

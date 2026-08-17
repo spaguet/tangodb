@@ -39,11 +39,11 @@ export function QrImagePreview({ value }: { value?: string }) {
   return (
     <>
       <div className="space-y-1">
-        <p className="text-[10px] uppercase tracking-wider text-ink-500">{label}</p>
+        <p className="text-[10px] uppercase tracking-wider text-slate-400">{label}</p>
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="rounded-lg border border-ink-100 bg-white p-2 cursor-pointer transition-colors hover:border-gold-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300"
+          className="rounded-lg border border-slate-100 bg-white p-2 cursor-pointer transition-colors hover:border-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
           aria-label={label}
         >
           <img src={value} alt={label} className="w-36 h-36 object-contain" />
@@ -58,28 +58,28 @@ export function QrImagePreview({ value }: { value?: string }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setOpen(false)}
-              className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
             />
             <motion.div
               initial={{ y: 12, opacity: 0, scale: 0.98 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 12, opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-ink-200 shadow-xl p-4 w-full max-w-sm panel-card-stack"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl p-4 w-full max-w-sm panel-card-stack"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="absolute top-3 right-3 rounded-md p-1 text-ink-400 hover:text-ink-700 hover:bg-ink-100 cursor-pointer"
+                className="absolute top-3 right-3 rounded-md p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                 aria-label={t("common.close")}
               >
                 <X className="w-4 h-4" />
               </button>
 
-              <p className="text-xs font-semibold uppercase tracking-wider text-ink-500 pr-8">{label}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 pr-8">{label}</p>
 
-              <div className="mt-3 flex justify-center rounded-lg border border-ink-100 bg-white p-4">
+              <div className="mt-3 flex justify-center rounded-lg border border-slate-100 bg-white p-4">
                 <img src={value} alt={label} className="w-full max-w-[min(80vw,320px)] aspect-square object-contain" />
               </div>
 

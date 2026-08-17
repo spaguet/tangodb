@@ -72,7 +72,7 @@ export default function OperationalDashboard({
   const pendingUnpaidCount = unpaidLessons.length;
   const pendingRevenue = unpaidLessons.reduce((sum, l) => sum + l.price, 0);
   const hasPendingPayment = pendingUnpaidCount > 0;
-  const pendingPaymentColor = hasPendingPayment ? "text-garnet-600" : "text-ink-400";
+  const pendingPaymentColor = hasPendingPayment ? "text-rose-600" : "text-slate-400";
 
   const attendanceStats = useMemo(() => {
     const records = attendanceQuery.data ?? [];
@@ -98,17 +98,17 @@ export default function OperationalDashboard({
         <div className={`grid gap-3 ${personalLessonsEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
           <motion.div
             whileHover={{ y: -2 }}
-            className="bg-white rounded-xl px-3 py-2.5 border border-ink-200 shadow-xs cursor-pointer hover:shadow-sm transition-all min-w-0"
+            className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all min-w-0"
             onClick={() => onNavigate("activeSubs")}
           >
-            <p className="text-[10px] text-ink-500 uppercase font-sans tracking-wider font-semibold leading-tight">
+            <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold leading-tight">
               {t("dashboard.activeSubs")}
             </p>
             <div className="flex items-center gap-1.5 mt-0.5 text-xl leading-none">
-              <Ticket className="text-gold-700 shrink-0 w-5 h-5" />
-              <h3 className="font-semibold text-ink-800">{activeSubs.length}</h3>
+              <Ticket className="text-indigo-600 shrink-0 w-5 h-5" />
+              <h3 className="font-semibold text-slate-800">{activeSubs.length}</h3>
             </div>
-            <p className="text-[10px] text-ink-500 font-sans mt-0.5 leading-tight">
+            <p className="text-[10px] text-slate-500 font-sans mt-0.5 leading-tight">
               {t("dashboard.solosPairs", { solos: solosCount, pairs: pairsCount })}
             </p>
           </motion.div>
@@ -116,7 +116,7 @@ export default function OperationalDashboard({
           {personalLessonsEnabled ? (
             <motion.div
               whileHover={{ y: -2 }}
-              className="bg-white rounded-xl px-3 py-2.5 border border-ink-200 shadow-xs cursor-pointer hover:shadow-sm transition-all"
+              className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all"
               onClick={() => onNavigate("personalView")}
             >
               <p className={`text-[10px] uppercase font-sans tracking-wider font-semibold leading-tight ${pendingPaymentColor}`}>
@@ -137,18 +137,18 @@ export default function OperationalDashboard({
       </div>
 
       {showOperationalPayments && (
-        <div className="bg-white rounded-xl p-3.5 border border-ink-200 shadow-xs space-y-2">
-          <div className="flex items-center justify-between border-b border-ink-100 pb-2">
-            <div className="flex items-center gap-2 text-ink-800">
-              <BarChart3 className="w-4 h-4 text-gold-500" />
+        <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2 text-slate-800">
+              <BarChart3 className="w-4 h-4 text-indigo-500" />
               <h2 className="font-sans text-sm font-semibold tracking-tight">{t("dashboard.todayPayments")}</h2>
             </div>
-            <span className="text-[10px] font-sans uppercase bg-ink-100 text-ink-600 px-2 py-0.5 rounded font-semibold">
+            <span className="text-[10px] font-sans uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">
               {todayPaymentCount}
             </span>
           </div>
           {todayPayments.length === 0 ? (
-            <p className="text-ink-400 text-xs font-sans py-3 text-center">{t("dashboard.noPaymentsToday")}</p>
+            <p className="text-slate-400 text-xs font-sans py-3 text-center">{t("dashboard.noPaymentsToday")}</p>
           ) : (
             <div className="space-y-1.5">
               {todayPayments.slice(0, 8).map((payment) => {
@@ -163,19 +163,19 @@ export default function OperationalDashboard({
                   key={payment.id}
                   className={`flex items-center justify-between p-2 rounded-lg border font-sans ${
                     isStorno
-                      ? "bg-garnet-50/10 border-garnet-100"
-                      : "bg-ink-50 border-ink-100"
+                      ? "bg-rose-50/60 border-rose-100"
+                      : "bg-slate-50 border-slate-100"
                   }`}
                 >
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-ink-800 truncate">{payment.clientDisplay}</p>
-                    <p className={`text-[10px] ${isStorno ? "text-garnet-600" : "text-ink-400"}`}>
+                    <p className="text-xs font-semibold text-slate-800 truncate">{payment.clientDisplay}</p>
+                    <p className={`text-[10px] ${isStorno ? "text-rose-600" : "text-slate-400"}`}>
                       {subtitle}
                     </p>
                   </div>
                   <span
                     className={`text-xs font-semibold shrink-0 ${
-                      isStorno ? "text-garnet-600" : "text-gold-700"
+                      isStorno ? "text-rose-600" : "text-indigo-700"
                     }`}
                   >
                     {isStorno ? "−" : ""}
@@ -190,17 +190,17 @@ export default function OperationalDashboard({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl p-3.5 border border-ink-200 shadow-xs space-y-2">
-          <div className="flex items-center justify-between border-b border-ink-100 pb-2">
-            <h2 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
+        <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
               <span
-                className={`w-2 h-2 rounded-full ${warningSubs.length === 0 ? "bg-ink-400" : "bg-garnet-600"}`}
+                className={`w-2 h-2 rounded-full ${warningSubs.length === 0 ? "bg-slate-400" : "bg-rose-600"}`}
               />
               {t("dashboard.expiringSubs", { threshold: lowBalanceThreshold })}
             </h2>
             <span
               className={`text-[10px] font-sans px-2 py-0.5 rounded font-semibold tabular-nums ${
-                warningSubs.length === 0 ? "bg-ink-100 text-ink-400" : "bg-garnet-50 text-garnet-700"
+                warningSubs.length === 0 ? "bg-slate-100 text-slate-400" : "bg-rose-50 text-rose-700"
               }`}
             >
               {warningSubs.length}
@@ -208,7 +208,7 @@ export default function OperationalDashboard({
           </div>
 
           {warningSubs.length === 0 ? (
-            <div className="text-center py-5 text-ink-400">
+            <div className="text-center py-5 text-slate-400">
               <p className="text-xs">{t("dashboard.noExpiringSubs")}</p>
             </div>
           ) : (
@@ -225,9 +225,9 @@ export default function OperationalDashboard({
                   : sub.clientId1;
 
                 return (
-                  <div key={sub.id} className="p-2 bg-ink-50 rounded-lg border border-ink-100 space-y-1">
+                  <div key={sub.id} className="p-2 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="font-sans font-semibold text-ink-800 text-xs min-w-0 truncate">{clientLabel}</p>
+                      <p className="font-sans font-semibold text-slate-800 text-xs min-w-0 truncate">{clientLabel}</p>
                       <div className="flex items-center gap-1 shrink-0">
                         {[c1, c2, c3].map((c) => {
                           if (!c?.telegram) return null;
@@ -253,14 +253,14 @@ export default function OperationalDashboard({
                         })}
                       </div>
                     </div>
-                    <p className="text-[10px] font-sans text-ink-500">
+                    <p className="text-[10px] font-sans text-slate-500">
                       {isMonthlyUnlimitedSubscription(sub) ? (
                         <>
                           {t("dashboard.remainingDays")}{" "}
-                          <span className="font-semibold text-garnet-700">
+                          <span className="font-semibold text-rose-700">
                             {getSubscriptionDaysLeft(sub.expiresAt)}
                           </span>
-                          <span className="text-ink-400">
+                          <span className="text-slate-400">
                             {" "}
                             {t("common.of")} 30 {plural(30, [t("common.day.one"), t("common.day.few"), t("common.day.many")])}
                           </span>
@@ -268,8 +268,8 @@ export default function OperationalDashboard({
                       ) : (
                         <>
                           {t("dashboard.balance")}{" "}
-                          <span className="font-semibold text-garnet-700">{sub.lessonsLeft}</span>
-                          <span className="text-ink-400"> {t("common.of")} {sub.lessonsTotal}</span>
+                          <span className="font-semibold text-rose-700">{sub.lessonsLeft}</span>
+                          <span className="text-slate-400"> {t("common.of")} {sub.lessonsTotal}</span>
                         </>
                       )}
                     </p>
@@ -280,28 +280,28 @@ export default function OperationalDashboard({
           )}
         </div>
 
-        <div className="bg-white rounded-xl p-3.5 border border-ink-200 shadow-xs space-y-2">
-          <div className="flex items-center justify-between gap-2 border-b border-ink-100 pb-2">
-            <h2 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
-              <ClipboardCheck className="w-4 h-4 text-gold-500" />
+        <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
+          <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+            <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <ClipboardCheck className="w-4 h-4 text-indigo-500" />
               {t("dashboard.attendance")}
             </h2>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setStatsMonth((m) => shiftMonth(m, -1))}
-                className="p-1 rounded-lg hover:bg-ink-50 text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 aria-label={t("subscriptions.aria.prevMonth")}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex flex-col items-center min-w-0">
-                <span className="text-xs font-semibold text-ink-800">{formatMonthTitle(statsMonth, locale)}</span>
+                <span className="text-xs font-semibold text-slate-800">{formatMonthTitle(statsMonth, locale)}</span>
                 {!isViewingCurrentMonth && (
                   <button
                     type="button"
                     onClick={() => setStatsMonth(currentYearMonth())}
-                    className="text-[10px] font-semibold text-gold-700 hover:text-gold-800 hover:underline cursor-pointer whitespace-nowrap"
+                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer whitespace-nowrap"
                   >
                     {t("common.currentMonth")}
                   </button>
@@ -310,7 +310,7 @@ export default function OperationalDashboard({
               <button
                 type="button"
                 onClick={() => setStatsMonth((m) => shiftMonth(m, 1))}
-                className="p-1 rounded-lg hover:bg-ink-50 text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 aria-label={t("subscriptions.aria.nextMonth")}
               >
                 <ChevronRight className="w-4 h-4" />
@@ -318,25 +318,25 @@ export default function OperationalDashboard({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-px bg-ink-200/10 rounded-lg overflow-hidden border border-ink-200/10">
+          <div className="grid grid-cols-3 gap-px bg-slate-200/70 rounded-lg overflow-hidden border border-slate-200/70">
             <div className="bg-white px-3 py-2.5 text-center">
-              <p className="text-[10px] text-ink-500 uppercase font-semibold">{t("dashboard.present")}</p>
-              <p className="text-lg font-semibold text-gold-700 mt-0.5">{attendanceStats.present}</p>
+              <p className="text-[10px] text-slate-400 uppercase font-semibold">{t("dashboard.present")}</p>
+              <p className="text-lg font-semibold text-indigo-700 mt-0.5">{attendanceStats.present}</p>
             </div>
             <div className="bg-white px-3 py-2.5 text-center">
-              <p className="text-[10px] text-ink-500 uppercase font-semibold">{t("dashboard.absences")}</p>
-              <p className="text-lg font-semibold text-garnet-600 mt-0.5">{attendanceStats.absent}</p>
+              <p className="text-[10px] text-slate-400 uppercase font-semibold">{t("dashboard.absences")}</p>
+              <p className="text-lg font-semibold text-rose-600 mt-0.5">{attendanceStats.absent}</p>
             </div>
             <div className="bg-white px-3 py-2.5 text-center">
-              <p className="text-[10px] text-ink-500 uppercase font-semibold">{t("dashboard.freeze")}</p>
-              <p className="text-lg font-semibold text-ink-800 mt-0.5">{attendanceStats.freeze}</p>
+              <p className="text-[10px] text-slate-400 uppercase font-semibold">{t("dashboard.freeze")}</p>
+              <p className="text-lg font-semibold text-slate-800 mt-0.5">{attendanceStats.freeze}</p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={() => onNavigate("attendance")}
-            className="w-full text-center py-2 border border-dashed border-ink-300 hover:border-ink-400 rounded-lg text-ink-500 text-[11px] font-sans hover:bg-ink-50 transition-colors uppercase tracking-wider font-semibold cursor-pointer"
+            className="w-full text-center py-2 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-500 text-[11px] font-sans hover:bg-slate-50 transition-colors uppercase tracking-wider font-semibold cursor-pointer"
           >
             {t("dashboard.openAttendance")}
           </button>

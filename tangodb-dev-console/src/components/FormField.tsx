@@ -11,11 +11,11 @@ interface FieldProps {
 
 export function Field({ label, value, onChange, placeholder, type = "text", multiline }: FieldProps) {
   const className =
-    "w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm text-ink-100 placeholder:text-ink-600";
+    "w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder:text-slate-600";
 
   return (
     <label className="block space-y-1">
-      <span className="text-xs text-ink-500 uppercase">{label}</span>
+      <span className="text-xs text-slate-500 uppercase">{label}</span>
       {multiline ? (
         <textarea
           value={value}
@@ -45,10 +45,10 @@ interface SectionProps {
 
 export function Section({ title, description, children }: SectionProps) {
   return (
-    <section className="bg-ink-900 border border-ink-800 rounded-xl p-4 space-y-3">
+    <section className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
       <div>
         <h3 className="text-sm font-semibold text-white">{title}</h3>
-        {description && <p className="text-xs text-ink-500 mt-1">{description}</p>}
+        {description && <p className="text-xs text-slate-500 mt-1">{description}</p>}
       </div>
       {children}
     </section>

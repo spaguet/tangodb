@@ -41,7 +41,7 @@ interface CreateRentalDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 function defaultTimeEnd(timeStart: string): string {
   try {
@@ -286,27 +286,27 @@ export default function CreateRentalDialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !createMutation.isPending && onClose()}
-            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
-            className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-lg w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
+            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-lg w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div className="min-w-0">
-                <h3 className="text-base font-semibold tracking-tight text-ink-900">
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">
                   {t("schedule.rental.title")}
                 </h3>
-                <p className="text-xs text-ink-500">{t("schedule.rental.subtitle")}</p>
+                <p className="text-xs text-slate-500">{t("schedule.rental.subtitle")}</p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={createMutation.isPending}
                 aria-label={t("common.close")}
-                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer"
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -342,17 +342,17 @@ export default function CreateRentalDialog({
                     <button
                       type="button"
                       onClick={() => setShowNewRenter(true)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-700 cursor-pointer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       {t("schedule.rental.addRenter")}
                     </button>
-                    <Link to="/renters" className="block text-xs font-semibold text-gold-700 hover:text-gold-800">
+                    <Link to="/renters" className="block text-xs font-semibold text-indigo-600 hover:text-indigo-800">
                       {t("renters.manageLink")}
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/10 p-3">
+                  <div className="space-y-2 rounded-lg border border-amber-100 bg-amber-50/50 p-3">
                     <div>
                       <span className={labelCls}>{t("schedule.rental.newRenterName")}</span>
                       <input className={fieldCls} value={newRenterName} onChange={(e) => setNewRenterName(e.target.value)} />
@@ -361,7 +361,7 @@ export default function CreateRentalDialog({
                       <button type="button" onClick={() => void handleCreateRenter()} disabled={createRenterMutation.isPending} className={btnAddCls}>
                         {t("common.save")}
                       </button>
-                      <button type="button" onClick={() => setShowNewRenter(false)} className="px-3 py-1.5 text-xs font-semibold text-ink-600 cursor-pointer">
+                      <button type="button" onClick={() => setShowNewRenter(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 cursor-pointer">
                         {t("common.cancel")}
                       </button>
                     </div>
@@ -374,16 +374,16 @@ export default function CreateRentalDialog({
                 </div>
 
                 {canLookupTariffs && !canSeeTariffPrices ? (
-                  <div className="rounded-lg border border-gold-100 bg-gold-50/10 px-3 py-2 space-y-1">
+                  <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 px-3 py-2 space-y-1">
                     <RentalTariffLookupLink />
-                    <p className="text-[11px] text-ink-500">{t("rentalTariffs.lookupCreateHint")}</p>
+                    <p className="text-[11px] text-slate-500">{t("rentalTariffs.lookupCreateHint")}</p>
                   </div>
                 ) : null}
 
                 {canSeeTariffPrices ? (
                   <>
                     {hourlyTariffsExist ? (
-                      <p className="text-[11px] text-ink-500 rounded-lg border border-ink-100 bg-ink-50 px-3 py-2">
+                      <p className="text-[11px] text-slate-500 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
                         {t("rentalTariffs.hourlyOnlySeriesHint")}
                       </p>
                     ) : null}
@@ -414,7 +414,7 @@ export default function CreateRentalDialog({
                         onChange={(e) => setFixedAmount(e.target.value)}
                       />
                       {selectedTariff && tariffListPrice != null && !showOverrideReason ? (
-                        <p className="mt-1 text-[11px] text-ink-500">
+                        <p className="mt-1 text-[11px] text-slate-500">
                           {t("schedule.rental.priceFromTariff", {
                             name: selectedTariff.name,
                             amount: formatCurrency(tariffListPrice),
@@ -465,26 +465,26 @@ export default function CreateRentalDialog({
               </div>
             ) : (
               <div className="space-y-4 text-sm">
-                <div className="rounded-lg border border-amber-200 bg-amber-50/10 p-3">
+                <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">{t("schedule.rental.previewTitle")}</p>
-                  <p className="mt-1 font-semibold text-ink-800">{previewSummary}</p>
-                  {renterLabel ? <p className="text-ink-600 mt-1">{renterLabel}{purpose ? ` · ${purpose}` : ""}</p> : null}
+                  <p className="mt-1 font-semibold text-slate-800">{previewSummary}</p>
+                  {renterLabel ? <p className="text-slate-600 mt-1">{renterLabel}{purpose ? ` · ${purpose}` : ""}</p> : null}
                   {canSeeTariffPrices && enteredAmount > 0 ? (
-                    <p className="text-ink-600 mt-1">
+                    <p className="text-slate-600 mt-1">
                       {t("schedule.rental.fixedAmountLabel")}: {formatCurrency(enteredAmount)}
                     </p>
                   ) : null}
                 </div>
                 {conflictsQuery.isLoading ? (
-                  <p className="text-ink-400">{t("common.loading.default")}</p>
+                  <p className="text-slate-400">{t("common.loading.default")}</p>
                 ) : conflictsQuery.data && !conflictsQuery.data.success ? (
-                  <p className="text-garnet-600 text-xs">
+                  <p className="text-rose-600 text-xs">
                     {resolveMutationError(conflictsQuery.data.error, "schedule.rental.previewFailed", t)}
                   </p>
                 ) : conflictsQuery.data?.conflicts.length ? (
-                  <p className="text-garnet-600 text-xs">{t("schedule.rental.conflictBlocked")}</p>
+                  <p className="text-rose-600 text-xs">{t("schedule.rental.conflictBlocked")}</p>
                 ) : (
-                  <p className="text-gold-700 text-xs">{t("schedule.rental.noConflicts")}</p>
+                  <p className="text-indigo-600 text-xs">{t("schedule.rental.noConflicts")}</p>
                 )}
               </div>
             )}

@@ -69,16 +69,16 @@ interface ScheduleGroup {
   slots: ScheduleSlot[];
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 const iconBtnCls =
-  "p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-all cursor-pointer";
+  "p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer";
 
 const deleteBtnCls =
-  "p-1.5 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 rounded-lg transition-all cursor-pointer";
+  "p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer";
 
 const addDayBtnCls =
-  "w-full py-2 bg-ink-50 border border-dashed border-ink-300 hover:border-ink-400 rounded-lg text-ink-600 hover:bg-ink-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
+  "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
 
 function makeDayRow(): DayFormRow {
   return { key: crypto.randomUUID(), day: 1, time: "19:00", timeEnd: "21:00" };
@@ -522,14 +522,14 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
       <RequirePermission
         action="schedule.write"
         fallback={
-          <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-ink-200 shadow-xs text-xs text-ink-500">
+          <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
             {t("schedule.readOnlyHint")}
           </div>
         }
       >
-        <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-ink-200 shadow-xs panel-card-stack">
-          <div className="flex items-center gap-2.5 text-ink-800 border-b border-ink-100 pb-3">
-            <CalendarDays className="w-4.5 h-4.5 text-gold-500" />
+        <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+          <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
+            <CalendarDays className="w-4.5 h-4.5 text-indigo-500" />
             <h2 className="text-base font-semibold tracking-tight">{t("schedule.form.addTitle")}</h2>
           </div>
 
@@ -589,11 +589,11 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                 placeholder={t("groupCapacity.maxCapacityPlaceholder")}
                 className={fieldCls}
               />
-              <p className="text-[10px] text-ink-500 leading-relaxed">{t("groupCapacity.maxCapacityHint")}</p>
+              <p className="text-[10px] text-slate-400 leading-relaxed">{t("groupCapacity.maxCapacityHint")}</p>
             </div>
 
             {dayRows.map((row) => (
-              <div key={row.key} className="space-y-3 pt-1 border-t border-ink-100 first:border-t-0 first:pt-0">
+              <div key={row.key} className="space-y-3 pt-1 border-t border-slate-100 first:border-t-0 first:pt-0">
                 <div className="flex items-start gap-2">
                   <div className="flex-1 min-w-0">
                     <AppSelect
@@ -613,7 +613,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                       type="button"
                       onClick={() => handleRemoveDayRow(row.key)}
                       aria-label={t("schedule.form.removeDay")}
-                      className="mt-6 p-2 rounded-lg border border-ink-200 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 transition-colors cursor-pointer shrink-0"
+                      className="mt-6 p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -624,7 +624,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                   <div className="field-stack">
                     <label className={labelCls}>{t("common.timeStart")}</label>
                     <div className="relative font-sans">
-                      <Clock className="w-4 h-4 text-ink-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <Clock className="w-4 h-4 text-slate-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type="time"
                         required
@@ -637,7 +637,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                   <div className="field-stack">
                     <label className={labelCls}>{t("common.timeEnd")}</label>
                     <div className="relative font-sans">
-                      <Clock className="w-4 h-4 text-ink-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <Clock className="w-4 h-4 text-slate-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type="time"
                         required
@@ -666,18 +666,18 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
         </div>
       </RequirePermission>
 
-      <div className="lg:col-span-8 bg-white rounded-xl p-4 border border-ink-200 shadow-xs panel-card-stack">
-        <div className="border-b border-ink-100 pb-3 space-y-1">
-          <div className="flex items-center gap-2.5 text-ink-800">
-            <CalendarRange className="w-4.5 h-4.5 text-gold-500" />
+      <div className="lg:col-span-8 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+        <div className="border-b border-slate-100 pb-3 space-y-1">
+          <div className="flex items-center gap-2.5 text-slate-800">
+            <CalendarRange className="w-4.5 h-4.5 text-indigo-500" />
             <h2 className="text-base font-semibold tracking-tight">{t("schedule.form.approvedGrid")}</h2>
           </div>
-          <p className="text-ink-400 text-xs font-sans pl-7">{t("schedule.form.groupLessons")}</p>
+          <p className="text-slate-400 text-xs font-sans pl-7">{t("schedule.form.groupLessons")}</p>
         </div>
 
         {scheduleGroups.length === 0 ? (
-          <div className="text-center py-20 text-ink-500 space-y-3">
-            <CalendarDays className="w-8 h-8 mx-auto text-ink-300" />
+          <div className="text-center py-20 text-slate-400 space-y-3">
+            <CalendarDays className="w-8 h-8 mx-auto text-slate-300" />
             <p className="text-sm">
               {t("schedule.empty")}
             </p>
@@ -687,21 +687,21 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
             {scheduleGroups.map((group) => (
               <div
                 key={group.groupKey}
-                className="bg-ink-50 rounded-xl border border-ink-100 p-4 space-y-2"
+                className="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-2"
               >
-                <div className="flex items-start justify-between gap-3 pb-2 border-b border-ink-200">
+                <div className="flex items-start justify-between gap-3 pb-2 border-b border-slate-200/60">
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm tracking-tight text-ink-800 break-words">
+                    <p className="font-semibold text-sm tracking-tight text-slate-800 break-words">
                       {group.displayName}
                     </p>
                     {group.groupName && (
-                      <p className="text-[10px] text-ink-500 font-sans mt-0.5">{group.disciplineLabel}</p>
+                      <p className="text-[10px] text-slate-400 font-sans mt-0.5">{group.disciplineLabel}</p>
                     )}
-                    <p className="text-[10px] text-ink-500 font-sans mt-0.5">
+                    <p className="text-[10px] text-slate-400 font-sans mt-0.5">
                       {group.locationLabel} · {group.teacherLabel}
                     </p>
                     {group.scheduleGroupId && capacityByGroupId[group.scheduleGroupId]?.hasLimit && (
-                      <p className="text-[10px] text-gold-700 font-semibold mt-1">
+                      <p className="text-[10px] text-indigo-600 font-semibold mt-1">
                         {formatGroupOccupancy(capacityByGroupId[group.scheduleGroupId]!, t)}
                         {capacityByGroupId[group.scheduleGroupId]?.isFull
                           ? ` · ${t("groupCapacity.noSeats")}`
@@ -751,14 +751,14 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                   {group.slots.map((slot) => (
                     <div
                       key={slot.id ?? `${slot.dayOfWeek}-${slot.time}`}
-                      className="flex items-center gap-2.5 py-1.5 px-2.5 bg-white border border-ink-200 rounded-lg text-sm"
+                      className="flex items-center gap-2.5 py-1.5 px-2.5 bg-white border border-slate-200/60 rounded-lg text-sm"
                     >
-                      <span className="w-2 h-2 rounded-full bg-gold-500 shrink-0" />
-                      <span className="font-semibold text-sm tracking-tight text-ink-800 shrink-0">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                      <span className="font-semibold text-sm tracking-tight text-slate-800 shrink-0">
                         {dowFull(slot.dayOfWeek)}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 font-sans text-ink-700 font-semibold min-w-0">
-                        <Clock className="w-3.5 h-3.5 text-ink-400 shrink-0" />
+                      <span className="inline-flex items-center gap-1.5 font-sans text-slate-700 font-semibold min-w-0">
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         {slot.time} – {slot.timeEnd || "21:00"}
                       </span>
                     </div>
@@ -786,29 +786,29 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setEditingGroup(null)}
-              className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
             />
             <motion.div
               initial={{ scale: 0.97, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between border-b border-ink-100 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="min-w-0 pr-2">
-                  <h3 className="text-base font-semibold tracking-tight text-ink-900 break-words">
+                  <h3 className="text-base font-semibold tracking-tight text-slate-900 break-words">
                     {editingGroup.displayName}
                   </h3>
                   {editingGroup.groupName && (
-                    <p className="text-[10px] text-ink-500 font-sans mt-0.5">{editingGroup.disciplineLabel}</p>
+                    <p className="text-[10px] text-slate-400 font-sans mt-0.5">{editingGroup.disciplineLabel}</p>
                   )}
                 </div>
                 <button
                   type="button"
                   onClick={() => setEditingGroup(null)}
                   aria-label={t("common.close")}
-                  className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors shrink-0"
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -841,7 +841,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                 ) : (
                   <div className="field-stack">
                     <span className={labelCls}>{t("schedule.form.teacher")}</span>
-                    <p className="text-sm text-ink-700 px-3 py-2 bg-ink-50 border border-ink-100 rounded-lg">
+                    <p className="text-sm text-slate-700 px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg">
                       {editingGroup.teacherLabel}
                     </p>
                   </div>
@@ -861,12 +861,12 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                       placeholder={t("groupCapacity.maxCapacityPlaceholder")}
                       className={fieldCls}
                     />
-                    <p className="text-[10px] text-ink-500 leading-relaxed">{t("groupCapacity.maxCapacityHint")}</p>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">{t("groupCapacity.maxCapacityHint")}</p>
                   </div>
                 )}
 
                 {editSlots.length === 0 ? (
-                  <p className="text-xs text-ink-500 text-center py-4">{t("schedule.noSlotsToEdit")}</p>
+                  <p className="text-xs text-slate-400 text-center py-4">{t("schedule.noSlotsToEdit")}</p>
                 ) : (
                   editSlots.map((slot) => {
                     const conflict =
@@ -881,7 +881,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                       );
 
                     return (
-                      <div key={slot.key} className="p-3 bg-ink-50 rounded-lg border border-ink-100 space-y-2">
+                      <div key={slot.key} className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-2">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                           <AppSelect
                             value={slot.dayOfWeek}
@@ -910,7 +910,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                           />
                         </div>
                         {conflict && (
-                          <p className="text-[10px] text-garnet-600 font-sans">{t(conflict)}</p>
+                          <p className="text-[10px] text-rose-600 font-sans">{t(conflict)}</p>
                         )}
                       </div>
                     );

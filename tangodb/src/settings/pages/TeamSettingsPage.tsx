@@ -29,10 +29,10 @@ type MemberPreset = "director" | "admin" | "reception" | "teacher" | "accountant
 
 const EDITABLE_PRESETS: MemberPreset[] = ["director", "admin", "reception", "teacher", "accountant"];
 
-const labelCls = "text-[10px] font-semibold uppercase tracking-wider text-ink-500 block";
+const labelCls = "text-[10px] font-semibold uppercase tracking-wider text-slate-400 block";
 
 const iconBtnCls =
-  "p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-all cursor-pointer";
+  "p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer";
 
 function presetToRoleMeta(preset: MemberPreset): { role: MemberRole; meta: MemberMeta } {
   if (preset === "reception") {
@@ -277,20 +277,20 @@ export default function TeamSettingsPage() {
   return (
     <div className="panel-card-stack max-w-2xl">
       <div>
-        <h2 className="text-base font-semibold text-ink-900">{t("team.title")}</h2>
-        <p className="text-xs text-ink-500 mt-1">{t("team.subtitle")}</p>
+        <h2 className="text-base font-semibold text-slate-900">{t("team.title")}</h2>
+        <p className="text-xs text-slate-500 mt-1">{t("team.subtitle")}</p>
       </div>
 
       {canShowRecoveryGuide && (
-        <div className="bg-lavender-50/10 rounded-xl border border-lavender-100 p-3.5 space-y-2">
-          <h3 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
-            <LifeBuoy className="w-4 h-4 text-lavender-600" />
+        <div className="bg-sky-50/80 rounded-xl border border-sky-100 p-3.5 space-y-2">
+          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <LifeBuoy className="w-4 h-4 text-sky-600" />
             {t("team.recoveryTitle")}
           </h3>
-          <ul className="text-[11px] text-ink-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+          <ul className="text-[11px] text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
             <li>{t("team.recoveryForgotPassword")}</li>
             <li>{t("team.recoveryLostEmail")}</li>
-            <li className="text-ink-500">{t("team.recoveryOwnerNote")}</li>
+            <li className="text-slate-500">{t("team.recoveryOwnerNote")}</li>
           </ul>
         </div>
       )}
@@ -299,26 +299,26 @@ export default function TeamSettingsPage() {
       <form
         ref={inviteFormRef}
         onSubmit={handleInvite}
-        className="bg-white rounded-xl border border-ink-200 shadow-xs overflow-hidden"
+        className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden"
       >
         <button
           type="button"
           onClick={() => setInviteExpanded((prev) => !prev)}
-          className="w-full flex items-center justify-between gap-3 px-3.5 py-3 text-left cursor-pointer hover:bg-ink-50/10 transition-colors"
+          className="w-full flex items-center justify-between gap-3 px-3.5 py-3 text-left cursor-pointer hover:bg-slate-50/80 transition-colors"
           aria-expanded={inviteExpanded}
         >
-          <h3 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
-            <Mail className="w-4 h-4 text-gold-500" />
+          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <Mail className="w-4 h-4 text-indigo-500" />
             {t("team.invite")}
           </h3>
           <ChevronDown
-            className={`w-4 h-4 text-ink-400 shrink-0 transition-transform duration-200 ${
+            className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
               inviteExpanded ? "rotate-180" : ""
             }`}
           />
         </button>
         {inviteExpanded && (
-        <div className="px-3.5 pb-3.5 space-y-3 border-t border-ink-100 pt-3">
+        <div className="px-3.5 pb-3.5 space-y-3 border-t border-slate-100 pt-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="block space-y-1">
             <span className={labelCls}>{t("team.inviteEmail")}</span>
@@ -376,24 +376,24 @@ export default function TeamSettingsPage() {
           <TeacherScopeFields value={inviteScope} onChange={setInviteScope} />
         )}
         <div className="space-y-1.5">
-          <p className="text-[11px] text-ink-500">
+          <p className="text-[11px] text-slate-500">
             {reinviteSourceId ? t("team.reinviteHint") : t("team.inviteLinkHint")}
           </p>
           <button
             type="submit"
             disabled={invite.isPending}
-            className="px-4 py-2 bg-gold-700 text-white text-xs font-semibold rounded-lg hover:bg-gold-700 disabled:opacity-50 cursor-pointer transition-colors"
+            className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 cursor-pointer transition-colors"
           >
             {invite.isPending ? "…" : t("team.sendInvite")}
           </button>
         </div>
         {lastInviteUrl && (
-          <div className="flex items-center gap-2 p-2 bg-gold-50 rounded-lg border border-gold-100">
-            <p className="text-[11px] text-gold-800 truncate flex-1 font-mono">{lastInviteUrl}</p>
+          <div className="flex items-center gap-2 p-2 bg-indigo-50 rounded-lg border border-indigo-100">
+            <p className="text-[11px] text-indigo-800 truncate flex-1 font-mono">{lastInviteUrl}</p>
             <button
               type="button"
               onClick={copyInviteUrl}
-              className="shrink-0 p-1.5 text-gold-700 hover:bg-gold-100 rounded cursor-pointer"
+              className="shrink-0 p-1.5 text-indigo-600 hover:bg-indigo-100 rounded cursor-pointer"
               aria-label={t("common.copy")}
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -406,17 +406,17 @@ export default function TeamSettingsPage() {
       )}
 
       {canInvite && !invitesLoading && invites.length > 0 && (
-        <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-3.5 space-y-2">
-          <h3 className="font-sans text-sm font-semibold text-ink-800">{t("team.pendingInvites")}</h3>
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
+          <h3 className="font-sans text-sm font-semibold text-slate-800">{t("team.pendingInvites")}</h3>
           <div className="space-y-1.5">
             {invites.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center justify-between gap-2 p-2.5 bg-amber-50 rounded-lg border border-amber-200"
+                className="flex items-center justify-between gap-2 p-2.5 bg-amber-50/80 rounded-lg border border-amber-100"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink-800 truncate">{inviteListLabel(inv)}</p>
-                  <p className="text-[11px] text-ink-500 truncate">
+                  <p className="text-sm font-medium text-slate-800 truncate">{inviteListLabel(inv)}</p>
+                  <p className="text-[11px] text-slate-400 truncate">
                     {inv.email} · {memberRoleLabel(inv.role, inv.meta, locale)} ·{" "}
                     {t("settings.team.inviteExpires", { date: formatExpires(inv.expires_at, formatDate) })}
                   </p>
@@ -425,7 +425,7 @@ export default function TeamSettingsPage() {
                   type="button"
                   onClick={() => revokeInvite.mutate(inv.id)}
                   disabled={revokeInvite.isPending}
-                  className="text-[10px] font-semibold uppercase text-garnet-600 hover:bg-garnet-50 px-2 py-1 rounded cursor-pointer"
+                  className="text-[10px] font-semibold uppercase text-rose-600 hover:bg-rose-50 px-2 py-1 rounded cursor-pointer"
                 >
                   {t("team.revoke")}
                 </button>
@@ -435,10 +435,10 @@ export default function TeamSettingsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-3.5 space-y-2">
-        <div className="flex items-center justify-between border-b border-ink-100 pb-2 gap-2">
-          <h3 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
-            <Users className="w-4 h-4 text-gold-500" />
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
+          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <Users className="w-4 h-4 text-indigo-500" />
             {t("team.members")}
           </h3>
           <div className="flex items-center gap-2 shrink-0">
@@ -449,13 +449,13 @@ export default function TeamSettingsPage() {
                   setVacationTeacherId("");
                   setTeacherVacationOpen(true);
                 }}
-                className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold-700 bg-gold-50 hover:bg-gold-100 border border-gold-200 rounded-lg cursor-pointer"
+                className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg cursor-pointer"
               >
                 <CalendarOff className="w-3.5 h-3.5" />
                 {t("schedule.vacation.action")}
               </button>
             ) : null}
-            <span className="text-[10px] bg-ink-100 text-ink-500 font-sans px-2 py-0.5 rounded-full font-semibold">
+            <span className="text-[10px] bg-slate-100 text-slate-500 font-sans px-2 py-0.5 rounded-full font-semibold">
               {activeMembers.length}
             </span>
           </div>
@@ -463,20 +463,20 @@ export default function TeamSettingsPage() {
 
         <div className="space-y-1.5">
           {activeMembers.length === 0 && (
-            <p className="text-sm text-ink-500 py-2">{t("team.noMembers")}</p>
+            <p className="text-sm text-slate-400 py-2">{t("team.noMembers")}</p>
           )}
           {activeMembers.map((member) => {
             const preset = memberPreset(member);
             return (
             <div
               key={member.id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-ink-50 rounded-lg border border-ink-100"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-100"
             >
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-ink-800 truncate">
+                <p className="text-sm font-semibold text-slate-800 truncate">
                   {memberListLabel(member, locale)}
                 </p>
-                <p className="text-[11px] text-ink-500 mt-0.5">
+                <p className="text-[11px] text-slate-400 mt-0.5">
                   {memberRoleLabel(member.role, member.meta, locale)} ·{" "}
                   {t("settings.team.memberSince", { date: formatJoined(member.joined_at, formatDate) })}
                 </p>
@@ -546,7 +546,7 @@ export default function TeamSettingsPage() {
                       type="button"
                       onClick={() => setDeactivateTarget(member)}
                       disabled={updateMember.isPending}
-                      className="flex items-center gap-1 text-[10px] font-semibold uppercase text-garnet-600 hover:bg-garnet-50 px-2 py-1.5 rounded cursor-pointer"
+                      className="flex items-center gap-1 text-[10px] font-semibold uppercase text-rose-600 hover:bg-rose-50 px-2 py-1.5 rounded cursor-pointer"
                       title={t("team.deactivate")}
                     >
                       <UserMinus className="w-3.5 h-3.5" />
@@ -554,7 +554,7 @@ export default function TeamSettingsPage() {
                   </>
                 )}
                 {canManageMember(member.role) && !isEditableMemberPreset(preset) && (
-                  <span className="text-xs font-semibold text-ink-600 px-2.5 py-1.5 bg-ink-100 rounded-lg shrink-0">
+                  <span className="text-xs font-semibold text-slate-600 px-2.5 py-1.5 bg-slate-100 rounded-lg shrink-0">
                     {memberRoleLabel(member.role, member.meta, locale)}
                   </span>
                 )}
@@ -565,8 +565,8 @@ export default function TeamSettingsPage() {
         </div>
 
         {inactiveMembers.length > 0 && (
-          <div className="pt-2 border-t border-ink-100 space-y-1">
-            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-semibold">
+          <div className="pt-2 border-t border-slate-100 space-y-1">
+            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
               {t("team.inactive")}
             </p>
             {inactiveMembers.map((member) => {
@@ -576,7 +576,7 @@ export default function TeamSettingsPage() {
               return (
               <div
                 key={member.id}
-                className="flex items-center justify-between gap-2 text-xs text-ink-500 px-2 py-1"
+                className="flex items-center justify-between gap-2 text-xs text-slate-400 px-2 py-1"
               >
                 <span>
                   {memberListLabel(member, locale)} · {memberRoleLabel(member.role, member.meta, locale)}
@@ -585,7 +585,7 @@ export default function TeamSettingsPage() {
                   <button
                     type="button"
                     onClick={() => handleReinvite(member)}
-                    className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-gold-700 hover:bg-gold-50 px-2 py-1 rounded cursor-pointer"
+                    className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded cursor-pointer"
                   >
                     <UserPlus className="w-3 h-3" />
                     {t("team.reinvite")}

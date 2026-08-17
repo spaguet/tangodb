@@ -92,9 +92,9 @@ export default function LandingAnalyticsPage() {
   if (error) {
     return (
       <div className="space-y-2">
-        <p className="text-garnet-400">{error}</p>
+        <p className="text-rose-400">{error}</p>
         {envHint(error) && (
-          <p className="text-xs text-ink-500">
+          <p className="text-xs text-slate-500">
             Vercel → Dev Console → Settings → Environment Variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY.
             Supabase → Edge Functions → Secrets: ALLOWED_ORIGINS с https://tangodb-dev-console.vercel.app
           </p>
@@ -113,11 +113,11 @@ export default function LandingAnalyticsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white">Landing analytics</h2>
-          <p className="mt-1 text-sm text-ink-500">
+          <p className="mt-1 text-sm text-slate-500">
             Traffic and CTA clicks from tangodb-landing (aggregate, not per-user).
           </p>
         </div>
-        <div className="flex rounded-lg border border-ink-800 bg-ink-900 p-1">
+        <div className="flex rounded-lg border border-slate-800 bg-slate-900 p-1">
           {PERIODS.map((item) => (
             <button
               key={item.id}
@@ -125,8 +125,8 @@ export default function LandingAnalyticsPage() {
               onClick={() => setPeriod(item.id)}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 period === item.id
-                  ? "bg-gold-600/10 text-gold-200"
-                  : "text-ink-400 hover:text-ink-200"
+                  ? "bg-indigo-600/30 text-indigo-200"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
               {item.label}
@@ -137,71 +137,71 @@ export default function LandingAnalyticsPage() {
 
       {loading || !analytics ? (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-2 border-gold-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <>
-          <div className="bg-ink-900 border border-ink-800 rounded-xl p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-white">Landing funnel</h3>
-                <p className="mt-1 text-xs text-ink-500">
+                <p className="mt-1 text-xs text-slate-500">
                   Attribution is aggregate, not per-user. Register clicks and new demo orgs are not linked at visitor level.
                 </p>
               </div>
-              <p className="text-xs text-ink-500">
+              <p className="text-xs text-slate-500">
                 New demo orgs: created in period with status demo_active, demo_retention, or licensed.
               </p>
             </div>
             <div className="mt-4 grid grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
-                <p className="text-xs uppercase tracking-wider text-ink-500">Unique visitors</p>
+                <p className="text-xs uppercase tracking-wider text-slate-500">Unique visitors</p>
                 <p className="text-2xl font-bold text-white mt-1">{analytics.funnel.unique_visitors}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-ink-500">Register clicks</p>
+                <p className="text-xs uppercase tracking-wider text-slate-500">Register clicks</p>
                 <p className="text-2xl font-bold text-white mt-1">{analytics.funnel.register_clicks}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-ink-500">New demo orgs</p>
+                <p className="text-xs uppercase tracking-wider text-slate-500">New demo orgs</p>
                 <p className="text-2xl font-bold text-white mt-1">{analytics.funnel.new_demo_orgs}</p>
-                <p className="mt-1 text-xs text-ink-500">
+                <p className="mt-1 text-xs text-slate-500">
                   {analytics.demo_active_new_in_period} still demo_active
                 </p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-ink-500">Register CTR</p>
+                <p className="text-xs uppercase tracking-wider text-slate-500">Register CTR</p>
                 <p className="text-2xl font-bold text-white mt-1">{formatRate(analytics.funnel.register_ctr)}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-ink-500">Trial start conversion</p>
+                <p className="text-xs uppercase tracking-wider text-slate-500">Trial start conversion</p>
                 <p className="text-2xl font-bold text-white mt-1">
                   {formatRate(analytics.funnel.trial_start_conversion)}
                 </p>
-                <p className="mt-1 text-xs text-ink-500">new demo orgs ÷ register clicks</p>
+                <p className="mt-1 text-xs text-slate-500">new demo orgs ÷ register clicks</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-ink-900 border border-ink-800 rounded-xl p-4">
-              <p className="text-xs uppercase tracking-wider text-ink-500">Pageviews</p>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+              <p className="text-xs uppercase tracking-wider text-slate-500">Pageviews</p>
               <p className="text-2xl font-bold text-white mt-1">{analytics.pageviews}</p>
             </div>
-            <div className="bg-ink-900 border border-ink-800 rounded-xl p-4">
-              <p className="text-xs uppercase tracking-wider text-ink-500">Demo distraction</p>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+              <p className="text-xs uppercase tracking-wider text-slate-500">Demo distraction</p>
               <p className="text-2xl font-bold text-white mt-1">
                 {formatRatio(analytics.rates.demo_distraction_ratio)}
               </p>
             </div>
-            <div className="bg-ink-900 border border-ink-800 rounded-xl p-4">
-              <p className="text-xs uppercase tracking-wider text-ink-500">Telegram intent</p>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+              <p className="text-xs uppercase tracking-wider text-slate-500">Telegram intent</p>
               <p className="text-2xl font-bold text-white mt-1">
                 {formatRate(analytics.rates.telegram_intent_rate)}
               </p>
             </div>
-            <div className="bg-ink-900 border border-ink-800 rounded-xl p-4">
-              <p className="text-xs uppercase tracking-wider text-ink-500">Login confusion</p>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+              <p className="text-xs uppercase tracking-wider text-slate-500">Login confusion</p>
               <p className="text-2xl font-bold text-white mt-1">
                 {formatRate(analytics.rates.login_confusion_rate)}
               </p>
@@ -209,7 +209,7 @@ export default function LandingAnalyticsPage() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <div className="bg-ink-900 border border-ink-800 rounded-xl p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
               <h3 className="text-sm font-semibold text-white">Clicks (selected period)</h3>
               <ul className="mt-4 space-y-3">
                 {CLICK_EVENTS.map((item) => {
@@ -218,11 +218,11 @@ export default function LandingAnalyticsPage() {
                   return (
                     <li key={item.key}>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-ink-400">{item.label}</span>
+                        <span className="text-slate-400">{item.label}</span>
                         <span className="font-medium text-white">{count}</span>
                       </div>
-                      <div className="mt-1 h-2 rounded-full bg-ink-800">
-                        <div className="h-2 rounded-full bg-gold-500/70" style={{ width }} />
+                      <div className="mt-1 h-2 rounded-full bg-slate-800">
+                        <div className="h-2 rounded-full bg-indigo-500/70" style={{ width }} />
                       </div>
                     </li>
                   );
@@ -230,53 +230,53 @@ export default function LandingAnalyticsPage() {
               </ul>
             </div>
 
-            <div className="bg-ink-900 border border-ink-800 rounded-xl p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
               <h3 className="text-sm font-semibold text-white">Derived rates</h3>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between gap-4">
-                  <dt className="text-ink-400">Register CTR</dt>
+                  <dt className="text-slate-400">Register CTR</dt>
                   <dd className="text-white font-medium">{formatRate(analytics.rates.register_ctr)}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-ink-400">Trial start conversion</dt>
+                  <dt className="text-slate-400">Trial start conversion</dt>
                   <dd className="text-white font-medium">{formatRate(analytics.rates.trial_start_conversion)}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-ink-400">Demo distraction ratio</dt>
+                  <dt className="text-slate-400">Demo distraction ratio</dt>
                   <dd className="text-white font-medium">{formatRatio(analytics.rates.demo_distraction_ratio)}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-ink-400">Telegram intent rate</dt>
+                  <dt className="text-slate-400">Telegram intent rate</dt>
                   <dd className="text-white font-medium">{formatRate(analytics.rates.telegram_intent_rate)}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-ink-400">Login confusion rate</dt>
+                  <dt className="text-slate-400">Login confusion rate</dt>
                   <dd className="text-white font-medium">{formatRate(analytics.rates.login_confusion_rate)}</dd>
                 </div>
               </dl>
-              <p className="mt-4 text-xs text-ink-500">
+              <p className="mt-4 text-xs text-slate-500">
                 History only since landing tracker deployment. 365-day view may be partial early on.
               </p>
             </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <div className="bg-ink-900 border border-ink-800 rounded-xl p-4 overflow-x-auto">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-x-auto">
               <h3 className="text-sm font-semibold text-white">Top referrers</h3>
               {analytics.top_referrers.length === 0 ? (
-                <p className="mt-4 text-sm text-ink-500">No referrer data yet.</p>
+                <p className="mt-4 text-sm text-slate-500">No referrer data yet.</p>
               ) : (
                 <table className="mt-4 w-full text-sm">
                   <thead>
-                    <tr className="text-left text-ink-500">
+                    <tr className="text-left text-slate-500">
                       <th className="pb-2 font-medium">Referrer</th>
                       <th className="pb-2 font-medium text-right">Pageviews</th>
                     </tr>
                   </thead>
                   <tbody>
                     {analytics.top_referrers.map((row) => (
-                      <tr key={row.referrer} className="border-t border-ink-800">
-                        <td className="py-2 pr-4 text-ink-300 break-all">{row.referrer}</td>
+                      <tr key={row.referrer} className="border-t border-slate-800">
+                        <td className="py-2 pr-4 text-slate-300 break-all">{row.referrer}</td>
                         <td className="py-2 text-right text-white">{row.pageviews}</td>
                       </tr>
                     ))}
@@ -285,14 +285,14 @@ export default function LandingAnalyticsPage() {
               )}
             </div>
 
-            <div className="bg-ink-900 border border-ink-800 rounded-xl p-4 overflow-x-auto">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-x-auto">
               <h3 className="text-sm font-semibold text-white">Daily pageviews & register clicks</h3>
               {analytics.daily.length === 0 ? (
-                <p className="mt-4 text-sm text-ink-500">No daily data yet.</p>
+                <p className="mt-4 text-sm text-slate-500">No daily data yet.</p>
               ) : (
                 <table className="mt-4 w-full text-sm">
                   <thead>
-                    <tr className="text-left text-ink-500">
+                    <tr className="text-left text-slate-500">
                       <th className="pb-2 font-medium">Date</th>
                       <th className="pb-2 font-medium text-right">Pageviews</th>
                       <th className="pb-2 font-medium text-right">Register</th>
@@ -300,8 +300,8 @@ export default function LandingAnalyticsPage() {
                   </thead>
                   <tbody>
                     {analytics.daily.map((row) => (
-                      <tr key={row.date} className="border-t border-ink-800">
-                        <td className="py-2 text-ink-300">{row.date}</td>
+                      <tr key={row.date} className="border-t border-slate-800">
+                        <td className="py-2 text-slate-300">{row.date}</td>
                         <td className="py-2 text-right text-white">{row.pageviews}</td>
                         <td className="py-2 text-right text-white">{row.cta_register}</td>
                       </tr>

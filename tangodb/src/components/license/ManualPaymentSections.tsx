@@ -12,8 +12,8 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-ink-500">{label}</p>
-      <p className="text-sm text-ink-800 break-words">{value}</p>
+      <p className="text-[10px] uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="text-sm text-slate-800 break-words">{value}</p>
     </div>
   );
 }
@@ -34,15 +34,15 @@ function PaymentDetails({
   children: ReactNode;
 }) {
   return (
-    <details className="group rounded-lg border border-ink-200 bg-white">
+    <details className="group rounded-lg border border-slate-200 bg-white">
       <summary className="flex items-center justify-between gap-3 px-3 py-3 cursor-pointer list-none">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">{title}</p>
-          {subtitle && <p className="text-[11px] text-ink-500 mt-0.5 truncate">{subtitle}</p>}
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</p>
+          {subtitle && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{subtitle}</p>}
         </div>
-        <ChevronDown className="w-4 h-4 text-ink-400 transition-transform group-open:rotate-180" />
+        <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
       </summary>
-      <div className="px-3 pb-3 pt-1 space-y-2 border-t border-ink-100">{children}</div>
+      <div className="px-3 pb-3 pt-1 space-y-2 border-t border-slate-100">{children}</div>
     </details>
   );
 }

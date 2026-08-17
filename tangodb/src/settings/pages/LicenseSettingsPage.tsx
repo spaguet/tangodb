@@ -16,11 +16,11 @@ import { useI18n } from "../../hooks/useI18n";
 import type { I18nKey } from "../../lib/i18n/keys";
 
 const STATUS_TONES: Record<string, string> = {
-  demo_active: "text-gold-700 bg-gold-50 border-gold-100",
-  demo_retention: "text-amber-700 bg-amber-50 border-amber-200",
-  licensed: "text-gold-700 bg-gold-50 border-gold-100",
-  suspended: "text-ink-600 bg-ink-100 border-ink-200",
-  purged: "text-ink-500 bg-ink-50 border-ink-200",
+  demo_active: "text-indigo-700 bg-indigo-50 border-indigo-100",
+  demo_retention: "text-amber-800 bg-amber-50 border-amber-100",
+  licensed: "text-indigo-700 bg-indigo-50 border-indigo-100",
+  suspended: "text-slate-600 bg-slate-100 border-slate-200",
+  purged: "text-slate-500 bg-slate-50 border-slate-200",
 };
 
 const STATUS_KEYS: Record<string, I18nKey> = {
@@ -126,17 +126,17 @@ export default function LicenseSettingsPage() {
     <div className="panel-card-stack max-w-xl">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-ink-900">
+          <h2 className="text-base font-semibold text-slate-900">
             {showManualPurchase ? t("license.title.purchase") : t("license.title.default")}
           </h2>
-          <p className="text-xs text-ink-500 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             {showManualPurchase ? t("license.subtitle.purchase") : t("license.subtitle.default")}
           </p>
         </div>
         {isDemo && !isPurchaseFlow && <DemoPurchaseCta variant="banner" />}
       </div>
 
-      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
         <div className={`flex items-start gap-3 rounded-lg border px-3 py-3 ${statusTone}`}>
           {isLifetime || (hasSubscription && subscription?.status === "active") ? (
             <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
@@ -179,7 +179,7 @@ export default function LicenseSettingsPage() {
               </p>
             )}
             {hasSubscription && subscription?.status === "past_due" && (
-              <p className="text-xs opacity-80 text-amber-700">
+              <p className="text-xs opacity-80 text-amber-800">
                 {t("license.subscription.pastDueReadOnly")}
               </p>
             )}
@@ -200,25 +200,25 @@ export default function LicenseSettingsPage() {
 
         {!isLifetime && (
           <RequirePermission action="license.activate" mode="hide">
-            <form onSubmit={handleActivate} className="space-y-3 border-t border-ink-100 pt-4">
-              <p className="text-xs text-ink-500 flex items-start gap-2">
-                <KeyRound className="w-4 h-4 text-gold-700 shrink-0 mt-0.5" />
+            <form onSubmit={handleActivate} className="space-y-3 border-t border-slate-100 pt-4">
+              <p className="text-xs text-slate-500 flex items-start gap-2">
+                <KeyRound className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                 {showManualPurchase ? t("license.activate.hintPurchase") : t("license.activate.hintLifetime")}
               </p>
               {error && (
-                <p className="text-xs text-garnet-600 bg-garnet-50 border border-garnet-100 rounded-lg px-3 py-2">{error}</p>
+                <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">{error}</p>
               )}
               <input
                 type="text"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 placeholder="TDB-LIFE-XXXX-XXXX-XXXX"
-                className="w-full bg-ink-50 border border-ink-200 rounded-lg px-3 py-2.5 text-sm"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm"
               />
               <button
                 type="submit"
                 disabled={loading || !key.trim()}
-                className="w-full py-2.5 border border-gold-200 text-gold-700 hover:bg-gold-50 text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs font-semibold uppercase tracking-wider rounded-lg cursor-pointer disabled:opacity-50"
               >
                 {loading ? t("license.activate.submitting") : t("license.activate.submit")}
               </button>
@@ -227,8 +227,8 @@ export default function LicenseSettingsPage() {
         )}
 
         {organization.status === "demo_retention" && (
-          <p className="text-xs text-ink-500">
-            <Link to="/license-required" className="text-gold-700 hover:underline">
+          <p className="text-xs text-slate-500">
+            <Link to="/license-required" className="text-indigo-600 hover:underline">
               {t("license.readOnlyLearnMore")}
             </Link>
           </p>
@@ -236,21 +236,21 @@ export default function LicenseSettingsPage() {
 
         <DeveloperContacts contacts={paymentConfig.contacts} />
 
-        <div className="border-t border-ink-100 pt-4 space-y-2">
-          <h3 className="text-sm font-semibold text-ink-800 flex items-center gap-2">
-            <LifeBuoy className="w-4 h-4 text-lavender-600" />
+        <div className="border-t border-slate-100 pt-4 space-y-2">
+          <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <LifeBuoy className="w-4 h-4 text-sky-600" />
             {t("license.ownerRecovery.title")}
           </h3>
-          <ul className="text-xs text-ink-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+          <ul className="text-xs text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
             <li>
               {forgotPasswordParts[0]}
-              <Link to="/auth/forgot-password" className="text-gold-700 hover:underline">
+              <Link to="/auth/forgot-password" className="text-indigo-600 hover:underline">
                 {forgotPasswordLinkText}
               </Link>
               {forgotPasswordParts[1]}
             </li>
             <li>{t("license.ownerRecovery.lostEmail")}</li>
-            <li className="text-ink-500">{t("license.ownerRecovery.emailChangeNote")}</li>
+            <li className="text-slate-500">{t("license.ownerRecovery.emailChangeNote")}</li>
           </ul>
         </div>
       </div>

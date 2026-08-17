@@ -30,12 +30,12 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="space-y-2">
-        <p className="text-garnet-400">{error}</p>
+        <p className="text-rose-400">{error}</p>
         {(error.includes("VITE_SUPABASE") ||
           error.includes("ALLOWED_ORIGINS") ||
           error.includes("origin_not_allowed") ||
           error.includes("Edge Function")) && (
-          <p className="text-xs text-ink-500">
+          <p className="text-xs text-slate-500">
             Vercel → Dev Console → Settings → Environment Variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY.
             Supabase → Edge Functions → Secrets: ALLOWED_ORIGINS с https://tangodb-dev-console.vercel.app
           </p>
@@ -46,7 +46,7 @@ export default function DashboardPage() {
   if (!metrics) {
     return (
       <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-2 border-gold-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -66,8 +66,8 @@ export default function DashboardPage() {
       <h2 className="text-2xl font-bold text-white">Platform metrics</h2>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map((c) => (
-          <div key={c.label} className="bg-ink-900 border border-ink-800 rounded-xl p-4">
-            <p className="text-xs uppercase tracking-wider text-ink-500">{c.label}</p>
+          <div key={c.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p className="text-xs uppercase tracking-wider text-slate-500">{c.label}</p>
             <p className="text-2xl font-bold text-white mt-1">{c.value}</p>
           </div>
         ))}

@@ -17,19 +17,19 @@ export default function DemoDashboardBanner() {
     <div
       className={`rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
         isRetention
-          ? "bg-amber-50 border-amber-200"
+          ? "bg-amber-50 border-amber-100"
           : urgency === "critical"
-            ? "bg-garnet-50 border-garnet-100"
+            ? "bg-rose-50 border-rose-100"
             : urgency === "warning"
-              ? "bg-amber-50 border-amber-200"
-              : "bg-gold-50 border-gold-100"
+              ? "bg-amber-50 border-amber-100"
+              : "bg-indigo-50 border-indigo-100"
       }`}
     >
       <div className="min-w-0">
         <p className={`text-sm font-semibold ${toneClass}`}>
           {isRetention ? t("demo.banner.retentionTitle") : t("demo.banner.activeTitle")}
         </p>
-        <p className="text-xs text-ink-600 mt-0.5">
+        <p className="text-xs text-slate-600 mt-0.5">
           {isRetention ? (
             <>
               {t("demo.banner.retentionActivate")}

@@ -19,18 +19,18 @@ export default function ManualPurchasePanel() {
   }
 
   return (
-    <div className="space-y-4 border-t border-ink-100 pt-4">
+    <div className="space-y-4 border-t border-slate-100 pt-4">
       <PurchaseActivationInstructions />
       <PurchaseRequestPanel contacts={config.contacts} />
 
       {isError && (
-        <p className="text-xs text-garnet-600 bg-garnet-50 border border-garnet-100 rounded-lg px-3 py-2">
+        <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
           {t("license.purchase.loadError")}
         </p>
       )}
 
       {!isError && !hasContent && (
-        <p className="text-xs text-ink-500 bg-ink-50 border border-ink-200 rounded-lg px-3 py-2">
+        <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
           {t("license.purchase.noMethodsConfigured")}
         </p>
       )}

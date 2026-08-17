@@ -14,16 +14,16 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-ink-50 px-6 py-10">
-      <div className="w-full max-w-md bg-white border border-ink-200 rounded-xl shadow-sm p-8 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6 py-10">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm p-8 space-y-6">
         <AuthLocalePicker />
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gold-700 rounded flex items-center justify-center text-white font-sans font-semibold text-[11px] tracking-tight leading-none shadow-xs">
+          <div className="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[11px] tracking-tight leading-none shadow-xs">
             TDB
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-ink-800">{title}</h1>
-            <p className="text-xs text-ink-500 font-sans uppercase tracking-wider">{subtitle}</p>
+            <h1 className="text-lg font-semibold text-slate-800">{title}</h1>
+            <p className="text-xs text-slate-400 font-sans uppercase tracking-wider">{subtitle}</p>
           </div>
         </div>
 
@@ -37,7 +37,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
 
 export function AuthLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
-    <Link to={to} className="text-gold-700 hover:text-gold-800 font-medium">
+    <Link to={to} className="text-indigo-600 hover:text-indigo-700 font-medium">
       {children}
     </Link>
   );
@@ -47,16 +47,16 @@ export function AuthDeveloperContact() {
   const { t } = useGuestI18n();
 
   return (
-    <p className="text-xs text-ink-500 text-center">
+    <p className="text-xs text-slate-400 text-center">
       {t("auth.developerContact.label")}{" "}
-      <a href="mailto:omowdance@gmail.com" className="text-gold-700 hover:text-gold-800 font-medium">
+      <a href="mailto:omowdance@gmail.com" className="text-indigo-600 hover:text-indigo-700 font-medium">
         omowdance@gmail.com
       </a>
     </p>
   );
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block mb-1";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block mb-1";
 
 export function AuthField({
   label,
@@ -82,7 +82,7 @@ export function AuthField({
   const isPassword = type === "password";
   const inputType = isPassword && passwordVisible ? "text" : type;
   const fieldCls = readOnly
-    ? `${baseFieldCls} bg-ink-100 text-ink-500 cursor-not-allowed`
+    ? `${baseFieldCls} bg-slate-100 text-slate-500 cursor-not-allowed`
     : baseFieldCls;
 
   return (
@@ -103,7 +103,7 @@ export function AuthField({
           <button
             type="button"
             onClick={() => setPasswordVisible((v) => !v)}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-ink-400 hover:text-ink-600 cursor-pointer"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
             aria-label={passwordVisible ? t("auth.aria.hidePassword") : t("auth.aria.showPassword")}
           >
             {passwordVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -133,8 +133,8 @@ export function AuthButton({
     "w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed";
   const styles =
     variant === "primary"
-      ? "bg-gold-700 text-white hover:bg-gold-800"
-      : "bg-white text-ink-700 border border-ink-200 hover:bg-ink-50";
+      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50";
 
   return (
     <button type={type} onClick={onClick} disabled={loading || disabled} className={`${base} ${styles}`}>
@@ -149,7 +149,7 @@ export function AuthButton({
 export function AuthError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="text-sm text-garnet-600 bg-garnet-50 border border-garnet-100 rounded-lg px-3 py-2">
+    <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
       {message}
     </div>
   );
@@ -158,7 +158,7 @@ export function AuthError({ message }: { message: string | null }) {
 export function AuthSuccess({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="text-sm text-gold-700 bg-gold-50 border border-gold-100 rounded-lg px-3 py-2">
+    <div className="text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
       {message}
     </div>
   );

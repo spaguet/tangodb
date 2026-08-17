@@ -26,7 +26,7 @@ import {
   fiscalValuesToInput,
 } from "../rental-billing/RentalFiscalPaymentFields";
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 type ToastFn = (msg: string, type?: ToastType) => void;
 
@@ -55,25 +55,25 @@ function ModalShell({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-ink-950/40"
+            className="absolute inset-0 bg-slate-900/40"
             onClick={() => !pending && onClose()}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            className="relative w-full max-w-md bg-white rounded-xl border border-ink-200 shadow-xl"
+            className="relative w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-xl"
           >
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-ink-100">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
               <div className="flex items-center gap-2 min-w-0">
-                <Icon className="w-4 h-4 text-gold-700 shrink-0" />
-                <h3 className="text-base font-semibold text-ink-900 truncate">{title}</h3>
+                <Icon className="w-4 h-4 text-indigo-600 shrink-0" />
+                <h3 className="text-base font-semibold text-slate-900 truncate">{title}</h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={pending}
-                className="p-1.5 text-ink-400 hover:text-ink-600 rounded-lg cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
                 aria-label={t("common.close")}
               >
                 <X className="w-4 h-4" />
@@ -151,7 +151,7 @@ export function CreateRentalInvoiceModal({
       <DatePickerField label={t("rentalInvoices.periodStart")} value={periodStart} onChange={setPeriodStart} />
       <DatePickerField label={t("rentalInvoices.periodEnd")} value={periodEnd} onChange={setPeriodEnd} />
       <DatePickerField label={t("rentalInvoices.dueDate")} value={dueDate} onChange={setDueDate} />
-      <p className="text-xs text-ink-500">{t("rentalInvoices.createHint")}</p>
+      <p className="text-xs text-slate-500">{t("rentalInvoices.createHint")}</p>
       <div className="flex gap-2 pt-1">
         <button type="button" onClick={onClose} disabled={createInvoice.isPending} className={btnCancelCls}>
           {t("common.cancel")}
@@ -247,10 +247,10 @@ export function PayRentalInvoiceModal({
     <ModalShell open={open} title={t("rentalInvoices.payTitle")} icon={Coins} onClose={onClose} pending={recordPayment.isPending} t={t}>
       {invoice ? (
         <>
-          <p className="text-xs text-ink-600">
+          <p className="text-xs text-slate-600">
             {t("rentalInvoices.period")}: {invoice.periodStart} – {invoice.periodEnd}
           </p>
-          <p className="text-sm font-semibold text-ink-800">
+          <p className="text-sm font-semibold text-slate-800">
             {t("rentalInvoices.outstanding")}: {formatCurrency(outstanding)}
           </p>
           <div>
@@ -461,7 +461,7 @@ export function AllocateRentalAdvanceModal({
   return (
     <ModalShell open={open} title={t("rentalInvoices.allocateTitle")} icon={Wallet} onClose={onClose} pending={allocate.isPending} t={t}>
       {availableAdvances.length === 0 || payableInvoices.length === 0 ? (
-        <p className="text-sm text-ink-500">{t("rentalInvoices.allocateUnavailable")}</p>
+        <p className="text-sm text-slate-500">{t("rentalInvoices.allocateUnavailable")}</p>
       ) : (
         <>
           <AppSelect label={t("rentalInvoices.advanceSelect")} value={advanceId} onChange={(e) => setAdvanceId(e.target.value)}>
@@ -482,7 +482,7 @@ export function AllocateRentalAdvanceModal({
             <label className={labelCls}>{t("rentalInvoices.allocateAmount")}</label>
             <input className={fieldCls} type="number" min="0" step="0.01" max={maxAmount} value={amount} onChange={(e) => setAmount(e.target.value)} />
             {maxAmount > 0 ? (
-              <p className="text-xs text-ink-500 mt-1">{t("rentalInvoices.allocateMax", { amount: formatCurrency(maxAmount) })}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("rentalInvoices.allocateMax", { amount: formatCurrency(maxAmount) })}</p>
             ) : null}
           </div>
           <div className="flex gap-2 pt-1">
@@ -530,15 +530,15 @@ export function RentalAdvanceAllocationHistory({
 
   return (
     <div>
-      <h4 className="text-sm font-semibold text-ink-800 mb-2">{t("rentalInvoices.allocationHistory")}</h4>
+      <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("rentalInvoices.allocationHistory")}</h4>
       <ul className="text-xs space-y-2">
         {allocations.map((row) => (
-          <li key={row.id} className="flex items-start justify-between gap-2 border-b border-ink-50 pb-2">
+          <li key={row.id} className="flex items-start justify-between gap-2 border-b border-slate-50 pb-2">
             <div>
-              <p className="text-ink-800 font-medium">
+              <p className="text-slate-800 font-medium">
                 {formatCurrency(row.amount)} → {formatDate(row.invoicePeriodStart)} – {formatDate(row.invoicePeriodEnd)}
               </p>
-              <p className="text-ink-400">
+              <p className="text-slate-400">
                 {formatDate(row.allocatedAt.slice(0, 10))}
                 {row.cancelledAt ? ` · ${t("rentalInvoices.allocationCancelled")}` : ""}
               </p>
@@ -548,7 +548,7 @@ export function RentalAdvanceAllocationHistory({
                 type="button"
                 onClick={() => void handleCancel(row.id)}
                 disabled={cancelAllocation.isPending}
-                className="text-xs font-semibold text-garnet-600 cursor-pointer shrink-0"
+                className="text-xs font-semibold text-rose-600 cursor-pointer shrink-0"
               >
                 {t("rentalInvoices.cancelAllocation")}
               </button>

@@ -77,29 +77,29 @@ export default function DayColumn({
   }, [rangeStartMin, rangeEndMin]);
 
   return (
-    <div className="flex-1 min-w-0 border-l border-ink-100 first:border-l-0">
+    <div className="flex-1 min-w-0 border-l border-slate-100 first:border-l-0">
       <div
-        className={`sticky top-0 z-[1] flex h-9 sm:h-11 flex-col items-center justify-center border-b border-ink-100 px-0.5 sm:px-1 backdrop-blur-[2px] shadow-[0_2px_4px_-2px_rgba(15,23,42,0.08)] ${
-          isToday ? "bg-ink-200/10" : "bg-ink-50/10"
+        className={`sticky top-0 z-[1] flex h-9 sm:h-11 flex-col items-center justify-center border-b border-slate-100 px-0.5 sm:px-1 backdrop-blur-[2px] shadow-[0_2px_4px_-2px_rgba(15,23,42,0.08)] ${
+          isToday ? "bg-slate-200/70" : "bg-slate-50/95"
         }`}
       >
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-ink-500 leading-none">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 leading-none">
           {dowShort(dayOfWeek, locale)}
         </div>
-        <div className="text-xs sm:text-sm font-semibold text-ink-800 tabular-nums leading-tight">
+        <div className="text-xs sm:text-sm font-semibold text-slate-800 tabular-nums leading-tight">
           {dayNumber}
         </div>
       </div>
 
       <div
-        className={`relative ${isToday ? "bg-ink-100/10" : "bg-white"}`}
+        className={`relative ${isToday ? "bg-slate-100/80" : "bg-white"}`}
         style={{ height: gridHeight }}
       >
         {Array.from({ length: rowCount }, (_, i) => (
           <div
             key={i}
-            className={`absolute left-0 right-0 border-b border-ink-50 ${
-              i % 4 === 0 ? "border-ink-100" : ""
+            className={`absolute left-0 right-0 border-b border-slate-50 ${
+              i % 4 === 0 ? "border-slate-100" : ""
             }`}
             style={{ top: i * ROW_HEIGHT_PX, height: ROW_HEIGHT_PX }}
           />
@@ -108,7 +108,7 @@ export default function DayColumn({
         {hourLines.map((top) => (
           <div
             key={top}
-            className="absolute left-0 right-0 border-t border-ink-200 pointer-events-none"
+            className="absolute left-0 right-0 border-t border-slate-200 pointer-events-none"
             style={{ top }}
           />
         ))}
@@ -119,7 +119,7 @@ export default function DayColumn({
             type="button"
             aria-label={t("common.aria.addLesson", { time: timeStart })}
             onClick={() => onEmptyCellClick?.(dateISO, dayOfWeek, timeStart)}
-            className="absolute left-0 right-0 z-0 hover:bg-gold-50/10 transition-colors cursor-pointer border-0 bg-transparent p-0"
+            className="absolute left-0 right-0 z-0 hover:bg-indigo-50/60 transition-colors cursor-pointer border-0 bg-transparent p-0"
             style={{ top, height: ROW_HEIGHT_PX }}
           />
         ))}

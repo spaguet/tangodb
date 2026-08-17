@@ -25,7 +25,7 @@ interface ReplaceSubscriptionPartnerDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 export default function ReplaceSubscriptionPartnerDialog({
   subscription,
@@ -136,18 +136,18 @@ export default function ReplaceSubscriptionPartnerDialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
-            className="relative bg-white rounded-xl border border-ink-200 shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-5 space-y-4"
+            className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-5 space-y-4"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <RefreshCw className="w-4 h-4 text-gold-700 shrink-0" />
-                <h2 className="text-base font-semibold text-ink-900">
+                <RefreshCw className="w-4 h-4 text-indigo-600 shrink-0" />
+                <h2 className="text-base font-semibold text-slate-900">
                   {t("subscriptions.partnerReplace.title")}
                 </h2>
               </div>
@@ -155,14 +155,14 @@ export default function ReplaceSubscriptionPartnerDialog({
                 type="button"
                 onClick={onClose}
                 aria-label={t("common.close")}
-                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer"
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="rounded-lg border border-ink-100 bg-ink-50/10 p-3 space-y-2 text-[11px] text-ink-600">
-              <p className="font-semibold text-ink-800 flex items-center gap-1.5">
+            <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-3 space-y-2 text-[11px] text-slate-600">
+              <p className="font-semibold text-slate-800 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" />
                 {t("subscriptions.partnerReplace.currentMembers")}
               </p>
@@ -250,7 +250,7 @@ export default function ReplaceSubscriptionPartnerDialog({
             </div>
 
             {outgoingClient && incomingClient ? (
-              <p className="text-[11px] text-ink-500">
+              <p className="text-[11px] text-slate-500">
                 {t("subscriptions.partnerReplace.preview", {
                   outgoing: formatClientName(outgoingClient.lastName, outgoingClient.firstName),
                   incoming: formatClientName(incomingClient.lastName, incomingClient.firstName),

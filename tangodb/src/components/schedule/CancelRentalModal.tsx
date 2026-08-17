@@ -12,7 +12,7 @@ import {
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 export type CancelRentalMode = "single" | "series_occurrence";
 
@@ -186,22 +186,22 @@ export default function CancelRentalModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-ink-950/40"
+            className="absolute inset-0 bg-slate-900/40"
             onClick={() => !isPending && onClose()}
           />
           <motion.div
             initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="relative w-full max-w-md bg-white rounded-xl border border-ink-200 shadow-xl p-4 space-y-4 max-h-[90vh] overflow-y-auto"
+            className="relative w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-xl p-4 space-y-4 max-h-[90vh] overflow-y-auto"
           >
-            <h4 className="font-semibold text-ink-900">
+            <h4 className="font-semibold text-slate-900">
               {mode === "series_occurrence"
                 ? t("rentalSeries.cancelOccurrenceAction")
                 : t("schedule.rental.cancelAction")}
             </h4>
 
             {paidAmount > 0 ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 flex gap-2">
+              <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900 flex gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <p>{t("rental.cancel.paidWarning", { amount: formatCurrency(paidAmount) })}</p>
               </div>
@@ -243,25 +243,25 @@ export default function CancelRentalModal({
             ) : null}
 
             {!canCorrectFinancial && paidAmount > 0 ? (
-              <p className="text-xs text-ink-500">{t("rental.cancel.escalateFinance")}</p>
+              <p className="text-xs text-slate-500">{t("rental.cancel.escalateFinance")}</p>
             ) : null}
 
-            <div className="rounded-lg border border-ink-100 bg-ink-50/10 p-3 text-xs space-y-1">
-              <p className="font-semibold text-ink-700">{t("rental.cancel.previewTitle")}</p>
-              <p className="text-ink-600">
+            <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-3 text-xs space-y-1">
+              <p className="font-semibold text-slate-700">{t("rental.cancel.previewTitle")}</p>
+              <p className="text-slate-600">
                 {t("rental.cancel.previewCharge", {
                   amount: formatCurrency(preview.chargeAfter),
                   currency,
                 })}
               </p>
-              <p className="text-ink-600">
+              <p className="text-slate-600">
                 {t("rental.cancel.previewPaid", {
                   amount: formatCurrency(preview.paidAfter),
                   currency,
                 })}
               </p>
               {preview.debtAfter > 0 ? (
-                <p className="text-garnet-700 font-medium">
+                <p className="text-rose-700 font-medium">
                   {t("rental.cancel.previewDebt", {
                     amount: formatCurrency(preview.debtAfter),
                     currency,
@@ -269,7 +269,7 @@ export default function CancelRentalModal({
                 </p>
               ) : null}
               {preview.creditAfter > 0 ? (
-                <p className="text-sage-700 font-medium">
+                <p className="text-emerald-700 font-medium">
                   {t("rental.cancel.previewCredit", {
                     amount: formatCurrency(preview.creditAfter),
                     currency,
@@ -277,7 +277,7 @@ export default function CancelRentalModal({
                 </p>
               ) : null}
               {financialAction === "transfer_to_advance" && paidAmount > 0 ? (
-                <p className="text-gold-700">{t("rental.cancel.previewAdvance")}</p>
+                <p className="text-indigo-700">{t("rental.cancel.previewAdvance")}</p>
               ) : null}
             </div>
 
@@ -286,7 +286,7 @@ export default function CancelRentalModal({
                 type="button"
                 onClick={onClose}
                 disabled={isPending}
-                className="px-3 py-2 text-xs font-semibold text-ink-600 cursor-pointer"
+                className="px-3 py-2 text-xs font-semibold text-slate-600 cursor-pointer"
               >
                 {t("common.cancel")}
               </button>
@@ -294,7 +294,7 @@ export default function CancelRentalModal({
                 type="button"
                 onClick={() => void handleSubmit()}
                 disabled={isPending}
-                className="px-4 py-2 text-xs font-semibold text-white bg-garnet-600 rounded-lg cursor-pointer disabled:opacity-60"
+                className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 rounded-lg cursor-pointer disabled:opacity-60"
               >
                 {isPending
                   ? t("common.saving")

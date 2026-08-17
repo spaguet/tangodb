@@ -18,20 +18,20 @@ export default function OfflineLimitedState({
   const { t } = useI18n();
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/10 p-6 text-center space-y-3">
+    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-6 text-center space-y-3">
       <CloudOff className="w-10 h-10 mx-auto text-amber-700" />
-      <h3 className="font-semibold text-ink-800">
+      <h3 className="font-semibold text-slate-800">
         {reason === "expired"
           ? t("offline.limited.expiredTitle")
           : t("offline.limited.missingTitle")}
       </h3>
-      <p className="text-sm text-ink-600 max-w-md mx-auto">
+      <p className="text-sm text-slate-600 max-w-md mx-auto">
         {reason === "expired"
           ? t("offline.limited.expiredHint")
           : t("offline.limited.missingHint")}
       </p>
       {locations && locations.length > 0 ? (
-        <div className="text-xs text-ink-500 max-w-md mx-auto space-y-1">
+        <div className="text-xs text-slate-500 max-w-md mx-auto space-y-1">
           <p className="font-semibold uppercase tracking-wider flex items-center justify-center gap-1">
             <MapPin className="w-3 h-3" />
             {t("offline.limited.locationsTitle")}
@@ -39,12 +39,12 @@ export default function OfflineLimitedState({
           <p>{locations.map((loc) => loc.name).join(", ")}</p>
         </div>
       ) : null}
-      <div className="text-xs text-ink-500 space-y-1">
+      <div className="text-xs text-slate-500 space-y-1">
         <p className="font-semibold uppercase tracking-wider">{t("offline.limited.fallbackTitle")}</p>
         <p>{t("offline.limited.fallbackSteps")}</p>
       </div>
       {windowStart && windowEnd ? (
-        <p className="text-[11px] text-ink-500 flex items-center justify-center gap-1">
+        <p className="text-[11px] text-slate-400 flex items-center justify-center gap-1">
           <Clock className="w-3 h-3" />
           {t("offline.snapshot.window", { start: windowStart, end: windowEnd })}
         </p>

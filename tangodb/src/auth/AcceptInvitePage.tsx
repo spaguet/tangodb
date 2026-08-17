@@ -154,8 +154,8 @@ export default function AcceptInvitePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-ink-50">
-        <div className="w-8 h-8 rounded-full border-4 border-gold-200 border-t-gold-600 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
       </div>
     );
   }
@@ -163,10 +163,10 @@ export default function AcceptInvitePage() {
   if (!session) {
     if (status === "error") {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-ink-50 p-4">
-          <div className="max-w-md w-full bg-white rounded-xl border border-ink-200 shadow-xs p-6 space-y-3 text-center">
-            <h1 className="text-lg font-semibold text-ink-900">{t("auth.acceptInvite")}</h1>
-            <p className="text-sm text-garnet-600">{message || t("auth.acceptInviteError")}</p>
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+          <div className="max-w-md w-full bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-3 text-center">
+            <h1 className="text-lg font-semibold text-slate-900">{t("auth.acceptInvite")}</h1>
+            <p className="text-sm text-rose-600">{message || t("auth.acceptInviteError")}</p>
           </div>
         </div>
       );
@@ -174,8 +174,8 @@ export default function AcceptInvitePage() {
 
     if (previewLoading || !inviteEmail) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-ink-50">
-          <div className="w-8 h-8 rounded-full border-4 border-gold-200 border-t-gold-600 animate-spin" />
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+          <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
         </div>
       );
     }
@@ -185,8 +185,8 @@ export default function AcceptInvitePage() {
         title={t("auth.acceptInvite")}
         subtitle={orgName ? `«${orgName}»` : "TangoDB CRM"}
       >
-        <div className="flex items-center gap-2 text-sm text-ink-500">
-          <UserPlus className="w-4 h-4 text-gold-500 shrink-0" />
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <UserPlus className="w-4 h-4 text-indigo-500 shrink-0" />
           <p>{t("auth.acceptInviteSetupHint")}</p>
         </div>
 
@@ -224,31 +224,31 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-ink-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-xl border border-ink-200 shadow-xs p-6 space-y-3 text-center">
-        <h1 className="text-lg font-semibold text-ink-900">{t("auth.acceptInvite")}</h1>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <div className="max-w-md w-full bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-3 text-center">
+        <h1 className="text-lg font-semibold text-slate-900">{t("auth.acceptInvite")}</h1>
         {status === "loading" && (
           <div className="flex justify-center py-4">
-            <div className="w-8 h-8 rounded-full border-4 border-gold-200 border-t-gold-600 animate-spin" />
+            <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
           </div>
         )}
         {status === "success" && (
-          <p className="text-sm text-gold-700 font-medium">{message}</p>
+          <p className="text-sm text-indigo-600 font-medium">{message}</p>
         )}
         {status === "error" && (
           <>
-            <p className="text-sm text-garnet-600">{message || t("auth.acceptInviteError")}</p>
+            <p className="text-sm text-rose-600">{message || t("auth.acceptInviteError")}</p>
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="mt-2 text-sm text-gold-700 font-semibold hover:underline cursor-pointer"
+              className="mt-2 text-sm text-indigo-600 font-semibold hover:underline cursor-pointer"
             >
               {t("auth.acceptInvite.goHome")}
             </button>
           </>
         )}
         {status === "idle" && !tokenFromUrl && (
-          <p className="text-sm text-ink-500">{t("auth.acceptInviteError")}</p>
+          <p className="text-sm text-slate-500">{t("auth.acceptInviteError")}</p>
         )}
       </div>
     </div>

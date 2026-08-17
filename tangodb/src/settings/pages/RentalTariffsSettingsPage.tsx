@@ -31,7 +31,7 @@ import { formatCurrency } from "../../lib/utils";
 import type { RentalTariff, RentalTariffRule, RentalTariffType } from "../../types";
 import type { I18nKey } from "../../lib/i18n/keys";
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 const WEEK_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
@@ -168,13 +168,13 @@ function TariffEditorModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-ink-950/40" onClick={() => !upsertMutation.isPending && onClose()} />
-        <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white rounded-xl border border-ink-200 shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 space-y-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40" onClick={() => !upsertMutation.isPending && onClose()} />
+        <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 space-y-4">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="text-base font-semibold text-ink-900">
+            <h3 className="text-base font-semibold text-slate-900">
               {tariff ? t("rentalTariffs.editTitle") : t("rentalTariffs.createTitle")}
             </h3>
-            <button type="button" onClick={onClose} className="p-1 text-ink-400 hover:text-ink-700 cursor-pointer" aria-label={t("common.close")}>
+            <button type="button" onClick={onClose} className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer" aria-label={t("common.close")}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -240,30 +240,30 @@ function TariffEditorModal({
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-semibold text-ink-800">{t("rentalTariffs.rulesTitle")}</h4>
-                  <p className="text-xs text-ink-500 mt-0.5">{t("rentalTariffs.rulesApplyOrderHint")}</p>
-                  <p className="text-xs text-ink-500 mt-0.5">{t("rentalTariffs.rulePriorityHint")}</p>
+                  <h4 className="text-sm font-semibold text-slate-800">{t("rentalTariffs.rulesTitle")}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">{t("rentalTariffs.rulesApplyOrderHint")}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{t("rentalTariffs.rulePriorityHint")}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setRules((prev) => [...prev, emptyRule(nextTariffRulePriority(prev))])}
-                  className="text-xs font-semibold text-gold-700 cursor-pointer shrink-0"
+                  className="text-xs font-semibold text-indigo-600 cursor-pointer shrink-0"
                 >
                   {t("rentalTariffs.addRule")}
                 </button>
               </div>
               {ruleValidationIssues.length > 0 ? (
-                <p className="text-xs text-garnet-600 rounded-lg border border-garnet-100 bg-garnet-50 px-3 py-2">
+                <p className="text-xs text-rose-600 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2">
                   {validationIssueMessage(ruleValidationIssues[0]!, t)}
                 </p>
               ) : null}
               {sortedRuleEntries.map(({ rule, index: idx }, order) => (
-                <div key={idx} className="rounded-lg border border-ink-100 p-3 space-y-2">
+                <div key={idx} className="rounded-lg border border-slate-100 p-3 space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-gold-700 bg-gold-50 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
                       {t("rentalTariffs.ruleApplicationOrder", { order: order + 1 })}
                     </span>
-                    <span className="text-xs text-ink-500">{formatTariffRulePeriod(rule, t)}</span>
+                    <span className="text-xs text-slate-500">{formatTariffRulePeriod(rule, t)}</span>
                   </div>
                   <div>
                     <span className={labelCls}>{t("rentalTariffs.rulePriorityLabel")}</span>
@@ -287,7 +287,7 @@ function TariffEditorModal({
                         type="button"
                         onClick={() => toggleDay(idx, day)}
                         className={`px-2 py-0.5 text-[10px] font-semibold rounded cursor-pointer ${
-                          rule.daysOfWeek.includes(day) ? "bg-gold-100 text-gold-800" : "bg-ink-100 text-ink-500"
+                          rule.daysOfWeek.includes(day) ? "bg-indigo-100 text-indigo-800" : "bg-slate-100 text-slate-500"
                         }`}
                       >
                         {dayLabel(day)}
@@ -327,7 +327,7 @@ function TariffEditorModal({
                     </div>
                   </div>
                   <input type="number" min={0} step="0.01" className={inputCls} placeholder={t("rentalTariffs.priceOverrideLabel")} value={rule.priceOverride || ""} onChange={(e) => setRules((prev) => prev.map((r, i) => (i === idx ? { ...r, priceOverride: Number(e.target.value) || 0 } : r)))} />
-                  <button type="button" onClick={() => setRules((prev) => prev.filter((_, i) => i !== idx))} className="text-xs text-garnet-600 font-semibold cursor-pointer">
+                  <button type="button" onClick={() => setRules((prev) => prev.filter((_, i) => i !== idx))} className="text-xs text-rose-600 font-semibold cursor-pointer">
                     {t("common.delete")}
                   </button>
                 </div>
@@ -400,14 +400,14 @@ export default function RentalTariffsSettingsPage({
     <li key={tariff.id} className="py-3 flex items-start justify-between gap-3">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="font-semibold text-ink-900">{tariff.name}</p>
+          <p className="font-semibold text-slate-900">{tariff.name}</p>
           {tariff.status === "archived" ? (
-            <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full bg-ink-100 text-ink-600 px-2 py-0.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full bg-slate-100 text-slate-600 px-2 py-0.5">
               {t("rentalTariffs.statusArchivedBadge")}
             </span>
           ) : null}
         </div>
-        <p className="text-xs text-ink-500 mt-0.5">
+        <p className="text-xs text-slate-500 mt-0.5">
           {tariff.tariffType === "hourly" ? t("rentalTariffs.typeHourly") : t("rentalTariffs.typeFixed")}
           {tariff.locationId ? ` · ${locationMap.get(tariff.locationId)}` : ` · ${t("rentalTariffs.allLocations")}`}
           {` · ${formatTariffPrice(tariff)}`}
@@ -415,7 +415,7 @@ export default function RentalTariffsSettingsPage({
         </p>
       </div>
       {canWrite ? (
-        <button type="button" onClick={() => openEdit(tariff)} className="p-1.5 text-ink-400 hover:text-gold-800 cursor-pointer" aria-label={t("common.edit")}>
+        <button type="button" onClick={() => openEdit(tariff)} className="p-1.5 text-slate-400 hover:text-indigo-600 cursor-pointer" aria-label={t("common.edit")}>
           <Edit className="w-4 h-4" />
         </button>
       ) : null}
@@ -425,7 +425,7 @@ export default function RentalTariffsSettingsPage({
   return (
     <div className={embedded ? "space-y-3" : "panel-card-stack max-w-2xl"}>
       {!canWrite && !embedded ? (
-        <p className="text-xs text-ink-500 rounded-lg border border-ink-100 bg-ink-50/10 px-3 py-2">
+        <p className="text-xs text-slate-500 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2">
           {t("rentalTariffs.lookupHint")}
         </p>
       ) : null}
@@ -434,8 +434,8 @@ export default function RentalTariffsSettingsPage({
         <div>
           {!embedded && (
             <>
-              <h2 className="text-base font-semibold text-ink-900">{t("rentalTariffs.pageTitle")}</h2>
-              <p className="text-xs text-ink-500 mt-1">{t("rentalTariffs.pageSubtitle")}</p>
+              <h2 className="text-base font-semibold text-slate-900">{t("rentalTariffs.pageTitle")}</h2>
+              <p className="text-xs text-slate-500 mt-1">{t("rentalTariffs.pageSubtitle")}</p>
             </>
           )}
         </div>
@@ -472,8 +472,8 @@ export default function RentalTariffsSettingsPage({
       </div>
 
       {tariffs.length === 0 ? (
-        <div className="rounded-lg border border-ink-100 bg-ink-50/10 px-4 py-5 text-center space-y-3">
-          <p className="text-sm text-ink-600">
+        <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-4 py-5 text-center space-y-3">
+          <p className="text-sm text-slate-600">
             {isDefaultFilter ? t("rentalTariffs.empty") : t("rentalTariffs.emptyFiltered")}
           </p>
           {canWrite && isDefaultFilter ? (
@@ -482,19 +482,19 @@ export default function RentalTariffsSettingsPage({
               {t("rentalTariffs.emptyCta")}
             </button>
           ) : !canWrite ? (
-            <p className="text-xs text-ink-500">{t("rentalTariffs.lookupHint")}</p>
+            <p className="text-xs text-slate-500">{t("rentalTariffs.lookupHint")}</p>
           ) : null}
         </div>
       ) : (
         <div className="space-y-4">
           {groupedTariffs.map((group) => (
             <section key={group.locationKey ?? "all"}>
-              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-ink-500 mb-1">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                 {group.locationKey
                   ? locationMap.get(group.locationKey) ?? group.locationKey
                   : t("rentalTariffs.groupAllLocations")}
               </h3>
-              <ul className="divide-y divide-ink-100">{group.tariffs.map(renderTariffRow)}</ul>
+              <ul className="divide-y divide-slate-100">{group.tariffs.map(renderTariffRow)}</ul>
             </section>
           ))}
         </div>

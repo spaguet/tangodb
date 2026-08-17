@@ -19,16 +19,16 @@ function PriceCard({
   formatPrice: (n: number) => string;
 }) {
   return (
-    <div className="p-4 bg-ink-50 rounded-xl border border-ink-100 flex flex-col justify-between gap-4 h-full demo-field-disabled">
+    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between gap-4 h-full demo-field-disabled">
       <div className="min-w-0 flex-1 space-y-1">
-        <h4 className="font-semibold text-ink-800 text-sm leading-snug">{title}</h4>
-        <p className="text-[11px] text-ink-500 font-sans tracking-tight">
+        <h4 className="font-semibold text-slate-800 text-sm leading-snug">{title}</h4>
+        <p className="text-[11px] text-slate-400 font-sans tracking-tight">
           {desc} · {formatPrice(price)}
         </p>
-        <p className="text-[10px] text-ink-500 font-sans mt-1">{meta}</p>
+        <p className="text-[10px] text-slate-400 font-sans mt-1">{meta}</p>
       </div>
       <div className="flex items-center justify-end">
-        <span className="text-sm font-semibold text-ink-700">{formatPrice(price)}</span>
+        <span className="text-sm font-semibold text-slate-700">{formatPrice(price)}</span>
       </div>
     </div>
   );
@@ -45,7 +45,7 @@ function TariffSection({
 }) {
   return (
     <section className="panel-card-stack">
-      <h3 className="font-semibold text-xs text-ink-500 uppercase tracking-widest border-b border-ink-100 pb-2">
+      <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
         {title}
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -63,13 +63,13 @@ export function PricesPanel({ locale }: Props) {
 
   return (
     <div id="panel-prices" className="panel-page-stack">
-      <div className="bg-white rounded-xl p-4 border border-ink-200 shadow-xs panel-card-stack">
+      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
         <div className="panel-form-header">
           <div className="panel-form-header-icon">
-            <Coins className="w-5 h-5 text-gold-700" />
+            <Coins className="w-5 h-5 text-indigo-600" />
           </div>
-          <h2 className="text-base font-semibold tracking-tight text-ink-900">{p.pricesTitle}</h2>
-          <p className="text-ink-400 text-[11px] leading-snug">{p.pricesSubtitle}</p>
+          <h2 className="text-base font-semibold tracking-tight text-slate-900">{p.pricesTitle}</h2>
+          <p className="text-slate-400 text-[11px] leading-snug">{p.pricesSubtitle}</p>
         </div>
 
         <div className="space-y-6 pt-2">

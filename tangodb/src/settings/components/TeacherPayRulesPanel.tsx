@@ -169,11 +169,11 @@ export default function TeacherPayRulesPanel({ memberId, canManage }: TeacherPay
   };
 
   return (
-    <div className="space-y-3 rounded-xl border border-ink-100 bg-ink-50/10 p-3">
+    <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-xs font-semibold text-ink-800">{t("teacherPayRules.title")}</p>
-          <p className="text-[10px] text-ink-500 mt-0.5">{t("teacherPayRules.subtitle")}</p>
+          <p className="text-xs font-semibold text-slate-800">{t("teacherPayRules.title")}</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">{t("teacherPayRules.subtitle")}</p>
         </div>
         {canManage && (
           <button type="button" onClick={openCreate} className={btnAddSoftCls}>
@@ -184,11 +184,11 @@ export default function TeacherPayRulesPanel({ memberId, canManage }: TeacherPay
       </div>
 
       {rulesQuery.isLoading ? (
-        <p className="text-xs text-ink-500">{t("common.loading.default")}</p>
+        <p className="text-xs text-slate-500">{t("common.loading.default")}</p>
       ) : rulesQuery.isError ? (
-        <p className="text-xs text-garnet-600">{t("teacherPayRules.error.loadFailed")}</p>
+        <p className="text-xs text-red-600">{t("teacherPayRules.error.loadFailed")}</p>
       ) : rules.length === 0 ? (
-        <p className="text-xs text-ink-500">{t("teacherPayRules.empty")}</p>
+        <p className="text-xs text-slate-500">{t("teacherPayRules.empty")}</p>
       ) : (
         <ul className="space-y-2">
           {[...activeRules, ...scheduledRules, ...pastRules].map((rule) => {
@@ -197,15 +197,15 @@ export default function TeacherPayRulesPanel({ memberId, canManage }: TeacherPay
             <li
               key={rule.id}
               className={`rounded-lg border p-2.5 space-y-1 ${
-                status === "active" ? "border-gold-100 bg-white" : "border-ink-100 bg-ink-50"
+                status === "active" ? "border-indigo-100 bg-white" : "border-slate-100 bg-slate-50"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-ink-800">
+                  <p className="text-xs font-semibold text-slate-800">
                     {lessonKindLabel(rule.lessonKind)} · {scopeLabel(rule)}
                   </p>
-                  <p className="text-[11px] text-ink-500 mt-0.5">
+                  <p className="text-[11px] text-slate-500 mt-0.5">
                     {t("teacherPayRules.studioShare")}:{" "}
                     {rule.amountType === "percent" ? `${rule.value}%` : formatCurrency(rule.value)}
                     {" · "}
@@ -214,7 +214,7 @@ export default function TeacherPayRulesPanel({ memberId, canManage }: TeacherPay
                       ? teacherPayTeacherShareLabel(rule)
                       : t("teacherPayRules.teacherShareFixedHint")}
                   </p>
-                  <p className="text-[10px] text-ink-500">
+                  <p className="text-[10px] text-slate-400">
                     {formatDate(rule.validFrom)} — {rule.validTo ? formatDate(rule.validTo) : "∞"}
                     {" · "}
                     {t(`teacherPayRules.status.${status}`)}
@@ -230,7 +230,7 @@ export default function TeacherPayRulesPanel({ memberId, canManage }: TeacherPay
                     <button
                       type="button"
                       onClick={() => setEndTarget(rule)}
-                      className="p-1.5 rounded-lg text-ink-400 hover:text-amber-700 hover:bg-amber-50"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-amber-700 hover:bg-amber-50"
                       aria-label={t("teacherPayRules.endEarly")}
                     >
                       <StopCircle className="w-3.5 h-3.5" />
@@ -242,7 +242,7 @@ export default function TeacherPayRulesPanel({ memberId, canManage }: TeacherPay
                     <button
                       type="button"
                       onClick={() => openEdit(rule)}
-                      className="p-1.5 rounded-lg text-ink-400 hover:text-gold-800 hover:bg-gold-50"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
                       aria-label={t("common.edit")}
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -257,8 +257,8 @@ export default function TeacherPayRulesPanel({ memberId, canManage }: TeacherPay
       )}
 
       {editorOpen && draft && (
-        <div className="rounded-lg border border-ink-200 bg-white p-3 space-y-3">
-          <p className="text-xs font-semibold text-ink-800">
+        <div className="rounded-lg border border-slate-200 bg-white p-3 space-y-3">
+          <p className="text-xs font-semibold text-slate-800">
             {draft.id ? t("teacherPayRules.editTitle") : t("teacherPayRules.createTitle")}
           </p>
           <div className="grid sm:grid-cols-2 gap-2">
@@ -358,9 +358,9 @@ export default function TeacherPayRulesPanel({ memberId, canManage }: TeacherPay
                   expenseCategory: e.target.checked ? ("rent" as ExpenseCategory) : null,
                 })
               }
-              className="mt-0.5 rounded border-ink-300 text-gold-700"
+              className="mt-0.5 rounded border-slate-300 text-indigo-600"
             />
-            <span className="text-xs text-ink-700">{t("teacherPayRules.externalRentHint")}</span>
+            <span className="text-xs text-slate-700">{t("teacherPayRules.externalRentHint")}</span>
           </label>
 
           {draft.expenseCategory != null && (
@@ -379,9 +379,9 @@ export default function TeacherPayRulesPanel({ memberId, canManage }: TeacherPay
             </AppSelect>
           )}
 
-          <p className="text-[10px] text-ink-500">{t("teacherPayRules.studioShareHint")}</p>
+          <p className="text-[10px] text-slate-400">{t("teacherPayRules.studioShareHint")}</p>
 
-          <div className="flex justify-end gap-2 border-t border-ink-100 pt-2">
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-2">
             <button
               type="button"
               className={btnCancelCls}

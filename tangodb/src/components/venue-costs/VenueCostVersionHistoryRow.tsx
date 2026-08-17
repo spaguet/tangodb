@@ -103,11 +103,11 @@ function VersionSummary({
   t: ReturnType<typeof useI18n>["t"];
 }) {
   if (version.mode === "disabled") {
-    return <p className="text-xs text-ink-500 mt-1.5 ml-6">{t("venueCosts.mode.disabled")}</p>;
+    return <p className="text-xs text-slate-500 mt-1.5 ml-6">{t("venueCosts.mode.disabled")}</p>;
   }
 
   const accountingLine = (
-    <li className="text-ink-500">
+    <li className="text-slate-500">
       {t("venueCosts.expenseCategory")}: {t(expenseCategoryKey(version.expenseCategory))}
       {version.payee ? ` · ${t("venueCosts.payee")}: ${version.payee}` : null}
     </li>
@@ -117,9 +117,9 @@ function VersionSummary({
     const rules = version.rules as VenueCostFixedRules;
     if (isVenueCostFixedPerLocation(rules)) {
       return (
-        <ul className="text-xs text-ink-600 mt-1.5 ml-6 space-y-0.5">
+        <ul className="text-xs text-slate-600 mt-1.5 ml-6 space-y-0.5">
           {accountingLine}
-          <li className="text-ink-500">
+          <li className="text-slate-500">
             {t(`venueCosts.period.${rules.period}`)} · {t("venueCosts.fixedPeriod.perLocation")}
           </li>
           {(rules.locations ?? []).map((row) => (
@@ -132,7 +132,7 @@ function VersionSummary({
       );
     }
     return (
-      <ul className="text-xs text-ink-600 mt-1.5 ml-6 space-y-0.5">
+      <ul className="text-xs text-slate-600 mt-1.5 ml-6 space-y-0.5">
         {accountingLine}
         <li>
           {t(`venueCosts.period.${rules.period}`)} · {formatCurrency(rules.amount)} ·{" "}
@@ -145,7 +145,7 @@ function VersionSummary({
   const rules = version.rules as VenueCostPerLessonRules;
   if (!rules.group.length && !rules.personal.length) {
     return (
-      <ul className="text-xs text-ink-600 mt-1.5 ml-6 space-y-0.5">
+      <ul className="text-xs text-slate-600 mt-1.5 ml-6 space-y-0.5">
         {accountingLine}
         <li className="text-amber-700">{t("venueCosts.summary.emptyPerLesson")}</li>
       </ul>
@@ -153,11 +153,11 @@ function VersionSummary({
   }
 
   return (
-    <ul className="text-xs text-ink-600 mt-1.5 ml-6 space-y-1">
+    <ul className="text-xs text-slate-600 mt-1.5 ml-6 space-y-1">
       {accountingLine}
       {rules.group.map((rule, index) => (
         <li key={`g-${index}`}>
-          <span className="font-medium text-ink-700">{t("venueCosts.groupRules")}:</span>{" "}
+          <span className="font-medium text-slate-700">{t("venueCosts.groupRules")}:</span>{" "}
           <ScopeReadOnly
             inline
             teacherMemberId={rule.teacherMemberId}
@@ -168,7 +168,7 @@ function VersionSummary({
             locations={locations}
             t={t}
           />
-          <span className="text-ink-500">
+          <span className="text-slate-500">
             {" "}
             ·{" "}
             {rule.attendanceTiers
@@ -179,7 +179,7 @@ function VersionSummary({
       ))}
       {rules.personal.map((rule, index) => (
         <li key={`p-${index}`}>
-          <span className="font-medium text-ink-700">{t("venueCosts.personalRules")}:</span>{" "}
+          <span className="font-medium text-slate-700">{t("venueCosts.personalRules")}:</span>{" "}
           <ScopeReadOnly
             inline
             teacherMemberId={rule.teacherMemberId}
@@ -190,7 +190,7 @@ function VersionSummary({
             locations={locations}
             t={t}
           />
-          <span className="text-ink-500"> · {formatCurrency(rule.amount)}</span>
+          <span className="text-slate-500"> · {formatCurrency(rule.amount)}</span>
         </li>
       ))}
     </ul>
@@ -230,7 +230,7 @@ function ScopeReadOnly({
     return <span>{text}</span>;
   }
   return (
-    <p className="text-xs text-ink-600">
+    <p className="text-xs text-slate-600">
       {teacherLabel} · {disciplineLabel} · {locationLabel}
     </p>
   );
@@ -250,7 +250,7 @@ function GroupRuleReadOnly({
   t: ReturnType<typeof useI18n>["t"];
 }) {
   return (
-    <div className="rounded-lg border border-ink-100 bg-ink-50/10 p-2.5 space-y-1.5">
+    <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-2.5 space-y-1.5">
       <ScopeReadOnly
         teacherMemberId={rule.teacherMemberId}
         disciplineId={rule.disciplineId}
@@ -262,7 +262,7 @@ function GroupRuleReadOnly({
       />
       <ul className="space-y-0.5">
         {rule.attendanceTiers.map((tier, index) => (
-          <li key={index} className="text-[11px] text-ink-500 font-mono">
+          <li key={index} className="text-[11px] text-slate-500 font-mono">
             {tier.minAttendees}–{tier.maxAttendees ?? "∞"} → {formatCurrency(tier.amount)}
           </li>
         ))}
@@ -285,7 +285,7 @@ function PersonalRuleReadOnly({
   t: ReturnType<typeof useI18n>["t"];
 }) {
   return (
-    <div className="rounded-lg border border-gold-100 bg-gold-50/10 p-2.5 space-y-1">
+    <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 p-2.5 space-y-1">
       <ScopeReadOnly
         teacherMemberId={rule.teacherMemberId}
         disciplineId={rule.disciplineId}
@@ -295,7 +295,7 @@ function PersonalRuleReadOnly({
         locations={locations}
         t={t}
       />
-      <p className="text-xs text-ink-700">{formatCurrency(rule.amount)}</p>
+      <p className="text-xs text-slate-700">{formatCurrency(rule.amount)}</p>
     </div>
   );
 }
@@ -314,11 +314,11 @@ function VersionDetails({
   t: ReturnType<typeof useI18n>["t"];
 }) {
   if (version.mode === "disabled") {
-    return <p className="text-xs text-ink-500">{t("venueCosts.mode.disabled")}</p>;
+    return <p className="text-xs text-slate-500">{t("venueCosts.mode.disabled")}</p>;
   }
 
   const accountingBlock = (
-    <p className="text-xs text-ink-600">
+    <p className="text-xs text-slate-600">
       {t("venueCosts.expenseCategory")}: {t(expenseCategoryKey(version.expenseCategory))}
       {version.payee ? ` · ${t("venueCosts.payee")}: ${version.payee}` : null}
     </p>
@@ -328,7 +328,7 @@ function VersionDetails({
     const rules = version.rules as VenueCostFixedRules;
     if (isVenueCostFixedPerLocation(rules)) {
       return (
-        <div className="text-xs text-ink-600 space-y-1">
+        <div className="text-xs text-slate-600 space-y-1">
           {accountingBlock}
           <p>
             {t(`venueCosts.period.${rules.period}`)} · {t("venueCosts.fixedPeriod.perLocation")} ({rules.currency})
@@ -345,12 +345,12 @@ function VersionDetails({
       );
     }
     return (
-      <div className="text-xs text-ink-600 space-y-1">
+      <div className="text-xs text-slate-600 space-y-1">
         {accountingBlock}
         <p>
           {t(`venueCosts.period.${rules.period}`)} · {formatCurrency(rules.amount)} ({rules.currency})
         </p>
-        <p className="text-ink-500">{t("venueCosts.fixedPeriod.orgWide")}</p>
+        <p className="text-slate-500">{t("venueCosts.fixedPeriod.orgWide")}</p>
       </div>
     );
   }
@@ -361,7 +361,7 @@ function VersionDetails({
       {accountingBlock}
       {rules.group.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-ink-700">{t("venueCosts.groupRules")}</h4>
+          <h4 className="text-xs font-semibold text-slate-700">{t("venueCosts.groupRules")}</h4>
           {rules.group.map((rule, index) => (
             <GroupRuleReadOnly
               key={index}
@@ -376,7 +376,7 @@ function VersionDetails({
       )}
       {rules.personal.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-ink-700">{t("venueCosts.personalRules")}</h4>
+          <h4 className="text-xs font-semibold text-slate-700">{t("venueCosts.personalRules")}</h4>
           {rules.personal.map((rule, index) => (
             <PersonalRuleReadOnly
               key={index}
@@ -450,8 +450,8 @@ export default function VenueCostVersionHistoryRow({
       : [];
 
   const diffKindClass = (kind: VenueCostDiffEntry["kind"]) => {
-    if (kind === "added") return "text-sage-700 bg-sage-50";
-    if (kind === "removed") return "text-garnet-700 bg-garnet-50";
+    if (kind === "added") return "text-emerald-700 bg-emerald-50";
+    if (kind === "removed") return "text-rose-700 bg-rose-50";
     return "text-amber-700 bg-amber-50";
   };
 
@@ -466,18 +466,18 @@ export default function VenueCostVersionHistoryRow({
         >
           <div className="flex items-start gap-2">
             <ChevronDown
-              className={`w-4 h-4 mt-0.5 shrink-0 text-ink-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+              className={`w-4 h-4 mt-0.5 shrink-0 text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`}
             />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink-900 group-hover:text-gold-800">
+              <p className="text-sm font-semibold text-slate-900 group-hover:text-indigo-700">
                 {t("venueCosts.version", { version: version.versionNumber })} · {modeLabel}
               </p>
-              <p className="text-xs text-ink-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 {formatDate(version.validFrom)} — {version.validTo ? formatDate(version.validTo) : "∞"} ·{" "}
                 {t(`venueCosts.status.${version.status}`)}
               </p>
               {version.status === "accepted" && version.acceptedAt && (
-                <p className="text-xs text-ink-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   {t("venueCosts.acceptedBy", {
                     name: acceptedByLabel ?? t("venueCosts.unknownMember"),
                     date: formatDateTime(version.acceptedAt),
@@ -495,7 +495,7 @@ export default function VenueCostVersionHistoryRow({
                 <button
                   type="button"
                   onClick={() => onEditDraft(draftFromVersion)}
-                  className="p-1.5 rounded-lg text-ink-400 hover:text-gold-800 hover:bg-gold-50 cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 cursor-pointer"
                   aria-label={t("common.edit")}
                 >
                   <Edit className="w-4 h-4" />
@@ -505,7 +505,7 @@ export default function VenueCostVersionHistoryRow({
                     type="button"
                     onClick={() => setDeleteDraftOpen(true)}
                     disabled={deleteDraftPending}
-                    className="p-1.5 rounded-lg text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 cursor-pointer disabled:opacity-60"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-60"
                     aria-label={t("venueCosts.deleteDraft")}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -515,7 +515,7 @@ export default function VenueCostVersionHistoryRow({
                   type="button"
                   onClick={() => void onAccept(version.id)}
                   disabled={acceptPending}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gold-50 text-gold-700 text-xs font-semibold cursor-pointer disabled:opacity-60"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold cursor-pointer disabled:opacity-60"
                 >
                   <Check className="w-3.5 h-3.5" />
                   {t("venueCosts.accept")}
@@ -526,7 +526,7 @@ export default function VenueCostVersionHistoryRow({
               <button
                 type="button"
                 onClick={() => onCopyToDraft(draftFromVersion)}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-ink-200 text-ink-600 text-xs font-semibold hover:bg-ink-50 cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 cursor-pointer"
               >
                 <Copy className="w-3.5 h-3.5" />
                 {t("venueCosts.copyToDraft")}
@@ -537,7 +537,7 @@ export default function VenueCostVersionHistoryRow({
                 type="button"
                 onClick={() => setEndEarlyOpen(true)}
                 disabled={endEarlyPending}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-200 text-amber-700 text-xs font-semibold hover:bg-amber-50 cursor-pointer disabled:opacity-60"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-200 text-amber-800 text-xs font-semibold hover:bg-amber-50 cursor-pointer disabled:opacity-60"
               >
                 <StopCircle className="w-3.5 h-3.5" />
                 {t("venueCosts.endEarly")}
@@ -586,7 +586,7 @@ export default function VenueCostVersionHistoryRow({
       />
 
       {expanded && (
-        <div className="mt-3 ml-6 space-y-3 border-l border-ink-100 pl-3">
+        <div className="mt-3 ml-6 space-y-3 border-l border-slate-100 pl-3">
           <VersionDetails
             version={version}
             teachers={teachers}
@@ -597,7 +597,7 @@ export default function VenueCostVersionHistoryRow({
 
           {version.status === "draft" && diffEntries.length > 0 && (
             <div className="space-y-1.5">
-              <h4 className="text-xs font-semibold text-ink-700">{t("venueCosts.diff.title")}</h4>
+              <h4 className="text-xs font-semibold text-slate-700">{t("venueCosts.diff.title")}</h4>
               <ul className="space-y-1">
                 {diffEntries.map((entry, index) => (
                   <li

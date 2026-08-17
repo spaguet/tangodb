@@ -71,12 +71,12 @@ export default function VenueCostGapResolutionPanel({
   };
 
   return (
-    <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-4">
+    <section className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 space-y-4">
       <div className="flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1 space-y-1">
           <h3 className="text-sm font-semibold text-amber-950">{t("venueCosts.gap.title")}</h3>
-          <p className="text-xs text-amber-700 leading-relaxed">
+          <p className="text-xs text-amber-900 leading-relaxed">
             {t("venueCosts.gap.intro", {
               date: status.latestValidTo ? formatDate(status.latestValidTo) : "—",
               count: status.pendingUnpricedCount,
@@ -86,12 +86,12 @@ export default function VenueCostGapResolutionPanel({
       </div>
 
       {previewQuery.isLoading && (
-        <p className="text-xs text-amber-700">{t("common.loading.data")}</p>
+        <p className="text-xs text-amber-800">{t("common.loading.data")}</p>
       )}
 
       {preview && (
-        <div className="rounded-lg border border-amber-200 bg-white p-3 space-y-2 text-xs text-ink-700">
-          <p className="font-semibold text-ink-800">{t("venueCosts.gap.impactTitle")}</p>
+        <div className="rounded-lg border border-amber-200/80 bg-white/70 p-3 space-y-2 text-xs text-slate-700">
+          <p className="font-semibold text-slate-800">{t("venueCosts.gap.impactTitle")}</p>
           <ul className="space-y-1 list-disc pl-4">
             <li>
               {t("venueCosts.gap.impact.closedPending", { count: preview.closedPendingUnpricedInGap })}
@@ -122,7 +122,7 @@ export default function VenueCostGapResolutionPanel({
             <Check className="w-4 h-4" />
             {acceptPending ? t("common.saving") : t("venueCosts.gap.acceptDraft")}
           </button>
-          <span className="text-xs text-amber-700">{t("venueCosts.gap.orConfirmGap")}</span>
+          <span className="text-xs text-amber-800">{t("venueCosts.gap.orConfirmGap")}</span>
         </div>
       )}
 
@@ -157,7 +157,7 @@ export default function VenueCostGapResolutionPanel({
         />
       </label>
 
-      {error && <p className="text-xs text-garnet-700">{error}</p>}
+      {error && <p className="text-xs text-rose-700">{error}</p>}
 
       <div className="flex justify-end gap-2">
         <button

@@ -34,13 +34,13 @@ interface ProfileForm {
 }
 
 const labelCls =
-  "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+  "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 const fieldCls =
-  "w-full bg-white border border-ink-200 focus:border-gold-400 focus:ring-2 focus:ring-gold-100 outline-none rounded-lg px-3 py-2 text-sm transition-all";
+  "w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3 py-2 text-sm transition-all";
 
 const readOnlyCls =
-  "w-full bg-ink-50 border border-ink-100 rounded-lg px-3 py-2 text-sm text-ink-700";
+  "w-full bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-sm text-slate-700";
 
 function toForm(member: TeamMemberRow): ProfileForm {
   return {
@@ -227,27 +227,27 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-2xl w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
+            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-2xl w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-center justify-between border-b border-ink-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="min-w-0 pr-2">
-                <h3 className="text-base font-semibold tracking-tight text-ink-900">{t("memberProfile.editTitle")}</h3>
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("memberProfile.editTitle")}</h3>
                 {subtitle && (
-                  <p className="text-[10px] text-ink-500 font-sans mt-0.5 truncate">{subtitle}</p>
+                  <p className="text-[10px] text-slate-400 font-sans mt-0.5 truncate">{subtitle}</p>
                 )}
               </div>
               <button
                 type="button"
                 onClick={onClose}
                   aria-label={t("common.close")}
-                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors shrink-0"
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -325,8 +325,8 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
               )}
 
               {showRateField && (
-                <div className="space-y-3 rounded-xl border border-ink-100 bg-ink-50/10 p-3">
-                  <p className="text-xs font-semibold text-ink-800">{t("memberProfile.field.baseSalary")}</p>
+                <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                  <p className="text-xs font-semibold text-slate-800">{t("memberProfile.field.baseSalary")}</p>
                   <AppSelect
                     label={t("memberProfile.field.payMode")}
                     value={payMode}
@@ -355,13 +355,13 @@ export default function MemberProfileModal({ member, canEdit, onClose }: MemberP
                           }}
                           className={`${fieldCls} pr-14`}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-500 font-medium pointer-events-none">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium pointer-events-none">
                           {currencyCode}
                         </span>
                       </div>
                     </label>
                   )}
-                  <p className="text-[10px] text-ink-500">{t("memberProfile.field.baseSalaryHint")}</p>
+                  <p className="text-[10px] text-slate-400">{t("memberProfile.field.baseSalaryHint")}</p>
 
                   {(payMode === "percent" || payMode === "fixed_plus_percent") && (
                     <div className="grid sm:grid-cols-3 gap-2">

@@ -55,8 +55,8 @@ export default function PersonalLessonAttendanceActions({
         title={t("common.present")}
         className={`flex items-center gap-1 rounded-lg font-semibold border transition-all cursor-pointer disabled:opacity-60 ${btnBase} ${
           lesson.attendanceStatus === "present"
-            ? "bg-gold-700 border-gold-700 text-white"
-            : "bg-white border-ink-200 text-ink-600 hover:border-gold-300 hover:bg-gold-50"
+            ? "bg-indigo-600 border-indigo-600 text-white"
+            : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50"
         }`}
       >
         <Check className="w-3 h-3" />
@@ -69,8 +69,8 @@ export default function PersonalLessonAttendanceActions({
         title={t("common.absent")}
         className={`flex items-center gap-1 rounded-lg font-semibold border transition-all cursor-pointer disabled:opacity-60 ${btnBase} ${
           lesson.attendanceStatus === "absent"
-            ? "bg-garnet-600 border-garnet-600 text-white"
-            : "bg-white border-ink-200 text-ink-600 hover:border-garnet-300 hover:bg-garnet-50"
+            ? "bg-rose-600 border-rose-600 text-white"
+            : "bg-white border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50"
         }`}
       >
         <X className="w-3 h-3" />
@@ -83,8 +83,8 @@ export default function PersonalLessonAttendanceActions({
         title={t("common.excusedFull")}
         className={`flex items-center gap-1 rounded-lg font-semibold border transition-all cursor-pointer disabled:opacity-60 ${btnBase} ${
           lesson.attendanceStatus === "excused"
-            ? "bg-ink-600 border-ink-600 text-white"
-            : "bg-white border-ink-200 text-ink-600 hover:border-ink-300 hover:bg-ink-50"
+            ? "bg-slate-600 border-slate-600 text-white"
+            : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
         }`}
       >
         <ShieldCheck className="w-3 h-3" />

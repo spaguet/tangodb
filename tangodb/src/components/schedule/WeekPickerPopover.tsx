@@ -72,22 +72,22 @@ export default function WeekPickerPopover({
   };
 
   return (
-    <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1 z-50 w-72 rounded-xl border border-ink-200 bg-white shadow-lg p-3">
+    <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1 z-50 w-72 rounded-xl border border-slate-200 bg-white shadow-lg p-3">
       <div className="flex items-center justify-between mb-3">
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
           aria-label={t("subscriptions.aria.prevMonth")}
-          className="p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-all cursor-pointer"
+          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-xs font-semibold text-ink-800 capitalize">{monthLabel}</span>
+        <span className="text-xs font-semibold text-slate-800 capitalize">{monthLabel}</span>
         <button
           type="button"
           onClick={() => shiftMonth(1)}
           aria-label={t("subscriptions.aria.nextMonth")}
-          className="p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-all cursor-pointer"
+          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -97,7 +97,7 @@ export default function WeekPickerPopover({
         {weekdayHeaders.map((d) => (
           <div
             key={d}
-            className="text-center text-[10px] font-semibold uppercase tracking-wider text-ink-500 py-1"
+            className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 py-1"
           >
             {d}
           </div>
@@ -120,10 +120,10 @@ export default function WeekPickerPopover({
               onClick={() => onSelect(day)}
               className={`h-8 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                 inWeek
-                  ? "bg-gold-700 text-white hover:bg-gold-800"
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
                   : isToday
-                    ? "bg-gold-50 text-gold-700 hover:bg-gold-100"
-                    : "text-ink-700 hover:bg-ink-100"
+                    ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                    : "text-slate-700 hover:bg-slate-100"
               }`}
             >
               {day.getDate()}

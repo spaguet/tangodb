@@ -53,8 +53,8 @@ function debtorKindLabel(kind: DebtorEntry["kind"], t: ReturnType<typeof useI18n
 function DebtorDetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[10px] uppercase tracking-wider font-semibold text-ink-500 font-sans">{label}</dt>
-      <dd className="text-xs text-ink-700 font-sans mt-0.5 break-words">{value}</dd>
+      <dt className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">{label}</dt>
+      <dd className="text-xs text-slate-700 font-sans mt-0.5 break-words">{value}</dd>
     </div>
   );
 }
@@ -109,32 +109,32 @@ function DebtorRow({
       : null;
 
   return (
-    <div className="border-b border-ink-100 last:border-b-0">
+    <div className="border-b border-slate-100 last:border-b-0">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
         <button type="button" onClick={onToggle} className="min-w-0 text-left cursor-pointer" aria-expanded={expanded}>
           <div className="flex items-start gap-2">
             <ChevronDown
-              className={`w-3.5 h-3.5 text-ink-400 shrink-0 mt-0.5 transition-transform duration-200 ${
+              className={`w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5 transition-transform duration-200 ${
                 expanded ? "rotate-180" : ""
               }`}
             />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink-800 truncate">{entry.clientDisplay}</p>
-              <p className="text-[10px] font-semibold text-ink-500 mt-0.5">{kindLabel}</p>
+              <p className="text-sm font-semibold text-slate-800 truncate">{entry.clientDisplay}</p>
+              <p className="text-[10px] font-semibold text-slate-500 mt-0.5">{kindLabel}</p>
             </div>
           </div>
         </button>
         <button
           type="button"
           onClick={onToggle}
-          className="text-xs text-ink-500 font-sans hidden sm:block text-left cursor-pointer"
+          className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
         >
           {entry.contact}
         </button>
         <button
           type="button"
           onClick={onToggle}
-          className="text-xs text-ink-500 font-sans hidden sm:block text-left cursor-pointer"
+          className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
         >
           {formatDebtorDetail(entry, t, formatDate)}
         </button>
@@ -142,7 +142,7 @@ function DebtorRow({
           <button
             type="button"
             onClick={onToggle}
-            className="text-sm font-sans font-semibold text-right whitespace-nowrap text-garnet-700 cursor-pointer"
+            className="text-sm font-sans font-semibold text-right whitespace-nowrap text-rose-700 cursor-pointer"
           >
             {amountLabel}
           </button>
@@ -176,7 +176,7 @@ function DebtorRow({
               <Link
                 to={`/renters/${entry.renterId}`}
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-gold-700 hover:bg-gold-50 rounded-lg"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-lg"
               >
                 {t("finance.debtors.openRenter")}
               </Link>
@@ -187,7 +187,7 @@ function DebtorRow({
 
       {expanded ? (
         <div className="px-3 pb-3 pt-0 ml-5 sm:ml-6">
-          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 p-3 rounded-lg bg-ink-50/10 border border-ink-100">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 p-3 rounded-lg bg-slate-50/80 border border-slate-100">
             <DebtorDetailItem label={t("finance.debtors.documentType")} value={kindLabel} />
             <DebtorDetailItem label={t("common.date")} value={serviceDate} />
             <DebtorDetailItem label={t("common.timeStart")} value={timeStart} />
@@ -221,21 +221,21 @@ function DebtorRow({
             <DebtorDetailItem label={t("finance.debtors.dueStatus")} value={agingLabel} />
             {isGroup ? (
               <div className="sm:col-span-2 lg:col-span-3">
-                <dt className="text-[10px] uppercase tracking-wider font-semibold text-ink-500 font-sans">
+                <dt className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
                   {t("finance.debtors.chargePerMember")}
                 </dt>
                 <dd className="mt-1.5 space-y-2">
                   {members.map((member) => (
                     <div
                       key={member.id}
-                      className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-lg border border-ink-100 bg-white px-2.5 py-2"
+                      className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-lg border border-slate-100 bg-white px-2.5 py-2"
                     >
-                      <span className="text-xs font-medium text-ink-800">{member.clientDisplay}</span>
-                      <span className="text-xs font-semibold text-garnet-700 tabular-nums">
+                      <span className="text-xs font-medium text-slate-800">{member.clientDisplay}</span>
+                      <span className="text-xs font-semibold text-rose-700 tabular-nums">
                         {formatCurrency(member.amount)}
                       </span>
                       {member.contact && member.contact !== "—" ? (
-                        <span className="w-full text-[11px] text-ink-500">Telegram: {member.contact}</span>
+                        <span className="w-full text-[11px] text-slate-500">Telegram: {member.contact}</span>
                       ) : null}
                     </div>
                   ))}
@@ -266,7 +266,7 @@ function DebtorRow({
             ) : null}
           </dl>
           {entry.kind === "subscription" ? (
-            <p className="mt-2 text-[11px] text-ink-500 font-sans">{t("finance.debtors.subscriptionNote")}</p>
+            <p className="mt-2 text-[11px] text-slate-500 font-sans">{t("finance.debtors.subscriptionNote")}</p>
           ) : null}
           {schedulePath || canAdjust ? (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -398,18 +398,18 @@ export default function FinanceDebtorsPage() {
 
   return (
     <div className="panel-page-stack">
-      <div className="bg-white rounded-xl border border-ink-200 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-ink-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-garnet-600" />
-            <h2 className="font-sans text-sm font-semibold text-ink-800">{t("finance.debtors.title")}</h2>
+            <AlertCircle className="w-4 h-4 text-rose-600" />
+            <h2 className="font-sans text-sm font-semibold text-slate-800">{t("finance.debtors.title")}</h2>
           </div>
-          <span className="text-sm font-sans font-semibold text-garnet-700">
+          <span className="text-sm font-sans font-semibold text-rose-700">
             {t("finance.debtors.toPay", { amount: formatCurrency(totalDebt) })}
           </span>
         </div>
 
-        <div className="px-3 py-2 border-b border-ink-100 flex flex-wrap items-end justify-between gap-2">
+        <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap items-end justify-between gap-2">
           <div className="flex flex-wrap gap-2">
             {tabs.map((item) => (
               <button
@@ -418,13 +418,13 @@ export default function FinanceDebtorsPage() {
                 onClick={() => setTab(item.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${
                   tab === item.id
-                    ? "bg-gold-50 text-gold-700 border border-gold-200"
-                    : "text-ink-600 hover:bg-ink-50 border border-transparent"
+                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                    : "text-slate-600 hover:bg-slate-50 border border-transparent"
                 }`}
               >
                 {item.label}
                 {item.id === "rentals" && rentalDebtTotal > 0 ? (
-                  <span className="ml-1 text-garnet-600">({formatCurrency(rentalDebtTotal)})</span>
+                  <span className="ml-1 text-rose-600">({formatCurrency(rentalDebtTotal)})</span>
                 ) : null}
               </button>
             ))}
@@ -446,12 +446,12 @@ export default function FinanceDebtorsPage() {
 
         {debtors.length === 0 ? (
           <div className="py-20 text-center">
-            <AlertCircle className="w-8 h-8 text-ink-300 mx-auto mb-3" />
-            <p className="text-sm text-ink-500">{t("finance.debtors.empty")}</p>
+            <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+            <p className="text-sm text-slate-500">{t("finance.debtors.empty")}</p>
           </div>
         ) : (
           <>
-            <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-ink-50 border-b border-ink-100 text-[10px] uppercase tracking-wider font-semibold text-ink-500 font-sans">
+            <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
               <span>{t("common.client")}</span>
               <span>Telegram</span>
               <span>{t("common.details")}</span>
@@ -503,8 +503,8 @@ export default function FinanceDebtorsPage() {
                 );
               })}
             </div>
-            <div className="px-4 py-3 border-t border-ink-100 flex justify-between items-center bg-ink-50/10">
-              <span className="text-xs text-ink-500 font-sans">
+            <div className="px-4 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/60">
+              <span className="text-xs text-slate-500 font-sans">
                 {plural(debtors.length, [
                   t("common.records.one", { count: debtors.length }),
                   t("common.records.few", { count: debtors.length }),

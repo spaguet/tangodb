@@ -18,7 +18,7 @@ import AppSelect, { fieldCls } from "../ui/AppSelect";
 import LoadingState from "../ui/LoadingState";
 import { btnAddCls } from "../ui/buttonStyles";
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 export default function RentalBillingProfileSection({ embedded }: { embedded?: boolean }) {
   const { t } = useI18n();
@@ -58,7 +58,7 @@ export default function RentalBillingProfileSection({ embedded }: { embedded?: b
 
   const content = (
     <div className="space-y-4">
-      <p className="text-xs text-ink-500">{t("rentalBilling.disclaimer")}</p>
+      <p className="text-xs text-slate-500">{t("rentalBilling.disclaimer")}</p>
 
       <AppSelect
         label={t("rentalBilling.documentsMode")}
@@ -209,13 +209,13 @@ export default function RentalBillingProfileSection({ embedded }: { embedded?: b
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
+      <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
         <input
           type="checkbox"
           checked={profile.fiscal_tracking_enabled}
           onChange={(e) => setField("fiscal_tracking_enabled", e.target.checked)}
           disabled={!canManage}
-          className="rounded border-ink-300 text-gold-700 focus:ring-gold-500"
+          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
         />
         {t("rentalBilling.fiscalTrackingEnabled")}
       </label>
@@ -230,7 +230,7 @@ export default function RentalBillingProfileSection({ embedded }: { embedded?: b
           {updateProfile.isPending ? t("common.saving") : t("common.save")}
         </button>
       ) : (
-        <p className="text-xs text-ink-500">{t("rentalBilling.readOnlyHint")}</p>
+        <p className="text-xs text-slate-400">{t("rentalBilling.readOnlyHint")}</p>
       )}
     </div>
   );
@@ -240,10 +240,10 @@ export default function RentalBillingProfileSection({ embedded }: { embedded?: b
   return (
     <div className="panel-card-stack max-w-4xl">
       <div>
-        <h2 className="text-base font-semibold text-ink-900">{t("rentalBilling.pageTitle")}</h2>
-        <p className="text-xs text-ink-500 mt-1">{t("rentalBilling.pageSubtitle")}</p>
+        <h2 className="text-base font-semibold text-slate-900">{t("rentalBilling.pageTitle")}</h2>
+        <p className="text-xs text-slate-500 mt-1">{t("rentalBilling.pageSubtitle")}</p>
       </div>
-      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4">{content}</div>
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4">{content}</div>
     </div>
   );
 }

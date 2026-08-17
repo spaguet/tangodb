@@ -33,7 +33,7 @@ interface CreateCalendarEventDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 
 function emptySession(defaultLocationId: string): CalendarEventSessionInput {
   return {
@@ -264,28 +264,28 @@ export default function CreateCalendarEventDialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-ink-950/40"
+            className="absolute inset-0 bg-slate-900/40"
             onClick={() => !createMutation.isPending && onClose()}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            className="relative w-full max-w-2xl max-h-[90dvh] overflow-hidden bg-white rounded-xl border border-ink-200 shadow-xl flex flex-col"
+            className="relative w-full max-w-2xl max-h-[90dvh] overflow-hidden bg-white rounded-xl border border-slate-200 shadow-xl flex flex-col"
           >
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-ink-100">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
               <div className="flex items-center gap-2 min-w-0">
-                <CalendarPlus className="w-4 h-4 text-lavender-600 shrink-0" />
+                <CalendarPlus className="w-4 h-4 text-violet-600 shrink-0" />
                 <div className="min-w-0">
-                  <h3 className="text-base font-semibold text-ink-900 truncate">{t("schedule.event.title")}</h3>
-                  <p className="text-xs text-ink-500 truncate">{t("schedule.event.subtitle")}</p>
+                  <h3 className="text-base font-semibold text-slate-900 truncate">{t("schedule.event.title")}</h3>
+                  <p className="text-xs text-slate-500 truncate">{t("schedule.event.subtitle")}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={createMutation.isPending}
-                className="p-1.5 text-ink-400 hover:text-ink-600 rounded-lg cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
                 aria-label={t("common.close")}
               >
                 <X className="w-4 h-4" />
@@ -307,8 +307,8 @@ export default function CreateCalendarEventDialog({
                             onClick={() => setEventType(type)}
                             className={`px-3 py-2.5 rounded-lg border text-sm font-semibold transition-colors cursor-pointer ${
                               active
-                                ? "border-lavender-300 bg-lavender-50 text-lavender-700"
-                                : "border-ink-200 bg-white text-ink-600 hover:border-lavender-200 hover:bg-lavender-50/10"
+                                ? "border-violet-300 bg-violet-50 text-violet-700"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:bg-violet-50/50"
                             }`}
                           >
                             {t(
@@ -361,14 +361,14 @@ export default function CreateCalendarEventDialog({
                         type="button"
                         disabled={!defaultLocationId}
                         onClick={() => setSessions((prev) => [...prev, emptySession(defaultLocationId)])}
-                        className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-lavender-700 hover:text-lavender-800 cursor-pointer"
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-violet-700 hover:text-violet-800 cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         {t("schedule.event.addSession")}
                       </button>
                     </div>
                     {sessions.map((session, index) => (
-                      <div key={index} className="grid sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end p-3 rounded-lg border border-ink-100 bg-ink-50/10">
+                      <div key={index} className="grid sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end p-3 rounded-lg border border-slate-100 bg-slate-50/60">
                         <DatePickerField
                           label={t("schedule.form.currentDate")}
                           value={session.date}
@@ -416,7 +416,7 @@ export default function CreateCalendarEventDialog({
                             <button
                               type="button"
                               onClick={() => setSessions((prev) => prev.filter((_, i) => i !== index))}
-                              className="p-2 text-garnet-500 hover:bg-garnet-50 rounded-lg cursor-pointer self-end"
+                              className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg cursor-pointer self-end"
                               aria-label={t("common.delete")}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -428,8 +428,8 @@ export default function CreateCalendarEventDialog({
                   </div>
 
                   {canSeeFinance ? (
-                    <div className="space-y-3 pt-2 border-t border-ink-100">
-                      <p className="text-xs font-semibold text-ink-700">{t("schedule.event.financeSection")}</p>
+                    <div className="space-y-3 pt-2 border-t border-slate-100">
+                      <p className="text-xs font-semibold text-slate-700">{t("schedule.event.financeSection")}</p>
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div>
                           <span className={labelCls}>{t("schedule.event.incomeLabel")}</span>
@@ -484,33 +484,33 @@ export default function CreateCalendarEventDialog({
               ) : (
                 <>
                   {previewQuery.isLoading ? (
-                    <p className="text-sm text-ink-500">{t("common.loading.default")}</p>
+                    <p className="text-sm text-slate-400">{t("common.loading.default")}</p>
                   ) : previewQuery.isError ? (
-                    <p className="text-sm text-garnet-600">{t("schedule.event.previewFailed")}</p>
+                    <p className="text-sm text-rose-600">{t("schedule.event.previewFailed")}</p>
                   ) : previewQuery.data && !previewQuery.data.success ? (
-                    <p className="text-sm text-garnet-600">
+                    <p className="text-sm text-rose-600">
                       {resolveMutationError(previewQuery.data.error, "schedule.event.previewFailed", t)}
                     </p>
                   ) : (
                     <>
                       {cancellableConflicts.length > 0 ? (
-                        <p className="text-sm text-ink-600">{t("schedule.event.previewIntro")}</p>
+                        <p className="text-sm text-slate-600">{t("schedule.event.previewIntro")}</p>
                       ) : null}
                       {eventConflicts.length > 0 ? (
                         <ul className="space-y-2">
                           {eventConflicts.map((conflict) => (
                             <li
                               key={conflictKey(conflict)}
-                              className="p-2 rounded-lg border border-garnet-200 bg-garnet-50 text-sm text-garnet-800"
+                              className="p-2 rounded-lg border border-rose-200 bg-rose-50 text-sm text-rose-800"
                             >
                               {conflictLabel(conflict)}
                             </li>
                           ))}
-                          <p className="text-sm text-garnet-700">{t("schedule.event.eventConflictBlocked")}</p>
+                          <p className="text-sm text-rose-700">{t("schedule.event.eventConflictBlocked")}</p>
                         </ul>
                       ) : null}
                       {cancellableConflicts.length === 0 && eventConflicts.length === 0 ? (
-                        <p className="text-sm text-lavender-700 bg-lavender-50 border border-lavender-100 rounded-lg px-3 py-2">
+                        <p className="text-sm text-violet-700 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2">
                           {t("schedule.event.noConflicts")}
                         </p>
                       ) : cancellableConflicts.length > 0 ? (
@@ -519,7 +519,7 @@ export default function CreateCalendarEventDialog({
                             const key = conflictKey(conflict);
                             const checked = selectedConflictKeys.has(key);
                             return (
-                              <li key={key} className="flex items-start gap-2 p-2 rounded-lg border border-ink-100">
+                              <li key={key} className="flex items-start gap-2 p-2 rounded-lg border border-slate-100">
                                 <input
                                   type="checkbox"
                                   checked={checked}
@@ -534,12 +534,12 @@ export default function CreateCalendarEventDialog({
                                   className="mt-0.5"
                                 />
                                 <div className="min-w-0">
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-500">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                                     {conflict.kind === "group"
                                       ? t("common.groupLesson")
                                       : t("common.personalLabel")}
                                   </p>
-                                  <p className="text-sm text-ink-800">{conflictLabel(conflict)}</p>
+                                  <p className="text-sm text-slate-800">{conflictLabel(conflict)}</p>
                                 </div>
                               </li>
                             );
@@ -555,13 +555,13 @@ export default function CreateCalendarEventDialog({
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-3 border-t border-ink-100 bg-ink-50/10">
+            <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
               {step === "preview" ? (
                 <button
                   type="button"
                   onClick={() => setStep("form")}
                   disabled={createMutation.isPending}
-                  className="px-3 py-2 text-xs font-semibold text-ink-600 hover:bg-ink-100 rounded-lg cursor-pointer"
+                  className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
                 >
                   {t("common.back")}
                 </button>
@@ -570,7 +570,7 @@ export default function CreateCalendarEventDialog({
                 type="button"
                 onClick={onClose}
                 disabled={createMutation.isPending}
-                className="px-3 py-2 text-xs font-semibold text-ink-600 hover:bg-ink-100 rounded-lg cursor-pointer"
+                className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
               >
                 {t("common.cancel")}
               </button>
@@ -579,7 +579,7 @@ export default function CreateCalendarEventDialog({
                   type="button"
                   onClick={handleCreate}
                   disabled={createRequested}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-lavender-600 hover:bg-lavender-700 disabled:opacity-50 rounded-lg cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-lg cursor-pointer"
                 >
                   {t("schedule.event.createType", {
                     type: t(
@@ -601,7 +601,7 @@ export default function CreateCalendarEventDialog({
                     unresolvedCount > 0 ||
                     (previewQuery.data != null && !previewQuery.data.success)
                   }
-                  className="px-4 py-2 text-xs font-semibold text-white bg-lavender-600 hover:bg-lavender-700 disabled:opacity-50 rounded-lg cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-lg cursor-pointer"
                 >
                   {createMutation.isPending ? t("common.saving") : confirmLabel}
                 </button>

@@ -29,10 +29,10 @@ export function FaqSection({ locale, t }: Props) {
   }));
 
   return (
-    <section id="faq" className="bg-ink-50">
+    <section id="faq" className="bg-slate-50">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="max-w-2xl">
-          <h2 className="text-2xl font-bold text-ink-900 sm:text-3xl">{t("faq.title")}</h2>
+          <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("faq.title")}</h2>
         </div>
 
         <div className="mt-8 max-w-3xl">

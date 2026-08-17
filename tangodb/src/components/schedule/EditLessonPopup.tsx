@@ -74,15 +74,15 @@ interface EditLessonPopupProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 const readOnlyCls =
-  "flex items-center gap-2 h-8 px-3 bg-ink-100 border border-ink-200 rounded-lg text-xs text-ink-700";
+  "flex items-center gap-2 h-8 px-3 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-700";
 
 const addDayBtnCls =
-  "w-full py-2 bg-ink-50 border border-dashed border-ink-300 hover:border-ink-400 rounded-lg text-ink-600 hover:bg-ink-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
+  "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
 
 const addClientRowBtnCls =
-  "w-full py-2 bg-ink-50 border border-dashed border-ink-300 hover:border-ink-400 rounded-lg text-ink-600 hover:bg-ink-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
+  "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
 
 const MAX_PERSONAL_CLIENTS = 4;
 
@@ -1019,21 +1019,21 @@ export default function EditLessonPopup({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
+            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gold-500">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
                   {lesson.kind === "group" ? t("common.groupLesson") : t("common.personalLesson")}
                 </p>
-                <h3 className="text-base font-semibold tracking-tight text-ink-900">
+                <h3 className="text-base font-semibold tracking-tight text-slate-900">
                   {t("schedule.popup.edit")}
                 </h3>
               </div>
@@ -1041,14 +1041,14 @@ export default function EditLessonPopup({
                 type="button"
                 onClick={onClose}
                 aria-label={t("common.close")}
-                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors shrink-0"
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {readOnly ? (
-              <p className="text-sm text-ink-600 bg-ink-50 border border-ink-200 rounded-lg px-3 py-2.5">
+              <p className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5">
                 {t("schedule.popup.pastReadOnly")}
               </p>
             ) : (
@@ -1065,7 +1065,7 @@ export default function EditLessonPopup({
                   <div className="field-stack">
                     <label className={labelCls}>{t("schedule.form.location")}</label>
                     <div className={readOnlyCls}>
-                      <MapPin className="w-4 h-4 text-ink-400 shrink-0" />
+                      <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                       {locationName}
                     </div>
                   </div>
@@ -1075,7 +1075,7 @@ export default function EditLessonPopup({
                   <div className="field-stack">
                     <label className={labelCls}>{t("schedule.form.location")}</label>
                     <div className={readOnlyCls}>
-                      <MapPin className="w-4 h-4 text-ink-400 shrink-0" />
+                      <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                       {locationName}
                     </div>
                   </div>
@@ -1086,7 +1086,7 @@ export default function EditLessonPopup({
                     <div className="field-stack">
                       <label className={labelCls}>{t("schedule.form.currentDate")}</label>
                       <div className={readOnlyCls}>
-                        <CalendarDays className="w-4 h-4 text-ink-400 shrink-0" />
+                        <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
                         {formatDate(lesson.date)}
                       </div>
                     </div>
@@ -1144,7 +1144,7 @@ export default function EditLessonPopup({
                           placeholder={t("groupCapacity.maxCapacityPlaceholder")}
                           className={fieldCls}
                         />
-                        <p className="text-[10px] text-ink-500 leading-relaxed">
+                        <p className="text-[10px] text-slate-400 leading-relaxed">
                           {t("groupCapacity.maxCapacityHint")}
                         </p>
                       </div>
@@ -1158,7 +1158,7 @@ export default function EditLessonPopup({
                           return (
                             <div
                               key={row.key}
-                              className="p-3 bg-ink-50 rounded-lg border border-ink-100 space-y-2"
+                              className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-2"
                             >
                               <div className="flex items-start gap-2">
                                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1194,7 +1194,7 @@ export default function EditLessonPopup({
                                   <button
                                     type="button"
                                     onClick={() => handleRemoveGroupDay(row.key)}
-                                    className="p-1.5 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 rounded-lg transition-all cursor-pointer shrink-0 mt-1"
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0 mt-1"
                                     title={t("schedule.form.removeDay")}
                                     aria-label={t("schedule.form.removeDay")}
                                   >
@@ -1203,7 +1203,7 @@ export default function EditLessonPopup({
                                 )}
                               </div>
                               {conflict && (
-                                <p className="text-[10px] text-garnet-600 font-sans">
+                                <p className="text-[10px] text-rose-600 font-sans">
                                   {t("common.conflict")}: {conflict}
                                 </p>
                               )}
@@ -1223,7 +1223,7 @@ export default function EditLessonPopup({
                     />
 
                     {groupVersionNote && (
-                      <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                      <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
                         <Info className="w-4 h-4 shrink-0 mt-0.5" />
                         <p>{groupVersionNote}</p>
                       </div>
@@ -1268,7 +1268,7 @@ export default function EditLessonPopup({
                                 <button
                                   type="button"
                                   onClick={() => setBookingClients((prev) => prev.filter((_, i) => i !== idx))}
-                                  className="mt-6 p-1.5 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 rounded-lg transition-all cursor-pointer shrink-0"
+                                  className="mt-6 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0"
                                   title={t("common.removeClient")}
                                   aria-label={t("common.removeClient")}
                                 >
@@ -1383,20 +1383,20 @@ export default function EditLessonPopup({
                     )}
 
                     {personalHasPayments && personalSlotChanged ? (
-                      <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                      <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
                         <Info className="w-4 h-4 shrink-0 mt-0.5" />
                         <p>{t("personal.edit.slotChangedWithPayments")}</p>
                       </div>
                     ) : null}
 
                     {personalDurationWarnMessage ? (
-                      <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                      <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
                         <Info className="w-4 h-4 shrink-0 mt-0.5" />
                         <p>{personalDurationWarnMessage}</p>
                       </div>
                     ) : null}
 
-                    <p className="text-xs text-ink-500 leading-relaxed">{personalEditNote}</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">{personalEditNote}</p>
                   </>
                 )}
               </div>

@@ -46,33 +46,33 @@ export default function RenterDuplicateDialog({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs" onClick={onClose} />
-      <div className="relative bg-white rounded-xl border border-ink-200 shadow-xl max-w-md w-full p-4 space-y-4">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs" onClick={onClose} />
+      <div className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full p-4 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 text-amber-700">
             <AlertTriangle className="w-5 h-5 shrink-0" />
-            <h3 className="text-base font-semibold text-ink-900">{t("renters.duplicate.title")}</h3>
+            <h3 className="text-base font-semibold text-slate-900">{t("renters.duplicate.title")}</h3>
           </div>
-          <button type="button" onClick={onClose} className="p-1 text-ink-400 hover:text-ink-700 rounded-full cursor-pointer">
+          <button type="button" onClick={onClose} className="p-1 text-slate-400 hover:text-slate-700 rounded-full cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <p className="text-sm text-ink-600">{t("renters.duplicate.message")}</p>
+        <p className="text-sm text-slate-600">{t("renters.duplicate.message")}</p>
 
         <ul className="space-y-2 max-h-48 overflow-y-auto">
           {duplicates.map((dup) => (
-            <li key={dup.id} className="flex items-center justify-between gap-2 rounded-lg border border-ink-100 bg-ink-50 px-3 py-2 text-sm">
+            <li key={dup.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm">
               <div className="min-w-0">
-                <p className="font-semibold text-ink-800 truncate">{dup.displayName}</p>
-                <p className="text-xs text-ink-500">
+                <p className="font-semibold text-slate-800 truncate">{dup.displayName}</p>
+                <p className="text-xs text-slate-500">
                   {dup.matchFields.map((f) => t(matchKey[f] ?? "renters.duplicate.matchPhone")).join(", ")}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => onOpenExisting(dup.id)}
-                className="shrink-0 text-xs font-semibold text-gold-700 hover:text-gold-800 cursor-pointer"
+                className="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
               >
                 {t("renters.duplicate.openExisting")}
               </button>
@@ -82,7 +82,7 @@ export default function RenterDuplicateDialog({
 
         {showReason ? (
           <div className="field-stack">
-            <label className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block">
+            <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
               {t("renters.duplicate.reason")}
             </label>
             <input className={fieldCls} value={reason} onChange={(e) => setReason(e.target.value)} />
