@@ -304,6 +304,7 @@ export default function PayPersonalLessonModal({
         if (lessonTariffs.some((t) => t.id === lesson.priceId)) return lesson.priceId;
         if (bookedTariff) return lesson.priceId;
         if (needsArchivedLookup && !archivedPricesFetched) return lesson.priceId;
+        return lesson.priceId;
       }
       if (current && lessonTariffs.some((t) => t.id === current)) return current;
       return lessonTariffs[0]?.id ?? "";

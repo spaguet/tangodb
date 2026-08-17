@@ -1000,6 +1000,11 @@ export default function EditLessonPopup({
               clientPayload.type === "solo"
                 ? clientPayload.clientId1
                 : payerClientId || clientPayload.clientId1,
+            ...(clientPayload.type !== "solo" &&
+            !personalHasPayments &&
+            !lesson.subscriptionId
+              ? { billingSplitMode: "equal" as const }
+              : {}),
           }
         : {};
 

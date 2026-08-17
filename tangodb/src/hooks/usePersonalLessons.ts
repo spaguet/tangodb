@@ -473,6 +473,7 @@ export function useUpdatePersonalLesson() {
       subscriptionId,
       priceId,
       payerClientId,
+      billingSplitMode,
     }: {
       id: string;
       lessonDate?: string;
@@ -492,6 +493,7 @@ export function useUpdatePersonalLesson() {
       subscriptionId?: string | null;
       priceId?: string | null;
       payerClientId?: string | null;
+      billingSplitMode?: "single_payer" | "equal";
     }) => {
       const currentDate = lessonDate;
       if (currentDate && isPersonalLessonLockedForWrite(currentDate, canEditPastSchedule)) {
@@ -522,6 +524,7 @@ export function useUpdatePersonalLesson() {
       if (subscriptionId !== undefined) payload.subscription_id = subscriptionId;
       if (priceId !== undefined) payload.price_id = priceId;
       if (payerClientId !== undefined) payload.payer_client_id = payerClientId;
+      if (billingSplitMode !== undefined) payload.billing_split_mode = billingSplitMode;
 
       if (Object.keys(payload).length === 0) {
         return { success: false as const, error: "hooks.error.noUpdateData" };
