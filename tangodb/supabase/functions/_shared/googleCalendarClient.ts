@@ -418,6 +418,7 @@ export async function listCalendarEventsPage(
     pageToken?: string | null;
     showDeleted?: boolean;
     privateExtendedProperty?: string;
+    privateExtendedProperties?: string[];
   }
 ): Promise<GoogleCalendarEventsListPage> {
   const query = new URLSearchParams();
@@ -434,7 +435,12 @@ export async function listCalendarEventsPage(
     query.set("showDeleted", "true");
   }
   if (params.privateExtendedProperty) {
-    query.set("privateExtendedProperty", params.privateExtendedProperty);
+    query.append("privateExtendedProperty", params.privateExtendedProperty);
+  }
+  if (params.privateExtendedProperties) {
+    for (const prop of params.privateExtendedProperties) {
+      query.append("privateExtendedProperty", prop);
+    }
   }
 
   const res = await fetch(

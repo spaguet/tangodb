@@ -5,9 +5,10 @@ import {
 } from "../_shared/http.ts";
 import {
   createGoogleCalendar,
+  listGoogleCalendars,
   loadGoogleOAuthConfigOrThrow,
-  mapCalendarApiError,
   obtainAccessTokenForAccount,
+  mapCalendarApiError,
 } from "../_shared/googleCalendarClient.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
@@ -96,6 +97,33 @@ Deno.serve(async (req) => {
   try {
     const config = await loadGoogleOAuthConfigOrThrow();
     const accessToken = await obtainAccessTokenForAccount(admin, config, googleAccountId, userId);
+
+    const existingCalendars = await listGoogleCalendars(accessToken);
+    const existing = existingCalendars.find(
+      (cal) => cal.summary.trim() === summary && cal.selectable
+    );
+    if (existing) {
+      logEvent("gcal_create_calendar_reuse", {
+        user_id: userId,
+        google_account_id: googleAccountId,
+        organization_id: organizationId,
+        calendar_id: existing.id,
+      });
+
+      return jsonResponse({
+        ok: true,
+        reused: true,
+        calendar: {
+          id: existing.id,
+          summary: existing.summary,
+          timeZone: existing.timeZone,
+          accessRole: existing.accessRole,
+          selectable: existing.selectable,
+          primary: existing.primary,
+        },
+      }, 200, req);
+    }
+
     const calendar = await createGoogleCalendar(accessToken, summary, timeZone);
 
     logEvent("gcal_create_calendar", {

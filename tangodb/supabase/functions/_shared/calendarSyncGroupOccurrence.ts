@@ -25,8 +25,10 @@ import {
   upsertLinkRow,
   recordBindingSuccess,
   syncEventToGoogle,
+  cleanupStaleManagedEvents,
   handleSyncJobError,
 } from "./calendarSyncCommon.ts";
+import { obtainAccessTokenForGoogleAccount } from "./googleCalendarClient.ts";
 import type { GoogleOAuthConfig } from "./googleOAuth.ts";
 import { logEvent } from "./supabase.ts";
 
@@ -37,6 +39,7 @@ type ScheduleSlotRow = {
   time: string;
   time_end: string;
   group_name: string | null;
+  discipline_id: string | null;
   teacher_member_id: string | null;
   valid_from: string | null;
   valid_to: string | null;
@@ -48,6 +51,53 @@ function isoDayOfWeek(dateStr: string): number {
   const d = new Date(`${dateStr}T12:00:00`);
   const jsDay = d.getUTCDay();
   return jsDay === 0 ? 7 : jsDay;
+}
+
+async function cleanupOverlappingGroupSlotEvents(
+  admin: SupabaseClient,
+  accessToken: string,
+  calendarId: string,
+  slot: ScheduleSlotRow,
+  occurrenceDate: string,
+  keepEventId: string
+): Promise<void> {
+  if (!slot.teacher_member_id) return;
+
+  const { data: overlapping } = await admin
+    .from("schedule_slots")
+    .select("id, day_of_week, time, time_end, group_name, discipline_id, valid_from, valid_to")
+    .eq("organization_id", slot.organization_id)
+    .eq("teacher_member_id", slot.teacher_member_id)
+    .eq("time", slot.time)
+    .eq("time_end", slot.time_end)
+    .neq("id", slot.id);
+
+  const overlaps = (overlapping ?? []) as Array<{
+    id: string;
+    day_of_week: number;
+    time: string;
+    time_end: string;
+    group_name: string | null;
+    discipline_id: string | null;
+    valid_from: string | null;
+    valid_to: string | null;
+  }>;
+
+  const slotGroup = (slot.group_name ?? "").trim().toLowerCase();
+  const slotDisciplineId = slot.discipline_id ?? null;
+
+  for (const other of overlaps) {
+    const otherGroup = (other.group_name ?? "").trim().toLowerCase();
+    if (slotGroup && otherGroup && slotGroup !== otherGroup) continue;
+    if (!slotGroup && !otherGroup && slotDisciplineId !== other.discipline_id) continue;
+    if (!isGroupSlotOccurrenceDate(other as ScheduleSlotRow, occurrenceDate)) continue;
+
+    await cleanupStaleManagedEvents(accessToken, calendarId, {
+      sourceType: "group_occurrence",
+      sourceId: other.id,
+      occurrenceKey: occurrenceDate,
+    }, keepEventId);
+  }
 }
 
 export function isGroupSlotOccurrenceDate(slot: ScheduleSlotRow, occurrenceDate: string): boolean {
@@ -80,7 +130,7 @@ async function loadScheduleSlot(
   const { data } = await admin
     .from("schedule_slots")
     .select(
-      "id, organization_id, day_of_week, time, time_end, group_name, teacher_member_id, valid_from, valid_to, disciplines(name), locations(name)"
+      "id, organization_id, day_of_week, time, time_end, group_name, discipline_id, teacher_member_id, valid_from, valid_to, disciplines(name), locations(name)"
     )
     .eq("organization_id", organizationId)
     .eq("id", slotId)
@@ -265,6 +315,30 @@ export async function upsertGroupOccurrence(
       desiredHash,
       deterministicEventId,
       currentLink
+    );
+
+    const accessToken = await obtainAccessTokenForGoogleAccount(
+      admin,
+      config,
+      binding.google_account_id
+    );
+    await cleanupStaleManagedEvents(
+      accessToken,
+      binding.calendar_id,
+      {
+        sourceType: "group_occurrence",
+        sourceId: slot.id,
+        occurrenceKey: occurrenceDate,
+      },
+      eventId
+    );
+    await cleanupOverlappingGroupSlotEvents(
+      admin,
+      accessToken,
+      binding.calendar_id,
+      slot,
+      occurrenceDate,
+      eventId
     );
 
     await upsertLinkRow(admin, {

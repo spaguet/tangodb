@@ -10,6 +10,7 @@ import {
   getCalendarEvent,
   GoogleCalendarApiError,
   insertCalendarEvent,
+  listCalendarEventsPage,
   obtainAccessTokenForGoogleAccount,
   updateCalendarEvent,
 } from "./googleCalendarClient.ts";
@@ -26,7 +27,7 @@ export type OutboxJob = {
   source_id: string;
   occurrence_date: string | null;
   dedupe_key: string;
-  operation: "upsert" | "delete" | "reconcile_member" | "incremental_sync";
+  operation: "upsert" | "delete" | "reconcile_member" | "refresh_member" | "incremental_sync";
   attempt_count: number;
 };
 
@@ -735,6 +736,55 @@ export async function recordBindingError(
       updated_at: nowIso,
     })
     .eq("id", bindingId);
+}
+
+/** Deletes duplicate managed events on a calendar that share the same CRM source keys. */
+export async function cleanupStaleManagedEvents(
+  accessToken: string,
+  calendarId: string,
+  filters: {
+    sourceType: string;
+    sourceId: string;
+    occurrenceKey?: string | null;
+  },
+  keepEventId: string
+): Promise<void> {
+  const privateExtendedProperties = [
+    "managedBy=tangodb",
+    `sourceType=${filters.sourceType}`,
+    `sourceId=${filters.sourceId}`,
+  ];
+  if (filters.occurrenceKey) {
+    privateExtendedProperties.push(`occurrenceKey=${filters.occurrenceKey}`);
+  }
+
+  let pageToken: string | null | undefined = undefined;
+  while (true) {
+    const page = await listCalendarEventsPage(accessToken, calendarId, {
+      privateExtendedProperties,
+      pageToken,
+      showDeleted: false,
+    });
+
+    for (const item of page.items) {
+      if (item.status === "cancelled") continue;
+      if (item.id === keepEventId) continue;
+      try {
+        await deleteCalendarEvent(accessToken, calendarId, item.id);
+      } catch (err) {
+        if (
+          err instanceof GoogleCalendarApiError &&
+          (err.status === 404 || err.status === 410)
+        ) {
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!page.nextPageToken) break;
+    pageToken = page.nextPageToken;
+  }
 }
 
 export async function syncEventToGoogle(

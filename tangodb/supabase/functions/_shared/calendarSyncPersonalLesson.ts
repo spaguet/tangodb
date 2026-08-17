@@ -28,10 +28,14 @@ import {
   recordBindingSuccess,
   recreateMemberBindingCalendar,
   syncEventToGoogle,
+  cleanupStaleManagedEvents,
   handleSyncJobError,
 } from "./calendarSyncCommon.ts";
+import {
+  GoogleCalendarApiError,
+  obtainAccessTokenForGoogleAccount,
+} from "./googleCalendarClient.ts";
 import type { GoogleOAuthConfig } from "./googleOAuth.ts";
-import { GoogleCalendarApiError } from "./googleCalendarClient.ts";
 import { logEvent } from "./supabase.ts";
 import {
   deleteGroupOccurrence,
@@ -286,6 +290,21 @@ export async function upsertPersonalLesson(
       currentLink
     );
 
+    const accessToken = await obtainAccessTokenForGoogleAccount(
+      admin,
+      config,
+      targetBinding.google_account_id
+    );
+    await cleanupStaleManagedEvents(
+      accessToken,
+      targetBinding.calendar_id,
+      {
+        sourceType: "personal_lesson",
+        sourceId: lesson.id,
+      },
+      eventId
+    );
+
     await upsertLinkRow(admin, {
       organizationId: job.organization_id,
       memberBindingId: targetBinding.id,
@@ -346,11 +365,14 @@ async function runReconcileMember(
   admin: SupabaseClient,
   job: OutboxJob
 ): Promise<void> {
+  const forceRefresh = job.operation === "refresh_member";
+
   const { data: personalResult, error: personalError } = await admin.rpc(
     "execute_member_personal_lessons_reconcile",
     {
       p_organization_id: job.organization_id,
       p_member_id: job.source_id,
+      p_force_refresh: forceRefresh,
     }
   );
 
@@ -363,6 +385,7 @@ async function runReconcileMember(
     {
       p_organization_id: job.organization_id,
       p_member_id: job.source_id,
+      p_force_refresh: forceRefresh,
     }
   );
 
@@ -405,7 +428,7 @@ export async function processCalendarSyncJob(
     return;
   }
 
-  if (job.operation === "reconcile_member") {
+  if (job.operation === "reconcile_member" || job.operation === "refresh_member") {
     await runReconcileMember(admin, job);
     return;
   }

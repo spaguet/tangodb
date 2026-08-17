@@ -60,27 +60,33 @@ export function formatClientLabel(
   return fn;
 }
 
-export function buildPersonalLessonSummary(disciplineName: string | null): string {
+export function buildPersonalLessonSummary(
+  clientLabels: string[],
+  disciplineName: string | null
+): string {
+  const clients =
+    clientLabels.length > 0 ? clientLabels.join(", ") : "Клиент";
   const discipline = (disciplineName ?? "").trim();
-  if (discipline) return `Персональный урок · ${discipline}`;
-  return "Персональный урок";
+  if (discipline) return `${clients} · ${discipline}`;
+  return clients;
 }
 
 export function buildPersonalLessonDescription(input: {
-  clientLabels: string[];
+  locationName: string | null;
   organizationName: string;
   scheduleUrl: string;
 }): string {
-  const clientLine =
-    input.clientLabels.length > 0
-      ? `Клиент: ${input.clientLabels.join(", ")}`
-      : "Клиент: —";
-  return [
-    clientLine,
+  const lines: string[] = [];
+  const location = (input.locationName ?? "").trim();
+  if (location) {
+    lines.push(`Локация: ${location}`);
+  }
+  lines.push(
     `Организация: ${input.organizationName}`,
     `Открыть в CRM: ${input.scheduleUrl}`,
-    "Управляется TangoDB. Изменяйте урок в CRM.",
-  ].join("\n");
+    "Управляется TangoDB. Изменяйте урок в CRM."
+  );
+  return lines.join("\n");
 }
 
 export function buildPersonalLessonGoogleEvent(input: {
@@ -97,7 +103,7 @@ export function buildPersonalLessonGoogleEvent(input: {
   scheduleUrl: string;
   cancelledMark?: boolean;
 }): GoogleCalendarEventResource {
-  let summary = buildPersonalLessonSummary(input.disciplineName);
+  let summary = buildPersonalLessonSummary(input.clientLabels, input.disciplineName);
   if (input.cancelledMark) {
     summary = `Отменено: ${summary}`;
   }
@@ -105,11 +111,10 @@ export function buildPersonalLessonGoogleEvent(input: {
   return {
     summary,
     description: buildPersonalLessonDescription({
-      clientLabels: input.clientLabels,
+      locationName: input.locationName,
       organizationName: input.organizationName,
       scheduleUrl: input.scheduleUrl,
     }),
-    location: input.locationName?.trim() || undefined,
     start: toGoogleDateTime(input.date, input.timeStart, input.timeZone),
     end: toGoogleDateTime(input.date, input.timeEnd, input.timeZone),
     transparency: input.cancelledMark ? "transparent" : "opaque",
@@ -167,14 +172,21 @@ export function buildGroupOccurrenceSummary(
 }
 
 export function buildGroupOccurrenceDescription(input: {
+  locationName: string | null;
   organizationName: string;
   scheduleUrl: string;
 }): string {
-  return [
+  const lines: string[] = [];
+  const location = (input.locationName ?? "").trim();
+  if (location) {
+    lines.push(`Локация: ${location}`);
+  }
+  lines.push(
     `Организация: ${input.organizationName}`,
     `Открыть в CRM: ${input.scheduleUrl}`,
-    "Управляется TangoDB. Изменяйте урок в CRM.",
-  ].join("\n");
+    "Управляется TangoDB. Изменяйте урок в CRM."
+  );
+  return lines.join("\n");
 }
 
 export function buildGroupOccurrenceGoogleEvent(input: {
@@ -193,10 +205,10 @@ export function buildGroupOccurrenceGoogleEvent(input: {
   return {
     summary: buildGroupOccurrenceSummary(input.groupName, input.disciplineName),
     description: buildGroupOccurrenceDescription({
+      locationName: input.locationName,
       organizationName: input.organizationName,
       scheduleUrl: input.scheduleUrl,
     }),
-    location: input.locationName?.trim() || undefined,
     start: toGoogleDateTime(input.occurrenceDate, input.timeStart, input.timeZone),
     end: toGoogleDateTime(input.occurrenceDate, input.timeEnd, input.timeZone),
     transparency: "opaque",
@@ -226,6 +238,7 @@ export function buildEventSessionDescription(input: {
   guestTeacher: string | null;
   organizer: string | null;
   comment: string | null;
+  locationName: string | null;
   organizationName: string;
   scheduleUrl: string;
 }): string {
@@ -242,6 +255,10 @@ export function buildEventSessionDescription(input: {
   }
   if (input.comment?.trim()) {
     lines.push(`Комментарий: ${input.comment.trim()}`);
+  }
+  const location = (input.locationName ?? "").trim();
+  if (location) {
+    lines.push(`Локация: ${location}`);
   }
 
   lines.push(`Организация: ${input.organizationName}`);
@@ -275,10 +292,10 @@ export function buildEventSessionGoogleEvent(input: {
       guestTeacher: input.guestTeacher,
       organizer: input.organizer,
       comment: input.comment,
+      locationName: input.locationName,
       organizationName: input.organizationName,
       scheduleUrl: input.scheduleUrl,
     }),
-    location: input.locationName?.trim() || undefined,
     start: toGoogleDateTime(input.sessionDate, input.timeStart, input.timeZone),
     end: toGoogleDateTime(input.sessionDate, input.timeEnd, input.timeZone),
     transparency: "opaque",
