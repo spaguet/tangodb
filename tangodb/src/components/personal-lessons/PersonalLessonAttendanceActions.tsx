@@ -5,6 +5,7 @@ import {
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
 import { useI18n } from "../../hooks/useI18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { PersonalLesson } from "../../types";
 
 interface PersonalLessonAttendanceActionsProps {
@@ -33,7 +34,7 @@ export default function PersonalLessonAttendanceActions({
     }
     const res = await markPersonal.mutateAsync({ lessonId: lesson.id, status });
     if (!res.success) {
-      toast(res.error ?? t("common.saveMarkFailed"), "error");
+      toast(resolveMutationError(res.error, "common.saveMarkFailed", t), "error");
       return;
     }
     toast(t("common.markSaved"), "success");

@@ -49,6 +49,7 @@ import {
   tariffParticipantType,
 } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { I18nKey } from "../../lib/i18n/keys";
 import type { Client, Price, Subscription } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
@@ -760,7 +761,7 @@ export default function PersonalLessonSaleForm({
         });
 
         if (!res.success) {
-          toast(res.error ?? t("common.bookFailed"), "error");
+          toast(resolveMutationError(res.error, "common.bookFailed", t), "error");
           return;
         }
         if (res.ids) {
@@ -824,7 +825,7 @@ export default function PersonalLessonSaleForm({
               setVenueConfirmStatus(paymentRes.venueRuleStatus);
               return;
             }
-            toast(paymentRes.error ?? t("common.bookedPaymentFailed"), "error");
+            toast(resolveMutationError(paymentRes.error, "common.bookedPaymentFailed", t), "error");
             onSuccess();
             onClose?.();
             return;
@@ -879,7 +880,7 @@ export default function PersonalLessonSaleForm({
         lessonDurationMinutes: plan.billing?.lessonMinutes ?? null,
       });
       if (!paymentRes.success) {
-        toast(paymentRes.error ?? t("common.bookedPaymentFailed"), "error");
+        toast(resolveMutationError(paymentRes.error, "common.bookedPaymentFailed", t), "error");
         return;
       }
     }

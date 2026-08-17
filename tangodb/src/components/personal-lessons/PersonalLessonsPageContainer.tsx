@@ -21,6 +21,7 @@ import {
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
 import { useI18n } from "../../hooks/useI18n";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { PersonalDisplayLesson, PersonalLesson } from "../../types";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
@@ -233,7 +234,7 @@ export default function PersonalLessonsPageContainer({
       lessonDate: deleteTarget.date,
     });
     if (!res.success) {
-      toast(res.error ?? t("personal.error.deleteFailed"), "error");
+      toast(resolveMutationError(res.error, "personal.error.deleteFailed", t), "error");
     } else {
       toast(t("personal.success.deleted"), "success");
       setDeleteTarget(null);
@@ -251,7 +252,7 @@ export default function PersonalLessonsPageContainer({
       lessonDate: deleteTarget.date,
     });
     if (!res.success) {
-      toast(res.error ?? t("personal.error.deleteFailed"), "error");
+      toast(resolveMutationError(res.error, "personal.error.deleteFailed", t), "error");
     } else {
       toast(t("schedule.success.personalSeriesDeleted", { count: res.deletedCount }), "success");
       setDeleteTarget(null);
