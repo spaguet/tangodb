@@ -267,11 +267,11 @@ function PaymentRow({
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
-      <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
         <button
           type="button"
           onClick={onToggle}
-          className="min-w-0 text-left cursor-pointer"
+          className="min-w-0 text-left cursor-pointer col-start-1"
           aria-expanded={expanded}
         >
           <div className="flex items-start gap-2">
@@ -309,32 +309,34 @@ function PaymentRow({
         >
           {methodLabel}
         </button>
-        <button
-          type="button"
-          onClick={onToggle}
-          className={`text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer ${
-            isRefund ? "text-rose-600" : "text-indigo-700"
-          }`}
-        >
-          {amountLabel}
-        </button>
-        {canCorrect &&
-          !isRefund &&
-          payment.correctionStatus !== "voided" &&
-          payment.correctionStatus !== "replaced" && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCorrect(payment);
-              }}
-              aria-label={translate("common.edit")}
-              title={translate("common.edit")}
-              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 bg-white cursor-pointer transition-colors"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-          )}
+        <div className="flex items-center justify-end gap-2 col-start-2 sm:contents">
+          <button
+            type="button"
+            onClick={onToggle}
+            className={`text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer ${
+              isRefund ? "text-rose-600" : "text-indigo-700"
+            }`}
+          >
+            {amountLabel}
+          </button>
+          {canCorrect &&
+            !isRefund &&
+            payment.correctionStatus !== "voided" &&
+            payment.correctionStatus !== "replaced" && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCorrect(payment);
+                }}
+                aria-label={translate("common.edit")}
+                title={translate("common.edit")}
+                className="w-8 h-8 shrink-0 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 bg-white cursor-pointer transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
+        </div>
       </div>
       {expanded && (
         <div className="px-3 pb-3 pt-0 ml-5 sm:ml-6">
@@ -506,7 +508,7 @@ function RentalPaymentRow({
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
-      <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
         <button type="button" onClick={onToggle} className="min-w-0 text-left cursor-pointer" aria-expanded={expanded}>
           <div className="flex items-start gap-2">
             <ChevronDown
@@ -535,28 +537,30 @@ function RentalPaymentRow({
         <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer">
           {methodLabel}
         </button>
-        <button
-          type="button"
-          onClick={onToggle}
-          className={`text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer ${
-            isOutflow ? "text-rose-600" : "text-amber-700"
-          }`}
-        >
-          {isOutflow ? "−" : ""}
-          {formatCurrency(Math.abs(payment.signedAmount))}
-        </button>
-        {showCorrect ? (
+        <div className="flex items-center justify-end gap-2 col-start-2 sm:contents">
           <button
             type="button"
-            onClick={() => onCorrect(correctionTarget)}
-            className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg cursor-pointer"
-            aria-label={translate("corrections.payment.title")}
+            onClick={onToggle}
+            className={`text-sm font-sans font-semibold text-right whitespace-nowrap cursor-pointer ${
+              isOutflow ? "text-rose-600" : "text-amber-700"
+            }`}
           >
-            <Pencil className="w-3.5 h-3.5" />
+            {isOutflow ? "−" : ""}
+            {formatCurrency(Math.abs(payment.signedAmount))}
           </button>
-        ) : (
-          <span className="hidden sm:block w-8" />
-        )}
+          {showCorrect ? (
+            <button
+              type="button"
+              onClick={() => onCorrect(correctionTarget)}
+              className="w-8 h-8 shrink-0 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-slate-200 bg-white cursor-pointer"
+              aria-label={translate("corrections.payment.title")}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <span className="hidden sm:block w-8" />
+          )}
+        </div>
       </div>
       {expanded ? (
         <div className="px-3 pb-3 pt-0 border-t border-slate-50 bg-slate-50/40">

@@ -1198,16 +1198,16 @@ export default function SubscriptionsPanel({
                           />
                         ) : null}
 
-                        <div className="flex items-center justify-between pt-1 text-xs flex-wrap gap-2">
+                        <div className="flex flex-col gap-2 pt-1 text-xs sm:flex-row sm:items-center sm:justify-between">
                           {isMonthly ? (
-                            <span className="text-slate-400">{t("subscriptions.card.expiresAt", { date: sub.expiresAt || "—" })}</span>
+                            <span className="text-slate-400 min-w-0">{t("subscriptions.card.expiresAt", { date: sub.expiresAt || "—" })}</span>
                           ) : isAlarm ? (
-                            <span className="text-rose-600 font-semibold">{t("subscriptions.card.suggestRenewal")}</span>
+                            <span className="text-rose-600 font-semibold min-w-0">{t("subscriptions.card.suggestRenewal")}</span>
                           ) : (
-                            <span className="text-slate-400">{t("subscriptions.card.balanceOk")}</span>
+                            <span className="text-slate-400 min-w-0">{t("subscriptions.card.balanceOk")}</span>
                           )}
 
-                          <div className="flex items-center gap-3">
+                          <div className="flex flex-col gap-2 w-full min-w-0 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:justify-end">
                             {canReplacePartnerSubscription ? (
                               <button
                                 type="button"

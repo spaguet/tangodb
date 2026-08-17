@@ -110,7 +110,7 @@ function DebtorRow({
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
-      <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
         <button type="button" onClick={onToggle} className="min-w-0 text-left cursor-pointer" aria-expanded={expanded}>
           <div className="flex items-start gap-2">
             <ChevronDown
@@ -138,48 +138,50 @@ function DebtorRow({
         >
           {formatDebtorDetail(entry, t, formatDate)}
         </button>
-        <button
-          type="button"
-          onClick={onToggle}
-          className="text-sm font-sans font-semibold text-right whitespace-nowrap text-rose-700 cursor-pointer"
-        >
-          {amountLabel}
-        </button>
-        <div className="flex flex-col items-end gap-1.5 sm:items-end">
-          {canPayPersonal ? (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPayByTariff();
-                }}
-                className={btnAddCls}
+        <div className="flex flex-col items-end gap-1.5 col-start-2 sm:contents">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="text-sm font-sans font-semibold text-right whitespace-nowrap text-rose-700 cursor-pointer"
+          >
+            {amountLabel}
+          </button>
+          <div className="flex flex-col items-end gap-1.5 sm:col-start-5">
+            {canPayPersonal ? (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPayByTariff();
+                  }}
+                  className={btnAddCls}
+                >
+                  <Coins className="w-3.5 h-3.5" />
+                  {t("finance.debtors.payByTariff")}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPayOutstanding();
+                  }}
+                  className={btnOpenCls}
+                >
+                  <Coins className="w-3.5 h-3.5" />
+                  {t("finance.debtors.payOutstanding")}
+                </button>
+              </>
+            ) : entry.kind === "rental" && entry.renterId ? (
+              <Link
+                to={`/renters/${entry.renterId}`}
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-lg"
               >
-                <Coins className="w-3.5 h-3.5" />
-                {t("finance.debtors.payByTariff")}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPayOutstanding();
-                }}
-                className={btnOpenCls}
-              >
-                <Coins className="w-3.5 h-3.5" />
-                {t("finance.debtors.payOutstanding")}
-              </button>
-            </>
-          ) : entry.kind === "rental" && entry.renterId ? (
-            <Link
-              to={`/renters/${entry.renterId}`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-lg"
-            >
-              {t("finance.debtors.openRenter")}
-            </Link>
-          ) : null}
+                {t("finance.debtors.openRenter")}
+              </Link>
+            ) : null}
+          </div>
         </div>
       </div>
 

@@ -106,26 +106,31 @@ export default function FinanceRentalInboxPage() {
   return (
     <div className="panel-page-stack">
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Inbox className="w-4 h-4 text-indigo-600" />
-            <h2 className="font-sans text-sm font-semibold text-slate-800">{t("rentalInbox.title")}</h2>
+        <div className="px-4 py-3 border-b border-slate-100">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Inbox className="w-4 h-4 text-indigo-600 shrink-0" />
+              <h2 className="font-sans text-sm font-semibold text-slate-800 truncate">{t("rentalInbox.title")}</h2>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs text-slate-500 font-sans hidden sm:inline">
+                {t("rentalInbox.asOf", { date: formatDate(orgToday) })}
+              </span>
+              {canCreateRental ? (
+                <button
+                  type="button"
+                  onClick={() => setCreateRentalOpen(true)}
+                  className={btnAddCls}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  {t("rentalInbox.createRental")}
+                </button>
+              ) : null}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-sans">
-              {t("rentalInbox.asOf", { date: formatDate(orgToday) })}
-            </span>
-            {canCreateRental ? (
-              <button
-                type="button"
-                onClick={() => setCreateRentalOpen(true)}
-                className={btnAddCls}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                {t("rentalInbox.createRental")}
-              </button>
-            ) : null}
-          </div>
+          <p className="text-xs text-slate-500 font-sans mt-1 sm:hidden">
+            {t("rentalInbox.asOf", { date: formatDate(orgToday) })}
+          </p>
         </div>
 
         <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap gap-2">
