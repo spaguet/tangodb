@@ -104,11 +104,16 @@ Deno.serve(async (req) => {
       .eq("google_subject", claims.sub)
       .maybeSingle();
 
+    const priorStatus =
+      existingForUser?.status ?? subjectOwner?.status ?? null;
+    const requiresFreshRefreshToken =
+      priorStatus === "revoked" || priorStatus === "error";
+
     let encryptedToken: Uint8Array | null = null;
     const refreshToken = tokens.refresh_token;
     if (refreshToken) {
       encryptedToken = await encryptRefreshToken(config.encryptionKey, refreshToken);
-    } else {
+    } else if (!requiresFreshRefreshToken) {
       encryptedToken =
         byteaToUint8Array(existingForUser?.encrypted_refresh_token) ??
         byteaToUint8Array(subjectOwner?.encrypted_refresh_token);
@@ -136,6 +141,8 @@ Deno.serve(async (req) => {
       updated_at: nowIso,
     };
 
+    let savedAccountId = accountId as string | undefined;
+
     if (accountId) {
       const { error: updateError } = await admin
         .from("user_google_accounts")
@@ -145,18 +152,59 @@ Deno.serve(async (req) => {
         throw updateError;
       }
     } else {
-      const { error: insertError } = await admin.from("user_google_accounts").insert(row);
+      const { data: inserted, error: insertError } = await admin
+        .from("user_google_accounts")
+        .insert(row)
+        .select("id")
+        .single();
       if (insertError) {
         if (insertError.code === "23505") {
           return safeRedirect(returnUrl, { ok: false, reason: "google_account_in_use" });
         }
         throw insertError;
       }
+      savedAccountId = inserted.id as string;
+    }
+
+    if (savedAccountId) {
+      const { data: bindings } = await admin
+        .from("member_google_calendar_bindings")
+        .select("organization_id, organization_member_id")
+        .eq("google_account_id", savedAccountId)
+        .eq("enabled", true);
+
+      for (const binding of bindings ?? []) {
+        const { error: reconcileError } = await admin.rpc("enqueue_calendar_sync", {
+          p_organization_id: binding.organization_id,
+          p_source_type: "personal_lesson",
+          p_source_id: binding.organization_member_id,
+          p_occurrence_date: null,
+          p_operation: "reconcile_member",
+        });
+        if (reconcileError) {
+          logEvent("gcal_auth_reconcile_enqueue_error", {
+            google_account_id: savedAccountId,
+            organization_member_id: binding.organization_member_id,
+            message: reconcileError.message,
+          });
+        }
+      }
+
+      await admin
+        .from("member_google_calendar_bindings")
+        .update({
+          last_error_code: null,
+          last_error_at: null,
+          updated_at: nowIso,
+        })
+        .eq("google_account_id", savedAccountId)
+        .eq("enabled", true);
     }
 
     logEvent("gcal_auth_connected", {
       user_id: oauthState.user_id as string,
       google_email: claims.email,
+      reconnected: requiresFreshRefreshToken,
     });
 
     return safeRedirect(returnUrl, { ok: true });

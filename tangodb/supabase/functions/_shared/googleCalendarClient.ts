@@ -67,10 +67,6 @@ async function refreshAccessTokenForAccountRow(
   googleAccountId: string,
   row: GoogleAccountRow
 ): Promise<string> {
-  if (row.status === "revoked") {
-    throw new GoogleCalendarApiError(401, "token_revoked", "Google account requires reconnection");
-  }
-
   const tokenBytes = byteaToUint8Array(row.encrypted_refresh_token);
   if (!tokenBytes) {
     throw new GoogleCalendarApiError(401, "token_missing", "No stored credential for Google account");

@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-17 — Google Calendar: «requires reconnection» после переподключения
+
+- **Ошибка:** в карточке урока оставалась ошибка `Google account requires reconnection`, хотя пользователь прошёл OAuth заново.
+- **Причина:** callback помечал аккаунт `active`, даже если Google не вернул новый `refresh_token`, и переиспользовал отозванный credential; worker при `status=revoked` не пытался refresh; reconcile после reconnect не запускался.
+- **Как избежать:** при `revoked`/`error` требовать новый refresh token в callback; всегда пробовать refresh по сохранённому credential; после reconnect enqueue `reconcile_member` и auto-sync в Integrations.
+
 ### 2026-08-15 — Deep link в расписание открывал раздел, а не сетку с записью
 
 - **Дата:** 2026-08-15

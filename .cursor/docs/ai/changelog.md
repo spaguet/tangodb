@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-17 — fix: микропатч **2.8.14** — Google Calendar reconnect: OAuth callback требует новый refresh token при `revoked`/`error`, не помечает аккаунт active со старым токеном; после reconnect — reconcile outbox и сброс binding errors; worker снова пробует refresh вместо мгновенного `token_revoked`; Integrations auto-sync после OAuth success.
+
 2026-08-17 — fix: микропатч **2.8.13** — оплата персонального урока после добавления второго клиента: `update_personal_lesson` переключает `billing_split_mode=equal` и пересинхронизирует charges; `PayPersonalLessonModal` не сбрасывает тариф записи на первый из прайса при загрузке. Миграция `20260923000001`.
 
 2026-08-17 — feat: микропатч **2.8.12** — редактирование персонального урока: еженедельное повторение (как при создании из расписания); общий хелпер `expandPersonalLessonWeeklySlots`.

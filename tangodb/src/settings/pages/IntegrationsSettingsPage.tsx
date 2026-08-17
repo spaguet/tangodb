@@ -67,7 +67,11 @@ export default function IntegrationsSettingsPage() {
 
     if (gcal === "success") {
       toast(t("integrations.googleCalendar.oauthSuccess"), "success");
-      void invalidateAll();
+      void invalidateAll().then(() => {
+        if (memberId) {
+          syncFuture.mutate(memberId);
+        }
+      });
     } else if (gcal === "error") {
       const reason = searchParams.get("reason") ?? "unknown";
       const reasonKey = `integrations.googleCalendar.oauthError.${reason}` as I18nKey;
@@ -78,7 +82,7 @@ export default function IntegrationsSettingsPage() {
     searchParams.delete("gcal");
     searchParams.delete("reason");
     setSearchParams(searchParams, { replace: true });
-  }, [searchParams, setSearchParams, toast, t, invalidateAll]);
+  }, [searchParams, setSearchParams, toast, t, invalidateAll, memberId, syncFuture]);
 
   const loadCalendars = useCallback(
     async (googleAccountId: string) => {
