@@ -19,6 +19,7 @@ import {
 import { findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
 import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
 import {
+  expandPersonalLessonWeeklySlots,
   expandWeeklyRecurrence,
   expandWeeklyRecurrenceByWeekCount,
   findLessonEntriesBeyondEndDate,
@@ -109,34 +110,6 @@ function participantTypeFromCount(count: number): "solo" | "pair" | "trio" | "qu
 }
 
 const WEEK_COUNT_OPTIONS = [2, 3, 4, 6, 8, 12] as const;
-
-function expandScheduleCellWeeklySlots(
-  startDate: string,
-  timeStart: string,
-  timeEnd: string,
-  repeatWeekly: boolean,
-  weeklyEndMode: "date" | "weeks",
-  weeklyWeekCount: number,
-  weeklyEndDate: string
-): PersonalLessonSlot[] {
-  if (!repeatWeekly) {
-    return [{ date: startDate, timeStart, timeEnd }];
-  }
-
-  const rows = uniqueWeeklyRecurrenceRows([
-    {
-      dayOfWeek: jsDayToIsoDow(new Date(`${startDate}T12:00:00`).getDay()),
-      timeStart,
-      timeEnd,
-    },
-  ]);
-
-  if (weeklyEndMode === "weeks") {
-    return expandWeeklyRecurrenceByWeekCount(startDate, weeklyWeekCount, rows);
-  }
-
-  return expandWeeklyRecurrence(startDate, weeklyEndDate, rows);
-}
 
 function validateBookingClients(
   clients: BookingClientField[],
@@ -282,15 +255,12 @@ export default function PersonalLessonSaleForm({
   const freebusySlots = useMemo(() => {
     if (isScheduleCell) {
       if (!prefill?.date) return [];
-      return expandScheduleCellWeeklySlots(
-        prefill.date,
-        timeStart,
-        timeEnd,
+      return expandPersonalLessonWeeklySlots(prefill.date, timeStart, timeEnd, {
         repeatWeekly,
-        weeklyEndMode,
-        weeklyWeekCount,
-        weeklyEndDate
-      ).filter((slot) => slot.date && slot.timeStart && slot.timeEnd);
+        endMode: weeklyEndMode,
+        weekCount: weeklyWeekCount,
+        endDate: weeklyEndDate,
+      }).filter((slot) => slot.date && slot.timeStart && slot.timeEnd);
     }
 
     return lessonEntries.filter((slot) => slot.date && slot.timeStart && slot.timeEnd);
@@ -522,15 +492,12 @@ export default function PersonalLessonSaleForm({
         }
       }
 
-      const slots = expandScheduleCellWeeklySlots(
-        prefill.date,
-        timeStart,
-        timeEnd,
+      const slots = expandPersonalLessonWeeklySlots(prefill.date, timeStart, timeEnd, {
         repeatWeekly,
-        weeklyEndMode,
-        weeklyWeekCount,
-        weeklyEndDate
-      );
+        endMode: weeklyEndMode,
+        weekCount: weeklyWeekCount,
+        endDate: weeklyEndDate,
+      });
 
       if (repeatWeekly && slots.length === 0) {
         toast(t("personal.error.noDatesGenerated"), "error");

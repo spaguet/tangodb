@@ -1472,6 +1472,7 @@ export type I18nKey =
   | "schedule.error.orgReadOnly"
   | "schedule.success.groupUpdated"
   | "schedule.success.personalUpdated"
+  | "schedule.success.personalUpdatedWithSeries"
   | "schedule.success.groupAdded"
   | "schedule.success.groupDeleted"
   | "schedule.success.oneLessonCancelled"

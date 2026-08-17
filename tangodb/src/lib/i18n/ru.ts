@@ -1539,6 +1539,7 @@ export const RU: Record<I18nKey, string> = {
   "schedule.error.orgReadOnly": "Организация в режиме только чтения",
   "schedule.success.groupUpdated": "Групповое занятие обновлено",
   "schedule.success.personalUpdated": "Персональный урок обновлён",
+  "schedule.success.personalUpdatedWithSeries": "Урок обновлён, добавлено ещё {{count}} занятий",
   "schedule.success.groupAdded": "Группа «{{name}}» добавлена в расписание",
   "schedule.success.groupDeleted": "Групповое занятие удалено из расписания",
   "schedule.success.oneLessonCancelled": "Занятие на выбранную дату отменено",

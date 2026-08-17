@@ -8,7 +8,7 @@ import {
   useUpdateGroupScheduleMetadata,
   useUpdateGroupScheduleValidity,
 } from "../../hooks/useSchedule";
-import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
+import { useAddPersonalLessons, useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
 import { usePrices } from "../../hooks/usePrices";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -28,11 +28,13 @@ import { resolveMutationError } from "../../lib/resolveMutationError";
 import { pickGroupSlotsForEdit } from "../../lib/scheduleSlotEdit";
 import {
   computeSlotValidTo,
+  defaultGroupRepeatConfig,
   inferGroupRepeatConfig,
   type GroupRepeatConfig,
 } from "../../lib/groupLessonRepeat";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
-import { durationWarning, lessonDurationMinutes, translateDurationWarning } from "../../lib/personalTariffPricing";
+import { durationWarning, billedFromTariff, lessonDurationMinutes, translateDurationWarning } from "../../lib/personalTariffPricing";
+import { expandPersonalLessonWeeklySlots } from "../../lib/personalLessonDates";
 import { addDays, getWeekRange, isScheduleDateLockedForWrite, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, canShowPaidStatus, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { useVoidPersonalLessonPayment } from "../../hooks/usePayments";
@@ -212,6 +214,7 @@ export default function EditLessonPopup({
   const addGroupSchedule = useAddGroupSchedule();
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const updatePersonalLesson = useUpdatePersonalLesson();
+  const addPersonalLessons = useAddPersonalLessons();
   const voidPersonalLessonPayment = useVoidPersonalLessonPayment();
   const updateClassMaxCapacity = useUpdateClassMaxCapacity();
   const { data: activeClients = [] } = useClients();
@@ -242,6 +245,9 @@ export default function EditLessonPopup({
   );
   const [originalRepeatConfig, setOriginalRepeatConfig] = useState<GroupRepeatConfig>(() =>
     inferGroupRepeatConfig(toISODateLocal(new Date()), toISODateLocal(new Date()))
+  );
+  const [personalRepeatConfig, setPersonalRepeatConfig] = useState<GroupRepeatConfig>(() =>
+    defaultGroupRepeatConfig()
   );
 
   const editLessonKey = useMemo(() => {
@@ -299,6 +305,7 @@ export default function EditLessonPopup({
         clientIdsFromLesson(lesson)[0] ??
         "";
       setPayerClientId(initialPayer);
+      setPersonalRepeatConfig(defaultGroupRepeatConfig());
     }
   }, [editLessonKey, lesson, scheduleSlots, teacherOptions, memberId, isTeacher, todayISO, directoryClients]);
 
@@ -453,6 +460,11 @@ export default function EditLessonPopup({
     if (!lesson) return [];
     if (lesson.kind === "personal") {
       const date = personalDate || lesson.date;
+      if (!personalListEdit && personalRepeatConfig.repeatWeekly) {
+        return expandPersonalLessonWeeklySlots(date, timeStart, timeEnd, personalRepeatConfig).filter(
+          (slot) => slot.date && slot.timeStart && slot.timeEnd
+        );
+      }
       return [{ date, timeStart, timeEnd }];
     }
     return groupSlotRows.map((row) => ({
@@ -460,7 +472,7 @@ export default function EditLessonPopup({
       timeStart: row.timeStart,
       timeEnd: row.timeEnd,
     }));
-  }, [lesson, personalDate, timeStart, timeEnd, groupSlotRows]);
+  }, [lesson, personalDate, timeStart, timeEnd, groupSlotRows, personalRepeatConfig, personalListEdit]);
 
   const resolvedTeacherForFreebusy =
     teacherMemberId || lesson?.teacherMemberId || "";
@@ -892,6 +904,57 @@ export default function EditLessonPopup({
       return;
     }
 
+    let additionalSlots: Array<{ date: string; timeStart: string; timeEnd: string }> = [];
+    if (!personalListEdit && personalRepeatConfig.repeatWeekly) {
+      if (personalRepeatConfig.endMode === "weeks" && personalRepeatConfig.weekCount < 1) {
+        toast(t("personal.error.weekCount"), "error");
+        return;
+      }
+      if (personalRepeatConfig.endMode === "date") {
+        if (!personalRepeatConfig.endDate) {
+          toast(t("personal.error.endDate"), "error");
+          return;
+        }
+        if (personalRepeatConfig.endDate < targetDate) {
+          toast(t("personal.error.endBeforeStart"), "error");
+          return;
+        }
+      }
+
+      const expandedSlots = expandPersonalLessonWeeklySlots(
+        targetDate,
+        timeStart,
+        timeEnd,
+        personalRepeatConfig
+      );
+      if (expandedSlots.length === 0) {
+        toast(t("personal.error.noDatesGenerated"), "error");
+        return;
+      }
+
+      additionalSlots = expandedSlots.filter((slot) => slot.date !== targetDate);
+      const effectiveLocationId = personalListEdit ? locationId : lesson.locationId;
+
+      for (const slot of additionalSlots) {
+        const seriesConflict = findScheduleConflict(
+          {
+            date: slot.date,
+            timeStart: slot.timeStart,
+            timeEnd: slot.timeEnd,
+            locationId: effectiveLocationId,
+          },
+          personalLessons,
+          scheduleSlots,
+          t,
+          locale
+        );
+        if (seriesConflict) {
+          toast(formatScheduleConflictToast(slot.date, seriesConflict, t, locale), "error");
+          return;
+        }
+      }
+    }
+
     let clientPayload: {
       type: "solo" | "pair" | "trio" | "quad";
       clientId1: string;
@@ -959,6 +1022,66 @@ export default function EditLessonPopup({
       return;
     }
 
+    if (additionalSlots.length > 0) {
+      const repeatClientIds = clientPayload
+        ? [
+            clientPayload.clientId1,
+            clientPayload.clientId2,
+            clientPayload.clientId3,
+            clientPayload.clientId4,
+          ]
+        : clientIdsFromLesson(lesson);
+
+      const repeatType = clientPayload?.type ?? participantTypeFromCount(repeatClientIds.filter(Boolean).length);
+      const repeatPayerId =
+        clientPayload?.type === "solo"
+          ? repeatClientIds[0] ?? ""
+          : canReadClients
+            ? payerClientId || (repeatClientIds[0] ?? "")
+            : lesson.payerClientId ?? lesson.clientId1 ?? repeatClientIds[0] ?? "";
+
+      let repeatLessonPrice = lesson.price ?? 0;
+      if (personalLessonContext?.priceId && personalTariff) {
+        repeatLessonPrice = billedFromTariff(
+          personalTariff.price,
+          personalLessonMinutes,
+          personalTariff.durationMinutes
+        );
+      }
+
+      const addRes = await addPersonalLessons.mutateAsync({
+        requireScope: true,
+        type: repeatType,
+        clientId1: repeatClientIds[0] ?? "",
+        clientId2: repeatClientIds[1] ?? "",
+        clientId3: repeatClientIds[2] ?? "",
+        clientId4: repeatClientIds[3] ?? "",
+        dates: additionalSlots.map((slot) => slot.date),
+        timeStart,
+        timeEnd,
+        price: repeatLessonPrice,
+        paid: false,
+        disciplineId,
+        locationId: personalListEdit ? locationId : lesson.locationId,
+        teacherMemberId: resolvedTeacherMemberId,
+        priceId: lesson.priceId ?? null,
+        payerClientId: repeatPayerId || null,
+      });
+
+      if (!addRes.success) {
+        toast(resolveMutationError(addRes.error, "common.saveFailed", t), "error");
+        return;
+      }
+
+      toast(
+        t("schedule.success.personalUpdatedWithSeries", { count: additionalSlots.length }),
+        "success"
+      );
+      onSuccess();
+      onClose();
+      return;
+    }
+
     toast(t("schedule.success.personalUpdated"), "success");
     onSuccess();
     onClose();
@@ -1001,6 +1124,7 @@ export default function EditLessonPopup({
     addGroupSchedule.isPending ||
     deleteScheduleSlot.isPending ||
     updatePersonalLesson.isPending ||
+    addPersonalLessons.isPending ||
     updateClassMaxCapacity.isPending ||
     voidPersonalLessonPayment.isPending;
   const readOnly = lesson ? isScheduleDateLockedForWrite(lesson.date, canEditPastSchedule) : false;
@@ -1380,6 +1504,14 @@ export default function EditLessonPopup({
                         <TimeSelect label={t("common.timeStart")} value={timeStart} onChange={handleTimeStartChange} required />
                         <TimeSelect label={t("common.timeEnd")} value={timeEnd} onChange={setTimeEnd} required />
                       </div>
+                    )}
+
+                    {!personalListEdit && (
+                      <GroupLessonRepeatFields
+                        config={personalRepeatConfig}
+                        onChange={(patch) => setPersonalRepeatConfig((prev) => ({ ...prev, ...patch }))}
+                        minEndDate={personalDate || lesson.date}
+                      />
                     )}
 
                     {personalHasPayments && personalSlotChanged ? (

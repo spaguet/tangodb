@@ -1541,6 +1541,7 @@ export const EN: Record<I18nKey, string> = {
   "schedule.error.orgReadOnly": "Organization is read-only",
   "schedule.success.groupUpdated": "Group class updated",
   "schedule.success.personalUpdated": "Private lesson updated",
+  "schedule.success.personalUpdatedWithSeries": "Lesson updated, {{count}} more sessions added",
   "schedule.success.groupAdded": "Group «{{name}}» added to schedule",
   "schedule.success.groupDeleted": "Group class removed from schedule",
   "schedule.success.oneLessonCancelled": "Class on selected date cancelled",

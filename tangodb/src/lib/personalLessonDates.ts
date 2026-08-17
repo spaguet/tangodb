@@ -1,4 +1,6 @@
+import type { GroupRepeatConfig } from "./groupLessonRepeat";
 import { addDays, getWeekRange, nextOccurrenceOnOrAfter, toISODateLocal } from "./scheduleWeek";
+import { jsDayToIsoDow } from "./utils";
 
 export interface PersonalLessonSlot {
   date: string;
@@ -92,4 +94,29 @@ export function expandWeeklyRecurrenceByWeekCount(
   if (weekCount < 1) return [];
   const endDate = addDays(startDate, weekCount * 7 - 1);
   return expandWeeklyRecurrence(startDate, endDate, rows);
+}
+
+export function expandPersonalLessonWeeklySlots(
+  startDate: string,
+  timeStart: string,
+  timeEnd: string,
+  config: Pick<GroupRepeatConfig, "repeatWeekly" | "endMode" | "weekCount" | "endDate">
+): PersonalLessonSlot[] {
+  if (!config.repeatWeekly) {
+    return [{ date: startDate, timeStart, timeEnd }];
+  }
+
+  const rows = uniqueWeeklyRecurrenceRows([
+    {
+      dayOfWeek: jsDayToIsoDow(new Date(`${startDate}T12:00:00`).getDay()),
+      timeStart,
+      timeEnd,
+    },
+  ]);
+
+  if (config.endMode === "weeks") {
+    return expandWeeklyRecurrenceByWeekCount(startDate, config.weekCount, rows);
+  }
+
+  return expandWeeklyRecurrence(startDate, config.endDate, rows);
 }
