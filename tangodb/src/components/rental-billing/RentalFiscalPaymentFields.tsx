@@ -5,7 +5,7 @@ import { useI18n } from "../../hooks/useI18n";
 import type { PaymentMethod } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 export interface RentalFiscalFieldValues {
   fiscalStatus: RentalFiscalStatus;
@@ -56,8 +56,8 @@ export function RentalFiscalPaymentFields({
   ];
 
   return (
-    <div className="space-y-3 border-t border-slate-100 pt-3">
-      <p className="text-xs font-semibold text-slate-700">{t("rentalBilling.fiscalSection")}</p>
+    <div className="space-y-3 border-t border-ink-100 pt-3">
+      <p className="text-xs font-semibold text-ink-700">{t("rentalBilling.fiscalSection")}</p>
       <AppSelect
         label={t("rentalBilling.fiscalStatus")}
         value={values.fiscalStatus}

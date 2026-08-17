@@ -18,7 +18,7 @@ interface TeacherTariffDropdownProps {
   compact?: boolean;
 }
 
-const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
+const checkboxCls = "rounded border-ink-300 text-gold-700 focus:ring-gold-500";
 const MENU_MAX_HEIGHT = 224;
 const MENU_GAP = 4;
 
@@ -114,9 +114,9 @@ export default function TeacherTariffDropdown({
               width: menuStyle.width,
               maxHeight: menuStyle.maxHeight,
             }}
-            className="fixed z-[100] rounded-lg border border-slate-200 bg-white shadow-lg overflow-y-auto overscroll-contain p-2 space-y-1"
+            className="fixed z-[100] rounded-lg border border-ink-200 bg-white shadow-lg overflow-y-auto overscroll-contain p-2 space-y-1"
           >
-            <label className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 mb-1 pb-2">
+            <label className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-ink-50 cursor-pointer text-sm text-ink-700 border-b border-ink-100 mb-1 pb-2">
               <input
                 type="checkbox"
                 checked={allTeachers}
@@ -128,7 +128,7 @@ export default function TeacherTariffDropdown({
             {teachers.map((teacher) => (
               <label
                 key={teacher.id}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-50 cursor-pointer text-sm text-slate-700"
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-ink-50 cursor-pointer text-sm text-ink-700"
               >
                 <input
                   type="checkbox"
@@ -153,11 +153,11 @@ export default function TeacherTariffDropdown({
           type="button"
           disabled={disabled || teachers.length === 0}
           onClick={() => setOpen((prev) => !prev)}
-          className={`${selectFieldCls} text-left ${allTeachers && teachers.length > 0 ? "text-slate-400" : "text-slate-800"} disabled:opacity-60 disabled:cursor-not-allowed ${compact ? "text-xs py-1.5" : ""}`}
+          className={`${selectFieldCls} text-left ${allTeachers && teachers.length > 0 ? "text-ink-400" : "text-ink-800"} disabled:opacity-60 disabled:cursor-not-allowed ${compact ? "text-xs py-1.5" : ""}`}
         >
           {teachers.length === 0 ? t("common.noTeachers") : summary}
         </button>
-        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <ChevronDown className="w-4 h-4 text-ink-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         {menu}
       </div>
     </div>

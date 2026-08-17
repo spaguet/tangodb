@@ -65,18 +65,18 @@ export default function ScheduleToolbar({
           type="button"
           onClick={() => shiftWeek(-1)}
           aria-label={t("common.aria.prevWeek")}
-          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
 
         <div className="flex flex-col items-center gap-0.5 min-w-[120px] sm:min-w-[180px]">
-          <span className="text-sm font-semibold text-slate-800 text-center">{label}</span>
+          <span className="text-sm font-semibold text-ink-800 text-center">{label}</span>
           {!isCurrentWeek && (
             <button
               type="button"
               onClick={goToCurrentWeek}
-              className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
+              className="text-[10px] font-semibold text-gold-700 hover:underline cursor-pointer"
             >
               {t("common.currentWeek")}
             </button>
@@ -87,7 +87,7 @@ export default function ScheduleToolbar({
           type="button"
           onClick={() => shiftWeek(1)}
           aria-label={t("common.aria.nextWeek")}
-          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -98,7 +98,7 @@ export default function ScheduleToolbar({
             onClick={() => setPickerOpen((v) => !v)}
             aria-label={t("common.aria.pickWeek")}
             aria-expanded={pickerOpen}
-            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 cursor-pointer"
           >
             <CalendarDays className="w-4 h-4" />
           </button>

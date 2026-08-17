@@ -25,7 +25,7 @@ interface ClientNotesPanelProps {
 }
 
 const inputCls =
-  "w-full bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all resize-y min-h-[4.5rem]";
+  "w-full bg-ink-50 border border-ink-200 focus:border-gold-400 focus:bg-white focus:ring-2 focus:ring-gold-100 outline-none rounded-lg px-3.5 py-2.5 text-sm transition-all resize-y min-h-[4.5rem]";
 
 function formatNoteDate(iso: string, locale: string): string {
   const date = new Date(iso);
@@ -82,10 +82,10 @@ export default function ClientNotesPanel({ clientId, toast }: ClientNotesPanelPr
 
   return (
     <div className="panel-card-stack">
-      <div className="flex items-center gap-2 text-slate-800 border-b border-slate-100 pb-3">
-        <MessageSquare className="w-4 h-4 text-indigo-500" />
+      <div className="flex items-center gap-2 text-ink-800 border-b border-ink-100 pb-3">
+        <MessageSquare className="w-4 h-4 text-gold-500" />
         <h3 className="text-sm font-semibold tracking-tight">{t("notes.title")}</h3>
-        <span className="text-[10px] font-sans bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">
+        <span className="text-[10px] font-sans bg-ink-100 text-ink-500 px-2 py-0.5 rounded-full font-semibold">
           {notes.length}
         </span>
       </div>
@@ -95,18 +95,18 @@ export default function ClientNotesPanel({ clientId, toast }: ClientNotesPanelPr
       ) : isError ? (
         <QueryErrorState error={error} />
       ) : notes.length === 0 ? (
-        <p className="text-sm text-slate-400 py-4 text-center">{t("notes.empty")}</p>
+        <p className="text-sm text-ink-500 py-4 text-center">{t("notes.empty")}</p>
       ) : (
         <ul className="space-y-3 max-h-64 overflow-y-auto pr-1">
           {notes.map((note) => (
             <li
               key={note.id}
-              className="rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5 text-sm"
+              className="rounded-lg border border-ink-100 bg-ink-50/10 px-3 py-2.5 text-sm"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-slate-800 whitespace-pre-wrap break-words">{note.body}</p>
-                  <p className="text-[10px] text-slate-400 mt-1.5 font-sans">
+                  <p className="text-ink-800 whitespace-pre-wrap break-words">{note.body}</p>
+                  <p className="text-[10px] text-ink-500 mt-1.5 font-sans">
                     {isI18nKey(note.authorDisplayName) ? t(note.authorDisplayName) : note.authorDisplayName} ·{" "}
                     {formatNoteDate(note.createdAt, locale)}
                   </p>
@@ -118,7 +118,7 @@ export default function ClientNotesPanel({ clientId, toast }: ClientNotesPanelPr
                       onClick={() => void handleDelete(note.id)}
                       disabled={connectionState !== "online" || deleteNote.isPending}
                       title={translateConnectionBlockReason(connectionState, t) ?? t("common.delete")}
-                      className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0 disabled:opacity-40"
+                      className="p-1 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 rounded-lg transition-all cursor-pointer shrink-0 disabled:opacity-40"
                       aria-label={t("notes.deleteAria")}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -133,7 +133,7 @@ export default function ClientNotesPanel({ clientId, toast }: ClientNotesPanelPr
 
       {canWrite && (
         <RequirePermission action="client_notes.write">
-          <div className="panel-form-stack pt-1 border-t border-slate-100">
+          <div className="panel-form-stack pt-1 border-t border-ink-100">
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}

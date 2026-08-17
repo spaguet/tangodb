@@ -22,7 +22,7 @@ import PersonalTariffDurationField, {
 } from "./PersonalTariffDurationField";
 import type { ToastType } from "../../App";
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 interface CreatePrivatePackageTariffModalProps {
   open: boolean;
@@ -172,20 +172,20 @@ export default function CreatePrivatePackageTariffModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
-            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
+            className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 sticky top-0 bg-white z-10">
+            <div className="flex items-center justify-between border-b border-ink-100 pb-3 sticky top-0 bg-white z-10">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center shrink-0">
-                  <Coins className="w-4 h-4 text-indigo-600" />
+                <div className="w-8 h-8 bg-gold-50 rounded-lg flex items-center justify-center shrink-0">
+                  <Coins className="w-4 h-4 text-gold-700" />
                 </div>
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                <h3 className="text-base font-semibold tracking-tight text-ink-900">
                   {t("prices.form.privatePackageTitle")}
                 </h3>
               </div>
@@ -193,7 +193,7 @@ export default function CreatePrivatePackageTariffModal({
                 type="button"
                 onClick={onClose}
                 aria-label={t("common.close")}
-                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
+                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -251,7 +251,7 @@ export default function CreatePrivatePackageTariffModal({
                     onChange={(e) => setForm({ ...form, price: e.target.value })}
                     className={`${inputCls} pr-8`}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{currencySuffix}</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-500">{currencySuffix}</span>
                 </div>
               </div>
               <PersonalTariffDurationField

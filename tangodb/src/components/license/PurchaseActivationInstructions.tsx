@@ -11,21 +11,21 @@ export default function PurchaseActivationInstructions() {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-3 space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+      <div className="rounded-lg border border-gold-100 bg-gold-50/10 px-3 py-3 space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gold-700 flex items-center gap-1.5">
           <MessageCircle className="w-3.5 h-3.5" />
           {t("license.purchase.developerKeyTitle")}
         </p>
-        <p className="text-xs text-slate-600 leading-relaxed">{t("license.purchase.developerKeyIntro")}</p>
+        <p className="text-xs text-ink-600 leading-relaxed">{t("license.purchase.developerKeyIntro")}</p>
         <DeveloperContacts contacts={config.contacts} embedded />
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+      <div className="rounded-lg border border-ink-200 bg-ink-50 px-3 py-3 space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-600 flex items-center gap-1.5">
           <ListOrdered className="w-3.5 h-3.5" />
           {t("license.purchase.instructionsTitle")}
         </p>
-        <ol className="text-xs text-slate-600 space-y-1.5 list-decimal pl-4">
+        <ol className="text-xs text-ink-600 space-y-1.5 list-decimal pl-4">
           {steps.map((step) => (
             <li key={step}>{step}</li>
           ))}

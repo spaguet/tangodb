@@ -104,22 +104,22 @@ export default function ActivateKeyPage() {
   return (
     <AuthLayout title="TangoDB" subtitle={t("auth.activateKey.subtitle")}>
       {demoUsedRedirect && (
-        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
           {t("auth.activateKey.demoUsedHint")}
         </p>
       )}
 
-      <div className="space-y-3 text-sm text-slate-600">
-        <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
-          <KeyRound className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+      <div className="space-y-3 text-sm text-ink-600">
+        <div className="flex items-start gap-3 bg-gold-50 border border-gold-100 rounded-lg px-3 py-2">
+          <KeyRound className="w-4 h-4 text-gold-700 shrink-0 mt-0.5" />
           <p>{t("auth.activateKey.intro")}</p>
         </div>
-        <ul className="text-xs text-slate-500 space-y-1.5 list-disc pl-4">
+        <ul className="text-xs text-ink-500 space-y-1.5 list-disc pl-4">
           <li>{t("auth.activateKey.demoKeyHint")}</li>
           <li>{t("auth.activateKey.lifetimeKeyHint")}</li>
           <li>
             {t("auth.activateKey.purchaseHint")}{" "}
-            <Link to={DEMO_PURCHASE_PATH} className="text-indigo-600 hover:underline font-medium">
+            <Link to={DEMO_PURCHASE_PATH} className="text-gold-700 hover:underline font-medium">
               {t("demo.purchaseCta")}
             </Link>
             .
@@ -133,7 +133,7 @@ export default function ActivateKeyPage() {
 
       <Link
         to={DEMO_PURCHASE_PATH}
-        className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition-colors"
+        className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold border border-gold-200 text-gold-700 hover:bg-gold-50 transition-colors"
       >
         <ShoppingBag className="w-4 h-4" />
         {t("demo.purchaseCta")}
@@ -150,7 +150,7 @@ export default function ActivateKeyPage() {
         <AuthButton loading={loading}>{t("license.activate.submit")}</AuthButton>
       </form>
 
-      <div className="text-sm text-slate-500 text-center space-y-2">
+      <div className="text-sm text-ink-500 text-center space-y-2">
         {crmPath ? (
           <p>
             <AuthLink to={crmPath}>{t("auth.activateKey.goToCrm")}</AuthLink>
@@ -164,7 +164,7 @@ export default function ActivateKeyPage() {
           <button
             type="button"
             onClick={() => void signOut().then(() => navigate("/login", { replace: true }))}
-            className="text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer"
+            className="text-gold-700 hover:text-gold-800 font-medium cursor-pointer"
           >
             {t("nav.signOut")}
           </button>

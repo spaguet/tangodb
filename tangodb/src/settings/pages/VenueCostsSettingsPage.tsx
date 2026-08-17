@@ -120,11 +120,11 @@ export default function VenueCostsSettingsPage({
   const [searchParams, setSearchParams] = useSearchParams();
 
   const editorPanelCls = embedded
-    ? "space-y-4 border-t border-slate-100 pt-4"
-    : "bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4";
+    ? "space-y-4 border-t border-ink-100 pt-4"
+    : "bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4";
   const historyPanelCls = embedded
-    ? "space-y-3 border-t border-slate-100 pt-4"
-    : "bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3";
+    ? "space-y-3 border-t border-ink-100 pt-4"
+    : "bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-3";
 
   useEffect(() => {
     if (searchParams.get("new") !== "1" || !canManage || draft) return;
@@ -152,7 +152,7 @@ export default function VenueCostsSettingsPage({
   if (!canRead) {
     return (
       <div className={embedded ? "space-y-3" : "panel-card-stack max-w-4xl"}>
-        <p className="text-sm text-slate-500">{t("dashboard.noAccess")}</p>
+        <p className="text-sm text-ink-500">{t("dashboard.noAccess")}</p>
       </div>
     );
   }
@@ -296,12 +296,12 @@ export default function VenueCostsSettingsPage({
         <div>
           {!embedded && (
             <>
-              <h2 className="text-base font-semibold text-slate-900">{t("venueCosts.pageTitle")}</h2>
-              <p className="text-xs text-slate-500 mt-1">{t("venueCosts.pageSubtitle")}</p>
+              <h2 className="text-base font-semibold text-ink-900">{t("venueCosts.pageTitle")}</h2>
+              <p className="text-xs text-ink-500 mt-1">{t("venueCosts.pageSubtitle")}</p>
             </>
           )}
           {!embedded ? (
-            <p className="text-xs text-slate-500 mt-1">{t("venueCosts.sectionHint")}</p>
+            <p className="text-xs text-ink-500 mt-1">{t("venueCosts.sectionHint")}</p>
           ) : null}
         </div>
         {canManage && !draft && (
@@ -334,15 +334,15 @@ export default function VenueCostsSettingsPage({
 
       {draft && canManage && (
         <section className={editorPanelCls}>
-          <h3 className="text-sm font-semibold text-slate-900">{t("venueCosts.editorTitle")}</h3>
+          <h3 className="text-sm font-semibold text-ink-900">{t("venueCosts.editorTitle")}</h3>
           {draftErrors.length > 0 ? (
             <div
               ref={draftErrorRef}
-              className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 space-y-1"
+              className="rounded-lg border border-garnet-100 bg-garnet-50 px-3 py-2 space-y-1"
               role="alert"
             >
-              <p className="text-xs font-semibold text-rose-800">{t("venueCosts.error.validationTitle")}</p>
-              <ul className="text-xs text-rose-700 list-disc pl-4 space-y-0.5">
+              <p className="text-xs font-semibold text-garnet-800">{t("venueCosts.error.validationTitle")}</p>
+              <ul className="text-xs text-garnet-700 list-disc pl-4 space-y-0.5">
                 {formatVenueCostDraftErrors(draftErrors, t).map((message, index) => (
                   <li key={`${draftErrors[index]}-${index}`}>{message}</li>
                 ))}
@@ -366,7 +366,7 @@ export default function VenueCostsSettingsPage({
           </div>
 
           {draft.mode !== "disabled" && (
-            <div className="grid sm:grid-cols-2 gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+            <div className="grid sm:grid-cols-2 gap-3 rounded-lg border border-ink-100 bg-ink-50/10 p-3">
               <AppSelect
                 label={t("venueCosts.expenseCategory")}
                 value={draft.expenseCategory}
@@ -390,12 +390,12 @@ export default function VenueCostsSettingsPage({
                   onChange={(e) => setDraft({ ...draft, payee: e.target.value })}
                 />
               </label>
-              <p className="sm:col-span-2 text-[11px] text-slate-500">{t("venueCosts.accountingHint")}</p>
+              <p className="sm:col-span-2 text-[11px] text-ink-500">{t("venueCosts.accountingHint")}</p>
             </div>
           )}
 
           {draft.mode !== "disabled" && (
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-ink-500">
               {t("venueCosts.amountCurrencyHint", { currency: currencyLabel })}
             </p>
           )}
@@ -414,7 +414,7 @@ export default function VenueCostsSettingsPage({
             />
           )}
 
-          <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
+          <div className="flex justify-end gap-2 border-t border-ink-100 pt-3">
             <button
               type="button"
               onClick={() => {
@@ -432,7 +432,7 @@ export default function VenueCostsSettingsPage({
           </div>
 
           {draftPerLessonHasScope && draftPerLessonRules && (
-            <div className="space-y-4 border-t border-slate-100 pt-4">
+            <div className="space-y-4 border-t border-ink-100 pt-4">
               <VenueCostBulkCopyPanel
                 rules={draftPerLessonRules}
                 locations={locations}
@@ -462,10 +462,10 @@ export default function VenueCostsSettingsPage({
       />
 
       <section className={historyPanelCls}>
-        <h3 className="text-sm font-semibold text-slate-900">{t("venueCosts.history")}</h3>
+        <h3 className="text-sm font-semibold text-ink-900">{t("venueCosts.history")}</h3>
         {versions.length === 0 ? (
-          <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-4 py-5 text-center space-y-3">
-            <p className="text-sm text-slate-600">{t("venueCosts.empty")}</p>
+          <div className="rounded-lg border border-ink-100 bg-ink-50/10 px-4 py-5 text-center space-y-3">
+            <p className="text-sm text-ink-600">{t("venueCosts.empty")}</p>
             {canManage ? (
               <button
                 type="button"
@@ -479,11 +479,11 @@ export default function VenueCostsSettingsPage({
                 {t("venueCosts.emptyCta")}
               </button>
             ) : (
-              <p className="text-xs text-slate-500">{t("venueCosts.emptyReadOnlyHint")}</p>
+              <p className="text-xs text-ink-500">{t("venueCosts.emptyReadOnlyHint")}</p>
             )}
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-ink-100">
             {versions.map((version) => (
               <VenueCostVersionHistoryRow
                 key={version.id}
@@ -555,7 +555,7 @@ function FixedPeriodEditor({
       <div className="space-y-2">
         <span className={selectLabelCls}>{t("venueCosts.fixedPeriod.scopeLabel")}</span>
         <div className="flex flex-wrap gap-4">
-          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
             <input
               type="radio"
               name="fixed-period-scope"
@@ -564,7 +564,7 @@ function FixedPeriodEditor({
             />
             {t("venueCosts.fixedPeriod.orgWide")}
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
             <input
               type="radio"
               name="fixed-period-scope"
@@ -574,7 +574,7 @@ function FixedPeriodEditor({
             {t("venueCosts.fixedPeriod.perLocation")}
           </label>
         </div>
-        <p className="text-[11px] text-slate-500">
+        <p className="text-[11px] text-ink-500">
           {perLocation ? t("venueCosts.fixedPeriod.perLocationHint") : t("venueCosts.fixedPeriod.orgWideHint")}
         </p>
       </div>
@@ -601,17 +601,17 @@ function FixedPeriodEditor({
       </div>
 
       {perLocation ? (
-        <div className="space-y-2 rounded-lg border border-slate-100 p-3">
-          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+        <div className="space-y-2 rounded-lg border border-ink-100 p-3">
+          <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
             {t("venueCosts.fixedPeriod.locationAmount")}
           </p>
           {locations.length === 0 ? (
-            <p className="text-xs text-slate-500">{t("venueCosts.fixedPeriod.noLocations")}</p>
+            <p className="text-xs text-ink-500">{t("venueCosts.fixedPeriod.noLocations")}</p>
           ) : (
             <ul className="space-y-2">
               {buildFixedLocationAmounts(locations, rules.locations).map((row) => (
                 <li key={row.locationId} className="flex items-center gap-3">
-                  <span className="text-sm text-slate-700 min-w-0 flex-1 truncate">
+                  <span className="text-sm text-ink-700 min-w-0 flex-1 truncate">
                     {locations.find((loc) => loc.id === row.locationId)?.name}
                   </span>
                   <MoneyInput
@@ -666,23 +666,23 @@ function PerLessonEditor({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <p className="text-[11px] text-slate-500">{t("venueCosts.applyTypesHint")}</p>
+        <p className="text-[11px] text-ink-500">{t("venueCosts.applyTypesHint")}</p>
         <div className="flex flex-wrap gap-4">
-          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
             <input
               type="checkbox"
               checked={groupEnabled}
               onChange={(e) => setGroupEnabled(e.target.checked)}
-              className="rounded border-slate-300 text-indigo-600"
+              className="rounded border-ink-300 text-gold-700"
             />
             {t("venueCosts.groupRules")}
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
             <input
               type="checkbox"
               checked={personalEnabled}
               onChange={(e) => setPersonalEnabled(e.target.checked)}
-              className="rounded border-slate-300 text-indigo-600"
+              className="rounded border-ink-300 text-gold-700"
             />
             {t("venueCosts.personalRules")}
           </label>
@@ -690,7 +690,7 @@ function PerLessonEditor({
       </div>
 
       {(groupEnabled || personalEnabled) && (
-        <p className="text-[11px] text-slate-500">{t("venueCosts.orgScopeHint")}</p>
+        <p className="text-[11px] text-ink-500">{t("venueCosts.orgScopeHint")}</p>
       )}
 
       {groupEnabled && (
@@ -704,7 +704,7 @@ function PerLessonEditor({
           }
         >
           {rules.group.map((rule, ruleIndex) => (
-            <div key={ruleIndex} className="rounded-xl border border-slate-200 p-3 space-y-3">
+            <div key={ruleIndex} className="rounded-xl border border-ink-200 p-3 space-y-3">
               <RuleScope
                 disciplineId={rule.disciplineId}
                 locationId={rule.locationId}
@@ -845,7 +845,7 @@ function PerLessonEditor({
           }
         >
           {rules.personal.map((rule, index) => (
-            <div key={index} className="rounded-xl border border-indigo-100 bg-indigo-50/30 p-3 space-y-2">
+            <div key={index} className="rounded-xl border border-gold-100 bg-gold-50/10 p-3 space-y-2">
               <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-end">
                 <RuleScope
                   compact
@@ -893,7 +893,7 @@ function RuleSection({ title, onAdd, children }: { title: string; onAdd: () => v
   return (
     <section className="space-y-2">
       <div className="flex justify-between items-center">
-        <h4 className="text-sm font-semibold text-slate-800">{title}</h4>
+        <h4 className="text-sm font-semibold text-ink-800">{title}</h4>
         <button type="button" onClick={onAdd} className={btnAddLinkCls}>
           + {t("common.add")}
         </button>
@@ -981,7 +981,7 @@ function MoneyInput({
           value={value}
           onChange={(e) => onChange(Number(e.target.value) || 0)}
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-500 pointer-events-none">
           {currencySuffix}
         </span>
       </div>
@@ -991,7 +991,7 @@ function MoneyInput({
 function IconDelete({ onClick }: { onClick: () => void }) {
   const { t } = useI18n();
   return (
-    <button type="button" onClick={onClick} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer" aria-label={t("common.delete")}>
+    <button type="button" onClick={onClick} className="p-2 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 rounded-lg cursor-pointer" aria-label={t("common.delete")}>
       <Trash2 className="w-4 h-4" />
     </button>
   );

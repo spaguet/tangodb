@@ -12,7 +12,7 @@ const sizes = {
 export function TdbLogo({ size = "md", className = "" }: Props) {
   return (
     <div
-      className={`bg-indigo-600 flex items-center justify-center text-white font-sans font-semibold tracking-tight leading-none shadow-xs ${sizes[size]} ${className}`}
+      className={`bg-gold-700 flex items-center justify-center text-white font-sans font-semibold tracking-tight leading-none shadow-xs ${sizes[size]} ${className}`}
     >
       TDB
     </div>

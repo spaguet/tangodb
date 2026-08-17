@@ -63,8 +63,8 @@ export default function SubscriptionRefundHistory({
   };
 
   return (
-    <div className="space-y-2 border-t border-slate-100 pt-3">
-      <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold flex items-center gap-1.5">
+    <div className="space-y-2 border-t border-ink-100 pt-3">
+      <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold flex items-center gap-1.5">
         <Banknote className="w-3 h-3" />
         {t("subscriptions.refund.history.title")}
       </p>
@@ -76,37 +76,37 @@ export default function SubscriptionRefundHistory({
           const canAct = canManage && pending && !completeRefund.isPending && !cancelRefund.isPending;
 
           return (
-            <li key={refund.id} className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2 text-[11px] text-slate-600 space-y-1">
+            <li key={refund.id} className="rounded-lg border border-ink-100 bg-ink-50/70 px-3 py-2 text-[11px] text-ink-600 space-y-1">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-semibold text-slate-800">
+                  <p className="font-semibold text-ink-800">
                     {t("subscriptions.refund.history.amount", { amount: formatCurrency(refund.amount) })}
                   </p>
-                  <p className="text-slate-500">
+                  <p className="text-ink-500">
                     {refundKindLabel(refund, t)}
                     {" · "}
                     {getPaymentMethodLabel(refund.method, t)}
                     {" · "}
                     {recipient}
                   </p>
-                  <p className="text-slate-500">
+                  <p className="text-ink-500">
                     {formatDate(refund.operationDate)}
                     {" · "}
                     {t(`subscriptions.refund.history.status.${refund.status}`)}
                   </p>
                   {refund.lessonsDeducted > 0 ? (
-                    <p className="text-slate-500">
+                    <p className="text-ink-500">
                       {t("subscriptions.refund.history.lessonsDeducted", { count: refund.lessonsDeducted })}
                     </p>
                   ) : null}
-                  {refund.reason ? <p className="text-slate-500 italic">{refund.reason}</p> : null}
+                  {refund.reason ? <p className="text-ink-500 italic">{refund.reason}</p> : null}
                 </div>
                 {canAct ? (
                   <div className="flex flex-col gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => void handleComplete(refund)}
-                      className="inline-flex items-center gap-1 text-indigo-700 hover:underline cursor-pointer text-[10px] font-semibold uppercase"
+                      className="inline-flex items-center gap-1 text-gold-700 hover:underline cursor-pointer text-[10px] font-semibold uppercase"
                     >
                       <CheckCircle2 className="w-3 h-3" />
                       {t("subscriptions.refund.completeAction")}
@@ -114,7 +114,7 @@ export default function SubscriptionRefundHistory({
                     <button
                       type="button"
                       onClick={() => void handleCancel(refund)}
-                      className="inline-flex items-center gap-1 text-rose-600 hover:underline cursor-pointer text-[10px] font-semibold uppercase"
+                      className="inline-flex items-center gap-1 text-garnet-600 hover:underline cursor-pointer text-[10px] font-semibold uppercase"
                     >
                       <XCircle className="w-3 h-3" />
                       {t("subscriptions.refund.cancelAction")}

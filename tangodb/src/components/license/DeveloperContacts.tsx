@@ -77,9 +77,9 @@ export default function DeveloperContacts({
   if (embedded) return buttons;
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 space-y-2">
+    <div className="rounded-lg border border-ink-200 bg-ink-50 px-3 py-3 space-y-2">
       {showTitle && (
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
           {t("license.contacts.title")}
         </p>
       )}

@@ -43,7 +43,7 @@ function AuditLogList({
   const { t } = useI18n();
 
   if (rows.length === 0) {
-    return <p className="text-xs text-slate-400 py-2">{emptyLabel}</p>;
+    return <p className="text-xs text-ink-500 py-2">{emptyLabel}</p>;
   }
 
   return (
@@ -56,13 +56,13 @@ function AuditLogList({
         return (
           <div
             key={row.id}
-            className="text-[11px] text-slate-500 py-2 border-b border-slate-50 last:border-0 space-y-1"
+            className="text-[11px] text-ink-500 py-2 border-b border-ink-50 last:border-0 space-y-1"
           >
             <div className="flex justify-between gap-2">
-              <span className="font-semibold text-slate-700">
+              <span className="font-semibold text-ink-700">
                 {auditTableLabel(row.table_name, locale)} · {auditOperationLabel(row.operation, t)}
               </span>
-              <span className="shrink-0 text-slate-400">
+              <span className="shrink-0 text-ink-500">
                 {formatDateTime(row.changed_at, {
                   day: "numeric",
                   month: "short",
@@ -71,17 +71,17 @@ function AuditLogList({
                 })}
               </span>
             </div>
-            <p className="text-slate-400">{actor}</p>
-            {summary && <p className="text-slate-700 font-medium">{summary}</p>}
+            <p className="text-ink-500">{actor}</p>
+            {summary && <p className="text-ink-700 font-medium">{summary}</p>}
             {details.length > 0 && (
               <ul className="space-y-0.5">
                 {details.slice(0, 6).map((detail) => (
-                  <li key={detail} className="text-slate-600">
+                  <li key={detail} className="text-ink-600">
                     {detail}
                   </li>
                 ))}
                 {details.length > 6 && (
-                  <li className="text-slate-400">{t("team.auditMore", { count: details.length - 6 })}</li>
+                  <li className="text-ink-500">{t("team.auditMore", { count: details.length - 6 })}</li>
                 )}
               </ul>
             )}
@@ -120,25 +120,25 @@ export default function AuditLogSection() {
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
+      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-3.5 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <ClipboardList className="w-4 h-4 text-indigo-500" />
+          <h3 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
+            <ClipboardList className="w-4 h-4 text-gold-500" />
             {t("team.audit")}
           </h3>
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer whitespace-nowrap"
+            className="text-[10px] font-semibold uppercase tracking-wider text-gold-700 hover:text-gold-800 hover:underline cursor-pointer whitespace-nowrap"
           >
             {t("team.auditViewAll")}
           </button>
         </div>
         {todayLoading ? (
-          <p className="text-xs text-slate-400 py-2">{t("common.loading.default")}</p>
+          <p className="text-xs text-ink-500 py-2">{t("common.loading.default")}</p>
         ) : (
           <>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-500">
               {t("team.auditToday")}
             </p>
             <AuditLogList
@@ -164,48 +164,48 @@ export default function AuditLogSection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/40"
+              className="absolute inset-0 bg-ink-950/40"
               onClick={() => setModalOpen(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
-              className="relative w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl p-4 space-y-3 max-h-[85vh] flex flex-col"
+              className="relative w-full max-w-lg bg-white rounded-xl border border-ink-200 shadow-xl p-4 space-y-3 max-h-[85vh] flex flex-col"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 id="audit-log-modal-title" className="text-sm font-semibold text-slate-900">
+                  <h3 id="audit-log-modal-title" className="text-sm font-semibold text-ink-900">
                     {t("team.auditViewAll")}
                   </h3>
-                  <p className="text-[11px] text-slate-500 mt-0.5">{t("team.auditModalHint")}</p>
+                  <p className="text-[11px] text-ink-500 mt-0.5">{t("team.auditModalHint")}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer"
+                  className="p-1.5 text-ink-400 hover:text-ink-700 hover:bg-ink-100 rounded-lg cursor-pointer"
                   aria-label={t("common.close")}
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <label className="flex items-center gap-2 text-xs text-slate-600">
-                <CalendarDays className="w-4 h-4 text-indigo-500 shrink-0" />
-                <span className="font-semibold uppercase tracking-wider text-[10px] text-slate-400">
+              <label className="flex items-center gap-2 text-xs text-ink-600">
+                <CalendarDays className="w-4 h-4 text-gold-500 shrink-0" />
+                <span className="font-semibold uppercase tracking-wider text-[10px] text-ink-500">
                   {t("team.auditSelectDay")}
                 </span>
                 <input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="ml-auto rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700"
+                  className="ml-auto rounded-lg border border-ink-200 px-2 py-1 text-xs text-ink-700"
                 />
               </label>
 
               <div className="flex-1 min-h-0">
                 {modalLoading ? (
-                  <p className="text-xs text-slate-400 py-2">{t("common.loading.default")}</p>
+                  <p className="text-xs text-ink-500 py-2">{t("common.loading.default")}</p>
                 ) : (
                   <AuditLogList
                     rows={modalRows}

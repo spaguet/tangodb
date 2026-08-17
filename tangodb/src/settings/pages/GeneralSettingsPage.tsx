@@ -76,11 +76,11 @@ export default function GeneralSettingsPage() {
   return (
     <div className="panel-card-stack max-w-xl">
       <div>
-        <h2 className="text-base font-semibold text-slate-900">{t("settings.general.title")}</h2>
-        <p className="text-xs text-slate-500 mt-1">{t("settings.general.subtitle")}</p>
+        <h2 className="text-base font-semibold text-ink-900">{t("settings.general.title")}</h2>
+        <p className="text-xs text-ink-500 mt-1">{t("settings.general.subtitle")}</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4 font-sans">
+      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4 font-sans">
         <AppSelect
           label={t("settings.general.field.locale")}
           value={locale}
@@ -131,7 +131,7 @@ export default function GeneralSettingsPage() {
         </AppSelect>
 
         <div className="field-stack">
-          <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
+          <label className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block">
             {t("settings.general.brandingName")}
           </label>
           <input
@@ -143,7 +143,7 @@ export default function GeneralSettingsPage() {
           />
         </div>
 
-        <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+        <p className="text-xs text-ink-500 bg-ink-50 rounded-lg px-3 py-2">
           {t("settings.general.currencyPreview", { value: formatCurrency(1250000) })}
         </p>
 

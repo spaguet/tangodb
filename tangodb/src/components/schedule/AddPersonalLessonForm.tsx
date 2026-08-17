@@ -46,21 +46,21 @@ export default function AddPersonalLessonForm({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
+            className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-3">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-gold-500">
                   {t("common.personalLesson")}
                 </p>
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                <h3 className="text-base font-semibold tracking-tight text-ink-900">
                   {t("schedule.popup.newBooking")}
                 </h3>
               </div>
@@ -68,7 +68,7 @@ export default function AddPersonalLessonForm({
                 type="button"
                 onClick={onClose}
                 aria-label={t("common.close")}
-                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0"
+                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>

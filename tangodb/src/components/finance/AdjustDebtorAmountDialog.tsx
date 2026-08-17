@@ -17,7 +17,7 @@ interface AdjustDebtorAmountDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 export default function AdjustDebtorAmountDialog({
   entry,
@@ -104,19 +104,19 @@ export default function AdjustDebtorAmountDialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-slate-900/40"
+            className="absolute inset-0 bg-ink-950/40"
             onClick={() => !pending && onClose()}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            className="relative w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-xl"
+            className="relative w-full max-w-md bg-white rounded-xl border border-ink-200 shadow-xl"
           >
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-ink-100">
               <div className="flex items-center gap-2 min-w-0">
-                <Pencil className="w-4 h-4 text-indigo-600 shrink-0" />
-                <h3 className="text-base font-semibold text-slate-900 truncate">
+                <Pencil className="w-4 h-4 text-gold-700 shrink-0" />
+                <h3 className="text-base font-semibold text-ink-900 truncate">
                   {t("finance.debtors.adjustTitle")}
                 </h3>
               </div>
@@ -124,22 +124,22 @@ export default function AdjustDebtorAmountDialog({
                 type="button"
                 onClick={onClose}
                 disabled={pending}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                className="p-1.5 text-ink-400 hover:text-ink-600 rounded-lg cursor-pointer"
                 aria-label={t("common.close")}
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="p-4 space-y-3">
-              <p className="text-sm font-semibold text-slate-800">{entry.clientDisplay}</p>
-              <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 text-xs text-slate-600 space-y-1">
+              <p className="text-sm font-semibold text-ink-800">{entry.clientDisplay}</p>
+              <div className="rounded-lg border border-ink-100 bg-ink-50/10 px-3 py-2 text-xs text-ink-600 space-y-1">
                 <p>
                   {t("finance.debtors.adjustBilled")}: {formatCurrency(billedAmount)}
                 </p>
                 <p>
                   {t("finance.debtors.adjustPaid")}: {formatCurrency(paidAmount)}
                 </p>
-                <p className="font-semibold text-rose-700">
+                <p className="font-semibold text-garnet-700">
                   {t("finance.debtors.outstanding")}: {formatCurrency(outstanding)}
                 </p>
               </div>
@@ -155,7 +155,7 @@ export default function AdjustDebtorAmountDialog({
                 />
               </div>
               {newBilled != null && parsedOutstanding !== outstanding ? (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-ink-500">
                   {t("finance.debtors.adjustPreview", {
                     billed: formatCurrency(newBilled),
                     outstanding: formatCurrency(parsedOutstanding ?? 0),
@@ -173,15 +173,15 @@ export default function AdjustDebtorAmountDialog({
                   />
                 </div>
               ) : (
-                <p className="text-[11px] text-slate-500">{t("finance.debtors.adjustPersonalHint")}</p>
+                <p className="text-[11px] text-ink-500">{t("finance.debtors.adjustPersonalHint")}</p>
               )}
             </div>
-            <div className="flex justify-end gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
+            <div className="flex justify-end gap-2 px-4 py-3 border-t border-ink-100 bg-ink-50/10">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={pending}
-                className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                className="px-3 py-2 text-xs font-semibold text-ink-600 hover:bg-ink-100 rounded-lg cursor-pointer"
               >
                 {t("common.cancel")}
               </button>

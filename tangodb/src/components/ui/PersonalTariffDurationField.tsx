@@ -5,7 +5,7 @@ export const PERSONAL_TARIFF_DURATION_PRESETS = [30, 45, 60, 90] as const;
 
 export type PersonalTariffDurationSelect = "30" | "45" | "60" | "90" | "custom" | "";
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 export function minutesToDurationSelect(minutes: number | null | undefined): PersonalTariffDurationSelect {
   if (minutes == null) return "";
@@ -77,7 +77,7 @@ export default function PersonalTariffDurationField({
         />
       )}
       {legacyOptional && select === "" && (
-        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
           {t("prices.form.tariffDurationLegacyHint")}
         </p>
       )}

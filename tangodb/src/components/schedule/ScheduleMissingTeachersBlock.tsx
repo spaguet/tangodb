@@ -187,29 +187,29 @@ export default function ScheduleMissingTeachersBlock({
     <motion.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl border border-violet-200/80 shadow-xs overflow-hidden"
+      className="bg-white rounded-xl border border-lavender-200 shadow-xs overflow-hidden"
     >
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        className={`w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 bg-violet-50/60 text-left cursor-pointer hover:bg-violet-50 transition-colors ${
-          expanded ? "border-b border-violet-100" : ""
+        className={`w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 bg-lavender-50/10 text-left cursor-pointer hover:bg-lavender-50 transition-colors ${
+          expanded ? "border-b border-lavender-100" : ""
         }`}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <UserRoundSearch className="w-4 h-4 text-violet-700 shrink-0" />
+          <UserRoundSearch className="w-4 h-4 text-lavender-700 shrink-0" />
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-800">
+            <h3 className="text-sm font-semibold text-ink-800">
               {t("schedule.missingTeachers.title")}
             </h3>
-            <p className="text-[11px] text-slate-500">{t("schedule.missingTeachers.subtitle")}</p>
+            <p className="text-[11px] text-ink-500">{t("schedule.missingTeachers.subtitle")}</p>
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 shrink-0">
-          <span className="text-sm font-semibold text-violet-700 tabular-nums">{countLabel}</span>
+          <span className="text-sm font-semibold text-lavender-700 tabular-nums">{countLabel}</span>
           <ChevronDown
-            className={`w-4 h-4 text-violet-400 shrink-0 transition-transform duration-200 ${
+            className={`w-4 h-4 text-lavender-400 shrink-0 transition-transform duration-200 ${
               expanded ? "rotate-180" : ""
             }`}
           />
@@ -226,7 +226,7 @@ export default function ScheduleMissingTeachersBlock({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-ink-100">
         {rows.map((row) => {
           const key = entryKey(row.entry);
           const isAssigning = assigningKey === key;
@@ -242,12 +242,12 @@ export default function ScheduleMissingTeachersBlock({
             >
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <span className="text-sm font-semibold text-slate-800 truncate">{row.title}</span>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-700">
+                  <span className="text-sm font-semibold text-ink-800 truncate">{row.title}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-lavender-700">
                     {kindLabel}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">{row.meta}</p>
+                <p className="text-xs text-ink-500 mt-0.5">{row.meta}</p>
                 {!row.entry.disciplineId ? (
                   <p className="text-[11px] text-amber-700 mt-1">
                     {t("schedule.missingTeachers.disciplineRequired")}

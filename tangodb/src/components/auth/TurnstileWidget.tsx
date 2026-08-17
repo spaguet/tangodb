@@ -117,14 +117,14 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
 
   if (!SITE_KEY) {
     return (
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-ink-500">
         {t("auth.captcha.devDisabled")}
       </p>
     );
   }
 
   if (loadFailed) {
-    return <p className="text-xs text-red-500">{t("auth.captcha.loadFailed")}</p>;
+    return <p className="text-xs text-garnet-500">{t("auth.captcha.loadFailed")}</p>;
   }
 
   return <div ref={containerRef} className="min-h-[65px]" />;

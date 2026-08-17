@@ -124,8 +124,8 @@ export default function VenueCostEstimatePanel({
   };
 
   const panelCls = embedded
-    ? "space-y-4 border-t border-slate-100 pt-4"
-    : "bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4";
+    ? "space-y-4 border-t border-ink-100 pt-4"
+    : "bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4";
 
   if (!versions.length && !draftSnapshot) return null;
 
@@ -133,19 +133,19 @@ export default function VenueCostEstimatePanel({
     <section className={panelCls}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-            <Calculator className="w-4 h-4 text-slate-500" />
+          <h3 className="text-sm font-semibold text-ink-900 flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-ink-500" />
             {t("venueCosts.estimate.title")}
           </h3>
-          <p className="text-xs text-slate-500 mt-1">{t("venueCosts.estimate.subtitle")}</p>
-          <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-md px-2 py-1 mt-2 inline-block">
+          <p className="text-xs text-ink-500 mt-1">{t("venueCosts.estimate.subtitle")}</p>
+          <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 mt-2 inline-block">
             {t("venueCosts.estimate.forecastBadge")}
           </p>
         </div>
       </div>
 
       {!snapshot ? (
-        <p className="text-sm text-slate-500">{t("venueCosts.estimate.noRules")}</p>
+        <p className="text-sm text-ink-500">{t("venueCosts.estimate.noRules")}</p>
       ) : (
         <>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -269,14 +269,14 @@ export default function VenueCostEstimatePanel({
                 value={defaultScheduleAttendees}
                 onChange={(e) => setDefaultScheduleAttendees(Number(e.target.value) || 0)}
               />
-              <span className="text-[11px] text-slate-400">{t("venueCosts.estimate.defaultAttendeesHint")}</span>
+              <span className="text-[11px] text-ink-500">{t("venueCosts.estimate.defaultAttendeesHint")}</span>
             </label>
           )}
 
-          <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-3 flex flex-wrap items-baseline justify-between gap-3">
+          <div className="rounded-lg border border-ink-100 bg-ink-50/10 px-4 py-3 flex flex-wrap items-baseline justify-between gap-3">
             <div>
-              <p className="text-xs text-slate-500">{t("venueCosts.estimate.totalLabel")}</p>
-              <p className="text-xl font-semibold text-slate-900">
+              <p className="text-xs text-ink-500">{t("venueCosts.estimate.totalLabel")}</p>
+              <p className="text-xl font-semibold text-ink-900">
                 {isLoading
                   ? t("common.loading.data")
                   : result
@@ -284,7 +284,7 @@ export default function VenueCostEstimatePanel({
                     : "—"}
               </p>
             </div>
-            <div className="text-xs text-slate-500 space-y-0.5 text-right">
+            <div className="text-xs text-ink-500 space-y-0.5 text-right">
               {result?.mode === "per_lesson" ? (
                 <p>{t("venueCosts.estimate.lessonCount", { count: lessonCount })}</p>
               ) : null}
@@ -303,16 +303,16 @@ export default function VenueCostEstimatePanel({
               <button
                 type="button"
                 onClick={() => setShowBreakdown((value) => !value)}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                className="text-xs font-semibold text-gold-700 hover:text-gold-800"
               >
                 {showBreakdown
                   ? t("venueCosts.estimate.hideBreakdown")
                   : t("venueCosts.estimate.showBreakdown")}
               </button>
               {showBreakdown ? (
-                <div className="mt-2 overflow-x-auto rounded-lg border border-slate-100">
+                <div className="mt-2 overflow-x-auto rounded-lg border border-ink-100">
                   <table className="min-w-full text-xs">
-                    <thead className="bg-slate-50 text-slate-500 uppercase tracking-wide">
+                    <thead className="bg-ink-50 text-ink-500 uppercase tracking-wide">
                       <tr>
                         <th className="px-3 py-2 text-left font-semibold">{t("venueCosts.estimate.colDate")}</th>
                         <th className="px-3 py-2 text-left font-semibold">{t("venueCosts.estimate.colKind")}</th>
@@ -321,42 +321,42 @@ export default function VenueCostEstimatePanel({
                         <th className="px-3 py-2 text-left font-semibold">{t("venueCosts.estimate.colReason")}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-ink-100">
                       {result.fixedPeriodLines.map((line) => (
                         <tr key={`fixed-${line.periodFrom}-${line.periodTo}-${line.locationId ?? "org"}`}>
-                          <td className="px-3 py-2 text-slate-700">
+                          <td className="px-3 py-2 text-ink-700">
                             {formatDate(line.periodFrom)} — {formatDate(line.periodTo)}
                           </td>
-                          <td className="px-3 py-2 text-slate-600">{t("venueCosts.mode.fixedPeriod")}</td>
-                          <td className="px-3 py-2 text-slate-600">
+                          <td className="px-3 py-2 text-ink-600">{t("venueCosts.mode.fixedPeriod")}</td>
+                          <td className="px-3 py-2 text-ink-600">
                             {line.locationId
                               ? locations.find((loc) => loc.id === line.locationId)?.name ?? line.locationId
                               : t("venueCosts.fixedPeriod.orgWide")}
                           </td>
-                          <td className="px-3 py-2 text-right font-medium text-slate-900">
+                          <td className="px-3 py-2 text-right font-medium text-ink-900">
                             {formatCurrency(line.amount)}
                           </td>
-                          <td className="px-3 py-2 text-slate-500">{t("venueCosts.estimate.reason.matched")}</td>
+                          <td className="px-3 py-2 text-ink-500">{t("venueCosts.estimate.reason.matched")}</td>
                         </tr>
                       ))}
                       {result.lessonLines.map((line) => (
                         <tr key={line.lessonId}>
-                          <td className="px-3 py-2 text-slate-700">{formatDate(line.date)}</td>
-                          <td className="px-3 py-2 text-slate-600">
+                          <td className="px-3 py-2 text-ink-700">{formatDate(line.date)}</td>
+                          <td className="px-3 py-2 text-ink-600">
                             {line.kind === "group"
                               ? t("venueCosts.estimate.kindGroup")
                               : t("venueCosts.estimate.kindPersonal")}
                           </td>
-                          <td className="px-3 py-2 text-slate-600 truncate max-w-[12rem]">
+                          <td className="px-3 py-2 text-ink-600 truncate max-w-[12rem]">
                             {line.label ?? "—"}
                           </td>
-                          <td className="px-3 py-2 text-right font-medium text-slate-900">
+                          <td className="px-3 py-2 text-right font-medium text-ink-900">
                             {formatCurrency(line.amount)}
                           </td>
-                          <td className="px-3 py-2 text-slate-500">
+                          <td className="px-3 py-2 text-ink-500">
                             {reasonLabel(line.reason)}
                             {line.ruleScope ? (
-                              <span className="block text-[10px] text-slate-400">{line.ruleScope}</span>
+                              <span className="block text-[10px] text-ink-500">{line.ruleScope}</span>
                             ) : null}
                           </td>
                         </tr>

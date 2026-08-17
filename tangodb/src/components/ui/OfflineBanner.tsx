@@ -46,7 +46,7 @@ export default function OfflineBanner({
       <div
         role="status"
         aria-live="polite"
-        className="bg-indigo-50 border-b border-indigo-200 text-indigo-900 text-xs font-semibold px-4 py-2 flex flex-wrap items-center justify-between gap-2"
+        className="bg-gold-50 border-b border-gold-200 text-gold-900 text-xs font-semibold px-4 py-2 flex flex-wrap items-center justify-between gap-2"
       >
         <span className="flex items-center gap-2">
           <ListChecks className="w-3.5 h-3.5 shrink-0" />
@@ -58,7 +58,7 @@ export default function OfflineBanner({
           <button
             type="button"
             onClick={onOpenReconciliation}
-            className="text-indigo-700 underline underline-offset-2 cursor-pointer hover:text-indigo-900"
+            className="text-gold-700 underline underline-offset-2 cursor-pointer hover:text-gold-900"
           >
             {t("offline.banner.openReconciliation")}
           </button>
@@ -72,7 +72,7 @@ export default function OfflineBanner({
       <div
         role="status"
         aria-live="polite"
-        className="bg-slate-100 border-b border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 flex flex-wrap items-center justify-between gap-2"
+        className="bg-ink-100 border-b border-ink-200 text-ink-700 text-xs font-semibold px-4 py-2 flex flex-wrap items-center justify-between gap-2"
       >
         <span className="flex items-center gap-2">
           <CloudOff className="w-3.5 h-3.5 shrink-0" />
@@ -87,7 +87,7 @@ export default function OfflineBanner({
             <button
               type="button"
               onClick={onOpenReconciliation}
-              className="text-slate-800 underline underline-offset-2 cursor-pointer"
+              className="text-ink-800 underline underline-offset-2 cursor-pointer"
             >
               {t("offline.banner.openReconciliation")}
             </button>
@@ -101,7 +101,7 @@ export default function OfflineBanner({
     <div
       role="status"
       aria-live="polite"
-      className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs font-semibold px-4 py-2 flex flex-wrap items-center justify-between gap-2"
+      className="bg-amber-50 border-b border-amber-200 text-amber-700 text-xs font-semibold px-4 py-2 flex flex-wrap items-center justify-between gap-2"
     >
       <span className="flex items-center gap-2">
         <WifiOff className="w-3.5 h-3.5 shrink-0" />
@@ -109,7 +109,7 @@ export default function OfflineBanner({
         {snapshotSyncedAt
           ? ` · ${t("offline.banner.snapshotAt", { time: formatSyncedAt(snapshotSyncedAt, locale) })}`
           : ` · ${t("offline.banner.noSnapshot")}`}
-        <span className="font-normal text-amber-700/90"> · {t("offline.restrictions.scopeHint")}</span>
+        <span className="font-normal text-amber-700"> · {t("offline.restrictions.scopeHint")}</span>
       </span>
       <span className="flex items-center gap-3">
         {queueLabel ? <span>{queueLabel}</span> : null}
@@ -117,7 +117,7 @@ export default function OfflineBanner({
           <button
             type="button"
             onClick={onOpenReconciliation}
-            className="text-amber-900 underline underline-offset-2 cursor-pointer"
+            className="text-amber-700 underline underline-offset-2 cursor-pointer"
           >
             {t("offline.banner.openReconciliation")}
           </button>

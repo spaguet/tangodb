@@ -16,9 +16,9 @@ export function Header({ locale, onLocaleChange, t }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-ink-200 bg-white backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <a href="#" className="flex items-center gap-2.5 font-semibold text-slate-900">
+        <a href="#" className="flex items-center gap-2.5 font-semibold text-ink-900">
           <TdbLogo />
           <span>TangoDB</span>
         </a>
@@ -26,7 +26,7 @@ export function Header({ locale, onLocaleChange, t }: Props) {
         <nav className="hidden items-center gap-6 md:flex">
           <a
             href="#demo"
-            className="text-sm text-slate-600 hover:text-indigo-600 transition-colors"
+            className="text-sm text-ink-600 hover:text-gold-700 transition-colors"
             onClick={onLandingCtaClick(LANDING_EVENTS.CTA_DEMO, locale)}
           >
             {t("nav.demo")}
@@ -34,7 +34,7 @@ export function Header({ locale, onLocaleChange, t }: Props) {
           <LocaleSwitcher locale={locale} onChange={onLocaleChange} />
           <a
             href={CRM_LOGIN_URL}
-            className="text-sm text-slate-600 hover:text-indigo-600 transition-colors"
+            className="text-sm text-ink-600 hover:text-gold-700 transition-colors"
             onClick={onLandingCtaClick(LANDING_EVENTS.CTA_LOGIN, locale)}
           >
             {t("nav.login")}
@@ -50,7 +50,7 @@ export function Header({ locale, onLocaleChange, t }: Props) {
 
         <button
           type="button"
-          className="md:hidden p-2 text-slate-600 cursor-pointer"
+          className="md:hidden p-2 text-ink-600 cursor-pointer"
           onClick={() => setOpen(!open)}
           aria-label="Menu"
         >
@@ -59,7 +59,7 @@ export function Header({ locale, onLocaleChange, t }: Props) {
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-slate-100 px-4 py-4 space-y-3 animate-fade-in">
+        <div className="md:hidden border-t border-ink-100 px-4 py-4 space-y-3 animate-fade-in">
           <a
             href={CRM_REGISTER_URL}
             className="btn-primary w-full"
@@ -69,7 +69,7 @@ export function Header({ locale, onLocaleChange, t }: Props) {
           </a>
           <a
             href={CRM_LOGIN_URL}
-            className="block text-sm text-slate-700"
+            className="block text-sm text-ink-700"
             onClick={() => {
               onLandingCtaClick(LANDING_EVENTS.CTA_LOGIN, locale)();
               setOpen(false);
@@ -79,7 +79,7 @@ export function Header({ locale, onLocaleChange, t }: Props) {
           </a>
           <a
             href="#demo"
-            className="block text-sm text-slate-700"
+            className="block text-sm text-ink-700"
             onClick={() => {
               onLandingCtaClick(LANDING_EVENTS.CTA_DEMO, locale)();
               setOpen(false);

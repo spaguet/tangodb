@@ -20,7 +20,7 @@ export function Accordion({ items }: Props) {
   }
 
   return (
-    <div className="divide-y divide-slate-200 border-y border-slate-200">
+    <div className="divide-y divide-ink-200 border-y border-ink-200">
       {items.map(({ id, question, answer }) => {
         const isOpen = openId === id;
         const panelId = `${baseId}-${id}-panel`;
@@ -32,14 +32,14 @@ export function Accordion({ items }: Props) {
               <button
                 id={buttonId}
                 type="button"
-                className="flex w-full items-center justify-between gap-4 py-4 text-left text-sm font-semibold text-slate-900 transition-colors hover:text-indigo-600 sm:text-base"
+                className="flex w-full items-center justify-between gap-4 py-4 text-left text-sm font-semibold text-ink-900 transition-colors hover:text-gold-700 sm:text-base"
                 aria-expanded={isOpen}
                 aria-controls={panelId}
                 onClick={() => toggle(id)}
               >
                 <span>{question}</span>
                 <ChevronDown
-                  className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                  className={`h-5 w-5 shrink-0 text-ink-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
                   aria-hidden
                 />
               </button>
@@ -49,7 +49,7 @@ export function Accordion({ items }: Props) {
               role="region"
               aria-labelledby={buttonId}
               hidden={!isOpen}
-              className="pb-4 text-sm leading-relaxed text-slate-600 sm:text-[0.9375rem]"
+              className="pb-4 text-sm leading-relaxed text-ink-600 sm:text-[0.9375rem]"
             >
               {answer}
             </div>

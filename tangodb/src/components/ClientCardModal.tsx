@@ -26,15 +26,15 @@ interface ClientCardModalProps {
   stackLayer?: "default" | "above";
 }
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
-const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const checkboxCls = "rounded border-ink-300 text-gold-700 focus:ring-gold-500";
 
 function ProfileField({ label, value }: { label: string; value: string }) {
   if (!value.trim()) return null;
   return (
     <div>
-      <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">{label}</p>
-      <p className="text-sm text-slate-700 mt-0.5">{value}</p>
+      <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">{label}</p>
+      <p className="text-sm text-ink-700 mt-0.5">{value}</p>
     </div>
   );
 }
@@ -58,13 +58,13 @@ function GuardianBlock({
   if (!hasData) return null;
 
   return (
-    <div className="border border-slate-100 rounded-lg p-3 space-y-2">
-      <p className="text-xs font-semibold text-slate-600">{title}</p>
+    <div className="border border-ink-100 rounded-lg p-3 space-y-2">
+      <p className="text-xs font-semibold text-ink-600">{title}</p>
       <ProfileField label={t("clients.form.guardianName")} value={name} />
       <ProfileField label={t("clients.form.phone")} value={phone} />
       {telegram && normalizeTelegramContact(telegram) ? (
         <div>
-          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">Telegram</p>
+          <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">Telegram</p>
           <a
             href={normalizeTelegramContact(telegram)!}
             target="_blank"
@@ -236,17 +236,17 @@ export default function ClientCardModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => (mode === "edit" ? setMode("view") : onClose())}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
+            className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
-              <h2 className="text-base font-semibold tracking-tight text-slate-900 min-w-0 truncate">
+            <div className="flex items-center justify-between border-b border-ink-100 pb-3 gap-2">
+              <h2 className="text-base font-semibold tracking-tight text-ink-900 min-w-0 truncate">
                 {mode === "edit" ? t("clients.modal.editTitle") : `${client.lastName} ${client.firstName}`}
               </h2>
               <div className="flex items-center gap-1 shrink-0">
@@ -257,7 +257,7 @@ export default function ClientCardModal({
                       onClick={startEdit}
                       disabled={connectionState !== "online"}
                       title={translateConnectionBlockReason(connectionState, t) ?? t("common.change")}
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
+                      className="p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
                       aria-label={t("common.change")}
                     >
                       <Edit className="w-4 h-4" />
@@ -268,7 +268,7 @@ export default function ClientCardModal({
                   type="button"
                   onClick={() => (mode === "edit" ? setMode("view") : onClose())}
                   aria-label={t("common.close")}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
+                  className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -286,7 +286,7 @@ export default function ClientCardModal({
                   </div>
 
                   <div>
-                    <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">Telegram</p>
+                    <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">Telegram</p>
                     {client.telegram && normalizeTelegramContact(client.telegram) ? (
                       <a
                         href={normalizeTelegramContact(client.telegram)!}
@@ -302,13 +302,13 @@ export default function ClientCardModal({
                         {formatTelegramDisplay(client.telegram)}
                       </a>
                     ) : (
-                      <span className="text-xs text-slate-400 italic">{t("clientCard.telegramNotSet")}</span>
+                      <span className="text-xs text-ink-500 italic">{t("clientCard.telegramNotSet")}</span>
                     )}
                   </div>
 
                   {client.isMinor ? (
-                    <div className="space-y-2 border-t border-slate-100 pt-3">
-                      <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                    <div className="space-y-2 border-t border-ink-100 pt-3">
+                      <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
                         {t("clients.form.isMinor")}
                       </p>
                       <GuardianBlock
@@ -380,7 +380,7 @@ export default function ClientCardModal({
                   />
                 </div>
 
-                <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={editIsMinor}
@@ -391,8 +391,8 @@ export default function ClientCardModal({
                 </label>
 
                 {editIsMinor ? (
-                  <div className="space-y-4 border border-slate-100 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-slate-600">{t("clients.form.guardian1")}</p>
+                  <div className="space-y-4 border border-ink-100 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-ink-600">{t("clients.form.guardian1")}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="field-stack">
                         <label className={labelCls}>{t("clients.form.guardianName")}</label>
@@ -406,7 +406,7 @@ export default function ClientCardModal({
                     <div className="field-stack">
                       <label className={labelCls}>Telegram</label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
+                        <span className="absolute left-3.5 top-3 text-xs text-ink-500 font-sans pointer-events-none">t.me/</span>
                         <input
                           type="text"
                           value={editGuardian1Telegram.replace(/https?:\/\/t\.me\//, "")}
@@ -424,7 +424,7 @@ export default function ClientCardModal({
                       <input type="text" value={editGuardian1Address} onChange={(e) => setEditGuardian1Address(e.target.value)} className={inputCls} />
                     </div>
 
-                    <p className="text-xs font-semibold text-slate-600 pt-1">{t("clients.form.guardian2")}</p>
+                    <p className="text-xs font-semibold text-ink-600 pt-1">{t("clients.form.guardian2")}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="field-stack">
                         <label className={labelCls}>{t("clients.form.guardianName")}</label>
@@ -438,7 +438,7 @@ export default function ClientCardModal({
                     <div className="field-stack">
                       <label className={labelCls}>Telegram</label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-3 text-xs text-slate-400 font-sans pointer-events-none">t.me/</span>
+                        <span className="absolute left-3.5 top-3 text-xs text-ink-500 font-sans pointer-events-none">t.me/</span>
                         <input
                           type="text"
                           value={editGuardian2Telegram.replace(/https?:\/\/t\.me\//, "")}

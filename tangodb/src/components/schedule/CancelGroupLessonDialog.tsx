@@ -19,7 +19,7 @@ interface CancelGroupLessonDialogProps {
 
 type CancelMode = "single" | "range";
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 export default function CancelGroupLessonDialog({
   lesson,
@@ -109,47 +109,47 @@ export default function CancelGroupLessonDialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !cancelOccurrences.isPending && onClose()}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
+            className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-3">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">
                   {t("schedule.lessonInfo.cancelOneTitle")}
                 </p>
-                <h3 className="text-base font-semibold tracking-tight text-slate-900 break-words">{groupLabel}</h3>
+                <h3 className="text-base font-semibold tracking-tight text-ink-900 break-words">{groupLabel}</h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={cancelOccurrences.isPending}
                 aria-label={t("common.close")}
-                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0 disabled:opacity-60"
+                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors shrink-0 disabled:opacity-60"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-4 font-sans">
-              <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-3 space-y-2">
+              <div className="rounded-lg border border-ink-100 bg-ink-50/10 p-3 space-y-2">
                 <div className="flex items-start gap-2.5">
-                  <CalendarDays className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                  <CalendarDays className="w-4 h-4 text-ink-400 shrink-0 mt-0.5" />
                   <div>
                     <p className={labelCls}>{t("schedule.lessonInfo.cancelStartDate")}</p>
-                    <p className="text-sm text-slate-800">{formatDate(lesson.date)}</p>
+                    <p className="text-sm text-ink-800">{formatDate(lesson.date)}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2.5">
-                  <Clock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                  <Clock className="w-4 h-4 text-ink-400 shrink-0 mt-0.5" />
                   <div>
                     <p className={labelCls}>{t("common.time")}</p>
-                    <p className="text-sm text-slate-800">
+                    <p className="text-sm text-ink-800">
                       {lesson.timeStart} – {lesson.timeEnd}
                     </p>
                   </div>
@@ -158,23 +158,23 @@ export default function CancelGroupLessonDialog({
 
               <fieldset className="space-y-2">
                 <legend className={labelCls}>{t("schedule.lessonInfo.cancelModeLabel")}</legend>
-                <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
                   <input
                     type="radio"
                     name="cancel-mode"
                     checked={mode === "single"}
                     onChange={() => setMode("single")}
-                    className="text-indigo-600"
+                    className="text-gold-700"
                   />
                   {t("schedule.lessonInfo.cancelModeSingle")}
                 </label>
-                <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
                   <input
                     type="radio"
                     name="cancel-mode"
                     checked={mode === "range"}
                     onChange={() => setMode("range")}
-                    className="text-indigo-600"
+                    className="text-gold-700"
                   />
                   {t("schedule.lessonInfo.cancelModeRange")}
                 </label>
@@ -198,12 +198,12 @@ export default function CancelGroupLessonDialog({
                 </div>
               ) : null}
 
-              <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3 space-y-2">
+              <div className="rounded-lg border border-amber-200 bg-amber-50/10 p-3 space-y-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">
                   {t("schedule.lessonInfo.cancelPreviewTitle", { count: previewDates.length })}
                 </p>
                 {previewDates.length > 0 ? (
-                  <ul className="max-h-32 overflow-y-auto space-y-1 text-xs text-slate-700">
+                  <ul className="max-h-32 overflow-y-auto space-y-1 text-xs text-ink-700">
                     {previewDates.map((date) => (
                       <li key={date} className="flex items-center gap-1.5">
                         <span className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />
@@ -212,7 +212,7 @@ export default function CancelGroupLessonDialog({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-xs text-slate-500">{t("schedule.lessonInfo.cancelPreviewEmpty")}</p>
+                  <p className="text-xs text-ink-500">{t("schedule.lessonInfo.cancelPreviewEmpty")}</p>
                 )}
               </div>
             </div>

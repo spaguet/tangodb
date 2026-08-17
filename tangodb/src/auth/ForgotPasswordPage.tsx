@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout title="TangoDB" subtitle={t("auth.forgotPassword.subtitle")}>
-      <p className="text-sm text-slate-500">{t("auth.forgotPassword.hint")}</p>
+      <p className="text-sm text-ink-500">{t("auth.forgotPassword.hint")}</p>
       <AuthError message={error} />
       <AuthSuccess message={success} />
 
@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
         <AuthButton loading={loading}>{t("auth.forgotPassword.submit")}</AuthButton>
       </form>
 
-      <p className="text-sm text-slate-500 text-center">
+      <p className="text-sm text-ink-500 text-center">
         <AuthLink to="/login">{t("auth.forgotPassword.backToLogin")}</AuthLink>
       </p>
     </AuthLayout>

@@ -14,19 +14,19 @@ const toneByStatus: Record<
   { wrap: string; icon: typeof CheckCircle2 }
 > = {
   synced: {
-    wrap: "text-emerald-700 bg-emerald-50 border-emerald-100",
+    wrap: "text-sage-700 bg-sage-50 border-sage-100",
     icon: CheckCircle2,
   },
   pending: {
-    wrap: "text-amber-800 bg-amber-50 border-amber-100",
+    wrap: "text-amber-700 bg-amber-50 border-amber-200",
     icon: Loader2,
   },
   error: {
-    wrap: "text-rose-700 bg-rose-50 border-rose-100",
+    wrap: "text-garnet-700 bg-garnet-50 border-garnet-100",
     icon: AlertTriangle,
   },
   not_connected: {
-    wrap: "text-slate-600 bg-slate-50 border-slate-200",
+    wrap: "text-ink-600 bg-ink-50 border-ink-200",
     icon: CalendarOff,
   },
 };

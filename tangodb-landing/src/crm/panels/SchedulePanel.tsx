@@ -43,36 +43,36 @@ export function SchedulePanel({ locale }: Props) {
 
   return (
     <div id="panel-schedule" className="panel-page-stack">
-      <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white/95 backdrop-blur-[2px] py-1 -mx-1 px-1">
+      <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white backdrop-blur-[2px] py-1 -mx-1 px-1">
         <div className="flex items-center gap-2">
-          <CalendarDays className="w-5 h-5 text-indigo-500 shrink-0" />
-          <h2 className="text-base font-semibold text-slate-800 tracking-tight">
+          <CalendarDays className="w-5 h-5 text-gold-500 shrink-0" />
+          <h2 className="text-base font-semibold text-ink-800 tracking-tight">
             {locale === "ru" ? "Расписание" : "Schedule"}
           </h2>
         </div>
         <div className="flex items-center gap-1">
-          <button type="button" disabled className="p-1.5 rounded-lg text-slate-400 cursor-not-allowed" aria-label="Prev week">
+          <button type="button" disabled className="p-1.5 rounded-lg text-ink-400 cursor-not-allowed" aria-label="Prev week">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-xs font-semibold text-slate-800 min-w-[120px] text-center">{weekLabel}</span>
-          <button type="button" disabled className="p-1.5 rounded-lg text-slate-400 cursor-not-allowed" aria-label="Next week">
+          <span className="text-xs font-semibold text-ink-800 min-w-[120px] text-center">{weekLabel}</span>
+          <button type="button" disabled className="p-1.5 rounded-lg text-ink-400 cursor-not-allowed" aria-label="Next week">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs demo-field-disabled">
+      <section className="bg-white rounded-xl border border-ink-200 shadow-xs demo-field-disabled">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 bg-slate-50/60 text-left cursor-pointer hover:bg-slate-50 transition-colors rounded-t-xl"
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-ink-100 bg-ink-50/10 text-left cursor-pointer hover:bg-ink-50 transition-colors rounded-t-xl"
           aria-expanded={expanded}
         >
-          <h3 className="text-sm font-semibold text-slate-800 tracking-tight min-w-0 truncate">{STUDIO_LOCATION}</h3>
+          <h3 className="text-sm font-semibold text-ink-800 tracking-tight min-w-0 truncate">{STUDIO_LOCATION}</h3>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-slate-500 tabular-nums">{scheduleLessons.length}</span>
+            <span className="text-xs text-ink-500 tabular-nums">{scheduleLessons.length}</span>
             <ChevronDown
-              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+              className={`w-4 h-4 text-ink-400 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
             />
           </div>
         </button>
@@ -80,16 +80,16 @@ export function SchedulePanel({ locale }: Props) {
         {expanded && (
           <div className="isolate overflow-auto max-h-[min(52vh,420px)] sm:max-h-none [-webkit-overflow-scrolling:touch]">
             <div className="flex min-w-[640px]">
-              <div className="sticky left-0 z-[1] w-10 sm:w-12 shrink-0 border-r border-slate-100 bg-white shadow-[2px_0_4px_-2px_rgba(15,23,42,0.08)]">
+              <div className="sticky left-0 z-[1] w-10 sm:w-12 shrink-0 border-r border-ink-100 bg-white shadow-[2px_0_4px_-2px_rgba(15,23,42,0.08)]">
                 <div
-                  className="sticky top-0 z-[2] h-9 sm:h-11 border-b border-slate-100 bg-slate-50/95 backdrop-blur-[2px]"
+                  className="sticky top-0 z-[2] h-9 sm:h-11 border-b border-ink-100 bg-ink-50/10 backdrop-blur-[2px]"
                   aria-hidden
                 />
                 <div className="relative" style={{ height: gridH }}>
                   {timeLabels.map(({ top, label }) => (
                     <div
                       key={label}
-                      className="absolute right-0.5 sm:right-1 text-[10px] font-semibold text-slate-400 tabular-nums -translate-y-1/2"
+                      className="absolute right-0.5 sm:right-1 text-[10px] font-semibold text-ink-400 tabular-nums -translate-y-1/2"
                       style={{ top }}
                     >
                       {label}
@@ -98,7 +98,7 @@ export function SchedulePanel({ locale }: Props) {
                   {Array.from({ length: rowCount }, (_, i) => (
                     <div
                       key={i}
-                      className="absolute left-0 right-0 border-b border-slate-50"
+                      className="absolute left-0 right-0 border-b border-ink-50"
                       style={{ top: i * ROW_H, height: ROW_H }}
                     />
                   ))}
@@ -110,18 +110,18 @@ export function SchedulePanel({ locale }: Props) {
                   const dayLessons = scheduleLessons.filter((l) => l.day === dow);
                   const dayNum = dayLessons[0]?.dayNum ?? 23 + idx;
                   return (
-                    <div key={dow} className="flex-1 min-w-0 border-l border-slate-100 first:border-l-0">
-                      <div className="sticky top-0 z-[1] flex h-9 sm:h-11 flex-col items-center justify-center border-b border-slate-100 bg-slate-50/95 backdrop-blur-[2px] px-0.5">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    <div key={dow} className="flex-1 min-w-0 border-l border-ink-100 first:border-l-0">
+                      <div className="sticky top-0 z-[1] flex h-9 sm:h-11 flex-col items-center justify-center border-b border-ink-100 bg-ink-50/10 backdrop-blur-[2px] px-0.5">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-ink-400">
                           {days[idx]}
                         </div>
-                        <div className="text-xs font-semibold text-slate-800 tabular-nums">{dayNum}</div>
+                        <div className="text-xs font-semibold text-ink-800 tabular-nums">{dayNum}</div>
                       </div>
                       <div className="relative bg-white" style={{ height: gridH }}>
                         {Array.from({ length: rowCount }, (_, i) => (
                           <div
                             key={i}
-                            className="absolute left-0 right-0 border-b border-slate-50"
+                            className="absolute left-0 right-0 border-b border-ink-50"
                             style={{ top: i * ROW_H, height: ROW_H }}
                           />
                         ))}
@@ -137,8 +137,8 @@ export function SchedulePanel({ locale }: Props) {
                               key={`${lesson.start}-${lesson.title}`}
                               className={`absolute left-0.5 right-0.5 overflow-hidden rounded-md border px-1 py-0.5 text-[10px] leading-tight font-semibold text-white shadow-xs ${
                                 isPersonal
-                                  ? "border-sky-700 bg-sky-500"
-                                  : "border-indigo-700 bg-indigo-600"
+                                  ? "border-lavender-700 bg-lavender-500"
+                                  : "border-gold-700 bg-gold-700"
                               }`}
                               style={{ top, height, zIndex: 1 }}
                             >

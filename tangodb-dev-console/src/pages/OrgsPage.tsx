@@ -271,10 +271,10 @@ export default function OrgsPage() {
   };
 
   const badgeColor = (badge: string) => {
-    if (badge === "Lifetime") return "bg-emerald-900/50 text-emerald-300";
-    if (badge === "Subscription") return "bg-blue-900/50 text-blue-300";
-    if (badge === "Demo") return "bg-amber-900/50 text-amber-300";
-    return "bg-slate-800 text-slate-300";
+    if (badge === "Lifetime") return "bg-sage-900/70 text-sage-300";
+    if (badge === "Subscription") return "bg-lavender-900/70 text-lavender-300";
+    if (badge === "Demo") return "bg-ink-800 text-amber-700";
+    return "bg-ink-800 text-ink-300";
   };
 
   const isLicensedTenant = (t: TenantRow) =>
@@ -286,7 +286,7 @@ export default function OrgsPage() {
     <div className="space-y-4 max-w-[1400px]">
       <div>
         <h2 className="text-2xl font-bold text-white">Tenants</h2>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-ink-500 mt-1">
           CRM-базы клиентов: owner, лицензия, размер данных, last login. Поиск по email, имени, payment_ref.
         </p>
       </div>
@@ -296,13 +296,13 @@ export default function OrgsPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Email, UUID, name, slug или payment_ref"
-          className="flex-1 min-w-[220px] px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm"
+          className="flex-1 min-w-[220px] px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm"
           onKeyDown={(e) => e.key === "Enter" && void search()}
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm"
+          className="px-3 py-2 bg-ink-900 border border-ink-800 rounded-lg text-sm"
         >
           <option value="">Все статусы</option>
           <option value="demo_active">demo_active</option>
@@ -311,7 +311,7 @@ export default function OrgsPage() {
           <option value="purged">purged</option>
           <option value="suspended">suspended</option>
         </select>
-        <label className="flex items-center gap-1.5 text-xs text-slate-400 px-2">
+        <label className="flex items-center gap-1.5 text-xs text-ink-400 px-2">
           <input
             type="checkbox"
             checked={expiringSoon}
@@ -320,7 +320,7 @@ export default function OrgsPage() {
           />
           Demo ≤7 дней
         </label>
-        <label className="flex items-center gap-1.5 text-xs text-slate-400 px-2">
+        <label className="flex items-center gap-1.5 text-xs text-ink-400 px-2">
           <input
             type="checkbox"
             checked={awaitingPayment}
@@ -333,17 +333,17 @@ export default function OrgsPage() {
           type="button"
           onClick={() => void search()}
           disabled={loading}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
+          className="px-4 py-2 bg-gold-700 hover:bg-gold-800 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
         >
           {loading ? "…" : "Search"}
         </button>
       </div>
 
-      {error && <p className="text-sm text-rose-400">{error}</p>}
+      {error && <p className="text-sm text-garnet-400">{error}</p>}
 
-      <div className="border border-slate-800 rounded-xl overflow-x-auto">
+      <div className="border border-ink-800 rounded-xl overflow-x-auto">
         <table className="w-full text-sm min-w-[1280px]">
-          <thead className="bg-slate-900 text-slate-500 text-left">
+          <thead className="bg-ink-900 text-ink-500 text-left">
             <tr>
               <th className="px-3 py-2 font-medium">UUID</th>
               <th className="px-3 py-2 font-medium">CRM</th>
@@ -359,11 +359,11 @@ export default function OrgsPage() {
           </thead>
           <tbody>
             {tenants.map((t) => (
-              <tr key={t.id} className="border-t border-slate-800 align-top">
+              <tr key={t.id} className="border-t border-ink-800 align-top">
                 <td className="px-3 py-2">
                   <div className="flex items-start gap-1 max-w-[220px]">
                     <code
-                      className="text-[11px] font-mono text-slate-400 break-all leading-snug"
+                      className="text-[11px] font-mono text-ink-400 break-all leading-snug"
                       title={t.id}
                     >
                       {t.id}
@@ -372,10 +372,10 @@ export default function OrgsPage() {
                       type="button"
                       title="Скопировать UUID"
                       onClick={() => void copyText(t.id, "uuid")}
-                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 shrink-0 cursor-pointer"
+                      className="p-1 rounded bg-ink-800 hover:bg-ink-700 text-ink-400 shrink-0 cursor-pointer"
                     >
                       {copiedUuid === t.id ? (
-                        <Check className="w-3 h-3 text-emerald-400" />
+                        <Check className="w-3 h-3 text-sage-400" />
                       ) : (
                         <Copy className="w-3 h-3" />
                       )}
@@ -383,17 +383,17 @@ export default function OrgsPage() {
                   </div>
                 </td>
                 <td className="px-3 py-2">
-                  <p className="text-slate-200 font-medium">{t.name}</p>
-                  <p className="text-xs text-slate-500">{t.crm_version_code ?? "—"}</p>
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{t.status}</span>
+                  <p className="text-ink-200 font-medium">{t.name}</p>
+                  <p className="text-xs text-ink-500">{t.crm_version_code ?? "—"}</p>
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-ink-800 text-ink-400">{t.status}</span>
                 </td>
-                <td className="px-3 py-2 text-slate-300">
+                <td className="px-3 py-2 text-ink-300">
                   <p className="truncate max-w-[180px]" title={t.owner_email ?? undefined}>
                     {t.owner_email ?? "—"}
                   </p>
-                  <p className="text-xs text-slate-500">{t.owner_display_name ?? "—"}</p>
+                  <p className="text-xs text-ink-500">{t.owner_display_name ?? "—"}</p>
                   {t.telegram_masked && (
-                    <p className="text-xs text-slate-600">TG {t.telegram_masked}</p>
+                    <p className="text-xs text-ink-600">TG {t.telegram_masked}</p>
                   )}
                 </td>
                 <td className="px-3 py-2">
@@ -401,28 +401,28 @@ export default function OrgsPage() {
                     {t.license_badge}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-slate-400">
+                <td className="px-3 py-2 text-ink-400">
                   {t.storage_display}
-                  <span className="text-xs text-slate-600 block">{t.storage_rows} rows</span>
+                  <span className="text-xs text-ink-600 block">{t.storage_rows} rows</span>
                 </td>
-                <td className="px-3 py-2 text-slate-400">
+                <td className="px-3 py-2 text-ink-400">
                   {t.demo_expires_at ? (
                     <>
                       {new Date(t.demo_expires_at).toLocaleDateString("ru-RU")}
                       {t.demo_days_left != null && (
-                        <span className="text-xs text-amber-400 block">{t.demo_days_left} дн.</span>
+                        <span className="text-xs text-amber-700 block">{t.demo_days_left} дн.</span>
                       )}
                     </>
                   ) : (
                     "—"
                   )}
                 </td>
-                <td className="px-3 py-2 text-slate-500 text-xs">
+                <td className="px-3 py-2 text-ink-500 text-xs">
                   {t.last_sign_in_at
                     ? new Date(t.last_sign_in_at).toLocaleString("ru-RU")
                     : "—"}
                 </td>
-                <td className="px-3 py-2 text-xs text-slate-500">
+                <td className="px-3 py-2 text-xs text-ink-500">
                   {t.key_metadata ? (
                     <>
                       {t.key_metadata.key_type}/{t.key_metadata.status}
@@ -431,7 +431,7 @@ export default function OrgsPage() {
                     "—"
                   )}
                 </td>
-                <td className="px-3 py-2 text-xs font-mono text-slate-400">{t.payment_ref ?? "—"}</td>
+                <td className="px-3 py-2 text-xs font-mono text-ink-400">{t.payment_ref ?? "—"}</td>
                 <td className="px-3 py-2">
                   <div className="flex flex-wrap gap-1">
                     <button
@@ -439,7 +439,7 @@ export default function OrgsPage() {
                       title="Восстановить доступ"
                       onClick={() => openModal("password", t)}
                       disabled={!t.owner_email || t.status === "purged"}
-                      className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40 cursor-pointer"
+                      className="p-1.5 rounded bg-ink-800 hover:bg-ink-700 text-ink-300 disabled:opacity-40 cursor-pointer"
                     >
                       <UserCog className="w-3.5 h-3.5" />
                     </button>
@@ -448,7 +448,7 @@ export default function OrgsPage() {
                       title="Сменить owner email (S9)"
                       onClick={() => openModal("transferOwner", t)}
                       disabled={!t.owner_email || t.status === "purged"}
-                      className="p-1.5 rounded bg-slate-800 hover:bg-amber-900/40 text-amber-300 disabled:opacity-40 cursor-pointer"
+                      className="p-1.5 rounded bg-ink-800 hover:bg-amber-50/10 text-amber-700 disabled:opacity-40 cursor-pointer"
                     >
                       <Mail className="w-3.5 h-3.5" />
                     </button>
@@ -457,7 +457,7 @@ export default function OrgsPage() {
                       title="Lifetime key"
                       onClick={() => openModal("issueKey", t)}
                       disabled={!t.owner_email}
-                      className="p-1.5 rounded bg-slate-800 hover:bg-indigo-900/50 text-indigo-300 disabled:opacity-40 cursor-pointer"
+                      className="p-1.5 rounded bg-ink-800 hover:bg-gold-900/70 text-gold-300 disabled:opacity-40 cursor-pointer"
                     >
                       <Key className="w-3.5 h-3.5" />
                     </button>
@@ -466,7 +466,7 @@ export default function OrgsPage() {
                       title="Удалить базу"
                       onClick={() => openModal("purge", t)}
                       disabled={!canPurge(t)}
-                      className="p-1.5 rounded bg-slate-800 hover:bg-rose-900/50 text-rose-400 disabled:opacity-40 cursor-pointer"
+                      className="p-1.5 rounded bg-ink-800 hover:bg-garnet-900/70 text-garnet-400 disabled:opacity-40 cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -476,7 +476,7 @@ export default function OrgsPage() {
             ))}
             {tenants.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={10} className="px-4 py-8 text-center text-ink-500">
                   {searched
                     ? "Ничего не найдено. Проверьте email (можно без @), UUID org или снимите фильтр статуса."
                     : "Нажмите Search для загрузки tenant org"}
@@ -488,32 +488,32 @@ export default function OrgsPage() {
       </div>
 
       {modal && activeTenant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-md w-full p-5 space-y-4 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/40 p-4">
+          <div className="bg-ink-900 border border-ink-700 rounded-xl max-w-md w-full p-5 space-y-4 shadow-xl">
             {modal === "password" && (
               <>
                 <h3 className="text-lg font-semibold text-white">Восстановить доступ</h3>
-                <p className="text-sm text-slate-400">
-                  Org: <span className="text-slate-200">{activeTenant.name}</span>
+                <p className="text-sm text-ink-400">
+                  Org: <span className="text-ink-200">{activeTenant.name}</span>
                   <br />
                   Owner: {activeTenant.owner_email}
                 </p>
                 {!tempPassword ? (
                   <>
-                    <p className="text-xs text-amber-400">
+                    <p className="text-xs text-amber-700">
                       Если owner email доступен — сначала попросите «Забыли пароль?» в CRM. Здесь — сброс
                       support-пароля, если email недоступен или письмо не доходит. Пароль не сохраняется в audit log.
                     </p>
-                    {modalError && <p className="text-sm text-rose-400">{modalError}</p>}
+                    {modalError && <p className="text-sm text-garnet-400">{modalError}</p>}
                     <div className="flex gap-2 justify-end">
-                      <button type="button" onClick={closeModal} className="px-3 py-2 text-sm text-slate-400 cursor-pointer">
+                      <button type="button" onClick={closeModal} className="px-3 py-2 text-sm text-ink-400 cursor-pointer">
                         Отмена
                       </button>
                       <button
                         type="button"
                         onClick={() => void resetPassword()}
                         disabled={modalLoading}
-                        className="px-4 py-2 bg-indigo-600 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
+                        className="px-4 py-2 bg-gold-700 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
                       >
                         {modalLoading ? "…" : "Сгенерировать пароль"}
                       </button>
@@ -521,14 +521,14 @@ export default function OrgsPage() {
                   </>
                 ) : (
                   <>
-                    <p className="text-xs text-emerald-400 uppercase font-semibold">Пароль — скопируйте сейчас</p>
-                    <div className="flex items-center gap-2 p-3 bg-slate-950 rounded-lg border border-emerald-900">
-                      <code className="flex-1 text-sm font-mono text-emerald-200 break-all">{tempPassword}</code>
-                      <button type="button" onClick={() => void copyText(tempPassword)} className="p-2 text-emerald-400 cursor-pointer">
+                    <p className="text-xs text-sage-400 uppercase font-semibold">Пароль — скопируйте сейчас</p>
+                    <div className="flex items-center gap-2 p-3 bg-ink-950 rounded-lg border border-sage-900">
+                      <code className="flex-1 text-sm font-mono text-sage-200 break-all">{tempPassword}</code>
+                      <button type="button" onClick={() => void copyText(tempPassword)} className="p-2 text-sage-400 cursor-pointer">
                         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
-                    <button type="button" onClick={closeModal} className="w-full py-2 text-sm text-slate-400 cursor-pointer">
+                    <button type="button" onClick={closeModal} className="w-full py-2 text-sm text-ink-400 cursor-pointer">
                       Закрыть
                     </button>
                   </>
@@ -539,46 +539,46 @@ export default function OrgsPage() {
             {modal === "transferOwner" && (
               <>
                 <h3 className="text-lg font-semibold text-white">Смена owner email (emergency)</h3>
-                <p className="text-sm text-slate-400">
-                  Org: <span className="text-slate-200">{activeTenant.name}</span>
+                <p className="text-sm text-ink-400">
+                  Org: <span className="text-ink-200">{activeTenant.name}</span>
                   <br />
                   Текущий owner: {activeTenant.owner_email}
                 </p>
                 {!transferSuccess ? (
                   <>
-                    <p className="text-xs text-amber-400">
+                    <p className="text-xs text-amber-700">
                       Минимум 2 фактора владения. Recovery code — только дополнительный фактор, не единственный.
                       Все действия пишутся в audit log (email — только hash).
                     </p>
                     <label className="block space-y-1">
-                      <span className="text-xs text-slate-500">Новый email owner</span>
+                      <span className="text-xs text-ink-500">Новый email owner</span>
                       <input
                         type="email"
                         value={transferEmail}
                         onChange={(e) => setTransferEmail(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+                        className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
                       />
                     </label>
                     <label className="block space-y-1">
-                      <span className="text-xs text-slate-500">Причина (support ticket / заметка)</span>
+                      <span className="text-xs text-ink-500">Причина (support ticket / заметка)</span>
                       <input
                         value={transferReason}
                         onChange={(e) => setTransferReason(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+                        className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
                       />
                     </label>
                     <label className="block space-y-1">
-                      <span className="text-xs text-slate-500">Emergency Recovery Code (optional)</span>
+                      <span className="text-xs text-ink-500">Emergency Recovery Code (optional)</span>
                       <input
                         value={transferVerification.recovery_code}
                         onChange={(e) =>
                           setTransferVerification((v) => ({ ...v, recovery_code: e.target.value }))
                         }
                         placeholder="XXXX-XXXX-XXXX"
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm font-mono"
+                        className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm font-mono"
                       />
                     </label>
-                    <div className="space-y-2 text-xs text-slate-400">
+                    <div className="space-y-2 text-xs text-ink-400">
                       <label className="flex items-start gap-2 cursor-pointer">
                         <input
                           type="checkbox"
@@ -659,12 +659,12 @@ export default function OrgsPage() {
                         <span>Данные организации проверены вручную</span>
                       </label>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-ink-500">
                       Факторов: {countTransferFactors(transferVerification)} / мин. 2
                     </p>
-                    {modalError && <p className="text-sm text-rose-400">{modalError}</p>}
+                    {modalError && <p className="text-sm text-garnet-400">{modalError}</p>}
                     <div className="flex gap-2 justify-end">
-                      <button type="button" onClick={closeModal} className="px-3 py-2 text-sm text-slate-400 cursor-pointer">
+                      <button type="button" onClick={closeModal} className="px-3 py-2 text-sm text-ink-400 cursor-pointer">
                         Отмена
                       </button>
                       <button
@@ -676,7 +676,7 @@ export default function OrgsPage() {
                           !transferReason.trim() ||
                           countTransferFactors(transferVerification) < 2
                         }
-                        className="px-4 py-2 bg-amber-700 hover:bg-amber-600 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
+                        className="px-4 py-2 bg-garnet-600 hover:bg-garnet-700 text-white rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
                       >
                         {modalLoading ? "…" : "Сменить owner email"}
                       </button>
@@ -684,8 +684,8 @@ export default function OrgsPage() {
                   </>
                 ) : (
                   <>
-                    <p className="text-sm text-emerald-400">{transferSuccess}</p>
-                    <button type="button" onClick={closeModal} className="w-full py-2 text-sm text-slate-400 cursor-pointer">
+                    <p className="text-sm text-sage-400">{transferSuccess}</p>
+                    <button type="button" onClick={closeModal} className="w-full py-2 text-sm text-ink-400 cursor-pointer">
                       Закрыть
                     </button>
                   </>
@@ -696,41 +696,41 @@ export default function OrgsPage() {
             {modal === "issueKey" && (
               <>
                 <h3 className="text-lg font-semibold text-white">Lifetime key</h3>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-ink-400">
                   Ключ будет привязан к email owner и активируется только этим аккаунтом.
                 </p>
                 <label className="block space-y-1">
-                  <span className="text-xs text-slate-500">Email получателя</span>
+                  <span className="text-xs text-ink-500">Email получателя</span>
                   <input
                     type="email"
                     value={activeTenant.owner_email ?? ""}
                     readOnly
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-300"
+                    className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm text-ink-300"
                   />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-xs text-slate-500">Подпись выдающего</span>
+                  <span className="text-xs text-ink-500">Подпись выдающего</span>
                   <input
                     type="password"
                     value={issueKeySignature}
                     onChange={(e) => setIssueKeySignature(e.target.value)}
                     placeholder="Ваша секретная подпись"
                     autoComplete="off"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+                    className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
                   />
                 </label>
                 {!issuedKey ? (
                   <>
-                    {modalError && <p className="text-sm text-rose-400">{modalError}</p>}
+                    {modalError && <p className="text-sm text-garnet-400">{modalError}</p>}
                     <div className="flex gap-2 justify-end">
-                      <button type="button" onClick={closeModal} className="px-3 py-2 text-sm text-slate-400 cursor-pointer">
+                      <button type="button" onClick={closeModal} className="px-3 py-2 text-sm text-ink-400 cursor-pointer">
                         Отмена
                       </button>
                       <button
                         type="button"
                         onClick={() => void issueKey()}
                         disabled={modalLoading || !issueKeySignature.trim()}
-                        className="px-4 py-2 bg-indigo-600 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
+                        className="px-4 py-2 bg-gold-700 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
                       >
                         {modalLoading ? "…" : "Выдать ключ"}
                       </button>
@@ -738,14 +738,14 @@ export default function OrgsPage() {
                   </>
                 ) : (
                   <>
-                    <p className="text-xs text-emerald-400 uppercase font-semibold">Key — copy now</p>
-                    <div className="flex items-center gap-2 p-3 bg-slate-950 rounded-lg border border-emerald-900">
-                      <code className="flex-1 text-sm font-mono text-emerald-200 break-all">{issuedKey}</code>
-                      <button type="button" onClick={() => void copyText(issuedKey)} className="p-2 text-emerald-400 cursor-pointer">
+                    <p className="text-xs text-sage-400 uppercase font-semibold">Key — copy now</p>
+                    <div className="flex items-center gap-2 p-3 bg-ink-950 rounded-lg border border-sage-900">
+                      <code className="flex-1 text-sm font-mono text-sage-200 break-all">{issuedKey}</code>
+                      <button type="button" onClick={() => void copyText(issuedKey)} className="p-2 text-sage-400 cursor-pointer">
                         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
-                    <button type="button" onClick={closeModal} className="w-full py-2 text-sm text-slate-400 cursor-pointer">
+                    <button type="button" onClick={closeModal} className="w-full py-2 text-sm text-ink-400 cursor-pointer">
                       Закрыть
                     </button>
                   </>
@@ -755,33 +755,33 @@ export default function OrgsPage() {
 
             {modal === "purge" && (
               <>
-                <h3 className="text-lg font-semibold text-rose-300">Удалить базу</h3>
-                <p className="text-sm text-slate-400">
+                <h3 className="text-lg font-semibold text-garnet-300">Удалить базу</h3>
+                <p className="text-sm text-ink-400">
                   {isLicensedTenant(activeTenant)
                     ? "Licensed / Lifetime org — необратимое удаление. Требуется подтверждение и причина."
                     : "Необратимое удаление demo org и всех данных."}
                 </p>
                 <label className="block space-y-1">
-                  <span className="text-xs text-slate-500">Подтвердите название org</span>
+                  <span className="text-xs text-ink-500">Подтвердите название org</span>
                   <input
                     value={purgeNameConfirm}
                     onChange={(e) => setPurgeNameConfirm(e.target.value)}
                     placeholder={activeTenant.name}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+                    className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
                   />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-ink-500">
                     Причина{isLicensedTenant(activeTenant) ? " *" : " (optional)"}
                   </span>
                   <input
                     value={purgeReason}
                     onChange={(e) => setPurgeReason(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+                    className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
                   />
                 </label>
                 {isLicensedTenant(activeTenant) && (
-                  <label className="flex items-start gap-2 text-xs text-amber-300 cursor-pointer">
+                  <label className="flex items-start gap-2 text-xs text-amber-700 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={purgeForceLicensed}
@@ -793,9 +793,9 @@ export default function OrgsPage() {
                     </span>
                   </label>
                 )}
-                {modalError && <p className="text-sm text-rose-400">{modalError}</p>}
+                {modalError && <p className="text-sm text-garnet-400">{modalError}</p>}
                 <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={closeModal} className="px-3 py-2 text-sm text-slate-400 cursor-pointer">
+                  <button type="button" onClick={closeModal} className="px-3 py-2 text-sm text-ink-400 cursor-pointer">
                     Отмена
                   </button>
                   <button
@@ -807,7 +807,7 @@ export default function OrgsPage() {
                       (isLicensedTenant(activeTenant) &&
                         (!purgeForceLicensed || !purgeReason.trim()))
                     }
-                    className="px-4 py-2 bg-rose-700 hover:bg-rose-600 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
+                    className="px-4 py-2 bg-garnet-600 hover:bg-garnet-700 text-white rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
                   >
                     {modalLoading ? "…" : "Удалить навсегда"}
                   </button>

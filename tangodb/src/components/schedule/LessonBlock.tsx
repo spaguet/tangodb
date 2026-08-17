@@ -1,4 +1,5 @@
 import type { KeyboardEvent } from "react";
+import { Building2, CalendarPlus, User, Users } from "lucide-react";
 import type { DisplayLesson } from "../../types";
 import { GROUP_LESSON_COLOR, PERSONAL_LESSON_COLOR, EVENT_LESSON_COLOR, RENTAL_LESSON_COLOR } from "../../lib/scheduleColors";
 import { isPastDate } from "../../lib/scheduleWeek";
@@ -49,6 +50,16 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
   const leftPct = column * widthPct;
 
   const showSubtitle = heightPx >= ROW_HEIGHT_PX * 2 && subtitle;
+  const showIcon = heightPx >= ROW_HEIGHT_PX;
+
+  const LessonIcon =
+    lesson.kind === "rental"
+      ? Building2
+      : lesson.kind === "event"
+        ? CalendarPlus
+        : lesson.kind === "personal"
+          ? User
+          : Users;
 
   const handleClick = () => onClick?.(lesson);
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -68,9 +79,9 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
         onClick ? "cursor-pointer hover:brightness-95" : ""
       } ${isPast ? "opacity-50 grayscale" : ""} ${colors.bg} ${colors.text} ${
         highlighted
-          ? "ring-2 ring-indigo-600 ring-offset-1"
+          ? "ring-2 ring-gold-600 ring-offset-1"
           : hasDebt
-            ? "ring-2 ring-rose-500 ring-inset"
+            ? "ring-2 ring-garnet-500 ring-inset"
             : colors.border
       }`}
       style={{
@@ -82,7 +93,14 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
       }}
       title={`${title}${subtitle ? ` · ${subtitle}` : ""}`}
     >
-      <span className="block truncate">{title}</span>
+      {showIcon ? (
+        <span className="flex min-w-0 items-center gap-0.5">
+          <LessonIcon className="h-3 w-3 shrink-0" aria-hidden />
+          <span className="truncate">{title}</span>
+        </span>
+      ) : (
+        <span className="block truncate">{title}</span>
+      )}
       {showSubtitle ? <span className="block truncate opacity-80 font-normal">{subtitle}</span> : null}
     </div>
   );

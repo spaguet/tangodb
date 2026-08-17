@@ -54,7 +54,7 @@ export default function ResetPasswordPage() {
   if (!session) {
     return (
       <AuthLayout title="TangoDB" subtitle={t("auth.resetPassword.subtitle")}>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-ink-500">
           {t("auth.resetPassword.noSessionHint")}{" "}
           <AuthLink to="/auth/forgot-password">{t("auth.resetPassword.requestNewLink")}</AuthLink>.
         </p>

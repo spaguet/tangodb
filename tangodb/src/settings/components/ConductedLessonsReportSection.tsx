@@ -47,37 +47,37 @@ function ConductedLessonsDisciplinePicker({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+        <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
           {t("settings.export.conductedLessons.disciplines")}
         </p>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={selectAll}
-            className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
+            className="text-[10px] font-semibold text-gold-700 hover:underline cursor-pointer"
           >
             {t("settings.export.conductedLessons.selectAll")}
           </button>
           <button
             type="button"
             onClick={clearAll}
-            className="text-[10px] font-semibold text-slate-500 hover:underline cursor-pointer"
+            className="text-[10px] font-semibold text-ink-500 hover:underline cursor-pointer"
           >
             {t("settings.export.conductedLessons.clearAll")}
           </button>
         </div>
       </div>
-      <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
+      <div className="max-h-40 overflow-y-auto rounded-lg border border-ink-200 divide-y divide-ink-100">
         {disciplines.map((discipline) => (
           <label
             key={discipline.id}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-ink-700 hover:bg-ink-50 cursor-pointer"
           >
             <input
               type="checkbox"
               checked={selectedSet.has(discipline.id)}
               onChange={() => toggle(discipline.id)}
-              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-ink-300 text-gold-700 focus:ring-gold-500"
             />
             <span className="truncate">{discipline.name}</span>
           </label>
@@ -173,12 +173,12 @@ export default function ConductedLessonsReportSection() {
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
+      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4">
         <div>
-          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold mb-1">
+          <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold mb-1">
             {t("settings.export.conductedLessons.title")}
           </p>
-          <p className="text-xs text-slate-500">{t("settings.export.conductedLessons.subtitle")}</p>
+          <p className="text-xs text-ink-500">{t("settings.export.conductedLessons.subtitle")}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -220,40 +220,40 @@ export default function ConductedLessonsReportSection() {
             onChange={setSelectedDisciplineIds}
           />
         ) : (
-          <p className="text-sm text-slate-500">{t("settings.export.conductedLessons.noDisciplinesInCategory")}</p>
+          <p className="text-sm text-ink-500">{t("settings.export.conductedLessons.noDisciplinesInCategory")}</p>
         )}
 
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-2 text-xs text-slate-600">
+        <div className="rounded-lg border border-ink-100 bg-ink-50 p-3 space-y-2 text-xs text-ink-600">
           <p>
-            <span className="font-semibold text-slate-700">{t("settings.export.conductedLessons.previewPeriod")}:</span>{" "}
+            <span className="font-semibold text-ink-700">{t("settings.export.conductedLessons.previewPeriod")}:</span>{" "}
             {periodLabel}
           </p>
           {category && (
             <p>
-              <span className="font-semibold text-slate-700">{t("settings.export.conductedLessons.previewCategory")}:</span>{" "}
+              <span className="font-semibold text-ink-700">{t("settings.export.conductedLessons.previewCategory")}:</span>{" "}
               {category}
             </p>
           )}
           <p>
-            <span className="font-semibold text-slate-700">{t("settings.export.conductedLessons.previewIncluded")}:</span>{" "}
+            <span className="font-semibold text-ink-700">{t("settings.export.conductedLessons.previewIncluded")}:</span>{" "}
             {includedDisciplines.length > 0
               ? includedDisciplines.map((d) => d.name).join(", ")
               : t("settings.export.conductedLessons.noneSelected")}
           </p>
           {excludedDisciplines.length > 0 && (
             <p>
-              <span className="font-semibold text-slate-700">{t("settings.export.conductedLessons.previewExcluded")}:</span>{" "}
+              <span className="font-semibold text-ink-700">{t("settings.export.conductedLessons.previewExcluded")}:</span>{" "}
               {excludedDisciplines.map((d) => d.name).join(", ")}
             </p>
           )}
           <p>
-            <span className="font-semibold text-slate-700">{t("settings.export.conductedLessons.previewCount")}:</span>{" "}
+            <span className="font-semibold text-ink-700">{t("settings.export.conductedLessons.previewCount")}:</span>{" "}
             {reportQuery.isFetching ? "…" : rows.length}
           </p>
         </div>
 
         {selectedDisciplineIds.length === 0 ? (
-          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
             {t("settings.export.conductedLessons.selectDisciplinesHint")}
           </p>
         ) : reportQuery.isFetching ? (
@@ -261,11 +261,11 @@ export default function ConductedLessonsReportSection() {
         ) : reportQuery.isError ? (
           <QueryErrorState error={reportQuery.error} />
         ) : rows.length === 0 ? (
-          <p className="text-sm text-slate-500">{t("settings.export.conductedLessons.noData")}</p>
+          <p className="text-sm text-ink-500">{t("settings.export.conductedLessons.noData")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <div className="overflow-x-auto rounded-lg border border-ink-200">
             <table className="min-w-full text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider">
+              <thead className="bg-ink-50 text-ink-500 uppercase tracking-wider">
                 <tr>
                   <th className="px-2 py-2 text-left font-semibold">{t("settings.export.conductedLessons.column.date")}</th>
                   <th className="px-2 py-2 text-left font-semibold">{t("settings.export.conductedLessons.column.timeStart")}</th>
@@ -274,7 +274,7 @@ export default function ConductedLessonsReportSection() {
                   <th className="px-2 py-2 text-right font-semibold">{t("settings.export.conductedLessons.column.present")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-ink-100 text-ink-700">
                 {rows.slice(0, PREVIEW_ROW_LIMIT).map((row) => (
                   <tr key={row.occurrenceId}>
                     <td className="px-2 py-2 whitespace-nowrap">{row.date}</td>
@@ -287,7 +287,7 @@ export default function ConductedLessonsReportSection() {
               </tbody>
             </table>
             {rows.length > PREVIEW_ROW_LIMIT && (
-              <p className="px-2 py-2 text-[10px] text-slate-400 border-t border-slate-100">
+              <p className="px-2 py-2 text-[10px] text-ink-500 border-t border-ink-100">
                 {t("settings.export.conductedLessons.previewMore", { count: rows.length - PREVIEW_ROW_LIMIT })}
               </p>
             )}

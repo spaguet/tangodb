@@ -75,9 +75,9 @@ export default function PersonalLessonFilters({
   };
 
   return (
-    <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+    <div className="bg-white rounded-xl p-4 border border-ink-200 shadow-xs panel-card-stack">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className="flex flex-wrap bg-slate-100 rounded-lg p-1 text-xs font-semibold gap-1">
+        <div className="flex flex-wrap bg-ink-100 rounded-lg p-1 text-xs font-semibold gap-1">
           {periodModes.map((mode) => (
             <button
               key={mode.id}
@@ -85,8 +85,8 @@ export default function PersonalLessonFilters({
               onClick={() => onChange({ periodMode: mode.id })}
               className={`px-3 py-1.5 rounded-md cursor-pointer transition-all ${
                 filters.periodMode === mode.id
-                  ? "bg-white text-slate-900 shadow-xs font-semibold"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-white text-ink-900 shadow-xs font-semibold"
+                  : "text-ink-500 hover:text-ink-700"
               }`}
             >
               {mode.label}
@@ -99,18 +99,18 @@ export default function PersonalLessonFilters({
             <button
               type="button"
               onClick={() => shiftWeek(-1)}
-              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 cursor-pointer"
               aria-label={t("common.aria.prevWeek")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex flex-col items-center gap-0.5 min-w-[120px] sm:min-w-[180px]">
-              <span className="text-sm font-semibold text-slate-800 text-center">{weekLabel}</span>
+              <span className="text-sm font-semibold text-ink-800 text-center">{weekLabel}</span>
               {!isCurrentWeek && (
                 <button
                   type="button"
                   onClick={goToCurrentWeek}
-                  className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
+                  className="text-[10px] font-semibold text-gold-700 hover:underline cursor-pointer"
                 >
                   {t("common.currentWeek")}
                 </button>
@@ -119,7 +119,7 @@ export default function PersonalLessonFilters({
             <button
               type="button"
               onClick={() => shiftWeek(1)}
-              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 cursor-pointer"
               aria-label={t("common.aria.nextWeek")}
             >
               <ChevronRight className="w-4 h-4" />
@@ -132,20 +132,20 @@ export default function PersonalLessonFilters({
             <button
               type="button"
               onClick={() => onChange({ yearMonth: shiftMonth(filters.yearMonth, -1) })}
-              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 cursor-pointer"
               aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex flex-col items-center gap-0.5 min-w-[120px]">
-              <span className="text-sm font-semibold text-slate-800">
+              <span className="text-sm font-semibold text-ink-800">
                 {formatMonthTitle(filters.yearMonth, locale)}
               </span>
               {!isCurrentMonth && (
                 <button
                   type="button"
                   onClick={() => onChange({ yearMonth: currentYearMonth() })}
-                  className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
+                  className="text-[10px] font-semibold text-gold-700 hover:underline cursor-pointer"
                 >
                   {t("common.currentMonth")}
                 </button>
@@ -154,7 +154,7 @@ export default function PersonalLessonFilters({
             <button
               type="button"
               onClick={() => onChange({ yearMonth: shiftMonth(filters.yearMonth, 1) })}
-              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 cursor-pointer"
               aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
@@ -177,7 +177,7 @@ export default function PersonalLessonFilters({
           </div>
         )}
 
-        <div className="flex flex-wrap bg-slate-100 rounded-lg p-1 text-xs font-semibold gap-1 ml-auto">
+        <div className="flex flex-wrap bg-ink-100 rounded-lg p-1 text-xs font-semibold gap-1 ml-auto">
           {paidFilters.map((item) => (
             <button
               key={item.id}
@@ -185,8 +185,8 @@ export default function PersonalLessonFilters({
               onClick={() => onChange({ paidFilter: item.id })}
               className={`px-3 py-1.5 rounded-md cursor-pointer transition-all ${
                 filters.paidFilter === item.id
-                  ? "bg-white text-slate-900 shadow-xs font-semibold"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-white text-ink-900 shadow-xs font-semibold"
+                  : "text-ink-500 hover:text-ink-700"
               }`}
             >
               {item.label}
@@ -240,10 +240,10 @@ export default function PersonalLessonFilters({
         </AppSelect>
 
         <div className="relative">
-          <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block mb-1">
+          <label className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block mb-1">
             {t("common.searchClient")}
           </label>
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder={t("common.searchByName")}

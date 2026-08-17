@@ -37,7 +37,7 @@ interface RentersPanelProps {
 
 type ListTab = "active" | "archived" | "blocked";
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 export default function RentersPanel({ toast }: RentersPanelProps) {
   const { t, formatDate } = useI18n();
@@ -165,14 +165,14 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
       <RequirePermission
         action="renters.write"
         fallback={
-          <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
+          <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-ink-200 shadow-xs text-xs text-ink-500">
             {t("renters.readOnlyHint")}
           </div>
         }
       >
-        <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
-          <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
-            <UserPlus className="w-4.5 h-4.5 text-indigo-500" />
+        <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-ink-200 shadow-xs panel-card-stack">
+          <div className="flex items-center gap-2.5 text-ink-800 border-b border-ink-100 pb-3">
+            <UserPlus className="w-4.5 h-4.5 text-gold-500" />
             <h2 className="text-base font-semibold tracking-tight">{t("renters.form.addTitle")}</h2>
           </div>
 
@@ -220,11 +220,11 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
         <PageTabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as ListTab)} />
 
         <div
-          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack space-y-3 ${pageTabPanelCls(activeTab, "active")}`}
+          className={`bg-white p-4 border border-ink-200 shadow-xs panel-card-stack space-y-3 ${pageTabPanelCls(activeTab, "active")}`}
         >
           <div className="flex flex-col sm:flex-row sm:items-end gap-2">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
               <input
                 className={searchFieldCls}
                 placeholder={t("renters.searchPlaceholder")}
@@ -253,21 +253,21 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
           </div>
 
           {filteredRows.length === 0 ? (
-            <p className="text-sm text-slate-400 py-6 text-center">{t("renters.detail.noRentals")}</p>
+            <p className="text-sm text-ink-500 py-6 text-center">{t("renters.detail.noRentals")}</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-ink-100">
               {filteredRows.map((row) => (
                 <li key={row.id}>
                   <button
                     type="button"
                     onClick={() => canOpenDetail && navigate(`/renters/${row.id}`)}
                     disabled={!canOpenDetail}
-                    className="w-full flex items-center gap-3 py-3 px-1 text-left hover:bg-slate-50 rounded-lg cursor-pointer disabled:cursor-default"
+                    className="w-full flex items-center gap-3 py-3 px-1 text-left hover:bg-ink-50 rounded-lg cursor-pointer disabled:cursor-default"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-slate-800">{row.displayName}</span>
-                        <span className="text-[10px] uppercase font-semibold text-slate-400">
+                        <span className="font-semibold text-ink-800">{row.displayName}</span>
+                        <span className="text-[10px] uppercase font-semibold text-ink-400">
                           {renterTypeLabel(row.counterpartyType)}
                         </span>
                         {row.hasExpiringDocument ? (
@@ -277,20 +277,20 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
                           </span>
                         ) : null}
                         {row.hasOverdueDebt ? (
-                          <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-semibold text-garnet-700 bg-garnet-50 px-1.5 py-0.5 rounded">
                             {t("renters.reminder.overdueDebt")}
                           </span>
                         ) : null}
                         {row.hasNextActionDue ? (
-                          <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-semibold text-gold-700 bg-gold-50 px-1.5 py-0.5 rounded">
                             {t("renters.reminder.nextAction")}
                           </span>
                         ) : null}
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-ink-500 mt-0.5">
                         {[row.primaryContactName, row.contactPhone, row.contactEmail].filter(Boolean).join(" · ")}
                       </p>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-ink-500">
                         {row.nextRentalDate ? (
                           <span className="inline-flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
@@ -298,13 +298,13 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
                           </span>
                         ) : null}
                         {canSeeFinance && row.debtAmount != null && row.debtAmount > 0 ? (
-                          <span className="text-rose-600 font-semibold">
+                          <span className="text-garnet-600 font-semibold">
                             {formatCurrency(row.debtAmount)}
                           </span>
                         ) : null}
                       </div>
                     </div>
-                    {canOpenDetail ? <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" /> : null}
+                    {canOpenDetail ? <ChevronRight className="w-4 h-4 text-ink-300 shrink-0" /> : null}
                   </button>
                 </li>
               ))}

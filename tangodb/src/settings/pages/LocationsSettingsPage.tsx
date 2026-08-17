@@ -18,7 +18,7 @@ import { btnAddCls, btnCancelCls } from "../../components/ui/buttonStyles";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 export default function LocationsSettingsPage() {
   const { t } = useI18n();
@@ -96,14 +96,14 @@ export default function LocationsSettingsPage() {
     <div className="panel-card-stack max-w-2xl">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">{t("settings.locations.title")}</h2>
-          <p className="text-xs text-slate-500 mt-1">{t("settings.locations.subtitle")}</p>
+          <h2 className="text-base font-semibold text-ink-900">{t("settings.locations.title")}</h2>
+          <p className="text-xs text-ink-500 mt-1">{t("settings.locations.subtitle")}</p>
         </div>
         <RequirePermission action="settings.manage" mode="hide">
           <button
             type="button"
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gold-700 bg-gold-50 border border-gold-100 rounded-lg hover:bg-gold-100 transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             {t("common.add")}
@@ -111,32 +111,32 @@ export default function LocationsSettingsPage() {
         </RequirePermission>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-indigo-500" />
+      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-3.5 space-y-2">
+        <div className="flex items-center justify-between border-b border-ink-100 pb-2">
+          <h3 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-gold-500" />
             {t("settings.locations.list")}
           </h3>
-          <span className="text-[10px] bg-slate-100 text-slate-500 font-sans px-2 py-0.5 rounded-full font-semibold">
+          <span className="text-[10px] bg-ink-100 text-ink-500 font-sans px-2 py-0.5 rounded-full font-semibold">
             {locations.length}
           </span>
         </div>
 
         {locations.length === 0 ? (
-          <p className="text-xs text-slate-400 py-6 text-center">{t("settings.locations.empty")}</p>
+          <p className="text-xs text-ink-500 py-6 text-center">{t("settings.locations.empty")}</p>
         ) : (
           <div className="space-y-1.5">
             {locations.map((loc) => (
               <div
                 key={loc.id}
-                className="flex items-start justify-between gap-3 p-2.5 bg-slate-50 rounded-lg border border-slate-100 group"
+                className="flex items-start justify-between gap-3 p-2.5 bg-ink-50 rounded-lg border border-ink-100 group"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-800">{loc.name}</p>
+                  <p className="text-sm font-semibold text-ink-800">{loc.name}</p>
                   {loc.address ? (
-                    <p className="text-[11px] text-slate-400 mt-0.5">{loc.address}</p>
+                    <p className="text-[11px] text-ink-500 mt-0.5">{loc.address}</p>
                   ) : (
-                    <p className="text-[11px] text-slate-300 italic mt-0.5">{t("common.noAddress")}</p>
+                    <p className="text-[11px] text-ink-300 italic mt-0.5">{t("common.noAddress")}</p>
                   )}
                 </div>
                 <RequirePermission action="settings.manage" mode="hide">
@@ -144,7 +144,7 @@ export default function LocationsSettingsPage() {
                     <button
                       type="button"
                       onClick={() => startEdit(loc)}
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+                      className="p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-all cursor-pointer"
                       aria-label={`${t("common.edit")} ${loc.name}`}
                     >
                       <Edit className="w-3.5 h-3.5" />
@@ -152,7 +152,7 @@ export default function LocationsSettingsPage() {
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(loc)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                      className="p-1.5 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 rounded-lg transition-all cursor-pointer"
                       aria-label={`${t("common.delete")} ${loc.name}`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -173,21 +173,21 @@ export default function LocationsSettingsPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowAdd(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+              className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
             />
             <motion.div
               initial={{ scale: 0.97, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
-              className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-sm w-full p-4 panel-card-stack"
+              className="relative bg-white rounded-xl border border-ink-200 shadow-xl max-w-sm w-full p-4 panel-card-stack"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-semibold text-slate-900">{t("settings.locations.newTitle")}</h3>
+              <div className="flex items-center justify-between border-b border-ink-100 pb-3">
+                <h3 className="text-base font-semibold text-ink-900">{t("settings.locations.newTitle")}</h3>
                 <button
                   type="button"
                   onClick={() => setShowAdd(false)}
                   aria-label={t("common.close")}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer"
+                  className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -228,21 +228,21 @@ export default function LocationsSettingsPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setEditing(null)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+              className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
             />
             <motion.div
               initial={{ scale: 0.97, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
-              className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-sm w-full p-4 panel-card-stack"
+              className="relative bg-white rounded-xl border border-ink-200 shadow-xl max-w-sm w-full p-4 panel-card-stack"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-semibold text-slate-900">{t("settings.locations.editTitle")}</h3>
+              <div className="flex items-center justify-between border-b border-ink-100 pb-3">
+                <h3 className="text-base font-semibold text-ink-900">{t("settings.locations.editTitle")}</h3>
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
                   aria-label={t("common.close")}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer"
+                  className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>

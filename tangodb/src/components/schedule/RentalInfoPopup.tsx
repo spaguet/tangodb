@@ -27,7 +27,7 @@ interface RentalInfoPopupProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 function paymentStatusLabel(status: string | null | undefined, t: (key: string) => string): string {
   if (status === "paid") return t("schedule.rental.paymentPaid");
@@ -98,14 +98,14 @@ export default function RentalInfoPopup({
     <>
       <AnimatePresence>
         <div className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/30" onClick={onClose} />
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }} className="relative w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-xl border border-slate-200 shadow-xl">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-ink-950/40" onClick={onClose} />
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }} className="relative w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-xl border border-ink-200 shadow-xl">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-ink-100">
               <div className="flex items-center gap-2 min-w-0">
-                <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-                <h3 className="text-base font-semibold text-slate-900 truncate">{displayTitle}</h3>
+                <Building2 className="w-4 h-4 text-amber-700 shrink-0" />
+                <h3 className="text-base font-semibold text-ink-900 truncate">{displayTitle}</h3>
               </div>
-              <button type="button" onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer" aria-label={t("common.close")}>
+              <button type="button" onClick={onClose} className="p-1.5 text-ink-400 hover:text-ink-600 rounded-lg cursor-pointer" aria-label={t("common.close")}>
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -113,33 +113,33 @@ export default function RentalInfoPopup({
             <div className="p-4 space-y-3 text-sm max-h-[70dvh] overflow-y-auto">
               <div>
                 <span className={labelCls}>{t("schedule.rental.whenLabel")}</span>
-                <p className="text-slate-800">{formatDate(lesson.date)} · {lesson.timeStart}–{lesson.timeEnd}</p>
+                <p className="text-ink-800">{formatDate(lesson.date)} · {lesson.timeStart}–{lesson.timeEnd}</p>
               </div>
               {locationName ? (
                 <div>
                   <span className={labelCls}>{t("schedule.form.location")}</span>
-                  <p className="text-slate-800">{locationName}</p>
+                  <p className="text-ink-800">{locationName}</p>
                 </div>
               ) : null}
               {lesson.purpose ? (
                 <div>
                   <span className={labelCls}>{t("schedule.rental.purposeLabel")}</span>
-                  <p className="text-slate-800">{lesson.purpose}</p>
+                  <p className="text-ink-800">{lesson.purpose}</p>
                 </div>
               ) : null}
               {detail?.renter.displayName ? (
                 <div>
                   <span className={labelCls}>{t("schedule.rental.renterLabel")}</span>
-                  <p className="text-slate-800">{detail.renter.displayName}</p>
+                  <p className="text-ink-800">{detail.renter.displayName}</p>
                 </div>
               ) : null}
               {lesson.bookingStatus === "cancelled" || detail?.bookingStatus === "cancelled" ? (
-                <p className="text-xs font-semibold text-rose-600 uppercase">{t("schedule.rental.statusCancelled")}</p>
+                <p className="text-xs font-semibold text-garnet-600 uppercase">{t("schedule.rental.statusCancelled")}</p>
               ) : null}
               {seriesId ? (
                 <div>
                   <span className={labelCls}>{t("rentalSeries.seriesLabel")}</span>
-                  <p className="text-xs text-indigo-700 font-semibold">{t("rentalSeries.partOfSeries")}</p>
+                  <p className="text-xs text-gold-700 font-semibold">{t("rentalSeries.partOfSeries")}</p>
                 </div>
               ) : null}
               {canSeeCashAmounts && (effectiveAmount > 0 || calculatedAmount != null || paymentStatus) ? (
@@ -147,19 +147,19 @@ export default function RentalInfoPopup({
                   {canSeeFinance && calculatedAmount != null && calculatedAmount !== effectiveAmount ? (
                     <div>
                       <span className={labelCls}>{t("rentalSeries.calculatedAmountLabel")}</span>
-                      <p className="text-slate-800">{formatCurrency(calculatedAmount)} {lesson.currency ?? "RUB"}</p>
+                      <p className="text-ink-800">{formatCurrency(calculatedAmount)} {lesson.currency ?? "RUB"}</p>
                     </div>
                   ) : null}
                   {(effectiveAmount > 0 || paymentStatus) ? (
                     <div>
                       <span className={labelCls}>{t("schedule.rental.fixedAmountLabel")}</span>
-                      <p className="text-slate-800">{formatCurrency(effectiveAmount)} {lesson.currency ?? "RUB"}</p>
+                      <p className="text-ink-800">{formatCurrency(effectiveAmount)} {lesson.currency ?? "RUB"}</p>
                     </div>
                   ) : null}
                   {canSeeFinance && pricingBreakdown && Array.isArray(pricingBreakdown) ? (
                     <div>
                       <span className={labelCls}>{t("rentalSeries.pricingBreakdownLabel")}</span>
-                      <ul className="mt-1 space-y-1 text-xs text-slate-700">
+                      <ul className="mt-1 space-y-1 text-xs text-ink-700">
                         {(pricingBreakdown as Record<string, unknown>[]).map((line, idx) => (
                           <li key={idx} className="flex justify-between gap-2">
                             <span>{String(line.label ?? line.description ?? t("rentalSeries.pricingLine"))}</span>
@@ -171,8 +171,8 @@ export default function RentalInfoPopup({
                   ) : null}
                   <div>
                     <span className={labelCls}>{t("schedule.rental.paymentStatusLabel")}</span>
-                    <p className="text-slate-800">{paymentStatusLabel(paymentStatus, t)}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-ink-800">{paymentStatusLabel(paymentStatus, t)}</p>
+                    <p className="text-xs text-ink-500 mt-0.5">
                       {t("schedule.rental.paidSummary", { paid: formatCurrency(paidAmount), remaining: formatCurrency(remaining) })}
                     </p>
                   </div>
@@ -180,7 +180,7 @@ export default function RentalInfoPopup({
                   {visiblePayments.length ? (
                     <div>
                       <span className={labelCls}>{t("schedule.rental.paymentsLabel")}</span>
-                      <ul className="mt-1 space-y-1 text-xs text-slate-700">
+                      <ul className="mt-1 space-y-1 text-xs text-ink-700">
                         {visiblePayments.map((p) => {
                           const author = p.createdBy
                             ? memberNameById.get(p.createdBy) ?? t("team.auditSystem")
@@ -189,10 +189,10 @@ export default function RentalInfoPopup({
                             <li key={p.id}>
                               {formatCurrency(p.amount)} · {getPaymentMethodLabel(p.method, t, locale)}
                               {p.operationDate ? (
-                                <span className="text-slate-400"> · {formatDate(p.operationDate)}</span>
+                                <span className="text-ink-400"> · {formatDate(p.operationDate)}</span>
                               ) : null}
-                              <span className="text-slate-400"> · {author}</span>
-                              <span className="text-slate-400 text-[10px]">
+                              <span className="text-ink-400"> · {author}</span>
+                              <span className="text-ink-400 text-[10px]">
                                 {" "}
                                 ({formatDateTime(p.createdAt, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })})
                               </span>
@@ -206,12 +206,12 @@ export default function RentalInfoPopup({
               ) : null}
             </div>
 
-            <div className="flex flex-wrap gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
+            <div className="flex flex-wrap gap-2 px-4 py-3 border-t border-ink-100 bg-ink-50/10">
               {canEditAmount ? (
                 <button
                   type="button"
                   onClick={() => setEditAmountOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-ink-700 bg-white border border-ink-200 rounded-lg cursor-pointer"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   {t("schedule.rental.editAmountAction")}
@@ -221,20 +221,20 @@ export default function RentalInfoPopup({
                 <button
                   type="button"
                   onClick={() => setEditSlotOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-ink-700 bg-white border border-ink-200 rounded-lg cursor-pointer"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   {t("schedule.rental.editSlotAction")}
                 </button>
               ) : null}
               {canRecordPayment ? (
-                <button type="button" onClick={() => setPaymentOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
+                <button type="button" onClick={() => setPaymentOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
                   <Coins className="w-3.5 h-3.5" />
                   {t("schedule.rental.recordPaymentTitle")}
                 </button>
               ) : null}
               {canManage && lesson.bookingStatus === "confirmed" ? (
-                <button type="button" onClick={() => setCancelOpen(true)} className="px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg cursor-pointer">
+                <button type="button" onClick={() => setCancelOpen(true)} className="px-3 py-2 text-xs font-semibold text-garnet-700 bg-garnet-50 border border-garnet-200 rounded-lg cursor-pointer">
                   {seriesId ? t("rentalSeries.cancelOccurrenceAction") : t("schedule.rental.cancelAction")}
                 </button>
               ) : null}

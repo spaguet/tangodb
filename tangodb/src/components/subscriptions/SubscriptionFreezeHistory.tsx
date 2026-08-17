@@ -48,8 +48,8 @@ export default function SubscriptionFreezeHistory({
   };
 
   return (
-    <div className="space-y-2 border-t border-slate-100 pt-3">
-      <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold flex items-center gap-1.5">
+    <div className="space-y-2 border-t border-ink-100 pt-3">
+      <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold flex items-center gap-1.5">
         <Snowflake className="w-3 h-3" />
         {t("freeze.history.title")}
       </p>
@@ -65,16 +65,16 @@ export default function SubscriptionFreezeHistory({
           return (
             <li
               key={period.id}
-              className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2 text-[11px] text-slate-600 space-y-1"
+              className="rounded-lg border border-ink-100 bg-ink-50/70 px-3 py-2 text-[11px] text-ink-600 space-y-1"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-semibold text-slate-800">
+                  <p className="font-semibold text-ink-800">
                     {formatDate(new Date(`${period.startDate}T12:00:00`))}
                     {" — "}
                     {formatDate(new Date(`${period.endDate}T12:00:00`))}
                   </p>
-                  <p className="text-slate-500">
+                  <p className="text-ink-500">
                     {t("freeze.history.duration", { count: period.calendarDays })}
                     {" · "}
                     {t(`freeze.history.status.${status}`)}
@@ -84,15 +84,15 @@ export default function SubscriptionFreezeHistory({
                   <button
                     type="button"
                     onClick={() => void handleCancel(period)}
-                    className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-rose-600 hover:underline cursor-pointer shrink-0"
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-garnet-600 hover:underline cursor-pointer shrink-0"
                   >
                     <XCircle className="w-3 h-3" />
                     {t("freeze.history.cancel")}
                   </button>
                 ) : null}
               </div>
-              {period.reason ? <p className="text-slate-500">{period.reason}</p> : null}
-              <p className="text-slate-400">
+              {period.reason ? <p className="text-ink-500">{period.reason}</p> : null}
+              <p className="text-ink-400">
                 {t("freeze.history.createdAt", {
                   date: formatDateTime(new Date(period.createdAt)),
                 })}

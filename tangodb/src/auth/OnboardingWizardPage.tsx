@@ -203,12 +203,12 @@ export default function OnboardingWizardPage() {
               onClick={() => applyPreset(value)}
               className={`w-full rounded-lg border px-4 py-3 text-left transition-colors cursor-pointer ${
                 preset === value
-                  ? "border-indigo-400 bg-indigo-50"
-                  : "border-slate-200 hover:border-indigo-200"
+                  ? "border-gold-400 bg-gold-50"
+                  : "border-ink-200 hover:border-gold-200"
               }`}
             >
-              <p className="text-sm font-semibold text-slate-800">{t(PRESET_I18N[value].label)}</p>
-              <p className="text-xs text-slate-500">{t(PRESET_I18N[value].hint)}</p>
+              <p className="text-sm font-semibold text-ink-800">{t(PRESET_I18N[value].label)}</p>
+              <p className="text-xs text-ink-500">{t(PRESET_I18N[value].hint)}</p>
             </button>
           ))}
         </div>
@@ -243,23 +243,23 @@ export default function OnboardingWizardPage() {
 
       {step === "modules" && (
         <div className="space-y-4">
-          <p className="text-xs text-slate-500">{t("orgModules.disableHint")}</p>
+          <p className="text-xs text-ink-500">{t("orgModules.disableHint")}</p>
           {ORG_MODULE_GROUPS.map((group) => (
             <div key={group.id} className="space-y-2">
-              <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+              <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
                 {t(MODULE_GROUP_LABEL_KEYS[group.id])}
               </p>
               {group.keys.map((key) => (
                 <label
                   key={key}
-                  className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
+                  className="flex items-center justify-between rounded-lg border border-ink-200 px-4 py-3 cursor-pointer hover:bg-ink-50"
                 >
-                  <span className="text-sm text-slate-700">{t(MODULE_I18N[key])}</span>
+                  <span className="text-sm text-ink-700">{t(MODULE_I18N[key])}</span>
                   <input
                     type="checkbox"
                     checked={modules[key]}
                     onChange={() => toggleModule(key)}
-                    className="w-4 h-4 accent-indigo-600"
+                    className="w-4 h-4 accent-gold-600"
                   />
                 </label>
               ))}

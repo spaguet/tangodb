@@ -50,8 +50,8 @@ export default function LoginPage() {
   return (
     <AuthLayout title="TangoDB" subtitle={t("auth.login.subtitle")}>
       {loading && (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <div className="w-4 h-4 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin" />
+        <div className="flex items-center gap-2 text-sm text-ink-500">
+          <div className="w-4 h-4 rounded-full border-2 border-gold-200 border-t-gold-600 animate-spin" />
           {t("auth.login.authorizing")}
         </div>
       )}
@@ -81,16 +81,16 @@ export default function LoginPage() {
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-ink-300 text-gold-700 focus:ring-gold-500"
             />
-            <span className="text-sm text-slate-600">{t("auth.login.rememberMe")}</span>
+            <span className="text-sm text-ink-600">{t("auth.login.rememberMe")}</span>
           </label>
           <AuthLink to="/auth/forgot-password">{t("auth.login.forgotPasswordLink")}</AuthLink>
         </div>
         <AuthButton loading={loading}>{t("auth.login.submit")}</AuthButton>
       </form>
 
-      <p className="text-sm text-slate-500 text-center">
+      <p className="text-sm text-ink-500 text-center">
         {t("auth.login.noAccount")}{" "}
         <AuthLink to="/register">{t("auth.login.registerLink")}</AuthLink>
       </p>

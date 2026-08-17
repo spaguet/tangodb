@@ -30,7 +30,7 @@ interface TeacherVacationDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 export default function TeacherVacationDialog({
   open,
@@ -123,21 +123,21 @@ export default function TeacherVacationDialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !vacationMutation.isPending && onClose()}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-lg w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
+            className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-lg w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-3">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-gold-500">
                   {t("schedule.vacation.title")}
                 </p>
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                <h3 className="text-base font-semibold tracking-tight text-ink-900">
                   {t("schedule.vacation.subtitle")}
                 </h3>
               </div>
@@ -146,7 +146,7 @@ export default function TeacherVacationDialog({
                 onClick={onClose}
                 disabled={vacationMutation.isPending}
                 aria-label={t("common.close")}
-                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors shrink-0 disabled:opacity-60"
+                className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors shrink-0 disabled:opacity-60"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -197,12 +197,12 @@ export default function TeacherVacationDialog({
                 </div>
               </div>
 
-              <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3 space-y-2">
+              <div className="rounded-lg border border-amber-200 bg-amber-50/10 p-3 space-y-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">
                   {t("schedule.lessonInfo.cancelPreviewTitle", { count: previewDates.length })}
                 </p>
                 {previewItems.length > 0 ? (
-                  <ul className="max-h-48 overflow-y-auto space-y-2 text-xs text-slate-700">
+                  <ul className="max-h-48 overflow-y-auto space-y-2 text-xs text-ink-700">
                     {previewItems.map((item) => {
                       const label =
                         item.groupName?.trim() ||
@@ -213,14 +213,14 @@ export default function TeacherVacationDialog({
                         : undefined;
 
                       return (
-                        <li key={item.slotId} className="rounded-md border border-amber-100/80 bg-white/70 p-2">
-                          <p className="font-semibold text-slate-800">
+                        <li key={item.slotId} className="rounded-md border border-amber-200 bg-white p-2">
+                          <p className="font-semibold text-ink-800">
                             {label} · {item.timeStart}–{item.timeEnd}
                           </p>
                           {locationName ? (
-                            <p className="text-[11px] text-slate-500 mt-0.5">{locationName}</p>
+                            <p className="text-[11px] text-ink-500 mt-0.5">{locationName}</p>
                           ) : null}
-                          <p className="text-[11px] text-slate-600 mt-1">
+                          <p className="text-[11px] text-ink-600 mt-1">
                             {item.dates.map((date) => formatDate(date)).join(", ")}
                           </p>
                         </li>
@@ -228,7 +228,7 @@ export default function TeacherVacationDialog({
                     })}
                   </ul>
                 ) : (
-                  <p className="text-xs text-slate-500">{t("schedule.lessonInfo.cancelPreviewEmpty")}</p>
+                  <p className="text-xs text-ink-500">{t("schedule.lessonInfo.cancelPreviewEmpty")}</p>
                 )}
               </div>
             </div>

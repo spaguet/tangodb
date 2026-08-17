@@ -60,7 +60,7 @@ export function formatDemoDaysLeftLabel(
 }
 
 export const DEMO_URGENCY_TEXT_CLASS: Record<DemoUrgencyTone, string> = {
-  default: "text-indigo-600",
-  warning: "text-amber-600",
-  critical: "text-rose-600",
+  default: "text-gold-700",
+  warning: "text-amber-700",
+  critical: "text-garnet-600",
 };

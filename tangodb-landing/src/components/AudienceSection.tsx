@@ -10,15 +10,15 @@ const tiers = [
 
 export function AudienceSection({ t }: Props) {
   return (
-    <section id="audience" className="border-y border-slate-100 bg-white">
+    <section id="audience" className="border-y border-ink-100 bg-white">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
-        <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">{t("audience.title")}</h2>
+        <h2 className="text-xl font-bold text-ink-900 sm:text-2xl">{t("audience.title")}</h2>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           {tiers.map(({ titleKey, descKey }) => (
-            <article key={titleKey} className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 sm:p-5">
-              <h3 className="text-sm font-semibold text-slate-900">{t(titleKey)}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{t(descKey)}</p>
+            <article key={titleKey} className="rounded-xl border border-ink-200 bg-ink-50/10 p-4 sm:p-5">
+              <h3 className="text-sm font-semibold text-ink-900">{t(titleKey)}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-600">{t(descKey)}</p>
             </article>
           ))}
         </div>

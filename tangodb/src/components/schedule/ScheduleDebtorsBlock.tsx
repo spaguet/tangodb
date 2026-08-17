@@ -116,15 +116,15 @@ function DebtorRow({
   const metaParts = [disciplineName, teacherName].filter(Boolean);
 
   return (
-    <li className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-b border-slate-100 last:border-b-0">
+    <li className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-b border-ink-100 last:border-b-0">
       <div className="min-w-0 space-y-0.5 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className="text-sm font-semibold text-slate-800 truncate">{clientLabel}</span>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-600">
+          <span className="text-sm font-semibold text-ink-800 truncate">{clientLabel}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-garnet-600">
             {unpaidLabel}
           </span>
         </div>
-        <p className="text-xs text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <p className="text-xs text-ink-500 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span>{formatDate(entry.date)}</span>
           <span className="inline-flex items-center gap-1">
             <Clock className="w-3 h-3 shrink-0" />
@@ -135,17 +135,17 @@ function DebtorRow({
           ) : null}
         </p>
         {otherParticipants ? (
-          <p className="text-[11px] text-slate-400 truncate">
+          <p className="text-[11px] text-ink-500 truncate">
             {otherParticipants}
           </p>
         ) : null}
         {metaParts.length > 0 ? (
-          <p className="text-[11px] text-slate-400 truncate">{metaParts.join(" · ")}</p>
+          <p className="text-[11px] text-ink-500 truncate">{metaParts.join(" · ")}</p>
         ) : null}
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {showAmount && entry.amount != null ? (
-          <span className="text-sm font-semibold text-rose-600 tabular-nums">{formatCurrency(entry.amount)}</span>
+          <span className="text-sm font-semibold text-garnet-600 tabular-nums">{formatCurrency(entry.amount)}</span>
         ) : null}
         {canPay ? (
           <button
@@ -277,39 +277,39 @@ export default function ScheduleDebtorsBlock({
       <motion.section
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl border border-rose-200/80 shadow-xs overflow-hidden"
+        className="bg-white rounded-xl border border-garnet-200 shadow-xs overflow-hidden"
       >
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className={`w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 bg-rose-50/60 text-left cursor-pointer hover:bg-rose-50 transition-colors ${
-            expanded ? "border-b border-rose-100" : ""
+          className={`w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 bg-garnet-50/10 text-left cursor-pointer hover:bg-garnet-50 transition-colors ${
+            expanded ? "border-b border-garnet-100" : ""
           }`}
         >
           <div className="flex items-center gap-2 min-w-0">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-garnet-600 shrink-0" />
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-slate-800">{t("schedule.debtors.title")}</h3>
-              <p className="text-[11px] text-slate-500">{subtitle}</p>
+              <h3 className="text-sm font-semibold text-ink-800">{t("schedule.debtors.title")}</h3>
+              <p className="text-[11px] text-ink-500">{subtitle}</p>
             </div>
           </div>
           <div className="flex items-center justify-end gap-2 shrink-0">
             <div className="flex flex-wrap items-baseline justify-end gap-x-2 gap-y-0.5 text-sm text-right">
-              <span className="font-semibold text-rose-600 tabular-nums">{countLabel}</span>
+              <span className="font-semibold text-garnet-600 tabular-nums">{countLabel}</span>
               {showAmount ? (
                 <>
-                  <span className="text-rose-400" aria-hidden="true">
+                  <span className="text-garnet-400" aria-hidden="true">
                     ·
                   </span>
-                  <span className="font-semibold text-rose-600 tabular-nums">
+                  <span className="font-semibold text-garnet-600 tabular-nums">
                     {formatCurrency(totalAmount)}
                   </span>
                 </>
               ) : null}
             </div>
             <ChevronDown
-              className={`w-4 h-4 text-rose-400 shrink-0 transition-transform duration-200 ${
+              className={`w-4 h-4 text-garnet-400 shrink-0 transition-transform duration-200 ${
                 expanded ? "rotate-180" : ""
               }`}
             />
@@ -326,11 +326,11 @@ export default function ScheduleDebtorsBlock({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-ink-100">
                 {debtorGroups.map((group) => (
                   <section key={group.key}>
-                    <div className="px-4 py-2 bg-slate-50/80 border-b border-slate-100">
-                      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <div className="px-4 py-2 bg-ink-50/10 border-b border-ink-100">
+                      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-ink-500">
                         {group.label}
                       </h4>
                     </div>

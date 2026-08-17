@@ -52,21 +52,21 @@ function PaymentBadge({
 }) {
   if (lesson.subscriptionId) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-50 text-gold-700 border border-gold-200">
         {t("personal.row.package")}
       </span>
     );
   }
   if (lesson.paid === "yes") {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-50 text-gold-700 border border-gold-200">
         {t("personal.row.paid")}
       </span>
     );
   }
   const debt = Math.max(lesson.price - lesson.paidAmount, 0);
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-garnet-50 text-garnet-700 border border-garnet-200">
       {t("personal.row.debt")}
       {showAmount && lesson.paidAmount > 0 ? ` · ${formatCurrency(debt)}` : ""}
     </span>
@@ -76,27 +76,27 @@ function PaymentBadge({
 function AttendanceBadge({ lesson, t }: { lesson: PersonalLesson; t: ReturnType<typeof useI18n>["t"] }) {
   if (!lesson.attendanceStatus) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-50 text-slate-500 border border-slate-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-ink-50 text-ink-500 border border-ink-200">
         {t("common.notMarked")}
       </span>
     );
   }
   if (lesson.attendanceStatus === "present") {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-50 text-gold-700 border border-gold-200">
         {lesson.subscriptionId ? t("common.charged") : t("personal.row.presentCharged")}
       </span>
     );
   }
   if (lesson.attendanceStatus === "absent") {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-garnet-50 text-garnet-700 border border-garnet-200">
         {lesson.subscriptionId ? t("common.charged") : t("personal.row.absentCharged")}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-ink-100 text-ink-700 border border-ink-200">
       {t("personal.row.excusedSkip")}
     </span>
   );
@@ -193,22 +193,22 @@ export default function PersonalLessonRow({
   };
 
   return (
-    <tr className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-      <td className="py-3 px-3 text-xs text-slate-800 whitespace-nowrap">
+    <tr className="border-b border-ink-100 hover:bg-ink-50/10 transition-colors">
+      <td className="py-3 px-3 text-xs text-ink-800 whitespace-nowrap">
         {lesson.timeStart}–{lesson.timeEnd}
       </td>
-      <td className="py-3 px-3 text-xs text-slate-600">{locationName ?? "—"}</td>
-      <td className="py-3 px-3 text-xs text-slate-600">{disciplineName ?? "—"}</td>
-      <td className="py-3 px-3 text-xs text-slate-600">{teacherName ?? "—"}</td>
-      <td className="py-3 px-3 text-xs text-slate-800 font-medium">{clientLabel}</td>
-      <td className="py-3 px-3 text-xs text-slate-500">{personalLessonTypeLabel(lesson.type, t)}</td>
+      <td className="py-3 px-3 text-xs text-ink-600">{locationName ?? "—"}</td>
+      <td className="py-3 px-3 text-xs text-ink-600">{disciplineName ?? "—"}</td>
+      <td className="py-3 px-3 text-xs text-ink-600">{teacherName ?? "—"}</td>
+      <td className="py-3 px-3 text-xs text-ink-800 font-medium">{clientLabel}</td>
+      <td className="py-3 px-3 text-xs text-ink-500">{personalLessonTypeLabel(lesson.type, t)}</td>
       <td className="py-3 px-3">
         <div className="flex flex-wrap gap-1">
           <PaymentBadge lesson={lesson} t={t} showAmount={showPrice} />
           {(canShowPaidStatus(role) || !lesson.subscriptionId) && <AttendanceBadge lesson={lesson} t={t} />}
         </div>
       </td>
-      <td className="py-3 px-3 text-xs text-slate-800 whitespace-nowrap">
+      <td className="py-3 px-3 text-xs text-ink-800 whitespace-nowrap">
         {showPrice ? (lesson.subscriptionId ? "—" : formatCurrency(lesson.price)) : "—"}
       </td>
       <td className="py-3 px-3">
@@ -228,7 +228,7 @@ export default function PersonalLessonRow({
               type="button"
               onClick={() => onPay(lesson)}
               title={t("common.pay")}
-              className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 cursor-pointer transition-colors"
+              className="p-1.5 rounded-lg text-gold-700 hover:bg-gold-50 cursor-pointer transition-colors"
             >
               <Coins className="w-3.5 h-3.5" />
             </button>
@@ -239,7 +239,7 @@ export default function PersonalLessonRow({
               onClick={() => void handleClose()}
               disabled={closePersonalLesson.isPending}
               title={t("venueCosts.closeLesson")}
-              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors disabled:opacity-60"
+              className="p-1.5 rounded-lg text-ink-600 hover:bg-ink-50 cursor-pointer transition-colors disabled:opacity-60"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
             </button>
@@ -250,7 +250,7 @@ export default function PersonalLessonRow({
               onClick={() => void handleReopen()}
               disabled={reopenLessonClosure.isPending}
               title={t("venueCosts.reopenLesson")}
-              className="p-1.5 rounded-lg text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors disabled:opacity-60"
+              className="p-1.5 rounded-lg text-ink-700 hover:bg-ink-50 cursor-pointer transition-colors disabled:opacity-60"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -258,7 +258,7 @@ export default function PersonalLessonRow({
           {activeClosure && !canReopen && (
             <span
               title={t("venueCosts.closeLesson.closed")}
-              className="p-1.5 rounded-lg text-indigo-600"
+              className="p-1.5 rounded-lg text-gold-700"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
             </span>
@@ -268,7 +268,7 @@ export default function PersonalLessonRow({
               type="button"
               onClick={() => onEdit(lesson)}
               title={t("common.edit")}
-              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+              className="p-1.5 rounded-lg text-ink-600 hover:bg-ink-100 cursor-pointer transition-colors"
             >
               <Edit className="w-3.5 h-3.5" />
             </button>
@@ -278,7 +278,7 @@ export default function PersonalLessonRow({
               type="button"
               onClick={() => onDelete(lesson)}
               title={t("common.delete")}
-              className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors"
+              className="p-1.5 rounded-lg text-garnet-600 hover:bg-garnet-50 cursor-pointer transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>

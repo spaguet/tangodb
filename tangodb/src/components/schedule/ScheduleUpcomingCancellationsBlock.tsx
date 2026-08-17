@@ -76,28 +76,28 @@ export default function ScheduleUpcomingCancellationsBlock({
     <motion.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl border border-amber-200/80 shadow-xs overflow-hidden"
+      className="bg-white rounded-xl border border-amber-200 shadow-xs overflow-hidden"
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-b border-amber-100 bg-amber-50/60">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-b border-amber-200 bg-amber-50/10">
         <div className="flex items-center gap-2 min-w-0">
           <CalendarOff className="w-4 h-4 text-amber-700 shrink-0" />
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-800">{t("schedule.cancellations.title")}</h3>
-            <p className="text-[11px] text-slate-500">{t("schedule.cancellations.subtitle")}</p>
+            <h3 className="text-sm font-semibold text-ink-800">{t("schedule.cancellations.title")}</h3>
+            <p className="text-[11px] text-ink-500">{t("schedule.cancellations.subtitle")}</p>
           </div>
         </div>
         <span className="text-sm font-semibold text-amber-700 tabular-nums shrink-0">{countLabel}</span>
       </div>
 
-      <ul className="divide-y divide-slate-100">
+      <ul className="divide-y divide-ink-100">
         {rows.map(({ entry, groupLabel, teacherName, locationName }) => (
           <li
             key={entry.id}
             className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1"
           >
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-800 truncate">{groupLabel}</p>
-              <p className="text-xs text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+              <p className="text-sm font-semibold text-ink-800 truncate">{groupLabel}</p>
+              <p className="text-xs text-ink-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                 <span>{formatDate(entry.date)}</span>
                 <span className="inline-flex items-center gap-1">
                   <Clock className="w-3 h-3 shrink-0" />
@@ -105,7 +105,7 @@ export default function ScheduleUpcomingCancellationsBlock({
                 </span>
               </p>
               {[locationName, teacherName].filter(Boolean).length > 0 ? (
-                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                <p className="text-[11px] text-ink-500 truncate mt-0.5">
                   {[locationName, teacherName].filter(Boolean).join(" · ")}
                 </p>
               ) : null}

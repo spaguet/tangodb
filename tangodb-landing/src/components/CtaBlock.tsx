@@ -38,7 +38,7 @@ export function CtaBlock({
           {t("cta.getInstructions")}
         </a>
       </div>
-      {showHint && <p className="mt-3 text-sm text-slate-500">{t("cta.startFreeHint")}</p>}
+      {showHint && <p className="mt-3 text-sm text-ink-500">{t("cta.startFreeHint")}</p>}
     </div>
   );
 }

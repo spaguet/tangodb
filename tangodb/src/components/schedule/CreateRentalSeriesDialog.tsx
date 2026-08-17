@@ -33,7 +33,7 @@ interface CreateRentalSeriesDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 const WEEK_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 function emptyPattern(prefill?: ScheduleCellPrefill | null): RentalSeriesPattern {
@@ -201,14 +201,14 @@ export default function CreateRentalSeriesDialog({
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !createMutation.isPending && onClose()} className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs" />
-          <motion.div initial={{ scale: 0.97, opacity: 0, y: 8 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.97, opacity: 0, y: 8 }} className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-lg w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !createMutation.isPending && onClose()} className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs" />
+          <motion.div initial={{ scale: 0.97, opacity: 0, y: 8 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.97, opacity: 0, y: 8 }} className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-lg w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3 border-b border-ink-100 pb-3">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600">{t("rentalSeries.action")}</p>
-                <h3 className="text-base font-semibold tracking-tight text-slate-900">{t("rentalSeries.title")}</h3>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">{t("rentalSeries.action")}</p>
+                <h3 className="text-base font-semibold tracking-tight text-ink-900">{t("rentalSeries.title")}</h3>
               </div>
-              <button type="button" onClick={onClose} disabled={createMutation.isPending} aria-label={t("common.close")} className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer">
+              <button type="button" onClick={onClose} disabled={createMutation.isPending} aria-label={t("common.close")} className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -245,16 +245,16 @@ export default function CreateRentalSeriesDialog({
                         <option key={r.id} value={r.id}>{r.displayName}</option>
                       ))}
                     </AppSelect>
-                    <button type="button" onClick={() => setShowNewRenter(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800 cursor-pointer">
+                    <button type="button" onClick={() => setShowNewRenter(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-700 cursor-pointer">
                       <Plus className="w-3.5 h-3.5" />
                       {t("schedule.rental.addRenter")}
                     </button>
-                    <Link to="/renters" className="block text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                    <Link to="/renters" className="block text-xs font-semibold text-gold-700 hover:text-gold-800">
                       {t("renters.manageLink")}
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-2 rounded-lg border border-amber-100 bg-amber-50/50 p-3">
+                  <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/10 p-3">
                     <div>
                       <span className={labelCls}>{t("schedule.rental.newRenterName")}</span>
                       <input className={fieldCls} value={newRenterName} onChange={(e) => setNewRenterName(e.target.value)} />
@@ -263,7 +263,7 @@ export default function CreateRentalSeriesDialog({
                       <button type="button" onClick={() => void handleCreateRenter()} disabled={createRenterMutation.isPending} className={btnAddCls}>
                         {t("common.save")}
                       </button>
-                      <button type="button" onClick={() => setShowNewRenter(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 cursor-pointer">
+                      <button type="button" onClick={() => setShowNewRenter(false)} className="px-3 py-1.5 text-xs font-semibold text-ink-600 cursor-pointer">
                         {t("common.cancel")}
                       </button>
                     </div>
@@ -278,12 +278,12 @@ export default function CreateRentalSeriesDialog({
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className={labelCls}>{t("rentalSeries.patternsLabel")}</span>
-                    <button type="button" onClick={() => setPatterns((prev) => [...prev, emptyPattern()])} className="text-xs font-semibold text-indigo-600 cursor-pointer">
+                    <button type="button" onClick={() => setPatterns((prev) => [...prev, emptyPattern()])} className="text-xs font-semibold text-gold-700 cursor-pointer">
                       {t("rentalSeries.addPattern")}
                     </button>
                   </div>
                   {patterns.map((pattern, idx) => (
-                    <div key={idx} className="rounded-lg border border-slate-100 p-3 space-y-2">
+                    <div key={idx} className="rounded-lg border border-ink-100 p-3 space-y-2">
                       <div className="flex flex-wrap gap-1">
                         {WEEK_DAYS.map((day) => (
                           <button
@@ -291,7 +291,7 @@ export default function CreateRentalSeriesDialog({
                             type="button"
                             onClick={() => togglePatternDay(idx, day)}
                             className={`px-2 py-0.5 text-[10px] font-semibold rounded cursor-pointer ${
-                              pattern.daysOfWeek.includes(day) ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-500"
+                              pattern.daysOfWeek.includes(day) ? "bg-amber-50 text-amber-700" : "bg-ink-100 text-ink-500"
                             }`}
                           >
                             {dayLabel(day)}
@@ -303,7 +303,7 @@ export default function CreateRentalSeriesDialog({
                         <input type="time" className={fieldCls} value={pattern.timeEnd} onChange={(e) => setPatterns((prev) => prev.map((p, i) => (i === idx ? { ...p, timeEnd: e.target.value } : p)))} />
                       </div>
                       {patterns.length > 1 ? (
-                        <button type="button" onClick={() => setPatterns((prev) => prev.filter((_, i) => i !== idx))} className="text-xs text-rose-600 font-semibold cursor-pointer">
+                        <button type="button" onClick={() => setPatterns((prev) => prev.filter((_, i) => i !== idx))} className="text-xs text-garnet-600 font-semibold cursor-pointer">
                           {t("common.delete")}
                         </button>
                       ) : null}
@@ -313,13 +313,13 @@ export default function CreateRentalSeriesDialog({
               </div>
             ) : (
               <div className="space-y-4 text-sm">
-                <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3">
+                <div className="rounded-lg border border-amber-200 bg-amber-50/10 p-3">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">{t("rentalSeries.previewTitle")}</p>
-                  <p className="mt-1 font-semibold text-slate-800">
+                  <p className="mt-1 font-semibold text-ink-800">
                     {formatDate(validFrom)} – {formatDate(validTo)}
                   </p>
                   {previewQuery.data?.success ? (
-                    <p className="text-xs text-slate-600 mt-1">
+                    <p className="text-xs text-ink-600 mt-1">
                       {t("rentalSeries.occurrenceCount", { count: previewQuery.data.occurrenceCount })}
                       {canSeeTariffPrices && previewQuery.data.totalAmount != null
                         ? ` · ${formatCurrency(previewQuery.data.totalAmount)}`
@@ -329,11 +329,11 @@ export default function CreateRentalSeriesDialog({
                 </div>
 
                 {previewQuery.isLoading ? (
-                  <p className="text-slate-400">{t("common.loading.default")}</p>
+                  <p className="text-ink-400">{t("common.loading.default")}</p>
                 ) : previewQuery.data?.success ? (
                   <div className="max-h-48 overflow-y-auto space-y-1 text-xs">
                     {previewQuery.data.occurrences.map((occ) => (
-                      <div key={`${occ.occurrenceDate}-${occ.timeStart}`} className={`flex justify-between gap-2 py-1 border-b border-slate-50 ${occ.hasConflict ? "text-rose-600" : "text-slate-700"}`}>
+                      <div key={`${occ.occurrenceDate}-${occ.timeStart}`} className={`flex justify-between gap-2 py-1 border-b border-ink-50 ${occ.hasConflict ? "text-garnet-600" : "text-ink-700"}`}>
                         <span>{formatDate(occ.occurrenceDate)} · {occ.timeStart}–{occ.timeEnd}</span>
                         <span>
                           {occ.hasConflict ? t("rentalSeries.hasConflict") : canSeeTariffPrices && occ.calculatedAmount != null ? formatCurrency(occ.calculatedAmount) : ""}
@@ -342,13 +342,13 @@ export default function CreateRentalSeriesDialog({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-rose-600 text-xs">{t("rentalSeries.error.previewFailed")}</p>
+                  <p className="text-garnet-600 text-xs">{t("rentalSeries.error.previewFailed")}</p>
                 )}
 
                 {previewQuery.data?.hasConflicts ? (
-                  <p className="text-rose-600 text-xs">{t("rentalSeries.conflictBlocked")}</p>
+                  <p className="text-garnet-600 text-xs">{t("rentalSeries.conflictBlocked")}</p>
                 ) : previewQuery.data?.success ? (
-                  <p className="text-indigo-700 text-xs">{t("rentalSeries.noConflicts")}</p>
+                  <p className="text-gold-700 text-xs">{t("rentalSeries.noConflicts")}</p>
                 ) : null}
               </div>
             )}

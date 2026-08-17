@@ -34,9 +34,9 @@ export default function OrgSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 max-w-[220px] rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+        className="flex items-center gap-2 max-w-[220px] rounded-lg border border-ink-200 px-2.5 py-1.5 text-xs font-semibold text-ink-600 hover:bg-ink-50 cursor-pointer"
       >
-        <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+        <Building2 className="w-3.5 h-3.5 text-gold-700 shrink-0" />
         <span className="truncate">{organization?.name ?? t("orgSwitcher.defaultName")}</span>
         <ChevronDown className="w-3.5 h-3.5 shrink-0" />
       </button>
@@ -49,7 +49,7 @@ export default function OrgSwitcher() {
             className="fixed inset-0 z-40 cursor-default"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1">
+          <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-lg border border-ink-200 bg-white shadow-lg py-1">
             {memberships.map((membership) => {
               const label = membership.organization?.name ?? membership.display_name ?? membership.organization_id;
               const active = membership.organization_id === organization?.id;
@@ -59,12 +59,12 @@ export default function OrgSwitcher() {
                   type="button"
                   disabled={!!loadingId}
                   onClick={() => handleSwitch(membership.organization_id)}
-                  className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-50 cursor-pointer disabled:opacity-60 ${
-                    active ? "text-indigo-700 bg-indigo-50/60" : "text-slate-700"
+                  className={`w-full px-3 py-2 text-left text-xs hover:bg-ink-50 cursor-pointer disabled:opacity-60 ${
+                    active ? "text-gold-700 bg-gold-50/10" : "text-ink-700"
                   }`}
                 >
                   <span className="font-semibold block truncate">{label}</span>
-                  <span className="text-slate-400 uppercase tracking-wide">{membership.role}</span>
+                  <span className="text-ink-400 uppercase tracking-wide">{membership.role}</span>
                 </button>
               );
             })}
@@ -74,7 +74,7 @@ export default function OrgSwitcher() {
                 setOpen(false);
                 navigate("/select-organization");
               }}
-              className="w-full px-3 py-2 text-left text-xs text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 cursor-pointer"
+              className="w-full px-3 py-2 text-left text-xs text-gold-700 hover:bg-gold-50 border-t border-ink-100 cursor-pointer"
             >
               {t("orgSwitcher.allOrgs")}
             </button>

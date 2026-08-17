@@ -14,8 +14,8 @@ export default function ReadOnlyBanner() {
     : "";
 
   return (
-    <div className="bg-amber-50 border-b border-amber-100 px-4 sm:px-6 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-      <div className="flex items-start gap-2 text-sm text-amber-900">
+    <div className="bg-amber-50 border-b border-amber-200 px-4 sm:px-6 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div className="flex items-start gap-2 text-sm text-amber-700">
         <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
         <span>
           {organization?.status === "demo_retention"
@@ -26,7 +26,7 @@ export default function ReadOnlyBanner() {
       </div>
       <Link
         to="/license-required"
-        className="text-xs font-semibold uppercase tracking-wide text-amber-900 underline underline-offset-2 shrink-0"
+        className="text-xs font-semibold uppercase tracking-wide text-amber-700 underline underline-offset-2 shrink-0"
       >
         {t("common.readOnly.activateLicense")}
       </Link>

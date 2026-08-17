@@ -44,21 +44,21 @@ export default function GroupCapacityOverrideDialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !pending && onCancel()}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
-            className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full p-4 panel-card-stack"
+            className="relative bg-white rounded-xl border border-ink-200 shadow-xl max-w-md w-full p-4 panel-card-stack"
           >
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-lg bg-amber-50 shrink-0">
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <AlertTriangle className="w-5 h-5 text-amber-700" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                  <h3 className="text-base font-semibold tracking-tight text-ink-900">
                     {t("groupCapacity.override.title")}
                   </h3>
                   <button
@@ -66,19 +66,19 @@ export default function GroupCapacityOverrideDialog({
                     onClick={onCancel}
                     disabled={pending}
                     aria-label={t("common.close")}
-                    className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer shrink-0 disabled:opacity-60"
+                    className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer shrink-0 disabled:opacity-60"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+                <p className="text-sm text-ink-600 mt-1 leading-relaxed">
                   {t("groupCapacity.override.body", { group: groupLabel ?? t("common.groupLesson") })}
                 </p>
               </div>
             </div>
 
             <div className="field-stack">
-              <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
+              <label className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block">
                 {t("groupCapacity.override.reasonLabel")}
               </label>
               <textarea
@@ -87,7 +87,7 @@ export default function GroupCapacityOverrideDialog({
                 rows={3}
                 required
                 placeholder={t("groupCapacity.override.reasonPlaceholder")}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none"
+                className="w-full bg-ink-50 border border-ink-200 rounded-lg px-3 py-2 text-sm resize-none"
               />
             </div>
 

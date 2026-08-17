@@ -15,7 +15,7 @@ export default function AddLocationsInSettingsHint({
       {t("attendance.noLocationsHint")}{" "}
       <Link
         to="/settings/locations"
-        className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline"
+        className="text-gold-700 hover:text-gold-800 font-semibold underline-offset-2 hover:underline"
       >
         {t("attendance.settingsLocations")}
       </Link>

@@ -22,7 +22,7 @@ import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
 import type { PaymentMethod } from "../../types";
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 type CorrectionMode = "void" | "correct";
 
@@ -137,44 +137,44 @@ export default function PaymentCorrectionDialog({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <div className="absolute inset-0 bg-slate-900/40" onClick={handleClose} />
+          <div className="absolute inset-0 bg-ink-950/40" onClick={handleClose} />
           <motion.div
             className="relative w-full sm:max-w-lg bg-white rounded-t-xl sm:rounded-xl shadow-xl max-h-[90vh] overflow-y-auto"
             initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
           >
-            <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-100">
+            <div className="flex items-start justify-between gap-3 p-4 border-b border-ink-100">
               <div>
-                <p className="text-base font-semibold text-slate-900">{t("corrections.payment.title")}</p>
-                <p className="text-xs text-slate-500 mt-1">{t("corrections.payment.subtitle")}</p>
+                <p className="text-base font-semibold text-ink-900">{t("corrections.payment.title")}</p>
+                <p className="text-xs text-ink-500 mt-1">{t("corrections.payment.subtitle")}</p>
               </div>
-              <button type="button" onClick={handleClose} className="p-1 text-slate-400 hover:text-slate-600">
+              <button type="button" onClick={handleClose} className="p-1 text-ink-400 hover:text-ink-600">
                 <X size={18} />
               </button>
             </div>
 
             <div className="p-4 space-y-4">
-              <div className="rounded-xl bg-slate-50 p-3 space-y-2 text-sm">
+              <div className="rounded-xl bg-ink-50 p-3 space-y-2 text-sm">
                 <div className="flex justify-between gap-3">
-                  <span className="text-slate-500">{t("corrections.payment.original")}</span>
-                  <span className="font-semibold text-slate-800">{formatCurrency(payment.amount)}</span>
+                  <span className="text-ink-500">{t("corrections.payment.original")}</span>
+                  <span className="font-semibold text-ink-800">{formatCurrency(payment.amount)}</span>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <span className="text-slate-500">{t("corrections.payment.client")}</span>
-                  <span className="text-slate-800 truncate">{payment.clientDisplay}</span>
+                  <span className="text-ink-500">{t("corrections.payment.client")}</span>
+                  <span className="text-ink-800 truncate">{payment.clientDisplay}</span>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <span className="text-slate-500">{t("corrections.payment.method")}</span>
-                  <span className="text-slate-800">{getPaymentMethodLabel(payment.method, t)}</span>
+                  <span className="text-ink-500">{t("corrections.payment.method")}</span>
+                  <span className="text-ink-800">{getPaymentMethodLabel(payment.method, t)}</span>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <span className="text-slate-500">{t("corrections.payment.source")}</span>
-                  <span className="text-slate-800">{paymentSourceLabel(payment, t)}</span>
+                  <span className="text-ink-500">{t("corrections.payment.source")}</span>
+                  <span className="text-ink-800">{paymentSourceLabel(payment, t)}</span>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <span className="text-slate-500">{t("corrections.payment.date")}</span>
-                  <span className="text-slate-800">
+                  <span className="text-ink-500">{t("corrections.payment.date")}</span>
+                  <span className="text-ink-800">
                     {formatDateTime(payment.createdAt, {
                       day: "numeric",
                       month: "short",
@@ -186,14 +186,14 @@ export default function PaymentCorrectionDialog({
                 </div>
                 {payment.operationNumber != null && (
                   <div className="flex justify-between gap-3">
-                    <span className="text-slate-500">{t("corrections.payment.operationNumber")}</span>
-                    <span className="text-slate-800">{formatOperationNumber(payment.operationNumber)}</span>
+                    <span className="text-ink-500">{t("corrections.payment.operationNumber")}</span>
+                    <span className="text-ink-800">{formatOperationNumber(payment.operationNumber)}</span>
                   </div>
                 )}
               </div>
 
               {!canCorrect ? (
-                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
                   <AlertTriangle size={16} className="shrink-0 mt-0.5" />
                   <span>{t("corrections.payment.notCorrectable")}</span>
                 </div>
@@ -260,17 +260,17 @@ export default function PaymentCorrectionDialog({
               )}
 
               {isSaved && savedOperationNumber != null && (
-                <p className="text-sm text-indigo-700 font-medium">
+                <p className="text-sm text-gold-700 font-medium">
                   {t("corrections.payment.saved", { op: formatOperationNumber(savedOperationNumber) })}
                 </p>
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-100 flex gap-2">
+            <div className="p-4 border-t border-ink-100 flex gap-2">
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600"
+                className="flex-1 py-2.5 rounded-xl border border-ink-200 text-sm font-medium text-ink-600"
               >
                 {isSaved ? t("common.close") : t("common.cancel")}
               </button>
@@ -279,7 +279,7 @@ export default function PaymentCorrectionDialog({
                   type="button"
                   disabled={isPending}
                   onClick={() => void handleSubmit()}
-                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold disabled:opacity-60"
+                  className="flex-1 py-2.5 rounded-xl bg-gold-700 text-white text-sm font-semibold disabled:opacity-60"
                 >
                   {isPending ? t("common.saving") : t("corrections.payment.confirm")}
                 </button>

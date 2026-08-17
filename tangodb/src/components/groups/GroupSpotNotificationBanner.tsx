@@ -40,11 +40,11 @@ export default function GroupSpotNotificationBanner({ toast }: GroupSpotNotifica
   };
 
   return (
-    <div className="rounded-xl border border-indigo-200 bg-indigo-50/80 px-4 py-3 flex items-start gap-3">
-      <Bell className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+    <div className="rounded-xl border border-gold-200 bg-gold-50/10 px-4 py-3 flex items-start gap-3">
+      <Bell className="w-4 h-4 text-gold-700 shrink-0 mt-0.5" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-indigo-900">{t("groupWaitlist.spotAvailableTitle")}</p>
-        <p className="text-xs text-indigo-800/90 mt-0.5 leading-relaxed">
+        <p className="text-sm font-semibold text-gold-900">{t("groupWaitlist.spotAvailableTitle")}</p>
+        <p className="text-xs text-gold-800 mt-0.5 leading-relaxed">
           {t("groupWaitlist.spotAvailableBody", { client: clientName, group: groupName })}
         </p>
       </div>
@@ -53,7 +53,7 @@ export default function GroupSpotNotificationBanner({ toast }: GroupSpotNotifica
         onClick={() => void handleDismiss()}
         disabled={dismissNotification.isPending}
         aria-label={t("common.close")}
-        className="p-1 text-indigo-500 hover:text-indigo-800 rounded-full hover:bg-indigo-100 cursor-pointer shrink-0 disabled:opacity-60"
+        className="p-1 text-gold-500 hover:text-gold-800 rounded-full hover:bg-gold-100 cursor-pointer shrink-0 disabled:opacity-60"
       >
         <X className="w-4 h-4" />
       </button>

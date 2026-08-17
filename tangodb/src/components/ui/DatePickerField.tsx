@@ -16,8 +16,8 @@ interface DatePickerFieldProps {
   className?: string;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
-const triggerCls = `${fieldCls} flex items-center gap-2 hover:border-indigo-300 text-left cursor-pointer`;
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
+const triggerCls = `${fieldCls} flex items-center gap-2 hover:border-gold-300 text-left cursor-pointer`;
 const CALENDAR_MIN_WIDTH = 280;
 const CALENDAR_ESTIMATED_HEIGHT = 300;
 const MENU_GAP = 4;
@@ -174,23 +174,23 @@ export default function DatePickerField({
           left: panelStyle.left,
           width: panelStyle.width,
         }}
-        className="fixed z-[100] rounded-xl border border-slate-200 bg-white shadow-lg p-3"
+        className="fixed z-[100] rounded-xl border border-ink-200 bg-white shadow-lg p-3"
       >
         <div className="flex items-center justify-between mb-3">
           <button
             type="button"
             onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
             aria-label={t("ui.datePicker.prevMonth")}
-            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+            className="p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-all cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-xs font-semibold text-slate-800 capitalize">{monthLabel}</span>
+          <span className="text-xs font-semibold text-ink-800 capitalize">{monthLabel}</span>
           <button
             type="button"
             onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
             aria-label={t("ui.datePicker.nextMonth")}
-            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+            className="p-1.5 text-ink-400 hover:text-gold-800 hover:bg-gold-50 rounded-lg transition-all cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -200,7 +200,7 @@ export default function DatePickerField({
           {weekdayHeaders.map((d) => (
             <div
               key={d}
-              className="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 py-1"
+              className="text-center text-[10px] font-semibold uppercase tracking-wider text-ink-500 py-1"
             >
               {d}
             </div>
@@ -226,12 +226,12 @@ export default function DatePickerField({
                 onClick={() => handleSelect(day)}
                 className={`h-8 rounded-md text-xs font-semibold transition-colors ${
                   disabled
-                    ? "text-slate-300 cursor-not-allowed"
+                    ? "text-ink-300 cursor-not-allowed"
                     : selected
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
+                      ? "bg-gold-700 text-white hover:bg-gold-800 cursor-pointer"
                       : isToday
-                        ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 cursor-pointer"
-                        : "text-slate-700 hover:bg-slate-100 cursor-pointer"
+                        ? "bg-gold-50 text-gold-700 hover:bg-gold-100 cursor-pointer"
+                        : "text-ink-700 hover:bg-ink-100 cursor-pointer"
                 }`}
               >
                 {day.getDate()}
@@ -256,9 +256,9 @@ export default function DatePickerField({
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className={`${triggerCls} ${!value ? "text-slate-400" : "text-slate-700"}`}
+        className={`${triggerCls} ${!value ? "text-ink-400" : "text-ink-700"}`}
       >
-        <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
+        <CalendarDays className="w-4 h-4 text-ink-400 shrink-0" />
         <span>{value ? formatDate(value, { day: "numeric", month: "long", year: "numeric" }) : t("ui.datePicker.selectDate")}</span>
       </button>
 

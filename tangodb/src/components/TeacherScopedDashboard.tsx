@@ -55,35 +55,35 @@ export default function TeacherScopedDashboard({
             key={id}
             type="button"
             onClick={() => onNavigate(id)}
-            className="bg-white rounded-xl px-4 py-3 border border-slate-200/90 shadow-xs hover:shadow-sm transition-all text-left flex items-center gap-3"
+            className="bg-white rounded-xl px-4 py-3 border border-ink-200 shadow-xs hover:shadow-sm transition-all text-left flex items-center gap-3"
           >
-            <Icon className="w-5 h-5 text-indigo-600 shrink-0" />
-            <span className="text-sm font-semibold text-slate-800">{t(labelKey)}</span>
+            <Icon className="w-5 h-5 text-gold-700 shrink-0" />
+            <span className="text-sm font-semibold text-ink-800">{t(labelKey)}</span>
           </button>
         ))}
       </div>
 
-      <section className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
-        <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-          <CalendarDays className="w-4 h-4 text-indigo-500" />
+      <section className="bg-white rounded-xl p-3.5 border border-ink-200 shadow-xs space-y-2">
+        <h2 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
+          <CalendarDays className="w-4 h-4 text-gold-500" />
           {t("dashboard.teacher.todaySchedule")}
         </h2>
         {todaySlots.length === 0 ? (
-          <p className="text-slate-400 text-xs font-sans py-3 text-center">{t("dashboard.teacher.noClassesToday")}</p>
+          <p className="text-ink-400 text-xs font-sans py-3 text-center">{t("dashboard.teacher.noClassesToday")}</p>
         ) : (
           <ul className="space-y-1.5">
             {todaySlots.map((slot) => (
               <li
                 key={slot.id ?? `${slot.dayOfWeek}-${slot.time}`}
-                className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs font-sans"
+                className="flex items-center justify-between p-2 bg-ink-50 rounded-lg border border-ink-100 text-xs font-sans"
               >
-                <span className="font-semibold text-slate-800">
+                <span className="font-semibold text-ink-800">
                   {slot.groupName || t("common.group")}
                   {slot.disciplineId && disciplineNames[slot.disciplineId]
                     ? ` · ${disciplineNames[slot.disciplineId]}`
                     : ""}
                 </span>
-                <span className="text-slate-500 flex items-center gap-1 shrink-0">
+                <span className="text-ink-500 flex items-center gap-1 shrink-0">
                   <Clock className="w-3.5 h-3.5" />
                   {slot.time}–{slot.timeEnd}
                 </span>
@@ -94,22 +94,22 @@ export default function TeacherScopedDashboard({
       </section>
 
       {personalLessonsEnabled ? (
-        <section className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
-          <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-500" />
+        <section className="bg-white rounded-xl p-3.5 border border-ink-200 shadow-xs space-y-2">
+          <h2 className="font-sans text-sm font-semibold text-ink-800 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-gold-500" />
             {t("dashboard.teacher.upcomingPersonal")}
           </h2>
           {upcomingLessons.length === 0 ? (
-            <p className="text-slate-400 text-xs font-sans py-3 text-center">{t("dashboard.teacher.noUpcoming")}</p>
+            <p className="text-ink-400 text-xs font-sans py-3 text-center">{t("dashboard.teacher.noUpcoming")}</p>
           ) : (
             <ul className="space-y-1.5">
               {upcomingLessons.map((lesson) => (
                 <li
                   key={lesson.id}
-                  className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs font-sans"
+                  className="flex items-center justify-between p-2 bg-ink-50 rounded-lg border border-ink-100 text-xs font-sans"
                 >
-                  <span className="font-semibold text-slate-800 truncate">{lesson.clientDisplay}</span>
-                  <span className="text-slate-500 shrink-0 ml-2">
+                  <span className="font-semibold text-ink-800 truncate">{lesson.clientDisplay}</span>
+                  <span className="text-ink-500 shrink-0 ml-2">
                     {formatDate(lesson.date, { day: "numeric", month: "long", year: "numeric" })} · {lesson.timeStart}
                   </span>
                 </li>

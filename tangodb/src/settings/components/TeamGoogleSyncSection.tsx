@@ -36,15 +36,15 @@ export default function TeamGoogleSyncSection() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
+    <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          <Users className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+          <Users className="w-5 h-5 text-gold-700 shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-sm font-semibold text-slate-900">
+            <h3 className="text-sm font-semibold text-ink-900">
               {t("integrations.googleCalendar.team.title")}
             </h3>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-ink-500 mt-1">
               {t("integrations.googleCalendar.team.subtitle")}
             </p>
           </div>
@@ -61,23 +61,23 @@ export default function TeamGoogleSyncSection() {
 
       {orgMetrics && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-            <p className="text-slate-500">{t("integrations.googleCalendar.team.queuePending")}</p>
-            <p className="font-semibold text-slate-800">
+          <div className="rounded-lg border border-ink-100 bg-ink-50 px-3 py-2">
+            <p className="text-ink-500">{t("integrations.googleCalendar.team.queuePending")}</p>
+            <p className="font-semibold text-ink-800">
               {(orgMetrics.pending_count ?? 0) + (orgMetrics.retry_count ?? 0)}
             </p>
           </div>
-          <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-            <p className="text-slate-500">{t("integrations.googleCalendar.team.queueProcessing")}</p>
-            <p className="font-semibold text-slate-800">{orgMetrics.processing_count ?? 0}</p>
+          <div className="rounded-lg border border-ink-100 bg-ink-50 px-3 py-2">
+            <p className="text-ink-500">{t("integrations.googleCalendar.team.queueProcessing")}</p>
+            <p className="font-semibold text-ink-800">{orgMetrics.processing_count ?? 0}</p>
           </div>
-          <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-            <p className="text-slate-500">{t("integrations.googleCalendar.team.queueDead")}</p>
-            <p className="font-semibold text-slate-800">{orgMetrics.dead_count ?? 0}</p>
+          <div className="rounded-lg border border-ink-100 bg-ink-50 px-3 py-2">
+            <p className="text-ink-500">{t("integrations.googleCalendar.team.queueDead")}</p>
+            <p className="font-semibold text-ink-800">{orgMetrics.dead_count ?? 0}</p>
           </div>
-          <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-            <p className="text-slate-500">{t("integrations.googleCalendar.team.oldestPending")}</p>
-            <p className="font-semibold text-slate-800 truncate">
+          <div className="rounded-lg border border-ink-100 bg-ink-50 px-3 py-2">
+            <p className="text-ink-500">{t("integrations.googleCalendar.team.oldestPending")}</p>
+            <p className="font-semibold text-ink-800 truncate">
               {orgMetrics.oldest_pending_at
                 ? formatDateTime(orgMetrics.oldest_pending_at)
                 : "—"}
@@ -91,12 +91,12 @@ export default function TeamGoogleSyncSection() {
       ) : isError ? (
         <QueryErrorState onRetry={() => void refetch()} />
       ) : members.length === 0 ? (
-        <p className="text-xs text-slate-500">{t("integrations.googleCalendar.team.empty")}</p>
+        <p className="text-xs text-ink-500">{t("integrations.googleCalendar.team.empty")}</p>
       ) : (
         <div className="overflow-x-auto -mx-1">
           <table className="w-full min-w-[32rem] text-xs">
             <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-100">
+              <tr className="text-left text-ink-500 border-b border-ink-100">
                 <th className="py-2 px-2 font-medium">{t("integrations.googleCalendar.team.member")}</th>
                 <th className="py-2 px-2 font-medium">{t("integrations.googleCalendar.team.connected")}</th>
                 <th className="py-2 px-2 font-medium">{t("integrations.googleCalendar.team.lastSync")}</th>
@@ -112,24 +112,24 @@ export default function TeamGoogleSyncSection() {
                 const showRemind = !member.has_active_binding;
 
                 return (
-                  <tr key={member.organization_member_id} className="border-b border-slate-50">
-                    <td className="py-2.5 px-2 font-medium text-slate-800">{member.member_name}</td>
+                  <tr key={member.organization_member_id} className="border-b border-ink-50">
+                    <td className="py-2.5 px-2 font-medium text-ink-800">{member.member_name}</td>
                     <td className="py-2.5 px-2">
                       {member.has_active_binding
                         ? t("integrations.googleCalendar.team.yes")
                         : t("integrations.googleCalendar.team.no")}
                     </td>
-                    <td className="py-2.5 px-2 text-slate-600">
+                    <td className="py-2.5 px-2 text-ink-600">
                       {member.binding_last_success_at
                         ? formatDateTime(member.binding_last_success_at)
                         : "—"}
                       {member.binding_last_error_code && (
-                        <span className="block text-rose-600 mt-0.5">
+                        <span className="block text-garnet-600 mt-0.5">
                           {member.binding_last_error_code}
                         </span>
                       )}
                     </td>
-                    <td className="py-2.5 px-2 text-slate-600">
+                    <td className="py-2.5 px-2 text-ink-600">
                       {pendingTotal > 0 || failedLinks > 0
                         ? t("integrations.googleCalendar.team.pendingFailedCounts", {
                             pending: pendingTotal,

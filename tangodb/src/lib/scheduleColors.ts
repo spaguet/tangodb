@@ -1,27 +1,27 @@
-/** Group lessons — синий (indigo) */
+/** Group lessons — primary (gold); dark text on gold-500 for WCAG AA (4.5:1) */
 export const GROUP_LESSON_COLOR = {
-  bg: "bg-indigo-600",
-  border: "border-indigo-700",
-  text: "text-white",
+  bg: "bg-gold-500",
+  border: "border-gold-700",
+  text: "text-ink-900",
 } as const;
 
-/** Personal lessons — голубой (sky) */
+/** Personal lessons — secondary accent (lavender); lavender-500 bg for white text AA */
 export const PERSONAL_LESSON_COLOR = {
-  bg: "bg-sky-400",
-  border: "border-sky-500",
+  bg: "bg-lavender-500",
+  border: "border-lavender-600",
   text: "text-white",
 } as const;
 
-/** Calendar events (master class / open lesson) — фиолетовый (violet) */
+/** Calendar events (master class / open lesson) — secondary accent, darker lavender */
 export const EVENT_LESSON_COLOR = {
-  bg: "bg-violet-600",
-  border: "border-violet-700",
+  bg: "bg-lavender-600",
+  border: "border-lavender-700",
   text: "text-white",
 } as const;
 
-/** Hall rentals — серый (slate) */
+/** Hall rentals — neutral (ink) */
 export const RENTAL_LESSON_COLOR = {
-  bg: "bg-slate-600",
-  border: "border-slate-700",
+  bg: "bg-ink-600",
+  border: "border-ink-700",
   text: "text-white",
 } as const;

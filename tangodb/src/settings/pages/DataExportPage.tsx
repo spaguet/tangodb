@@ -133,41 +133,41 @@ function OperationalExportSection() {
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
+      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4">
         <div>
-          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold mb-2">
+          <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold mb-2">
             {t("settings.export.operationalTitle")}
           </p>
           <ul className="space-y-1.5">
             {exportSets.map((set) => (
-              <li key={set.id} className="text-sm text-slate-700 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+              <li key={set.id} className="text-sm text-ink-700 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-gold-400 shrink-0" />
                 {set.label}
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+        <div className="flex items-center justify-between gap-2 border-t border-ink-100 pt-3">
+          <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
             {t("settings.export.operationalMonth")}
           </p>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setStatsMonth((m) => shiftMonthLocal(m, -1))}
-              className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 cursor-pointer"
+              className="p-1 rounded-lg hover:bg-ink-50 text-ink-500 cursor-pointer"
               aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-semibold text-slate-800 min-w-[120px] text-center">
+            <span className="text-xs font-semibold text-ink-800 min-w-[120px] text-center">
               {formatMonthTitle(statsMonth, locale)}
             </span>
             <button
               type="button"
               onClick={() => setStatsMonth((m) => shiftMonthLocal(m, 1))}
-              className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 cursor-pointer"
+              className="p-1 rounded-lg hover:bg-ink-50 text-ink-500 cursor-pointer"
               aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
@@ -179,7 +179,7 @@ function OperationalExportSection() {
           <button
             type="button"
             onClick={() => setStatsMonth(currentYearMonth())}
-            className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
+            className="text-[10px] font-semibold text-gold-700 hover:underline cursor-pointer"
           >
             {t("common.currentMonth")}
           </button>
@@ -297,41 +297,41 @@ function FinancialExportSection() {
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
+      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4">
         <div>
-          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold mb-2">
+          <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold mb-2">
             {t("settings.export.financeTitle")}
           </p>
           <ul className="space-y-1.5">
             {exportSets.map((set) => (
-              <li key={set.id} className="text-sm text-slate-700 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+              <li key={set.id} className="text-sm text-ink-700 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-gold-400 shrink-0" />
                 {set.label}
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+        <div className="flex items-center justify-between gap-2 border-t border-ink-100 pt-3">
+          <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
             {t("settings.export.financeMonth")}
           </p>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setStatsMonth((m) => shiftMonthLocal(m, -1))}
-              className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 cursor-pointer"
+              className="p-1 rounded-lg hover:bg-ink-50 text-ink-500 cursor-pointer"
               aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-semibold text-slate-800 min-w-[120px] text-center">
+            <span className="text-xs font-semibold text-ink-800 min-w-[120px] text-center">
               {formatMonthTitle(statsMonth, locale)}
             </span>
             <button
               type="button"
               onClick={() => setStatsMonth((m) => shiftMonthLocal(m, 1))}
-              className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 cursor-pointer"
+              className="p-1 rounded-lg hover:bg-ink-50 text-ink-500 cursor-pointer"
               aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
@@ -343,7 +343,7 @@ function FinancialExportSection() {
           <button
             type="button"
             onClick={() => setStatsMonth(currentYearMonth())}
-            className="text-[10px] font-semibold text-indigo-600 hover:underline cursor-pointer"
+            className="text-[10px] font-semibold text-gold-700 hover:underline cursor-pointer"
           >
             {t("common.currentMonth")}
           </button>
@@ -392,7 +392,7 @@ export default function DataExportPage() {
   if (!canAnyExport) {
     return (
       <div className="panel-card-stack max-w-xl">
-        <p className="text-sm text-slate-500">{t("settings.export.noPermission")}</p>
+        <p className="text-sm text-ink-500">{t("settings.export.noPermission")}</p>
       </div>
     );
   }
@@ -400,8 +400,8 @@ export default function DataExportPage() {
   return (
     <div className="panel-card-stack max-w-xl">
       <div>
-        <h2 className="text-base font-semibold text-slate-900">{t("settings.export.title")}</h2>
-        <p className="text-xs text-slate-500 mt-1">
+        <h2 className="text-base font-semibold text-ink-900">{t("settings.export.title")}</h2>
+        <p className="text-xs text-ink-500 mt-1">
           {t("settings.export.subtitle")} {exportSettings?.locale ?? "ru-RU"}.
         </p>
       </div>

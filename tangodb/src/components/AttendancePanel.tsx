@@ -148,14 +148,14 @@ function AttendanceMarkLegend({
     : ATTENDANCE_MARK_KEYS.filter((item) => item.status !== "freeze");
 
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 space-y-1.5 mb-4">
-      <p className="text-[10px] font-sans font-semibold uppercase tracking-wider text-slate-500">
+    <div className="rounded-xl border border-ink-100 bg-ink-50/10 px-3 py-2.5 space-y-1.5 mb-4">
+      <p className="text-[10px] font-sans font-semibold uppercase tracking-wider text-ink-500">
         {t("attendance.legend.title")}
       </p>
       <div className="space-y-1">
         {items.map((item) => (
-          <p key={item.status} className="text-[11px] text-slate-500 font-sans leading-snug">
-            <span className="font-semibold text-slate-700">{t(item.labelKey)}</span>
+          <p key={item.status} className="text-[11px] text-ink-500 font-sans leading-snug">
+            <span className="font-semibold text-ink-700">{t(item.labelKey)}</span>
             {" — "}
             {t(item.hintKey)}
           </p>
@@ -999,15 +999,15 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     return (
       <div
         key={st.subId}
-        className="py-4 flex flex-col gap-3 border-b border-slate-100 last:border-0"
+        className="py-4 flex flex-col gap-3 border-b border-ink-100 last:border-0"
       >
         <div className="space-y-1.5">
-          <p className="text-[11px] font-sans font-semibold text-indigo-700 leading-snug">{tariffLabel}</p>
+          <p className="text-[11px] font-sans font-semibold text-gold-700 leading-snug">{tariffLabel}</p>
           <div className="space-y-0.5">
-            <h4 className="text-sm font-semibold text-slate-800 leading-tight">{fullname}</h4>
-            <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400 font-sans">
+            <h4 className="text-sm font-semibold text-ink-800 leading-tight">{fullname}</h4>
+            <div className="flex items-center gap-2 flex-wrap text-xs text-ink-500 font-sans">
               <span>{isMonthly ? t("attendance.balance.remaining") : t("attendance.balance.label")}</span>
-              <strong className={`font-semibold ${hasLowCredits ? "text-rose-600" : "text-slate-700"}`}>
+              <strong className={`font-semibold ${hasLowCredits ? "text-garnet-600" : "text-ink-700"}`}>
                 {isMonthly
                   ? `${daysLeft ?? 0} ${plural(daysLeft ?? 0, [t("common.day.one"), t("common.day.few"), t("common.day.many")])}`
                   : `${displayLessonsLeft} ${t("common.of")} ${st.lessonsTotal}`}
@@ -1025,7 +1025,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-50">
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-ink-50">
           <button
             type="button"
             onClick={() => handleMark(st.subId, "present", st)}
@@ -1036,8 +1036,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             }
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "present"
-                ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
-                : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50"
+                ? "bg-gold-700 border-gold-700 text-white shadow-xs"
+                : "bg-white border-ink-200 text-ink-600 hover:border-gold-300 hover:bg-gold-50"
             }`}
           >
             <Check className="w-3.5 h-3.5" />
@@ -1054,8 +1054,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             }
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "absent"
-                ? "bg-rose-600 border-rose-600 text-white shadow-xs"
-                : "bg-white border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50"
+                ? "bg-garnet-600 border-garnet-600 text-white shadow-xs"
+                : "bg-white border-ink-200 text-ink-600 hover:border-garnet-300 hover:bg-garnet-50"
             }`}
           >
             <X className="w-3.5 h-3.5" />
@@ -1075,10 +1075,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               }
               className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border disabled:opacity-60 ${
                 st.currentStatus === "freeze"
-                  ? "bg-sky-600 border-sky-600 text-white shadow-xs cursor-pointer"
+                  ? "bg-lavender-600 border-lavender-600 text-white shadow-xs cursor-pointer"
                   : freezeLocked
-                    ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50 cursor-pointer"
+                    ? "bg-ink-50 border-ink-100 text-ink-300 cursor-not-allowed"
+                    : "bg-white border-ink-200 text-ink-600 hover:border-lavender-300 hover:bg-lavender-50 cursor-pointer"
               }`}
             >
               <Snowflake className="w-3.5 h-3.5" />
@@ -1094,8 +1094,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             title={connectionTitle ?? t("attendance.titleExcusedNoDeduct")}
             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
               st.currentStatus === "excused"
-                ? "bg-slate-600 border-slate-600 text-white shadow-xs"
-                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                ? "bg-ink-600 border-ink-600 text-white shadow-xs"
+                : "bg-white border-ink-200 text-ink-600 hover:border-ink-300 hover:bg-ink-50"
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -1185,14 +1185,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
     if (isOfflineMode && canRecordSingleVisit) {
       return (
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-2">
-          <p className="text-[11px] text-amber-800 font-sans leading-relaxed">
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/10 p-3 space-y-2">
+          <p className="text-[11px] text-amber-700 font-sans leading-relaxed">
             {t("offline.restrictions.singleVisit")}
           </p>
           <button
             type="button"
             onClick={() => void handleSaveSingleVisitDraft()}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 border border-amber-300 bg-white hover:bg-amber-50 text-amber-900 rounded-lg text-[11px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 border border-amber-300 bg-white hover:bg-amber-50 text-amber-700 rounded-lg text-[11px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
           >
             <Ticket className="w-3.5 h-3.5" />
             {t("offline.draft.saveReminder")}
@@ -1202,12 +1202,12 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     }
 
     return (
-      <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50/70 p-3 space-y-3">
+      <div className="mb-4 rounded-xl border border-ink-100 bg-ink-50/70 p-3 space-y-3">
         {canRecordSingleVisit && (
           <button
             type="button"
             onClick={() => setSingleVisitOpen((value) => !value)}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 border border-dashed border-slate-300 hover:border-indigo-300 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 rounded-lg text-[11px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 border border-dashed border-ink-300 hover:border-gold-300 hover:bg-gold-50 text-ink-600 hover:text-gold-800 rounded-lg text-[11px] font-sans font-semibold uppercase tracking-wider transition-colors cursor-pointer"
           >
             <Ticket className="w-3.5 h-3.5" />
             {t("attendance.singleVisit.button")}
@@ -1254,9 +1254,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             </AppSelect>
 
             {singleVisitTariffs.length === 0 && (
-              <p className="text-[11px] text-amber-600 font-sans">
+              <p className="text-[11px] text-amber-700 font-sans">
                 {t("attendance.singleVisit.noTariffs")}{" "}
-                <Link to="/prices" className="font-semibold text-indigo-600 hover:text-indigo-800 underline-offset-2 hover:underline">
+                <Link to="/prices" className="font-semibold text-gold-700 hover:text-gold-800 underline-offset-2 hover:underline">
                   {t("attendance.singleVisit.openPrices")}
                 </Link>
               </p>
@@ -1275,7 +1275,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             </AppSelect>
 
             <div className="field-stack">
-              <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
+              <label className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block">
                 {t("common.amount")}
               </label>
               <input
@@ -1305,15 +1305,15 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         {selectedGroupLesson.slotId &&
           connectionState === "online" &&
           (canCloseGroupOccurrence || (Boolean(activeGroupClosure) && canReopenGroupClosure)) && (
-          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
-            <p className="text-[11px] font-semibold text-slate-800 uppercase tracking-wider">
+          <div className="rounded-lg border border-ink-100 bg-ink-50/10 p-3 space-y-2">
+            <p className="text-[11px] font-semibold text-ink-800 uppercase tracking-wider">
               {t("venueCosts.closeLesson")}
             </p>
             {activeGroupClosure ? (
               <>
-                <p className="text-xs text-slate-800 font-semibold">{t("venueCosts.closeLesson.closed")}</p>
+                <p className="text-xs text-ink-800 font-semibold">{t("venueCosts.closeLesson.closed")}</p>
                 {activeGroupClosure.confirmedAttendeeCount != null && (
-                  <p className="text-[11px] text-slate-600">
+                  <p className="text-[11px] text-ink-600">
                     {t("venueCosts.closeLesson.attendeesConfirmed", {
                       count: activeGroupClosure.confirmedAttendeeCount,
                     })}
@@ -1322,14 +1322,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 {canReopenGroupClosure && (
                   <>
                     <label className="block space-y-1">
-                      <span className="text-[10px] text-slate-500 font-sans uppercase tracking-wider">
+                      <span className="text-[10px] text-ink-500 font-sans uppercase tracking-wider">
                         {t("venueCosts.reopenLesson.reason")}
                       </span>
                       <input
                         type="text"
                         value={reopenReason}
                         onChange={(e) => setReopenReason(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-amber-400"
+                        className="w-full px-3 py-2 bg-white border border-ink-200 rounded-lg text-sm outline-none focus:border-amber-400"
                       />
                     </label>
                     <button
@@ -1346,7 +1346,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             ) : canCloseGroupOccurrence ? (
               <>
                 <label className="block space-y-1">
-                  <span className="text-[10px] text-slate-500 font-sans uppercase tracking-wider">
+                  <span className="text-[10px] text-ink-500 font-sans uppercase tracking-wider">
                     {t("venueCosts.closeLesson.attendees")}
                   </span>
                   <input
@@ -1357,7 +1357,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       countPresentAttendeesFromSubs(effectiveModalSubs, groupSingleVisits.length)
                     )}
                     onChange={(e) => setCloseAttendeeCount(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 bg-white border border-ink-200 rounded-lg text-sm outline-none focus:border-amber-400"
                   />
                 </label>
                 <button
@@ -1374,14 +1374,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         )}
 
         {groupSingleVisits.length > 0 && (
-          <div className="space-y-1.5 pt-2 border-t border-slate-100">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          <div className="space-y-1.5 pt-2 border-t border-ink-100">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-500">
               {t("attendance.singleVisit.recordedTitle")}
             </p>
             {groupSingleVisits.map((visit) => (
               <div key={visit.id} className="flex items-center justify-between gap-2 text-xs font-sans">
-                <span className="text-slate-700 truncate">{visit.clientDisplay}</span>
-                <span className="text-indigo-700 font-semibold whitespace-nowrap">{formatCurrency(visit.amount)}</span>
+                <span className="text-ink-700 truncate">{visit.clientDisplay}</span>
+                <span className="text-gold-700 font-semibold whitespace-nowrap">{formatCurrency(visit.amount)}</span>
               </div>
             ))}
           </div>
@@ -1414,17 +1414,17 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   if (!selectedLocationId) {
     return (
       <div id="panel-attendance" className="panel-page-stack">
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+        <div className="bg-white rounded-xl p-4 border border-ink-200 shadow-xs panel-card-stack">
           <div className="panel-card-stack">
-            <h2 className="text-base font-semibold tracking-tight text-slate-800">{t("attendance.title")}</h2>
-            <p className="text-xs text-slate-400">{t("attendance.hint.selectLocation")}</p>
+            <h2 className="text-base font-semibold tracking-tight text-ink-800">{t("attendance.title")}</h2>
+            <p className="text-xs text-ink-500">{t("attendance.hint.selectLocation")}</p>
           </div>
 
           {isLoading ? (
             <LoadingState label={t("attendance.loadingLocations")} />
           ) : locations.length === 0 ? (
-            <div className="text-center py-16 text-slate-400 space-y-3">
-              <MapPin className="w-8 h-8 mx-auto text-slate-300" />
+            <div className="text-center py-16 text-ink-500 space-y-3">
+              <MapPin className="w-8 h-8 mx-auto text-ink-300" />
               <p className="text-sm">{t("attendance.noLocations")}</p>
               <AddLocationsInSettingsHint />
             </div>
@@ -1435,17 +1435,17 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   key={loc.id}
                   type="button"
                   onClick={() => setSelectedLocationId(loc.id)}
-                  className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/40 transition-all cursor-pointer text-left"
+                  className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-ink-200 bg-white hover:border-gold-300 hover:bg-gold-50/40 transition-all cursor-pointer text-left"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800">{loc.name}</p>
+                    <p className="text-sm font-semibold text-ink-800">{loc.name}</p>
                     {loc.address ? (
-                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">{loc.address}</p>
+                      <p className="text-[11px] text-ink-500 mt-0.5 truncate">{loc.address}</p>
                     ) : (
-                      <p className="text-[11px] text-slate-300 italic mt-0.5">{t("common.noAddress")}</p>
+                      <p className="text-[11px] text-ink-300 italic mt-0.5">{t("common.noAddress")}</p>
                     )}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-ink-400 shrink-0" />
                 </button>
               ))}
             </div>
@@ -1465,7 +1465,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   return (
     <div id="panel-attendance" className="panel-page-stack">
-      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+      <div className="bg-white rounded-xl p-4 border border-ink-200 shadow-xs panel-card-stack">
         <div className="panel-card-stack">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
@@ -1475,37 +1475,37 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   setSelectedLocationId(null);
                   setSelectedLesson(null);
                 }}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold-700 hover:text-gold-800 transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 {t("attendance.allLocations")}
               </button>
-              <h2 className="text-base font-semibold tracking-tight text-slate-800">
+              <h2 className="text-base font-semibold tracking-tight text-ink-800">
                 {t("attendance.title")}
               </h2>
               {selectedLocation && (
-                <p className="text-xs text-slate-500 font-sans flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <p className="text-xs text-ink-500 font-sans flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-gold-500 shrink-0" />
                   {selectedLocation.name}
                 </p>
               )}
             </div>
             <button
               onClick={handleRefresh}
-              className="shrink-0 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center gap-2"
+              className="shrink-0 py-2 px-3 bg-ink-100 hover:bg-ink-200 text-ink-700 font-sans text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors cursor-pointer flex items-center gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               {t("common.refresh")}
             </button>
           </div>
-          <p className="w-full text-xs text-slate-400">
+          <p className="w-full text-xs text-ink-500">
             {t("attendance.hint.selectDay")}
           </p>
           {isOfflineMode && snapshotMeta.hasSnapshot && snapshotMeta.isStale ? (
             <p className="text-xs text-amber-700 font-semibold">{t("offline.snapshot.stale")}</p>
           ) : null}
           {isOfflineMode && snapshotMeta.windowStart && snapshotMeta.windowEnd ? (
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-ink-500">
               {t("offline.snapshot.window", {
                 start: snapshotMeta.windowStart,
                 end: snapshotMeta.windowEnd,
@@ -1518,36 +1518,36 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           <OfflineScopeNotice />
         ) : null}
 
-        <div className="border border-slate-200 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between gap-2 px-3 py-2.5 bg-slate-50 border-b border-slate-200">
+        <div className="border border-ink-200 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between gap-2 px-3 py-2.5 bg-ink-50 border-b border-ink-200">
             <button
               type="button"
               onClick={() => handleMonthNav(-1)}
-              className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-white text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
               aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm font-semibold text-slate-800">{formatMonthTitle(selectedMonth, locale)}</span>
+            <span className="text-sm font-semibold text-ink-800">{formatMonthTitle(selectedMonth, locale)}</span>
             <button
               type="button"
               onClick={() => handleMonthNav(1)}
-              className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-white text-ink-500 hover:text-ink-800 transition-colors cursor-pointer"
               aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-7 bg-slate-50/50">
+          <div className="grid grid-cols-7 bg-ink-50/10">
             {weekdayLabels.map((label) => (
-              <div key={label} className="text-center text-[10px] font-sans font-semibold text-slate-400 uppercase py-2">
+              <div key={label} className="text-center text-[10px] font-sans font-semibold text-ink-400 uppercase py-2">
                 {label}
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-px bg-slate-200 p-px">
+          <div className="grid grid-cols-7 gap-px bg-ink-200 p-px">
             {calendarCells.map((cell, idx) => {
               if (!cell.date || cell.day === null) {
                 return <div key={`empty-${idx}`} className="bg-white min-h-[52px]" />;
@@ -1563,26 +1563,26 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     setSelectedLesson(null);
                   }}
                   className={`min-h-[52px] bg-white p-1.5 flex flex-col items-center justify-start gap-1 transition-colors cursor-pointer ${
-                    isSelected ? "ring-2 ring-inset ring-indigo-500 bg-indigo-50/60" : "hover:bg-slate-50"
+                    isSelected ? "ring-2 ring-inset ring-gold-500 bg-gold-50/10" : "hover:bg-ink-50"
                   }`}
                 >
                   <span
                     className={`text-sm font-semibold leading-none ${
                       cell.isToday
-                        ? "w-6 h-6 flex items-center justify-center rounded-full bg-indigo-600 text-white"
+                        ? "w-6 h-6 flex items-center justify-center rounded-full bg-gold-700 text-white"
                         : isSelected
-                          ? "text-indigo-700"
-                          : "text-slate-700"
+                          ? "text-gold-700"
+                          : "text-ink-700"
                     }`}
                   >
                     {cell.day}
                   </span>
                   <div className="flex items-center gap-0.5 min-h-[6px]">
                     {cell.hasGroup && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" title={t("common.groupLesson")} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-gold-500" title={t("common.groupLesson")} />
                     )}
                     {cell.hasPersonal && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-700" title={t("common.personalLesson")} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-gold-700" title={t("common.personalLesson")} />
                     )}
                   </div>
                 </button>
@@ -1590,21 +1590,21 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             })}
           </div>
 
-          <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center gap-4 text-[10px] text-slate-500 font-sans">
+          <div className="px-3 py-2 bg-ink-50 border-t border-ink-200 flex items-center gap-4 text-[10px] text-ink-500 font-sans">
             <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-indigo-500" /> {t("common.groupShort")}
+              <span className="w-2 h-2 rounded-full bg-gold-500" /> {t("common.groupShort")}
             </span>
             {personalLessonsEnabled && !isOfflineMode ? (
               <span className="inline-flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-indigo-700" /> {t("common.personalShort")}
+                <span className="w-2 h-2 rounded-full bg-gold-700" /> {t("common.personalShort")}
               </span>
             ) : null}
           </div>
         </div>
 
-        <p className="text-xs text-slate-500 font-sans leading-relaxed">
+        <p className="text-xs text-ink-500 font-sans leading-relaxed">
           {t("attendance.editSchedule")}{" "}
-          <Link to="/schedule" className="text-indigo-600 hover:text-indigo-800 font-semibold underline-offset-2 hover:underline">
+          <Link to="/schedule" className="text-gold-700 hover:text-gold-800 font-semibold underline-offset-2 hover:underline">
             {t("attendance.scheduleLink")}
           </Link>
           .
@@ -1612,11 +1612,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
         {selectedDate && (
           <div className="panel-card-stack">
-            <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
-              <p className="text-xs font-semibold text-slate-700">{formatAttendanceDate(selectedDate)}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5 font-sans">{t("attendance.daySchedule")}</p>
+            <div className="rounded-lg bg-ink-50 border border-ink-100 px-3 py-2.5">
+              <p className="text-xs font-semibold text-ink-700">{formatAttendanceDate(selectedDate)}</p>
+              <p className="text-[10px] text-ink-500 mt-0.5 font-sans">{t("attendance.daySchedule")}</p>
               {!canMarkAttendance && (
-                <p className="text-[10px] text-amber-600 mt-1 font-sans">
+                <p className="text-[10px] text-amber-700 mt-1 font-sans">
                   {t("attendance.error.pastOnly")}
                 </p>
               )}
@@ -1624,7 +1624,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
             {dayScheduleEntries.length > 0 ? (
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">{t("attendance.lessonJournal")}</h3>
+                <h3 className="text-xs font-semibold text-ink-500 uppercase tracking-widest">{t("attendance.lessonJournal")}</h3>
                 {dayScheduleEntries.map((entry) => (
                   <button
                     key={entry.key}
@@ -1632,27 +1632,27 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     onClick={() => setSelectedLesson(entry)}
                     className={`w-full flex items-center justify-between gap-3 p-3 rounded-xl border transition-all cursor-pointer text-left ${
                       entry.kind === "group"
-                        ? "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40"
-                        : "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40"
+                        ? "bg-white border-ink-200 hover:border-gold-300 hover:bg-gold-50/40"
+                        : "bg-white border-ink-200 hover:border-gold-300 hover:bg-gold-50/40"
                     }`}
                   >
                     <div className="min-w-0">
                       <p
                         className={`text-[10px] font-sans font-semibold uppercase tracking-wider ${
-                          entry.kind === "group" ? "text-indigo-600" : "text-indigo-700"
+                          entry.kind === "group" ? "text-gold-700" : "text-gold-700"
                         }`}
                       >
                         {entry.kind === "group" ? t("common.groupLabel") : t("common.personalLabel")}
                         {entry.kind === "personal" && entry.lesson.subscriptionId ? t("common.packageSuffix") : ""}
                       </p>
-                      <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">{entry.label}</p>
+                      <p className="text-sm font-semibold text-ink-800 mt-0.5 truncate">{entry.label}</p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-ink-400 shrink-0" />
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 font-sans text-center py-6">{t("attendance.noLessonsDay")}</p>
+              <p className="text-xs text-ink-500 font-sans text-center py-6">{t("attendance.noLessonsDay")}</p>
             )}
           </div>
         )}
@@ -1666,25 +1666,25 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedLesson(null)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+              className="absolute inset-0 bg-ink-950/40 backdrop-blur-xs"
             />
             <motion.div
               initial={{ scale: 0.97, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-lg w-full max-h-[85vh] flex flex-col"
+              className="relative bg-white rounded-xl border border-ink-200 shadow-xl overflow-hidden max-w-lg w-full max-h-[85vh] flex flex-col"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 shrink-0">
+              <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3 shrink-0">
                 <div>
-                  <h3 className="text-base font-semibold tracking-tight text-slate-900">{modalTitle}</h3>
-                  <p className="text-xs text-slate-400 mt-0.5 font-sans">{formatDate(selectedDate)}</p>
+                  <h3 className="text-base font-semibold tracking-tight text-ink-900">{modalTitle}</h3>
+                  <p className="text-xs text-ink-500 mt-0.5 font-sans">{formatDate(selectedDate)}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedLesson(null)}
                   aria-label={t("common.close")}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
+                  className="p-1 text-ink-400 hover:text-ink-700 rounded-full hover:bg-ink-100 cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1694,14 +1694,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 className={`px-4 py-3 flex-1 min-h-0 ${useVirtualSubsList ? "" : "overflow-y-auto"}`}
               >
                 {isPersonalAttendanceView && activePersonalLesson ? (
-                  <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+                  <div className="rounded-xl border border-ink-200 p-4 space-y-3">
                     <div className="space-y-2">
-                      <p className="text-sm font-semibold text-slate-800">{activePersonalLesson.clientDisplay}</p>
+                      <p className="text-sm font-semibold text-ink-800">{activePersonalLesson.clientDisplay}</p>
                       {isPersonalPackageView ? (
-                        <p className="text-xs text-slate-500 font-sans">{t("common.packagePaid")}</p>
+                        <p className="text-xs text-ink-500 font-sans">{t("common.packagePaid")}</p>
                       ) : (
                         <>
-                          <p className="text-xs text-slate-500 font-sans">
+                          <p className="text-xs text-ink-500 font-sans">
                             {t("common.singleLesson")} · {formatCurrency(activePersonalLesson.price)}
                           </p>
                           <p className="text-xs font-sans">
@@ -1709,8 +1709,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             <span
                               className={
                                 activePersonalLesson.paid === "yes"
-                                  ? "text-indigo-600 font-semibold"
-                                  : "text-rose-600 font-semibold"
+                                  ? "text-gold-700 font-semibold"
+                                  : "text-garnet-600 font-semibold"
                               }
                             >
                               {activePersonalLesson.paid === "yes"
@@ -1719,10 +1719,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             </span>
                           </p>
                           {activePersonalLesson.paid === "no" && activePersonalLesson.paidAmount > 0 && (
-                            <p className="text-xs font-sans text-slate-500">
+                            <p className="text-xs font-sans text-ink-500">
                               {t("personal.pay.paidSoFar")}: {formatCurrency(activePersonalLesson.paidAmount)}
                               {" · "}
-                              <span className="text-rose-600 font-semibold">
+                              <span className="text-garnet-600 font-semibold">
                                 {t("common.debt")}:{" "}
                                 {formatCurrency(
                                   Math.max(activePersonalLesson.price - activePersonalLesson.paidAmount, 0)
@@ -1735,7 +1735,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                     </div>
 
                     {!canMarkSelectedLesson ? (
-                      <p className="text-[11px] text-amber-600 font-sans">
+                      <p className="text-[11px] text-amber-700 font-sans">
                         {t("attendance.error.pastOnly")}
                       </p>
                     ) : isOfflineMode ? (
@@ -1747,7 +1747,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                           <button
                             type="button"
                             onClick={() => void openPayPersonalLesson(activePersonalLesson)}
-                            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border bg-amber-100 border-amber-300 text-amber-900 cursor-pointer"
+                            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border bg-amber-50 border-amber-300 text-amber-700 cursor-pointer"
                           >
                             <Coins className="w-3.5 h-3.5" />
                             {t("offline.draft.saveReminder")}
@@ -1762,7 +1762,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             <button
                               type="button"
                               onClick={() => openPayPersonalLesson(activePersonalLesson)}
-                              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border bg-indigo-600 border-indigo-600 text-white shadow-xs cursor-pointer"
+                              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border bg-gold-700 border-gold-700 text-white shadow-xs cursor-pointer"
                             >
                               <Coins className="w-3.5 h-3.5" />
                               {t("common.pay")}
@@ -1775,8 +1775,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             title={translateConnectionBlockReason(connectionState, t) ?? t("attendance.titlePresentDeduct")}
                             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                               activePersonalLesson.attendanceStatus === "present"
-                                ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
-                                : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50"
+                                ? "bg-gold-700 border-gold-700 text-white shadow-xs"
+                                : "bg-white border-ink-200 text-ink-600 hover:border-gold-300 hover:bg-gold-50"
                             }`}
                           >
                             <Check className="w-3.5 h-3.5" />
@@ -1789,8 +1789,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             title={translateConnectionBlockReason(connectionState, t) ?? t("attendance.titleAbsentDeduct")}
                             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                               activePersonalLesson.attendanceStatus === "absent"
-                                ? "bg-rose-600 border-rose-600 text-white shadow-xs"
-                                : "bg-white border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50"
+                                ? "bg-garnet-600 border-garnet-600 text-white shadow-xs"
+                                : "bg-white border-ink-200 text-ink-600 hover:border-garnet-300 hover:bg-garnet-50"
                             }`}
                           >
                             <X className="w-3.5 h-3.5" />
@@ -1803,8 +1803,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                             title={translateConnectionBlockReason(connectionState, t) ?? t("attendance.titleExcusedNoDeduct")}
                             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
                               activePersonalLesson.attendanceStatus === "excused"
-                                ? "bg-slate-600 border-slate-600 text-white shadow-xs"
-                                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                                ? "bg-ink-600 border-ink-600 text-white shadow-xs"
+                                : "bg-white border-ink-200 text-ink-600 hover:border-ink-300 hover:bg-ink-50"
                             }`}
                           >
                             <ShieldCheck className="w-3.5 h-3.5" />
@@ -1817,15 +1817,15 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 ) : subsError ? (
                   <QueryErrorState error={subsErr} onRetry={handleRefresh} />
                 ) : subsLoading ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
-                    <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
+                  <div className="flex flex-col items-center justify-center py-16 text-ink-400 gap-3">
+                    <Loader2 className="w-7 h-7 text-gold-500 animate-spin" />
                     <p className="text-xs">{t("attendance.loadingSubscriptions")}</p>
                   </div>
                 ) : effectiveModalSubs.length === 0 ? (
                   <div>
                     {renderSingleVisitPanel()}
-                    <div className="text-center py-20 text-slate-400 space-y-3">
-                      <Ticket className="w-8 h-8 mx-auto text-slate-300" />
+                    <div className="text-center py-20 text-ink-500 space-y-3">
+                      <Ticket className="w-8 h-8 mx-auto text-ink-300" />
                       <p className="text-sm">{t("attendance.noSubscriptions")}</p>
                     </div>
                   </div>
@@ -1833,7 +1833,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   <div>
                     {renderSingleVisitPanel()}
                     {!canMarkSelectedLesson && (
-                      <p className="text-[11px] text-amber-600 font-sans mb-3">
+                      <p className="text-[11px] text-amber-700 font-sans mb-3">
                         {t("attendance.error.pastOnly")}
                       </p>
                     )}
@@ -1841,7 +1841,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       showFreeze={selectedLesson?.kind === "group" && freezePolicy.freezeEnabled}
                       t={t}
                     />
-                    <p className="text-[10px] font-sans bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums">
+                    <p className="text-[10px] font-sans bg-ink-100 text-ink-600 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums">
                       {effectiveModalSubs.length}{" "}
                       {plural(effectiveModalSubs.length, [
                         t("common.subscription.one"),
@@ -1868,11 +1868,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                 )}
               </div>
 
-              <div className="border-t border-slate-100 px-4 py-3 shrink-0">
+              <div className="border-t border-ink-100 px-4 py-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setSelectedLesson(null)}
-                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer"
+                  className="w-full py-2.5 bg-ink-100 hover:bg-ink-200 text-ink-700 font-semibold uppercase tracking-wider font-sans text-xs rounded-lg transition-colors cursor-pointer"
                 >
                   {t("common.close")}
                 </button>
@@ -1893,7 +1893,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       />
 
       {pendingUndo && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800 text-white text-sm shadow-lg">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-3 rounded-xl bg-ink-800 text-white text-sm shadow-lg">
           <span>{t("corrections.attendance.undoHint", { client: pendingUndo.clientDisplay })}</span>
           <button
             type="button"

@@ -74,7 +74,7 @@ export default function ClientAutocomplete({
 
   return (
     <div className="field-stack relative">
-      <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">{label}</label>
+      <label className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block">{label}</label>
       <div className="relative">
         <input
           type="text"
@@ -93,11 +93,11 @@ export default function ClientAutocomplete({
           aria-expanded={showList}
         />
         {selectedId && (
-          <Check className="w-4 h-4 text-indigo-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Check className="w-4 h-4 text-gold-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         )}
       </div>
       {showList && (
-        <div className="absolute left-0 right-0 top-full bg-white border border-slate-200 rounded-lg shadow-lg z-50 mt-1 overflow-hidden">
+        <div className="absolute left-0 right-0 top-full bg-white border border-ink-200 rounded-lg shadow-lg z-50 mt-1 overflow-hidden">
           {suggestions.map((s, i) => (
             <div
               key={s.id}
@@ -107,8 +107,8 @@ export default function ClientAutocomplete({
                 select(s);
               }}
               onMouseEnter={() => setHighlight(i)}
-              className={`cursor-pointer px-3.5 py-2.5 text-slate-800 text-sm border-b border-slate-50 last:border-0 transition-colors ${
-                i === highlight ? "bg-indigo-50" : ""
+              className={`cursor-pointer px-3.5 py-2.5 text-ink-800 text-sm border-b border-ink-50 last:border-0 transition-colors ${
+                i === highlight ? "bg-gold-50" : ""
               }`}
             >
               {s.lastName} {s.firstName}
@@ -122,7 +122,7 @@ export default function ClientAutocomplete({
           <button
             type="button"
             onClick={() => setAddModalOpen(true)}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer mt-0.5"
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gold-700 hover:text-gold-800 hover:underline cursor-pointer mt-0.5"
           >
             <UserPlus className="w-3 h-3" />
             {resolvedAddClientLinkLabel}

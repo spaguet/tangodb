@@ -30,7 +30,7 @@ export default function SelectOrganizationPage() {
 
   return (
     <AuthLayout title="TangoDB" subtitle={t("auth.selectOrg.subtitle")}>
-      <p className="text-sm text-slate-500">{t("auth.selectOrg.hint")}</p>
+      <p className="text-sm text-ink-500">{t("auth.selectOrg.hint")}</p>
       <AuthError message={error} />
 
       <div className="space-y-2">
@@ -44,19 +44,19 @@ export default function SelectOrganizationPage() {
               type="button"
               disabled={!!loadingId}
               onClick={() => handleSelect(membership.organization_id)}
-              className="w-full flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 text-left hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors cursor-pointer disabled:opacity-60"
+              className="w-full flex items-center gap-3 rounded-lg border border-ink-200 px-4 py-3 text-left hover:border-gold-300 hover:bg-gold-50/40 transition-colors cursor-pointer disabled:opacity-60"
             >
-              <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-gold-100 text-gold-700 flex items-center justify-center shrink-0">
                 <Building2 className="w-4 h-4" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-slate-800 truncate">{label}</p>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
+                <p className="text-sm font-semibold text-ink-800 truncate">{label}</p>
+                <p className="text-xs text-ink-500 uppercase tracking-wide">
                   {membership.role} · {status.replace("_", " ")}
                 </p>
               </div>
               {loadingId === membership.organization_id && (
-                <span className="w-4 h-4 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin" />
+                <span className="w-4 h-4 rounded-full border-2 border-gold-200 border-t-gold-600 animate-spin" />
               )}
             </button>
           );

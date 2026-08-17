@@ -3,7 +3,7 @@ import GroupCheckboxDropdown from "./GroupCheckboxDropdown";
 import { useI18n } from "../../hooks/useI18n";
 import type { Discipline } from "../../types";
 
-const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500";
+const checkboxCls = "rounded border-ink-300 text-gold-700 focus:ring-gold-500";
 
 interface DisciplineTariffFieldProps {
   bindToDiscipline: boolean;
@@ -28,7 +28,7 @@ export default function DisciplineTariffField({
 
   return (
     <div className="space-y-2">
-      <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+      <label className="flex items-start gap-2 text-sm text-ink-700 cursor-pointer">
         <input
           type="checkbox"
           checked={bindToDiscipline}
@@ -41,7 +41,7 @@ export default function DisciplineTariffField({
       {bindToDiscipline && (
         <div className="animate-fade-in">
           {disciplines.length === 0 ? (
-            <p className="text-xs text-slate-400 font-sans leading-relaxed">
+            <p className="text-xs text-ink-500 font-sans leading-relaxed">
               {t("ui.tariff.noDisciplinesHint")}
             </p>
           ) : (

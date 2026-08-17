@@ -23,11 +23,11 @@ export default function RecoveryCodeModal({ code, onContinue }: RecoveryCodeModa
   return (
     <AuthLayout title="TangoDB" subtitle={t("auth.recoveryCode.subtitle")}>
       <div className="space-y-4">
-        <p className="text-sm text-slate-600">{t("auth.recoveryCode.instructions")}</p>
+        <p className="text-sm text-ink-600">{t("auth.recoveryCode.instructions")}</p>
 
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-center">
           <p className="text-xs uppercase tracking-widest text-amber-700 mb-1">Emergency Recovery Code</p>
-          <p className="font-mono text-lg font-bold text-slate-900 tracking-wider">{code}</p>
+          <p className="font-mono text-lg font-bold text-ink-900 tracking-wider">{code}</p>
         </div>
 
         <AuthButton type="button" variant="secondary" onClick={() => void copy()}>

@@ -1,8 +1,12 @@
-# Design System — TangoDB
+# Design System — TangoDB (Atelier v2)
 
 Единый источник правил визуального стиля основного приложения (`tangodb/`).
 
 Обновлять при изменении цветов, типографики, отступов или UI-паттернов.
+
+**Спека этапа 1:** `tangodb_design_system_v2.md` (закрыта 2026-08-17, CRM `2.9.0`).
+
+> **Legacy запрещён:** в UI-коде (`tangodb/src`, `tangodb-dev-console/src`, `tangodb-landing/src`) **не использовать** Tailwind-семейства `slate`, `indigo`, `sky`, `violet`, `emerald`, `rose`, `red`, `blue`. Актуальная палитра — 6 семейств: `ink`, `gold`, `lavender`, `sage`, `garnet`, `amber`.
 
 ---
 
@@ -10,12 +14,12 @@
 
 | Слой | Расположение |
 |------|--------------|
-| Tailwind CSS v4 | `tangodb/src/index.css` (`@import "tailwindcss"`) |
+| Tailwind CSS v4 | `tangodb/src/index.css` (`@import "tailwindcss"`, `@theme`) |
 | Глобальные компонентные классы | `@layer components` в `index.css` |
 | Переиспользуемые UI-компоненты | `tangodb/src/components/ui/` |
 | Иконки | `lucide-react` |
 
-**Не использовать:** `violet-*`, `emerald-*`, `purple-*`, `green-*` — акцент только через `indigo-*`.
+**Не использовать:** `violet-*`, `emerald-*`, `purple-*`, `green-*`, `slate-*`, `indigo-*` — акцент только через `gold-*`; вторичный акцент — `lavender-*`.
 
 ---
 
@@ -51,56 +55,88 @@ Sidebar и desktop-layout — от `md:`. Сетки форм/дашборда �
 
 ---
 
-## Цветовая палитра
+## Цветовая палитра (Atelier)
 
-### Нейтральные (slate)
+Токены зарегистрированы в `@theme` (`index.css`) каждого приложения. Максимум **6 семейств**.
 
-| Токен Tailwind | Назначение |
-|----------------|------------|
-| `slate-50` | Фон страницы (`body`, `AppLayout`) |
-| `slate-100` | Разделители, фон неактивных табов, hover sidebar |
-| `slate-200` | Границы карточек, полей, header, sidebar |
-| `slate-300` | Пунктирные границы, scrollbar thumb, иконки empty state |
-| `slate-400` | Вторичный текст, плейсхолдеры, метки полей |
-| `slate-500` | Подписи, вторичные кнопки |
-| `slate-600` | Текст навигации, иконки |
-| `slate-700` | Текст sidebar |
-| `slate-800` | Основной текст, заголовки панелей |
-| `slate-900` | Overlay backdrop (`bg-slate-900/40`) |
-| `slate-950` | Hover текста навигации |
-| `white` | Карточки, header, sidebar, модали |
+### Нейтральная база — `ink` (заменяет `slate`)
 
-### Акцент (indigo) — основной цвет бренда
+Тёплый графитовый ramp.
 
-| Токен | Hex (примерно) | Назначение |
-|-------|----------------|------------|
-| `indigo-50` | `#eef2ff` | Фон активного пункта меню, highlight-карточки, статус «оплачено» |
-| `indigo-100` | `#e0e7ff` | Focus ring полей (`ring-indigo-100`), границы accent-блоков |
-| `indigo-200` | `#c7d2fe` | Hover border, spinner track |
-| `indigo-300` | `#a5b4fc` | Hover border карточек расписания |
-| `indigo-400` | `#818cf8` | Focus border полей, scrollbar hover |
-| `indigo-500` | `#6366f1` | Иконки секций, loader, focus outline (`index.css`) |
-| `indigo-600` | `#4f46e5` | **Primary CTA**, логотип, активные кнопки, ссылки |
-| `indigo-700` | `#4338ca` | Активный текст nav, значения статистики, персональные уроки |
-| `indigo-800` | `#3730a3` | Hover ссылок |
+| Токен | Hex | Назначение |
+|-------|-----|------------|
+| `ink-25` | `#FAF9F7` | Фон карточек на светлом фоне |
+| `ink-50` | `#F5F3EF` | Фон страницы (light CRM) |
+| `ink-100` | `#E8E4DC` | Разделители, неактивные табы, skeleton |
+| `ink-200` | `#D6D0C4` | Границы карточек, полей |
+| `ink-300` | `#B5AC9C` | Scrollbar thumb, empty icons |
+| `ink-400` | `#8C8272` | Вторичные иконки |
+| `ink-500` | `#6B6255` | Подписи, вторичные кнопки, **метки полей** |
+| `ink-600` | `#4F473D` | Текст навигации |
+| `ink-700` | `#39332B` | Sidebar текст, fallback boot |
+| `ink-800` | `#241F1A` | Основной текст, заголовки панелей |
+| `ink-900` | `#171310` | Фон карточек (dark dev-console) |
+| `ink-950` | `#0D0B09` | Overlay backdrop, фон dev-console |
+| `white` | `#ffffff` | Карточки, header, sidebar, модали |
 
-> **Примечание о семантике:** indigo намеренно используется и для интерактивных состояний (CTA), и для позитивных статусов («оплачено», «присутствие»). Это осознанный выбор в пользу минималистичной палитры. Чтобы различать: интерактивные элементы имеют hover/cursor-pointer, статусные — нет.
+**Маппинг по роли (не 1:1 по суффиксу):** см. `tangodb_design_system_v2.md` §2.1.
 
-### Семантические
+### Основной акцент — `gold` (заменяет `indigo`)
 
-| Роль | Tailwind | Когда |
-|------|----------|-------|
-| Ошибка / долг / destructive | `rose-50`, `rose-100`, `rose-600`, `rose-700` | Ошибки, неоплаченные уроки, низкий баланс |
-| `amber-50`, `amber-100`, `amber-800` | Demo retention, осторожные статусы — **только пассивные баннеры**, не кнопки |
-| Информация / успех | `indigo-500`, `indigo-600`, `indigo-50` | Toast info/success, оплаченные уроки, присутствие |
-| Telegram | `#229ED9` / `#1C82B4` | Только для кнопок Telegram (исключение из палитры) |
+CTA, активная навигация, primary-кнопки, логотип, focus.
 
-### Различие типов занятий (оба — indigo)
+| Токен | Hex | Назначение |
+|-------|-----|------------|
+| `gold-50` | `#FBF3E3` | Фон активного пункта меню, highlight |
+| `gold-100` | `#F5E4C0` | Focus ring, границы accent-блоков |
+| `gold-200` | `#EDD096` | Hover border |
+| `gold-300` | `#E2B665` | Hover border карточек |
+| `gold-400` | `#D49F42` | Focus border, scrollbar hover |
+| `gold-500` | `#C4902E` | Иконки секций, loader |
+| `gold-600` | `#A97522` | Блоки расписания (групповой), ring highlight |
+| `gold-700` | `#8A5D1B` | **Primary CTA** (filled), **текстовые ссылки** на светлом |
+| `gold-800` | `#6B4715` | Hover CTA / ссылок |
+| `gold-900` | `#4A3110` | Тёмные фоны с акцентом (dev-console) |
 
-| Тип | Маркер | Фон строки |
-|-----|--------|------------|
-| Групповой | точка `bg-indigo-500` | `bg-slate-50` |
-| Персональный | точка `bg-indigo-700` | `bg-indigo-50/60`, border `indigo-100` |
+> **WCAG:** filled CTA — `bg-gold-700 text-white` (hover `gold-800`); inline-ссылки и accent-текст на светлом — `text-gold-700` (hover `gold-800`), не `gold-600`.
+
+### Вторичный акцент — `lavender` (заменяет `sky` / `violet` / `blue`)
+
+Персональные уроки, мероприятия, premium/особый статус, SaaS-бейджи. **Не для CTA.**
+
+| Токен | Hex | Назначение |
+|-------|-----|------------|
+| `lavender-50` … `lavender-900` | см. `@theme` | Бейджи, блоки расписания, Subscription badge |
+| `lavender-400` | `#9578C7` | Фон персонального урока |
+| `lavender-500`–`600` | — | Персональный / мероприятие в расписании |
+| `lavender-900/70` + `lavender-300` | — | Бейдж Subscription (dev-console) |
+
+### Семантические (строго 3 семейства)
+
+#### `sage` — успех (заменяет `emerald`)
+
+` sage-50` / `sage-100` — фон sync badge; `sage-400`–`sage-600` — текст и иконки успеха.
+
+#### `garnet` — ошибки, долги, destructive (заменяет `rose` и `red`)
+
+| Роль | Токены |
+|------|--------|
+| Фон ошибок / долгов | `garnet-50`, `garnet-100` |
+| Destructive CTA, attendance «не был» | `garnet-600` (hover `garnet-700`) |
+| Текст долгов | `garnet-700` |
+| Ring долга в расписании | `ring-garnet-500` |
+
+#### `amber` — только пассивные warning-баннеры
+
+Только `amber-50`, `amber-200`, `amber-700`. **Не кнопки в CRM.** Исключение dev-console emergency CTA → `garnet-600`.
+
+### Бренд-исключение
+
+Telegram-кнопки: `#229ED9` / `#1C82B4` — единственный разрешённый hex вне токенов.
+
+### Прозрачность
+
+Только три уровня: `/10` (tint, hover-подложки), `/40` (backdrop средней плотности), `/70` (плотный overlay, тёмные бейджи).
 
 ---
 
@@ -112,7 +148,7 @@ Sidebar и desktop-layout — от `md:`. Сетки форм/дашборда �
 --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 ```
 
-Подключение: Google Fonts в `index.css` (weights 400, 600).
+Подключение: Google Fonts в `index.css` (weights 400, 600). CRM и dev-console — **только Inter**; display-шрифты Atelier (Cormorant) — только landing, отдельный этап.
 
 Класс по умолчанию: `font-sans antialiased`.
 
@@ -140,11 +176,11 @@ Sidebar и desktop-layout — от `md:`. Сетки форм/дашборда �
 
 ### Стили текста
 
-- **Метки полей:** `text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold`
-- **Секции sidebar:** `text-[11px] text-slate-400 uppercase tracking-wider font-semibold`
+- **Метки полей:** `text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold`
+- **Секции sidebar:** `text-[11px] text-ink-400 uppercase tracking-wider font-semibold`
 - **Sidebar subtitle / logo badge:** `text-[11px]`
 - **Mobile tab labels:** `text-[10px] font-semibold uppercase tracking-wide`
-- **Заголовок панели:** `text-base font-semibold text-slate-800 tracking-tight`
+- **Заголовок панели:** `text-base font-semibold text-ink-800 tracking-tight`
 - **Uppercase CTA:** `text-xs font-semibold uppercase tracking-wider` или `tracking-widest`
 
 ---
@@ -156,7 +192,7 @@ Sidebar и desktop-layout — от `md:`. Сетки форм/дашборда �
 | Контекст | Размер |
 |----------|--------|
 | Внутри кнопки (CTA), nav, icon button, search | `w-4 h-4` |
-| Компактные inline-иконки (Send, Snowflake) | `w-3 h-3` |
+| Компактные inline-иконки, тип занятия в расписании | `w-3 h-3` |
 | Мелкие inline (Ticket в badge) | `w-3.5 h-3.5` |
 | Заголовки секций, stat cards, modal close | `w-5 h-5` |
 | Empty state | `w-8 h-8` |
@@ -176,10 +212,10 @@ Sidebar и desktop-layout — от `md:`. Сетки форм/дашборда �
 | `.panel-page-stack` | `space-y-4` | Вертикальный стек страницы панели |
 | `.panel-card-stack` | `space-y-3` | Стек внутри карточки |
 | `.panel-form-stack` | `space-y-3 text-sm` | Форма |
-| `.panel-form-stack-compact` | `space-y-1`, `md:gap-y-1`, divider `pt-1`, field `space-y-0.5` | Компактная форма (продажа абонемента, персонального урока) |
+| `.panel-form-stack-compact` | `space-y-1`, `md:gap-y-1`, divider `pt-1`, field `space-y-0.5` | Компактная форма |
 | `.field-stack` | `space-y-1` | Label + input |
-| `.panel-form-header` | `text-center space-y-1 border-b border-slate-100 pb-3` | Шапка формы |
-| `.panel-form-divider` | `border-t border-slate-100 pt-3` | Разделитель формы |
+| `.panel-form-header` | `text-center space-y-1 border-b border-ink-100 pb-3` | Шапка формы |
+| `.panel-form-divider` | `border-t border-ink-100 pt-3` | Разделитель формы |
 
 ### Типичные значения
 
@@ -231,7 +267,7 @@ Focus outline (глобально в `index.css`):
 
 ```css
 :focus-visible {
-  outline: 2px solid #6366f1; /* indigo-500 */
+  outline: 2px solid var(--color-gold-500);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -243,91 +279,75 @@ Focus outline (глобально в `index.css`):
 
 ### Кнопки
 
-**Общее правило:** высота всех кнопок = `h-8` (как `fieldCls` / `selectFieldCls`, эталон — Telegram в header). Базовые классы — `tangodb/src/components/ui/buttonStyles.ts`.
+**Общее правило:** высота всех кнопок = `h-8` (как `fieldCls` / `selectFieldCls`). Базовые классы — `tangodb/src/components/ui/buttonStyles.ts`.
 
 | Тип | Класс | Цвет | Регистр текста | Когда |
 |-----|-------|------|----------------|-------|
-| Добавление / создание | `btnAddCls` | indigo filled | С заглавной буквы, **без** uppercase | «Добавить», «Создать правило», сохранить новую запись |
-| Добавление (мягкое) | `btnAddSoftCls` | indigo outline | С заглавной буквы | Вторичное создание в заголовке секции |
-| Открытие popup / страницы | `btnOpenCls` | indigo outline | С заглавной буквы, **без** uppercase | «Мероприятие», «Аренда», «Отпуск преподавателя», открыть диалог |
-| Удаление / предупреждение | `btnDestructiveCls` | rose filled | **UPPERCASE** | Удалить, аннулировать, опасное действие |
-| Обновить / отмена | `btnRefreshCls` / `btnCancelCls` | slate | **UPPERCASE** | «Обновить», «Отмена» |
-| Текстовая ссылка «+ Добавить» | `btnAddLinkCls` | indigo text | С заглавной буквы | Внутри форм и секций |
+| Добавление / создание | `btnAddCls` | gold filled (`gold-700`) | С заглавной буквы, **без** uppercase | «Добавить», «Создать», сохранить |
+| Добавление (мягкое) | `btnAddSoftCls` | gold outline | С заглавной буквы | Вторичное создание |
+| Открытие popup / страницы | `btnOpenCls` | gold outline | С заглавной буквы | Диалоги, «Мероприятие», «Аренда» |
+| Удаление / предупреждение | `btnDestructiveCls` | garnet filled | **UPPERCASE** | Удалить, опасное действие |
+| Обновить / отмена | `btnRefreshCls` / `btnCancelCls` | ink | **UPPERCASE** | «Обновить», «Отмена» |
+| Текстовая ссылка «+ Добавить» | `btnAddLinkCls` | `text-gold-700` | С заглавной буквы | Внутри форм |
 
-**Header (поддержка и выход):**
+**Header:**
 
 | Элемент | Класс |
 |---------|--------|
 | Email / Telegram / WhatsApp | `btnHeaderContactCls` — outline white, h-8 |
-| Выход (Sign out) | `btnHeaderSignOutCls` — outline slate, h-8 |
-
-**Primary CTA (legacy, формы submit):**
-```
-btnAddCls — indigo filled, sentence case, h-8
-```
+| Выход (Sign out) | `btnHeaderSignOutCls` — outline ink, h-8 |
 
 **Secondary / outline (legacy):**
 ```
-border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50
+border border-ink-200 text-ink-500 hover:text-ink-800 hover:bg-ink-50
 rounded-lg text-xs font-semibold h-8
 ```
 
-**Accent secondary (продажа пакета, переключатели):**
+**Accent secondary (продажа пакета):**
 ```
-bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 h-10
-```
-
-**Destructive (кнопка):**
-```
-btnDestructiveCls
+bg-gold-50 text-gold-700 border border-gold-200 hover:bg-gold-100 h-10
 ```
 
 **Icon button (edit):**
 ```
-p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer
+p-1.5 text-ink-400 hover:text-gold-700 hover:bg-gold-50 rounded-lg transition-all cursor-pointer
 ```
 
 **Icon button (delete):**
 ```
-p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer
+p-1.5 text-ink-400 hover:text-garnet-600 hover:bg-garnet-50 rounded-lg transition-all cursor-pointer
 ```
 
 **Dashed link:**
 ```
-border border-dashed border-slate-300 hover:border-slate-400
-text-slate-500 text-[11px] uppercase tracking-wider font-semibold h-10
+border border-dashed border-ink-300 hover:border-ink-400
+text-ink-500 text-[11px] uppercase tracking-wider font-semibold h-10
 ```
 
-> **Не использовать amber/brown для кнопок и акцентов UI.** Amber допустим только для **пассивных** warning-баннеров (лицензия, demo retention).
+> **Не использовать amber для кнопок.** Amber — только пассивные warning-баннеры.
 
 ### Поля ввода
 
-Эталон (`fieldCls`, `selectFieldCls`, `descriptionFieldCls` в `AppSelect.tsx`):
-
-**Однострочные поля** (`fieldCls` — input, select, date picker, autocomplete):
+Эталон (`fieldCls`, `selectFieldCls` в `AppSelect.tsx`):
 
 ```
-w-full h-8 box-border bg-slate-50 border border-slate-200
-focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100
+w-full h-8 box-border bg-ink-50 border border-ink-200
+focus:border-gold-400 focus:bg-white focus:ring-2 focus:ring-gold-100
 outline-none rounded-lg px-3 text-xs transition-all
 ```
 
-**Высота контролов:** `h-8` (32px), `px-3`, `text-xs` — эталон: `btnBaseCls` / `controlHeightCls` в `AppSelect.tsx` и `buttonStyles.ts`.
-
 **Select:** `selectFieldCls` = `fieldCls` + `appearance-none cursor-pointer pr-10`.
 
-**Поиск (input с иконкой слева):** `searchFieldCls` = `fieldCls` + `pl-9 pr-3`; иконка `Search` — `absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4`. Не задавать `py-2` / `py-2.5` / `text-sm` вручную.
+**Поиск:** `searchFieldCls` = `fieldCls` + `pl-9 pr-3`; иконка `Search` — `absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4`.
 
-**Описание (textarea):** `descriptionFieldCls` — без фиксированной `h-10`, `min-h-[4.5rem]`, `resize-none`.
+**Описание (textarea):** `descriptionFieldCls` — `min-h-[4.5rem]`, `resize-none`.
 
-Метка: `selectLabelCls` из `AppSelect.tsx`.
-
-**Правило:** все `<select>` — через `AppSelect` или `selectFieldCls`; однострочные `<input>` и `DatePickerField` — через `fieldCls`; поля поиска с иконкой — через `searchFieldCls` (см. `.cursor/rules/dropdowns.mdc`).
+Метка: `selectLabelCls` — `text-[10px] text-ink-500 uppercase`.
 
 ### Карточки
 
 ```
-bg-white rounded-xl border border-slate-200/90 shadow-xs
+bg-white rounded-xl border border-ink-200 shadow-xs
 ```
 
 Hover-кликабельные виджеты:
@@ -339,34 +359,34 @@ hover:shadow-sm transition-all cursor-pointer
 
 **Активный пункт:**
 ```
-bg-indigo-50 text-indigo-700 border-l-2 border-indigo-600 pl-2.5
+bg-gold-50 text-gold-700 border-l-2 border-gold-600 pl-2.5
 text-xs font-semibold tracking-wide
 ```
 
 **Неактивный:**
 ```
-text-slate-600 hover:bg-slate-50 hover:text-slate-950
+text-ink-600 hover:bg-ink-50 hover:text-ink-950
 ```
 
 **Logo badge:**
 ```
-w-8 h-8 bg-indigo-600 rounded text-white font-semibold text-[11px] shadow-xs
+w-8 h-8 bg-gold-600 rounded text-white font-semibold text-[11px] shadow-xs
 ```
 
 ### Page tabs (`PageTabs.tsx`)
 
-- Активный: `bg-white border-slate-200 text-indigo-700`
-- Неактивный: `bg-slate-100/70 text-slate-400 hover:bg-slate-100`
+- Активный: `bg-white border-ink-200 text-gold-700`
+- Неактивный: `bg-ink-100/10 text-ink-400 hover:bg-ink-100`
 
 ### Toast (`App.tsx`)
 
 | Тип | Accent |
 |-----|--------|
-| success | `text-indigo-600` |
-| error | `text-rose-600` |
-| info | `text-indigo-500` |
+| success | `text-gold-700` |
+| error | `text-garnet-600` |
+| info | `text-gold-500` |
 
-Контейнер: `bg-white border border-slate-200 rounded-xl shadow-lg text-xs z-[60]`.
+Контейнер: `bg-white border border-ink-200 rounded-xl shadow-lg text-xs z-[60]`.
 
 ### Badges / статусы
 
@@ -378,122 +398,106 @@ px-2 py-0.5 rounded
 
 **Count badge (warning):**
 ```
-text-[10px] bg-rose-50 text-rose-700 font-semibold tabular-nums
+text-[10px] bg-garnet-50 text-garnet-700 font-semibold tabular-nums
 ```
 
 **Day badge:**
 ```
-text-[10px] uppercase bg-indigo-50 text-indigo-700 font-semibold
+text-[10px] uppercase bg-gold-50 text-gold-700 font-semibold
 ```
 
 ### Таблицы
 
-- Header row: `bg-slate-50` или inline cards
-- Row hover: `hover:bg-slate-50`
-- Scrollbar: 5px, thumb `slate-300`, hover `indigo-400`
+- Header row: `bg-ink-50` или inline cards
+- Row hover: `hover:bg-ink-50`
+- Scrollbar: 5px, thumb `ink-300`, hover `gold-400`
 
 ### Модальные окна
 
 ```
-bg-white rounded-xl border border-slate-200 shadow-xl z-50
+bg-white rounded-xl border border-ink-200 shadow-xl z-50
 max-h-[90vh] overflow-y-auto
 ```
 
-Контейнер: `fixed inset-0 z-50 flex items-center justify-center p-4`.
-
-Backdrop (внутри контейнера): `absolute inset-0 bg-slate-900/40 backdrop-blur-xs`.
+Backdrop: `absolute inset-0 bg-ink-950/40 backdrop-blur-xs`.
 
 ### Attendance toggle
 
 | Состояние | «Был» | «Не был» |
 |-----------|-------|----------|
-| Active | `bg-indigo-600 border-indigo-600 text-white` | `bg-rose-600 border-rose-600 text-white` |
-| Inactive | `hover:border-indigo-300 hover:bg-indigo-50` | `hover:border-rose-300 hover:bg-rose-50` |
+| Active | `bg-gold-600 border-gold-600 text-white` | `bg-garnet-600 border-garnet-600 text-white` |
+| Inactive | `hover:border-gold-300 hover:bg-gold-50` | `hover:border-garnet-300 hover:bg-garnet-50` |
 
 ### Пустое состояние (Empty State)
 
-Эталон: `SchedulePanel.tsx`, `PersonalLessonsPanel.tsx`.
-
 ```
-text-center py-20 text-slate-400 space-y-3
+text-center py-20 text-ink-400 space-y-3
 ```
 
-Структура:
-- Иконка: `w-8 h-8 mx-auto text-slate-300`
-- Текст: `text-sm`
-- CTA (опционально): текстовая ссылка `text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline` или Primary button
+- Иконка: `w-8 h-8 mx-auto text-ink-300`
+- CTA: `text-xs font-semibold text-gold-700 hover:text-gold-800 hover:underline`
 
 ### Скелетон / загрузка
 
-Spinner (короткие операции, полноэкранная загрузка):
-```
-Loader2 w-7 h-7 text-indigo-500 animate-spin
-```
+Spinner: `Loader2 w-7 h-7 text-gold-500 animate-spin`
 
-Skeleton-блоки (если нужна структура до загрузки):
-```
-bg-slate-100 rounded-lg animate-pulse
-```
+Skeleton: `bg-ink-100 rounded-lg animate-pulse`
 
-Пульсирующая точка «live» (Dashboard): `w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse`.
+Пульсирующая точка «live»: `w-1.5 h-1.5 bg-gold-500 rounded-full animate-pulse`.
 
 ---
 
-### Finance sub-layout (R5, updated 2026-06-27)
+### Finance sub-layout
 
-Навигация внутри `/finance/*` — горизонтальная верхняя панель на всех размерах экрана:
-
-```
-flex flex-col gap-5
-nav: flex gap-1 overflow-x-auto, NavLink с active = bg-indigo-50 text-indigo-700 border-indigo-100
-```
+Навигация внутри `/finance/*` — горизонтальная панель; active = `bg-gold-50 text-gold-700 border-gold-100`.
 
 Эталон: `tangodb/src/pages/FinanceLayout.tsx`.
 
-### Dashboard split (R5 + NAV-2 / RBAC-4)
+### Dashboard split (RBAC)
 
-| Роль | Компонент | Содержимое |
-|------|-----------|------------|
-| owner, director | `OperationalDashboard` + `FinancialDashboard` | вкладки «Операционный» / «Финансовый» (`PageTabs`) |
-| admin | `OperationalDashboard` | абонементы, должники, посещаемость, платежи за день |
-| accountant | `FinancialDashboard` | выручка, дебиторка, ссылки на `/finance/*` |
-| teacher (scope) | `TeacherScopedDashboard` | быстрые ссылки, расписание на сегодня, ближайшие персональные — **без** CRM-агрегатов |
-| teacher (пустой scope) | empty state | «Нет доступа к обзору для вашей роли» |
+| Роль | Компонент |
+|------|-----------|
+| owner, director | `OperationalDashboard` + `FinancialDashboard` |
+| admin | `OperationalDashboard` |
+| accountant | `FinancialDashboard` |
+| teacher (scope) | `TeacherScopedDashboard` |
 
-Выбор в `DashboardPage.tsx` по `can('reports.operational')`, `can('reports.financial')`, `can('dashboard.scoped_summary')`.
+Teacher scoped home: quick-link кнопки `border-ink-200`, icon `gold-600`; empty state `text-ink-400`.
 
-#### Teacher scoped home (`TeacherScopedDashboard`)
+---
 
-Паттерн минимального home для teacher — не дублировать stat-карточки `OperationalDashboard`.
+## Расписание — цвета блоков (`scheduleColors.ts`)
 
-```
-panel-page-stack
-├── grid sm:grid-cols-3 gap-3 — quick-link кнопки (rounded-xl, border-slate-200/90, icon indigo-600)
-├── section «Сегодня в расписании» — список slot rows (bg-slate-50, text-xs)
-└── section «Ближайшие персональные уроки» — список lesson rows (truncate clientDisplay)
-```
+Различение типа — **цвет + иконка** в `LessonBlock` (`w-3 h-3`).
 
-Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`. Заголовки секций: `text-sm font-semibold text-slate-800` + иконка `w-4 h-4 text-indigo-500`.
+| Тип | Фон | Граница | Иконка lucide |
+|-----|-----|---------|---------------|
+| Групповой урок | `gold-500` | `gold-700` | `Users` |
+| Персональный | `lavender-500` | `lavender-600` | `User` |
+| Мероприятие | `lavender-600` | `lavender-700` | `CalendarPlus` |
+| Аренда зала | `ink-600` | `ink-700` | `Building2` |
+
+Дополнительно: highlight ring → `ring-gold-600`; долг → `ring-garnet-500`.
 
 ---
 
 ## Правила для агента
 
-1. **Акцентный цвет — только indigo.** Не добавлять violet/emerald/green/purple для UI-кнопок (violet — только блоки мероприятий в сетке).
-2. **Ошибки и долги — rose.** Не заменять rose на indigo.
-3. **Кнопки — через `buttonStyles.ts`.** Add / open popup — sentence case; destructive/warning — rose + uppercase; refresh/cancel — slate + uppercase.
-4. **Не использовать amber для кнопок и акцентов.** Amber — только пассивные warning-баннеры.
-5. **Не дублировать стили полей** — `AppSelect`, `selectFieldCls`, `selectLabelCls`.
-6. **Не использовать inline-стили** (`style={{}}`), кроме grid columns в `PageTabs`.
-7. **Карточки панелей** — `rounded-xl`, не `rounded-2xl`.
-8. **Высота кнопок и полей** — `h-8` (`controlHeightCls`), через `btnBaseCls` / `fieldCls`.
-9. **Метки полей** — всегда 10px, uppercase, slate-400.
-10. **Минимальный размер шрифта** — `text-[10px]`.
-11. **Z-index** — только из таблицы слоёв.
-12. **Иконки** — по умолчанию `w-4 h-4`.
-13. **Пустые списки** — паттерн Empty State.
-14. **Telegram / email / выход в header** — `btnHeaderContactCls` / `btnHeaderSignOutCls` (h-8).
-15. **Новые UI-компоненты** — в `tangodb/src/components/ui/`.
+1. **Акцент UI — только `gold`.** Не использовать `lavender` для кнопок/CTA.
+2. **Ошибки и долги — только `garnet`.** `red` в кодовой базе не должен встречаться.
+3. **`amber` — только пассивные warning-баннеры** (`50`/`200`/`700`), никогда кнопки в CRM.
+4. **Telegram — `#229ED9` / `#1C82B4`**, единственное брендовое исключение вне токенов.
+5. **Максимум 3 уровня прозрачности:** `/10`, `/40`, `/70`.
+6. **Никаких хардкод-hex вне токенов**, кроме Telegram.
+7. **`dev-console` использует ту же систему токенов** (`ink-900`/`ink-950` фон, `gold`/`garnet`/`sage`/`lavender`).
+8. **Шрифт CRM и dev-console — Inter.**
+9. **Текстовые ссылки на светлом** — `gold-700`, не `gold-600`.
+10. **Кнопки — через `buttonStyles.ts`.** Add/open — sentence case; destructive — garnet + uppercase.
+11. **Не дублировать стили полей** — `AppSelect`, `fieldCls`, `selectLabelCls`.
+12. **Карточки панелей** — `rounded-xl`.
+13. **Высота кнопок и полей** — `h-8` (`controlHeightCls`).
+14. **Метки полей** — `text-[10px]`, uppercase, `ink-500`.
+15. **Z-index** — только из таблицы слоёв.
 16. При изменении палитры — обновить этот файл.
 
 ---
@@ -506,22 +510,10 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 | Глобальные стили | `tangodb/src/index.css` |
 | Select / labels / buttons | `tangodb/src/components/ui/AppSelect.tsx`, `buttonStyles.ts` |
 | Tabs | `tangodb/src/components/ui/PageTabs.tsx` |
-| Dashboard widgets | `tangodb/src/components/OperationalDashboard.tsx`, `FinancialDashboard.tsx`, `TeacherScopedDashboard.tsx` |
+| Расписание | `tangodb/src/lib/scheduleColors.ts`, `LessonBlock.tsx` |
+| Dashboard widgets | `OperationalDashboard.tsx`, `FinancialDashboard.tsx`, `TeacherScopedDashboard.tsx` |
 | Finance sub-nav | `tangodb/src/pages/FinanceLayout.tsx` |
 | Auth forms | `tangodb/src/auth/AuthLayout.tsx` |
-| Primary forms | `tangodb/src/components/SchedulePanel.tsx` |
-| Empty state | `tangodb/src/components/SchedulePanel.tsx`, `PersonalLessonsPanel.tsx` |
-
----
-
-## Расписание — цвета блоков (`scheduleColors.ts`)
-
-| Тип | Tailwind | Назначение |
-|-----|----------|------------|
-| Групповой урок | `indigo-600` / `indigo-700` | Регулярные и разовые групповые занятия |
-| Персональный | `sky-400` / `sky-500` | Персональные уроки |
-| Мероприятие | `violet-600` / `violet-700` | Мастер-класс / открытый урок (`calendar_events`); **исключение** из общего запрета violet для отличия от уроков |
-| Аренда зала | `slate-600` / `slate-700` | Сдача зала арендаторам |
 
 ---
 
@@ -529,9 +521,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 | Дата | Изменение |
 |------|-----------|
-| 2026-08-01 | Компактные контролы h-8 (32px): поля, select, кнопки — эталон Telegram в header; add/save/open без uppercase по всему CRM. |
-| 2026-08-01 | `btnOpenCls` — sentence case (как add), без uppercase: Мероприятие / Аренда / Отпуск преподавателя. |
-| 2026-06-20 | RBAC R5: FinanceLayout (sub-nav как Settings), split Operational/Financial dashboard. |
-| 2026-06-19 | Унификация палитры: violet/emerald заменены на indigo; rose сохранён для ошибок. Документ заполнен. |
-| 2026-06-19 | Ревью: добавлены брейкпоинты, z-index, иконки, empty state, skeleton; пояснение семантики indigo; правила агента расширены. Z-index и брейкпоинты сверены с кодом. |
-| 2026-06-19 | Типографика: 8px/9px заменены на 10px/11px в nav и logo; минимум системы — 10px. |
+| 2026-08-17 | **Atelier v2 (2.9.0):** палитра `ink`/`gold`/`lavender`/`sage`/`garnet`/`amber`; расписание gold+lavender+ink с иконками; WCAG-фиксы CTA и меток. |
+| 2026-08-01 | Компактные контролы h-8; add/save/open без uppercase. |
+| 2026-06-20 | RBAC R5: FinanceLayout, split dashboard. |
+| 2026-06-19 | Унификация палитры (legacy indigo/slate). |

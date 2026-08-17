@@ -25,9 +25,9 @@ import {
 
 function LoadingScreen({ label }: { label: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="flex flex-col items-center gap-3 text-slate-400">
-        <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
+    <div className="min-h-screen flex items-center justify-center bg-ink-50">
+      <div className="flex flex-col items-center gap-3 text-ink-400">
+        <div className="w-8 h-8 rounded-full border-4 border-gold-200 border-t-gold-600 animate-spin" />
         <p className="text-xs font-sans font-semibold tracking-widest uppercase">{label}</p>
       </div>
     </div>

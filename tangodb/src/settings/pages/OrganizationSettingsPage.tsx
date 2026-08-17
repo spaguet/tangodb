@@ -190,15 +190,15 @@ export default function OrganizationSettingsPage() {
   return (
     <div className="panel-card-stack max-w-xl">
       <div>
-        <h2 className="text-base font-semibold text-slate-900">{t("settings.org.title")}</h2>
-        <p className="text-xs text-slate-500 mt-1">
+        <h2 className="text-base font-semibold text-ink-900">{t("settings.org.title")}</h2>
+        <p className="text-xs text-ink-500 mt-1">
           {t("settings.org.subtitle", {
             name: settings.branding_name?.trim() || organization?.name || "—",
           })}
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4 font-sans">
+      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4 font-sans">
         <AppSelect
           label={t("settings.org.preset")}
           value={orgPreset}
@@ -213,23 +213,23 @@ export default function OrganizationSettingsPage() {
 
         <div className="space-y-4">
           <div>
-            <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+            <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
               {t("settings.org.modules")}
             </p>
-            <p className="text-xs text-slate-500 mt-1">{t("orgModules.disableHint")}</p>
+            <p className="text-xs text-ink-500 mt-1">{t("orgModules.disableHint")}</p>
           </div>
           {ORG_MODULE_GROUPS.map((group) => (
             <div key={group.id} className="space-y-2">
-              <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+              <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
                 {t(MODULE_GROUP_LABEL_KEYS[group.id])}
               </p>
               {group.keys.map((key) => (
-                <label key={key} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <label key={key} className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={modules[key]}
                     onChange={() => toggleModule(key)}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-ink-300 text-gold-700 focus:ring-gold-500"
                   />
                   {t(MODULE_LABEL_KEYS[key])}
                 </label>
@@ -238,7 +238,7 @@ export default function OrganizationSettingsPage() {
           ))}
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-ink-700 cursor-pointer">
           <input
             type="checkbox"
             checked={teachersCanManageDisciplines}
@@ -246,14 +246,14 @@ export default function OrganizationSettingsPage() {
               setTeachersCanManageDisciplines(e.target.checked);
               setDirty(true);
             }}
-            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            className="rounded border-ink-300 text-gold-700 focus:ring-gold-500"
           />
           {t("settings.org.teachersEditDisciplines")}
         </label>
 
         <RequirePermission action="settings.manage" mode="hide">
-          <div className="border-t border-slate-100 pt-4 space-y-2">
-            <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+          <div className="border-t border-ink-100 pt-4 space-y-2">
+            <p className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold">
               {t("settings.org.roleOverrides")}
             </p>
             {ROLE_OVERRIDE_KEYS.map(({ key, labelKey, hintKey }) => {
@@ -287,7 +287,7 @@ export default function OrganizationSettingsPage() {
               } as const;
 
               return (
-                <label key={key} className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+                <label key={key} className="flex items-start gap-2 text-sm text-ink-700 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checkedMap[key]}
@@ -295,12 +295,12 @@ export default function OrganizationSettingsPage() {
                       setters[key](e.target.checked);
                       setDirty(true);
                     }}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
+                    className="rounded border-ink-300 text-gold-700 focus:ring-gold-500 mt-0.5"
                   />
                   <span>
                     {t(labelKey)}
                     {hintKey ? (
-                      <span className="block text-xs text-slate-400 mt-0.5">{t(hintKey)}</span>
+                      <span className="block text-xs text-ink-500 mt-0.5">{t(hintKey)}</span>
                     ) : null}
                   </span>
                 </label>
@@ -310,7 +310,7 @@ export default function OrganizationSettingsPage() {
         </RequirePermission>
 
         <div className="field-stack">
-          <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block">
+          <label className="text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block">
             {t("settings.org.lowBalanceThreshold")}
           </label>
           <input
@@ -321,7 +321,7 @@ export default function OrganizationSettingsPage() {
               setLowBalanceThreshold(Number(e.target.value));
               setDirty(true);
             }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm"
+            className="w-full bg-ink-50 border border-ink-200 rounded-lg px-3 py-2 text-sm"
           />
         </div>
 

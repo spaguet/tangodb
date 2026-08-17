@@ -16,9 +16,9 @@ function DefaultErrorFallback({ error }: { error?: Error }) {
   const { t } = useI18n();
 
   return (
-    <div className="p-6 text-center text-rose-600">
+    <div className="p-6 text-center text-garnet-600">
       <p className="font-semibold">{t("common.error.boundaryTitle")}</p>
-      <p className="text-xs text-slate-500 mt-1">{error?.message}</p>
+      <p className="text-xs text-ink-500 mt-1">{error?.message}</p>
     </div>
   );
 }

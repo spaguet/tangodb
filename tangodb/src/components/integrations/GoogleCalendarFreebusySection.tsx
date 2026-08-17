@@ -120,14 +120,14 @@ export default function GoogleCalendarFreebusySection() {
   const needsConsent = selectedIds.length > 0 && !hasScopes;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
+    <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4 space-y-4">
       <div className="flex items-start gap-3">
-        <Clock className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+        <Clock className="w-5 h-5 text-gold-700 shrink-0 mt-0.5" />
         <div>
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="text-sm font-semibold text-ink-800">
             {t("integrations.googleCalendar.freebusy.title")}
           </h3>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-ink-500 mt-1">
             {t("integrations.googleCalendar.freebusy.subtitle")}
           </p>
         </div>
@@ -146,22 +146,22 @@ export default function GoogleCalendarFreebusySection() {
           {t("integrations.googleCalendar.freebusy.loadCalendars")}
         </button>
       ) : loadingCalendars ? (
-        <p className="text-xs text-slate-500 flex items-center gap-2">
+        <p className="text-xs text-ink-500 flex items-center gap-2">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
           {t("integrations.googleCalendar.freebusy.loadingCalendars")}
         </p>
       ) : calendars.length === 0 ? (
-        <p className="text-xs text-slate-500">{t("integrations.googleCalendar.freebusy.noCalendars")}</p>
+        <p className="text-xs text-ink-500">{t("integrations.googleCalendar.freebusy.noCalendars")}</p>
       ) : (
         <div className="space-y-2 max-h-48 overflow-y-auto">
           {calendars.map((cal) => (
             <label
               key={cal.id}
-              className="flex items-start gap-2 text-xs text-slate-700 cursor-pointer"
+              className="flex items-start gap-2 text-xs text-ink-700 cursor-pointer"
             >
               <input
                 type="checkbox"
-                className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                className="mt-0.5 rounded border-ink-300 text-gold-700 focus:ring-gold-500"
                 checked={selectedIds.includes(cal.id)}
                 onChange={() => toggleCalendar(cal.id)}
               />
@@ -177,12 +177,12 @@ export default function GoogleCalendarFreebusySection() {
         </div>
       )}
 
-      <p className="text-[10px] text-slate-400 leading-relaxed">
+      <p className="text-[10px] text-ink-500 leading-relaxed">
         {t("integrations.googleCalendar.freebusy.hint")}
       </p>
 
       {needsConsent && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
           {t("integrations.googleCalendar.freebusy.consentRequired")}
         </div>
       )}

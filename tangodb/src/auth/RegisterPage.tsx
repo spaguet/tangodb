@@ -101,7 +101,7 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout title="TangoDB" subtitle={t("auth.register.subtitle")}>
-      <p className="text-sm text-slate-500">{t("auth.register.demoHint")}</p>
+      <p className="text-sm text-ink-500">{t("auth.register.demoHint")}</p>
 
       <AuthError message={error} />
       <AuthSuccess message={success} />
@@ -147,12 +147,12 @@ export default function RegisterPage() {
         <AuthButton loading={loading}>{t("auth.register.submit")}</AuthButton>
       </form>
 
-      <p className="text-sm text-slate-500 text-center">
+      <p className="text-sm text-ink-500 text-center">
         {t("auth.register.hasAccount")}{" "}
         <AuthLink to="/login">{t("auth.register.signInLink")}</AuthLink>
       </p>
       <AuthDeveloperContact />
-      <p className="text-xs text-slate-400 text-center">{t("auth.register.hasLicenseKey")}</p>
+      <p className="text-xs text-ink-500 text-center">{t("auth.register.hasLicenseKey")}</p>
     </AuthLayout>
   );
 }

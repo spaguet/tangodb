@@ -25,8 +25,8 @@ const ANALYTICS_EVENT_KEYS = [
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-8">
-      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-      <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-600">{children}</div>
+      <h2 className="text-lg font-semibold text-ink-900">{title}</h2>
+      <div className="mt-3 space-y-3 text-sm leading-relaxed text-ink-600">{children}</div>
     </section>
   );
 }
@@ -34,9 +34,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export function PrivacyPage({ locale, onLocaleChange, t }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+      <header className="border-b border-ink-200 bg-white backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <a href="/" className="flex items-center gap-2.5 font-semibold text-slate-900">
+          <a href="/" className="flex items-center gap-2.5 font-semibold text-ink-900">
             <TdbLogo />
             <span>TangoDB</span>
           </a>
@@ -48,16 +48,16 @@ export function PrivacyPage({ locale, onLocaleChange, t }: Props) {
         <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
           <a
             href="/"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 transition-colors hover:text-gold-700"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             {t("privacy.backLink")}
           </a>
 
-          <h1 className="mt-6 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="mt-6 text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">
             {t("privacy.title")}
           </h1>
-          <p className="mt-2 text-sm text-slate-500">{t("privacy.updated")}</p>
+          <p className="mt-2 text-sm text-ink-500">{t("privacy.updated")}</p>
 
           <Section title={t("privacy.intro.title")}>
             <p>{t("privacy.intro.text")}</p>
@@ -90,7 +90,7 @@ export function PrivacyPage({ locale, onLocaleChange, t }: Props) {
               {t("privacy.contact.text")}{" "}
               <a
                 href={`mailto:${CONTACTS.email}`}
-                className="font-medium text-indigo-600 hover:text-indigo-700"
+                className="font-medium text-gold-700 hover:text-gold-700"
               >
                 {CONTACTS.email}
               </a>

@@ -31,7 +31,7 @@ interface EditCalendarEventDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 function emptySession(defaultLocationId: string): CalendarEventSessionInput {
   return {
@@ -265,25 +265,25 @@ export default function EditCalendarEventDialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-slate-900/40"
+            className="absolute inset-0 bg-ink-950/40"
             onClick={() => !isPending && onClose()}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            className="relative w-full max-w-2xl max-h-[90dvh] overflow-hidden bg-white rounded-xl border border-slate-200 shadow-xl flex flex-col"
+            className="relative w-full max-w-2xl max-h-[90dvh] overflow-hidden bg-white rounded-xl border border-ink-200 shadow-xl flex flex-col"
           >
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-ink-100">
               <div className="flex items-center gap-2 min-w-0">
-                <CalendarPlus className="w-4 h-4 text-violet-600 shrink-0" />
-                <h3 className="text-base font-semibold text-slate-900 truncate">{t("schedule.event.editTitle")}</h3>
+                <CalendarPlus className="w-4 h-4 text-lavender-600 shrink-0" />
+                <h3 className="text-base font-semibold text-ink-900 truncate">{t("schedule.event.editTitle")}</h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isPending}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                className="p-1.5 text-ink-400 hover:text-ink-600 rounded-lg cursor-pointer"
                 aria-label={t("common.close")}
               >
                 <X className="w-4 h-4" />
@@ -292,7 +292,7 @@ export default function EditCalendarEventDialog({
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {isLoadingSessions ? (
-                <p className="text-sm text-slate-400">{t("common.loading.default")}</p>
+                <p className="text-sm text-ink-500">{t("common.loading.default")}</p>
               ) : step === "form" ? (
                 <>
                   <div>
@@ -355,7 +355,7 @@ export default function EditCalendarEventDialog({
                         type="button"
                         disabled={!defaultLocationId}
                         onClick={() => setSessions((prev) => [...prev, emptySession(defaultLocationId)])}
-                        className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-violet-700 hover:text-violet-800 cursor-pointer"
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-lavender-700 hover:text-lavender-800 cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         {t("schedule.event.addSession")}
@@ -364,7 +364,7 @@ export default function EditCalendarEventDialog({
                     {sessions.map((session, index) => (
                       <div
                         key={session.sessionId ?? `new-${index}`}
-                        className="grid sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end p-3 rounded-lg border border-slate-100 bg-slate-50/60"
+                        className="grid sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end p-3 rounded-lg border border-ink-100 bg-ink-50/10"
                       >
                         <DatePickerField
                           label={t("schedule.form.currentDate")}
@@ -421,7 +421,7 @@ export default function EditCalendarEventDialog({
                             <button
                               type="button"
                               onClick={() => setSessions((prev) => prev.filter((_, i) => i !== index))}
-                              className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg cursor-pointer self-end"
+                              className="p-2 text-garnet-500 hover:bg-garnet-50 rounded-lg cursor-pointer self-end"
                               aria-label={t("common.delete")}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -433,7 +433,7 @@ export default function EditCalendarEventDialog({
                   </div>
 
                   {canSeeFinance ? (
-                    <div className="space-y-3 pt-2 border-t border-slate-100">
+                    <div className="space-y-3 pt-2 border-t border-ink-100">
                       <div>
                         <span className={labelCls}>{t("schedule.event.incomeLabel")}</span>
                         <input
@@ -455,33 +455,33 @@ export default function EditCalendarEventDialog({
               ) : (
                 <>
                   {previewQuery.isLoading ? (
-                    <p className="text-sm text-slate-400">{t("common.loading.default")}</p>
+                    <p className="text-sm text-ink-500">{t("common.loading.default")}</p>
                   ) : previewQuery.isError ? (
-                    <p className="text-sm text-rose-600">{t("schedule.event.previewFailed")}</p>
+                    <p className="text-sm text-garnet-600">{t("schedule.event.previewFailed")}</p>
                   ) : previewQuery.data && !previewQuery.data.success ? (
-                    <p className="text-sm text-rose-600">
+                    <p className="text-sm text-garnet-600">
                       {resolveMutationError(previewQuery.data.error, "schedule.event.previewFailed", t)}
                     </p>
                   ) : (
                     <>
                       {cancellableConflicts.length > 0 ? (
-                        <p className="text-sm text-slate-600">{t("schedule.event.previewIntro")}</p>
+                        <p className="text-sm text-ink-600">{t("schedule.event.previewIntro")}</p>
                       ) : null}
                       {eventConflicts.length > 0 ? (
                         <ul className="space-y-2">
                           {eventConflicts.map((conflict) => (
                             <li
                               key={conflictKey(conflict)}
-                              className="p-2 rounded-lg border border-rose-200 bg-rose-50 text-sm text-rose-800"
+                              className="p-2 rounded-lg border border-garnet-200 bg-garnet-50 text-sm text-garnet-800"
                             >
                               {conflictLabel(conflict)}
                             </li>
                           ))}
-                          <p className="text-sm text-rose-700">{t("schedule.event.eventConflictBlocked")}</p>
+                          <p className="text-sm text-garnet-700">{t("schedule.event.eventConflictBlocked")}</p>
                         </ul>
                       ) : null}
                       {cancellableConflicts.length === 0 && eventConflicts.length === 0 ? (
-                        <p className="text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+                        <p className="text-sm text-gold-700 bg-gold-50 border border-gold-100 rounded-lg px-3 py-2">
                           {t("schedule.event.noConflicts")}
                         </p>
                       ) : cancellableConflicts.length > 0 ? (
@@ -490,7 +490,7 @@ export default function EditCalendarEventDialog({
                             const key = conflictKey(conflict);
                             const checked = selectedConflictKeys.has(key);
                             return (
-                              <li key={key} className="flex items-start gap-2 p-2 rounded-lg border border-slate-100">
+                              <li key={key} className="flex items-start gap-2 p-2 rounded-lg border border-ink-100">
                                 <input
                                   type="checkbox"
                                   checked={checked}
@@ -505,12 +505,12 @@ export default function EditCalendarEventDialog({
                                   className="mt-0.5"
                                 />
                                 <div className="min-w-0">
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-500">
                                     {conflict.kind === "group"
                                       ? t("common.groupLesson")
                                       : t("common.personalLabel")}
                                   </p>
-                                  <p className="text-sm text-slate-800">{conflictLabel(conflict)}</p>
+                                  <p className="text-sm text-ink-800">{conflictLabel(conflict)}</p>
                                 </div>
                               </li>
                             );
@@ -526,13 +526,13 @@ export default function EditCalendarEventDialog({
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
+            <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-3 border-t border-ink-100 bg-ink-50/10">
               {step === "preview" ? (
                 <button
                   type="button"
                   onClick={() => setStep("form")}
                   disabled={isPending}
-                  className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                  className="px-3 py-2 text-xs font-semibold text-ink-600 hover:bg-ink-100 rounded-lg cursor-pointer"
                 >
                   {t("common.back")}
                 </button>
@@ -541,7 +541,7 @@ export default function EditCalendarEventDialog({
                 type="button"
                 onClick={onClose}
                 disabled={isPending}
-                className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                className="px-3 py-2 text-xs font-semibold text-ink-600 hover:bg-ink-100 rounded-lg cursor-pointer"
               >
                 {t("common.cancel")}
               </button>
@@ -551,7 +551,7 @@ export default function EditCalendarEventDialog({
                     type="button"
                     onClick={handleGoPreview}
                     disabled={isLoadingSessions}
-                    className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-lg cursor-pointer"
+                    className="px-4 py-2 text-xs font-semibold text-white bg-lavender-600 hover:bg-lavender-700 disabled:opacity-50 rounded-lg cursor-pointer"
                   >
                     {t("schedule.event.checkConflicts")}
                   </button>
@@ -560,7 +560,7 @@ export default function EditCalendarEventDialog({
                     type="button"
                     onClick={handleSaveMetadata}
                     disabled={isPending || isLoadingSessions}
-                    className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-lg cursor-pointer"
+                    className="px-4 py-2 text-xs font-semibold text-white bg-lavender-600 hover:bg-lavender-700 disabled:opacity-50 rounded-lg cursor-pointer"
                   >
                     {isPending ? t("common.saving") : t("common.save")}
                   </button>
@@ -577,7 +577,7 @@ export default function EditCalendarEventDialog({
                     unresolvedCount > 0 ||
                     (previewQuery.data != null && !previewQuery.data.success)
                   }
-                  className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-lg cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-lavender-600 hover:bg-lavender-700 disabled:opacity-50 rounded-lg cursor-pointer"
                 >
                   {isPending ? t("common.saving") : confirmLabel}
                 </button>

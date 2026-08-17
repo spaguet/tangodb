@@ -9,14 +9,14 @@ interface LayoutProps {
 export default function Layout({ onSignOut }: LayoutProps) {
   const linkCls = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-      isActive ? "bg-indigo-600/20 text-indigo-300" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+      isActive ? "bg-gold-600/20 text-gold-300" : "text-ink-400 hover:text-ink-200 hover:bg-ink-800"
     }`;
 
   return (
     <div className="min-h-screen flex">
-      <aside className="w-56 border-r border-slate-800 p-4 flex flex-col gap-1">
+      <aside className="w-56 border-r border-ink-800 p-4 flex flex-col gap-1">
         <div className="mb-6 px-2">
-          <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">TangoDB</p>
+          <p className="text-xs uppercase tracking-widest text-ink-500 font-semibold">TangoDB</p>
           <h1 className="text-lg font-bold text-white">Dev Console</h1>
         </div>
         <NavLink to="/" end className={linkCls}>
@@ -52,14 +52,14 @@ export default function Layout({ onSignOut }: LayoutProps) {
         <button
           type="button"
           onClick={onSignOut}
-          className="mt-auto flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-rose-400 cursor-pointer"
+          className="mt-auto flex items-center gap-2 px-3 py-2 text-sm text-ink-500 hover:text-garnet-400 cursor-pointer"
         >
           <LogOut className="w-4 h-4" /> Sign out
         </button>
       </aside>
       <main className="flex-1 p-6 overflow-y-auto">
         {supabaseEnvError && (
-          <p className="mb-4 text-sm text-amber-400 bg-amber-950/40 border border-amber-900 rounded-lg px-3 py-2">
+          <p className="mb-4 text-sm text-amber-700 bg-amber-50/10 border border-amber-200 rounded-lg px-3 py-2">
             {supabaseEnvError}
           </p>
         )}

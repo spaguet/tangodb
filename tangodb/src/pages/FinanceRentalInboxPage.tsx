@@ -105,15 +105,15 @@ export default function FinanceRentalInboxPage() {
 
   return (
     <div className="panel-page-stack">
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100">
+      <div className="bg-white rounded-xl border border-ink-200 shadow-xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-ink-100">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <Inbox className="w-4 h-4 text-indigo-600 shrink-0" />
-              <h2 className="font-sans text-sm font-semibold text-slate-800 truncate">{t("rentalInbox.title")}</h2>
+              <Inbox className="w-4 h-4 text-gold-700 shrink-0" />
+              <h2 className="font-sans text-sm font-semibold text-ink-800 truncate">{t("rentalInbox.title")}</h2>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-slate-500 font-sans hidden sm:inline">
+              <span className="text-xs text-ink-500 font-sans hidden sm:inline">
                 {t("rentalInbox.asOf", { date: formatDate(orgToday) })}
               </span>
               {canCreateRental ? (
@@ -128,12 +128,12 @@ export default function FinanceRentalInboxPage() {
               ) : null}
             </div>
           </div>
-          <p className="text-xs text-slate-500 font-sans mt-1 sm:hidden">
+          <p className="text-xs text-ink-500 font-sans mt-1 sm:hidden">
             {t("rentalInbox.asOf", { date: formatDate(orgToday) })}
           </p>
         </div>
 
-        <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap gap-2">
+        <div className="px-3 py-2 border-b border-ink-100 flex flex-wrap gap-2">
           {bucketTabs.map((tab) => (
             <button
               key={tab.id}
@@ -144,8 +144,8 @@ export default function FinanceRentalInboxPage() {
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${
                 bucket === tab.id
-                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                  : "text-slate-600 hover:bg-slate-50 border border-transparent"
+                  ? "bg-gold-50 text-gold-700 border border-gold-200"
+                  : "text-ink-600 hover:bg-ink-50 border border-transparent"
               }`}
             >
               {tab.label}
@@ -153,7 +153,7 @@ export default function FinanceRentalInboxPage() {
           ))}
         </div>
 
-        <div className="px-3 py-3 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="px-3 py-3 border-b border-ink-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <AppSelect
             label={t("schedule.form.location")}
             value={locationId}
@@ -217,21 +217,21 @@ export default function FinanceRentalInboxPage() {
           </AppSelect>
         </div>
 
-        <p className="px-4 py-2 text-xs text-slate-500 border-b border-slate-100">
+        <p className="px-4 py-2 text-xs text-ink-500 border-b border-ink-100">
           {t("rentalInbox.hint")}
           {canCreateRental ? null : (
-            <span className="block mt-1 text-slate-400">{t("rental.booking.escalateSchedule")}</span>
+            <span className="block mt-1 text-ink-500">{t("rental.booking.escalateSchedule")}</span>
           )}
         </p>
 
         {items.length === 0 ? (
           <div className="py-20 text-center">
-            <Inbox className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm text-slate-500">{t("rentalInbox.empty")}</p>
+            <Inbox className="w-8 h-8 text-ink-300 mx-auto mb-3" />
+            <p className="text-sm text-ink-500">{t("rentalInbox.empty")}</p>
           </div>
         ) : (
           <>
-            <div className="hidden lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_auto_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
+            <div className="hidden lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_auto_auto_auto] gap-3 px-3 py-2 bg-ink-50 border-b border-ink-100 text-[10px] uppercase tracking-wider font-semibold text-ink-500 font-sans">
               <span>{t("rentalInbox.col.renter")}</span>
               <span>{t("rentalInbox.col.slot")}</span>
               <span>{t("rentalInbox.col.status")}</span>
@@ -245,47 +245,47 @@ export default function FinanceRentalInboxPage() {
                   row.paymentStatus === "overpaid"
                     ? "text-amber-700"
                     : row.isOverdue
-                      ? "text-rose-700"
+                      ? "text-garnet-700"
                       : row.paymentStatus === "partial"
                         ? "text-amber-700"
-                        : "text-slate-600";
+                        : "text-ink-600";
 
                 return (
                   <div
                     key={row.rentalId}
-                    className="grid grid-cols-[1fr_auto] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_auto_auto_auto] gap-2 lg:gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0"
+                    className="grid grid-cols-[1fr_auto] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_auto_auto_auto] gap-2 lg:gap-3 items-center px-3 py-3 border-b border-ink-100 last:border-b-0"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{row.renterName}</p>
+                      <p className="text-sm font-semibold text-ink-800 truncate">{row.renterName}</p>
                       {row.locationName ? (
-                        <p className="text-[10px] text-slate-500 mt-0.5">{row.locationName}</p>
+                        <p className="text-[10px] text-ink-500 mt-0.5">{row.locationName}</p>
                       ) : null}
                       {row.lastPaymentBy ? (
-                        <p className="text-[10px] text-slate-400 mt-0.5">
+                        <p className="text-[10px] text-ink-500 mt-0.5">
                           {t("rentalInbox.lastCashier", {
                             name: memberNameById.get(row.lastPaymentBy) ?? "—",
                           })}
                         </p>
                       ) : null}
                     </div>
-                    <p className="text-xs text-slate-600 font-sans hidden lg:block">
+                    <p className="text-xs text-ink-600 font-sans hidden lg:block">
                       {formatDate(row.rentalDate)} · {row.timeStart}–{row.timeEnd}
                     </p>
                     <p className={`text-xs font-semibold hidden lg:block ${statusCls}`}>
                       {paymentStatusLabel(row.paymentStatus, t)}
                       {row.isOverdue ? ` · ${t("rentalInbox.overdueBadge")}` : ""}
                     </p>
-                    <p className="text-sm font-sans text-right whitespace-nowrap text-slate-700 hidden lg:block">
+                    <p className="text-sm font-sans text-right whitespace-nowrap text-ink-700 hidden lg:block">
                       {formatCurrency(row.effectiveAmount)}
                     </p>
-                    <p className="text-sm font-sans font-semibold text-right whitespace-nowrap text-rose-700">
+                    <p className="text-sm font-sans font-semibold text-right whitespace-nowrap text-garnet-700">
                       {row.remainingAmount > 0 ? formatCurrency(row.remainingAmount) : "—"}
                     </p>
                     <div className="text-right col-span-2 lg:col-span-1 flex flex-wrap justify-end gap-2">
                       <button
                         type="button"
                         onClick={() => setDetailLesson(inboxItemToRentalLesson(row))}
-                        className="px-2.5 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50"
+                        className="px-2.5 py-1.5 text-xs font-semibold text-ink-600 border border-ink-200 rounded-lg cursor-pointer hover:bg-ink-50"
                       >
                         {t("common.details")}
                       </button>
@@ -304,8 +304,8 @@ export default function FinanceRentalInboxPage() {
                 );
               })}
             </div>
-            <div className="px-4 py-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-slate-50/60">
-              <span className="text-xs text-slate-500 font-sans">
+            <div className="px-4 py-3 border-t border-ink-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-ink-50/10">
+              <span className="text-xs text-ink-500 font-sans">
                 {plural(total, [
                   t("common.records.one", { count: total }),
                   t("common.records.few", { count: total }),
@@ -321,18 +321,18 @@ export default function FinanceRentalInboxPage() {
                     type="button"
                     disabled={page <= 0}
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 disabled:opacity-40 cursor-pointer"
+                    className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-ink-200 disabled:opacity-40 cursor-pointer"
                   >
                     {t("rentalInbox.pagination.prev")}
                   </button>
-                  <span className="text-xs text-slate-600">
+                  <span className="text-xs text-ink-600">
                     {page + 1} / {totalPages}
                   </span>
                   <button
                     type="button"
                     disabled={page + 1 >= totalPages}
                     onClick={() => setPage((p) => p + 1)}
-                    className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 disabled:opacity-40 cursor-pointer"
+                    className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-ink-200 disabled:opacity-40 cursor-pointer"
                   >
                     {t("rentalInbox.pagination.next")}
                   </button>

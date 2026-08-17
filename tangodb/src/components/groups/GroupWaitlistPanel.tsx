@@ -21,7 +21,7 @@ interface GroupWaitlistPanelProps {
   toast: (msg: string, type?: ToastType) => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 export default function GroupWaitlistPanel({ classId, canManage = false, toast }: GroupWaitlistPanelProps) {
   const { t } = useI18n();
@@ -67,14 +67,14 @@ export default function GroupWaitlistPanel({ classId, canManage = false, toast }
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-3">
-      <div className="flex items-center gap-2 text-slate-800">
-        <Users className="w-4 h-4 text-indigo-500" />
+    <div className="rounded-xl border border-ink-200 bg-white p-3 space-y-3">
+      <div className="flex items-center gap-2 text-ink-800">
+        <Users className="w-4 h-4 text-gold-500" />
         <h4 className="text-sm font-semibold tracking-tight">{t("groupWaitlist.title")}</h4>
       </div>
 
       {canManage && (
-        <div className="space-y-2 border-b border-slate-100 pb-3">
+        <div className="space-y-2 border-b border-ink-100 pb-3">
           <ClientAutocomplete
             label={t("groupWaitlist.addClient")}
             clients={clients}
@@ -96,7 +96,7 @@ export default function GroupWaitlistPanel({ classId, canManage = false, toast }
               type="text"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm"
+              className="w-full bg-ink-50 border border-ink-200 rounded-lg px-3 py-2 text-sm"
             />
           </div>
           <button
@@ -111,9 +111,9 @@ export default function GroupWaitlistPanel({ classId, canManage = false, toast }
       )}
 
       {isLoading ? (
-        <p className="text-xs text-slate-400">{t("common.loading.default")}</p>
+        <p className="text-xs text-ink-500">{t("common.loading.default")}</p>
       ) : sortedEntries.length === 0 ? (
-        <p className="text-xs text-slate-400">{t("groupWaitlist.empty")}</p>
+        <p className="text-xs text-ink-500">{t("groupWaitlist.empty")}</p>
       ) : (
         <div className="space-y-2">
           {sortedEntries.map((entry, index) => {
@@ -122,16 +122,16 @@ export default function GroupWaitlistPanel({ classId, canManage = false, toast }
               ? formatClientName(client.lastName, client.firstName)
               : t("groupWaitlist.unknownClient");
             return (
-              <div key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 space-y-2">
+              <div key={entry.id} className="rounded-lg border border-ink-100 bg-ink-50/10 px-3 py-2 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">
+                    <p className="text-sm font-semibold text-ink-800 truncate">
                       {index + 1}. {name}
                     </p>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">
+                    <p className="text-[10px] text-ink-500 uppercase tracking-wider mt-0.5">
                       {t(`groupWaitlist.status.${entry.status}`)}
                     </p>
-                    {entry.comment && <p className="text-xs text-slate-500 mt-1">{entry.comment}</p>}
+                    {entry.comment && <p className="text-xs text-ink-500 mt-1">{entry.comment}</p>}
                   </div>
                 </div>
                 {canManage && entry.status !== "enrolled" && entry.status !== "declined" && entry.status !== "cancelled" && (
@@ -141,7 +141,7 @@ export default function GroupWaitlistPanel({ classId, canManage = false, toast }
                         type="button"
                         onClick={() => void handleStatus(entry.id, "offered")}
                         disabled={updateStatus.isPending}
-                        className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 cursor-pointer disabled:opacity-60"
+                        className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white border border-gold-200 text-gold-700 hover:bg-gold-50 cursor-pointer disabled:opacity-60"
                       >
                         {t("groupWaitlist.action.offer")}
                       </button>
@@ -151,7 +151,7 @@ export default function GroupWaitlistPanel({ classId, canManage = false, toast }
                         type="button"
                         onClick={() => void handleStatus(entry.id, "enrolled")}
                         disabled={updateStatus.isPending}
-                        className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 cursor-pointer disabled:opacity-60"
+                        className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white border border-gold-200 text-gold-700 hover:bg-gold-50 cursor-pointer disabled:opacity-60"
                       >
                         {t("groupWaitlist.action.enrolled")}
                       </button>
@@ -162,7 +162,7 @@ export default function GroupWaitlistPanel({ classId, canManage = false, toast }
                           type="button"
                           onClick={() => void handleStatus(entry.id, "declined")}
                           disabled={updateStatus.isPending}
-                          className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer disabled:opacity-60"
+                          className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white border border-ink-200 text-ink-600 hover:bg-ink-100 cursor-pointer disabled:opacity-60"
                         >
                           {t("groupWaitlist.action.declined")}
                         </button>
@@ -170,7 +170,7 @@ export default function GroupWaitlistPanel({ classId, canManage = false, toast }
                           type="button"
                           onClick={() => void handleStatus(entry.id, "cancelled")}
                           disabled={updateStatus.isPending}
-                          className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white border border-rose-200 text-rose-700 hover:bg-rose-50 cursor-pointer disabled:opacity-60"
+                          className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white border border-garnet-200 text-garnet-700 hover:bg-garnet-50 cursor-pointer disabled:opacity-60"
                         >
                           {t("groupWaitlist.action.cancelled")}
                         </button>

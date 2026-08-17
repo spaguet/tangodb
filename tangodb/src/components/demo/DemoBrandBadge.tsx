@@ -27,12 +27,12 @@ export default function DemoBrandBadge({ compact = false }: DemoBrandBadgeProps)
         <p className={`text-[10px] leading-tight mt-0.5 ${toneClass}`}>{daysLeftLabel}</p>
       )}
       {!compact && status === "demo_active" && expiryDate !== "—" && (
-        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+        <p className="text-[10px] text-ink-500 mt-0.5 leading-tight">
           {t("demo.badge.untilDate", { date: expiryDate })}
         </p>
       )}
       {!compact && status === "demo_retention" && purgeDate !== "—" && (
-        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+        <p className="text-[10px] text-ink-500 mt-0.5 leading-tight">
           {t("demo.badge.purgeDate", { date: purgeDate })}
         </p>
       )}

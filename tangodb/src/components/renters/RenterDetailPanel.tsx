@@ -69,7 +69,7 @@ interface RenterDetailPanelProps {
 
 type DetailTab = "overview" | "rentals" | "finance" | "contracts" | "communications";
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const { renterId = "" } = useParams();
@@ -172,7 +172,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
         <button
           type="button"
           onClick={() => navigate("/renters")}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-500 hover:text-gold-800 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           {t("renters.detail.back")}
@@ -181,16 +181,16 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
           <button
             type="button"
             onClick={() => setArchiveOpen(true)}
-            className="text-xs font-semibold text-rose-600 hover:text-rose-800 cursor-pointer"
+            className="text-xs font-semibold text-garnet-600 hover:text-garnet-800 cursor-pointer"
           >
             {t("renters.archive.title")}
           </button>
         ) : null}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4">
-        <h1 className="text-lg font-semibold text-slate-900">{renter.displayName}</h1>
-        <p className="text-xs text-slate-500 mt-1">
+      <div className="bg-white rounded-xl border border-ink-200 shadow-xs p-4">
+        <h1 className="text-lg font-semibold text-ink-900">{renter.displayName}</h1>
+        <p className="text-xs text-ink-500 mt-1">
           {renter.status === "active"
             ? t("renters.status.active")
             : renter.status === "archived"
@@ -202,7 +202,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
 
       <PageTabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as DetailTab)} />
 
-      <div className={`bg-white border border-slate-200 shadow-xs p-4 ${pageTabPanelCls(activeTab, tabs[0]?.id ?? "overview")}`}>
+      <div className={`bg-white border border-ink-200 shadow-xs p-4 ${pageTabPanelCls(activeTab, tabs[0]?.id ?? "overview")}`}>
         {activeTab === "overview" ? (
           <OverviewTab
             renter={renter}
@@ -382,8 +382,8 @@ function OverviewTab({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-sans">
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-800">{t("renters.detail.requisites")}</h3>
-        <dl className="text-xs space-y-1.5 text-slate-600">
+        <h3 className="text-sm font-semibold text-ink-800">{t("renters.detail.requisites")}</h3>
+        <dl className="text-xs space-y-1.5 text-ink-600">
           {renter.legalName ? (
             <>
               <dt className={labelCls}>{t("renters.form.legalName")}</dt>
@@ -430,7 +430,7 @@ function OverviewTab({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-800">{t("renters.detail.stats")}</h3>
+        <h3 className="text-sm font-semibold text-ink-800">{t("renters.detail.stats")}</h3>
         <div className="grid grid-cols-2 gap-2 text-xs">
           <StatBox label={t("renters.detail.completedRentals")} value={String(rentalCounts.completed)} />
           <StatBox label={t("renters.detail.upcomingRentals")} value={String(rentalCounts.upcoming)} />
@@ -443,7 +443,7 @@ function OverviewTab({
           ) : null}
         </div>
         {warnings.length > 0 ? (
-          <div className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs text-amber-800">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
             <p className={labelCls}>{t("renters.detail.warnings")}</p>
             {warnings.map((w) => (
               <p key={w}>{w}</p>
@@ -453,19 +453,19 @@ function OverviewTab({
       </section>
 
       <section className="lg:col-span-2 space-y-3">
-        <h3 className="text-sm font-semibold text-slate-800">{t("renters.detail.contacts")}</h3>
+        <h3 className="text-sm font-semibold text-ink-800">{t("renters.detail.contacts")}</h3>
         {contacts.length === 0 ? (
-          <p className="text-xs text-slate-400">{t("renters.detail.noContacts")}</p>
+          <p className="text-xs text-ink-500">{t("renters.detail.noContacts")}</p>
         ) : (
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y divide-ink-100 text-sm">
             {contacts.map((c) => (
               <li key={c.id} className="flex items-center justify-between py-2 gap-2">
                 <div>
-                  <span className="font-semibold text-slate-800">{c.fullName}</span>
+                  <span className="font-semibold text-ink-800">{c.fullName}</span>
                   {c.isPrimary ? (
-                    <span className="ml-2 text-[10px] uppercase font-semibold text-indigo-600">{t("renters.contact.primary")}</span>
+                    <span className="ml-2 text-[10px] uppercase font-semibold text-gold-700">{t("renters.contact.primary")}</span>
                   ) : null}
-                  <p className="text-xs text-slate-500">{[c.roleTitle, c.phone, c.email].filter(Boolean).join(" · ")}</p>
+                  <p className="text-xs text-ink-500">{[c.roleTitle, c.phone, c.email].filter(Boolean).join(" · ")}</p>
                 </div>
                 {canWriteContacts ? (
                   <button
@@ -475,7 +475,7 @@ function OverviewTab({
                         if (!res.success) toast(resolveMutationError(res.error, "renters.error.contactSaveFailed", t), "error");
                       })
                     }
-                    className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                    className="p-1 text-ink-400 hover:text-garnet-600 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -485,7 +485,7 @@ function OverviewTab({
           </ul>
         )}
         {canWriteContacts ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-ink-100">
             <input className={inputCls} placeholder={t("renters.contact.fullName")} value={contactName} onChange={(e) => setContactName(e.target.value)} />
             <input className={inputCls} placeholder={t("renters.contact.role")} value={contactRole} onChange={(e) => setContactRole(e.target.value)} />
             <input className={inputCls} placeholder={t("renters.form.phone")} value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
@@ -497,7 +497,7 @@ function OverviewTab({
               type="button"
               disabled={connectionState !== "online"}
               onClick={() => void handleAddContact()}
-              className="col-span-full py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50"
+              className="col-span-full py-2 bg-gold-700 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50"
             >
               {t("renters.contact.add")}
             </button>
@@ -510,9 +510,9 @@ function OverviewTab({
 
 function StatBox({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className={`rounded-lg border p-2.5 ${highlight ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-slate-50"}`}>
+    <div className={`rounded-lg border p-2.5 ${highlight ? "border-garnet-200 bg-garnet-50" : "border-ink-100 bg-ink-50"}`}>
       <p className={labelCls}>{label}</p>
-      <p className={`text-sm font-semibold mt-0.5 ${highlight ? "text-rose-700" : "text-slate-800"}`}>{value}</p>
+      <p className={`text-sm font-semibold mt-0.5 ${highlight ? "text-garnet-700" : "text-ink-800"}`}>{value}</p>
     </div>
   );
 }
@@ -545,7 +545,7 @@ function RentalsTab({
           <button
             type="button"
             onClick={onCreateRental}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-gold-700 hover:text-gold-800 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             {t("renters.rentals.createNew")}
@@ -553,12 +553,12 @@ function RentalsTab({
         </div>
       ) : null}
       {rentals.length === 0 ? (
-        <p className="text-sm text-slate-400">{t("renters.detail.noRentals")}</p>
+        <p className="text-sm text-ink-500">{t("renters.detail.noRentals")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-left text-slate-400 uppercase tracking-wider">
+              <tr className="text-left text-ink-400 uppercase tracking-wider">
                 <th className="pb-2 pr-3">{t("renters.rentals.colDate")}</th>
                 <th className="pb-2 pr-3">{t("renters.rentals.colLocation")}</th>
                 <th className="pb-2 pr-3">{t("renters.rentals.colStatus")}</th>
@@ -571,9 +571,9 @@ function RentalsTab({
                 <th className="pb-2" />
               </tr>
             </thead>
-            <tbody className="text-slate-700">
+            <tbody className="text-ink-700">
               {rentals.map((r) => (
-                <tr key={r.id} className="border-t border-slate-100">
+                <tr key={r.id} className="border-t border-ink-100">
                   <td className="py-2 pr-3 whitespace-nowrap">
                     {formatDate(r.rentalDate)} {r.timeStart}–{r.timeEnd}
                   </td>
@@ -590,12 +590,12 @@ function RentalsTab({
                       <button
                         type="button"
                         onClick={() => navigate(`/schedule?date=${r.rentalDate}`)}
-                        className="text-indigo-600 font-semibold cursor-pointer"
+                        className="text-gold-700 font-semibold cursor-pointer"
                       >
                         {t("renters.rentals.openSchedule")}
                       </button>
                     ) : (
-                      <span className="text-slate-400">—</span>
+                      <span className="text-ink-400">—</span>
                     )}
                   </td>
                 </tr>
@@ -686,13 +686,13 @@ function FinanceTab({
     <div className="space-y-4">
       {canWrite ? (
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setCreateInvoiceOpen(true)} className="py-1.5 px-3 bg-indigo-600 text-white text-xs font-semibold rounded-lg cursor-pointer">
+          <button type="button" onClick={() => setCreateInvoiceOpen(true)} className="py-1.5 px-3 bg-gold-700 text-white text-xs font-semibold rounded-lg cursor-pointer">
             {t("rentalInvoices.createAction")}
           </button>
-          <button type="button" onClick={() => setAdvanceOpen(true)} className="py-1.5 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer">
+          <button type="button" onClick={() => setAdvanceOpen(true)} className="py-1.5 px-3 bg-white border border-ink-200 text-ink-700 text-xs font-semibold rounded-lg cursor-pointer">
             {t("rentalInvoices.advanceAction")}
           </button>
-          <button type="button" onClick={() => setAllocateOpen(true)} className="py-1.5 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer">
+          <button type="button" onClick={() => setAllocateOpen(true)} className="py-1.5 px-3 bg-white border border-ink-200 text-ink-700 text-xs font-semibold rounded-lg cursor-pointer">
             {t("rentalInvoices.allocateAction")}
           </button>
         </div>
@@ -715,18 +715,18 @@ function FinanceTab({
           <StatBox label={t("rentalInvoices.overdueAmount")} value={formatCurrency(extended.overdueAmount)} highlight={extended.overdueAmount > 0} />
         </div>
       ) : rentalFinanceQuery.isLoading ? (
-        <p className="text-xs text-slate-400">{t("common.loading.default")}</p>
+        <p className="text-xs text-ink-500">{t("common.loading.default")}</p>
       ) : null}
 
       <div>
-        <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("rentalInvoices.title")}</h4>
+        <h4 className="text-sm font-semibold text-ink-800 mb-2">{t("rentalInvoices.title")}</h4>
         {invoices.length === 0 ? (
-          <p className="text-xs text-slate-400">{t("rentalInvoices.empty")}</p>
+          <p className="text-xs text-ink-500">{t("rentalInvoices.empty")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-slate-400 uppercase tracking-wider">
+                <tr className="text-left text-ink-400 uppercase tracking-wider">
                   <th className="py-1 pr-2">{t("rentalInvoices.period")}</th>
                   {documentsMode !== "off" ? (
                     <th className="py-1 pr-2">{t("rentalBilling.documentNumber")}</th>
@@ -740,7 +740,7 @@ function FinanceTab({
               </thead>
               <tbody>
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="border-b border-slate-50">
+                  <tr key={inv.id} className="border-b border-ink-50">
                     <td className="py-2 pr-2">{formatDate(inv.periodStart)} – {formatDate(inv.periodEnd)}</td>
                     {documentsMode !== "off" ? (
                       <td className="py-2 pr-2">
@@ -748,18 +748,18 @@ function FinanceTab({
                           <span>
                             {inv.documentNumber}
                             {inv.documentVersion && inv.documentVersion > 1 ? (
-                              <span className="text-slate-400"> v{inv.documentVersion}</span>
+                              <span className="text-ink-400"> v{inv.documentVersion}</span>
                             ) : null}
                           </span>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-ink-400">—</span>
                         )}
                       </td>
                     ) : null}
                     <td className="py-2 pr-2">{formatDate(inv.dueDate)}</td>
                     <td className="py-2 pr-2">{invoiceStatusLabel(inv.status)}</td>
                     <td className="py-2 pr-2 text-right">{formatCurrency(inv.totalAmount)}</td>
-                    <td className={`py-2 pr-2 text-right font-semibold ${inv.outstanding > 0 ? "text-rose-600" : "text-slate-600"}`}>
+                    <td className={`py-2 pr-2 text-right font-semibold ${inv.outstanding > 0 ? "text-garnet-600" : "text-ink-600"}`}>
                       {formatCurrency(inv.outstanding)}
                     </td>
                     {canWrite ? (
@@ -769,7 +769,7 @@ function FinanceTab({
                             type="button"
                             onClick={() => void handleIssueDocument(inv)}
                             disabled={issueDocument.isPending}
-                            className="text-slate-600 font-semibold cursor-pointer"
+                            className="text-ink-600 font-semibold cursor-pointer"
                           >
                             {inv.documentNumber ? t("rentalBilling.reissueAction") : t("rentalBilling.issueAction")}
                           </button>
@@ -778,13 +778,13 @@ function FinanceTab({
                           <button
                             type="button"
                             onClick={() => setDocumentInvoiceId(inv.id)}
-                            className="text-slate-600 font-semibold cursor-pointer"
+                            className="text-ink-600 font-semibold cursor-pointer"
                           >
                             {t("rentalBilling.viewDocument")}
                           </button>
                         ) : null}
                         {inv.outstanding > 0 && inv.status !== "cancelled" ? (
-                          <button type="button" onClick={() => setPayInvoice(inv)} className="text-indigo-600 font-semibold cursor-pointer">
+                          <button type="button" onClick={() => setPayInvoice(inv)} className="text-gold-700 font-semibold cursor-pointer">
                             {t("rentalInvoices.payAction")}
                           </button>
                         ) : null}
@@ -800,15 +800,15 @@ function FinanceTab({
 
       {advances.length > 0 ? (
         <div>
-          <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("rentalInvoices.advancesTitle")}</h4>
+          <h4 className="text-sm font-semibold text-ink-800 mb-2">{t("rentalInvoices.advancesTitle")}</h4>
           <ul className="text-xs space-y-1">
             {advances.map((adv) => (
-              <li key={adv.id} className="flex justify-between border-b border-slate-50 py-1">
+              <li key={adv.id} className="flex justify-between border-b border-ink-50 py-1">
                 <span>{formatDate(adv.operationDate)} · {adv.method}</span>
-                <span className="text-slate-700">
+                <span className="text-ink-700">
                   {formatCurrency(adv.amount)}
                   {adv.available > 0 ? (
-                    <span className="text-emerald-600 ml-1">({formatCurrency(adv.available)})</span>
+                    <span className="text-sage-600 ml-1">({formatCurrency(adv.available)})</span>
                   ) : null}
                 </span>
               </li>
@@ -828,12 +828,12 @@ function FinanceTab({
 
       {withDebt.length > 0 ? (
         <div>
-          <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("renters.detail.debt")}</h4>
+          <h4 className="text-sm font-semibold text-ink-800 mb-2">{t("renters.detail.debt")}</h4>
           <ul className="text-xs space-y-1">
             {withDebt.map((r) => (
-              <li key={r.id} className="flex justify-between border-b border-slate-50 py-1">
+              <li key={r.id} className="flex justify-between border-b border-ink-50 py-1">
                 <span>{formatDate(r.rentalDate)} · {locationMap.get(r.locationId)}</span>
-                <span className="text-rose-600 font-semibold">
+                <span className="text-garnet-600 font-semibold">
                   {formatCurrency(rentalRemainingAmount(r.fixedAmount, r.paidAmount))}
                 </span>
               </li>
@@ -949,15 +949,15 @@ function ContractsTab({
   return (
     <div className="space-y-6">
       <section>
-        <h3 className="text-sm font-semibold text-slate-800 mb-2">{t("renters.contract.add")}</h3>
+        <h3 className="text-sm font-semibold text-ink-800 mb-2">{t("renters.contract.add")}</h3>
         {contracts.length === 0 ? (
-          <p className="text-xs text-slate-400 mb-2">{t("renters.detail.noContracts")}</p>
+          <p className="text-xs text-ink-500 mb-2">{t("renters.detail.noContracts")}</p>
         ) : (
-          <ul className="divide-y divide-slate-100 text-sm mb-4">
+          <ul className="divide-y divide-ink-100 text-sm mb-4">
             {contracts.map((c) => (
               <li key={c.id} className="py-2">
-                <p className="font-semibold text-slate-800">{c.title}</p>
-                <p className="text-xs text-slate-500">
+                <p className="font-semibold text-ink-800">{c.title}</p>
+                <p className="text-xs text-ink-500">
                   {[c.contractNumber, c.status, c.validFrom && c.validTo ? `${c.validFrom} – ${c.validTo}` : null].filter(Boolean).join(" · ")}
                 </p>
               </li>
@@ -968,7 +968,7 @@ function ContractsTab({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input className={inputCls} placeholder={t("renters.contract.title")} value={title} onChange={(e) => setTitle(e.target.value)} />
             <input className={inputCls} placeholder={t("renters.contract.number")} value={contractNumber} onChange={(e) => setContractNumber(e.target.value)} />
-            <button type="button" onClick={() => void handleAddContract()} className="sm:col-span-2 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg cursor-pointer">
+            <button type="button" onClick={() => void handleAddContract()} className="sm:col-span-2 py-2 bg-gold-700 text-white text-xs font-semibold rounded-lg cursor-pointer">
               {t("renters.contract.add")}
             </button>
           </div>
@@ -977,16 +977,16 @@ function ContractsTab({
 
       {canSeeDocuments ? (
         <section>
-          <h3 className="text-sm font-semibold text-slate-800 mb-2">{t("renters.document.add")}</h3>
+          <h3 className="text-sm font-semibold text-ink-800 mb-2">{t("renters.document.add")}</h3>
           {documents.length === 0 ? (
-            <p className="text-xs text-slate-400 mb-2">{t("renters.detail.noDocuments")}</p>
+            <p className="text-xs text-ink-500 mb-2">{t("renters.detail.noDocuments")}</p>
           ) : (
-            <ul className="divide-y divide-slate-100 text-sm mb-4">
+            <ul className="divide-y divide-ink-100 text-sm mb-4">
               {documents.map((d) => (
                 <li key={d.id} className="flex items-center justify-between py-2 gap-2">
                   <div>
-                    <p className="font-semibold text-slate-800">{d.displayName}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="font-semibold text-ink-800">{d.displayName}</p>
+                    <p className="text-xs text-ink-500">
                       {[d.category, d.validUntil ? formatDate(d.validUntil) : null].filter(Boolean).join(" · ")}
                     </p>
                   </div>
@@ -999,7 +999,7 @@ function ContractsTab({
                           else toast(resolveMutationError(res.error, "renters.error.documentUploadFailed", t), "error");
                         })
                       }
-                      className="text-xs font-semibold text-indigo-600 cursor-pointer"
+                      className="text-xs font-semibold text-gold-700 cursor-pointer"
                     >
                       {t("renters.document.download")}
                     </button>
@@ -1011,7 +1011,7 @@ function ContractsTab({
                             if (!res.success) toast(resolveMutationError(res.error, "renters.error.documentUploadFailed", t), "error");
                           })
                         }
-                        className="text-xs font-semibold text-rose-600 cursor-pointer"
+                        className="text-xs font-semibold text-garnet-600 cursor-pointer"
                       >
                         {t("renters.document.delete")}
                       </button>
@@ -1025,7 +1025,7 @@ function ContractsTab({
             <div className="space-y-2">
               <input className={inputCls} placeholder={t("renters.document.displayName")} value={docName} onChange={(e) => setDocName(e.target.value)} />
               <input type="file" accept=".pdf,.jpg,.jpeg,.png,.docx,application/pdf,image/jpeg,image/png" onChange={(e) => setDocFile(e.target.files?.[0] ?? null)} className="text-xs" />
-              <button type="button" onClick={() => void handleUpload()} disabled={!docFile} className="py-2 px-4 bg-indigo-600 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50">
+              <button type="button" onClick={() => void handleUpload()} disabled={!docFile} className="py-2 px-4 bg-gold-700 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50">
                 {t("renters.document.add")}
               </button>
             </div>
@@ -1089,17 +1089,17 @@ function CommunicationsTab({
   return (
     <div className="space-y-4">
       {communications.length === 0 ? (
-        <p className="text-sm text-slate-400">{t("renters.detail.noCommunications")}</p>
+        <p className="text-sm text-ink-500">{t("renters.detail.noCommunications")}</p>
       ) : (
         <ul className="space-y-3">
           {communications.map((cm) => (
-            <li key={cm.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm">
+            <li key={cm.id} className="rounded-lg border border-ink-100 bg-ink-50 p-3 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-semibold uppercase text-indigo-600">{t(commTypeLabel[cm.commType])}</span>
-                <span className="text-xs text-slate-400">{formatDateTime(new Date(cm.occurredAt))}</span>
+                <span className="text-[10px] font-semibold uppercase text-gold-700">{t(commTypeLabel[cm.commType])}</span>
+                <span className="text-xs text-ink-500">{formatDateTime(new Date(cm.occurredAt))}</span>
               </div>
-              {cm.subject ? <p className="font-semibold text-slate-800 mt-1">{cm.subject}</p> : null}
-              {cm.body ? <p className="text-slate-600 text-xs mt-1 whitespace-pre-wrap">{cm.body}</p> : null}
+              {cm.subject ? <p className="font-semibold text-ink-800 mt-1">{cm.subject}</p> : null}
+              {cm.body ? <p className="text-ink-600 text-xs mt-1 whitespace-pre-wrap">{cm.body}</p> : null}
               {cm.nextActionAt ? (
                 <p className="text-xs text-amber-700 mt-1">{t("renters.communication.nextAction")}: {formatDateTime(new Date(cm.nextActionAt))}</p>
               ) : null}
@@ -1109,7 +1109,7 @@ function CommunicationsTab({
       )}
 
       {canWrite ? (
-        <div className="border-t border-slate-100 pt-4 space-y-2">
+        <div className="border-t border-ink-100 pt-4 space-y-2">
           <AppSelect label={t("renters.communication.type")} value={commType} onChange={(e) => setCommType(e.target.value as RenterCommunicationType)}>
             {commTypes.map((ct) => (
               <option key={ct} value={ct}>{t(commTypeLabel[ct])}</option>
@@ -1118,7 +1118,7 @@ function CommunicationsTab({
           <input className={inputCls} placeholder={t("renters.communication.subject")} value={subject} onChange={(e) => setSubject(e.target.value)} />
           <textarea className={descriptionFieldCls} placeholder={t("renters.communication.body")} value={body} onChange={(e) => setBody(e.target.value)} />
           <input type="datetime-local" className={inputCls} value={nextAction} onChange={(e) => setNextAction(e.target.value)} />
-          <button type="button" onClick={() => void handleAdd()} className="py-2 px-4 bg-indigo-600 text-white text-xs font-semibold rounded-lg cursor-pointer">
+          <button type="button" onClick={() => void handleAdd()} className="py-2 px-4 bg-gold-700 text-white text-xs font-semibold rounded-lg cursor-pointer">
             {t("renters.communication.add")}
           </button>
         </div>

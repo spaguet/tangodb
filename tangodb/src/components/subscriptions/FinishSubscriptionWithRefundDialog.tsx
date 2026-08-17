@@ -36,7 +36,7 @@ interface FinishSubscriptionWithRefundDialogProps {
   onSuccess: () => void;
 }
 
-const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const labelCls = "text-[10px] text-ink-500 font-sans uppercase tracking-wider font-semibold block";
 
 export default function FinishSubscriptionWithRefundDialog({
   subscription,
@@ -249,7 +249,7 @@ export default function FinishSubscriptionWithRefundDialog({
     <AnimatePresence>
       {subscription ? (
         <motion.div
-          className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/40"
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-ink-950/40"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -259,16 +259,16 @@ export default function FinishSubscriptionWithRefundDialog({
             role="dialog"
             aria-modal="true"
             aria-labelledby="refund-dialog-title"
-            className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-xl shadow-xl border border-ink-200 w-full max-w-lg max-h-[90vh] overflow-y-auto"
             initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.96, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between px-4 py-3 border-b border-slate-100">
+            <div className="flex items-start justify-between px-4 py-3 border-b border-ink-100">
               <div className="flex items-center gap-2">
-                <Banknote className="w-4 h-4 text-indigo-600" />
-                <h2 id="refund-dialog-title" className="font-sans text-sm font-semibold text-slate-800">
+                <Banknote className="w-4 h-4 text-gold-700" />
+                <h2 id="refund-dialog-title" className="font-sans text-sm font-semibold text-ink-800">
                   {t("subscriptions.refund.title")}
                 </h2>
               </div>
@@ -276,7 +276,7 @@ export default function FinishSubscriptionWithRefundDialog({
                 type="button"
                 onClick={onClose}
                 disabled={finishWithRefund.isPending}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
+                className="p-1 rounded-lg text-ink-400 hover:text-ink-700 hover:bg-ink-50 cursor-pointer disabled:opacity-50"
                 aria-label={t("common.close")}
               >
                 <X className="w-4 h-4" />
@@ -284,7 +284,7 @@ export default function FinishSubscriptionWithRefundDialog({
             </div>
 
             <div className="p-4 space-y-4">
-              <p className="text-xs text-slate-500">{t("subscriptions.refund.summary")}</p>
+              <p className="text-xs text-ink-500">{t("subscriptions.refund.summary")}</p>
 
               {previewQuery.isLoading ? (
                 <LoadingState label={t("subscriptions.refund.error.previewFailed")} />
@@ -293,9 +293,9 @@ export default function FinishSubscriptionWithRefundDialog({
 
               {preview && formula ? (
                 <>
-                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-2 text-sm">
+                  <div className="rounded-lg border border-ink-100 bg-ink-50 p-3 space-y-2 text-sm">
                     {!formula.requiresManualAmount ? (
-                      <p className="text-slate-700">
+                      <p className="text-ink-700">
                         {t("subscriptions.refund.lessonsLeft", {
                           left: preview.lessonsLeft,
                           total: preview.lessonsTotal,
@@ -304,48 +304,48 @@ export default function FinishSubscriptionWithRefundDialog({
                     ) : null}
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <span className="text-slate-400">{t("subscriptions.refund.salePrice")}</span>
-                        <p className="font-semibold text-slate-800">{formatCurrency(formula.salePrice)}</p>
+                        <span className="text-ink-400">{t("subscriptions.refund.salePrice")}</span>
+                        <p className="font-semibold text-ink-800">{formatCurrency(formula.salePrice)}</p>
                       </div>
                       <div>
-                        <span className="text-slate-400">{t("subscriptions.refund.received")}</span>
-                        <p className="font-semibold text-slate-800">{formatCurrency(formula.receivedTotal)}</p>
+                        <span className="text-ink-400">{t("subscriptions.refund.received")}</span>
+                        <p className="font-semibold text-ink-800">{formatCurrency(formula.receivedTotal)}</p>
                       </div>
                       <div>
-                        <span className="text-slate-400">{t("subscriptions.refund.priorRefunds")}</span>
-                        <p className="font-semibold text-slate-800">{formatCurrency(formula.priorRefunds)}</p>
+                        <span className="text-ink-400">{t("subscriptions.refund.priorRefunds")}</span>
+                        <p className="font-semibold text-ink-800">{formatCurrency(formula.priorRefunds)}</p>
                       </div>
                       {(formula.pendingRefunds ?? 0) > 0 ? (
                         <div>
-                          <span className="text-slate-400">{t("subscriptions.refund.pendingRefunds")}</span>
+                          <span className="text-ink-400">{t("subscriptions.refund.pendingRefunds")}</span>
                           <p className="font-semibold text-amber-700">
                             {formatCurrency(formula.pendingRefunds ?? 0)}
                           </p>
                         </div>
                       ) : null}
                       <div>
-                        <span className="text-slate-400">{t("subscriptions.refund.available")}</span>
-                        <p className="font-semibold text-indigo-700">
+                        <span className="text-ink-400">{t("subscriptions.refund.available")}</span>
+                        <p className="font-semibold text-gold-700">
                           {formatCurrency(formula.availableAmount)}
                         </p>
                       </div>
                     </div>
                     {!formula.requiresManualAmount && formula.formula && calcMode === "pro_rata" ? (
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-[11px] text-ink-500">
                         {t("subscriptions.refund.formula", { formula: formula.formula })}
                       </p>
                     ) : null}
                     {!formula.requiresManualAmount &&
                     formula.perLessonPrice != null &&
                     calcMode === "pro_rata" ? (
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-[11px] text-ink-500">
                         {t("subscriptions.refund.perLesson", {
                           amount: formatCurrency(formula.perLessonPrice),
                         })}
                       </p>
                     ) : null}
                     {formula.requiresManualAmount ? (
-                      <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-md px-2 py-1.5">
+                      <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
                         {t("subscriptions.refund.manualRequired")}
                         {formula.activationDate && formula.expiresAt ? (
                           <>
@@ -374,8 +374,8 @@ export default function FinishSubscriptionWithRefundDialog({
                       </AppSelect>
 
                       {calcMode === "single_visit_rate" ? (
-                        <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-3 space-y-3">
-                          <p className="text-[11px] text-slate-600 leading-relaxed">
+                        <div className="rounded-lg border border-gold-100 bg-gold-50/40 p-3 space-y-3">
+                          <p className="text-[11px] text-ink-600 leading-relaxed">
                             {t("subscriptions.refund.singleVisit.hint")}
                           </p>
                           <AppSelect
@@ -409,10 +409,10 @@ export default function FinishSubscriptionWithRefundDialog({
                             />
                           </div>
                           {previewQuery.isFetching ? (
-                            <p className="text-[11px] text-slate-500">{t("common.loading.data")}</p>
+                            <p className="text-[11px] text-ink-500">{t("common.loading.data")}</p>
                           ) : formula?.calcMode === "single_visit_rate" &&
                             Number.isFinite(parsedSingleVisitRate) ? (
-                            <div className="text-[11px] text-slate-600 space-y-1">
+                            <div className="text-[11px] text-ink-600 space-y-1">
                               <p>
                                 {t("subscriptions.refund.singleVisit.used", {
                                   count: formula.lessonsUsed ?? 0,
@@ -421,9 +421,9 @@ export default function FinishSubscriptionWithRefundDialog({
                                 })}
                               </p>
                               {formula.formula ? (
-                                <p className="text-slate-500">{formula.formula}</p>
+                                <p className="text-ink-500">{formula.formula}</p>
                               ) : null}
-                              <p className="font-semibold text-indigo-800">
+                              <p className="font-semibold text-gold-800">
                                 {t("subscriptions.refund.singleVisit.result", {
                                   amount: formatCurrency(formula.recommendedAmount ?? 0),
                                 })}
@@ -467,7 +467,7 @@ export default function FinishSubscriptionWithRefundDialog({
                     {!formula.requiresManualAmount &&
                     formula.recommendedAmount != null &&
                     (calcMode === "pro_rata" || calcMode === "single_visit_rate") ? (
-                      <p className="text-[10px] text-slate-400 mt-1">
+                      <p className="text-[10px] text-ink-500 mt-1">
                         {t("subscriptions.refund.recommended")}:{" "}
                         {formatCurrency(formula.recommendedAmount)}
                       </p>
@@ -513,12 +513,12 @@ export default function FinishSubscriptionWithRefundDialog({
               ) : null}
             </div>
 
-            <div className="px-4 py-3 border-t border-slate-100 flex justify-end gap-2">
+            <div className="px-4 py-3 border-t border-ink-100 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={finishWithRefund.isPending}
-                className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer disabled:opacity-50"
+                className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-ink-600 hover:bg-ink-50 rounded-lg cursor-pointer disabled:opacity-50"
               >
                 {t("common.cancel")}
               </button>

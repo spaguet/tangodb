@@ -61,10 +61,10 @@ export default function KeysPage() {
   return (
     <div className="max-w-lg space-y-6">
       <h2 className="text-2xl font-bold text-white">Lifetime keys</h2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-ink-500">
         Ключ привязан к email получателя и активируется только этим аккаунтом. Подпись выдающего обязательна.
         Скопируйте ключ и передайте клиенту. Реквизиты оплаты — в{" "}
-        <Link to="/payment-methods" className="text-indigo-400 hover:text-indigo-300 underline">
+        <Link to="/payment-methods" className="text-gold-400 hover:text-gold-300 underline">
           Payment methods
         </Link>
         .
@@ -75,7 +75,7 @@ export default function KeysPage() {
           type="button"
           onClick={() => setMode("generate")}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer ${
-            mode === "generate" ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400"
+            mode === "generate" ? "bg-gold-700 text-white" : "bg-ink-800 text-ink-400"
           }`}
         >
           Generate
@@ -84,75 +84,75 @@ export default function KeysPage() {
           type="button"
           onClick={() => setMode("payment")}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer ${
-            mode === "payment" ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400"
+            mode === "payment" ? "bg-gold-700 text-white" : "bg-ink-800 text-ink-400"
           }`}
         >
           Manual payment
         </button>
       </div>
 
-      <div className="space-y-3 bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <div className="space-y-3 bg-ink-900 border border-ink-800 rounded-xl p-4">
         <label className="block space-y-1">
-          <span className="text-xs text-slate-500 uppercase">Recipient email *</span>
+          <span className="text-xs text-ink-500 uppercase">Recipient email *</span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+            className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
           />
         </label>
         {mode === "payment" && (
           <label className="block space-y-1">
-            <span className="text-xs text-slate-500 uppercase">Invoice ref</span>
+            <span className="text-xs text-ink-500 uppercase">Invoice ref</span>
             <input
               value={invoiceRef}
               onChange={(e) => setInvoiceRef(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+              className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
             />
           </label>
         )}
         <label className="block space-y-1">
-          <span className="text-xs text-slate-500 uppercase">Подпись выдающего *</span>
+          <span className="text-xs text-ink-500 uppercase">Подпись выдающего *</span>
           <input
             type="password"
             value={issuerSignature}
             onChange={(e) => setIssuerSignature(e.target.value)}
             autoComplete="off"
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+            className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-xs text-slate-500 uppercase">Note</span>
+          <span className="text-xs text-ink-500 uppercase">Note</span>
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
+            className="w-full px-3 py-2 bg-ink-950 border border-ink-700 rounded-lg text-sm"
           />
         </label>
         <button
           type="button"
           onClick={run}
           disabled={loading || !email.trim() || !issuerSignature.trim()}
-          className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
+          className="w-full py-2.5 bg-gold-700 hover:bg-gold-800 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
         >
           {loading ? "…" : mode === "generate" ? "Generate lifetime key" : "Issue key after payment"}
         </button>
       </div>
 
       {error && (
-        <div className="text-sm text-rose-400 space-y-1">
+        <div className="text-sm text-garnet-400 space-y-1">
           <p>{error}</p>
-          {errorHint && <p className="text-xs text-slate-400">{errorHint}</p>}
+          {errorHint && <p className="text-xs text-ink-400">{errorHint}</p>}
         </div>
       )}
 
       {generatedKey && (
-        <div className="p-4 bg-emerald-950/50 border border-emerald-800 rounded-xl space-y-2">
-          <p className="text-xs text-emerald-400 uppercase font-semibold">Key — copy now</p>
+        <div className="p-4 bg-sage-950/40 border border-sage-800 rounded-xl space-y-2">
+          <p className="text-xs text-sage-400 uppercase font-semibold">Key — copy now</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-sm font-mono text-emerald-200 break-all">{generatedKey}</code>
-            <button type="button" onClick={copy} className="p-2 text-emerald-400 hover:bg-emerald-900/50 rounded cursor-pointer">
+            <code className="flex-1 text-sm font-mono text-sage-200 break-all">{generatedKey}</code>
+            <button type="button" onClick={copy} className="p-2 text-sage-400 hover:bg-sage-900/70 rounded cursor-pointer">
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>

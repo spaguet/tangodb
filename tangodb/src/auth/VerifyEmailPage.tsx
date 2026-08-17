@@ -148,8 +148,8 @@ export default function VerifyEmailPage() {
   if (phase === "loading" || phase === "creating") {
     return (
       <AuthLayout title="TangoDB" subtitle={t("auth.verifyEmail.preparingSubtitle")}>
-        <div className="flex flex-col items-center gap-3 py-8 text-slate-400">
-          <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
+        <div className="flex flex-col items-center gap-3 py-8 text-ink-400">
+          <div className="w-8 h-8 rounded-full border-4 border-gold-200 border-t-gold-600 animate-spin" />
           <p className="text-xs font-semibold tracking-widest uppercase">
             {phase === "creating"
               ? t("auth.verifyEmail.creatingOrg")
@@ -166,21 +166,21 @@ export default function VerifyEmailPage() {
 
       {!session ? (
         <>
-          <p className="text-sm text-slate-500">{t("auth.verifyEmail.noSessionHint")}</p>
+          <p className="text-sm text-ink-500">{t("auth.verifyEmail.noSessionHint")}</p>
           <p className="text-sm text-center">
             <AuthLink to="/login">{t("auth.register.signInLink")}</AuthLink>
           </p>
         </>
       ) : !session.user.email_confirmed_at ? (
         <>
-          <p className="text-sm text-slate-500">{t("auth.verifyEmail.notConfirmedHint")}</p>
+          <p className="text-sm text-ink-500">{t("auth.verifyEmail.notConfirmedHint")}</p>
           <p className="text-sm text-center">
             <AuthLink to="/login">{t("auth.verifyEmail.signInOtherAccount")}</AuthLink>
           </p>
         </>
       ) : needsCaptcha ? (
         <div className="space-y-4">
-          <p className="text-sm text-slate-500">{t("auth.verifyEmail.captchaHint")}</p>
+          <p className="text-sm text-ink-500">{t("auth.verifyEmail.captchaHint")}</p>
           <TurnstileWidget
             resetKey={turnstileResetKey}
             onToken={setTurnstileToken}
@@ -197,7 +197,7 @@ export default function VerifyEmailPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-slate-500">{t("auth.verifyEmail.confirmedFallbackHint")}</p>
+          <p className="text-sm text-ink-500">{t("auth.verifyEmail.confirmedFallbackHint")}</p>
           <AuthButton type="button" onClick={() => void attemptCreateDemo()}>
             {t("auth.verifyEmail.retryCreate")}
           </AuthButton>

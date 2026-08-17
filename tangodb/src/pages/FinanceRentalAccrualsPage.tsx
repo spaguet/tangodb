@@ -9,9 +9,9 @@ import { currentYearMonth, formatCurrency, formatMonthTitle } from "../lib/utils
 
 function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-      <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">{label}</p>
-      <p className={`text-lg font-semibold mt-1 ${highlight ? "text-rose-600" : "text-slate-900"}`}>{value}</p>
+    <div className="rounded-lg border border-ink-100 bg-ink-50 p-3">
+      <p className="text-[10px] uppercase tracking-wider text-ink-500 font-semibold">{label}</p>
+      <p className={`text-lg font-semibold mt-1 ${highlight ? "text-garnet-600" : "text-ink-900"}`}>{value}</p>
     </div>
   );
 }
@@ -42,29 +42,29 @@ export default function FinanceRentalAccrualsPage() {
 
   return (
     <div className="panel-page-stack">
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white rounded-xl border border-ink-200 shadow-xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-ink-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
-            <FileBarChart className="w-4 h-4 text-indigo-500" />
-            <h2 className="font-sans text-sm font-semibold text-slate-800">{t("rentalAccrual.title")}</h2>
+            <FileBarChart className="w-4 h-4 text-gold-500" />
+            <h2 className="font-sans text-sm font-semibold text-ink-800">{t("rentalAccrual.title")}</h2>
           </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setYearMonth((m) => shiftMonth(m, -1))}
-              className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer"
+              className="p-1.5 rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-50 cursor-pointer"
               aria-label={t("subscriptions.aria.prevMonth")}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-semibold text-slate-700 min-w-[8rem] text-center">
+            <span className="text-xs font-semibold text-ink-700 min-w-[8rem] text-center">
               {formatMonthTitle(yearMonth, locale)}
             </span>
             <button
               type="button"
               onClick={() => setYearMonth((m) => shiftMonth(m, 1))}
               disabled={isCurrentMonth}
-              className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer disabled:opacity-40"
+              className="p-1.5 rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-50 cursor-pointer disabled:opacity-40"
               aria-label={t("subscriptions.aria.nextMonth")}
             >
               <ChevronRight className="w-4 h-4" />
@@ -73,7 +73,7 @@ export default function FinanceRentalAccrualsPage() {
         </div>
 
         <div className="p-4 space-y-4">
-          <p className="text-xs text-slate-500">{t("rentalAccrual.hint")}</p>
+          <p className="text-xs text-ink-500">{t("rentalAccrual.hint")}</p>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             <StatCard label={t("rentalAccrual.accrued")} value={formatCurrency(report.accruedAmount)} />
@@ -89,11 +89,11 @@ export default function FinanceRentalAccrualsPage() {
           </div>
 
           {paidBreakdown ? (
-            <div className="rounded-lg border border-slate-100 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-2">{t("rentalAccrual.paidBreakdown")}</p>
+            <div className="rounded-lg border border-ink-100 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-ink-500 font-semibold mb-2">{t("rentalAccrual.paidBreakdown")}</p>
               <ul className="text-sm space-y-1">
                 {paidBreakdown.map((row) => (
-                  <li key={row.label} className="flex justify-between text-slate-700">
+                  <li key={row.label} className="flex justify-between text-ink-700">
                     <span>{row.label}</span>
                     <span className="font-semibold">{formatCurrency(row.value)}</span>
                   </li>
