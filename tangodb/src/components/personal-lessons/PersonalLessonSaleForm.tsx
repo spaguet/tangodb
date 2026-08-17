@@ -3,7 +3,7 @@ import { CalendarDays, MapPin, Ticket, Trash2 } from "lucide-react";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useAccessibleLocations } from "../../hooks/useLocations";
-import { useAddPersonalLessons } from "../../hooks/usePersonalLessons";
+import { useAddPersonalLessons, usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { useRecordPersonalLessonPayment } from "../../hooks/usePayments";
 import { usePrices } from "../../hooks/usePrices";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
@@ -311,6 +311,34 @@ export default function PersonalLessonSaleForm({
       teacherMemberId,
       slots: freebusySlots,
     });
+
+  const conflictCheckDateRange = useMemo(() => {
+    if (!isScheduleCell || freebusySlots.length === 0) return null;
+    let min = freebusySlots[0].date;
+    let max = freebusySlots[0].date;
+    for (const slot of freebusySlots) {
+      if (slot.date < min) min = slot.date;
+      if (slot.date > max) max = slot.date;
+    }
+    return { start: min, end: max };
+  }, [isScheduleCell, freebusySlots]);
+
+  const lessonsInRangeQuery = usePersonalLessons({
+    dateRange: conflictCheckDateRange ?? undefined,
+    excludeCancelled: true,
+    enabled: Boolean(conflictCheckDateRange),
+  });
+
+  const personalLessonsForConflict = useMemo(() => {
+    if (!conflictCheckDateRange) return personalLessons;
+    return (lessonsInRangeQuery.data ?? []).map((lesson) => ({
+      id: lesson.id,
+      date: lesson.date,
+      timeStart: lesson.timeStart,
+      timeEnd: lesson.timeEnd,
+      locationId: lesson.locationId,
+    }));
+  }, [conflictCheckDateRange, lessonsInRangeQuery.data, personalLessons]);
 
   const pType = participantTypeFromCount(bookingClients.length);
 
@@ -695,6 +723,18 @@ export default function PersonalLessonSaleForm({
       }
     }
 
+    let lessonsForConflict = personalLessonsForConflict;
+    if (conflictCheckDateRange) {
+      const { data: rangeLessons } = await lessonsInRangeQuery.refetch();
+      lessonsForConflict = (rangeLessons ?? []).map((lesson) => ({
+        id: lesson.id,
+        date: lesson.date,
+        timeStart: lesson.timeStart,
+        timeEnd: lesson.timeEnd,
+        locationId: lesson.locationId,
+      }));
+    }
+
     for (const slot of slots) {
       const conflict = findScheduleConflict(
         {
@@ -703,7 +743,7 @@ export default function PersonalLessonSaleForm({
           timeEnd: slot.timeEnd,
           locationId: effectiveLocationId,
         },
-        personalLessons,
+        lessonsForConflict,
         scheduleSlots,
         t,
         locale
