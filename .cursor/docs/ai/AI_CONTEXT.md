@@ -32,5 +32,7 @@ project/
 | Похожая ошибка в прошлом | `.cursor/docs/ai/lessons.md` |
 | Почему сделано именно так | `.cursor/docs/ai/decision_log.md` |
 | Что менялось недавно | `.cursor/docs/ai/changelog.md` |
+| Тариф персонального урока, длительность, раздельный платёж | `tangodb_personal_tariff_duration_payments.md` |
+| Промпты реализации того же контура | `tangodb_personal_tariff_duration_payments_prompts.md` |
 
 Не загружай остальные файлы без необходимости.

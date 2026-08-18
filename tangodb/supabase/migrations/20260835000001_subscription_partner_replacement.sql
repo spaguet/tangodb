@@ -401,7 +401,7 @@ BEGIN
     SELECT 1 FROM clients c
     WHERE c.id = p_incoming_client_id
       AND c.organization_id = v_org_id
-      AND c.deleted_at IS NULL
+      AND c.archived_at IS NULL
   ) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Новый клиент не найден или неактивен');
   END IF;

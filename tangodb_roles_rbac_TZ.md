@@ -109,6 +109,24 @@ interface TeacherScope {
 
 Default deny: пустой scope = нет доступа (уже в RLS).
 
+### 3.4. Миграция существующих ролей (при внедрении R2)
+
+При применении новой RBAC-модели **все текущие участники с ролью `admin` повышаются до `owner`**.
+
+**Зачем:** в действующих организациях `admin` сегодня имеет права, которые после R1/R2 переходят к `owner`/`director` (настройки, команда, тарифы, экспорт). Без повышения единственный оператор школы потеряет доступ к `/settings/*` и управлению командой.
+
+**Правило миграции данных (R2, до обновления RLS-функций):**
+
+```sql
+UPDATE organization_members
+SET role = 'owner'
+WHERE role = 'admin';
+```
+
+**После миграции:** при необходимости owner вручную приглашает нового узкого `admin` (операционка без settings/team). Существующие `teacher` и `accountant` не меняются.
+
+**JWT / сессия:** после UPDATE пользователям с изменённой ролью нужен re-login или refresh session, чтобы `member_role` в JWT совпал с БД.
+
 ---
 
 ## 4. Целевая матрица доступа
@@ -309,6 +327,7 @@ Policies на `clients`, `subscriptions`, `attendance`, `schedule_slots`, `perso
 - [x] Подтвердить: teacher **сохраняет** `personal_lessons.sell` для своих уроков.
 - [x] Решить: оставлять ли `director` или схлопнуть в owner (рекомендация: **оставить**).
 - [x] Зафиксировать: обновить `tangodb_saas_platform_TZ.md` §5 после R0.
+- [x] Подтвердить: при внедрении R2 все существующие `admin` → `owner` (§3.4), чтобы текущие операторы не потеряли settings/team.
 
 **Критерий:** стейкхолдер подписал матрицу §4; создана запись в `decision_log.md`.
 
@@ -336,8 +355,9 @@ Policies на `clients`, `subscriptions`, `attendance`, `schedule_slots`, `perso
 
 **Новая migration:** `<дата_запуска_YYYYMMDD>_v2_rbac_roles_refinement.sql` (использовать реальную дату создания файла)
 
-> **Порядок в миграции:** всё выполнять в одной транзакции (`BEGIN … COMMIT`). Строгий порядок: сначала пересоздать функции (шаги 1–2), затем обновить policies (шаг 4). Промежуточное состояние недопустимо — функция обновлена, а политика ещё ссылается на старое поведение создаёт временное окно с неверными правами.
+> **Порядок в миграции:** всё выполнять в одной транзакции (`BEGIN … COMMIT`). Строгий порядок: **сначала data-migration admin→owner (§3.4)**, затем пересоздать функции (шаги 1–2), затем обновить policies (шаг 4). Промежуточное состояние недопустимо — функция обновлена, а политика ещё ссылается на старое поведение создаёт временное окно с неверными правами.
 
+0. **Data migration (§3.4):** `UPDATE organization_members SET role = 'owner' WHERE role = 'admin'` — до изменения RLS, чтобы текущие admin не потеряли доступ к settings/team.
 1. **Обновить** (не дублировать) в одной миграции:
    ```sql
    can_manage_settings()   -- owner, director
@@ -551,6 +571,7 @@ R0 согласование
 4. **`teacher` слишком широкий** в продажах **групповых** абонементов — сузить, оставить override через settings.
 5. Часть рекомендаций (платежи, зарплаты, заметки, P&L) — **новые модули**, RBAC для них закладывается заранее.
 6. Базовое ТЗ §5 **устарело** относительно целевой модели — синхронизировать после R0.
+7. **Миграция ролей:** при R2 все существующие `admin` → `owner` (§3.4), иначе текущие операторы потеряют settings/team.
 
 Принцип для RLS остаётся неизменным: **UI — удобство, RLS — источник истины**.
 
@@ -623,13 +644,14 @@ R0 согласование
 ```
 Задача: фаза R2 из tangodb_roles_rbac_TZ.md — security layer.
 
-Прочитай: tangodb_roles_rbac_TZ.md §6.2, §7 R2, §8.
+Прочитай: tangodb_roles_rbac_TZ.md §3.4, §6.2, §7 R2, §8.
 Файлы: 20260620000002_v2_tenant_auth_helpers.sql (can_manage_settings/team),
        20260623000001_v2_business_rls.sql,
        20260624000001_v2_organization_invites.sql (inviter_can_assign_role),
        invite-member/index.ts.
 
 Создай миграцию с именем `<реальная_дата_YYYYMMDD>_v2_rbac_roles_refinement.sql` (подставь актуальную дату запуска, не литеральный YYYYMMDD):
+0. Data migration §3.4: UPDATE organization_members SET role = 'owner' WHERE role = 'admin' (до изменения RLS).
 1. UPDATE can_manage_settings(), can_manage_team() — только owner, director.
 2. CREATE can_read_financial(), can_read_operational(), can_read_prices(), can_manage_prices(), can_export_financial().
 3. UPDATE can_export_data() — убрать admin.

@@ -77,3 +77,13 @@ npm run import:org -- --org-id <ORG_UUID> --input data/import/albertkoall/tangod
 ```bash
 py scripts/xlsx-to-export.py "path/to/TangoDB.xlsx" --output data/import/albertkoall/tangodb_export.json
 ```
+
+## Импорт из Google Calendar (ICS)
+
+См. [CALENDAR_IMPORT.md](./CALENDAR_IMPORT.md) — индивидуальные занятия (бальные + танго) с 2025-09-01.
+
+```bash
+node scripts/ics-to-personal-lessons.mjs "path/to/calendar.ics" --since 2025-09-01 --out data/import/albertkoall/calendar_personal_lessons.json
+npm run import:calendar:dry-run -- --org-id <ORG_UUID> --input data/import/albertkoall/calendar_personal_lessons.json --default-location-name "Miami studio"
+npm run import:calendar -- --org-id <ORG_UUID> --input data/import/albertkoall/calendar_personal_lessons.json --default-location-name "Miami studio"
+```

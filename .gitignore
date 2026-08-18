@@ -1,4 +1,6 @@
 node_modules/
+.codegraph/
+.wrangler/
 dist/
 build/
 coverage/
@@ -7,3 +9,17 @@ coverage/
 .env*
 !.env.example
 .vercel
+
+# Local working copies / drafts
+pics/
+temp_design_changes.md
+
+# Import artifacts with tenant data (keep *.md instructions in git)
+tangodb/data/import/**/calendar_*.json
+
+# One-off org-specific maintenance scripts (keep locally)
+tangodb/scripts/delete-*.mjs
+tangodb/scripts/cancel-*.mjs
+tangodb/scripts/fix-ballroom-trio-tariff.mjs
+tangodb/scripts/_assign-owner-teacher.mjs
+tangodb/scripts/_venue-cost-followup.mjs

@@ -372,28 +372,28 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1 FROM clients c
-    WHERE c.organization_id = v_org_id AND c.id = p_client_id1 AND c.deleted_at IS NULL
+    WHERE c.organization_id = v_org_id AND c.id = p_client_id1 AND c.archived_at IS NULL
   ) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Клиент не найден');
   END IF;
 
   IF p_client_id2 IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM clients c
-    WHERE c.organization_id = v_org_id AND c.id = p_client_id2 AND c.deleted_at IS NULL
+    WHERE c.organization_id = v_org_id AND c.id = p_client_id2 AND c.archived_at IS NULL
   ) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Второй клиент не найден');
   END IF;
 
   IF p_client_id3 IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM clients c
-    WHERE c.organization_id = v_org_id AND c.id = p_client_id3 AND c.deleted_at IS NULL
+    WHERE c.organization_id = v_org_id AND c.id = p_client_id3 AND c.archived_at IS NULL
   ) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Третий клиент не найден');
   END IF;
 
   IF p_client_id4 IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM clients c
-    WHERE c.organization_id = v_org_id AND c.id = p_client_id4 AND c.deleted_at IS NULL
+    WHERE c.organization_id = v_org_id AND c.id = p_client_id4 AND c.archived_at IS NULL
   ) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Четвёртый клиент не найден');
   END IF;
@@ -636,7 +636,7 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1 FROM clients c
-    WHERE c.id = p_client_id AND c.organization_id = v_org_id AND c.deleted_at IS NULL
+    WHERE c.id = p_client_id AND c.organization_id = v_org_id AND c.archived_at IS NULL
   ) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Клиент не найден');
   END IF;

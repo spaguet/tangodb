@@ -1,0 +1,44 @@
+---
+description: Автоматическое использование CodeGraph MCP для навигации и правок кода
+alwaysApply: true
+---
+
+# CodeGraph — первый инструмент для кода
+
+MCP-сервер `codegraph` подключён в `.cursor/mcp.json`, индекс в `.codegraph/`.
+Один инструмент: **`codegraph_explore`** (через `CallMcpTool`).
+
+## Когда вызывать (до Read/Grep/Task)
+
+- «Как работает X», архитектура, баг, «где/что такое Y»
+- Перед правкой — найти символы и blast radius
+- Путь между символами: `mutateElement renderScene`
+- Чтение файла/символа по имени — source с номерами строк, готовый для Edit
+
+**Один вызов** обычно заменяет цикл grep + read. Результат считать уже прочитанным — не открывать те же файлы через Read.
+
+## Как вызывать
+
+```
+CallMcpTool server="codegraph" toolName="codegraph_explore"
+  query: "usePermissions can personal_lessons"  // имена, путь или вопрос
+  projectPath: "D:\\cursor_dev\\TangoDB\\tangodb"  // при необходимости подпроект
+```
+
+## Анти-паттерны
+
+- Не начинать с Grep/Read для indexed-кода
+- Не перепроверять codegraph через grep — AST точнее
+- Не собирать flow вручную — назвать endpoints в query
+- После правок: баннер «edited since last index sync» → Read только перечисленные файлы
+
+## Когда НЕ codegraph
+
+- Конфиги, docs (`.cursor/`, `.md`, `mcp.json`), SQL-миграции без символов
+- Нет индекса (`.codegraph/` отсутствует) — упомянуть `codegraph init`, не запускать самому
+- RLS/политики Supabase — только по явному указанию (см. core.mdc)
+
+## Ограничения
+
+- Индекс отстаёт от записи ~1 с
+- Разрешение имён — best-effort; не заменяет tsc/линтер/тесты

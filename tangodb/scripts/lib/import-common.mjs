@@ -60,6 +60,7 @@ export function parseArgs(argv) {
     defaultDiscipline: null,
     defaultLocationName: null,
     defaultLocationId: null,
+    skipDbConflicts: false,
   };
 
   for (let i = 2; i < argv.length; i++) {
@@ -74,6 +75,7 @@ export function parseArgs(argv) {
     else if (a === '--default-discipline') args.defaultDiscipline = argv[++i];
     else if (a === '--default-location-name') args.defaultLocationName = argv[++i];
     else if (a === '--default-location-id') args.defaultLocationId = argv[++i];
+    else if (a === '--skip-db-conflicts') args.skipDbConflicts = true;
     else if (a === '--help' || a === '-h') args.help = true;
     else throw new Error(`Unknown argument: ${a}`);
   }

@@ -2,6 +2,7 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-18 — chore: gitignore для `.codegraph/`, `.wrangler/`, import JSON и one-off scripts; коммит calendar import tooling, миграций `archived_at`/prices, CodeGraph MCP rule, проектной документации.
 2026-08-18 — feat: микропатч **2.8.20** — редактирование персонального урока: выбор тарифа (без оплаты/абонемента), пересчёт суммы начисления, предупреждение по длительности.
 
 2026-08-18 — fix: микропатч **2.8.19** — Google Calendar group sync: `removeStaleRecipientLinks` больше не удаляет события других occurrence одного слота (из‑за этого в календаре оставался только один понедельник, среда/пятница не повторялись); `refresh_member` перед reconcile очищает все managed-события и links; скрипт `calendar-full-resync.mjs`.
