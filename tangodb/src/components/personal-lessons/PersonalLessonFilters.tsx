@@ -7,9 +7,10 @@ import { currentYearMonth, formatMonthTitle, shiftMonth } from "../../lib/utils"
 import type { Discipline } from "../../types";
 import { memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
 import { useI18n } from "../../hooks/useI18n";
-import AppSelect, { searchFieldCls } from "../ui/AppSelect";
+import AppSelect, { searchFieldCls, selectLabelCls } from "../ui/AppSelect";
 import DatePickerField from "../ui/DatePickerField";
 import type {
+  PersonalLessonDateSort,
   PersonalLessonFilterState,
   PersonalLessonPeriodMode,
 } from "./personalLessonFilterUtils";
@@ -50,6 +51,11 @@ export default function PersonalLessonFilters({
     { id: "all" as const, label: t("common.all") },
     { id: "yes" as const, label: t("common.paid") },
     { id: "no" as const, label: t("common.debt") },
+  ];
+
+  const dateSortOptions: { id: PersonalLessonDateSort; label: string }[] = [
+    { id: "asc", label: t("personal.sort.fromMonthStart") },
+    { id: "desc", label: t("personal.sort.fromMonthEnd") },
   ];
 
   const isCurrentMonth = filters.yearMonth === currentYearMonth();
@@ -177,6 +183,23 @@ export default function PersonalLessonFilters({
           </div>
         )}
 
+        <div className="flex flex-wrap bg-slate-100 rounded-lg p-1 text-xs font-semibold gap-1">
+          {dateSortOptions.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onChange({ dateSort: item.id })}
+              className={`px-3 py-1.5 rounded-md cursor-pointer transition-all ${
+                filters.dateSort === item.id
+                  ? "bg-white text-slate-900 shadow-xs font-semibold"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex flex-wrap bg-slate-100 rounded-lg p-1 text-xs font-semibold gap-1 ml-auto">
           {paidFilters.map((item) => (
             <button
@@ -239,18 +262,18 @@ export default function PersonalLessonFilters({
           ))}
         </AppSelect>
 
-        <div className="relative">
-          <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block mb-1">
-            {t("common.searchClient")}
-          </label>
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            placeholder={t("common.searchByName")}
-            value={filters.search}
-            onChange={(e) => onChange({ search: e.target.value })}
-            className={searchFieldCls}
-          />
+        <div className="field-stack">
+          <label className={selectLabelCls}>{t("common.searchClient")}</label>
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder={t("common.searchByName")}
+              value={filters.search}
+              onChange={(e) => onChange({ search: e.target.value })}
+              className={searchFieldCls}
+            />
+          </div>
         </div>
       </div>
     </div>

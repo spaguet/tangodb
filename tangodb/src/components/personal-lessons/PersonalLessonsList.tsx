@@ -2,6 +2,7 @@ import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { PERSONAL_LESSON_COLOR } from "../../lib/scheduleColors";
 import { toISODateLocal } from "../../lib/scheduleWeek";
+import type { PersonalLessonDateSort } from "./personalLessonFilterUtils";
 import type { PersonalLesson } from "../../types";
 import type { MemberRole } from "../../types/organization";
 import type { PermissionAction } from "../../lib/permissions";
@@ -13,6 +14,7 @@ type CanFn = (action: PermissionAction, context?: { disciplineId?: string | null
 
 interface PersonalLessonsListProps {
   lessons: PersonalLesson[];
+  dateSort?: PersonalLessonDateSort;
   role: MemberRole | null;
   memberId: string | null;
   isReadOnly: boolean;
@@ -30,6 +32,7 @@ interface PersonalLessonsListProps {
 
 export default function PersonalLessonsList({
   lessons,
+  dateSort = "desc",
   role,
   memberId,
   isReadOnly,
@@ -59,13 +62,19 @@ export default function PersonalLessonsList({
     }
 
     for (const dateLessons of groups.values()) {
-      dateLessons.sort((a, b) => b.timeStart.localeCompare(a.timeStart));
+      dateLessons.sort((a, b) =>
+        dateSort === "asc"
+          ? a.timeStart.localeCompare(b.timeStart)
+          : b.timeStart.localeCompare(a.timeStart)
+      );
     }
 
     return [...groups.entries()]
-      .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+      .sort(([dateA], [dateB]) =>
+        dateSort === "asc" ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA)
+      )
       .map(([date, dateLessons]) => [date, dateLessons] as const);
-  }, [lessons]);
+  }, [lessons, dateSort]);
 
   if (lessons.length === 0) {
     return (

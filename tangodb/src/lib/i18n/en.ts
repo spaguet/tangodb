@@ -1454,6 +1454,8 @@ export const EN: Record<I18nKey, string> = {
   "personal.confirm.deleteTitle": "Delete private lesson?",
   "personal.confirm.deleteBody": "Booking on {{date}} {{time}} will be permanently deleted.",
   "personal.empty.filtered": "No private lessons match these filters.",
+  "personal.sort.fromMonthStart": "From start of month",
+  "personal.sort.fromMonthEnd": "From end of month",
   "personal.sell.packageLink": "Sell lesson package",
   "personal.error.weekCount": "Enter number of weeks.",
   "personal.error.endDate": "Enter end date.",

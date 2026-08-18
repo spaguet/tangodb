@@ -1452,6 +1452,8 @@ export const RU: Record<I18nKey, string> = {
   "personal.confirm.deleteTitle": "Удалить персональный урок?",
   "personal.confirm.deleteBody": "Запись на {{date}} {{time}} будет удалена без возможности восстановления.",
   "personal.empty.filtered": "Персональных уроков с такими критериями нет.",
+  "personal.sort.fromMonthStart": "От начала месяца",
+  "personal.sort.fromMonthEnd": "От конца месяца",
   "personal.sell.packageLink": "Продать пакет уроков",
   "personal.error.weekCount": "Укажите количество недель.",
   "personal.error.endDate": "Укажите дату окончания.",

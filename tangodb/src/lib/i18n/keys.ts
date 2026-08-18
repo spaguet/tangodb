@@ -1391,6 +1391,8 @@ export type I18nKey =
   | "personal.confirm.deleteTitle"
   | "personal.confirm.deleteBody"
   | "personal.empty.filtered"
+  | "personal.sort.fromMonthStart"
+  | "personal.sort.fromMonthEnd"
   | "personal.sell.packageLink"
   | "personal.error.weekCount"
   | "personal.error.endDate"

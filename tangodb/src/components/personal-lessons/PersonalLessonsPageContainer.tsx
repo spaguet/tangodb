@@ -308,6 +308,7 @@ export default function PersonalLessonsPageContainer({
             />
             <PersonalLessonsList
               lessons={filteredLessons}
+              dateSort={filters.dateSort}
               role={role}
               memberId={memberId}
               isReadOnly={isReadOnly}

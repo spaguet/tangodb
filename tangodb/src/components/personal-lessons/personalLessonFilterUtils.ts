@@ -8,6 +8,8 @@ export type PersonalLessonPaidFilter = "all" | "yes" | "no";
 
 export type PersonalLessonAttendanceFilter = "all" | "unmarked" | "present" | "absent" | "excused";
 
+export type PersonalLessonDateSort = "asc" | "desc";
+
 export interface PersonalLessonFilterState {
   periodMode: PersonalLessonPeriodMode;
   weekStart: string;
@@ -21,6 +23,7 @@ export interface PersonalLessonFilterState {
   paidFilter: PersonalLessonPaidFilter;
   attendanceFilter: PersonalLessonAttendanceFilter;
   search: string;
+  dateSort: PersonalLessonDateSort;
 }
 
 export function defaultPersonalLessonFilters(): PersonalLessonFilterState {
@@ -39,6 +42,7 @@ export function defaultPersonalLessonFilters(): PersonalLessonFilterState {
     paidFilter: "all",
     attendanceFilter: "all",
     search: "",
+    dateSort: "desc",
   };
 }
 
