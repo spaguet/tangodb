@@ -53,6 +53,7 @@ import GroupLessonRepeatFields from "./GroupLessonRepeatFields";
 import GoogleCalendarSyncStatusBadge from "../integrations/GoogleCalendarSyncStatusBadge";
 import GoogleCalendarFreebusyWarning from "../integrations/GoogleCalendarFreebusyWarning";
 import { useGoogleCalendarSyncStatus } from "../../hooks/useGoogleCalendarSyncStatus";
+import { googleCalendarSyncTargetFromLesson } from "../../lib/googleCalendarApi";
 import { useGoogleCalendarFreebusy } from "../../hooks/useGoogleCalendarFreebusy";
 
 interface EditLessonPopupProps {
@@ -221,8 +222,8 @@ export default function EditLessonPopup({
   const { data: directoryClients = [] } = useClientDirectory();
   const { data: scheduleGroups = [] } = useScheduleGroups();
   const googleSyncStatus = useGoogleCalendarSyncStatus(
-    lesson?.kind === "personal" ? lesson.lessonId : null,
-    { enabled: lesson?.kind === "personal" }
+    googleCalendarSyncTargetFromLesson(lesson),
+    { enabled: lesson?.kind === "personal" || lesson?.kind === "group" }
   );
 
   const isTeacher = role === "teacher";
@@ -1182,7 +1183,14 @@ export default function EditLessonPopup({
               </p>
             ) : (
               <div className="panel-form-stack">
-                {lesson.kind === "personal" && googleSyncStatus.uiStatus && (
+                {googleSyncStatus.row?.calendar_name && (
+                  <div className="field-stack">
+                    <label className={labelCls}>{t("integrations.googleCalendar.calendarName")}</label>
+                    <div className={readOnlyCls}>{googleSyncStatus.row.calendar_name}</div>
+                  </div>
+                )}
+
+                {googleSyncStatus.uiStatus && (
                   <GoogleCalendarSyncStatusBadge
                     status={googleSyncStatus.uiStatus}
                     lastError={googleSyncStatus.row?.last_error}

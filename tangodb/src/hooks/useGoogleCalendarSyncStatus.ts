@@ -1,27 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  fetchPersonalLessonGoogleSyncStatus,
+  fetchScheduleEntryGoogleSyncStatus,
   resolveLessonGoogleSyncUiStatus,
+  type GoogleCalendarSyncTarget,
   type LessonGoogleSyncUiStatus,
-  type PersonalLessonGoogleSyncStatus,
+  type ScheduleEntryGoogleSyncStatus,
 } from "../lib/googleCalendarApi";
 
-export const googleCalendarSyncStatusQueryKey = (lessonId: string | null | undefined) =>
-  ["google-calendar", "lesson-sync-status", lessonId] as const;
+export const googleCalendarSyncStatusQueryKey = (target: GoogleCalendarSyncTarget | null | undefined) =>
+  [
+    "google-calendar",
+    "entry-sync-status",
+    target?.sourceType,
+    target?.sourceId,
+    target?.sourceType === "group_occurrence" ? target.occurrenceDate : null,
+  ] as const;
 
 export function useGoogleCalendarSyncStatus(
-  lessonId: string | null | undefined,
+  target: GoogleCalendarSyncTarget | null | undefined,
   options?: { enabled?: boolean }
 ) {
-  const enabled = Boolean(lessonId) && (options?.enabled ?? true);
+  const enabled = Boolean(target) && (options?.enabled ?? true);
 
   const query = useQuery({
-    queryKey: googleCalendarSyncStatusQueryKey(lessonId),
-    queryFn: () => fetchPersonalLessonGoogleSyncStatus(lessonId!),
+    queryKey: googleCalendarSyncStatusQueryKey(target),
+    queryFn: () => fetchScheduleEntryGoogleSyncStatus(target!),
     enabled,
     staleTime: 30_000,
     refetchInterval: (q) => {
-      const row = q.state.data as PersonalLessonGoogleSyncStatus | null | undefined;
+      const row = q.state.data as ScheduleEntryGoogleSyncStatus | null | undefined;
       const ui = resolveLessonGoogleSyncUiStatus(row);
       return ui === "pending" ? 15_000 : false;
     },

@@ -1112,7 +1112,6 @@ export const RU: Record<I18nKey, string> = {
 
   // schedule
   "schedule.loading": "Загрузка расписания...",
-  "schedule.lessonGoogleCalendar": "📅 {{calendar}}",
   "schedule.error.groupName": "Укажите название группы.",
   "schedule.error.discipline": "Выберите дисциплину.",
   "schedule.error.location": "Выберите локацию.",

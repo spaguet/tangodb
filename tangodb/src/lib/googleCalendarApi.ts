@@ -326,6 +326,27 @@ export interface PersonalLessonGoogleSyncStatus {
   last_error: string | null;
   has_pending_job: boolean;
   teacher_has_binding: boolean;
+  calendar_name: string | null;
+}
+
+export type ScheduleEntryGoogleSyncStatus = PersonalLessonGoogleSyncStatus;
+
+export type GoogleCalendarSyncTarget =
+  | { sourceType: "personal_lesson"; sourceId: string }
+  | { sourceType: "group_occurrence"; sourceId: string; occurrenceDate: string };
+
+export function googleCalendarSyncTargetFromLesson(
+  lesson: { kind: "personal"; lessonId: string } | { kind: "group"; slotId: string; date: string } | null | undefined
+): GoogleCalendarSyncTarget | null {
+  if (!lesson) return null;
+  if (lesson.kind === "personal") {
+    return { sourceType: "personal_lesson", sourceId: lesson.lessonId };
+  }
+  return {
+    sourceType: "group_occurrence",
+    sourceId: lesson.slotId,
+    occurrenceDate: lesson.date,
+  };
 }
 
 export function resolveLessonGoogleSyncUiStatus(
@@ -351,24 +372,27 @@ export async function fetchPersonalLessonGoogleSyncStatus(
   return row as PersonalLessonGoogleSyncStatus;
 }
 
-export interface ScheduleCalendarSyncLabel {
-  source_type: "personal_lesson" | "group_occurrence" | "event_session";
-  source_id: string;
-  occurrence_date: string;
-  calendar_name: string;
-  sync_status: string | null;
-}
-
-export async function fetchScheduleCalendarSyncLabels(
-  dateFrom: string,
-  dateTo: string
-): Promise<ScheduleCalendarSyncLabel[]> {
-  const { data, error } = await supabase.rpc("get_schedule_calendar_sync_labels", {
-    p_date_from: dateFrom,
-    p_date_to: dateTo,
+export async function fetchGroupOccurrenceGoogleSyncStatus(
+  slotId: string,
+  occurrenceDate: string
+): Promise<ScheduleEntryGoogleSyncStatus | null> {
+  const { data, error } = await supabase.rpc("get_group_occurrence_google_sync_status", {
+    p_slot_id: slotId,
+    p_occurrence_date: occurrenceDate,
   });
   if (error) throw new Error(error.message);
-  return (data ?? []) as ScheduleCalendarSyncLabel[];
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return row as ScheduleEntryGoogleSyncStatus;
+}
+
+export async function fetchScheduleEntryGoogleSyncStatus(
+  target: GoogleCalendarSyncTarget
+): Promise<ScheduleEntryGoogleSyncStatus | null> {
+  if (target.sourceType === "personal_lesson") {
+    return fetchPersonalLessonGoogleSyncStatus(target.sourceId);
+  }
+  return fetchGroupOccurrenceGoogleSyncStatus(target.sourceId, target.occurrenceDate);
 }
 
 export interface TeamCalendarSyncMemberMetrics {

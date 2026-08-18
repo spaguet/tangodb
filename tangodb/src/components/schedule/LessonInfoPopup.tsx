@@ -34,6 +34,7 @@ import MoveGroupLessonDialog from "./MoveGroupLessonDialog";
 import CancelGroupLessonDialog from "./CancelGroupLessonDialog";
 import GoogleCalendarSyncStatusBadge from "../integrations/GoogleCalendarSyncStatusBadge";
 import { useGoogleCalendarSyncStatus } from "../../hooks/useGoogleCalendarSyncStatus";
+import { googleCalendarSyncTargetFromLesson } from "../../lib/googleCalendarApi";
 import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
 
 interface LessonInfoPopupProps {
@@ -107,9 +108,11 @@ export default function LessonInfoPopup({
     lesson?.kind === "personal" ? lesson.lessonId : null,
     lesson?.kind === "personal"
   );
-  const googleSyncStatus = useGoogleCalendarSyncStatus(
-    lesson?.kind === "personal" ? lesson.lessonId : null
+  const googleSyncTarget = useMemo(
+    () => googleCalendarSyncTargetFromLesson(lesson),
+    [lesson]
   );
+  const googleSyncStatus = useGoogleCalendarSyncStatus(googleSyncTarget);
   const activePersonalClosure = personalClosureQuery.data ?? null;
 
   useEffect(() => {
@@ -463,7 +466,17 @@ export default function LessonInfoPopup({
                   </div>
                 )}
 
-                {lesson.kind === "personal" && googleSyncStatus.uiStatus && (
+                {googleSyncStatus.row?.calendar_name && (
+                  <div className="flex items-start gap-2.5">
+                    <CalendarDays className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                    <div>
+                      <dt className={detailLabelCls}>{t("integrations.googleCalendar.calendarName")}</dt>
+                      <dd className={detailValueCls}>{googleSyncStatus.row.calendar_name}</dd>
+                    </div>
+                  </div>
+                )}
+
+                {googleSyncStatus.uiStatus && (
                   <GoogleCalendarSyncStatusBadge
                     status={googleSyncStatus.uiStatus}
                     lastError={googleSyncStatus.row?.last_error}

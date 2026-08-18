@@ -2,6 +2,8 @@
 
 История значимых изменений кода. Обновлять при каждом изменении кода.
 
+2026-08-18 — fix: микропатч **2.8.18** — Google Calendar в popup урока (персональный и групповой): название календаря + статус синхронизации; убрано из сетки расписания. RPC `get_group_occurrence_google_sync_status`, `calendar_name` в personal RPC.
+
 2026-08-18 — feat: микропатч **2.8.17** — расписание: в каждой записи (группа, персональный, мероприятие) показывается название Google-календаря синхронизации; RPC `get_schedule_calendar_sync_labels`, хук `useScheduleCalendarSyncLabels`.
 
 2026-08-18 — fix: микропатч **2.8.16** — Google Calendar: массовый retry dead-letter (`token_revoked` после reconnect); OAuth callback автоматически requeue dead + `refresh_member`; кнопка «Повторить failed» в блоке синхронизации команды.
