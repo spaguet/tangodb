@@ -29,6 +29,7 @@ import {
   recreateMemberBindingCalendar,
   syncEventToGoogle,
   cleanupStaleManagedEvents,
+  purgeAllManagedEventsOnCalendar,
   handleSyncJobError,
 } from "./calendarSyncCommon.ts";
 import {
@@ -361,11 +362,65 @@ export async function upsertPersonalLesson(
   }
 }
 
+async function purgeMemberCalendarBeforeRefresh(
+  admin: SupabaseClient,
+  config: GoogleOAuthConfig,
+  organizationId: string,
+  memberId: string
+): Promise<{ purgedEvents: number; purgedLinks: number }> {
+  const binding =
+    (await loadActiveBinding(admin, organizationId, memberId, "sync_personal")) ??
+    (await loadActiveBinding(admin, organizationId, memberId, "sync_group"));
+
+  if (!binding) {
+    return { purgedEvents: 0, purgedLinks: 0 };
+  }
+
+  const accessToken = await obtainAccessTokenForGoogleAccount(
+    admin,
+    config,
+    binding.google_account_id
+  );
+  const purgedEvents = await purgeAllManagedEventsOnCalendar(
+    accessToken,
+    binding.calendar_id
+  );
+
+  const { data: links } = await admin
+    .from("google_calendar_event_links")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("member_binding_id", binding.id);
+
+  const linkIds = (links ?? []).map((row) => row.id as string);
+  if (linkIds.length > 0) {
+    await admin.from("google_calendar_event_links").delete().in("id", linkIds);
+  }
+
+  return { purgedEvents, purgedLinks: linkIds.length };
+}
+
 async function runReconcileMember(
   admin: SupabaseClient,
+  config: GoogleOAuthConfig,
   job: OutboxJob
 ): Promise<void> {
   const forceRefresh = job.operation === "refresh_member";
+
+  if (forceRefresh) {
+    const purge = await purgeMemberCalendarBeforeRefresh(
+      admin,
+      config,
+      job.organization_id,
+      job.source_id
+    );
+    logEvent("gcal_refresh_member_purge", {
+      organization_id: job.organization_id,
+      member_id: job.source_id,
+      purged_events: purge.purgedEvents,
+      purged_links: purge.purgedLinks,
+    });
+  }
 
   const { data: personalResult, error: personalError } = await admin.rpc(
     "execute_member_personal_lessons_reconcile",
@@ -429,7 +484,7 @@ export async function processCalendarSyncJob(
   }
 
   if (job.operation === "reconcile_member" || job.operation === "refresh_member") {
-    await runReconcileMember(admin, job);
+    await runReconcileMember(admin, config, job);
     return;
   }
 

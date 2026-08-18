@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-18 — Google Calendar: групповые уроки — один день в календаре, остальные не повторяются
+
+- **Ошибка:** в Google Calendar групповой «Танго» 20:00 по понедельникам «размножался» каждую неделю (или оставался один recurring orphan), а среда/пятница не повторялись — в CRM только одна дата на слот в `google_calendar_event_links`.
+- **Причина:** `removeStaleRecipientLinks` при upsert group occurrence удалял links/Google-события **всех других дат** того же `schedule_slot`, оставляя только последний обработанный occurrence.
+- **Как избежать:** в `removeStaleRecipientLinks` сравнивать recipient только среди links с `occurrence_date === current.occurrenceDate`; для полного пересоздания использовать `refresh_member` (purge managed events + links, затем reconcile).
+
 ### 2026-08-17 — Google Calendar: «requires reconnection» после переподключения
 
 - **Ошибка:** в карточке урока оставалась ошибка `Google account requires reconnection`, хотя пользователь прошёл OAuth заново.

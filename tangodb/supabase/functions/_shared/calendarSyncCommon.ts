@@ -523,6 +523,8 @@ export async function removeStaleRecipientLinks(
   }
 ): Promise<void> {
   for (const link of links) {
+    // Group slots have many occurrence dates — only reconcile recipient on this date.
+    if (link.occurrence_date !== current.occurrenceDate) continue;
     if (linkMatchesCurrentRecipient(link, current)) continue;
 
     await deleteGoogleEventForLink(admin, config, link);
@@ -736,6 +738,44 @@ export async function recordBindingError(
       updated_at: nowIso,
     })
     .eq("id", bindingId);
+}
+
+/** Deletes all TangoDB-managed events on a calendar (full resync / refresh). */
+export async function purgeAllManagedEventsOnCalendar(
+  accessToken: string,
+  calendarId: string
+): Promise<number> {
+  let deleted = 0;
+  let pageToken: string | null | undefined = undefined;
+
+  while (true) {
+    const page = await listCalendarEventsPage(accessToken, calendarId, {
+      privateExtendedProperty: "managedBy=tangodb",
+      pageToken,
+      showDeleted: false,
+    });
+
+    for (const item of page.items) {
+      if (item.status === "cancelled") continue;
+      try {
+        await deleteCalendarEvent(accessToken, calendarId, item.id);
+        deleted += 1;
+      } catch (err) {
+        if (
+          err instanceof GoogleCalendarApiError &&
+          (err.status === 404 || err.status === 410)
+        ) {
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!page.nextPageToken) break;
+    pageToken = page.nextPageToken;
+  }
+
+  return deleted;
 }
 
 /** Deletes duplicate managed events on a calendar that share the same CRM source keys. */
