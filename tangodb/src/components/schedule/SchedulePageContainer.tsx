@@ -19,6 +19,8 @@ import {
   canClickEmptyCell,
   canOfferGroupLessonAdd,
 } from "../../lib/scheduleLessonAccess";
+import { useScheduleCalendarSyncLabels } from "../../hooks/useScheduleCalendarSyncLabels";
+import { resolveScheduleLessonCalendarName } from "../../lib/scheduleCalendarSync";
 import { getWeekRange, isPastDate, toISODateLocal } from "../../lib/scheduleWeek";
 import { parseScheduleFocusParams, weekStartFromFocusDate } from "../../lib/scheduleFocus";
 import type { DisplayLesson, EventDisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, RentalDisplayLesson } from "../../types";
@@ -79,6 +81,11 @@ export default function SchedulePageContainer() {
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
 
   const scheduleQuery = useScheduleForWeek(selectedWeekStart, weekEnd);
+  const weekStartISO = toISODateLocal(selectedWeekStart);
+  const weekEndISO = toISODateLocal(weekEnd);
+  const calendarSyncLabels = useScheduleCalendarSyncLabels(weekStartISO, weekEndISO, {
+    enabled: !scheduleQuery.isLoading,
+  });
   const allScheduleQuery = useSchedule({ enabled: teacherVacationOpen });
   const locationsQuery = useAccessibleLocations();
   const disciplinesQuery = useDisciplines();
@@ -365,9 +372,14 @@ export default function SchedulePageContainer() {
         if (teacher) parts.push(teacher);
       }
 
+      const calendarName = resolveScheduleLessonCalendarName(lesson, calendarSyncLabels.map);
+      if (calendarName) {
+        parts.push(t("schedule.lessonGoogleCalendar", { calendar: calendarName }));
+      }
+
       return parts.length > 0 ? parts.join(" · ") : undefined;
     },
-    [disciplineMap, teamMap, t, can]
+    [disciplineMap, teamMap, t, can, calendarSyncLabels.map]
   );
 
   const handleLessonClick = useCallback((lesson: DisplayLesson) => {

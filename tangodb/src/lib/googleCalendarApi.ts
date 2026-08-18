@@ -351,6 +351,26 @@ export async function fetchPersonalLessonGoogleSyncStatus(
   return row as PersonalLessonGoogleSyncStatus;
 }
 
+export interface ScheduleCalendarSyncLabel {
+  source_type: "personal_lesson" | "group_occurrence" | "event_session";
+  source_id: string;
+  occurrence_date: string;
+  calendar_name: string;
+  sync_status: string | null;
+}
+
+export async function fetchScheduleCalendarSyncLabels(
+  dateFrom: string,
+  dateTo: string
+): Promise<ScheduleCalendarSyncLabel[]> {
+  const { data, error } = await supabase.rpc("get_schedule_calendar_sync_labels", {
+    p_date_from: dateFrom,
+    p_date_to: dateTo,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ScheduleCalendarSyncLabel[];
+}
+
 export interface TeamCalendarSyncMemberMetrics {
   organization_member_id: string;
   member_name: string;

@@ -1114,6 +1114,7 @@ export const EN: Record<I18nKey, string> = {
 
   // schedule
   "schedule.loading": "Loading schedule...",
+  "schedule.lessonGoogleCalendar": "📅 {{calendar}}",
   "schedule.error.groupName": "Enter the group name.",
   "schedule.error.discipline": "Choose a discipline.",
   "schedule.error.location": "Choose a location.",

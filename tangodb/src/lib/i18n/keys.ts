@@ -1056,6 +1056,7 @@ export type I18nKey =
   | "groupWaitlist.action.cancelled"
   // schedule
   | "schedule.loading"
+  | "schedule.lessonGoogleCalendar"
   | "schedule.error.groupName"
   | "schedule.error.discipline"
   | "schedule.error.location"
