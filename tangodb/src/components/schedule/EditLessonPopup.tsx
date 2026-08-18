@@ -10,7 +10,7 @@ import {
 } from "../../hooks/useSchedule";
 import { useAddPersonalLessons, useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
-import { usePrices } from "../../hooks/usePrices";
+import { useArchivedPrices, usePrices } from "../../hooks/usePrices";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -38,7 +38,15 @@ import { expandPersonalLessonWeeklySlots } from "../../lib/personalLessonDates";
 import { addDays, getWeekRange, isScheduleDateLockedForWrite, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, canShowPaidStatus, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { useVoidPersonalLessonPayment } from "../../hooks/usePayments";
-import { dowFullEntries, jsDayToIsoDow, timesOverlap } from "../../lib/utils";
+import {
+  dowFullEntries,
+  filterPrivateLessonTariffsForSale,
+  formatCurrency,
+  getPrivateTariffOptionLabel,
+  jsDayToIsoDow,
+  tariffParticipantType,
+  timesOverlap,
+} from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import type { I18nKey } from "../../lib/i18n/keys";
 import type { Client, Discipline, DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot } from "../../types";
@@ -250,6 +258,7 @@ export default function EditLessonPopup({
   const [personalRepeatConfig, setPersonalRepeatConfig] = useState<GroupRepeatConfig>(() =>
     defaultGroupRepeatConfig()
   );
+  const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<string | "">("");
 
   const editLessonKey = useMemo(() => {
     if (!lesson) return null;
@@ -307,6 +316,7 @@ export default function EditLessonPopup({
         "";
       setPayerClientId(initialPayer);
       setPersonalRepeatConfig(defaultGroupRepeatConfig());
+      setSelectedLessonTariffId(lesson.priceId ?? "");
     }
   }, [editLessonKey, lesson, scheduleSlots, teacherOptions, memberId, isTeacher, todayISO, directoryClients]);
 
@@ -510,17 +520,69 @@ export default function EditLessonPopup({
 
   const { data: prices = [] } = usePrices();
 
-  const personalTariff = useMemo(() => {
-    if (!personalLessonContext?.priceId) return null;
-    return prices.find((price) => price.id === personalLessonContext.priceId) ?? null;
-  }, [personalLessonContext?.priceId, prices]);
-
   const personalLessonMinutes = useMemo(() => {
     if (lesson?.kind !== "personal") return 0;
     return lessonDurationMinutes(timeStart, timeEnd);
   }, [lesson, timeStart, timeEnd]);
 
   const personalHasPayments = (personalLessonContext?.paidAmount ?? 0) > 0;
+
+  const personalTariffEditEnabled =
+    lesson?.kind === "personal" &&
+    !personalLessonContext?.subscriptionId &&
+    !personalHasPayments;
+
+  const effectiveLocationIdForTariff = useMemo(() => {
+    if (lesson?.kind !== "personal") return "";
+    return personalListEdit ? locationId : (lesson.locationId ?? "");
+  }, [lesson, personalListEdit, locationId]);
+
+  const needsArchivedTariffLookup = Boolean(
+    lesson?.kind === "personal" &&
+      lesson.priceId &&
+      !prices.some((price) => price.id === lesson.priceId)
+  );
+  const { data: archivedPrices = [] } = useArchivedPrices(needsArchivedTariffLookup);
+
+  const activeLessonTariffs = useMemo(
+    () =>
+      filterPrivateLessonTariffsForSale(prices, {
+        locationId: effectiveLocationIdForTariff || null,
+        disciplineId: disciplineId || null,
+        teacherMemberId: teacherMemberId || null,
+      }),
+    [prices, effectiveLocationIdForTariff, disciplineId, teacherMemberId]
+  );
+
+  const bookedTariff = useMemo(() => {
+    if (lesson?.kind !== "personal" || !lesson.priceId) return undefined;
+    return (
+      prices.find((price) => price.id === lesson.priceId) ??
+      archivedPrices.find((price) => price.id === lesson.priceId)
+    );
+  }, [lesson, prices, archivedPrices]);
+
+  const lessonTariffs = useMemo(() => {
+    if (lesson?.kind !== "personal") return [];
+    const base = activeLessonTariffs;
+    if (!lesson.priceId || !bookedTariff) return base;
+    if (base.some((tariff) => tariff.id === lesson.priceId)) return base;
+    return [bookedTariff, ...base];
+  }, [lesson, activeLessonTariffs, bookedTariff]);
+
+  const selectedTariff = useMemo(
+    () => lessonTariffs.find((tariff) => tariff.id === selectedLessonTariffId) ?? null,
+    [lessonTariffs, selectedLessonTariffId]
+  );
+
+  const personalBilledAmount = useMemo(() => {
+    if (!selectedTariff) return null;
+    return billedFromTariff(
+      selectedTariff.price,
+      personalLessonMinutes,
+      selectedTariff.durationMinutes
+    );
+  }, [selectedTariff, personalLessonMinutes]);
 
   const personalSlotChanged =
     lesson?.kind === "personal" &&
@@ -529,27 +591,65 @@ export default function EditLessonPopup({
   const personalDurationWarnMessage = useMemo(() => {
     if (lesson?.kind !== "personal") return null;
     if (personalLessonContext?.subscriptionId) return null;
-    if (!personalLessonContext?.priceId || personalHasPayments) return null;
-    if (!personalTariff) return null;
-    const code = durationWarning(
-      personalLessonMinutes,
-      personalTariff.durationMinutes ?? null
-    );
+    if (!personalTariffEditEnabled) return null;
+    if (!selectedTariff) return null;
+    const code = durationWarning({
+      lessonMinutes: personalLessonMinutes,
+      tariffDurationMinutes: selectedTariff.durationMinutes ?? null,
+    });
     if (!code) return null;
     return translateDurationWarning(
       code,
       t,
-      personalTariff.durationMinutes ?? null,
+      selectedTariff.durationMinutes ?? null,
       personalLessonMinutes
     );
   }, [
     lesson,
     personalLessonContext,
-    personalHasPayments,
-    personalTariff,
+    personalTariffEditEnabled,
+    selectedTariff,
     personalLessonMinutes,
     t,
   ]);
+
+  const applyLessonTariff = (tariffId: string) => {
+    const tariff = lessonTariffs.find((item) => item.id === tariffId);
+    if (!tariff) return;
+    setSelectedLessonTariffId(tariffId);
+    if (!canReadClients || !personalTariffEditEnabled) return;
+    const participant = tariffParticipantType(tariff);
+    const neededFields =
+      participant === "solo" ? 1 : participant === "pair" ? 2 : participant === "trio" ? 3 : 4;
+    setBookingClients((prev) => {
+      const next = [...prev];
+      while (next.length < neededFields) next.push({ query: "", id: "" });
+      while (next.length > neededFields) next.pop();
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (lesson?.kind !== "personal" || personalLessonContext?.subscriptionId) return;
+    if (selectedLessonTariffId) return;
+    if (lesson.priceId) {
+      setSelectedLessonTariffId(lesson.priceId);
+      return;
+    }
+    if (lessonTariffs.length > 0) {
+      setSelectedLessonTariffId(lessonTariffs[0].id!);
+    }
+  }, [lesson, personalLessonContext?.subscriptionId, lessonTariffs, selectedLessonTariffId]);
+
+  useEffect(() => {
+    if (lesson?.kind !== "personal") return;
+    if (
+      selectedLessonTariffId &&
+      !lessonTariffs.some((tariff) => tariff.id === selectedLessonTariffId)
+    ) {
+      setSelectedLessonTariffId("");
+    }
+  }, [lesson, lessonTariffs, selectedLessonTariffId]);
 
   useEffect(() => {
     if (lesson?.kind !== "personal") return;
@@ -876,6 +976,15 @@ export default function EditLessonPopup({
       return;
     }
 
+    if (
+      personalTariffEditEnabled &&
+      lessonTariffs.length > 0 &&
+      !selectedLessonTariffId
+    ) {
+      toast(t("subscriptions.error.selectTariff"), "error");
+      return;
+    }
+
     const rangeError = validateTimeRange(timeStart, timeEnd);
     if (rangeError) {
       toast(
@@ -1009,6 +1118,10 @@ export default function EditLessonPopup({
           }
         : {};
 
+    const resolvedPriceId = personalTariffEditEnabled
+      ? selectedLessonTariffId || null
+      : lesson.priceId ?? null;
+
     const res = await updatePersonalLesson.mutateAsync({
       id: lesson.lessonId,
       lessonDate: lesson.date,
@@ -1019,7 +1132,7 @@ export default function EditLessonPopup({
       teacherMemberId: resolvedTeacherMemberId,
       locationId: personalListEdit ? locationId : lesson.locationId,
       ...(clientPayload ?? {}),
-      ...(lesson.priceId != null ? { priceId: lesson.priceId } : {}),
+      ...(resolvedPriceId != null ? { priceId: resolvedPriceId } : {}),
       ...payerPayload,
     });
 
@@ -1047,11 +1160,11 @@ export default function EditLessonPopup({
             : lesson.payerClientId ?? lesson.clientId1 ?? repeatClientIds[0] ?? "";
 
       let repeatLessonPrice = lesson.price ?? 0;
-      if (personalLessonContext?.priceId && personalTariff) {
+      if (resolvedPriceId && selectedTariff) {
         repeatLessonPrice = billedFromTariff(
-          personalTariff.price,
+          selectedTariff.price,
           personalLessonMinutes,
-          personalTariff.durationMinutes
+          selectedTariff.durationMinutes
         );
       }
 
@@ -1070,7 +1183,7 @@ export default function EditLessonPopup({
         disciplineId,
         locationId: personalListEdit ? locationId : lesson.locationId,
         teacherMemberId: resolvedTeacherMemberId,
-        priceId: lesson.priceId ?? null,
+        priceId: resolvedPriceId,
         payerClientId: repeatPayerId || null,
       });
 
@@ -1510,6 +1623,39 @@ export default function EditLessonPopup({
                           ))
                         )}
                       </AppSelect>
+                    )}
+
+                    {!lesson.subscriptionId && lessonTariffs.length > 0 && (
+                      <div className="flex flex-nowrap items-end gap-3 w-full">
+                        <div className="min-w-0 flex-1">
+                          <AppSelect
+                            label={t("common.tariffPerLesson")}
+                            value={selectedLessonTariffId}
+                            onChange={(e) => {
+                              const id = e.target.value;
+                              if (id) applyLessonTariff(id);
+                            }}
+                            disabled={!personalTariffEditEnabled}
+                          >
+                            {lessonTariffs.map((tariff) => (
+                              <option key={tariff.id} value={tariff.id!}>
+                                {getPrivateTariffOptionLabel(tariff, t)}
+                              </option>
+                            ))}
+                          </AppSelect>
+                        </div>
+                        {personalTariffEditEnabled && personalBilledAmount != null && (
+                          <div className="field-stack w-[7.5rem] shrink-0">
+                            <label className={labelCls}>{t("common.lessonCost")}</label>
+                            <div
+                              className={`${fieldCls} font-semibold bg-slate-50 text-slate-800 cursor-default`}
+                              aria-readonly
+                            >
+                              {formatCurrency(personalBilledAmount)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
 
                     {!personalListEdit && (
