@@ -156,8 +156,16 @@ function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string,
   return hasFilter ? suffix : null;
 }
 
-function personalLessonsScopedQueryKey(organizationId: string | null | undefined): readonly unknown[] {
-  return organizationId ? [...personalLessonsQueryKey, organizationId] : personalLessonsQueryKey;
+/** Matches `withOrgId([...personalLessonsQueryKey, …filters])` — org id is the last segment. */
+function personalLessonsOrgQueryFilter(organizationId: string | null | undefined) {
+  return {
+    queryKey: personalLessonsQueryKey,
+    predicate: (query: { queryKey: readonly unknown[] }) =>
+      organizationId != null &&
+      query.queryKey.length > 0 &&
+      query.queryKey[0] === personalLessonsQueryKey[0] &&
+      query.queryKey[query.queryKey.length - 1] === organizationId,
+  };
 }
 
 function invalidatePersonalLessonRelatedQueries(
@@ -165,9 +173,8 @@ function invalidatePersonalLessonRelatedQueries(
   organizationId: string | null | undefined,
   options?: { refetchType?: "active"; includePayments?: boolean }
 ) {
-  const scopedKey = personalLessonsScopedQueryKey(organizationId);
   const opts = options?.refetchType ? { refetchType: options.refetchType } : undefined;
-  void queryClient.invalidateQueries({ queryKey: scopedKey, ...opts });
+  void queryClient.invalidateQueries({ ...personalLessonsOrgQueryFilter(organizationId), ...opts });
   void queryClient.invalidateQueries({ queryKey: ["schedule"], ...opts });
   void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey, ...opts });
@@ -635,8 +642,8 @@ type MarkPersonalLessonAttendanceRollbackContext = {
 
 export function useMarkPersonalLessonAttendance() {
   const queryClient = useQueryClient();
-  const { organizationId, withOrgId } = useOrgQueryScope();
-  const scopedPersonalLessonsKey = withOrgId(personalLessonsQueryKey);
+  const { organizationId } = useOrgQueryScope();
+  const personalLessonsFilter = personalLessonsOrgQueryFilter(organizationId);
 
   const rollback = (context: MarkPersonalLessonAttendanceRollbackContext | undefined) => {
     if (context?.previousEntries) {
@@ -669,13 +676,11 @@ export function useMarkPersonalLessonAttendance() {
       return { success: true as const };
     },
     onMutate: async ({ lessonId, status }) => {
-      await queryClient.cancelQueries({ queryKey: scopedPersonalLessonsKey });
+      await queryClient.cancelQueries(personalLessonsFilter);
 
-      const previousEntries = queryClient.getQueriesData<PersonalLesson[]>({
-        queryKey: scopedPersonalLessonsKey,
-      });
+      const previousEntries = queryClient.getQueriesData<PersonalLesson[]>(personalLessonsFilter);
       queryClient.setQueriesData<PersonalLesson[]>(
-        { queryKey: scopedPersonalLessonsKey },
+        personalLessonsFilter,
         (old) =>
           (old ?? []).map((l) => (l.id === lessonId ? { ...l, attendanceStatus: status } : l))
       );

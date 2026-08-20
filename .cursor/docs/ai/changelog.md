@@ -1,3 +1,5 @@
+2026-08-20 — fix(attendance): микропатч **2.8.59** — подсветка кнопки «Пришёл»/«Не пришёл»/«Уважит.» в журнале персональных уроков: оптимистичное обновление и invalidate снова попадают в кэш `usePersonalLessons` (org id — последний сегмент query key, не второй).
+
 2026-08-20 — fix(i18n): микропатч **2.8.58** — P38 / L7: module `t(locale, key)` в `personalLessonClients` и `scheduleLessonAccess` — `t(null, key)` вместо одноаргументного `t(key)`. TS2554 п.29, 31–33 ушли; `tsc --noEmit` — 0 ошибок (P33 follow-up закрыт).
 
 2026-08-20 — fix(types): микропатч **2.8.57** — P37 / L7: `usePrices` insert/update `prices` через `Tables.prices.Insert` / `Update`, не `Record<string, unknown>`; `discipline_id` из `disciplineIds` (один id или null). TS2345 п.9–10 ушли (6→4 ошибок tsc, остались TS2554 P38).
