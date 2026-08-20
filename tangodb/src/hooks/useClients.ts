@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { reportClientError } from "../lib/reportClientError";
 import { supabase } from "../lib/supabase";
 import { normalizeTelegramForStorage } from "../lib/telegram";
@@ -80,11 +81,12 @@ export function useClients(options?: { includeArchived?: boolean; enabled?: bool
     queryKey: withOrgId(clientsListQueryKey(includeArchived)),
     enabled: queryEnabled,
     queryFn: async () => {
-      let query = supabase.from("clients").select("*").order("last_name");
-      if (!includeArchived) query = query.is("archived_at", null);
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []).map(mapClient);
+      const data = await fetchAllPostgrestRows((from, to) => {
+        let query = supabase.from("clients").select("*").order("last_name");
+        if (!includeArchived) query = query.is("archived_at", null);
+        return query.range(from, to);
+      });
+      return data.map(mapClient);
     },
     staleTime: 5 * 60 * 1000,
   });

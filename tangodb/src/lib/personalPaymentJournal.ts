@@ -17,7 +17,7 @@ export function resolvePersonalPaymentLessonMinutes(
   if (payment.lessonDurationMinutes != null && payment.lessonDurationMinutes > 0) {
     return payment.lessonDurationMinutes;
   }
-  if (lesson) {
+  if (lesson?.timeStart && lesson.timeEnd) {
     const minutes = lessonDurationMinutes(lesson.timeStart, lesson.timeEnd);
     return minutes > 0 ? minutes : null;
   }

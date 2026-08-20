@@ -9,7 +9,7 @@ import SubscriptionWaitlistCard from "../../components/license/SubscriptionWaitl
 import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
 import { useToast } from "../../App";
 import { useOrganization } from "../../organization/OrganizationProvider";
-import { supabase } from "../../lib/supabase";
+import { useActivateAccessKey } from "../../hooks/useActivateAccessKey";
 import { isDemoOrgStatus } from "../../lib/demoLicense";
 import DemoPurchaseCta from "../../components/demo/DemoPurchaseCta";
 import { useI18n } from "../../hooks/useI18n";
@@ -48,9 +48,10 @@ export default function LicenseSettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { organization, orgLoading, license, subscription, refreshOrganization } = useOrganization();
   const { config: paymentConfig } = usePlatformPaymentConfig(true);
+  const activateKey = useActivateAccessKey();
   const [key, setKey] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loading = activateKey.isPending;
 
   useEffect(() => {
     const checkout = searchParams.get("checkout");
@@ -82,32 +83,10 @@ export default function LicenseSettingsPage() {
 
   const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("activate-access-key", {
-        body: { key: key.trim() },
-      });
-
-      if (fnError) {
-        const ctx = (fnError as { context?: Response }).context;
-        if (ctx) {
-          try {
-            const body = await ctx.json();
-            if (body?.error) throw new Error(body.error);
-          } catch (parseErr) {
-            if (parseErr instanceof Error && parseErr.message !== fnError.message) throw parseErr;
-          }
-        }
-        throw fnError;
-      }
-
-      if (!data?.ok) {
-        throw new Error(data?.error ?? t("license.activate.errorGeneric"));
-      }
-
-      await supabase.auth.refreshSession();
+      const data = await activateKey.mutateAsync(key.trim());
       await refreshOrganization();
       setKey("");
       toast(
@@ -116,9 +95,13 @@ export default function LicenseSettingsPage() {
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : t("license.activate.errorGeneric");
-      setError(message === "Invalid access key" ? t("license.activate.invalidKey") : message);
-    } finally {
-      setLoading(false);
+      if (message === "Invalid access key") {
+        setError(t("license.activate.invalidKey"));
+      } else if (message === "activation_failed") {
+        setError(t("license.activate.errorGeneric"));
+      } else {
+        setError(message);
+      }
     }
   };
 

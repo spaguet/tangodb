@@ -10,11 +10,13 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthProvider";
 import {
+  getClaimsFingerprint,
   getMemberIdFromSession,
   getMemberRoleFromSession,
   getOrganizationIdFromSession,
 } from "../lib/authClaims";
 import { supabase } from "../lib/supabase";
+import { reportClientError } from "../lib/reportClientError";
 import { normalizeOrgModules } from "../lib/orgModules";
 import { normalizeTeacherScope } from "../lib/teacherScope";
 import { resetUIStore } from "../store/ui";
@@ -33,6 +35,8 @@ import { EMPTY_TEACHER_SCOPE, PLACEHOLDER_ORG_NAMES } from "../types/organizatio
 
 export const membershipsQueryKey = ["organization-memberships"] as const;
 
+const MAX_CLAIMS_REFRESH_ATTEMPTS = 3;
+
 interface OrganizationContextValue {
   memberships: OrganizationMember[];
   membershipsLoading: boolean;
@@ -48,6 +52,7 @@ interface OrganizationContextValue {
   orgLoading: boolean;
   needsOnboarding: boolean;
   isReadOnly: boolean;
+  claimsMismatch: boolean;
   setActiveOrganization: (organizationId: string) => Promise<void>;
   refreshOrganization: () => Promise<void>;
 }
@@ -184,8 +189,24 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   );
 
   const organizationId = sessionOrganizationId;
-  const memberId = getMemberIdFromSession(session) ?? membership?.id ?? null;
-  const role = getMemberRoleFromSession(session) ?? membership?.role ?? null;
+  const memberId = membership?.id ?? getMemberIdFromSession(session) ?? null;
+  const role = membership?.role ?? getMemberRoleFromSession(session) ?? null;
+
+  const jwtRole = getMemberRoleFromSession(session);
+  const jwtMemberId = getMemberIdFromSession(session);
+  const dbRole = membership?.role ?? null;
+  const dbMemberId = membership?.id ?? null;
+  const claimsFingerprint = getClaimsFingerprint(session);
+
+  const roleMismatch = jwtRole != null && dbRole != null && jwtRole !== dbRole;
+  const memberIdMismatch =
+    jwtMemberId != null && dbMemberId != null && jwtMemberId !== dbMemberId;
+  const claimsMismatch = roleMismatch || memberIdMismatch;
+
+  const refreshInFlightRef = useRef(false);
+  const refreshAttemptsRef = useRef(0);
+  const lastRefreshFingerprintRef = useRef<string | null>(null);
+  const mismatchLimitReportedRef = useRef(false);
 
   const {
     data: orgBundle,
@@ -296,18 +317,93 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     }
   }, [session?.user.id]);
 
-  const jwtRole = getMemberRoleFromSession(session);
-  const dbRole = membership?.role ?? null;
-
   useEffect(() => {
-    if (!session || !organizationId || membershipsLoading || !dbRole || !jwtRole) return;
-    if (jwtRole === dbRole) return;
+    if (!session?.user.id || !organizationId || membershipsLoading) return;
 
-    void supabase.auth.refreshSession().then(({ error }) => {
-      if (error) return;
-      void queryClient.invalidateQueries();
-    });
-  }, [session, organizationId, membershipsLoading, jwtRole, dbRole, queryClient]);
+    if (!roleMismatch && !memberIdMismatch) {
+      refreshAttemptsRef.current = 0;
+      lastRefreshFingerprintRef.current = null;
+      mismatchLimitReportedRef.current = false;
+      return;
+    }
+
+    if (refreshAttemptsRef.current >= MAX_CLAIMS_REFRESH_ATTEMPTS) {
+      if (!mismatchLimitReportedRef.current) {
+        mismatchLimitReportedRef.current = true;
+        reportClientError(new Error("JWT claims mismatch persists after refresh attempts"), {
+          area: "auth",
+          action: "claimsMismatchLimit",
+          meta: {
+            jwtRole,
+            dbRole,
+            jwtMemberId,
+            dbMemberId,
+            fingerprint: claimsFingerprint,
+            attempts: refreshAttemptsRef.current,
+          },
+        });
+      }
+      return;
+    }
+
+    if (
+      lastRefreshFingerprintRef.current === claimsFingerprint &&
+      refreshAttemptsRef.current > 0
+    ) {
+      return;
+    }
+
+    if (refreshInFlightRef.current) return;
+
+    refreshInFlightRef.current = true;
+    const attempt = refreshAttemptsRef.current;
+    const backoffMs = attempt === 0 ? 0 : Math.min(1000 * 2 ** (attempt - 1), 8000);
+
+    const timer = window.setTimeout(() => {
+      void supabase.auth.refreshSession().then(({ data, error }) => {
+        refreshInFlightRef.current = false;
+
+        if (error) {
+          reportClientError(error, {
+            area: "auth",
+            action: "refreshSessionClaimsMismatch",
+            meta: { attempt, fingerprint: claimsFingerprint },
+          });
+          return;
+        }
+
+        refreshAttemptsRef.current += 1;
+        lastRefreshFingerprintRef.current = claimsFingerprint;
+
+        const newFingerprint = getClaimsFingerprint(data.session);
+        if (newFingerprint && newFingerprint !== claimsFingerprint) {
+          refreshAttemptsRef.current = 0;
+          lastRefreshFingerprintRef.current = null;
+        }
+
+        void queryClient.invalidateQueries({ queryKey: membershipsQueryKey });
+        if (organizationId) {
+          void queryClient.invalidateQueries({ queryKey: ["organization-context", organizationId] });
+        }
+      });
+    }, backoffMs);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    session?.user.id,
+    organizationId,
+    membershipsLoading,
+    claimsFingerprint,
+    dbRole,
+    dbMemberId,
+    roleMismatch,
+    memberIdMismatch,
+    jwtRole,
+    jwtMemberId,
+    queryClient,
+  ]);
 
   const organization = orgBundle?.organization ?? null;
   const settings = orgBundle?.settings ?? null;
@@ -346,6 +442,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       orgLoading,
       needsOnboarding,
       isReadOnly,
+      claimsMismatch,
       setActiveOrganization,
       refreshOrganization,
     }),
@@ -364,6 +461,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       orgLoading,
       needsOnboarding,
       isReadOnly,
+      claimsMismatch,
       setActiveOrganization,
       refreshOrganization,
     ]

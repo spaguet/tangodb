@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Bell, Clock } from "lucide-react";
-import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../auth/AuthProvider";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useI18n } from "../../hooks/useI18n";
+import { useSubmitSubscriptionWaitlist } from "../../hooks/useSubmitSubscriptionWaitlist";
 
 interface SubscriptionWaitlistCardProps {
   disabled?: boolean;
@@ -13,50 +13,34 @@ export default function SubscriptionWaitlistCard({ disabled }: SubscriptionWaitl
   const { t } = useI18n();
   const { session } = useAuth();
   const { organizationId } = useOrganization();
+  const submitWaitlist = useSubmitSubscriptionWaitlist();
   const defaultEmail = session?.user.email ?? "";
   const [email, setEmail] = useState(defaultEmail);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const loading = submitWaitlist.isPending;
 
   const submit = async () => {
-    setLoading(true);
     setError(null);
     setMessage(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("submit-subscription-waitlist", {
-        body: {
-          email: email.trim(),
-          organization_id: organizationId ?? undefined,
-        },
+      const data = await submitWaitlist.mutateAsync({
+        email: email.trim(),
+        organizationId,
       });
-
-      if (fnError) {
-        const ctx = (fnError as { context?: Response }).context;
-        if (ctx) {
-          try {
-            const body = await ctx.json();
-            if (body?.error) throw new Error(body.error);
-          } catch (parseErr) {
-            if (parseErr instanceof Error && parseErr.message !== fnError.message) throw parseErr;
-          }
-        }
-        throw fnError;
-      }
-
-      if (!data?.ok) {
-        throw new Error(typeof data?.error === "string" ? data.error : t("license.waitlist.saveError"));
-      }
-
       setMessage(
         data.already_registered ? t("license.waitlist.alreadyRegistered") : t("license.waitlist.saved")
       );
     } catch (err) {
       const text = err instanceof Error ? err.message : t("license.waitlist.saveError");
-      setError(text === "Too many requests" ? t("license.waitlist.tooManyRequests") : text);
-    } finally {
-      setLoading(false);
+      if (text === "Too many requests") {
+        setError(t("license.waitlist.tooManyRequests"));
+      } else if (text === "waitlist_save_failed") {
+        setError(t("license.waitlist.saveError"));
+      } else {
+        setError(text);
+      }
     }
   };
 

@@ -416,6 +416,8 @@ export default function SchedulePageContainer() {
       setFocusRentalId(found.kind === "rental" ? found.rentalId : null);
     } else {
       toast(t("schedule.error.focusNotFound"), "error");
+      setFocusLessonId(null);
+      setFocusRentalId(null);
     }
 
     setSearchParams(

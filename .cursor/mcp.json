@@ -2,12 +2,12 @@
   "mcpServers": {
     "codegraph": {
       "type": "stdio",
-      "command": "codegraph",
+      "command": "C:\\Users\\OMOW\\AppData\\Roaming\\npm\\codegraph.cmd",
       "args": [
         "serve",
         "--mcp",
         "--path",
-        "."
+        "D:\\cursor_dev\\TangoDB"
       ]
     }
   }

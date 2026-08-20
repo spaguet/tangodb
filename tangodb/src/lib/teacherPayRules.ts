@@ -1,3 +1,5 @@
+import { asJson } from "./json";
+import type { Json } from "../types/database";
 import type { ExpenseCategory } from "../types/expense";
 
 export type TeacherPayLessonKind = "personal" | "group" | "single_visit" | "all";
@@ -56,8 +58,8 @@ export function validateTeacherPayRuleDraft(draft: TeacherPayRuleDraft): string[
   return errors;
 }
 
-export function teacherPayRuleToPayload(draft: TeacherPayRuleDraft): Record<string, unknown> {
-  return {
+export function teacherPayRuleToPayload(draft: TeacherPayRuleDraft): Json {
+  return asJson({
     ...(draft.id ? { id: draft.id } : {}),
     member_id: draft.memberId,
     lesson_kind: draft.lessonKind,
@@ -68,7 +70,7 @@ export function teacherPayRuleToPayload(draft: TeacherPayRuleDraft): Record<stri
     expense_category: draft.expenseCategory,
     valid_from: draft.validFrom,
     valid_to: draft.validTo,
-  };
+  });
 }
 
 export function isTeacherPayRuleActive(rule: TeacherPayRule, onDate = new Date().toISOString().slice(0, 10)): boolean {

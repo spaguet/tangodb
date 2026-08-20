@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { asJson } from "../lib/json";
 import { supabase } from "../lib/supabase";
 import type { Renter } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
@@ -65,7 +66,7 @@ export function useCreateRenter() {
         payload.duplicate_create_reason = input.duplicateCreateReason;
       }
 
-      const { data, error } = await supabase.rpc("upsert_renter", { p_payload: payload });
+      const { data, error } = await supabase.rpc("upsert_renter", { p_payload: asJson(payload) });
 
       if (error) return { success: false as const, error: error.message };
 

@@ -1,4 +1,9 @@
 /**
+ * LEGACY — не подключать к роутеру.
+ * Живой маршрут `/schedule`: `App.tsx` → `SchedulePage` → `SchedulePageContainer`.
+ * Файл оставлен рядом как справочник старой слотовой сетки.
+ * Повторное подключение вернёт старые баги слотов (аудит L5 / P31).
+ *
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */

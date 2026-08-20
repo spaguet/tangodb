@@ -126,9 +126,12 @@ export default function PayPersonalLessonModal({
   const [payAllParticipants, setPayAllParticipants] = useState(false);
 
   const lessonId = lesson?.lessonId;
-  const { data: chargeBalances = [] } = usePersonalLessonChargeBalances(lessonId ? [lessonId] : [], {
-    enabled: Boolean(lessonId),
-  });
+  const { data: chargeBalances = [], refetch: refetchCharges } = usePersonalLessonChargeBalances(
+    lessonId ? [lessonId] : [],
+    {
+      enabled: Boolean(lessonId),
+    }
+  );
 
   const participants = useMemo(() => (lesson ? participantIds(lesson) : []), [lesson]);
 
@@ -413,97 +416,136 @@ export default function PayPersonalLessonModal({
     }
 
     paymentSubmit.begin();
+    let paymentSucceeded = false;
+    let paidCount = 0;
+    const totalToPay = chargesToPay.length;
+    const batchIdempotencyKey = paymentIdempotencyKey || crypto.randomUUID();
 
-    for (let i = 0; i < chargesToPay.length; i++) {
-      const charge = chargesToPay[i];
-      const payerId = charge.clientId;
-      const client = clientMap[payerId];
-      const display = client
-        ? formatClientName(client.lastName, client.firstName)
-        : lesson.clientDisplay;
-      const amountNum = payAllParticipants ? charge.remainingAmount : parseFloat(paymentAmount);
+    const notifyPayAllPartial = async () => {
+      toast(t("personal.pay.partialAll", { paid: paidCount, total: totalToPay }), "error");
+      await refetchCharges();
+    };
 
-      if (Number.isNaN(amountNum) || amountNum <= 0) {
-        paymentSubmit.reset();
-        toast(t("personal.pay.amountRequired"), "error");
-        return;
-      }
+    try {
+      for (let i = 0; i < chargesToPay.length; i++) {
+        const charge = chargesToPay[i];
+        const payerId = charge.clientId;
+        const client = clientMap[payerId];
+        const display = client
+          ? formatClientName(client.lastName, client.firstName)
+          : lesson.clientDisplay;
+        const amountNum = payAllParticipants ? charge.remainingAmount : parseFloat(paymentAmount);
 
-      const paymentRes = await recordPersonalLessonPayment.mutateAsync({
-        lessonId: lesson.lessonId,
-        clientId: payerId,
-        clientDisplay: display,
-        amount: amountNum,
-        method: paymentMethod,
-        idempotencyKey:
-          i === 0 ? paymentIdempotencyKey || crypto.randomUUID() : crypto.randomUUID(),
-        venueRuleAcknowledged,
-        priceId: isTariffMode ? (selectedTariff?.id ?? null) : null,
-        tariffUnits:
-          isTariffMode && selectedTariff?.durationMinutes != null && lessonMinutes > 0
-            ? tariffUnitsSnapshot(lessonMinutes, selectedTariff.durationMinutes)
-            : null,
-        tariffDurationMinutes: isTariffMode ? (selectedTariff?.durationMinutes ?? null) : null,
-        tariffPrice: isTariffMode ? (selectedTariff?.price ?? null) : null,
-        tariffLabel: isTariffMode && selectedTariff ? getPriceLabel(selectedTariff, t, locale) : null,
-        lessonDurationMinutes: isTariffMode && lessonMinutes > 0 ? lessonMinutes : null,
-        chargeId: charge.id || null,
-      });
-
-      if (!paymentRes.success) {
-        paymentSubmit.reset();
-        if (
-          "errorCode" in paymentRes &&
-          paymentRes.errorCode === "venue_rule_ack_required" &&
-          "venueRuleStatus" in paymentRes
-        ) {
-          setVenueConfirmStatus(paymentRes.venueRuleStatus);
+        if (Number.isNaN(amountNum) || amountNum <= 0) {
+          if (payAllParticipants && paidCount > 0) {
+            await notifyPayAllPartial();
+          } else {
+            toast(t("personal.pay.amountRequired"), "error");
+          }
           return;
         }
-        toast(paymentRes.error ?? t("common.paymentChargeFailed"), "error");
+
+        const paymentRes = await recordPersonalLessonPayment.mutateAsync({
+          lessonId: lesson.lessonId,
+          clientId: payerId,
+          clientDisplay: display,
+          amount: amountNum,
+          method: paymentMethod,
+          idempotencyKey: payAllParticipants
+            ? `${batchIdempotencyKey}:${charge.id || String(i)}`
+            : i === 0
+              ? batchIdempotencyKey
+              : crypto.randomUUID(),
+          venueRuleAcknowledged,
+          priceId: isTariffMode ? (selectedTariff?.id ?? null) : null,
+          tariffUnits:
+            isTariffMode && selectedTariff?.durationMinutes != null && lessonMinutes > 0
+              ? tariffUnitsSnapshot(lessonMinutes, selectedTariff.durationMinutes)
+              : null,
+          tariffDurationMinutes: isTariffMode ? (selectedTariff?.durationMinutes ?? null) : null,
+          tariffPrice: isTariffMode ? (selectedTariff?.price ?? null) : null,
+          tariffLabel: isTariffMode && selectedTariff ? getPriceLabel(selectedTariff, t, locale) : null,
+          lessonDurationMinutes: isTariffMode && lessonMinutes > 0 ? lessonMinutes : null,
+          chargeId: charge.id || null,
+        });
+
+        if (!paymentRes.success) {
+          if (
+            "errorCode" in paymentRes &&
+            paymentRes.errorCode === "venue_rule_ack_required" &&
+            "venueRuleStatus" in paymentRes
+          ) {
+            if (payAllParticipants && paidCount > 0) {
+              await notifyPayAllPartial();
+            }
+            setVenueConfirmStatus(paymentRes.venueRuleStatus);
+            return;
+          }
+          if (payAllParticipants && paidCount > 0) {
+            await notifyPayAllPartial();
+          } else {
+            toast(paymentRes.error ?? t("common.paymentChargeFailed"), "error");
+          }
+          return;
+        }
+        paidCount += 1;
+      }
+
+      paymentSubmit.complete(undefined);
+      setVenueConfirmStatus(null);
+      toast(t("personal.pay.success"), "success");
+      onSuccess();
+      onClose();
+      paymentSucceeded = true;
+    } catch (err) {
+      if (payAllParticipants && paidCount > 0) {
+        await notifyPayAllPartial();
         return;
       }
+      throw err;
+    } finally {
+      if (!paymentSucceeded) {
+        paymentSubmit.reset();
+      }
     }
-
-    paymentSubmit.complete(undefined);
-    setVenueConfirmStatus(null);
-    toast(t("personal.pay.success"), "success");
-    onSuccess();
-    onClose();
   };
 
   const handlePayPackage = async () => {
-    if (!lesson) return;
-    if (connectionState !== "online") {
-      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
-      return;
-    }
-    if (!linkedSubscriptionId) {
-      toast(t("common.selectPackageError"), "error");
-      return;
-    }
+    try {
+      if (!lesson) return;
+      if (connectionState !== "online") {
+        toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+        return;
+      }
+      if (!linkedSubscriptionId) {
+        toast(t("common.selectPackageError"), "error");
+        return;
+      }
 
-    const linkedSub = subscriptions.find((s) => s.id === linkedSubscriptionId);
-    if (!linkedSub) {
-      toast(t("common.packageNotFound"), "error");
-      return;
+      const linkedSub = subscriptions.find((s) => s.id === linkedSubscriptionId);
+      if (!linkedSub) {
+        toast(t("common.packageNotFound"), "error");
+        return;
+      }
+
+      const res = await updatePersonalLesson.mutateAsync({
+        id: lesson.lessonId,
+        subscriptionId: linkedSubscriptionId,
+        price: 0,
+        paid: true,
+      });
+
+      if (!res.success) {
+        toast(res.error ?? t("common.chargeFailed"), "error");
+        return;
+      }
+
+      toast(t("common.lessonPaidFromPackage"), "success");
+      onSuccess();
+      onClose();
+    } catch {
+      toast(t("common.chargeFailed"), "error");
     }
-
-    const res = await updatePersonalLesson.mutateAsync({
-      id: lesson.lessonId,
-      subscriptionId: linkedSubscriptionId,
-      price: 0,
-      paid: true,
-    });
-
-    if (!res.success) {
-      toast(res.error ?? t("common.chargeFailed"), "error");
-      return;
-    }
-
-    toast(t("common.lessonPaidFromPackage"), "success");
-    onSuccess();
-    onClose();
   };
 
   const selectMode = (mode: PersonalLessonPaymentMode) => {
@@ -837,7 +879,7 @@ export default function PayPersonalLessonModal({
                   )}
                   <button
                     type="button"
-                    onClick={handlePayPackage}
+                    onClick={() => void handlePayPackage()}
                     disabled={
                       connectionState !== "online" ||
                       pending ||

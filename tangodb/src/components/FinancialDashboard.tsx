@@ -68,6 +68,7 @@ import { useFinanceCosts, useRecalculatePendingVenueCosts } from "../hooks/useVe
 import { useOtherIncome } from "../hooks/useOtherIncome";
 import { useRentalPayments } from "../hooks/useRentalPayments";
 import { usePermissions } from "../hooks/usePermissions";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { useTeacherSettlements } from "../hooks/usePayroll";
 import { useSchedule } from "../hooks/useSchedule";
@@ -436,6 +437,8 @@ export default function FinancialDashboard() {
   const toast = useToast();
   const { t, locale, plural } = useI18n();
   const { can } = usePermissions();
+  const { settings } = useOrganization();
+  const timezone = settings?.timezone ?? "UTC";
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const canReadFinance = can("finance.read");
   const canShowOperationalAnalytics = can("reports.operational");
@@ -531,15 +534,16 @@ export default function FinancialDashboard() {
 
   const trendPoints = useMemo(() => {
     const mode = trendPeriod === "month" ? ("day" as const) : ("month" as const);
-    return buildExtendedTrendPoints(monthSeries, trendContext, mode);
-  }, [monthSeries, trendContext, trendPeriod]);
+    return buildExtendedTrendPoints(monthSeries, trendContext, mode, timezone);
+  }, [monthSeries, trendContext, trendPeriod, timezone]);
 
   const stats = useMemo(() => {
-    const monthPayments = paymentsInMonth(paymentsQuery.data ?? [], statsMonth);
+    const monthPayments = paymentsInMonth(paymentsQuery.data ?? [], statsMonth, timezone);
     const monthRefunds = refundsInMonth(refundsQuery.data ?? [], statsMonth);
     const otherFromTable = otherIncomeInMonth(
       (otherIncomeQuery.data ?? []).map((row) => ({ amount: row.amount, createdAt: row.createdAt })),
-      statsMonth
+      statsMonth,
+      timezone
     );
     const rentalForMonth = rentalEntriesInMonth(rentalPaymentsQuery.data ?? [], statsMonth);
     const allPending = (refundsQuery.data ?? []).filter((refund) => refund.status === "pending");
@@ -558,6 +562,7 @@ export default function FinancialDashboard() {
     otherIncomeQuery.data,
     rentalPaymentsQuery.data,
     statsMonth,
+    timezone,
   ]);
 
   const financeCostsUnavailable = financeCostsQuery.isError;
@@ -600,9 +605,9 @@ export default function FinancialDashboard() {
 
   const momPercent = useMemo(() => {
     const previousMonth = shiftMonth(statsMonth, -1);
-    const previousTotal = extendedNetTotalForMonth(previousMonth, trendContext);
+    const previousTotal = extendedNetTotalForMonth(previousMonth, trendContext, timezone);
     return computeMomChangePercent(stats.netTotal, previousTotal);
-  }, [stats.netTotal, statsMonth, trendContext]);
+  }, [stats.netTotal, statsMonth, trendContext, timezone]);
 
   const revenueSplit = useMemo(() => {
     const segments = buildRevenueSplit(stats);
@@ -610,13 +615,13 @@ export default function FinancialDashboard() {
   }, [stats, personalLessonsEnabled]);
 
   const monthPayments = useMemo(
-    () => paymentsInMonth(paymentsQuery.data ?? [], statsMonth),
-    [paymentsQuery.data, statsMonth]
+    () => paymentsInMonth(paymentsQuery.data ?? [], statsMonth, timezone),
+    [paymentsQuery.data, statsMonth, timezone]
   );
 
   const newClientsCount = useMemo(
-    () => countNewClientsInMonth(clientsQuery.data ?? [], statsMonth),
-    [clientsQuery.data, statsMonth]
+    () => countNewClientsInMonth(clientsQuery.data ?? [], statsMonth, timezone),
+    [clientsQuery.data, statsMonth, timezone]
   );
 
   const subscriptionTypesById = useMemo(

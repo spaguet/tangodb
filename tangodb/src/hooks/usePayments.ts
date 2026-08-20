@@ -3,10 +3,13 @@ import type { I18nKey } from "../lib/i18n/keys";
 import { t } from "../lib/i18n";
 import type { TranslateFn } from "../lib/utils";
 import { FINANCIAL_TREND_MONTH_COUNT, monthTrendRange } from "../lib/financeReports";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
 import { formatClientName } from "../lib/utils";
 import type { PaymentWithCorrectionMeta } from "../lib/paymentCorrection";
 import type { Payment, PaymentMethod } from "../types";
+import { applyCreatedAtUtcRange, orgCreatedAtUtcRange } from "../lib/orgFinanceDate";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { personalLessonsQueryKey } from "./usePersonalLessons";
 import { financialDebtorsQueryKey } from "./useFinancialDebtors";
@@ -20,7 +23,7 @@ import {
 export const paymentsQueryKey = ["payments"] as const;
 
 const PAYMENTS_SELECT =
-  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, single_visit_id, created_by, created_at, operation_kind, price_id, tariff_duration_minutes, tariff_units, tariff_price, tariff_label, lesson_duration_minutes";
+  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, personal_lesson_charge_id, single_visit_id, created_by, created_at, operation_kind, price_id, tariff_duration_minutes, tariff_units, tariff_price, tariff_label, lesson_duration_minutes";
 
 const mapPayment = (row: Record<string, unknown>): PaymentWithCorrectionMeta => ({
   id: row.id as string,
@@ -31,6 +34,8 @@ const mapPayment = (row: Record<string, unknown>): PaymentWithCorrectionMeta => 
   methodComment: row.method_comment != null ? String(row.method_comment) : null,
   subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
   personalLessonId: row.personal_lesson_id != null ? (row.personal_lesson_id as string) : null,
+  personalLessonChargeId:
+    row.personal_lesson_charge_id != null ? String(row.personal_lesson_charge_id) : null,
   singleVisitId: row.single_visit_id != null ? (row.single_visit_id as string) : null,
   createdBy: row.created_by != null ? (row.created_by as string) : null,
   createdAt: String(row.created_at ?? ""),
@@ -52,34 +57,25 @@ export interface PaymentsFilter {
   enabled?: boolean;
 }
 
-function buildPaymentsQuery(filter?: PaymentsFilter) {
-  let query = supabase.from("payments").select(PAYMENTS_SELECT).order("created_at", { ascending: false });
-
-  if (filter?.todayOnly) {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    query = query.gte("created_at", start.toISOString()).lt("created_at", end.toISOString());
-  } else {
-    if (filter?.dateFrom) query = query.gte("created_at", `${filter.dateFrom}T00:00:00`);
-    if (filter?.dateTo) query = query.lte("created_at", `${filter.dateTo}T23:59:59`);
-  }
-
-  return query;
+function buildPaymentsQuery(filter?: PaymentsFilter, timezone = "UTC") {
+  const query = supabase.from("payments").select(PAYMENTS_SELECT).order("created_at", { ascending: false });
+  return applyCreatedAtUtcRange(query, orgCreatedAtUtcRange(filter ?? {}, timezone));
 }
 
 export function usePayments(filter?: PaymentsFilter) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const { settings } = useOrganization();
+  const timezone = settings?.timezone ?? "UTC";
   const queryEnabled = orgEnabled && (filter?.enabled ?? true);
 
   return useQuery({
-    queryKey: withOrgId([...paymentsQueryKey, filter ?? {}]),
+    queryKey: withOrgId([...paymentsQueryKey, filter ?? {}, timezone]),
     enabled: queryEnabled,
     queryFn: async () => {
-      const { data, error } = await buildPaymentsQuery(filter);
-      if (error) throw error;
-      return (data ?? []).map((row) => mapPayment(row as unknown as Record<string, unknown>));
+      const data = await fetchAllPostgrestRows((from, to) =>
+        buildPaymentsQuery(filter, timezone).range(from, to)
+      );
+      return data.map((row) => mapPayment(row as unknown as Record<string, unknown>));
     },
     staleTime: 30 * 1000,
   });
@@ -89,30 +85,6 @@ export function usePayments(filter?: PaymentsFilter) {
 export function usePaymentsTrend(endMonth: string, monthCount = FINANCIAL_TREND_MONTH_COUNT) {
   const range = monthTrendRange(endMonth, monthCount);
   return usePayments({ dateFrom: range.dateFrom, dateTo: range.dateTo });
-}
-
-/**
- * @deprecated Direct INSERT into payments is blocked. Use canonical RPC hooks:
- * `useRecordSubscriptionPayment`, `useRecordPersonalLessonPayment`, or `useRecordSingleVisit`.
- */
-export function useRecordPayment() {
-  return useMutation({
-    mutationFn: async (_input: {
-      clientId: string;
-      clientDisplay: string;
-      amount: number;
-      method: PaymentMethod;
-      subscriptionId?: string;
-      personalLessonId?: string;
-      singleVisitId?: string;
-    }) => {
-      return {
-        success: false as const,
-        error:
-          "Direct payment insert is deprecated. Use record_subscription_payment / record_personal_lesson_payment / record_single_visit RPC via hooks.",
-      };
-    },
-  });
 }
 
 export function useRecordSubscriptionPayment() {
@@ -192,7 +164,6 @@ export function useRecordPersonalLessonPayment() {
       clientDisplay: string;
       amount: number;
       method: PaymentMethod;
-      markPaid?: boolean;
       idempotencyKey?: string;
       venueRuleAcknowledged?: boolean;
       priceId?: string | null;

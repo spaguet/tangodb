@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { asJson } from "../lib/json";
 import { supabase } from "../lib/supabase";
 import type {
   RenterCommunicationType,
@@ -16,6 +17,11 @@ import type {
   RenterStatus,
   RenterUpsertInput,
 } from "../types";
+import { reportClientError } from "../lib/reportClientError";
+import {
+  bindUploadedRenterDocument,
+  removeRenterStorageObject,
+} from "../lib/renterDocumentUpload";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { rentalsQueryKey } from "./useRentals";
 import { rentersQueryKey } from "./useRenters";
@@ -164,7 +170,7 @@ function mapDuplicate(row: Record<string, unknown>): RenterDuplicateMatch {
   };
 }
 
-function upsertPayload(input: RenterUpsertInput): Record<string, unknown> {
+function upsertPayload(input: RenterUpsertInput) {
   const payload: Record<string, unknown> = {
     display_name: input.displayName,
   };
@@ -190,7 +196,7 @@ function upsertPayload(input: RenterUpsertInput): Record<string, unknown> {
   if (input.duplicateCreateReason) {
     payload.duplicate_create_reason = input.duplicateCreateReason;
   }
-  return payload;
+  return asJson(payload);
 }
 
 function invalidateRenterCaches(
@@ -348,7 +354,7 @@ export function useCheckRenterDuplicates() {
       if (input.taxId !== undefined) payload.tax_id = input.taxId;
 
       const { data, error } = await supabase.rpc("check_renter_duplicates", {
-        p_payload: payload,
+        p_payload: asJson(payload),
       });
 
       if (error) return { success: false as const, error: error.message };
@@ -458,7 +464,7 @@ export function useUpsertRenterContact() {
       if (input.telegram !== undefined) payload.telegram = input.telegram;
       if (input.notes !== undefined) payload.notes = input.notes;
 
-      const { data, error } = await supabase.rpc("upsert_renter_contact", { p_payload: payload });
+      const { data, error } = await supabase.rpc("upsert_renter_contact", { p_payload: asJson(payload) });
 
       if (error) return { success: false as const, error: error.message };
 
@@ -469,8 +475,10 @@ export function useUpsertRenterContact() {
 
       return { success: true as const, contactId: result.contact_id ?? "" };
     },
-    onSuccess: (_result, variables) => {
-      invalidateRenterCaches(queryClient, variables.renterId);
+    onSuccess: (result, variables) => {
+      if (result.success) {
+        invalidateRenterCaches(queryClient, variables.renterId);
+      }
     },
   });
 }
@@ -493,8 +501,10 @@ export function useDeleteRenterContact() {
 
       return { success: true as const };
     },
-    onSuccess: (_result, variables) => {
-      invalidateRenterCaches(queryClient, variables.renterId);
+    onSuccess: (result, variables) => {
+      if (result.success) {
+        invalidateRenterCaches(queryClient, variables.renterId);
+      }
     },
   });
 }
@@ -540,7 +550,7 @@ export function useUpsertRenterContract() {
       if (input.notes !== undefined) payload.notes = input.notes;
       if (input.rentalIds !== undefined) payload.rental_ids = input.rentalIds;
 
-      const { data, error } = await supabase.rpc("upsert_renter_contract", { p_payload: payload });
+      const { data, error } = await supabase.rpc("upsert_renter_contract", { p_payload: asJson(payload) });
 
       if (error) return { success: false as const, error: error.message };
 
@@ -551,8 +561,10 @@ export function useUpsertRenterContract() {
 
       return { success: true as const, contractId: result.contract_id ?? "" };
     },
-    onSuccess: (_result, variables) => {
-      invalidateRenterCaches(queryClient, variables.renterId);
+    onSuccess: (result, variables) => {
+      if (result.success) {
+        invalidateRenterCaches(queryClient, variables.renterId);
+      }
     },
   });
 }
@@ -593,47 +605,55 @@ export function useUploadRenterDocument() {
         return { success: false as const, error: prep?.error ?? "renters.error.documentPrepareFailed" };
       }
 
-      const { error: uploadError } = await supabase.storage
-        .from(prep.bucket)
-        .upload(prep.storage_path, input.file, { contentType: input.file.type, upsert: false });
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from(prep.bucket)
+          .upload(prep.storage_path, input.file, { contentType: input.file.type, upsert: false });
 
-      if (uploadError) {
-        return { success: false as const, error: uploadError.message };
+        if (uploadError) {
+          await removeRenterStorageObject(prep.bucket, prep.storage_path);
+          return { success: false as const, error: uploadError.message };
+        }
+
+        const finalizePayload: Record<string, unknown> = {
+          renter_id: input.renterId,
+          storage_path: prep.storage_path,
+          mime_type: input.file.type,
+          file_size: input.file.size,
+          display_name: input.displayName,
+        };
+        if (input.contractId) finalizePayload.contract_id = input.contractId;
+        if (input.category) finalizePayload.category = input.category;
+        if (input.documentDate) finalizePayload.document_date = input.documentDate;
+        if (input.validUntil) finalizePayload.valid_until = input.validUntil;
+        if (input.notes) finalizePayload.notes = input.notes;
+
+        const fin = await bindUploadedRenterDocument({
+          bucket: prep.bucket,
+          storagePath: prep.storage_path,
+          finalizePayload,
+        });
+        if (fin.success === false) {
+          return { success: false as const, error: fin.error };
+        }
+        return { success: true as const, documentId: fin.documentId };
+      } catch (err) {
+        await removeRenterStorageObject(prep.bucket, prep.storage_path);
+        reportClientError(err, {
+          area: "mutation",
+          action: "useUploadRenterDocument",
+          meta: { renterId: input.renterId, storagePath: prep.storage_path },
+        });
+        return {
+          success: false as const,
+          error: err instanceof Error ? err.message : "renters.error.documentUploadFailed",
+        };
       }
-
-      const finalizePayload: Record<string, unknown> = {
-        renter_id: input.renterId,
-        storage_path: prep.storage_path,
-        mime_type: input.file.type,
-        file_size: input.file.size,
-        display_name: input.displayName,
-      };
-      if (input.contractId) finalizePayload.contract_id = input.contractId;
-      if (input.category) finalizePayload.category = input.category;
-      if (input.documentDate) finalizePayload.document_date = input.documentDate;
-      if (input.validUntil) finalizePayload.valid_until = input.validUntil;
-      if (input.notes) finalizePayload.notes = input.notes;
-
-      const { data: finData, error: finError } = await supabase.rpc(
-        "finalize_renter_document_upload",
-        { p_payload: finalizePayload }
-      );
-
-      if (finError) {
-        await supabase.storage.from(prep.bucket).remove([prep.storage_path]);
-        return { success: false as const, error: finError.message };
-      }
-
-      const fin = finData as { success?: boolean; error?: string; document_id?: string } | null;
-      if (!fin?.success) {
-        await supabase.storage.from(prep.bucket).remove([prep.storage_path]);
-        return { success: false as const, error: fin?.error ?? "renters.error.documentFinalizeFailed" };
-      }
-
-      return { success: true as const, documentId: fin.document_id ?? "" };
     },
-    onSuccess: (_result, variables) => {
-      invalidateRenterCaches(queryClient, variables.renterId);
+    onSuccess: (result, variables) => {
+      if (result.success) {
+        invalidateRenterCaches(queryClient, variables.renterId);
+      }
     },
   });
 }
@@ -689,8 +709,10 @@ export function useDeleteRenterDocument() {
 
       return { success: true as const };
     },
-    onSuccess: (_result, variables) => {
-      invalidateRenterCaches(queryClient, variables.renterId);
+    onSuccess: (result, variables) => {
+      if (result.success) {
+        invalidateRenterCaches(queryClient, variables.renterId);
+      }
     },
   });
 }
@@ -719,7 +741,7 @@ export function useCreateRenterCommunication() {
       if (input.nextActionAt) payload.next_action_at = input.nextActionAt;
 
       const { data, error } = await supabase.rpc("create_renter_communication", {
-        p_payload: payload,
+        p_payload: asJson(payload),
       });
 
       if (error) return { success: false as const, error: error.message };
@@ -731,8 +753,10 @@ export function useCreateRenterCommunication() {
 
       return { success: true as const, communicationId: result.communication_id ?? "" };
     },
-    onSuccess: (_result, variables) => {
-      invalidateRenterCaches(queryClient, variables.renterId);
+    onSuccess: (result, variables) => {
+      if (result.success) {
+        invalidateRenterCaches(queryClient, variables.renterId);
+      }
     },
   });
 }
@@ -762,7 +786,7 @@ export function useUpdateRenterCommunication() {
 
       const { data, error } = await supabase.rpc("update_renter_communication", {
         p_comm_id: input.communicationId,
-        p_payload: payload,
+        p_payload: asJson(payload),
         p_reason: input.reason,
       });
 
@@ -778,8 +802,10 @@ export function useUpdateRenterCommunication() {
 
       return { success: true as const };
     },
-    onSuccess: (_result, variables) => {
-      invalidateRenterCaches(queryClient, variables.renterId);
+    onSuccess: (result, variables) => {
+      if (result.success) {
+        invalidateRenterCaches(queryClient, variables.renterId);
+      }
     },
   });
 }
@@ -806,8 +832,10 @@ export function useDeleteRenterCommunication() {
 
       return { success: true as const };
     },
-    onSuccess: (_result, variables) => {
-      invalidateRenterCaches(queryClient, variables.renterId);
+    onSuccess: (result, variables) => {
+      if (result.success) {
+        invalidateRenterCaches(queryClient, variables.renterId);
+      }
     },
   });
 }

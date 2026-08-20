@@ -350,6 +350,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const { can, isReadOnly } = usePermissions();
   const { role, memberId, scope, settings: orgSettings } = useOrganization();
+  const showPrice = role !== "teacher";
   const attendanceAccessOptions = useMemo(
     () => ({ directorsCanMarkAttendance: orgSettings?.directors_can_mark_attendance ?? true }),
     [orgSettings?.directors_can_mark_attendance]
@@ -1702,7 +1703,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       ) : (
                         <>
                           <p className="text-xs text-slate-500 font-sans">
-                            {t("common.singleLesson")} · {formatCurrency(activePersonalLesson.price)}
+                            {t("common.singleLesson")}
+                            {showPrice ? ` · ${formatCurrency(activePersonalLesson.price)}` : null}
                           </p>
                           <p className="text-xs font-sans">
                             {t("common.paymentLabel")}:{" "}
@@ -1718,7 +1720,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                                 : t("common.unpaidStatus")}
                             </span>
                           </p>
-                          {activePersonalLesson.paid === "no" && activePersonalLesson.paidAmount > 0 && (
+                          {showPrice &&
+                            activePersonalLesson.paid === "no" &&
+                            activePersonalLesson.paidAmount > 0 && (
                             <p className="text-xs font-sans text-slate-500">
                               {t("personal.pay.paidSoFar")}: {formatCurrency(activePersonalLesson.paidAmount)}
                               {" · "}

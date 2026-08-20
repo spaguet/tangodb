@@ -30,11 +30,12 @@ export function clientNotesListQueryKey(clientId: string) {
 export function useClientNotes(clientId: string | null) {
   const { enabled, withOrgId } = useOrgQueryScope();
   const { data: teamMembers = [] } = useTeamMembers();
+  const teamMemberIds = [...teamMembers.map((member) => member.id)].sort();
 
   return useQuery({
     queryKey: withOrgId([
       ...clientNotesListQueryKey(clientId ?? ""),
-      teamMembers.length,
+      teamMemberIds,
     ]),
     enabled: enabled && Boolean(clientId),
     queryFn: async () => {

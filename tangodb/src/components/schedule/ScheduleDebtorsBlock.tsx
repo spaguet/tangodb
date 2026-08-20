@@ -283,9 +283,7 @@ export default function ScheduleDebtorsBlock({
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className={`w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 bg-rose-50/60 text-left cursor-pointer hover:bg-rose-50 transition-colors ${
-            expanded ? "border-b border-rose-100" : ""
-          }`}
+          className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 bg-rose-50/60 text-left cursor-pointer hover:bg-rose-50 transition-colors"
         >
           <div className="flex items-center gap-2 min-w-0">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -315,6 +313,10 @@ export default function ScheduleDebtorsBlock({
             />
           </div>
         </button>
+
+        <p className="px-4 py-2 text-[11px] leading-snug text-slate-500 border-y border-rose-100/80">
+          {t("schedule.debtors.scopeHint")}
+        </p>
 
         <AnimatePresence initial={false}>
           {expanded ? (

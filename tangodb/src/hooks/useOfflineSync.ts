@@ -16,29 +16,44 @@ export function useOfflineSyncEngine() {
   const [syncing, setSyncing] = useState(false);
 
   const refreshServerStates = useCallback(async (ops: OfflineAttendanceOperation[]) => {
+    const skipSyncIds = new Set<string>();
     const pending = ops.filter((o) => o.status === "pending" || o.status === "failed");
-    if (pending.length === 0) return ops;
+    if (pending.length === 0) {
+      return { ops, skipSyncIds, hadReadError: false };
+    }
 
     const updated = [...ops];
+    let hadReadError = false;
     for (let i = 0; i < updated.length; i++) {
       const op = updated[i];
       if (op.status !== "pending" && op.status !== "failed" && op.status !== "conflict") continue;
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("attendance")
-        .select("status")
+        .select("attendance_status")
         .eq("date", op.dateStr)
         .eq("subscription_id", op.subId)
         .eq("schedule_group_id", op.scheduleGroupId)
         .maybeSingle();
 
-      const serverStatus = (data?.status as AttendanceMarkStatus | undefined) ?? null;
+      if (error) {
+        hadReadError = true;
+        if (op.status === "conflict") {
+          updated[i] = { ...op, lastError: error.message };
+        } else {
+          updated[i] = { ...op, status: "failed", lastError: error.message };
+          skipSyncIds.add(op.id);
+        }
+        continue;
+      }
+
+      const serverStatus = (data?.attendance_status as AttendanceMarkStatus | undefined) ?? null;
       updated[i] = {
         ...op,
         serverOldStatus: serverStatus,
       };
     }
-    return updated;
+    return { ops: updated, skipSyncIds, hadReadError };
   }, []);
 
   const syncQueue = useCallback(async () => {
@@ -51,15 +66,21 @@ export function useOfflineSyncEngine() {
       try {
         await invalidateCaches();
 
-        let ops = await refreshServerStates(queue.operations);
+        const refreshed = await refreshServerStates(queue.operations);
+        const ops = refreshed.ops;
         let synced = 0;
         let conflicts = 0;
-        let failed = 0;
+        let failed = refreshed.skipSyncIds.size;
+
+        if (refreshed.hadReadError) {
+          await persistQueue(ops);
+        }
 
         const sorted = [...ops].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
         for (let i = 0; i < sorted.length; i++) {
           const op = sorted[i];
+          if (refreshed.skipSyncIds.has(op.id)) continue;
           if (op.status !== "pending" && op.status !== "failed") continue;
 
           sorted[i] = { ...op, status: "syncing" };

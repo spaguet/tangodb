@@ -1,3 +1,4 @@
+import { DATE_CURSOR_MAX_ITERATIONS, isIsoDateString } from "./dateRecurrenceLimits";
 import { addDays, nextOccurrenceOnOrAfter } from "./scheduleWeek";
 import type { ScheduleSlot } from "../types";
 
@@ -9,16 +10,24 @@ export function computeWeeklyOccurrencesInRange(
   validFrom: string,
   validTo: string | null
 ): string[] {
+  if (!isIsoDateString(rangeStart) || !isIsoDateString(rangeEnd)) return [];
   if (rangeEnd < rangeStart) return [];
+  if (!isIsoDateString(validFrom)) return [];
+  if (validTo != null && !isIsoDateString(validTo)) return [];
 
   const dates: string[] = [];
   let current = nextOccurrenceOnOrAfter(rangeStart, dayOfWeek);
+  if (!isIsoDateString(current)) return [];
 
+  let iterations = 0;
   while (current <= rangeEnd) {
+    if (++iterations > DATE_CURSOR_MAX_ITERATIONS) break;
+
     if (current >= validFrom && (validTo == null || current <= validTo)) {
       dates.push(current);
     }
     current = addDays(current, 7);
+    if (!isIsoDateString(current)) break;
   }
 
   return dates;

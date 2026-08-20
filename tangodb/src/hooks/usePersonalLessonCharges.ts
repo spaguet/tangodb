@@ -17,10 +17,12 @@ export interface PersonalLessonChargeBalance {
 
 const CHARGES_SELECT = "id, personal_lesson_id, client_id, billed_amount";
 
-function netPaidForCharge(
-  chargeId: string,
-  payments: PaymentWithCorrectionMeta[]
-): number {
+type ChargePaymentSlice = Pick<
+  PaymentWithCorrectionMeta,
+  "amount" | "operationKind" | "personalLessonChargeId"
+>;
+
+function netPaidForCharge(chargeId: string, payments: ChargePaymentSlice[]): number {
   return payments
     .filter((p) => p.personalLessonChargeId === chargeId)
     .reduce((sum, p) => sum + paymentEffectiveAmount(p), 0);

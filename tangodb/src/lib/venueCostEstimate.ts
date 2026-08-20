@@ -1,4 +1,5 @@
 import { addDays, expandSlotsToDateRange, toISODateLocal } from "./scheduleWeek";
+import { DATE_CURSOR_MAX_ITERATIONS, isIsoDateString } from "./dateRecurrenceLimits";
 import {
   isVenueCostFixedPerLocation,
   matchScopedRule,
@@ -148,6 +149,10 @@ export function computeFixedPeriodEstimate(
   periodEnd: string,
   locationFilter: string | null = null
 ): VenueCostFixedPeriodLine[] {
+  if (!isIsoDateString(periodStart) || !isIsoDateString(periodEnd)) return [];
+  if (!isIsoDateString(ruleValidFrom)) return [];
+  if (ruleValidTo != null && !isIsoDateString(ruleValidTo)) return [];
+
   const rangeStart = maxIso(ruleValidFrom, periodStart);
   const rangeEnd = minIso(ruleValidTo ?? periodEnd, periodEnd);
   if (rangeStart > rangeEnd) return [];
@@ -155,7 +160,11 @@ export function computeFixedPeriodEstimate(
   const lines: VenueCostFixedPeriodLine[] = [];
   let cursor = rangeStart;
 
+  let iterations = 0;
   while (cursor <= rangeEnd) {
+    if (++iterations > DATE_CURSOR_MAX_ITERATIONS) break;
+    if (!isIsoDateString(cursor)) break;
+
     const periodFrom = cursor;
     let periodTo: string;
     if (rules.period === "week") {

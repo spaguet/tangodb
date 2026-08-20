@@ -1,5 +1,6 @@
 import type { MemberRole, OrgModules } from "../types/organization";
 import type { DisplayLesson, PersonalDisplayLesson } from "../types";
+import { t } from "./i18n";
 import { isModuleEnabled } from "./orgModules";
 import { isPersonalLessonLockedForWrite, isScheduleDateLockedForWrite } from "./scheduleWeek";
 import type { PermissionAction } from "./permissions";
@@ -66,10 +67,22 @@ export function maskClientDisplay(
   clientDisplay: string | undefined,
   canReadClients: boolean
 ): string {
-  if (canReadClients) {
-    return clientDisplay && clientDisplay !== "Клиент не указан" ? clientDisplay : "Клиент не указан";
+  if (!canReadClients) {
+    return t(null, "common.client");
   }
-  return "Клиент";
+  const display = clientDisplay?.trim();
+  if (!isSpecifiedClientDisplay(display)) {
+    return t(null, "schedule.lessonInfo.clientNotSpecified");
+  }
+  return display;
+}
+
+function isSpecifiedClientDisplay(display: string | undefined): display is string {
+  if (!display) return false;
+  return (
+    display !== "schedule.lessonInfo.clientNotSpecified" &&
+    display !== t(null, "schedule.lessonInfo.clientNotSpecified")
+  );
 }
 
 export function canShowPaidStatus(role: MemberRole | null): boolean {

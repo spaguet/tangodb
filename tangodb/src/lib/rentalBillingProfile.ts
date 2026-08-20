@@ -1,3 +1,6 @@
+import { asJson } from "./json";
+import type { Json } from "../types/database";
+
 export type RentalDocumentsMode = "off" | "crm" | "export";
 
 export type RentalVatMode = "none" | "included" | "on_top";
@@ -146,10 +149,8 @@ export function defaultFiscalStatusForMethod(
   return "not_required";
 }
 
-export function rentalBillingProfileToPayload(
-  profile: RentalBillingProfile
-): Record<string, unknown> {
-  return {
+export function rentalBillingProfileToPayload(profile: RentalBillingProfile): Json {
+  return asJson({
     documents_mode: profile.documents_mode,
     country_code: profile.country_code.trim(),
     legal_name: profile.legal_name.trim(),
@@ -165,7 +166,7 @@ export function rentalBillingProfileToPayload(
     invoice_number_prefix: profile.invoice_number_prefix.trim(),
     next_invoice_number: profile.next_invoice_number,
     fiscal_tracking_enabled: profile.fiscal_tracking_enabled,
-  };
+  });
 }
 
 export function mapInvoiceDocument(row: Record<string, unknown>): RentalInvoiceDocument {

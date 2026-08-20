@@ -1,4 +1,5 @@
 import type { Client, PersonalDisplayLesson } from "../types";
+import { t } from "./i18n";
 import { formatClientName } from "./utils";
 
 export function clientIdsFromPersonalLesson(lesson: PersonalDisplayLesson): string[] {
@@ -20,7 +21,7 @@ export function personalLessonClientEntries(
   clientNotSpecifiedLabel: string
 ): PersonalLessonClientEntry[] {
   if (!canReadClients) {
-    return [{ id: null, label: "Клиент" }];
+    return [{ id: null, label: t(null, "common.client") }];
   }
 
   const ids = clientIdsFromPersonalLesson(lesson);
@@ -36,7 +37,11 @@ export function personalLessonClientEntries(
   }
 
   const display = lesson.clientDisplay?.trim();
-  if (!display || display === "Клиент не указан") {
+  if (
+    !display ||
+    display === "schedule.lessonInfo.clientNotSpecified" ||
+    display === clientNotSpecifiedLabel
+  ) {
     return [{ id: null, label: clientNotSpecifiedLabel }];
   }
 

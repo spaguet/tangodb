@@ -1,5 +1,6 @@
 import AppSelect from "../ui/AppSelect";
 import DatePickerField from "../ui/DatePickerField";
+import { maxRepeatEndDate } from "../../lib/dateRecurrenceLimits";
 import { useI18n } from "../../hooks/useI18n";
 import type { GroupRepeatConfig, GroupRepeatEndMode } from "../../lib/groupLessonRepeat";
 
@@ -82,6 +83,7 @@ export default function GroupLessonRepeatFields({
               value={config.endDate}
               onChange={(endDate) => onChange({ endDate })}
               min={minEndDate}
+              max={maxRepeatEndDate(minEndDate)}
             />
           )}
         </div>

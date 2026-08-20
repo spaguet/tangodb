@@ -59,6 +59,7 @@ import FinancePage from "./pages/FinancePage";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import OfflineBanner from "./components/ui/OfflineBanner";
 import ReadOnlyBanner from "./components/ui/ReadOnlyBanner";
+import ClaimsMismatchBanner from "./components/ui/ClaimsMismatchBanner";
 import OfflineReconciliationDialog from "./components/offline/OfflineReconciliationDialog";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import {
@@ -183,7 +184,7 @@ function AppLayout() {
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
   const personalTab = useUIStore((s) => s.personalTab);
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
-  const { settings } = useOrganization();
+  const { settings, claimsMismatch } = useOrganization();
   const { showPurchaseCta } = useDemoLicenseUi();
   const { config: paymentConfig } = usePlatformPaymentConfig(true);
   const orgModules = normalizeOrgModules(settings?.modules);
@@ -217,15 +218,28 @@ function AppLayout() {
     document.title = `${panelTitle} · TangoDB`;
   }, [panelTitle]);
 
+  const connectionRestoredHandledRef = useRef(false);
+  const prevJustConnectionRestoredRef = useRef(false);
+
   useEffect(() => {
-    if (!justConnectionRestored) return;
+    const wasRestored = prevJustConnectionRestoredRef.current;
+    prevJustConnectionRestoredRef.current = justConnectionRestored;
+
+    if (!justConnectionRestored) {
+      connectionRestoredHandledRef.current = false;
+      return;
+    }
+
+    if (wasRestored || connectionRestoredHandledRef.current) return;
+    connectionRestoredHandledRef.current = true;
+
     showToast(t("nav.connectionRestored"), "success");
     reportOfflineEvent("connection_restored");
     const pendingTotal = counts.pending + counts.conflict + counts.failed;
     if (pendingTotal > 0) {
       void invalidateAfterOfflineSync().then(() => openReconciliation());
     }
-  }, [justConnectionRestored, showToast, t, counts.pending, counts.conflict, counts.failed, invalidateAfterOfflineSync, openReconciliation]);
+  }, [justConnectionRestored, showToast, t, invalidateAfterOfflineSync, openReconciliation]);
 
   useEffect(() => {
     if (!mobileDrawerOpen) return;
@@ -276,6 +290,9 @@ function AppLayout() {
       {navSections.map((section) => {
         if (section.moduleKey && !orgModules[section.moduleKey]) return null;
         const visibleItems = section.items.filter((item) => {
+          if (claimsMismatch) {
+            if (item.path === "/finance" || item.settingsSection) return false;
+          }
           if (item.settingsSection) {
             return canAccessSettingsSection(role, item.settingsSection, permissionOptions);
           }
@@ -414,6 +431,7 @@ function AppLayout() {
             onOpenReconciliation={openReconciliation}
           />
           <ReadOnlyBanner />
+          <ClaimsMismatchBanner />
 
           <OfflineReconciliationDialog
             open={reconciliationOpen}

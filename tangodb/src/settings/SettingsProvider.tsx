@@ -17,6 +17,7 @@ import {
   freezePolicyFromSettings,
   type FreezePolicy,
 } from "../lib/freezePolicy";
+import { asJson } from "../lib/json";
 import { supabase } from "../lib/supabase";
 import type { OrganizationSettings } from "../types/organization";
 
@@ -59,9 +60,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
+      const { modules, ...rest } = patch;
       const { error } = await supabase
         .from("organization_settings")
-        .update({ ...patch, updated_at: new Date().toISOString() })
+        .update({
+          ...rest,
+          ...(modules !== undefined ? { modules: asJson(modules) } : {}),
+          updated_at: new Date().toISOString(),
+        })
         .eq("organization_id", organizationId);
 
       if (error) return { success: false as const, error: error.message };

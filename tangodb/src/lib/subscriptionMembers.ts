@@ -199,6 +199,37 @@ export function getScheduledMemberChangesForSubscription(
   );
 }
 
-export async function applyScheduledSubscriptionMemberChanges(): Promise<void> {
-  await supabase.rpc("apply_scheduled_subscription_member_changes");
+export type ApplyScheduledMemberChangesResult =
+  | { success: true }
+  | { success: false; error: string };
+
+const applyScheduledMemberChangesInFlight = new Map<
+  string,
+  Promise<ApplyScheduledMemberChangesResult>
+>();
+
+export async function applyScheduledSubscriptionMemberChanges(
+  organizationId?: string | null
+): Promise<ApplyScheduledMemberChangesResult> {
+  const key = organizationId ?? "";
+  const existing = applyScheduledMemberChangesInFlight.get(key);
+  if (existing) return existing;
+
+  const run = (async (): Promise<ApplyScheduledMemberChangesResult> => {
+    const { error } = await supabase.rpc(
+      "apply_scheduled_subscription_member_changes",
+      organizationId ? { p_org_id: organizationId } : undefined
+    );
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  })();
+
+  applyScheduledMemberChangesInFlight.set(key, run);
+  try {
+    return await run;
+  } finally {
+    applyScheduledMemberChangesInFlight.delete(key);
+  }
 }

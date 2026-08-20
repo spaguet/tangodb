@@ -11,6 +11,114 @@
 
 ## Записи
 
+### 2026-08-20 — Insert/update таблиц после createClient<Database>
+
+- **Ошибка:** `Record<string, unknown>` не assignable к `RejectExcessProperties` при `.from("prices").update` / `.insert`.
+- **Причина:** после `createClient<Database>` PostgREST ждёт `Tables.*.Insert` / `Update`, не динамический Record.
+- **Как избежать:** собирать row как `Database["public"]["Tables"]["<table>"]["Insert"]` или `Update`; jsonb-аргументы RPC — `asJson`, не `any`. Junction-поля (disciplineIds, teacherMemberIds) — через sync-хелперы, в row prices только колонка `discipline_id` (`length === 1 ? id : null`).
+
+### 2026-08-20 — Jsonb доменных интерфейсов: asJson на запись, normalizeTeacherScope на чтение
+
+- **Ошибка:** `OrgModules`, `TeacherScope`, `MemberMeta` не assignable к `Json` при RPC/update; прямой cast `row.scope as TeacherScope` — TS2352.
+- **Причина:** доменные интерфейсы без index signature; jsonb в Database — узкий `Json`.
+- **Как избежать:** запись — `asJson(value)`; чтение scope — `normalizeTeacherScope(raw)`; meta — `as unknown as MemberMeta` только для plain object. В `SettingsProvider` деструктурировать `modules` из patch, не `{ ...patch, modules: asJson(...) }`.
+
+### 2026-08-20 — Сгенерированные типы Database: шум Json vs реальная колонка
+
+- **Ошибка:** `createClient<Database>` сразу дал ~35 ошибок tsc. Почти все — `Record<string, unknown>` / доменные интерфейсы (`OrgModules`, `TeacherScope`) не assignable к jsonb `Json`, плюс union `.from("table" | "view")`. Реальная опечатка колонки одна: `attendance.status` вместо `attendance_status` в офлайн-сверке (SELECT всегда падал). Отдельно — четыре TS2554 на module `t()` (см. запись ниже); это не шум Database-типов.
+- **Причина:** клиент жил без generics; JSONB и динамический table/view не совпадают с узкими TS-типами приложения.
+- **Как избежать:** после `db:gen-types` чинить только имена RPC/колонок. Не засыпать хуки `as any`. Jsonb-пейлоады — `Json` или `as Json`, table|view — раздельные query-ветки, не union-строка в `.from()`. Не списывать соседние TS2554 на каскад `TS2589`, пока не сверена сигнатура вызова.
+
+### 2026-08-20 — Module `t()` без locale: TS2554 и сломанный перевод
+
+- **Ошибка:** `t("common.client")` / `t("schedule.lessonInfo.clientNotSpecified")` в `personalLessonClients.ts` и `scheduleLessonAccess.ts`. `tsc` — TS2554 (ожидалось 2–3 аргумента). В рантайме строка ключа уходит в `locale`, ключ — `undefined`. Сначала это приняли за каскад `TS2589` (deep instantiation после union `.from()`).
+- **Причина:** module-level `t` в `src/lib/i18n/core.ts` — `t(locale, key, params?)`. Одноаргументный `t` есть только у хука `useI18n`. Совпадение текста ошибки с «каскадом» после TS2589 не проверяли по сигнатуре.
+- **Как избежать:** в `lib/` всегда `t(locale, key)` (`null` / `getGuestLocale()`, если locale нет на руках). Не менять сигнатуру `t()` в `core.ts` ради короткого вызова. Не считать TS2554 на `t("key")` каскадом, пока не открыт `core.ts`.
+
+### 2026-08-20 — Мёртвый хелпер прямого paid-update
+
+- **Ошибка:** `useUpdatePersonalPaid` делал `.update({ paid })` без payment RPC; вызовов не было, но хук оставался экспортированным. Повторное вешание на кнопку обошло бы ledger (урок `price=0` без платежа).
+- **Причина:** опасный путь оставили «на всякий случай» после перехода на канонические RPC; заглушка `useRecordPayment` тоже жила без callers.
+- **Как избежать:** не держать мёртвые write-хелперы, которые обходят ledger. Статус `paid` — только через канонические RPC (`record_personal_lesson_payment` / `sync_personal_lesson_paid_status` и аналоги).
+
+### 2026-08-20 — CodeGraph MCP пропал из агента
+
+- **Ошибка:** в чате агента не было сервера `codegraph` / `codegraph_explore`; аудит писал, что индекса нет.
+- **Причина:** индекс `.codegraph/` был (gitignore), CLI работал. MCP stdio остановился 2026-08-18 после `snapshot_recovery`; в `.cursor/mcp.json` стояло `--path .`, а Cursor после recovery стартует MCP не из корня воркспейса — индекс не находится, процесс не поднимается. Glob `.codegraph/` агенту не показывает gitignored-каталог.
+- **Как избежать:** в Cursor MCP для CodeGraph — абсолютный `--path` к репо и полный путь к `codegraph.cmd`; после зависания — Refresh в Settings → MCP или Reload Window. Статус индекса: `codegraph status`.
+
+### 2026-08-20 — mark_attendance после early-return onMutate
+
+- **Ошибка:** `useMarkAttendance` в `onMutate` выходил без optimistic update (`oldStatus===status`, freeze, `lessonsLeft`, нет sub), но `mutationFn` всё равно звал `mark_attendance` / `correct_attendance`. Сервер мог применить отметку, а кэш оставался старым до refetch.
+- **Причина:** гарды жили только в `onMutate`; TanStack Query сначала ждёт `onMutate`, затем всегда вызывает `mutationFn`.
+- **Как избежать:** общие гарды (`evaluateMarkAttendanceGuard`) до RPC; решение `onMutate` передавать в `mutationFn` (WeakMap по объекту vars), потому что после optimistic update кэш уже с новым статусом и повторная проверка по кэшу ложно пропустит RPC.
+
+### 2026-08-20 — Write-on-read абонементов из каждого queryFn
+
+- **Ошибка:** `useSubscriptions` на каждый fetch вызывал `apply_scheduled_subscription_member_changes` без проверки `{ error }`. Список абонементов рисовался как успешный, даже если смена партнёра не применилась. Несколько экранов (`SubscriptionsPanel`, `AttendancePanel` через `useSubsForDate`, `PayPersonalLessonModal`, …) монтировали хук параллельно; вместе с H7 `invalidateQueries()` RPC писали в БД с каждого refetch.
+- **Причина:** мутационный RPC внутри read-`queryFn`; ошибка глоталась; нет once-per-org guard.
+- **Как избежать:** список — чистый SELECT; apply — один раз при входе в org (bootstrap, как `useEnsureOwnMemberProfile`); `{ error }` не глотать (`reportClientError` / `{ success: false }`); не класть write в `queryFn`.
+
+### 2026-08-20 — Query keys Google Calendar и personalLessons без org-scope
+
+- **Ошибка:** после смены организации TanStack Query показывал binding/метрики синка Google Calendar, badge entry-sync-status и optimistic attendance персональных уроков из кэша предыдущей org.
+- **Причина:** ключи `["google-calendar", "org-binding"]`, `team-sync-metrics`, `entry-sync-status` и `onMutate` в `useMarkPersonalLessonAttendance` не включали `organizationId`; invalidate/setQueriesData шли по глобальным префиксам.
+- **Как избежать:** org-binding и team/org metrics — `withOrgId` + `enabled` от org; `googleCalendarSyncStatusQueryKey(organizationId, target)`; optimistic update только по `withOrgId(personalLessonsQueryKey)`; accounts пользователя оставлять без org.
+
+### 2026-08-20 — Групповой слот: close без reopen на ветке successor
+
+- **Ошибка:** при ошибке `update` successor после `closeScheduleSlotByDate` занятие исчезало из сетки (`valid_to` оставался установленным).
+- **Причина:** ветка «есть successor» не делала rollback `valid_to = null`, в отличие от ветки insert; два последовательных запроса без транзакции.
+- **Как избежать:** при любой ошибке после close — reopen исходного слота (`valid_to = null`); см. также 2026-06-22 (`useEditGroupSchedule` без rollback при failed INSERT). Для атомарности — RPC/транзакция в БД.
+
+### 2026-08-20 — Тариф без дисциплин/преподавателей после сбоя sync
+
+- **Ошибка:** `syncPriceTeacherMembers` / `syncPriceDisciplines` делали DELETE, затем INSERT; при падении INSERT связи оставались пустыми. `useCreatePrice` после успешного `prices.insert` при ошибке sync возвращал ошибку, но тариф оставался в прайсе.
+- **Причина:** клиентские junction-sync без транзакции и без отката; create-price не удалял «полупустой» row.
+- **Как избежать:** перед DELETE сохранять snapshot строк; при любой ошибке после DELETE — восстанавливать snapshot. При create-price при сбое sync — `DELETE` созданного тарифа (CASCADE снимет junction). Предпочтительнее серверный RPC в одной транзакции, если появится повторяющийся контур.
+
+### 2026-08-20 — Повтор «до даты» без cap: бесконечный while и сотни freebusy
+
+- **Дата:** 2026-08-20
+- **Ошибка:** режим «до даты» без верхней границы генерировал сотни ISO-дат → последовательные Edge freebusy, тяжёлый conflict SELECT и bulk insert; не-ISO `endDate` мог зациклить `while` (лексикографика); freebusy не abort при unmount.
+- **Причина:** нет `isIsoDateString` guard в expand; DatePicker weekly-end без `max`; нет client-side cap слотов; `invokeFunction` без timeout/AbortSignal; cleanup freebusy только debounce-timer.
+- **Как избежать:** `dateRecurrenceLimits.ts` (cap 52/200, ISO guard, +12 мес); conflict-query только при `slots.length <= cap`; отказ insert в `useAddPersonalLessons`; AbortSignal + deadline в `useGoogleCalendarFreebusy`.
+
+### 2026-08-20 — GCal sync UI: `detached` показывался как вечный `pending`
+
+- **Дата:** 2026-08-20
+- **Ошибка:** урок с `sync_status = detached` (событие удалено в Google) в попапе крутил спиннер «Ожидает синхронизации» и опрашивал RPC каждые 15 с бесконечно.
+- **Причина:** `resolveLessonGoogleSyncUiStatus` в `else` возвращал `"pending"` для любого статуса вне `synced`/`failed`/`pending`; `refetchInterval` крутился на всё `ui === "pending"`.
+- **Как избежать:** явные ветки `detached` и `unknown`; poll только при реальном pending job; cap на число poll-тиков → `stale` без interval.
+
+### 2026-08-20 — PostgREST max_rows: тихая потеря данных в списках
+
+- **Дата:** 2026-08-20
+- **Ошибка:** справочники и журналы (clients, subscriptions, attendance, personal_lessons, payments) обрезались на 1000 строк без ошибки — UI показывал урезанный массив как полный.
+- **Причина:** `max_rows = 1000` в PostgREST; клиент не читал `Content-Range` и не использовал `.range()` для следующих страниц.
+- **Как избежать:** общий хелпер `fetchAllPostgrestRows` с циклом `.range()`; не поднимать `max_rows` вместо пагинации; ошибки PostgREST пробрасывать, не маскировать пустым `data`.
+
+### 2026-08-20 — Reconnect-эффект в App: self-triggering цикл на 3 с
+
+- **Дата:** 2026-08-20
+- **Ошибка:** после восстановления связи toast «связь восстановлена» и invalidate/reconciliation срабатывали многократно в течение ~3 с (`justConnectionRestored`), штормили PostgREST.
+- **Причина:** `showToast` → `setToast` → ререндер → новые `openReconciliation` / `invalidateAfterOfflineSync` (из-за немемоизированного `withOrgId`) → эффект снова; `counts.*` в deps усиливали повторы.
+- **Как избежать:** `useCallback` для `withOrgId`, `openReconciliation`; ref на rising edge `justConnectionRestored`; не включать `counts` в deps — читать внутри обработчика импульса.
+
+### 2026-08-20 — Цикл refreshSession при рассинхроне JWT и UI от JWT-роли
+
+- **Дата:** 2026-08-20
+- **Ошибка:** при `jwtRole !== membership.role` эффект в `OrganizationProvider` крутил бесконечный refresh (deps на объект `session`); UI показывал JWT-роль выше membership; `member_id` mismatch не ловился; после refresh — голый `invalidateQueries()`.
+- **Причина:** `refreshSession()` всегда создаёт новый объект session даже при тех же claims; JWT-first для `role`/`memberId`; сравнение только ролей в эффекте.
+- **Как избежать:** deps на fingerprint claims (`member_role` + `member_id` + `exp`), in-flight + лимит попыток; UI из membership при наличии строки; scoped invalidate; баннер и блок finance/settings при mismatch.
+
+### 2026-08-20 — Оптимистичная посещаемость остаётся при soft-fail RPC
+
+- **Дата:** 2026-08-20
+- **Ошибка:** после ошибки RPC (`{ success: false }`) UI показывал toast, но список посещаемости и `lessonsLeft`/статус абонемента оставались в оптимистичном состоянии до следующего refetch.
+- **Причина:** `mutationFn` возвращал `{ success: false }` без throw; TanStack Query вызывает `onError` только при reject, поэтому откат из `onMutate` не срабатывал.
+- **Как избежать:** при soft-fail вызывать тот же `rollback` в `onSettled`, если `result.success === false`; инвалидировать кэш только при `success === true`. Контракт `{ success, error }` для `mutateAsync` сохранять, если UI проверяет `!res.success`.
+
 ### 2026-08-18 — Google Calendar: групповые уроки — один день в календаре, остальные не повторяются
 
 - **Ошибка:** в Google Calendar групповой «Танго» 20:00 по понедельникам «размножался» каждую неделю (или оставался один recurring orphan), а среда/пятница не повторялись — в CRM только одна дата на слот в `google_calendar_event_links`.

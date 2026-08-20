@@ -1,3 +1,4 @@
+import { DATE_CURSOR_MAX_ITERATIONS, isIsoDateString } from "./dateRecurrenceLimits";
 import { jsDayToIsoDow } from "./utils";
 import { resolveLocale } from "./i18n";
 import type { GroupDisplayLesson, ScheduleSlot } from "../types";
@@ -123,13 +124,17 @@ export function expandSlotsToDateRange(
   rangeStartISO: string,
   rangeEndISO: string
 ): GroupDisplayLesson[] {
+  if (!isIsoDateString(rangeStartISO) || !isIsoDateString(rangeEndISO)) return [];
   if (rangeStartISO > rangeEndISO) return [];
 
   const seen = new Set<string>();
   const result: GroupDisplayLesson[] = [];
   let cursorISO = rangeStartISO;
 
+  let iterations = 0;
   while (cursorISO <= rangeEndISO) {
+    if (++iterations > DATE_CURSOR_MAX_ITERATIONS) break;
+
     const cursorDate = new Date(`${cursorISO}T12:00:00`);
     const { weekStart, weekEnd } = getWeekRange(cursorDate);
     const lessons = expandSlotsToWeek(slots, weekStart, weekEnd);
@@ -143,6 +148,7 @@ export function expandSlotsToDateRange(
     }
 
     cursorISO = addDays(toISODateLocal(weekEnd), 1);
+    if (!isIsoDateString(cursorISO)) break;
   }
 
   return result.sort(

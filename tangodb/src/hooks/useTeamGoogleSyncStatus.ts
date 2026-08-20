@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useOrgQueryScope } from "./useOrgQueryScope";
 import { usePermissions } from "./usePermissions";
 import {
   fetchOrganizationCalendarSyncMetrics,
@@ -14,34 +15,39 @@ export const teamGoogleSyncQueryKeys = {
 
 export function useTeamGoogleSyncStatus() {
   const { role } = usePermissions();
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const canViewTeam = role === "owner" || role === "director";
   const queryClient = useQueryClient();
+  const scopedMembersKey = withOrgId(teamGoogleSyncQueryKeys.members);
+  const scopedOrgMetricsKey = withOrgId(teamGoogleSyncQueryKeys.org);
 
   const membersQuery = useQuery({
-    queryKey: teamGoogleSyncQueryKeys.members,
+    queryKey: scopedMembersKey,
     queryFn: fetchTeamCalendarSyncMetrics,
-    enabled: canViewTeam,
+    enabled: orgEnabled && canViewTeam,
     staleTime: 60_000,
   });
 
   const orgMetricsQuery = useQuery({
-    queryKey: teamGoogleSyncQueryKeys.org,
+    queryKey: scopedOrgMetricsKey,
     queryFn: fetchOrganizationCalendarSyncMetrics,
-    enabled: canViewTeam,
+    enabled: orgEnabled && canViewTeam,
     staleTime: 60_000,
   });
 
   const remindMutation = useMutation({
     mutationFn: remindGoogleCalendarConnect,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["google-calendar", "team-sync-metrics"] });
+      await queryClient.invalidateQueries({ queryKey: scopedMembersKey });
     },
   });
 
   const retryDeadMutation = useMutation({
     mutationFn: retryOrganizationCalendarSyncDeadJobs,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["google-calendar"] });
+      await queryClient.invalidateQueries({ queryKey: scopedMembersKey });
+      await queryClient.invalidateQueries({ queryKey: scopedOrgMetricsKey });
+      await queryClient.invalidateQueries({ queryKey: withOrgId(["google-calendar", "entry-sync-status"]) });
     },
   });
 

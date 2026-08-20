@@ -1,5 +1,6 @@
-import { useCallback, useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, useRef } from "react";
+import { useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
 import { reportClientError } from "../lib/reportClientError";
 import { formatClientName, isMonthlyUnlimitedSubscription, jsDayToIsoDow } from "../lib/utils";
@@ -161,22 +162,23 @@ export function useAttendanceRecords(yearMonth?: string, options?: { enabled?: b
     queryKey: withOrgId(baseKey),
     enabled: queryEnabled,
     queryFn: async () => {
-      let query = supabase
-        .from("attendance")
-        .select("*")
-        .order("date", { ascending: false });
+      const data = await fetchAllPostgrestRows((from, to) => {
+        let query = supabase
+          .from("attendance")
+          .select("*")
+          .order("date", { ascending: false });
 
-      if (yearMonth) {
-        const [y, m] = yearMonth.split("-").map(Number);
-        const start = `${y}-${String(m).padStart(2, "0")}-01`;
-        const lastDay = new Date(y, m, 0).getDate();
-        const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-        query = query.gte("date", start).lte("date", end);
-      }
+        if (yearMonth) {
+          const [y, m] = yearMonth.split("-").map(Number);
+          const start = `${y}-${String(m).padStart(2, "0")}-01`;
+          const lastDay = new Date(y, m, 0).getDate();
+          const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+          query = query.gte("date", start).lte("date", end);
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []).map(mapAttendanceRecord);
+        return query.range(from, to);
+      });
+      return data.map(mapAttendanceRecord);
     },
     staleTime: 30 * 1000,
   });
@@ -339,33 +341,117 @@ function computeAttendanceDeltas(
   return { lessonDelta, freezeDelta };
 }
 
+type MarkAttendanceStatus = "present" | "absent" | "freeze" | "excused";
+
+type MarkAttendanceVars = {
+  dateStr: string;
+  subId: string;
+  status: MarkAttendanceStatus;
+  disciplineId?: string | null;
+  scheduleGroupId: string;
+  oldStatus?: MarkAttendanceStatus | null;
+  reasonCode?: string;
+  idempotencyKey?: string;
+};
+
+type MarkAttendanceRollbackContext = {
+  previousAttendanceEntries: [QueryKey, AttendanceRecord[] | undefined][];
+  previousSubscriptions: Subscription[] | undefined;
+};
+
+type MarkAttendanceGuard = { apply: true } | { apply: false; error: string };
+
+/** Shared by onMutate and mutationFn so a skipped optimistic update never still hits RPC. */
+function evaluateMarkAttendanceGuard(
+  sub: Subscription | undefined,
+  cacheOldStatus: MarkAttendanceStatus | null,
+  status: MarkAttendanceStatus,
+  freezePolicy: FreezePolicy
+): MarkAttendanceGuard {
+  if (!sub) {
+    return { apply: false, error: "common.saveMarkFailed" };
+  }
+  if (cacheOldStatus === status) {
+    return { apply: false, error: "common.saveMarkFailed" };
+  }
+  if (isMonthlyUnlimitedSubscription(sub)) {
+    return { apply: true };
+  }
+  const { lessonDelta, freezeDelta } = computeAttendanceDeltas(cacheOldStatus, status);
+  if (
+    status === "freeze" &&
+    !canApplyFreeze(sub.lessonsTotal, sub.freezeUsed, freezePolicy, sub.billingModel)
+  ) {
+    return { apply: false, error: "common.saveMarkFailed" };
+  }
+  if (status === "freeze" && wouldExceedFreezeLimit(sub.freezeUsed, freezeDelta, freezePolicy)) {
+    return { apply: false, error: "common.saveMarkFailed" };
+  }
+  if (sub.lessonsLeft + lessonDelta < 0) {
+    return { apply: false, error: "common.saveMarkFailed" };
+  }
+  return { apply: true };
+}
+
+function readMarkAttendanceSnapshot(
+  queryClient: ReturnType<typeof useQueryClient>,
+  scopedAttendanceKey: QueryKey,
+  scopedSubscriptionsKey: QueryKey,
+  vars: Pick<MarkAttendanceVars, "dateStr" | "subId" | "scheduleGroupId">
+) {
+  const previousAttendanceEntries = queryClient.getQueriesData<AttendanceRecord[]>({
+    queryKey: scopedAttendanceKey,
+  });
+  const previousSubscriptions = queryClient.getQueryData<Subscription[]>(scopedSubscriptionsKey);
+  const sub = previousSubscriptions?.find((s) => s.id === vars.subId);
+  const previousAttendance = previousAttendanceEntries[0]?.[1];
+  const existing = previousAttendance?.find(
+    (a) =>
+      a.date === vars.dateStr &&
+      a.subscriptionId === vars.subId &&
+      a.scheduleGroupId === vars.scheduleGroupId
+  );
+  const cacheOldStatus = existing?.attendanceStatus ?? null;
+  return { previousAttendanceEntries, previousSubscriptions, sub, cacheOldStatus };
+}
+
 export function useMarkAttendance() {
   const queryClient = useQueryClient();
   const { withOrgId } = useOrgQueryScope();
   const { freezePolicy } = useSettings();
   const scopedAttendanceKey = withOrgId(attendanceQueryKey);
   const scopedSubscriptionsKey = withOrgId(subscriptionsQueryKey);
+  const guardByVars = useRef(new WeakMap<MarkAttendanceVars, MarkAttendanceGuard>());
+
+  const rollback = (context: MarkAttendanceRollbackContext | undefined) => {
+    if (context?.previousAttendanceEntries) {
+      for (const [key, data] of context.previousAttendanceEntries) {
+        queryClient.setQueryData(key, data);
+      }
+    }
+    if (context?.previousSubscriptions) {
+      queryClient.setQueryData(scopedSubscriptionsKey, context.previousSubscriptions);
+    }
+  };
 
   return useMutation({
-    mutationFn: async ({
-      dateStr,
-      subId,
-      status,
-      disciplineId,
-      scheduleGroupId,
-      oldStatus,
-      reasonCode,
-      idempotencyKey,
-    }: {
-      dateStr: string;
-      subId: string;
-      status: "present" | "absent" | "freeze" | "excused";
-      disciplineId?: string | null;
-      scheduleGroupId: string;
-      oldStatus?: "present" | "absent" | "freeze" | "excused" | null;
-      reasonCode?: string;
-      idempotencyKey?: string;
-    }) => {
+    mutationFn: async (vars: MarkAttendanceVars) => {
+      const {
+        dateStr,
+        subId,
+        status,
+        disciplineId,
+        scheduleGroupId,
+        oldStatus,
+        reasonCode,
+        idempotencyKey,
+      } = vars;
+
+      const guard = guardByVars.current.get(vars);
+      if (guard?.apply === false) {
+        return { success: false as const, error: guard.error };
+      }
+
       const isCorrection = oldStatus != null && oldStatus !== status;
 
       if (isCorrection) {
@@ -427,47 +513,28 @@ export function useMarkAttendance() {
         isCorrection: false as const,
       };
     },
-    onMutate: async ({ dateStr, subId, status, scheduleGroupId }) => {
+    onMutate: async (vars) => {
+      const { dateStr, subId, status, scheduleGroupId } = vars;
       await queryClient.cancelQueries({ queryKey: scopedAttendanceKey });
       await queryClient.cancelQueries({ queryKey: scopedSubscriptionsKey });
 
-      const previousAttendanceEntries = queryClient.getQueriesData<AttendanceRecord[]>({
-        queryKey: scopedAttendanceKey,
-      });
-      const previousSubscriptions = queryClient.getQueryData<Subscription[]>(scopedSubscriptionsKey);
-
-      const sub = previousSubscriptions?.find((s) => s.id === subId);
-      if (!sub) return { previousAttendanceEntries, previousSubscriptions };
-
-      const previousAttendance = previousAttendanceEntries[0]?.[1];
-      const existing = previousAttendance?.find(
-        (a) =>
-          a.date === dateStr &&
-          a.subscriptionId === subId &&
-          a.scheduleGroupId === scheduleGroupId
+      const snapshot = readMarkAttendanceSnapshot(
+        queryClient,
+        scopedAttendanceKey,
+        scopedSubscriptionsKey,
+        vars
       );
-      const oldStatus = existing?.attendanceStatus ?? null;
-
-      if (oldStatus === status) {
+      const { previousAttendanceEntries, previousSubscriptions, sub, cacheOldStatus } = snapshot;
+      const guard = evaluateMarkAttendanceGuard(sub, cacheOldStatus, status, freezePolicy);
+      guardByVars.current.set(vars, guard);
+      if (guard.apply === false || !sub) {
         return { previousAttendanceEntries, previousSubscriptions };
       }
 
       const isMonthly = isMonthlyUnlimitedSubscription(sub);
       const { lessonDelta, freezeDelta } = isMonthly
         ? { lessonDelta: 0, freezeDelta: 0 }
-        : computeAttendanceDeltas(oldStatus, status);
-
-      if (!isMonthly) {
-        if (status === "freeze" && !canApplyFreeze(sub.lessonsTotal, sub.freezeUsed, freezePolicy, sub.billingModel)) {
-          return { previousAttendanceEntries, previousSubscriptions };
-        }
-        if (status === "freeze" && wouldExceedFreezeLimit(sub.freezeUsed, freezeDelta, freezePolicy)) {
-          return { previousAttendanceEntries, previousSubscriptions };
-        }
-        if (sub.lessonsLeft + lessonDelta < 0) {
-          return { previousAttendanceEntries, previousSubscriptions };
-        }
-      }
+        : computeAttendanceDeltas(cacheOldStatus, status);
 
       queryClient.setQueriesData<AttendanceRecord[]>(
         { queryKey: scopedAttendanceKey },
@@ -520,16 +587,13 @@ export function useMarkAttendance() {
     },
     onError: (error, _vars, context) => {
       reportClientError(error, { area: "mutation", action: "useMarkAttendance" });
-      if (context?.previousAttendanceEntries) {
-        for (const [key, data] of context.previousAttendanceEntries) {
-          queryClient.setQueryData(key, data);
-        }
-      }
-      if (context?.previousSubscriptions) {
-        queryClient.setQueryData(scopedSubscriptionsKey, context.previousSubscriptions);
-      }
+      rollback(context);
     },
-    onSettled: (result) => {
+    onSettled: (result, _error, _vars, context) => {
+      if (result?.success === false) {
+        rollback(context);
+        return;
+      }
       if (result?.success) {
         void queryClient.invalidateQueries({ queryKey: attendanceQueryKey });
         void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey });

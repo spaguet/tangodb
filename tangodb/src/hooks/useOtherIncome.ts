@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { applyCreatedAtUtcRange, orgCreatedAtUtcRange } from "../lib/orgFinanceDate";
 import { supabase } from "../lib/supabase";
 import type { OtherIncome, PaymentMethod } from "../types";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const otherIncomeQueryKey = ["otherIncome"] as const;
@@ -21,27 +23,26 @@ export interface OtherIncomeFilter {
   enabled?: boolean;
 }
 
-function buildOtherIncomeQuery(filter?: OtherIncomeFilter) {
-  let query = supabase
+function buildOtherIncomeQuery(filter?: OtherIncomeFilter, timezone = "UTC") {
+  const query = supabase
     .from("other_income")
     .select("id, calendar_event_id, amount, currency, method, method_comment, created_at")
     .order("created_at", { ascending: false });
 
-  if (filter?.dateFrom) query = query.gte("created_at", `${filter.dateFrom}T00:00:00`);
-  if (filter?.dateTo) query = query.lte("created_at", `${filter.dateTo}T23:59:59`);
-
-  return query;
+  return applyCreatedAtUtcRange(query, orgCreatedAtUtcRange(filter ?? {}, timezone));
 }
 
 export function useOtherIncome(filter?: OtherIncomeFilter) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const { settings } = useOrganization();
+  const timezone = settings?.timezone ?? "UTC";
   const queryEnabled = orgEnabled && (filter?.enabled ?? true);
 
   return useQuery({
-    queryKey: withOrgId([...otherIncomeQueryKey, filter ?? {}]),
+    queryKey: withOrgId([...otherIncomeQueryKey, filter ?? {}, timezone]),
     enabled: queryEnabled,
     queryFn: async () => {
-      const { data, error } = await buildOtherIncomeQuery(filter);
+      const { data, error } = await buildOtherIncomeQuery(filter, timezone);
       if (error) throw error;
       return (data ?? []).map((row) => mapOtherIncome(row as Record<string, unknown>));
     },

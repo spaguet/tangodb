@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { asJson } from "../lib/json";
 import { supabase } from "../lib/supabase";
+import type { Json } from "../types/database";
 import { normalizeTime } from "../lib/scheduleWeek";
 import type {
   RentalSeries,
@@ -45,7 +47,7 @@ export interface RentalSeriesPayload {
   patterns: RentalSeriesPattern[];
 }
 
-function seriesPayloadToRpc(input: RentalSeriesPayload): Record<string, unknown> {
+function seriesPayloadObject(input: RentalSeriesPayload) {
   return {
     renter_id: input.renterId,
     location_id: input.locationId,
@@ -60,6 +62,10 @@ function seriesPayloadToRpc(input: RentalSeriesPayload): Record<string, unknown>
       time_end: p.timeEnd,
     })),
   };
+}
+
+function seriesPayloadToRpc(input: RentalSeriesPayload): Json {
+  return asJson(seriesPayloadObject(input));
 }
 
 function invalidateSeriesQueries(queryClient: ReturnType<typeof useQueryClient>) {
@@ -125,10 +131,10 @@ export function useCreateRentalSeries() {
   return useMutation({
     mutationFn: async (input: CreateRentalSeriesInput) => {
       const { data, error } = await supabase.rpc("create_rental_series", {
-        p_payload: {
-          ...seriesPayloadToRpc(input),
+        p_payload: asJson({
+          ...seriesPayloadObject(input),
           idempotency_key: input.idempotencyKey,
-        },
+        }),
       });
 
       if (error) return { success: false as const, error: error.message };
@@ -217,7 +223,7 @@ export function useUpdateRentalSeries() {
     }) => {
       const { data, error } = await supabase.rpc("update_rental_series", {
         p_series_id: input.seriesId,
-        p_payload: input.payload,
+        p_payload: asJson(input.payload),
         p_scope: input.scope ?? "future",
       });
 

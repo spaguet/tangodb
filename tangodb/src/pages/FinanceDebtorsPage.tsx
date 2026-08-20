@@ -408,6 +408,9 @@ export default function FinanceDebtorsPage() {
             {t("finance.debtors.toPay", { amount: formatCurrency(totalDebt) })}
           </span>
         </div>
+        <p className="px-4 py-2 text-[11px] leading-snug text-slate-500 border-b border-slate-100">
+          {t("finance.debtors.scopeHint")}
+        </p>
 
         <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap items-end justify-between gap-2">
           <div className="flex flex-wrap gap-2">

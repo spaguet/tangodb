@@ -1,46 +1,11 @@
+import { orgLocalDateTimeToUtcMs } from "./orgFinanceDate";
+
 export type GoogleFreebusyInterval = {
   start: string;
   end: string;
 };
 
-/** Convert org-local date + HH:MM to UTC epoch ms using IANA timezone. */
-export function orgLocalDateTimeToUtcMs(
-  date: string,
-  time: string,
-  timeZone: string
-): number {
-  const tz = timeZone?.trim() || "UTC";
-  const hm = time.length >= 5 ? time.slice(0, 5) : time;
-  const [year, month, day] = date.split("-").map(Number);
-  const [hour, minute] = hm.split(":").map(Number);
-  const utcGuess = Date.UTC(year, month - 1, day, hour, minute, 0);
-
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    hour12: false,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-
-  const parts = formatter.formatToParts(new Date(utcGuess));
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((part) => part.type === type)?.value ?? 0);
-
-  const asUtc = Date.UTC(
-    get("year"),
-    get("month") - 1,
-    get("day"),
-    get("hour"),
-    get("minute"),
-    get("second")
-  );
-
-  return utcGuess - (asUtc - utcGuess);
-}
+export { orgLocalDateTimeToUtcMs };
 
 export function lessonOverlapsBusyIntervals(
   date: string,

@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
 import { inviteMember } from "../lib/edgeFunctions";
+import { asJson } from "../lib/json";
+import { supabase } from "../lib/supabase";
+import { normalizeTeacherScope } from "../lib/teacherScope";
 import type { MemberRole, MemberMeta, TeacherScope } from "../types/organization";
-import { EMPTY_TEACHER_SCOPE } from "../lib/permissions";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { teamMembersQueryKey } from "./useTeamMembers";
 
@@ -43,8 +44,11 @@ export function useTeamInvites() {
         first_name: (row.first_name as string | null) ?? null,
         last_name: (row.last_name as string | null) ?? null,
         role: row.role as MemberRole,
-        scope: (row.scope as TeacherScope) ?? EMPTY_TEACHER_SCOPE,
-        meta: (row.meta as MemberMeta) ?? {},
+        scope: normalizeTeacherScope(row.scope),
+        meta:
+          row.meta != null && typeof row.meta === "object" && !Array.isArray(row.meta)
+            ? (row.meta as unknown as MemberMeta)
+            : {},
         expires_at: row.expires_at as string,
         created_at: row.created_at as string,
       })) satisfies PendingInvite[];
@@ -106,8 +110,8 @@ export function useTeamMutations() {
       const { error } = await supabase.rpc("update_team_member", {
         p_member_id: params.memberId,
         p_role: params.role ?? null,
-        p_scope: params.scope ?? null,
-        p_meta: params.meta ?? null,
+        p_scope: params.scope == null ? null : asJson(params.scope),
+        p_meta: params.meta == null ? null : asJson(params.meta),
         p_is_active: params.isActive ?? null,
         p_display_name: params.displayName ?? null,
         p_first_name: params.firstName ?? null,

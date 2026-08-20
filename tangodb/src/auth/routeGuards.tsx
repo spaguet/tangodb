@@ -3,6 +3,7 @@ import { useAuth } from "./AuthProvider";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePermissions } from "../hooks/usePermissions";
 import { useEnsureOwnMemberProfile } from "../hooks/useEnsureOwnMemberProfile";
+import { useApplyScheduledSubscriptionMemberChanges } from "../hooks/useApplyScheduledSubscriptionMemberChanges";
 import { useGuestI18n } from "../hooks/useI18n";
 import { getOrganizationIdFromSession } from "../lib/authClaims";
 import { isSyntheticTelegramEmail } from "../lib/telegram";
@@ -12,6 +13,7 @@ import {
   panelIdFromPath,
   settingsSectionFromPath,
   canAccessSettingsSection,
+  canAccessFinanceNav,
   canAccessPayrollRoute,
   canAccessRentalInboxRoute,
   permissionOptionsFromSettings,
@@ -84,6 +86,7 @@ export function OrgWorkspaceRoute() {
     needsOnboarding,
   } = useOrganization();
   useEnsureOwnMemberProfile();
+  useApplyScheduledSubscriptionMemberChanges();
   const location = useLocation();
   const jwtOrganizationId = getOrganizationIdFromSession(session);
 
@@ -124,7 +127,7 @@ export function OrgWorkspaceRoute() {
 export function PanelAccessRoute() {
   const location = useLocation();
   const { canAccessPanel, role, scope, isReadOnly, membership } = usePermissions();
-  const { settings } = useOrganization();
+  const { settings, claimsMismatch } = useOrganization();
   const panel = panelIdFromPath(location.pathname);
   const settingsSection = settingsSectionFromPath(location.pathname);
   const modules = normalizeOrgModules(settings?.modules);
@@ -133,6 +136,11 @@ export function PanelAccessRoute() {
     restrictedAdmin: membership?.meta?.restricted_admin ?? false,
     isReadOnly,
   });
+
+  if (claimsMismatch && (settingsSection || panel === "finance")) {
+    const fallbackPath = findFirstEnabledAccessiblePanelPath(role, modules, options);
+    return <Navigate to={fallbackPath ?? "/"} replace />;
+  }
 
   if (settingsSection) {
     const settingsModuleKey = moduleKeyFromSettingsSection(settingsSection);
@@ -151,6 +159,12 @@ export function PanelAccessRoute() {
   if (panelModuleKey && !isModuleEnabled(modules, panelModuleKey)) {
     const fallbackPath = findFirstEnabledAccessiblePanelPath(role, modules, options);
     return <Navigate to={fallbackPath ?? "/"} replace />;
+  }
+
+  const isFinanceRoot =
+    location.pathname === "/finance" || location.pathname === "/finance/";
+  if (isFinanceRoot && canAccessFinanceNav(role, modules, options)) {
+    return <Outlet />;
   }
 
   const isPayrollRoute = location.pathname.startsWith("/finance/payroll");

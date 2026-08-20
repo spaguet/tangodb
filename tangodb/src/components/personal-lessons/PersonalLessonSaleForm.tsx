@@ -30,6 +30,11 @@ import {
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { toISODateLocal, addDays } from "../../lib/scheduleWeek";
 import {
+  exceedsWeeklySlotCap,
+  maxRepeatEndDate,
+  WEEKLY_RECURRENCE_SLOT_CAP,
+} from "../../lib/dateRecurrenceLimits";
+import {
   billedFromTariff,
   durationHardBlock,
   durationWarning,
@@ -252,18 +257,14 @@ export default function PersonalLessonSaleForm({
 
   const effectiveLocationId = isScheduleCell ? (prefill?.locationId ?? "") : locationId;
 
-  const freebusySlots = useMemo(() => {
-    if (isScheduleCell) {
-      if (!prefill?.date) return [];
-      return expandPersonalLessonWeeklySlots(prefill.date, timeStart, timeEnd, {
-        repeatWeekly,
-        endMode: weeklyEndMode,
-        weekCount: weeklyWeekCount,
-        endDate: weeklyEndDate,
-      }).filter((slot) => slot.date && slot.timeStart && slot.timeEnd);
-    }
-
-    return lessonEntries.filter((slot) => slot.date && slot.timeStart && slot.timeEnd);
+  const expandedScheduleCellSlots = useMemo(() => {
+    if (!isScheduleCell || !prefill?.date) return [];
+    return expandPersonalLessonWeeklySlots(prefill.date, timeStart, timeEnd, {
+      repeatWeekly,
+      endMode: weeklyEndMode,
+      weekCount: weeklyWeekCount,
+      endDate: weeklyEndDate,
+    }).filter((slot) => slot.date && slot.timeStart && slot.timeEnd);
   }, [
     isScheduleCell,
     prefill?.date,
@@ -273,8 +274,18 @@ export default function PersonalLessonSaleForm({
     weeklyEndMode,
     weeklyWeekCount,
     weeklyEndDate,
-    lessonEntries,
   ]);
+
+  const scheduleRepeatOverCap = exceedsWeeklySlotCap(expandedScheduleCellSlots.length);
+
+  const freebusySlots = useMemo(() => {
+    if (isScheduleCell) {
+      if (scheduleRepeatOverCap) return [];
+      return expandedScheduleCellSlots;
+    }
+
+    return lessonEntries.filter((slot) => slot.date && slot.timeStart && slot.timeEnd);
+  }, [isScheduleCell, scheduleRepeatOverCap, expandedScheduleCellSlots, lessonEntries]);
 
   const { hasOverlap: hasGoogleFreebusyOverlap, isChecking: isCheckingGoogleFreebusy } =
     useGoogleCalendarFreebusy({
@@ -283,7 +294,7 @@ export default function PersonalLessonSaleForm({
     });
 
   const conflictCheckDateRange = useMemo(() => {
-    if (!isScheduleCell || freebusySlots.length === 0) return null;
+    if (!isScheduleCell || freebusySlots.length === 0 || scheduleRepeatOverCap) return null;
     let min = freebusySlots[0].date;
     let max = freebusySlots[0].date;
     for (const slot of freebusySlots) {
@@ -291,7 +302,7 @@ export default function PersonalLessonSaleForm({
       if (slot.date > max) max = slot.date;
     }
     return { start: min, end: max };
-  }, [isScheduleCell, freebusySlots]);
+  }, [isScheduleCell, freebusySlots, scheduleRepeatOverCap]);
 
   const lessonsInRangeQuery = usePersonalLessons({
     dateRange: conflictCheckDateRange ?? undefined,
@@ -504,6 +515,11 @@ export default function PersonalLessonSaleForm({
         return null;
       }
 
+      if (exceedsWeeklySlotCap(slots.length)) {
+        toast(t("personal.error.tooManySlots", { max: WEEKLY_RECURRENCE_SLOT_CAP }), "error");
+        return null;
+      }
+
       return slots;
     }
 
@@ -543,7 +559,12 @@ export default function PersonalLessonSaleForm({
         );
         return null;
       }
-      return expandWeeklyRecurrenceByWeekCount(startDate, weeklyWeekCount, rows);
+      const weekSlots = expandWeeklyRecurrenceByWeekCount(startDate, weeklyWeekCount, rows);
+      if (exceedsWeeklySlotCap(weekSlots.length)) {
+        toast(t("personal.error.tooManySlots", { max: WEEKLY_RECURRENCE_SLOT_CAP }), "error");
+        return null;
+      }
+      return weekSlots;
     }
 
     if (!weeklyEndDate) {
@@ -568,6 +589,10 @@ export default function PersonalLessonSaleForm({
     const slots = expandWeeklyRecurrence(startDate, weeklyEndDate, rows);
     if (slots.length === 0) {
       toast(t("personal.error.noDatesGenerated"), "error");
+      return null;
+    }
+    if (exceedsWeeklySlotCap(slots.length)) {
+      toast(t("personal.error.tooManySlots", { max: WEEKLY_RECURRENCE_SLOT_CAP }), "error");
       return null;
     }
     return slots;
@@ -807,7 +832,6 @@ export default function PersonalLessonSaleForm({
             clientDisplay: payerDisplay,
             amount: plan.amount,
             method: "cash",
-            markPaid: true,
             idempotencyKey: getLessonPaymentIdempotencyKey(plan.lessonId),
             venueRuleAcknowledged,
             priceId: selectedTariff?.id ?? null,
@@ -876,7 +900,6 @@ export default function PersonalLessonSaleForm({
         clientDisplay: pending.clientDisplay,
         amount: plan.amount,
         method: "cash",
-        markPaid: true,
         idempotencyKey: getLessonPaymentIdempotencyKey(plan.lessonId),
         venueRuleAcknowledged: true,
         priceId: pending.tariff?.id ?? null,
@@ -1056,6 +1079,7 @@ export default function PersonalLessonSaleForm({
                 value={weeklyEndDate}
                 onChange={setWeeklyEndDate}
                 min={startDate || todayISO}
+                max={maxRepeatEndDate(startDate || todayISO)}
                 required
               />
             )}

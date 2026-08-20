@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { useOrgQueryScope } from "./useOrgQueryScope";
 import { usePermissions } from "./usePermissions";
 import {
   createGoogleCalendar,
@@ -25,8 +26,12 @@ export const googleCalendarQueryKeys = {
 export function useGoogleCalendarIntegration() {
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const { membership } = usePermissions();
   const memberId = membership?.id;
+  const scopedBindingKey = withOrgId(
+    memberId ? googleCalendarQueryKeys.binding(memberId) : (["google-calendar", "binding"] as const)
+  );
 
   const accountsQuery = useQuery({
     queryKey: googleCalendarQueryKeys.accounts,
@@ -34,13 +39,17 @@ export function useGoogleCalendarIntegration() {
   });
 
   const bindingQuery = useQuery({
-    queryKey: googleCalendarQueryKeys.binding(memberId),
+    queryKey: scopedBindingKey,
     queryFn: () => fetchMemberGoogleBinding(memberId!),
-    enabled: Boolean(memberId),
+    enabled: orgEnabled && Boolean(memberId),
   });
 
   const invalidateAll = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["google-calendar"] });
+    await queryClient.invalidateQueries({ queryKey: googleCalendarQueryKeys.accounts });
+    if (organizationId) {
+      await queryClient.invalidateQueries({ queryKey: withOrgId(["google-calendar", "binding"]) });
+      await queryClient.invalidateQueries({ queryKey: withOrgId(["google-calendar", "entry-sync-status"]) });
+    }
   };
 
   const connectMutation = useMutation({

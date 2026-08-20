@@ -491,6 +491,15 @@ export function useEditGroupSchedule() {
           .eq("id", successorId);
 
         if (updateError) {
+          const { error: rollbackError } = await supabase
+            .from(scheduleTable)
+            .update({ valid_to: null })
+            .eq("id", slotId);
+
+          if (rollbackError) {
+            return { success: false as const, error: mapScheduleMutationError(updateError) };
+          }
+
           return { success: false as const, error: mapScheduleMutationError(updateError) };
         }
         return { success: true as const };

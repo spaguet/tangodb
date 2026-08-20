@@ -1,9 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { Price, PriceCategory } from "../types";
+import type { Database } from "../types/database";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const pricesQueryKey = ["prices"] as const;
+
+type PricesInsert = Database["public"]["Tables"]["prices"]["Insert"];
+type PricesUpdate = Database["public"]["Tables"]["prices"]["Update"];
 
 type PriceTeacherRow = { member_id: string };
 type PriceDisciplineRow = { discipline_id: string };
@@ -148,7 +152,7 @@ export function useUpdatePriceMeta() {
       teacherMemberIds?: string[];
       durationMinutes?: number | null;
     }) => {
-      const payload: Record<string, unknown> = {
+      const payload: PricesUpdate = {
         label: label.trim(),
         description: description.trim(),
       };
@@ -183,10 +187,53 @@ export function useUpdatePriceMeta() {
   });
 }
 
+type PriceTeacherSnapshotRow = { organization_id: string; member_id: string };
+type PriceDisciplineSnapshotRow = { organization_id: string; discipline_id: string };
+
+async function restorePriceTeacherMembers(
+  priceId: string,
+  rows: PriceTeacherSnapshotRow[]
+): Promise<void> {
+  if (rows.length === 0) return;
+  await supabase.from("price_teacher_members").insert(
+    rows.map((row) => ({
+      organization_id: row.organization_id,
+      price_id: priceId,
+      member_id: row.member_id,
+    }))
+  );
+}
+
+async function restorePriceDisciplines(
+  priceId: string,
+  rows: PriceDisciplineSnapshotRow[]
+): Promise<void> {
+  if (rows.length === 0) return;
+  await supabase.from("price_disciplines").insert(
+    rows.map((row) => ({
+      organization_id: row.organization_id,
+      price_id: priceId,
+      discipline_id: row.discipline_id,
+    }))
+  );
+}
+
+async function deleteCreatedPrice(priceId: string): Promise<void> {
+  await supabase.from("prices").delete().eq("id", priceId);
+}
+
 async function syncPriceTeacherMembers(
   priceId: string,
   teacherMemberIds: string[]
 ): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: existingRows, error: selectError } = await supabase
+    .from("price_teacher_members")
+    .select("organization_id, member_id")
+    .eq("price_id", priceId);
+  if (selectError) return { success: false as const, error: selectError.message };
+
+  const snapshot = (existingRows ?? []) as PriceTeacherSnapshotRow[];
+
   const { error: deleteError } = await supabase
     .from("price_teacher_members")
     .delete()
@@ -202,8 +249,14 @@ async function syncPriceTeacherMembers(
     .select("organization_id")
     .eq("id", priceId)
     .maybeSingle();
-  if (priceError) return { success: false as const, error: priceError.message };
-  if (!priceRow?.organization_id) return { success: false as const, error: "Price not found" };
+  if (priceError) {
+    await restorePriceTeacherMembers(priceId, snapshot);
+    return { success: false as const, error: priceError.message };
+  }
+  if (!priceRow?.organization_id) {
+    await restorePriceTeacherMembers(priceId, snapshot);
+    return { success: false as const, error: "Price not found" };
+  }
 
   const { error: insertError } = await supabase.from("price_teacher_members").insert(
     teacherMemberIds.map((memberId) => ({
@@ -212,7 +265,10 @@ async function syncPriceTeacherMembers(
       member_id: memberId,
     }))
   );
-  if (insertError) return { success: false as const, error: insertError.message };
+  if (insertError) {
+    await restorePriceTeacherMembers(priceId, snapshot);
+    return { success: false as const, error: insertError.message };
+  }
 
   return { success: true as const };
 }
@@ -221,6 +277,14 @@ async function syncPriceDisciplines(
   priceId: string,
   disciplineIds: string[]
 ): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: existingRows, error: selectError } = await supabase
+    .from("price_disciplines")
+    .select("organization_id, discipline_id")
+    .eq("price_id", priceId);
+  if (selectError) return { success: false as const, error: selectError.message };
+
+  const snapshot = (existingRows ?? []) as PriceDisciplineSnapshotRow[];
+
   const { error: deleteError } = await supabase
     .from("price_disciplines")
     .delete()
@@ -236,8 +300,14 @@ async function syncPriceDisciplines(
     .select("organization_id")
     .eq("id", priceId)
     .maybeSingle();
-  if (priceError) return { success: false as const, error: priceError.message };
-  if (!priceRow?.organization_id) return { success: false as const, error: "Price not found" };
+  if (priceError) {
+    await restorePriceDisciplines(priceId, snapshot);
+    return { success: false as const, error: priceError.message };
+  }
+  if (!priceRow?.organization_id) {
+    await restorePriceDisciplines(priceId, snapshot);
+    return { success: false as const, error: "Price not found" };
+  }
 
   const { error: insertError } = await supabase.from("price_disciplines").insert(
     disciplineIds.map((disciplineId) => ({
@@ -246,7 +316,10 @@ async function syncPriceDisciplines(
       discipline_id: disciplineId,
     }))
   );
-  if (insertError) return { success: false as const, error: insertError.message };
+  if (insertError) {
+    await restorePriceDisciplines(priceId, snapshot);
+    return { success: false as const, error: insertError.message };
+  }
 
   return { success: true as const };
 }
@@ -306,7 +379,7 @@ export function useCreatePrice() {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
 
-      const insertPayload: Record<string, unknown> = {
+      const insertPayload: PricesInsert = {
         organization_id: organizationId,
         type: type.trim(),
         lessons,
@@ -330,16 +403,20 @@ export function useCreatePrice() {
 
       if (error) return { success: false as const, error: error.message };
 
+      const priceId = String(data.id);
+
       if (disciplineIds && disciplineIds.length > 0) {
-        const disciplineResult = await syncPriceDisciplines(String(data.id), disciplineIds);
+        const disciplineResult = await syncPriceDisciplines(priceId, disciplineIds);
         if (disciplineResult.success === false) {
+          await deleteCreatedPrice(priceId);
           return { success: false as const, error: disciplineResult.error };
         }
       }
 
       if (teacherMemberIds && teacherMemberIds.length > 0) {
-        const teacherResult = await syncPriceTeacherMembers(String(data.id), teacherMemberIds);
+        const teacherResult = await syncPriceTeacherMembers(priceId, teacherMemberIds);
         if (teacherResult.success === false) {
+          await deleteCreatedPrice(priceId);
           return { success: false as const, error: teacherResult.error };
         }
       }

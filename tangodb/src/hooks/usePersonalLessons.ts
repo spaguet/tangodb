@@ -1,6 +1,10 @@
 import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient, type QueryKey } from "@tanstack/react-query";
+import { asJson } from "../lib/json";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
+import { WEEKLY_RECURRENCE_SLOT_CAP } from "../lib/dateRecurrenceLimits";
 import { supabase } from "../lib/supabase";
+import { reportClientError } from "../lib/reportClientError";
 import { isPersonalLessonLockedForWrite, normalizeTime } from "../lib/scheduleWeek";
 import { formatClientName } from "../lib/utils";
 import type { Client, PersonalLesson } from "../types";
@@ -152,12 +156,18 @@ function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string,
   return hasFilter ? suffix : null;
 }
 
+function personalLessonsScopedQueryKey(organizationId: string | null | undefined): readonly unknown[] {
+  return organizationId ? [...personalLessonsQueryKey, organizationId] : personalLessonsQueryKey;
+}
+
 function invalidatePersonalLessonRelatedQueries(
   queryClient: QueryClient,
+  organizationId: string | null | undefined,
   options?: { refetchType?: "active"; includePayments?: boolean }
 ) {
+  const scopedKey = personalLessonsScopedQueryKey(organizationId);
   const opts = options?.refetchType ? { refetchType: options.refetchType } : undefined;
-  void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, ...opts });
+  void queryClient.invalidateQueries({ queryKey: scopedKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: ["schedule"], ...opts });
   void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey, ...opts });
@@ -192,60 +202,114 @@ export function usePersonalLessons(options?: UsePersonalLessonsOptions) {
     queryKey: withOrgId([...personalLessonsQueryKey, keySuffix, { maskFinancial }]),
     enabled: queryEnabled,
     queryFn: async () => {
-      const useBaseTable = resolved.excludeCancelled === true;
-      const table = useBaseTable ? "personal_lessons" : maskFinancial ? "personal_lessons_teacher_v" : "personal_lessons";
       const selectColumns = maskFinancial ? personalLessonsSelectTeacher : personalLessonsSelect;
-      let query = supabase.from(table).select(selectColumns).order("date", { ascending: false });
+      const useTeacherView = maskFinancial && resolved.excludeCancelled !== true;
 
-      if (resolved.excludeCancelled) {
-        query = query.is("cancelled_at", null);
-      }
+      const data = useTeacherView
+        ? await fetchAllPostgrestRows((from, to) => {
+            let query = supabase
+              .from("personal_lessons_teacher_v")
+              .select(selectColumns)
+              .order("date", { ascending: false });
 
-      if (resolved.dateRange) {
-        query = query
-          .gte("date", resolved.dateRange.start)
-          .lte("date", resolved.dateRange.end);
-      } else if (resolved.yearMonth) {
-        const [y, m] = resolved.yearMonth.split("-").map(Number);
-        const start = `${y}-${String(m).padStart(2, "0")}-01`;
-        const lastDay = new Date(y, m, 0).getDate();
-        const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-        query = query.gte("date", start).lte("date", end);
-      }
+            if (resolved.dateRange) {
+              query = query
+                .gte("date", resolved.dateRange.start)
+                .lte("date", resolved.dateRange.end);
+            } else if (resolved.yearMonth) {
+              const [y, m] = resolved.yearMonth.split("-").map(Number);
+              const start = `${y}-${String(m).padStart(2, "0")}-01`;
+              const lastDay = new Date(y, m, 0).getDate();
+              const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+              query = query.gte("date", start).lte("date", end);
+            }
 
-      if (resolved.paidFilter) {
-        query = query.eq("paid", resolved.paidFilter);
-      }
+            if (resolved.paidFilter) {
+              query = query.eq("paid", resolved.paidFilter);
+            }
 
-      if (resolved.locationId) {
-        query = query.eq("location_id", resolved.locationId);
-      }
+            if (resolved.locationId) {
+              query = query.eq("location_id", resolved.locationId);
+            }
 
-      if (resolved.teacherMemberId) {
-        query = query.eq("teacher_member_id", resolved.teacherMemberId);
-      }
+            if (resolved.teacherMemberId) {
+              query = query.eq("teacher_member_id", resolved.teacherMemberId);
+            }
 
-      if (resolved.disciplineId) {
-        query = query.eq("discipline_id", resolved.disciplineId);
-      }
+            if (resolved.disciplineId) {
+              query = query.eq("discipline_id", resolved.disciplineId);
+            }
 
-      if (resolved.attendanceStatus === "unmarked") {
-        query = query.is("attendance_status", null);
-      } else if (resolved.attendanceStatus) {
-        query = query.eq("attendance_status", resolved.attendanceStatus);
-      }
+            if (resolved.attendanceStatus === "unmarked") {
+              query = query.is("attendance_status", null);
+            } else if (resolved.attendanceStatus) {
+              query = query.eq("attendance_status", resolved.attendanceStatus);
+            }
 
-      if (resolved.clientId) {
-        const clientId = resolved.clientId;
-        query = query.or(
-          `client_id1.eq.${clientId},client_id2.eq.${clientId},client_id3.eq.${clientId},client_id4.eq.${clientId}`
-        );
-      }
+            if (resolved.clientId) {
+              const clientId = resolved.clientId;
+              query = query.or(
+                `client_id1.eq.${clientId},client_id2.eq.${clientId},client_id3.eq.${clientId},client_id4.eq.${clientId}`
+              );
+            }
 
-      const { data, error } = await query;
-      if (error) throw error;
+            return query.range(from, to);
+          })
+        : await fetchAllPostgrestRows((from, to) => {
+            let query = supabase
+              .from("personal_lessons")
+              .select(selectColumns)
+              .order("date", { ascending: false });
 
-      return (data ?? []).map((row) =>
+            if (resolved.excludeCancelled) {
+              query = query.is("cancelled_at", null);
+            }
+
+            if (resolved.dateRange) {
+              query = query
+                .gte("date", resolved.dateRange.start)
+                .lte("date", resolved.dateRange.end);
+            } else if (resolved.yearMonth) {
+              const [y, m] = resolved.yearMonth.split("-").map(Number);
+              const start = `${y}-${String(m).padStart(2, "0")}-01`;
+              const lastDay = new Date(y, m, 0).getDate();
+              const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+              query = query.gte("date", start).lte("date", end);
+            }
+
+            if (resolved.paidFilter) {
+              query = query.eq("paid", resolved.paidFilter);
+            }
+
+            if (resolved.locationId) {
+              query = query.eq("location_id", resolved.locationId);
+            }
+
+            if (resolved.teacherMemberId) {
+              query = query.eq("teacher_member_id", resolved.teacherMemberId);
+            }
+
+            if (resolved.disciplineId) {
+              query = query.eq("discipline_id", resolved.disciplineId);
+            }
+
+            if (resolved.attendanceStatus === "unmarked") {
+              query = query.is("attendance_status", null);
+            } else if (resolved.attendanceStatus) {
+              query = query.eq("attendance_status", resolved.attendanceStatus);
+            }
+
+            if (resolved.clientId) {
+              const clientId = resolved.clientId;
+              query = query.or(
+                `client_id1.eq.${clientId},client_id2.eq.${clientId},client_id3.eq.${clientId},client_id4.eq.${clientId}`
+              );
+            }
+
+            return query.range(from, to);
+          });
+
+      return data.map((row) =>
         mapPersonalLesson(row as unknown as Record<string, unknown>, maskFinancial)
       );
     },
@@ -323,6 +387,10 @@ export function useAddPersonalLessons() {
         return { success: false as const, error: "hooks.error.bookingDatesRequired" };
       }
 
+      if (dates.length > WEEKLY_RECURRENCE_SLOT_CAP) {
+        return { success: false as const, error: "hooks.error.bookingDatesTooMany" };
+      }
+
       const paidValue = subscriptionId || paid ? "yes" : "no";
       const rows = dates.map((date) => ({
         id: crypto.randomUUID(),
@@ -356,36 +424,15 @@ export function useAddPersonalLessons() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        invalidatePersonalLessonRelatedQueries(queryClient, { includePayments: false });
+        invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { includePayments: false });
       }
-    },
-  });
-}
-
-export function useUpdatePersonalPaid() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, paid }: { id: string; paid: boolean }) => {
-      const { data, error } = await supabase
-        .from("personal_lessons")
-        .update({ paid: paid ? "yes" : "no" })
-        .eq("id", id)
-        .select("id")
-        .maybeSingle();
-
-      if (error) return { success: false as const, error: error.message };
-      if (!data) return { success: false as const, error: "hooks.error.lessonNotFound" };
-      return { success: true as const };
-    },
-    onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient);
     },
   });
 }
 
 export function useDeletePersonalLesson() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
   const { membership } = useOrganization();
   const canEditPastSchedule = membership?.meta?.can_edit_past_schedule ?? false;
 
@@ -411,13 +458,14 @@ export function useDeletePersonalLesson() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, { refetchType: "active" });
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { refetchType: "active" });
     },
   });
 }
 
 export function useDeletePersonalLessonSeriesFromDate() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
   const { membership } = useOrganization();
   const canEditPastSchedule = membership?.meta?.can_edit_past_schedule ?? false;
 
@@ -443,13 +491,14 @@ export function useDeletePersonalLessonSeriesFromDate() {
       return { success: true as const, deletedCount: result.deleted_count ?? 0 };
     },
     onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, { refetchType: "active" });
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { refetchType: "active" });
     },
   });
 }
 
 export function useUpdatePersonalLesson() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
   const { membership } = useOrganization();
   const canEditPastSchedule = membership?.meta?.can_edit_past_schedule ?? false;
 
@@ -532,7 +581,7 @@ export function useUpdatePersonalLesson() {
 
       const { data, error } = await supabase.rpc("update_personal_lesson", {
         p_lesson_id: id,
-        p_payload: payload,
+        p_payload: asJson(payload),
       });
 
       if (error) {
@@ -549,13 +598,14 @@ export function useUpdatePersonalLesson() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient);
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId);
     },
   });
 }
 
 export function useRestatePersonalLessonAmount() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async (input: { lessonId: string; newAmount: number }) => {
@@ -574,13 +624,27 @@ export function useRestatePersonalLessonAmount() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient);
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId);
     },
   });
 }
 
+type MarkPersonalLessonAttendanceRollbackContext = {
+  previousEntries: [QueryKey, PersonalLesson[] | undefined][];
+};
+
 export function useMarkPersonalLessonAttendance() {
   const queryClient = useQueryClient();
+  const { organizationId, withOrgId } = useOrgQueryScope();
+  const scopedPersonalLessonsKey = withOrgId(personalLessonsQueryKey);
+
+  const rollback = (context: MarkPersonalLessonAttendanceRollbackContext | undefined) => {
+    if (context?.previousEntries) {
+      for (const [key, data] of context.previousEntries) {
+        queryClient.setQueryData(key, data);
+      }
+    }
+  };
 
   return useMutation({
     mutationFn: async ({
@@ -605,28 +669,29 @@ export function useMarkPersonalLessonAttendance() {
       return { success: true as const };
     },
     onMutate: async ({ lessonId, status }) => {
-      await queryClient.cancelQueries({ queryKey: personalLessonsQueryKey });
+      await queryClient.cancelQueries({ queryKey: scopedPersonalLessonsKey });
 
       const previousEntries = queryClient.getQueriesData<PersonalLesson[]>({
-        queryKey: personalLessonsQueryKey,
+        queryKey: scopedPersonalLessonsKey,
       });
       queryClient.setQueriesData<PersonalLesson[]>(
-        { queryKey: personalLessonsQueryKey },
+        { queryKey: scopedPersonalLessonsKey },
         (old) =>
           (old ?? []).map((l) => (l.id === lessonId ? { ...l, attendanceStatus: status } : l))
       );
 
       return { previousEntries };
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previousEntries) {
-        for (const [key, data] of context.previousEntries) {
-          queryClient.setQueryData(key, data);
-        }
-      }
+    onError: (error, _vars, context) => {
+      reportClientError(error, { area: "mutation", action: "useMarkPersonalLessonAttendance" });
+      rollback(context);
     },
-    onSettled: (result) => {
-      if (result?.success) invalidatePersonalLessonRelatedQueries(queryClient);
+    onSettled: (result, _error, _vars, context) => {
+      if (result?.success === false) {
+        rollback(context);
+        return;
+      }
+      if (result?.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId);
     },
   });
 }

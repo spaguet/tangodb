@@ -4,6 +4,11 @@ import { CalendarDays, Clock, X, XCircle } from "lucide-react";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { useCancelGroupLessonOccurrences } from "../../hooks/useSchedule";
 import { computeWeeklyOccurrencesInRange } from "../../lib/groupLessonOccurrences";
+import {
+  exceedsRangePreviewCap,
+  maxRepeatEndDate,
+  RANGE_PREVIEW_DATE_CAP,
+} from "../../lib/dateRecurrenceLimits";
 import { useI18n } from "../../hooks/useI18n";
 import type { GroupDisplayLesson } from "../../types";
 import { fieldCls } from "../ui/AppSelect";
@@ -70,8 +75,17 @@ export default function CancelGroupLessonDialog({
     );
   }, [lesson, mode, rangeEndDate]);
 
+  const previewOverCap = exceedsRangePreviewCap(previewDates.length);
+  const rangeEndMax =
+    lesson != null ? (lesson.validTo ?? maxRepeatEndDate(lesson.date)) : undefined;
+
   const handleSubmit = async () => {
     if (!lesson || previewDates.length === 0) return;
+
+    if (previewOverCap) {
+      toast(t("schedule.error.previewDatesTooMany", { max: RANGE_PREVIEW_DATE_CAP }), "error");
+      return;
+    }
 
     const res = await cancelOccurrences.mutateAsync({
       slotId: lesson.slotId,
@@ -190,7 +204,7 @@ export default function CancelGroupLessonDialog({
                     type="date"
                     required
                     min={lesson.date}
-                    max={lesson.validTo ?? undefined}
+                    max={rangeEndMax}
                     value={rangeEndDate}
                     onChange={(e) => setRangeEndDate(e.target.value)}
                     className={fieldCls}
@@ -214,6 +228,11 @@ export default function CancelGroupLessonDialog({
                 ) : (
                   <p className="text-xs text-slate-500">{t("schedule.lessonInfo.cancelPreviewEmpty")}</p>
                 )}
+                {previewOverCap ? (
+                  <p className="text-xs text-red-600">
+                    {t("schedule.error.previewDatesTooMany", { max: RANGE_PREVIEW_DATE_CAP })}
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -229,7 +248,7 @@ export default function CancelGroupLessonDialog({
               <button
                 type="button"
                 onClick={() => void handleSubmit()}
-                disabled={cancelOccurrences.isPending || previewDates.length === 0}
+                disabled={cancelOccurrences.isPending || previewDates.length === 0 || previewOverCap}
                 className={`flex-1 ${btnDestructiveCls}`}
               >
                 <XCircle className="w-4 h-4" />

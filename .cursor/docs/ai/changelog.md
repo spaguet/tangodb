@@ -1,6 +1,78 @@
-# Changelog
+2026-08-20 — fix(i18n): микропатч **2.8.58** — P38 / L7: module `t(locale, key)` в `personalLessonClients` и `scheduleLessonAccess` — `t(null, key)` вместо одноаргументного `t(key)`. TS2554 п.29, 31–33 ушли; `tsc --noEmit` — 0 ошибок (P33 follow-up закрыт).
 
-История значимых изменений кода. Обновлять при каждом изменении кода.
+2026-08-20 — fix(types): микропатч **2.8.57** — P37 / L7: `usePrices` insert/update `prices` через `Tables.prices.Insert` / `Update`, не `Record<string, unknown>`; `discipline_id` из `disciplineIds` (один id или null). TS2345 п.9–10 ушли (6→4 ошибок tsc, остались TS2554 P38).
+
+2026-08-20 — fix(types): микропатч **2.8.56** — P36 / L7: RPC `p_payload` (`Record` → `Json` через `asJson`) в personal lessons, rental billing/series/tariffs, renter CRM, teacher pay rules, venue costs, renter document upload; хелперы `*ToPayload` возвращают `Json`. TS2322 п.8, 11–21, 24, 28, 30 ушли (21→6 ошибок tsc).
+
+2026-08-20 — fix(types): микропатч **2.8.55** — P35 / L7: хелпер `asJson` (`src/lib/json.ts`); доменные jsonb (`OrgModules`, `TeacherScope`, `MemberMeta`) в onboarding, `SettingsProvider`, `useTeamInvites`; чтение scope через `normalizeTeacherScope`. TS2322/TS2345/TS2352 п.1, 25–27, 34 ушли (26→21 ошибка tsc).
+
+2026-08-20 — fix(types): микропатч **2.8.54** — P34 / L7: union `.from(table|view)` в `usePersonalLessons` и `useSubscriptions` заменён на два отдельных `fetchAllPostgrestRows` внутри queryFn; `.is("cancelled_at")` только на `personal_lessons`. TS2769/TS2589 и каскадные `.eq(..., never)` ушли (34→26 ошибок tsc).
+
+2026-08-20 — feat(types): микропатч **2.8.53** — P33 / L7: сгенерирован `src/types/database.ts`, `createClient<Database>`, скрипт `npm run db:gen-types`. Поймана опечатка колонки `attendance.status` → `attendance_status` в офлайн-сверке. Остальные ~34 ошибки tsc — Json/`Record` и union table|view; массово не чистились (порог шага 4).
+
+2026-08-20 — docs(schedule): микропатч **2.8.52** — P31 / L5: `SchedulePanel.tsx` оставлен как legacy (импортов в роутере нет); шапка файла + `architecture.md`: маршрут `/schedule` = `SchedulePage` → `SchedulePageContainer`, не подключать.
+
+2026-08-20 — chore(payments): микропатч **2.8.51** — P30 / L4: удалены мёртвые `useUpdatePersonalPaid` (прямой `.update({ paid })` без ledger RPC) и заглушка `useRecordPayment`. `useAddPersonalLessons` с `paid:true` для пакета не трогали; канонические RPC оплаты на месте.
+
+2026-08-20 — fix(notes): микропатч **2.8.50** — P29 / L3: queryKey заметок клиента — сортированные `member.id` команды, не `teamMembers.length`; замена сотрудника при той же длине списка обновляет подписи авторов. Fallback `common.employee` не трогали.
+
+2026-08-20 — fix(schedule): микропатч **2.8.49** — P28 / L2: при miss deep link расписания (`focusNotFound`) обнуляются `focusLessonId` / `focusRentalId`; toast и чистка query params как раньше, успешный focus не трогали.
+
+2026-08-20 — refactor(license): микропатч **2.8.48** — P27 / L1: waitlist (`submit-subscription-waitlist`), активация ключа (`activate-access-key`) и onboarding RPC (`complete_organization_onboarding`) вынесены из UI в хуки; `SubscriptionWaitlistCard`, `LicenseSettingsPage`, `OnboardingWizardPage` больше не зовут supabase напрямую.
+
+2026-08-20 — fix(i18n): микропатч **2.8.47** — P26 / M17: `LocaleDocumentSync` ставит `html lang` по префиксу локали (`en*` → `en`, `vi*` → `vi`, иначе `ru`); `vi-VN` больше не получает `lang="ru"`.
+
+2026-08-20 — fix(sql): микропатч **2.8.46** — P25 / M11: миграция `20260928000001` DROP 11-arg `_record_personal_lesson_payment_impl` (хвост после `CREATE OR REPLACE` с `p_charge_id`); публичный `record_personal_lesson_payment` не трогали. В комментарии: `20260925000002` обязателен после `000001` (GET DIAGNOSTICS). На прод не apply.
+
+2026-08-20 — chore: CodeGraph MCP — абсолютный `--path` и `codegraph.cmd` в `.cursor/mcp.json`; индекс синхронизирован (`codegraph sync`).
+
+2026-08-20 — fix(i18n): микропатч **2.8.45** — P24 / M10: маска клиента в `scheduleLessonAccess` / `personalLessonClients` через `t()` (`schedule.lessonInfo.clientNotSpecified`, `common.client`); сравнение с sentinel-ключом, не с русским литералом.
+
+2026-08-20 — fix(i18n): микропатч **2.8.44** — P23 / M9: подпись dual debtors — операционные долги сетки (`useScheduleDebtors`) явно не равны «Финансы → Дебиторы» (`financial_debtors_v`); ключи `schedule.debtors.scopeHint` / `finance.debtors.scopeHint` (ru/en).
+
+2026-08-20 — fix(renters): микропатч **2.8.43** — P22 / M8: загрузка документа арендатора — идемпотентный finalize (повтор RPC + существующая строка по `storage_path`); cleanup Storage при сбое upload/finalize; при неясном результате lookup файл не удаляется (не оставляем CRM-документ без объекта).
+
+2026-08-20 — fix(renters): микропатч **2.8.42** — P21 / M7: мутации contact/contract/document/communication в `useRenterCrm` инвалидируют кэш только при `success: true`; soft-fail больше не выглядит как сохранённые данные.
+
+2026-08-20 — fix(offline): микропатч **2.8.41** — P20 / M6: ошибка SELECT `attendance` в офлайн-сверке больше не трактуется как «нет записи» (`serverOldStatus=null`); операция помечается `failed` и не уходит в ложный sync.
+
+2026-08-20 — fix(finance): микропатч **2.8.40** — P19 / M4: границы дня/месяца для payments, corrections, other income и KPI в TZ организации (`orgCreatedAtUtcRange`); без браузерной полуночи и без naive `T00:00:00` / UTC `toISOString` для «сегодня».
+
+2026-08-20 — fix(personal): микропатч **2.8.39** — P18 / M3: `useRecordPersonalLessonPayment` больше не принимает `markPaid` (в RPC не уходил); call sites в `PersonalLessonSaleForm` убраны. Статус `paid` по-прежнему через `sync_personal_lesson_paid_status`.
+
+2026-08-20 — fix(payments): микропатч **2.8.38** — P17 / M2: журнал платежей (`usePayments` / `usePaymentCorrections`) SELECT + map `personal_lesson_charge_id` → `personalLessonChargeId`; расчёт балансов charges не менялся.
+
+2026-08-20 — fix(attendance): микропатч **2.8.37** — P16 / M15: `useMarkAttendance` — те же гарды, что early-return `onMutate` (`evaluateMarkAttendanceGuard`), проверяются в `mutationFn` до RPC; `oldStatus===status` / freeze / `lessonsLeft` / нет sub не вызывают `mark_attendance` / `correct_attendance`. Soft-fail `{success:false}` и откат кэша (C1) сохранены.
+
+2026-08-20 — fix(subscriptions): микропатч **2.8.36** — P15 / M5: `apply_scheduled_subscription_member_changes` убран из `queryFn` `useSubscriptions`; один вызов при входе в org (`useApplyScheduledSubscriptionMemberChanges`); ошибка RPC через `reportClientError`, не маскируется успешным fetch.
+
+2026-08-20 — fix(schedule): микропатч **2.8.35** — P14 / M14: оплата «за всех» в `PayPersonalLessonModal` — при обрыве цикла toast «оплачено X из Y», refetch charges, модалка не закрывается как полный успех; идемпотентность по charge id.
+
+2026-08-20 — fix(nav): микропатч **2.8.34** — P13 / M1: payroll-only teacher видит «Финансы» в сайдбаре (`canAccessFinanceNav`); `/finance` пропускает `PanelAccessRoute` → `FinanceIndexRedirect` на payroll; прочие finance-маршруты без `finance.read` по-прежнему закрыты.
+
+2026-08-20 — fix(attendance): микропатч **2.8.33** — P12 / H5: журнал посещений — цена разового персонального урока скрыта для teacher (`showPrice`, как на `/personal`); статус оплаты без суммы.
+
+2026-08-20 — fix(data): микропатч **2.8.32** — P11 / H4+M13+M16: org-scoped query keys для Google Calendar (binding, team/org metrics, entry-sync-status) и optimistic attendance персональных уроков (`withOrgId`); глобальные `["google-calendar"]` / `["personalLessons"]` без org убраны из этих хуков.
+
+2026-08-20 — fix(schedule): микропатч **2.8.31** — P10 / H6: `PayPersonalLessonModal` — `try/finally` вокруг cash-оплаты после `paymentSubmit.begin()` (сброс `saving` при throw/`success:false`); `handlePayPackage` — явный `catch` и `void` onClick.
+
+2026-08-20 — fix(schedule): микропатч **2.8.30** — P09 / H3: `useEditGroupSchedule` — при ошибке update successor после close восстанавливает `valid_to = null` у исходного слота (как на ветке insert).
+
+2026-08-20 — fix(prices): микропатч **2.8.29** — P08 / H2+L8: `syncPriceTeacherMembers` и `syncPriceDisciplines` — snapshot перед DELETE и rollback при ошибке INSERT; `useCreatePrice` удаляет тариф при сбое sync связей.
+
+2026-08-20 — fix(schedule): микропатч **2.8.28** — P07 / H9+M18+M19+M20: ISO-guard и max-iterations в expand/while; cap 52 слотов (повтор) и 200 дат (preview); DatePicker/native `max` +12 мес; conflict-query только в cap; `useAddPersonalLessons` отказ >52; freebusy AbortSignal+timeout, cap вызовов; i18n ru/en.
+
+2026-08-20 — fix(integrations): микропатч **2.8.27** — H8+M12: `resolveLessonGoogleSyncUiStatus` — `detached`/`unknown` без вечного `pending`; poll только при реальном job; cap 20×15s → badge `stale`; i18n ru/en.
+
+2026-08-20 — fix(data): микропатч **2.8.26** — H12: `fetchAllPostgrestRows` (`lib/postgrestRange.ts`) — пагинация `.range()` для clients, subscriptions, attendance, personal_lessons, payments; без тихой обрезки на `max_rows = 1000`.
+
+2026-08-20 — fix(types): микропатч **2.8.25** — H1: `netPaidForCharge` принимает узкий slice платежа; `TeacherRevenueContext.personalLessonById` включает `timeStart`/`timeEnd`; `resolvePersonalPaymentLessonMinutes` не бросает при пустых временах.
+
+2026-08-20 — fix(offline): микропатч **2.8.24** — H11: reconnect-импульс обрабатывается один раз (rising edge + ref); стабильные `withOrgId` и `openReconciliation`/`closeReconciliation` (`useCallback`).
+
+2026-08-20 — fix(auth): микропатч **2.8.23** — H7+H10: UI role/memberId из membership (JWT — fallback); `claimsMismatch` + баннер; refresh JWT без цикла (fingerprint, in-flight, лимит попыток, scoped invalidate); finance/settings скрыты при mismatch.
+
+2026-08-20 — fix(attendance): микропатч **2.8.22** — C1: откат оптимистичного кэша посещаемости при soft-fail RPC (`success: false`) в `useMarkAttendance` и `useMarkPersonalLessonAttendance` (`onSettled` + общий `rollback`).
 
 2026-08-18 — fix(personal): микропатч **2.8.21** — поиск клиента: иконка лупы слева по центру поля; сортировка списка «От начала месяца» / «От конца месяца» (по умолчанию от конца).
 2026-08-18 — chore: gitignore для `.codegraph/`, `.wrangler/`, import JSON и one-off scripts; коммит calendar import tooling, миграций `archived_at`/prices, CodeGraph MCP rule, проектной документации.

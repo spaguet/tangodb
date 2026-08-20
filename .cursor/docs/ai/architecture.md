@@ -20,10 +20,12 @@
 ## Слои (tangodb/)
 
 - `src/hooks/` — запросы к данным (TanStack Query + Supabase)
-- `src/lib/` — клиент Supabase, утилиты, edge functions
+- `src/lib/` — клиент Supabase (`createClient<Database>`), утилиты, edge functions
+- `src/types/database.ts` — сгенерированные типы Supabase `Database` (`npm run db:gen-types` из linked-проекта). Не править вручную.
 - `src/store/` — локальное UI-состояние (Zustand)
 - `src/components/` — UI без прямых вызовов Supabase
 - `src/components/schedule/` — недельная сетка расписания (Промпты 2–8):
+  - **Маршрут `/schedule`:** `App.tsx` → `SchedulePage` → `SchedulePageContainer`. Не подключать `src/components/SchedulePanel.tsx`.
   - **Контейнер:** `SchedulePageContainer` — state недели, фильтр `?teacher=`, deep link `?action=sell` (только `SellPackageModal`), deep link из финансов `/schedule?date=YYYY-MM-DD&lesson=<id>&location=<id>` / `&rental=` (неделя, раскрытая сетка зала, подсветка записи без popup), CRUD-потоки
   - **Сетка:** `WeeklyScheduleGrid`, `LocationScheduleSection`, `DayColumn`, `LessonBlock`, `TimeGutter`
   - **Toolbar:** `ScheduleToolbar`, `WeekPickerPopover`
@@ -31,7 +33,7 @@
   - **Долги:** `ScheduleDebtorsBlock` — операционный контур (`paid=no`), без `financial_debtors_v`
   - **Данные:** только через хуки (`useScheduleForWeek`, `usePersonalLessons`, `useScheduleDebtors`, mutations в `useSchedule.ts` / `usePersonalLessons.ts`); прямых Supabase-вызовов в компонентах нет
   - **Утилиты:** `lib/scheduleWeek.ts`, `lib/scheduleConflicts.ts`, `lib/scheduleTime.ts`, `lib/scheduleLessonAccess.ts`
-  - **Legacy (deprecated):** `SchedulePanel.tsx`
+  - **Legacy (не в роутере):** `src/components/SchedulePanel.tsx` — старая слотовая сетка; оставлена рядом как справочник. Повторное подключение вернёт баги слотов.
 - `src/components/personal-lessons/` — раздел «Персональные уроки» (`PERSONAL_LESSONS_TZ`, Этап 4):
   - **Маршруты:** `/personal` (список + фильтры), `/personal/sell` (продажа); `/personal/book` → redirect `/personal/sell`
   - **Контейнер:** `PersonalLessonsPageContainer` — вкладки, фильтры, edit/pay/delete через переиспользуемые popup
@@ -59,7 +61,7 @@
 - **Export split (RBAC-8):** `can_export_data()` — operational dashboard CSV (owner/director; admin при `admin_can_export`; teacher при `teachers_can_export` + scope). `can_export_financial()` — owner/director/accountant. UI: `DataExportPage` — отдельные секции; accountant не грузит CRM-хуки.
 - **Team payroll:** таблицы с legacy-префиксом `teacher_*` используются как контур зарплат команды. `teacher_pay_rates` хранит `pay_mode` (`percent` / `fixed` / `fixed_plus_percent`), `fixed_amount`, отдельные проценты для групповых и персональных уроков; `teacher_settlements` — начислено/выплачено по участнику за месяц; `teacher_settlement_payments` — выплаты и авансы. Начисления считаются через RPC `recalculate_teacher_settlement`, выплаты — только через `record_teacher_settlement_payment`; UI — `/finance/payroll` и блок настроек зарплаты в `MemberProfileModal`.
 - **Внутренние расходы на зал:** `venue_cost_rule_versions` хранит immutable accepted-снимки правил с включительными периодами (`per_lesson`, `fixed_period`, `disabled`); per-lesson item может ограничиваться одновременно `discipline_id` и `location_id`, более специфичная пара имеет приоритет, а ссылки проверяются в tenant при save/accept. `lesson_occurrence_closures` фиксирует явное закрытие группового/персонального урока, `venue_cost_accruals` — append-oriented начисления и компенсирующие корректировки. Операционный admin/назначенный teacher может закрыть доступный урок, но сумма возвращается только financial-роли; reopen остаётся financial operation. Разрыв в покрытии создаёт `pending_unpriced`, который разрешается принятием покрывающего правила или `recalculate_pending_venue_costs`. `finance_cost_entries_v` и `get_finance_costs` объединяют ручные `expenses` с начислениями зала.
-- **Venue-cost UI:** настройки `/settings/venue-costs` (`VenueCostsSettingsPage`, hooks `useVenueCosts`); expiry banner на Dashboard; payment ack через `VenueRulePaymentConfirmDialog` в продаже абонемента, разовом посещении, personal pay/sale; close-lesson кнопки в AttendancePanel (group), LessonInfoPopup и PersonalLessonRow; FinancialDashboard/FinanceExpensesPage читают `useFinanceCosts`; `useRecordPayment` soft-deprecated.
+- **Venue-cost UI:** основной экран зала — `/settings/hall-rent` (`HallRentSettingsPage`: embedded `RentalTariffsSettingsPage`, `VenueCostsSettingsPage`, `RentalBillingProfileSection`; hooks `useVenueCosts`); `/settings/venue-costs` — redirect (`VenueCostsLegacyRedirect`, query string сохраняется); expiry banner на Dashboard; payment ack через `VenueRulePaymentConfirmDialog` в продаже абонемента, разовом посещении, personal pay/sale; close-lesson кнопки в AttendancePanel (group), LessonInfoPopup и PersonalLessonRow; FinancialDashboard/FinanceExpensesPage читают `useFinanceCosts`; оплата только через канонические RPC-хуки (`useRecordSubscriptionPayment`, `useRecordPersonalLessonPayment`, `useRecordSingleVisit`).
 - **История закрытого personal lesson:** closure хранит стабильный `source_personal_lesson_id` и полный `source_snapshot`; nullable FK `personal_lesson_id` использует `ON DELETE SET NULL`. Поэтому канонические delete RPC не падают на FK, но финансовая/audit-история и защита от повторного active closure сохраняются.
 - **Expiry acknowledgement:** если на дату нет покрывающей accepted-версии, учитывается последняя non-disabled версия с `valid_from <= date`; будущая accepted-версия не скрывает gap. Канонические payment RPC требуют `p_venue_rule_acknowledged=true`, подтверждение хранится только для каждого действительно нового payment. Legacy idempotency fingerprint без нового boolean принимается при `acknowledged=false`; ответ с уже существующим payment не создаёт задним числом acknowledgement.
 

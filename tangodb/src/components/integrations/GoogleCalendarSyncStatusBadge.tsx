@@ -1,4 +1,12 @@
-import { AlertTriangle, CalendarOff, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarOff,
+  CalendarX,
+  CheckCircle2,
+  Clock,
+  HelpCircle,
+  Loader2,
+} from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import type { I18nKey } from "../../lib/i18n/keys";
 import type { LessonGoogleSyncUiStatus } from "../../lib/googleCalendarApi";
@@ -28,6 +36,18 @@ const toneByStatus: Record<
   not_connected: {
     wrap: "text-slate-600 bg-slate-50 border-slate-200",
     icon: CalendarOff,
+  },
+  detached: {
+    wrap: "text-slate-700 bg-slate-50 border-slate-200",
+    icon: CalendarX,
+  },
+  unknown: {
+    wrap: "text-slate-600 bg-slate-50 border-slate-200",
+    icon: HelpCircle,
+  },
+  stale: {
+    wrap: "text-amber-800 bg-amber-50 border-amber-100",
+    icon: Clock,
   },
 };
 

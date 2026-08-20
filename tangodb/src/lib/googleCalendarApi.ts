@@ -99,14 +99,49 @@ async function parseFunctionError(error: unknown): Promise<string> {
 
 async function invokeFunction<T extends EdgePayload>(
   name: string,
-  body?: Record<string, unknown>
+  body?: Record<string, unknown>,
+  options?: { signal?: AbortSignal; timeoutMs?: number }
 ): Promise<T> {
+  const { signal, timeoutMs = 30_000 } = options ?? {};
+
+  if (signal?.aborted) {
+    throw new DOMException("Aborted", "AbortError");
+  }
+
   const { data: sessionData } = await supabase.auth.getSession();
   if (!sessionData.session) {
     throw new Error("not_authenticated");
   }
 
-  const { data, error } = await supabase.functions.invoke(name, { body });
+  const invokePromise = supabase.functions.invoke(name, { body });
+
+  const { data, error } = await new Promise<{
+    data: unknown;
+    error: unknown;
+  }>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error("request_timeout"));
+    }, timeoutMs);
+
+    const onAbort = () => {
+      window.clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    void invokePromise
+      .then((result) => {
+        window.clearTimeout(timer);
+        signal?.removeEventListener("abort", onAbort);
+        resolve(result);
+      })
+      .catch((invokeError: unknown) => {
+        window.clearTimeout(timer);
+        signal?.removeEventListener("abort", onAbort);
+        reject(invokeError);
+      });
+  });
 
   if (error) {
     throw new Error(await parseFunctionError(error));
@@ -318,7 +353,15 @@ export type LessonGoogleSyncUiStatus =
   | "synced"
   | "pending"
   | "error"
-  | "not_connected";
+  | "not_connected"
+  | "detached"
+  | "unknown"
+  | "stale";
+
+/** Poll interval while a real pending job is in flight (see useGoogleCalendarSyncStatus). */
+export const GOOGLE_CALENDAR_SYNC_POLL_INTERVAL_MS = 15_000;
+/** Max RPC polls before showing stale badge and stopping interval (20 × 15s ≈ 5 min). */
+export const GOOGLE_CALENDAR_SYNC_MAX_POLL_COUNT = 20;
 
 export interface PersonalLessonGoogleSyncStatus {
   sync_status: string | null;
@@ -357,7 +400,22 @@ export function resolveLessonGoogleSyncUiStatus(
   if (row.has_pending_job || row.sync_status === "pending") return "pending";
   if (row.sync_status === "failed" || Boolean(row.last_error)) return "error";
   if (row.sync_status === "synced") return "synced";
-  return "pending";
+  if (row.sync_status === "detached") return "detached";
+  return "unknown";
+}
+
+export function resolveLessonGoogleSyncUiStatusWithPollCap(
+  row: PersonalLessonGoogleSyncStatus | null | undefined,
+  dataUpdateCount: number
+): LessonGoogleSyncUiStatus | null {
+  const ui = resolveLessonGoogleSyncUiStatus(row);
+  if (
+    ui === "pending" &&
+    dataUpdateCount >= GOOGLE_CALENDAR_SYNC_MAX_POLL_COUNT
+  ) {
+    return "stale";
+  }
+  return ui;
 }
 
 export async function fetchPersonalLessonGoogleSyncStatus(
@@ -434,22 +492,29 @@ export async function setFreebusyCalendarConfig(input: {
   return payload.freebusy_calendar_ids ?? [];
 }
 
-export async function fetchTeacherGoogleFreebusy(input: {
-  organizationMemberId: string;
-  date: string;
-  timeStart: string;
-  timeEnd: string;
-}): Promise<{ busy: GoogleFreebusyInterval[]; configured: boolean }> {
+export async function fetchTeacherGoogleFreebusy(
+  input: {
+    organizationMemberId: string;
+    date: string;
+    timeStart: string;
+    timeEnd: string;
+  },
+  options?: { signal?: AbortSignal }
+): Promise<{ busy: GoogleFreebusyInterval[]; configured: boolean }> {
   const payload = await invokeFunction<{
     ok: boolean;
     busy?: GoogleFreebusyInterval[];
     configured?: boolean;
-  }>("google-calendar-freebusy", {
-    organization_member_id: input.organizationMemberId,
-    date: input.date,
-    time_start: input.timeStart,
-    time_end: input.timeEnd,
-  });
+  }>(
+    "google-calendar-freebusy",
+    {
+      organization_member_id: input.organizationMemberId,
+      date: input.date,
+      time_start: input.timeStart,
+      time_end: input.timeEnd,
+    },
+    { signal: options?.signal, timeoutMs: 15_000 }
+  );
   return {
     busy: payload.busy ?? [],
     configured: payload.configured ?? false,

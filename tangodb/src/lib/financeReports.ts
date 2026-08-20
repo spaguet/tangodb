@@ -17,6 +17,7 @@ import {
   type PaymentWithCorrectionMeta,
 } from "../lib/paymentCorrection";
 import { buildScheduleFocusPath } from "./scheduleFocus";
+import { isInstantInOrgDay, isInstantInOrgInclusiveDates } from "./orgFinanceDate";
 export {
   aggregatePersonalTariffSales,
   formatPersonalTariffSalesRowLabel,
@@ -564,18 +565,17 @@ export function buildDaySeries(yearMonth: string): string[] {
   return days;
 }
 
-export function paymentsOnDay(payments: Payment[], day: string): Payment[] {
-  const from = `${day}T00:00:00`;
-  const to = `${day}T23:59:59`;
-  return payments.filter((payment) => payment.createdAt >= from && payment.createdAt <= to);
+export function paymentsOnDay(payments: Payment[], day: string, timezone: string): Payment[] {
+  return payments.filter((payment) => isInstantInOrgDay(payment.createdAt, day, timezone));
 }
 
 export function aggregatePaymentsByDay(
   payments: Payment[],
-  days: string[]
+  days: string[],
+  timezone: string
 ): MonthlyRevenuePoint[] {
   return days.map((day) => {
-    const stats = aggregatePaymentStats(paymentsOnDay(payments, day));
+    const stats = aggregatePaymentStats(paymentsOnDay(payments, day, timezone));
     return {
       month: day,
       total: stats.total,
@@ -594,11 +594,11 @@ export function revenueTrendMonthCount(period: RevenueTrendPeriod): number {
   return 1;
 }
 
-export function paymentsInMonth(payments: Payment[], yearMonth: string): Payment[] {
+export function paymentsInMonth(payments: Payment[], yearMonth: string, timezone: string): Payment[] {
   const { dateFrom, dateTo } = monthDateRange(yearMonth);
-  const from = `${dateFrom}T00:00:00`;
-  const to = `${dateTo}T23:59:59`;
-  return payments.filter((payment) => payment.createdAt >= from && payment.createdAt <= to);
+  return payments.filter((payment) =>
+    isInstantInOrgInclusiveDates(payment.createdAt, dateFrom, dateTo, timezone)
+  );
 }
 
 export interface MonthlyRevenuePoint {
@@ -611,10 +611,11 @@ export interface MonthlyRevenuePoint {
 
 export function aggregatePaymentsByMonth(
   payments: Payment[],
-  months: string[]
+  months: string[],
+  timezone: string
 ): MonthlyRevenuePoint[] {
   return months.map((month) => {
-    const stats = aggregatePaymentStats(paymentsInMonth(payments, month));
+    const stats = aggregatePaymentStats(paymentsInMonth(payments, month, timezone));
     return {
       month,
       total: stats.total,
@@ -634,24 +635,22 @@ export interface ExtendedRevenueTrendContext {
 
 export function otherIncomeOnDay(
   items: ExtendedRevenueTrendContext["otherIncome"],
-  day: string
+  day: string,
+  timezone: string
 ): number {
-  const from = `${day}T00:00:00`;
-  const to = `${day}T23:59:59`;
   return items
-    .filter((item) => item.createdAt >= from && item.createdAt <= to)
+    .filter((item) => isInstantInOrgDay(item.createdAt, day, timezone))
     .reduce((sum, item) => sum + item.amount, 0);
 }
 
 export function otherIncomeInMonth(
   items: ExtendedRevenueTrendContext["otherIncome"],
-  yearMonth: string
+  yearMonth: string,
+  timezone: string
 ): number {
   const { dateFrom, dateTo } = monthDateRange(yearMonth);
-  const from = `${dateFrom}T00:00:00`;
-  const to = `${dateTo}T23:59:59`;
   return items
-    .filter((item) => item.createdAt >= from && item.createdAt <= to)
+    .filter((item) => isInstantInOrgInclusiveDates(item.createdAt, dateFrom, dateTo, timezone))
     .reduce((sum, item) => sum + item.amount, 0);
 }
 
@@ -675,11 +674,14 @@ export function rentalEntriesInMonth(
 export function buildExtendedTrendPoints(
   series: string[],
   ctx: ExtendedRevenueTrendContext,
-  mode: "day" | "month"
+  mode: "day" | "month",
+  timezone: string
 ): MonthlyRevenuePoint[] {
   return series.map((key) => {
     const payments =
-      mode === "day" ? paymentsOnDay(ctx.payments, key) : paymentsInMonth(ctx.payments, key);
+      mode === "day"
+        ? paymentsOnDay(ctx.payments, key, timezone)
+        : paymentsInMonth(ctx.payments, key, timezone);
     const monthRefunds =
       mode === "day"
         ? ctx.refunds.filter(
@@ -688,8 +690,8 @@ export function buildExtendedTrendPoints(
         : refundsInMonth(ctx.refunds, key);
     const otherAmount =
       mode === "day"
-        ? otherIncomeOnDay(ctx.otherIncome, key)
-        : otherIncomeInMonth(ctx.otherIncome, key);
+        ? otherIncomeOnDay(ctx.otherIncome, key, timezone)
+        : otherIncomeInMonth(ctx.otherIncome, key, timezone);
     const rentalSlice =
       mode === "day"
         ? rentalEntriesOnDay(ctx.rentalEntries, key)
@@ -710,11 +712,12 @@ export function buildExtendedTrendPoints(
 
 export function extendedNetTotalForMonth(
   yearMonth: string,
-  ctx: ExtendedRevenueTrendContext
+  ctx: ExtendedRevenueTrendContext,
+  timezone: string
 ): number {
-  const payments = paymentsInMonth(ctx.payments, yearMonth);
+  const payments = paymentsInMonth(ctx.payments, yearMonth, timezone);
   const monthRefunds = refundsInMonth(ctx.refunds, yearMonth);
-  const otherAmount = otherIncomeInMonth(ctx.otherIncome, yearMonth);
+  const otherAmount = otherIncomeInMonth(ctx.otherIncome, yearMonth, timezone);
   const rentalSlice = rentalEntriesInMonth(ctx.rentalEntries, yearMonth);
   return buildExtendedRevenueStats(payments, monthRefunds, {
     otherIncomeAmount: otherAmount,
@@ -770,17 +773,16 @@ export function buildRevenueSplit(
 
 export function recordsInMonth(
   createdAt: string | undefined,
-  yearMonth: string
+  yearMonth: string,
+  timezone: string
 ): boolean {
   if (!createdAt) return false;
   const { dateFrom, dateTo } = monthDateRange(yearMonth);
-  const from = `${dateFrom}T00:00:00`;
-  const to = `${dateTo}T23:59:59`;
-  return createdAt >= from && createdAt <= to;
+  return isInstantInOrgInclusiveDates(createdAt, dateFrom, dateTo, timezone);
 }
 
-export function countNewClientsInMonth(clients: Client[], yearMonth: string): number {
-  return clients.filter((client) => recordsInMonth(client.createdAt, yearMonth)).length;
+export function countNewClientsInMonth(clients: Client[], yearMonth: string, timezone: string): number {
+  return clients.filter((client) => recordsInMonth(client.createdAt, yearMonth, timezone)).length;
 }
 
 export interface RevenueRankEntry {
@@ -836,7 +838,10 @@ export function buildClassLocationMap(slots: ScheduleSlot[]): Map<string, string
 }
 
 export interface TeacherRevenueContext {
-  personalLessonById: Map<string, Pick<PersonalLesson, "teacherMemberId" | "locationId" | "date">>;
+  personalLessonById: Map<
+    string,
+    Pick<PersonalLesson, "teacherMemberId" | "locationId" | "date" | "timeStart" | "timeEnd">
+  >;
   singleVisitById: Map<string, Pick<SingleVisit, "teacherMemberId" | "locationId">>;
   groupsBySubId: Record<string, SubscriptionGroupLink[]>;
   classTeacherByGroupId: Map<string, string>;

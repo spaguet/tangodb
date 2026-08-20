@@ -17,6 +17,7 @@ import DatePickerField from "../components/ui/DatePickerField";
 import { useToast } from "../App";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { memberListLabel, memberRoleLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import { usePayments } from "../hooks/usePayments";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
@@ -147,9 +148,11 @@ function MemberPayrollBreakdown({
   personalLessonsEnabled: boolean;
 }) {
   const { t } = useI18n();
+  const { settings } = useOrganization();
+  const timezone = settings?.timezone ?? "UTC";
   const monthPayments = useMemo(
-    () => paymentsInMonth(payments, yearMonth),
-    [payments, yearMonth]
+    () => paymentsInMonth(payments, yearMonth, timezone),
+    [payments, yearMonth, timezone]
   );
   const breakdown = useMemo(
     () => computeTeacherAccrualBreakdown(monthPayments, memberId, rate, teacherCtx),

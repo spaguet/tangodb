@@ -38,6 +38,17 @@ export function getMemberRoleFromSession(session: Session | null): MemberRole | 
   return null;
 }
 
+/** Stable fingerprint for JWT member claims — used to avoid refresh loops on session object churn. */
+export function getClaimsFingerprint(session: Session | null): string {
+  if (!session?.access_token) return "";
+  const payload = decodeJwtPayload(session.access_token);
+  if (!payload) return "";
+  const role = getMemberRoleFromSession(session) ?? "";
+  const memberId = getMemberIdFromSession(session) ?? "";
+  const exp = typeof payload.exp === "number" ? String(payload.exp) : "";
+  return `${role}|${memberId}|${exp}`;
+}
+
 function isMemberRole(value: string | null): value is MemberRole {
   return (
     value === "owner" ||

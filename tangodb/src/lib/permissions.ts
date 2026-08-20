@@ -802,14 +802,15 @@ export function isRentalInboxOnly(role: MemberRole | null, options?: PermissionO
   return can(role, "rentals.payments.write", options) && !can(role, "finance.read", options);
 }
 
-/** Main nav / finance workspace: full finance or rental inbox only. */
+/** Main nav / finance workspace: full finance, rental inbox only, or payroll-only teacher. */
 export function canAccessFinanceNav(
   role: MemberRole | null,
   modules: OrgModules,
   options?: PermissionOptions
 ): boolean {
   if (canAccessPanel(role, "finance", options)) return true;
-  return canAccessRentalInboxRoute(role, modules, options);
+  if (canAccessRentalInboxRoute(role, modules, options)) return true;
+  return canAccessPayrollRoute(role, modules, options) && isTeacherPayrollOnly(role, options);
 }
 
 export function panelIdFromPath(pathname: string): PanelId {
@@ -1038,6 +1039,9 @@ export function assertPayrollPermissions(): void {
   }
   if (!canAccessPayrollRoute("teacher", modules, teacherOpts)) {
     throw new Error("teacher must access payroll route with finance_basic");
+  }
+  if (!canAccessFinanceNav("teacher", modules, teacherOpts)) {
+    throw new Error("teacher payroll-only must access finance nav");
   }
   if (canAccessPanel("teacher", "finance", teacherOpts)) {
     throw new Error("teacher must not access full finance panel");

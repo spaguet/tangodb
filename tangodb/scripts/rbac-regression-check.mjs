@@ -188,6 +188,14 @@ assert(
 assert(isRentalInboxOnly("admin", optsFor("admin")), "admin is rental inbox only without finance.read");
 assert(!isRentalInboxOnly("accountant", optsFor("accountant")), "accountant has finance.read");
 assert(canAccessFinanceNav("admin", defaultModules, optsFor("admin")), "admin finance nav via inbox");
+assert(
+  canAccessFinanceNav("teacher", defaultModules, optsFor("teacher")),
+  "teacher payroll-only finance nav"
+);
+assert(
+  !canAccessFinanceNav("accountant", { ...defaultModules, finance_basic: false }, optsFor("accountant")),
+  "accountant no finance nav without finance_basic module"
+);
 assert(!can("accountant", "clients.read", optsFor("accountant")), "accountant no clients");
 assert(!canAccessPanel("accountant", "personal", optsFor("accountant")), "accountant no personal");
 assert(!canAccessPanel("accountant", "personal_sell", optsFor("accountant")), "accountant no personal_sell");

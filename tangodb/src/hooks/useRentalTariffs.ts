@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { asJson } from "../lib/json";
 import { supabase } from "../lib/supabase";
 import { normalizeTime } from "../lib/scheduleWeek";
 import type { RentalTariff, RentalTariffRule, RentalTariffStatus, RentalTariffType } from "../types";
@@ -134,7 +135,7 @@ export function useUpsertRentalTariff() {
       if (input.tariffId) payload.tariff_id = input.tariffId;
       if (input.rules) payload.rules = rulesToPayload(input.rules);
 
-      const { data, error } = await supabase.rpc("upsert_rental_tariff", { p_payload: payload });
+      const { data, error } = await supabase.rpc("upsert_rental_tariff", { p_payload: asJson(payload) });
 
       if (error) return { success: false as const, error: error.message };
 

@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppSelect from "../components/ui/AppSelect";
-import { supabase } from "../lib/supabase";
 import { useOrganization } from "../organization/OrganizationProvider";
 import type { OrgModules, OrgPreset } from "../types/organization";
 import { PRESET_MODULES } from "../types/organization";
 import { CURRENCY_SELECT_OPTIONS, DEFAULT_CURRENCY_CODE } from "../lib/currencies";
 import { ORG_MODULE_GROUPS, type OrgModuleGroupId } from "../lib/orgModules";
+import { useCompleteOrganizationOnboarding } from "../hooks/useCompleteOrganizationOnboarding";
 import { useGuestI18n } from "../hooks/useI18n";
 import type { I18nKey } from "../lib/i18n/keys";
 import {
@@ -74,6 +74,7 @@ export default function OnboardingWizardPage() {
   const { t } = useGuestI18n();
   const navigate = useNavigate();
   const { organizationId, refreshOrganization } = useOrganization();
+  const completeOnboarding = useCompleteOrganizationOnboarding();
   const [step, setStep] = useState<WizardStep>("name");
   const [orgName, setOrgName] = useState("");
   const [preset, setPreset] = useState<OrgPreset>("dance_school");
@@ -81,7 +82,7 @@ export default function OnboardingWizardPage() {
   const [currencyCode, setCurrencyCode] = useState<string>(DEFAULT_CURRENCY_CODE);
   const [modules, setModules] = useState<OrgModules>(PRESET_MODULES.dance_school);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const loading = completeOnboarding.isPending;
 
   const stepIndex = useMemo(() => {
     const order: WizardStep[] = ["name", "preset", "locale", "modules"];
@@ -106,31 +107,17 @@ export default function OnboardingWizardPage() {
       return;
     }
 
-    setLoading(true);
     setError(null);
 
     try {
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) throw refreshError;
-
-      const { data, error: rpcError } = await supabase.rpc("complete_organization_onboarding", {
-        p_organization_id: organizationId,
-        p_name: orgName.trim(),
-        p_org_preset: preset,
-        p_locale: locale,
-        p_currency_code: currencyCode,
-        p_modules: modules,
-        p_pair_cycle_enabled: false,
+      await completeOnboarding.mutateAsync({
+        organizationId,
+        name: orgName.trim(),
+        orgPreset: preset,
+        locale,
+        currencyCode,
+        modules,
       });
-
-      if (rpcError) throw rpcError;
-      if (!data || (data as { ok?: boolean }).ok !== true) {
-        throw new Error(t("onboarding.error.saveFailed"));
-      }
-
-      const { error: postRefreshError } = await supabase.auth.refreshSession();
-      if (postRefreshError) throw postRefreshError;
-
       await refreshOrganization();
       navigate("/", { replace: true });
     } catch (err) {
@@ -143,9 +130,7 @@ export default function OnboardingWizardPage() {
               typeof (err as { message: unknown }).message === "string"
             ? (err as { message: string }).message
             : t("onboarding.error.saveFailed");
-      setError(message);
-    } finally {
-      setLoading(false);
+      setError(message === "onboarding_save_failed" ? t("onboarding.error.saveFailed") : message);
     }
   };
 

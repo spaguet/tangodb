@@ -1,4 +1,5 @@
 import type { GroupRepeatConfig } from "./groupLessonRepeat";
+import { DATE_CURSOR_MAX_ITERATIONS, isIsoDateString } from "./dateRecurrenceLimits";
 import { addDays, getWeekRange, nextOccurrenceOnOrAfter, toISODateLocal } from "./scheduleWeek";
 import { jsDayToIsoDow } from "./utils";
 
@@ -57,18 +58,25 @@ export function expandWeeklyRecurrence(
   endDate: string,
   rows: WeeklyRecurrenceRow[]
 ): PersonalLessonSlot[] {
-  if (!rows.length || startDate > endDate) return [];
+  if (!rows.length) return [];
+  if (!isIsoDateString(startDate) || !isIsoDateString(endDate)) return [];
+  if (startDate > endDate) return [];
 
   const slots: PersonalLessonSlot[] = [];
   const seen = new Set<string>();
 
   let { weekStart } = getWeekRange(new Date(`${startDate}T12:00:00`));
 
+  let iterations = 0;
   while (toISODateLocal(weekStart) <= endDate) {
+    if (++iterations > DATE_CURSOR_MAX_ITERATIONS) break;
+
     const weekStartISO = toISODateLocal(weekStart);
+    if (!isIsoDateString(weekStartISO)) break;
+
     for (const row of rows) {
       const date = nextOccurrenceOnOrAfter(weekStartISO, row.dayOfWeek);
-      if (date < startDate || date > endDate) continue;
+      if (!isIsoDateString(date) || date < startDate || date > endDate) continue;
       const key = `${date}|${row.timeStart}|${row.timeEnd}`;
       if (seen.has(key)) continue;
       seen.add(key);

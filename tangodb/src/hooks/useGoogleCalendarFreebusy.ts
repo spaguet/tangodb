@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useOrganization } from "../organization/OrganizationProvider";
 import {
+  FREEBUSY_INVOKE_TIMEOUT_MS,
+  WEEKLY_RECURRENCE_SLOT_CAP,
+} from "../lib/dateRecurrenceLimits";
+import {
   fetchTeacherGoogleFreebusy,
   type GoogleFreebusyInterval,
 } from "../lib/googleCalendarApi";
@@ -31,13 +35,15 @@ export function useGoogleCalendarFreebusy({
 
   const normalizedSlots = useMemo(
     () =>
-      slots.filter(
-        (slot) =>
-          slot.date &&
-          slot.timeStart &&
-          slot.timeEnd &&
-          slot.timeEnd > slot.timeStart
-      ),
+      slots
+        .filter(
+          (slot) =>
+            slot.date &&
+            slot.timeStart &&
+            slot.timeEnd &&
+            slot.timeEnd > slot.timeStart
+        )
+        .slice(0, WEEKLY_RECURRENCE_SLOT_CAP),
     [slots]
   );
 
@@ -52,19 +58,29 @@ export function useGoogleCalendarFreebusy({
     }
 
     const requestId = ++requestIdRef.current;
-    const timer = window.setTimeout(() => {
+    const abortController = new AbortController();
+    const deadlineTimer = window.setTimeout(() => {
+      abortController.abort();
+    }, FREEBUSY_INVOKE_TIMEOUT_MS * normalizedSlots.length + 5_000);
+
+    const debounceTimer = window.setTimeout(() => {
       void (async () => {
         setIsChecking(true);
         const next = new Map<string, GoogleFreebusyInterval[]>();
 
         try {
           for (const slot of normalizedSlots) {
-            const result = await fetchTeacherGoogleFreebusy({
-              organizationMemberId: teacherMemberId,
-              date: slot.date,
-              timeStart: slot.timeStart,
-              timeEnd: slot.timeEnd,
-            });
+            if (requestId !== requestIdRef.current || abortController.signal.aborted) return;
+
+            const result = await fetchTeacherGoogleFreebusy(
+              {
+                organizationMemberId: teacherMemberId,
+                date: slot.date,
+                timeStart: slot.timeStart,
+                timeEnd: slot.timeEnd,
+              },
+              { signal: abortController.signal }
+            );
             if (requestId !== requestIdRef.current) return;
             if (result.configured && result.busy.length > 0) {
               next.set(slotKey(slot), result.busy);
@@ -73,6 +89,7 @@ export function useGoogleCalendarFreebusy({
         } catch {
           if (requestId !== requestIdRef.current) return;
         } finally {
+          window.clearTimeout(deadlineTimer);
           if (requestId === requestIdRef.current) {
             setBusyByKey(next);
             setIsChecking(false);
@@ -81,7 +98,12 @@ export function useGoogleCalendarFreebusy({
       })();
     }, 400);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(debounceTimer);
+      window.clearTimeout(deadlineTimer);
+      requestIdRef.current += 1;
+      abortController.abort();
+    };
   }, [enabled, teacherMemberId, normalizedSlots, timeZone]);
 
   const overlappingSlots = useMemo(() => {
@@ -103,5 +125,6 @@ export function useGoogleCalendarFreebusy({
     overlappingSlots,
     isChecking,
     slotKey,
+    slotsCapped: slots.length > WEEKLY_RECURRENCE_SLOT_CAP,
   };
 }

@@ -7,6 +7,11 @@ import {
   computeTeacherVacationPreview,
   flattenTeacherVacationPreview,
 } from "../../lib/groupLessonOccurrences";
+import {
+  exceedsRangePreviewCap,
+  maxRepeatEndDate,
+  RANGE_PREVIEW_DATE_CAP,
+} from "../../lib/dateRecurrenceLimits";
 import { toISODateLocal } from "../../lib/scheduleWeek";
 import { useI18n } from "../../hooks/useI18n";
 import type { ScheduleSlot } from "../../types";
@@ -73,10 +78,17 @@ export default function TeacherVacationDialog({
   }, [teacherMemberId, startDate, endDate, scheduleSlots]);
 
   const previewDates = useMemo(() => flattenTeacherVacationPreview(previewItems), [previewItems]);
+  const previewOverCap = exceedsRangePreviewCap(previewDates.length);
+  const vacationEndMax = maxRepeatEndDate(startDate || todayISO);
 
   const handleSubmit = async () => {
     if (!teacherMemberId || !startDate || !endDate) {
       toast(t("schedule.error.vacationInvalidRange"), "error");
+      return;
+    }
+
+    if (previewOverCap) {
+      toast(t("schedule.error.previewDatesTooMany", { max: RANGE_PREVIEW_DATE_CAP }), "error");
       return;
     }
 
@@ -190,6 +202,7 @@ export default function TeacherVacationDialog({
                     type="date"
                     required
                     min={startDate || todayISO}
+                    max={vacationEndMax}
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className={fieldCls}
@@ -230,6 +243,11 @@ export default function TeacherVacationDialog({
                 ) : (
                   <p className="text-xs text-slate-500">{t("schedule.lessonInfo.cancelPreviewEmpty")}</p>
                 )}
+                {previewOverCap ? (
+                  <p className="text-xs text-red-600">
+                    {t("schedule.error.previewDatesTooMany", { max: RANGE_PREVIEW_DATE_CAP })}
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -249,7 +267,8 @@ export default function TeacherVacationDialog({
                   vacationMutation.isPending ||
                   !teacherMemberId ||
                   !endDate ||
-                  previewDates.length === 0
+                  previewDates.length === 0 ||
+                  previewOverCap
                 }
                 className={`flex-1 ${btnAddCls}`}
               >

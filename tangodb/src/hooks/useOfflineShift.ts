@@ -279,10 +279,9 @@ export function useInvalidateAfterOfflineSync() {
 
 export function useOfflineReconciliation() {
   const setReconciliationOpen = useOfflineStore((s) => s.setReconciliationOpen);
-  return {
-    openReconciliation: () => setReconciliationOpen(true),
-    closeReconciliation: () => setReconciliationOpen(false),
-  };
+  const openReconciliation = useCallback(() => setReconciliationOpen(true), [setReconciliationOpen]);
+  const closeReconciliation = useCallback(() => setReconciliationOpen(false), [setReconciliationOpen]);
+  return { openReconciliation, closeReconciliation };
 }
 
 /** Call on logout / org switch — blocks stale queue from leaking */

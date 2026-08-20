@@ -2,6 +2,8 @@ import {
   findVenueCostAmbiguousPairs,
   findVenueCostDuplicateKeys,
 } from "./venueCostBulkCopy";
+import { asJson } from "./json";
+import type { Json } from "../types/database";
 import type { ExpenseCategory } from "../types/expense";
 
 export type VenueCostMode = "per_lesson" | "fixed_period" | "disabled";
@@ -484,7 +486,7 @@ function accountingFieldsPayload(draft: VenueCostRuleDraft): Record<string, unkn
   };
 }
 
-export function venueCostDraftToPayload(draft: VenueCostRuleDraft): Record<string, unknown> {
+export function venueCostDraftToPayload(draft: VenueCostRuleDraft): Json {
   const accounting = accountingFieldsPayload(draft);
   const rules =
     draft.mode === "per_lesson"
@@ -526,11 +528,11 @@ export function venueCostDraftToPayload(draft: VenueCostRuleDraft): Record<strin
             return payload;
           })()
         : {};
-  return {
+  return asJson({
     id: draft.id ?? null,
     mode: draft.mode,
     valid_from: draft.validFrom,
     valid_to: draft.validTo,
     rules,
-  };
+  });
 }

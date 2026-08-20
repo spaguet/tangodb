@@ -34,5 +34,6 @@ project/
 | Что менялось недавно | `.cursor/docs/ai/changelog.md` |
 | Тариф персонального урока, длительность, раздельный платёж | `tangodb_personal_tariff_duration_payments.md` |
 | Промпты реализации того же контура | `tangodb_personal_tariff_duration_payments_prompts.md` |
+| Аудит CRM 2026-08-19 + промпты починки | `.cursor/docs/ai/crm_audit_2026-08-19.md` |
 
 Не загружай остальные файлы без необходимости.

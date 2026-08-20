@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
 import {
   computeMonthlyExpiresAt,
@@ -14,7 +15,6 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 import { subscriptionGroupsQueryKey } from "./useSubscriptionGroups";
 import { groupCapacityQueryKey } from "./useGroupCapacity";
 import { groupSpotNotificationsQueryKey, groupWaitlistQueryKey } from "./useGroupWaitlist";
-import { applyScheduledSubscriptionMemberChanges } from "../lib/subscriptionMembers";
 
 export const subscriptionsQueryKey = ["subscriptions"] as const;
 
@@ -54,15 +54,22 @@ export function useSubscriptions(options?: { enabled?: boolean }) {
     queryKey: withOrgId([...subscriptionsQueryKey, { maskFinancial }]),
     enabled: queryEnabled,
     queryFn: async () => {
-      await applyScheduledSubscriptionMemberChanges();
-
-      const table = maskFinancial ? "subscriptions_teacher_v" : "subscriptions";
-      const { data, error } = await supabase
-        .from(table)
-        .select("*")
-        .order("activation_date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []).map((row) =>
+      const data = maskFinancial
+        ? await fetchAllPostgrestRows((from, to) =>
+            supabase
+              .from("subscriptions_teacher_v")
+              .select("*")
+              .order("activation_date", { ascending: false })
+              .range(from, to)
+          )
+        : await fetchAllPostgrestRows((from, to) =>
+            supabase
+              .from("subscriptions")
+              .select("*")
+              .order("activation_date", { ascending: false })
+              .range(from, to)
+          );
+      return data.map((row) =>
         mapSubscription(row as unknown as Record<string, unknown>, maskFinancial)
       );
     },

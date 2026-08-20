@@ -10,7 +10,9 @@ import {
   type PaymentCorrectionReasonCode,
   type PaymentWithCorrectionMeta,
 } from "../lib/paymentCorrection";
+import { applyCreatedAtUtcRange, orgCreatedAtUtcRange } from "../lib/orgFinanceDate";
 import type { PaymentMethod } from "../types";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { paymentsQueryKey } from "./usePayments";
 import { personalLessonsQueryKey } from "./usePersonalLessons";
@@ -21,7 +23,7 @@ import { subscriptionsQueryKey } from "./useSubscriptions";
 export const correctionsQueryKey = ["corrections"] as const;
 
 const PAYMENTS_CORRECTION_SELECT =
-  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, single_visit_id, created_by, created_at, operation_kind, reverses_payment_id, replaces_payment_id, correction_reason_code, correction_comment, operation_number";
+  "id, client_id, client_display, amount, method, method_comment, subscription_id, personal_lesson_id, personal_lesson_charge_id, single_visit_id, created_by, created_at, operation_kind, reverses_payment_id, replaces_payment_id, correction_reason_code, correction_comment, operation_number";
 
 function mapPaymentRow(row: Record<string, unknown>): PaymentWithCorrectionMeta {
   return {
@@ -33,6 +35,8 @@ function mapPaymentRow(row: Record<string, unknown>): PaymentWithCorrectionMeta 
     methodComment: row.method_comment != null ? String(row.method_comment) : null,
     subscriptionId: row.subscription_id != null ? (row.subscription_id as string) : null,
     personalLessonId: row.personal_lesson_id != null ? (row.personal_lesson_id as string) : null,
+    personalLessonChargeId:
+      row.personal_lesson_charge_id != null ? String(row.personal_lesson_charge_id) : null,
     singleVisitId: row.single_visit_id != null ? (row.single_visit_id as string) : null,
     createdBy: row.created_by != null ? (row.created_by as string) : null,
     createdAt: String(row.created_at ?? ""),
@@ -47,18 +51,20 @@ function mapPaymentRow(row: Record<string, unknown>): PaymentWithCorrectionMeta 
 
 export function usePaymentsWithCorrections(filter?: { dateFrom?: string; dateTo?: string }) {
   const { enabled, withOrgId } = useOrgQueryScope();
+  const { settings } = useOrganization();
+  const timezone = settings?.timezone ?? "UTC";
 
   return useQuery({
-    queryKey: withOrgId([...paymentsQueryKey, "with-corrections", filter ?? {}]),
+    queryKey: withOrgId([...paymentsQueryKey, "with-corrections", filter ?? {}, timezone]),
     enabled,
     queryFn: async () => {
-      let query = supabase
-        .from("payments")
-        .select(PAYMENTS_CORRECTION_SELECT)
-        .order("created_at", { ascending: false });
-
-      if (filter?.dateFrom) query = query.gte("created_at", `${filter.dateFrom}T00:00:00`);
-      if (filter?.dateTo) query = query.lte("created_at", `${filter.dateTo}T23:59:59`);
+      const query = applyCreatedAtUtcRange(
+        supabase
+          .from("payments")
+          .select(PAYMENTS_CORRECTION_SELECT)
+          .order("created_at", { ascending: false }),
+        orgCreatedAtUtcRange(filter ?? {}, timezone)
+      );
 
       const { data, error } = await query;
       if (error) throw error;
