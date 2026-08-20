@@ -9,6 +9,7 @@ import {
 } from "../lib/teacherPayRules";
 import type { ExpenseCategory } from "../types/expense";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { orgScopedQueryFilter } from "../lib/orgQueryFilter";
 
 export const teacherPayRulesQueryKey = ["teacher-pay-rules"] as const;
 
@@ -55,7 +56,7 @@ export function useTeacherPayRules(memberId: string | null | undefined) {
 
 export function useUpsertTeacherPayRule() {
   const queryClient = useQueryClient();
-  const { withOrgId } = useOrgQueryScope();
+  const { organizationId } = useOrgQueryScope();
   return useMutation({
     mutationFn: async (input: { draft: TeacherPayRuleDraft; idempotencyKey?: string }) => {
       const { data, error } = await supabase.rpc("save_teacher_pay_rule", {
@@ -75,7 +76,7 @@ export function useUpsertTeacherPayRule() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: withOrgId(teacherPayRulesQueryKey) });
+        void queryClient.invalidateQueries(orgScopedQueryFilter(teacherPayRulesQueryKey, organizationId));
         void queryClient.invalidateQueries({ queryKey: ["payroll"] });
         void queryClient.invalidateQueries({ queryKey: ["finance-costs"] });
       }
@@ -85,7 +86,7 @@ export function useUpsertTeacherPayRule() {
 
 export function useEndTeacherPayRuleEarly() {
   const queryClient = useQueryClient();
-  const { withOrgId } = useOrgQueryScope();
+  const { organizationId } = useOrgQueryScope();
   return useMutation({
     mutationFn: async (input: { ruleId: string; endDate?: string; idempotencyKey?: string }) => {
       const { data, error } = await supabase.rpc("end_teacher_pay_rule_early", {
@@ -106,7 +107,7 @@ export function useEndTeacherPayRuleEarly() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: withOrgId(teacherPayRulesQueryKey) });
+        void queryClient.invalidateQueries(orgScopedQueryFilter(teacherPayRulesQueryKey, organizationId));
         void queryClient.invalidateQueries({ queryKey: ["payroll"] });
       }
     },

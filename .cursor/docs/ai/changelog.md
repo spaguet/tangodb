@@ -1,3 +1,5 @@
+2026-08-20 — fix(data): микропатч **2.8.60** — автообновление UI после мутаций: общий `orgScopedQueryFilter` (org id — последний сегмент query key); исправлены оптимистичный кэш групповой посещаемости (`useMarkAttendance`), invalidate после офлайн-синка, payroll, teacher pay rules, Google Calendar binding/sync-status; `usePersonalLessons` переведён на общий хелпер.
+
 2026-08-20 — fix(attendance): микропатч **2.8.59** — подсветка кнопки «Пришёл»/«Не пришёл»/«Уважит.» в журнале персональных уроков: оптимистичное обновление и invalidate снова попадают в кэш `usePersonalLessons` (org id — последний сегмент query key, не второй).
 
 2026-08-20 — fix(i18n): микропатч **2.8.58** — P38 / L7: module `t(locale, key)` в `personalLessonClients` и `scheduleLessonAccess` — `t(null, key)` вместо одноаргументного `t(key)`. TS2554 п.29, 31–33 ушли; `tsc --noEmit` — 0 ошибок (P33 follow-up закрыт).

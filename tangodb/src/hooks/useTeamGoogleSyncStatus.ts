@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { orgScopedQueryFilter } from "../lib/orgQueryFilter";
 import { usePermissions } from "./usePermissions";
 import {
   fetchOrganizationCalendarSyncMetrics,
@@ -15,7 +16,7 @@ export const teamGoogleSyncQueryKeys = {
 
 export function useTeamGoogleSyncStatus() {
   const { role } = usePermissions();
-  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const { enabled: orgEnabled, organizationId, withOrgId } = useOrgQueryScope();
   const canViewTeam = role === "owner" || role === "director";
   const queryClient = useQueryClient();
   const scopedMembersKey = withOrgId(teamGoogleSyncQueryKeys.members);
@@ -47,7 +48,9 @@ export function useTeamGoogleSyncStatus() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: scopedMembersKey });
       await queryClient.invalidateQueries({ queryKey: scopedOrgMetricsKey });
-      await queryClient.invalidateQueries({ queryKey: withOrgId(["google-calendar", "entry-sync-status"]) });
+      await queryClient.invalidateQueries(
+        orgScopedQueryFilter(["google-calendar", "entry-sync-status"], organizationId)
+      );
     },
   });
 

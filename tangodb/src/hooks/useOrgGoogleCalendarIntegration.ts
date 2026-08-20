@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { orgScopedQueryFilter } from "../lib/orgQueryFilter";
 import { usePermissions } from "./usePermissions";
 import {
   createGoogleCalendar,
@@ -46,7 +47,9 @@ export function useOrgGoogleCalendarIntegration() {
     await queryClient.invalidateQueries({ queryKey: orgGoogleCalendarQueryKeys.accounts });
     if (organizationId) {
       await queryClient.invalidateQueries({ queryKey: scopedOrgBindingKey });
-      await queryClient.invalidateQueries({ queryKey: withOrgId(["google-calendar", "entry-sync-status"]) });
+      await queryClient.invalidateQueries(
+        orgScopedQueryFilter(["google-calendar", "entry-sync-status"], organizationId)
+      );
     }
   };
 

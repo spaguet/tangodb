@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-20 — org-scoped React Query key и invalidate/setQueriesData
+
+- **Ошибка:** после мутаций UI не обновлялся (кнопки посещаемости, payroll, Google Calendar) без F5.
+- **Причина:** `withOrgId([base, …filters])` ставит org id **последним** сегментом, а `withOrgId(base)` / `{ queryKey: withOrgId(base) }` ищет org id **вторым** — TanStack Query partial match не срабатывает.
+- **Как избежать:** для cancel/get/set/invalidate org-кэша с фильтрами в ключе — `orgScopedQueryFilter(baseKey, organizationId)` из `lib/orgQueryFilter.ts`; не использовать `withOrgId(base)` как префикс для filtered queries.
+
 ### 2026-08-20 — Insert/update таблиц после createClient<Database>
 
 - **Ошибка:** `Record<string, unknown>` не assignable к `RejectExcessProperties` при `.from("prices").update` / `.insert`.

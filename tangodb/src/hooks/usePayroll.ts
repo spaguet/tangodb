@@ -11,6 +11,7 @@ import type {
   TeacherSettlementPayment,
 } from "../types/payroll";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { orgScopedQueryFilter } from "../lib/orgQueryFilter";
 import { paymentsQueryKey } from "./usePayments";
 
 export const payrollQueryKey = ["payroll"] as const;
@@ -186,7 +187,7 @@ export function useRecalculateTeacherSettlement() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: withOrgId(payrollQueryKey) });
+        void queryClient.invalidateQueries(orgScopedQueryFilter(payrollQueryKey, organizationId));
       }
     },
   });
@@ -211,7 +212,7 @@ export function useTeacherSettlementDetail(settlementId: string | null) {
 
 export function useRecordSettlementPayment() {
   const queryClient = useQueryClient();
-  const { withOrgId } = useOrgQueryScope();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async (input: SettlementPaymentInput) => {
@@ -227,7 +228,7 @@ export function useRecordSettlementPayment() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: withOrgId(payrollQueryKey) });
+        void queryClient.invalidateQueries(orgScopedQueryFilter(payrollQueryKey, organizationId));
         void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
       }
     },
@@ -236,7 +237,7 @@ export function useRecordSettlementPayment() {
 
 export function useUpsertTeacherPayRate() {
   const queryClient = useQueryClient();
-  const { organizationId, withOrgId } = useOrgQueryScope();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async (input: TeacherPayRateInput) => {
@@ -263,8 +264,8 @@ export function useUpsertTeacherPayRate() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: withOrgId(teacherPayRatesQueryKey) });
-        void queryClient.invalidateQueries({ queryKey: withOrgId(payrollQueryKey) });
+        void queryClient.invalidateQueries(orgScopedQueryFilter(teacherPayRatesQueryKey, organizationId));
+        void queryClient.invalidateQueries(orgScopedQueryFilter(payrollQueryKey, organizationId));
       }
     },
   });

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient, type QueryClient, type QueryKey } from "@tanstack/react-query";
 import { asJson } from "../lib/json";
 import { fetchAllPostgrestRows } from "../lib/postgrestRange";
+import { orgScopedQueryFilter } from "../lib/orgQueryFilter";
 import { WEEKLY_RECURRENCE_SLOT_CAP } from "../lib/dateRecurrenceLimits";
 import { supabase } from "../lib/supabase";
 import { reportClientError } from "../lib/reportClientError";
@@ -156,25 +157,13 @@ function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string,
   return hasFilter ? suffix : null;
 }
 
-/** Matches `withOrgId([...personalLessonsQueryKey, …filters])` — org id is the last segment. */
-function personalLessonsOrgQueryFilter(organizationId: string | null | undefined) {
-  return {
-    queryKey: personalLessonsQueryKey,
-    predicate: (query: { queryKey: readonly unknown[] }) =>
-      organizationId != null &&
-      query.queryKey.length > 0 &&
-      query.queryKey[0] === personalLessonsQueryKey[0] &&
-      query.queryKey[query.queryKey.length - 1] === organizationId,
-  };
-}
-
 function invalidatePersonalLessonRelatedQueries(
   queryClient: QueryClient,
   organizationId: string | null | undefined,
   options?: { refetchType?: "active"; includePayments?: boolean }
 ) {
   const opts = options?.refetchType ? { refetchType: options.refetchType } : undefined;
-  void queryClient.invalidateQueries({ ...personalLessonsOrgQueryFilter(organizationId), ...opts });
+  void queryClient.invalidateQueries({ ...orgScopedQueryFilter(personalLessonsQueryKey, organizationId), ...opts });
   void queryClient.invalidateQueries({ queryKey: ["schedule"], ...opts });
   void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey, ...opts });
@@ -643,7 +632,7 @@ type MarkPersonalLessonAttendanceRollbackContext = {
 export function useMarkPersonalLessonAttendance() {
   const queryClient = useQueryClient();
   const { organizationId } = useOrgQueryScope();
-  const personalLessonsFilter = personalLessonsOrgQueryFilter(organizationId);
+  const personalLessonsFilter = orgScopedQueryFilter(personalLessonsQueryKey, organizationId);
 
   const rollback = (context: MarkPersonalLessonAttendanceRollbackContext | undefined) => {
     if (context?.previousEntries) {

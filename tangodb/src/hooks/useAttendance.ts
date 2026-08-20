@@ -27,6 +27,7 @@ import { useClientDirectory } from "./useClients";
 import { useSchedule } from "./useSchedule";
 import { subscriptionsQueryKey, useSubscriptions } from "./useSubscriptions";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { orgScopedQueryFilter } from "../lib/orgQueryFilter";
 import { useSettings } from "../settings/SettingsProvider";
 import { buildMemberChangesBySubId } from "../lib/subscriptionMembers";
 import { useAllSubscriptionMemberChanges } from "./useSubscriptionMemberChanges";
@@ -356,7 +357,7 @@ type MarkAttendanceVars = {
 
 type MarkAttendanceRollbackContext = {
   previousAttendanceEntries: [QueryKey, AttendanceRecord[] | undefined][];
-  previousSubscriptions: Subscription[] | undefined;
+  previousSubscriptionsEntries: [QueryKey, Subscription[] | undefined][];
 };
 
 type MarkAttendanceGuard = { apply: true } | { apply: false; error: string };
@@ -395,15 +396,17 @@ function evaluateMarkAttendanceGuard(
 
 function readMarkAttendanceSnapshot(
   queryClient: ReturnType<typeof useQueryClient>,
-  scopedAttendanceKey: QueryKey,
-  scopedSubscriptionsKey: QueryKey,
+  attendanceFilter: ReturnType<typeof orgScopedQueryFilter>,
+  subscriptionsFilter: ReturnType<typeof orgScopedQueryFilter>,
   vars: Pick<MarkAttendanceVars, "dateStr" | "subId" | "scheduleGroupId">
 ) {
-  const previousAttendanceEntries = queryClient.getQueriesData<AttendanceRecord[]>({
-    queryKey: scopedAttendanceKey,
-  });
-  const previousSubscriptions = queryClient.getQueryData<Subscription[]>(scopedSubscriptionsKey);
-  const sub = previousSubscriptions?.find((s) => s.id === vars.subId);
+  const previousAttendanceEntries = queryClient.getQueriesData<AttendanceRecord[]>(attendanceFilter);
+  const previousSubscriptionsEntries = queryClient.getQueriesData<Subscription[]>(subscriptionsFilter);
+  let sub: Subscription | undefined;
+  for (const [, data] of previousSubscriptionsEntries) {
+    sub = data?.find((s) => s.id === vars.subId);
+    if (sub) break;
+  }
   const previousAttendance = previousAttendanceEntries[0]?.[1];
   const existing = previousAttendance?.find(
     (a) =>
@@ -412,15 +415,15 @@ function readMarkAttendanceSnapshot(
       a.scheduleGroupId === vars.scheduleGroupId
   );
   const cacheOldStatus = existing?.attendanceStatus ?? null;
-  return { previousAttendanceEntries, previousSubscriptions, sub, cacheOldStatus };
+  return { previousAttendanceEntries, previousSubscriptionsEntries, sub, cacheOldStatus };
 }
 
 export function useMarkAttendance() {
   const queryClient = useQueryClient();
-  const { withOrgId } = useOrgQueryScope();
+  const { organizationId } = useOrgQueryScope();
   const { freezePolicy } = useSettings();
-  const scopedAttendanceKey = withOrgId(attendanceQueryKey);
-  const scopedSubscriptionsKey = withOrgId(subscriptionsQueryKey);
+  const attendanceFilter = orgScopedQueryFilter(attendanceQueryKey, organizationId);
+  const subscriptionsFilter = orgScopedQueryFilter(subscriptionsQueryKey, organizationId);
   const guardByVars = useRef(new WeakMap<MarkAttendanceVars, MarkAttendanceGuard>());
 
   const rollback = (context: MarkAttendanceRollbackContext | undefined) => {
@@ -429,8 +432,10 @@ export function useMarkAttendance() {
         queryClient.setQueryData(key, data);
       }
     }
-    if (context?.previousSubscriptions) {
-      queryClient.setQueryData(scopedSubscriptionsKey, context.previousSubscriptions);
+    if (context?.previousSubscriptionsEntries) {
+      for (const [key, data] of context.previousSubscriptionsEntries) {
+        queryClient.setQueryData(key, data);
+      }
     }
   };
 
@@ -515,20 +520,20 @@ export function useMarkAttendance() {
     },
     onMutate: async (vars) => {
       const { dateStr, subId, status, scheduleGroupId } = vars;
-      await queryClient.cancelQueries({ queryKey: scopedAttendanceKey });
-      await queryClient.cancelQueries({ queryKey: scopedSubscriptionsKey });
+      await queryClient.cancelQueries(attendanceFilter);
+      await queryClient.cancelQueries(subscriptionsFilter);
 
       const snapshot = readMarkAttendanceSnapshot(
         queryClient,
-        scopedAttendanceKey,
-        scopedSubscriptionsKey,
+        attendanceFilter,
+        subscriptionsFilter,
         vars
       );
-      const { previousAttendanceEntries, previousSubscriptions, sub, cacheOldStatus } = snapshot;
+      const { previousAttendanceEntries, previousSubscriptionsEntries, sub, cacheOldStatus } = snapshot;
       const guard = evaluateMarkAttendanceGuard(sub, cacheOldStatus, status, freezePolicy);
       guardByVars.current.set(vars, guard);
       if (guard.apply === false || !sub) {
-        return { previousAttendanceEntries, previousSubscriptions };
+        return { previousAttendanceEntries, previousSubscriptionsEntries };
       }
 
       const isMonthly = isMonthlyUnlimitedSubscription(sub);
@@ -536,54 +541,49 @@ export function useMarkAttendance() {
         ? { lessonDelta: 0, freezeDelta: 0 }
         : computeAttendanceDeltas(cacheOldStatus, status);
 
-      queryClient.setQueriesData<AttendanceRecord[]>(
-        { queryKey: scopedAttendanceKey },
-        (old) => {
-          const base = old ?? [];
-          const attIdx = base.findIndex(
-            (a) =>
-              a.date === dateStr &&
-              a.subscriptionId === subId &&
-              a.scheduleGroupId === scheduleGroupId
-          );
-          if (attIdx >= 0) {
-            const updated = [...base];
-            updated[attIdx] = { ...updated[attIdx], attendanceStatus: status };
-            return updated;
-          }
-          return [
-            ...base,
-            {
-              date: dateStr,
-              subscriptionId: subId,
-              scheduleGroupId,
-              clientDisplay: "",
-              attendanceStatus: status,
-            },
-          ];
+      queryClient.setQueriesData<AttendanceRecord[]>(attendanceFilter, (old) => {
+        const base = old ?? [];
+        const attIdx = base.findIndex(
+          (a) =>
+            a.date === dateStr &&
+            a.subscriptionId === subId &&
+            a.scheduleGroupId === scheduleGroupId
+        );
+        if (attIdx >= 0) {
+          const updated = [...base];
+          updated[attIdx] = { ...updated[attIdx], attendanceStatus: status };
+          return updated;
         }
-      );
+        return [
+          ...base,
+          {
+            date: dateStr,
+            subscriptionId: subId,
+            scheduleGroupId,
+            clientDisplay: "",
+            attendanceStatus: status,
+          },
+        ];
+      });
 
       if (!isMonthly) {
         const newLessonsLeft = sub.lessonsLeft + lessonDelta;
         const newFreezeUsed = sub.freezeUsed + freezeDelta;
-        queryClient.setQueryData<Subscription[]>(
-          scopedSubscriptionsKey,
-          (old) =>
-            (old ?? []).map((s) =>
-              s.id === subId
-                ? {
-                    ...s,
-                    lessonsLeft: newLessonsLeft,
-                    freezeUsed: newFreezeUsed,
-                    status: newLessonsLeft === 0 ? "finished" : s.status,
-                  }
-                : s
-            )
+        queryClient.setQueriesData<Subscription[]>(subscriptionsFilter, (old) =>
+          (old ?? []).map((s) =>
+            s.id === subId
+              ? {
+                  ...s,
+                  lessonsLeft: newLessonsLeft,
+                  freezeUsed: newFreezeUsed,
+                  status: newLessonsLeft === 0 ? "finished" : s.status,
+                }
+              : s
+          )
         );
       }
 
-      return { previousAttendanceEntries, previousSubscriptions };
+      return { previousAttendanceEntries, previousSubscriptionsEntries };
     },
     onError: (error, _vars, context) => {
       reportClientError(error, { area: "mutation", action: "useMarkAttendance" });

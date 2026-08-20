@@ -27,6 +27,7 @@ import type {
 } from "../lib/offline/types";
 import type { SubForDate } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
+import { orgScopedQueryFilter } from "../lib/orgQueryFilter";
 
 function useOfflineNamespace(): OfflineNamespace | null {
   const { session } = useAuth();
@@ -266,15 +267,15 @@ export function useOfflineQueuePersistence() {
 
 export function useInvalidateAfterOfflineSync() {
   const queryClient = useQueryClient();
-  const { withOrgId } = useOrgQueryScope();
+  const { organizationId } = useOrgQueryScope();
 
   return useCallback(async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: withOrgId(scheduleQueryKey) }),
-      queryClient.invalidateQueries({ queryKey: withOrgId(attendanceQueryKey) }),
-      queryClient.invalidateQueries({ queryKey: withOrgId(subscriptionsQueryKey) }),
+      queryClient.invalidateQueries(orgScopedQueryFilter(scheduleQueryKey, organizationId)),
+      queryClient.invalidateQueries(orgScopedQueryFilter(attendanceQueryKey, organizationId)),
+      queryClient.invalidateQueries(orgScopedQueryFilter(subscriptionsQueryKey, organizationId)),
     ]);
-  }, [queryClient, withOrgId]);
+  }, [queryClient, organizationId]);
 }
 
 export function useOfflineReconciliation() {
