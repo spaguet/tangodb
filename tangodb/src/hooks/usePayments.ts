@@ -4,10 +4,11 @@ import { t } from "../lib/i18n";
 import type { TranslateFn } from "../lib/utils";
 import { FINANCIAL_TREND_MONTH_COUNT, monthTrendRange } from "../lib/financeReports";
 import { fetchAllPostgrestRows } from "../lib/postgrestRange";
+import { orgScopedQueryFilter } from "../lib/orgQueryFilter";
 import { supabase } from "../lib/supabase";
 import { formatClientName } from "../lib/utils";
 import type { PaymentWithCorrectionMeta } from "../lib/paymentCorrection";
-import type { Payment, PaymentMethod } from "../types";
+import type { Payment, PaymentMethod, PersonalLesson } from "../types";
 import { applyCreatedAtUtcRange, orgCreatedAtUtcRange } from "../lib/orgFinanceDate";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
@@ -154,7 +155,7 @@ export function useRecordSubscriptionPayment() {
 
 export function useRecordPersonalLessonPayment() {
   const queryClient = useQueryClient();
-  const { withOrgId } = useOrgQueryScope();
+  const { organizationId, withOrgId } = useOrgQueryScope();
   const venueStatusQueryKey = withOrgId(venueCostStatusQueryKey);
 
   return useMutation({
@@ -217,14 +218,78 @@ export function useRecordPersonalLessonPayment() {
         alreadyApplied: result.already_applied ?? false,
       };
     },
-    onSuccess: (result) => {
-      if (result.success) {
-        void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
-        void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
-        void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey });
-        void queryClient.invalidateQueries({ queryKey: personalLessonChargesQueryKey });
+    onSuccess: (result, variables) => {
+      if (!result.success) return;
+      if (!result.alreadyApplied) {
+        applyPersonalLessonPaymentToCaches(
+          queryClient,
+          organizationId,
+          variables.lessonId,
+          variables.amount
+        );
       }
+      const refetchOpts = { refetchType: "active" as const };
+      void queryClient.invalidateQueries({ queryKey: paymentsQueryKey, ...refetchOpts });
+      void queryClient.invalidateQueries({
+        ...orgScopedQueryFilter(personalLessonsQueryKey, organizationId),
+        ...refetchOpts,
+      });
+      void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, ...refetchOpts });
+      void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey, ...refetchOpts });
+      void queryClient.invalidateQueries({ queryKey: personalLessonChargesQueryKey, ...refetchOpts });
     },
+  });
+}
+
+function applyPersonalLessonPaymentToCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  organizationId: string | null | undefined,
+  lessonId: string,
+  amount: number
+) {
+  const entries = queryClient.getQueriesData<PersonalLesson[]>(
+    orgScopedQueryFilter(personalLessonsQueryKey, organizationId)
+  );
+  for (const [key, lessons] of entries) {
+    if (!lessons) continue;
+    queryClient.setQueryData<PersonalLesson[]>(
+      key,
+      lessons.map((lesson) => {
+        if (lesson.id !== lessonId) return lesson;
+        const paidAmount = (lesson.paidAmount ?? 0) + amount;
+        const price = lesson.price ?? 0;
+        return {
+          ...lesson,
+          paidAmount,
+          paid: price > 0 && paidAmount >= price ? "yes" : lesson.paid,
+        };
+      })
+    );
+  }
+}
+
+export function usePersonalLessonPayments(
+  lessonId: string | null | undefined,
+  options?: { enabled?: boolean }
+) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const queryEnabled = orgEnabled && (options?.enabled ?? true) && Boolean(lessonId);
+
+  return useQuery({
+    queryKey: withOrgId([...paymentsQueryKey, "by-lesson", lessonId ?? ""]),
+    enabled: queryEnabled,
+    queryFn: async () => {
+      const data = await fetchAllPostgrestRows((from, to) =>
+        supabase
+          .from("payments")
+          .select(PAYMENTS_SELECT)
+          .eq("personal_lesson_id", lessonId!)
+          .order("created_at", { ascending: true })
+          .range(from, to)
+      );
+      return data.map((row) => mapPayment(row as unknown as Record<string, unknown>));
+    },
+    staleTime: 15 * 1000,
   });
 }
 

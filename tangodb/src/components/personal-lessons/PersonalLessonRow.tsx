@@ -8,6 +8,7 @@ import {
 } from "../../lib/scheduleLessonAccess";
 import { isPersonalLessonLockedForWrite, toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
+import { personalLessonHasScheduleDebt, personalLessonRemainingAmount } from "../../lib/personalLessonPayment";
 import { formatReopenLessonError } from "../../lib/venueCostDraftErrors";
 import { useI18n } from "../../hooks/useI18n";
 import {
@@ -57,14 +58,14 @@ function PaymentBadge({
       </span>
     );
   }
-  if (lesson.paid === "yes") {
+  if (!personalLessonHasScheduleDebt(lesson)) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
         {t("personal.row.paid")}
       </span>
     );
   }
-  const debt = Math.max(lesson.price - lesson.paidAmount, 0);
+  const debt = personalLessonRemainingAmount(lesson.price, lesson.paidAmount);
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
       {t("personal.row.debt")}

@@ -1,3 +1,5 @@
+2026-08-21 — fix(schedule): микропатч **2.8.63** — оплата персонального урока в расписании: красная рамка по остатку (`price − paid_amount`), а не только по флагу `paid`; `useScheduleForWeek.refetch` обновляет персональные уроки, не только групповые слоты; после платежа — optimistic cache + invalidate; в popup оплаты и карточке урока — расшифровка долга (начисление − платежи = остаток) и история платежей.
+
 2026-08-21 — fix(payments): микропатч **2.8.62** — `PayPersonalLessonModal` «Оплатить за всех»: idempotency key — UUID на charge (ref/map), не `${uuid}:${uuid}`; PostgreSQL `p_idempotency_key uuid` больше не падает.
 
 2026-08-21 — fix(integrations): микропатч **2.8.61** — GCal sync badge: `pending` только при `has_pending_job`; orphaned link `sync_status=pending` без job → `stale`; poll interval только при активной outbox-задаче; invalidate `entry-sync-status` после мутаций персональных уроков.

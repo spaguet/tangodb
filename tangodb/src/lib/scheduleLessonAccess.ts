@@ -1,5 +1,6 @@
 import type { MemberRole, OrgModules } from "../types/organization";
 import type { DisplayLesson, PersonalDisplayLesson } from "../types";
+import { personalLessonHasScheduleDebt } from "./personalLessonPayment";
 import { t } from "./i18n";
 import { isModuleEnabled } from "./orgModules";
 import { isPersonalLessonLockedForWrite, isScheduleDateLockedForWrite } from "./scheduleWeek";
@@ -33,7 +34,7 @@ export function canPayPersonalLesson(
   isReadOnly: boolean
 ): boolean {
   if (isReadOnly) return false;
-  if (lesson.paid === "yes") return false;
+  if (!personalLessonHasScheduleDebt(lesson)) return false;
   return can("payments.write", lessonContext(lesson));
 }
 

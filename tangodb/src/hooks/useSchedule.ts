@@ -163,9 +163,20 @@ export function useScheduleForWeek(
     };
   }, [scheduleQuery.data, personalQuery.data, eventsQuery.data, rentalsQuery.data, weekStart, weekEnd]);
 
+  const refetch = async () => {
+    const [scheduleResult] = await Promise.all([
+      scheduleQuery.refetch(),
+      personalLessonsEnabled ? personalQuery.refetch() : Promise.resolve(null),
+      eventsQuery.refetch(),
+      rentalsQuery.refetch(),
+    ]);
+    return scheduleResult;
+  };
+
   return {
     ...scheduleQuery,
     data,
+    refetch,
     isLoading:
       scheduleQuery.isLoading ||
       (personalLessonsEnabled && personalQuery.isLoading) ||

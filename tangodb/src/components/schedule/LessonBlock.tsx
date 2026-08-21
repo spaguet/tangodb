@@ -3,6 +3,7 @@ import type { DisplayLesson } from "../../types";
 import { GROUP_LESSON_COLOR, PERSONAL_LESSON_COLOR, EVENT_LESSON_COLOR, RENTAL_LESSON_COLOR } from "../../lib/scheduleColors";
 import { isPastDate } from "../../lib/scheduleWeek";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
+import { personalLessonHasScheduleDebt } from "../../lib/personalLessonPayment";
 import {
   lessonHeightPx,
   lessonTopPx,
@@ -22,7 +23,7 @@ interface LessonBlockProps {
 export default function LessonBlock({ item, rangeStartMin, title, subtitle, onClick, highlighted = false }: LessonBlockProps) {
   const { lesson, column, columnCount } = item;
   const isPast = isPastDate(lesson.date);
-  const personalDebt = lesson.kind === "personal" && lesson.paid === "no";
+  const personalDebt = lesson.kind === "personal" && personalLessonHasScheduleDebt(lesson);
   const rentalRemaining =
     lesson.kind === "rental"
       ? rentalRemainingAmount(lesson.fixedAmount, lesson.paidAmount)

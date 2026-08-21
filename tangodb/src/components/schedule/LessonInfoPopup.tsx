@@ -4,6 +4,8 @@ import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, X, XCir
 import { useClientDirectory } from "../../hooks/useClients";
 import { useDeleteScheduleSlot } from "../../hooks/useSchedule";
 import { useDeletePersonalLesson, useDeletePersonalLessonSeriesFromDate, usePersonalLessons } from "../../hooks/usePersonalLessons";
+import { usePersonalLessonPayments } from "../../hooks/usePayments";
+import { canShowScheduleDebtAmount } from "../../hooks/useScheduleDebtors";
 import { useClosePersonalLessonOccurrence, useActivePersonalLessonClosure, useReopenLessonOccurrenceClosure } from "../../hooks/useVenueCosts";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -23,6 +25,10 @@ import { toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
 import { formatReopenLessonError } from "../../lib/venueCostDraftErrors";
 import { personalLessonClientEntries } from "../../lib/personalLessonClients";
+import {
+  personalLessonHasScheduleDebt,
+  personalLessonRemainingAmount,
+} from "../../lib/personalLessonPayment";
 import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from "../../types";
 import type { Client } from "../../types";
 import ClientCardModal from "../ClientCardModal";
@@ -30,6 +36,7 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 import { btnAddCls, btnCancelCls, btnDestructiveCls, btnOpenCls } from "../ui/buttonStyles";
 import RequirePermission from "../RequirePermission";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
+import PersonalLessonDebtBreakdown from "./PersonalLessonDebtBreakdown";
 import MoveGroupLessonDialog from "./MoveGroupLessonDialog";
 import CancelGroupLessonDialog from "./CancelGroupLessonDialog";
 import GoogleCalendarSyncStatusBadge from "../integrations/GoogleCalendarSyncStatusBadge";
@@ -182,9 +189,32 @@ export default function LessonInfoPopup({
         })
       : null;
 
+  const fullPersonalLesson =
+    lesson?.kind === "personal"
+      ? personalLessonsQuery.data?.find((row) => row.id === lesson.lessonId)
+      : undefined;
+
+  const personalPayLesson = useMemo(() => {
+    if (!lesson || lesson.kind !== "personal") return null;
+    if (!fullPersonalLesson) return lesson;
+    return {
+      ...lesson,
+      paid: fullPersonalLesson.paid,
+      price: fullPersonalLesson.price,
+      paidAmount: fullPersonalLesson.paidAmount,
+      subscriptionId: fullPersonalLesson.subscriptionId ?? null,
+    };
+  }, [lesson, fullPersonalLesson]);
+
   const canPay =
-    lesson?.kind === "personal" &&
-    canPayPersonalLesson(role, memberId, lesson, can, isReadOnly);
+    personalPayLesson != null &&
+    canPayPersonalLesson(role, memberId, personalPayLesson, can, isReadOnly);
+
+  const showDebtAmounts = canShowScheduleDebtAmount(role);
+  const { data: lessonPayments = [] } = usePersonalLessonPayments(
+    lesson?.kind === "personal" ? lesson.lessonId : null,
+    { enabled: lesson?.kind === "personal" && showDebtAmounts }
+  );
 
   const canClosePersonal =
     lesson?.kind === "personal" &&
@@ -195,11 +225,6 @@ export default function LessonInfoPopup({
 
   const canReopenPersonal =
     lesson?.kind === "personal" && Boolean(activePersonalClosure) && can("finance.read");
-
-  const fullPersonalLesson =
-    lesson?.kind === "personal"
-      ? personalLessonsQuery.data?.find((row) => row.id === lesson.lessonId)
-      : undefined;
 
   const personalSeriesFromDate = useMemo(() => {
     if (!fullPersonalLesson || !personalLessonsQuery.data) return [];
@@ -453,15 +478,30 @@ export default function LessonInfoPopup({
                 {lesson.kind === "personal" && canShowPaidStatus(role) && (
                   <div className="flex items-start gap-2.5">
                     <Clock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <dt className={detailLabelCls}>{t("common.paymentLabel")}</dt>
                       <dd className={detailValueCls}>
-                        {lesson.paid === "yes" ? (
+                        {personalPayLesson && !personalLessonHasScheduleDebt(personalPayLesson) ? (
                           <span className="text-slate-600">{t("common.paidLabel")}</span>
+                        ) : personalPayLesson && (personalPayLesson.paidAmount ?? 0) > 0 ? (
+                          <span className="text-rose-600">{t("personal.pay.partialStatus")}</span>
                         ) : (
                           <span className="text-rose-600">{t("common.unpaidLabel")}</span>
                         )}
                       </dd>
+                      {showDebtAmounts && personalPayLesson ? (
+                        <div className="mt-2">
+                          <PersonalLessonDebtBreakdown
+                            billedAmount={personalPayLesson.price ?? 0}
+                            paidAmount={personalPayLesson.paidAmount ?? 0}
+                            remainingAmount={personalLessonRemainingAmount(
+                              personalPayLesson.price,
+                              personalPayLesson.paidAmount
+                            )}
+                            payments={lessonPayments}
+                          />
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 )}

@@ -5,6 +5,7 @@ import { useClients, useClientDirectory } from "../../hooks/useClients";
 import {
   PAYMENT_METHODS,
   getPaymentMethodLabel,
+  usePersonalLessonPayments,
   useRecordPersonalLessonPayment,
 } from "../../hooks/usePayments";
 import { usePaymentFormIdempotency, usePaymentSubmitState } from "../../hooks/usePaymentFormIdempotency";
@@ -40,6 +41,7 @@ import { useI18n } from "../../hooks/useI18n";
 import SellPackageModal from "../ui/SellPackageModal";
 import VenueRulePaymentConfirmDialog from "../venue-costs/VenueRulePaymentConfirmDialog";
 import { type VenueCostRuleStatus } from "../../hooks/useVenueCosts";
+import PersonalLessonDebtBreakdown from "./PersonalLessonDebtBreakdown";
 
 export type PersonalLessonPaymentMode = "tariff" | "outstanding" | "package";
 
@@ -141,6 +143,9 @@ export default function PayPersonalLessonModal({
       enabled: Boolean(lessonId),
     }
   );
+  const { data: lessonPayments = [] } = usePersonalLessonPayments(lessonId, {
+    enabled: Boolean(lessonId),
+  });
 
   const participants = useMemo(() => (lesson ? participantIds(lesson) : []), [lesson]);
 
@@ -186,6 +191,8 @@ export default function PayPersonalLessonModal({
   const billedAmount = selectedCharge?.billedAmount ?? lesson?.price ?? 0;
   const paidSoFar = selectedCharge?.paidAmount ?? lesson?.paidAmount ?? 0;
   const remainingDebt = selectedCharge?.remainingAmount ?? Math.max(billedAmount - paidSoFar, 0);
+  const totalBilledAll = lessonCharges.reduce((sum, charge) => sum + charge.billedAmount, 0);
+  const totalPaidAll = lessonCharges.reduce((sum, charge) => sum + charge.paidAmount, 0);
   const totalRemainingAll = unpaidCharges.reduce((sum, c) => sum + c.remainingAmount, 0);
   const hasPayments = lessonCharges.some((c) => c.paidAmount > 0);
   const lessonPriceId = lesson?.priceId ?? null;
@@ -670,16 +677,22 @@ export default function PayPersonalLessonModal({
 
               {(bookingPaymentMode === "tariff" || bookingPaymentMode === "outstanding") && (
                 <>
-                  {billedAmount > 0 && paidSoFar > 0 && (
-                    <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 text-xs font-sans">
-                      <span className="text-slate-500">
-                        {t("personal.pay.paidSoFar")}: {formatCurrency(paidSoFar)}
-                      </span>
-                      <span className="text-rose-600 font-semibold">
-                        {t("common.debt")}: {formatCurrency(remainingDebt)}
-                      </span>
-                    </div>
-                  )}
+                  <PersonalLessonDebtBreakdown
+                    billedAmount={totalBilledAll || billedAmount}
+                    paidAmount={totalPaidAll || paidSoFar}
+                    remainingAmount={Math.max(
+                      (totalBilledAll || billedAmount) - (totalPaidAll || paidSoFar),
+                      0
+                    )}
+                    tariffLabel={
+                      selectedTariff
+                        ? getPriceLabel(selectedTariff, t, locale)
+                        : bookedTariff
+                          ? getPriceLabel(bookedTariff, t, locale)
+                          : null
+                    }
+                    payments={lessonPayments}
+                  />
 
                   {hasMultipleUnpaidCharges && (
                     <div className="field-stack">
