@@ -366,7 +366,7 @@ export default function LessonInfoPopup({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.97, opacity: 0, y: 8 }}
               transition={{ duration: 0.18 }}
-              className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-sm w-full p-4 panel-card-stack"
+              className="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-sm w-full max-h-[90vh] overflow-y-auto p-4 panel-card-stack"
             >
               <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
                 <div className="min-w-0">

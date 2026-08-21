@@ -1,3 +1,5 @@
+2026-08-21 — fix(schedule): микропатч **2.8.64** — `LessonInfoPopup` не влазил в экран (долг + история платежей + GCal + переоткрытие): `max-h-[90vh] overflow-y-auto`, как у остальных модалей расписания.
+
 2026-08-21 — fix(schedule): микропатч **2.8.63** — оплата персонального урока в расписании: красная рамка по остатку (`price − paid_amount`), а не только по флагу `paid`; `useScheduleForWeek.refetch` обновляет персональные уроки, не только групповые слоты; после платежа — optimistic cache + invalidate; в popup оплаты и карточке урока — расшифровка долга (начисление − платежи = остаток) и история платежей.
 
 2026-08-21 — fix(payments): микропатч **2.8.62** — `PayPersonalLessonModal` «Оплатить за всех»: idempotency key — UUID на charge (ref/map), не `${uuid}:${uuid}`; PostgreSQL `p_idempotency_key uuid` больше не падает.
