@@ -1,17 +1,18 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { CalendarDays, ChevronDown, Landmark, Pencil, Search } from "lucide-react";
+import { CalendarDays, ChevronDown, Landmark, Pencil, Search, Trash2 } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect, { searchFieldCls } from "../components/ui/AppSelect";
 import DatePickerField from "../components/ui/DatePickerField";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
 import PaymentCorrectionDialog from "../components/finance/PaymentCorrectionDialog";
 import RentalPaymentCorrectionDialog from "../components/finance/RentalPaymentCorrectionDialog";
 import {
   getPaymentMethodLabel,
   paymentSourceLabel,
 } from "../hooks/usePayments";
-import { usePaymentsWithCorrections } from "../hooks/usePaymentCorrections";
+import { usePaymentsWithCorrections, useRemoveOrphanPaymentStorno } from "../hooks/usePaymentCorrections";
 import { usePermissions } from "../hooks/usePermissions";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
@@ -31,6 +32,7 @@ import {
 } from "../lib/financeReports";
 import {
   aggregateEffectivePaymentTotal,
+  isOrphanPaymentStorno,
   paymentCorrectionReasonLabelKey,
   paymentEffectiveAmount,
   paymentStatusLabelKey,
@@ -44,6 +46,7 @@ import { formatCurrency, formatMonthTitle, currentYearMonth } from "../lib/utils
 import { monthDateRange } from "../lib/financeReports";
 import { readFinanceMonthFromSearch } from "../lib/financeMonthUrl";
 import { paymentSchedulePath } from "../lib/scheduleFocus";
+import { resolveMutationError } from "../lib/resolveMutationError";
 import { btnOpenCls } from "../components/ui/buttonStyles";
 import {
   formatPersonalPaymentLessonDuration,
@@ -204,6 +207,8 @@ function PaymentRow({
   translate,
   canCorrect,
   onCorrect,
+  canRemoveOrphanStorno,
+  onRemoveOrphanStorno,
   teacherCtx,
   locationNameById,
   memberNameById,
@@ -215,6 +220,8 @@ function PaymentRow({
   translate: ReturnType<typeof useI18n>["t"];
   canCorrect: boolean;
   onCorrect: (payment: PaymentWithCorrectionMeta) => void;
+  canRemoveOrphanStorno: boolean;
+  onRemoveOrphanStorno: (payment: PaymentWithCorrectionMeta) => void;
   teacherCtx: TeacherRevenueContext;
   locationNameById: Map<string, string>;
   memberNameById: Map<string, string>;
@@ -336,6 +343,20 @@ function PaymentRow({
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             )}
+          {canRemoveOrphanStorno && isRefund && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemoveOrphanStorno(payment);
+              }}
+              aria-label={translate("corrections.payment.removeOrphanStorno")}
+              title={translate("corrections.payment.removeOrphanStorno")}
+              className="w-8 h-8 shrink-0 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200 bg-white cursor-pointer transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
       {expanded && (
@@ -624,6 +645,7 @@ export default function FinancePaymentsPage() {
   const [methodFilter, setMethodFilter] = useState<PaymentMethodFilter>("all");
   const [teacherFilter, setTeacherFilter] = useState("all");
   const [correctionTarget, setCorrectionTarget] = useState<PaymentWithCorrectionMeta | null>(null);
+  const [orphanStornoTarget, setOrphanStornoTarget] = useState<PaymentWithCorrectionMeta | null>(null);
   const [rentalCorrectionTarget, setRentalCorrectionTarget] =
     useState<RentalPaymentWithCorrectionMeta | null>(null);
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
@@ -638,6 +660,7 @@ export default function FinancePaymentsPage() {
   };
 
   const paymentsQuery = usePaymentsWithCorrections({ dateFrom, dateTo });
+  const removeOrphanPaymentStorno = useRemoveOrphanPaymentStorno();
   const rentalPaymentsQuery = useRentalPayments({ dateFrom, dateTo });
   const filterMonth = dateFrom.slice(0, 7);
   const teamQuery = useTeamMembers();
@@ -954,6 +977,10 @@ export default function FinancePaymentsPage() {
                               translate={t}
                               canCorrect={canCorrectPayments}
                               onCorrect={setCorrectionTarget}
+                              canRemoveOrphanStorno={
+                                canCorrectPayments && isOrphanPaymentStorno(p, paymentById)
+                              }
+                              onRemoveOrphanStorno={setOrphanStornoTarget}
                               teacherCtx={teacherCtx}
                               locationNameById={locationNameById}
                               memberNameById={memberNameById}
@@ -1096,6 +1123,42 @@ export default function FinancePaymentsPage() {
         open={rentalCorrectionTarget != null}
         onClose={() => setRentalCorrectionTarget(null)}
         toast={toast}
+      />
+      <ConfirmDialog
+        open={orphanStornoTarget != null}
+        title={t("corrections.payment.removeOrphanStornoTitle")}
+        description={
+          orphanStornoTarget
+            ? t("corrections.payment.removeOrphanStornoBody", {
+                client: orphanStornoTarget.clientDisplay,
+                amount: formatCurrency(orphanStornoTarget.amount),
+              })
+            : ""
+        }
+        confirmLabel={t("corrections.payment.removeOrphanStornoConfirm")}
+        pending={removeOrphanPaymentStorno.isPending}
+        onConfirm={() => {
+          if (!orphanStornoTarget) return;
+          void removeOrphanPaymentStorno
+            .mutateAsync({ stornoId: orphanStornoTarget.id })
+            .then((res) => {
+              if (!res.success) {
+                toast(
+                  resolveMutationError(res.error, "corrections.error.removeStornoFailed", t),
+                  "error"
+                );
+                return;
+              }
+              toast(
+                res.alreadyApplied
+                  ? t("corrections.payment.alreadyApplied")
+                  : t("corrections.payment.removeOrphanStornoSuccess"),
+                res.alreadyApplied ? "info" : "success"
+              );
+              setOrphanStornoTarget(null);
+            });
+        }}
+        onCancel={() => setOrphanStornoTarget(null)}
       />
     </div>
   );

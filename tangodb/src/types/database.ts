@@ -7281,6 +7281,24 @@ export type Database = {
         }
         Returns: Json
       }
+      update_payment_method: {
+        Args: {
+          p_idempotency_key?: string
+          p_new_method: string
+          p_payment_id: string
+          p_reason_code: string
+          p_reason_comment?: string
+        }
+        Returns: Json
+      }
+      remove_orphan_payment_storno: {
+        Args: {
+          p_idempotency_key?: string
+          p_reason_comment?: string
+          p_storno_id: string
+        }
+        Returns: Json
+      }
       correct_rental_payment: {
         Args: {
           p_idempotency_key?: string
