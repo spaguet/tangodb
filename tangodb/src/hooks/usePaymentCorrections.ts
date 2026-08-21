@@ -17,6 +17,7 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 import { paymentsQueryKey } from "./usePayments";
 import { personalLessonsQueryKey } from "./usePersonalLessons";
 import { financialDebtorsQueryKey } from "./useFinancialDebtors";
+import { personalLessonChargesQueryKey } from "./usePersonalLessonCharges";
 import { attendanceQueryKey } from "./useAttendance";
 import { subscriptionsQueryKey } from "./useSubscriptions";
 
@@ -141,6 +142,7 @@ export function useCorrectionsReport(dateFrom?: string, dateTo?: string) {
 function invalidatePaymentCaches(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({ queryKey: paymentsQueryKey });
   void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
+  void queryClient.invalidateQueries({ queryKey: personalLessonChargesQueryKey });
   void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey });
   void queryClient.invalidateQueries({ queryKey: correctionsQueryKey });
 }
@@ -223,6 +225,52 @@ export function useCorrectPayment() {
         paymentId: result.payment_id,
         stornoId: result.storno_id,
         operationNumber: result.operation_number,
+        alreadyApplied: result.already_applied ?? false,
+      };
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidatePaymentCaches(queryClient);
+    },
+  });
+}
+
+export function useUpdatePaymentInPlace() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      paymentId: string;
+      newAmount: number;
+      newMethod: PaymentMethod;
+      reasonCode: PaymentCorrectionReasonCode;
+      reasonComment?: string;
+      idempotencyKey?: string;
+    }) => {
+      const { data, error } = await supabase.rpc("update_payment_in_place", {
+        p_payment_id: input.paymentId,
+        p_new_amount: input.newAmount,
+        p_new_method: input.newMethod,
+        p_reason_code: input.reasonCode,
+        p_reason_comment: input.reasonComment ?? null,
+        p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
+      });
+      if (error) return { success: false as const, error: error.message };
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        payment_id?: string;
+        operation_number?: number;
+        billed_restated?: boolean;
+        already_applied?: boolean;
+      } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error ?? "corrections.error.correctFailed" };
+      }
+      return {
+        success: true as const,
+        paymentId: result.payment_id,
+        operationNumber: result.operation_number,
+        billedRestated: result.billed_restated ?? false,
         alreadyApplied: result.already_applied ?? false,
       };
     },

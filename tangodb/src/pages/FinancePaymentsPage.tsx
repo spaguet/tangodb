@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { CalendarDays, ChevronDown, Landmark, Pencil, Search, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronDown, Landmark, Pencil, Search } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect, { searchFieldCls } from "../components/ui/AppSelect";
@@ -32,7 +32,6 @@ import {
 } from "../lib/financeReports";
 import {
   aggregateEffectivePaymentTotal,
-  isOrphanPaymentStorno,
   paymentCorrectionReasonLabelKey,
   paymentEffectiveAmount,
   paymentStatusLabelKey,
@@ -316,7 +315,7 @@ function PaymentRow({
         >
           {methodLabel}
         </button>
-        <div className="flex items-center justify-end gap-2 col-start-2 sm:contents">
+        <div className="flex flex-col items-end gap-1.5 col-start-2 sm:contents">
           <button
             type="button"
             onClick={onToggle}
@@ -343,20 +342,18 @@ function PaymentRow({
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             )}
-          {canRemoveOrphanStorno && isRefund && (
+          {canRemoveOrphanStorno && isRefund ? (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onRemoveOrphanStorno(payment);
               }}
-              aria-label={translate("corrections.payment.removeOrphanStorno")}
-              title={translate("corrections.payment.removeOrphanStorno")}
-              className="w-8 h-8 shrink-0 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200 bg-white cursor-pointer transition-colors"
+              className="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 cursor-pointer transition-colors whitespace-nowrap"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              {translate("corrections.payment.removeOrphanStorno")}
             </button>
-          )}
+          ) : null}
         </div>
       </div>
       {expanded && (
@@ -991,9 +988,7 @@ export default function FinancePaymentsPage() {
                               translate={t}
                               canCorrect={canCorrectPayments}
                               onCorrect={setCorrectionTarget}
-                              canRemoveOrphanStorno={
-                                canCorrectPayments && isOrphanPaymentStorno(p, paymentById)
-                              }
+                              canRemoveOrphanStorno={canCorrectPayments}
                               onRemoveOrphanStorno={setOrphanStornoTarget}
                               teacherCtx={teacherCtx}
                               locationNameById={locationNameById}
@@ -1151,6 +1146,7 @@ export default function FinancePaymentsPage() {
         }
         confirmLabel={t("corrections.payment.removeOrphanStornoConfirm")}
         pending={removeOrphanPaymentStorno.isPending}
+        zClassName="z-[90]"
         onConfirm={() => {
           if (!orphanStornoTarget) return;
           void removeOrphanPaymentStorno

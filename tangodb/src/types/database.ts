@@ -7281,6 +7281,17 @@ export type Database = {
         }
         Returns: Json
       }
+      update_payment_in_place: {
+        Args: {
+          p_idempotency_key?: string
+          p_new_amount: number
+          p_new_method: string
+          p_payment_id: string
+          p_reason_code: string
+          p_reason_comment?: string
+        }
+        Returns: Json
+      }
       update_payment_method: {
         Args: {
           p_idempotency_key?: string

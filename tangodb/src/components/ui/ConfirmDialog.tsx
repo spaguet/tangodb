@@ -15,6 +15,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   onAlternateConfirm?: () => void;
+  zClassName?: string;
 }
 
 export default function ConfirmDialog({
@@ -29,6 +30,7 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   onAlternateConfirm,
+  zClassName = "z-50",
 }: ConfirmDialogProps) {
   const { t } = useI18n();
   const resolvedConfirmLabel = confirmLabel ?? t("common.confirm");
@@ -47,7 +49,7 @@ export default function ConfirmDialog({
     <AnimatePresence>
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className={`fixed inset-0 ${zClassName} flex items-center justify-center p-4`}
           role="dialog"
           aria-modal="true"
         >

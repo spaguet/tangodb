@@ -10,9 +10,8 @@ import {
   type PaymentWithCorrectionMeta,
 } from "../../lib/paymentCorrection";
 import {
-  useCorrectPayment,
   useStornoPayment,
-  useUpdatePaymentMethod,
+  useUpdatePaymentInPlace,
 } from "../../hooks/usePaymentCorrections";
 import {
   PAYMENT_METHODS,
@@ -43,8 +42,7 @@ export default function PaymentCorrectionDialog({
 }: PaymentCorrectionDialogProps) {
   const { t, formatDateTime } = useI18n();
   const stornoPayment = useStornoPayment();
-  const correctPayment = useCorrectPayment();
-  const updatePaymentMethod = useUpdatePaymentMethod();
+  const updatePaymentInPlace = useUpdatePaymentInPlace();
 
   const [mode, setMode] = useState<CorrectionMode>("correct");
   const [reasonCode, setReasonCode] = useState<PaymentCorrectionReasonCode>("wrong_method");
@@ -58,17 +56,16 @@ export default function PaymentCorrectionDialog({
   useEffect(() => {
     if (!open || !payment) return;
     setMode("correct");
-    setReasonCode("wrong_method");
+    setReasonCode(payment.personalLessonId ? "wrong_amount" : "wrong_method");
     setReasonComment("");
     setNewAmount(String(payment.amount));
     setNewMethod(payment.method);
     setSavedOperationNumber(null);
     setConfirmOpen(false);
     setIdempotencyKey(crypto.randomUUID());
-  }, [open, payment?.id, payment?.amount, payment?.method]);
+  }, [open, payment?.id, payment?.amount, payment?.method, payment?.personalLessonId]);
 
-  const isPending =
-    stornoPayment.isPending || correctPayment.isPending || updatePaymentMethod.isPending;
+  const isPending = stornoPayment.isPending || updatePaymentInPlace.isPending;
   const isSaved = savedOperationNumber != null;
 
   const canCorrect = useMemo(() => {
@@ -83,11 +80,6 @@ export default function PaymentCorrectionDialog({
 
   const parsedAmount = Number(newAmount);
 
-  const isMethodOnlyChange = useMemo(() => {
-    if (!payment || mode !== "correct") return false;
-    return parsedAmount > 0 && parsedAmount === payment.amount && newMethod !== payment.method;
-  }, [payment, mode, parsedAmount, newMethod]);
-
   const validateForm = (): string | null => {
     if (!payment || !canCorrect) return t("corrections.payment.notCorrectable");
 
@@ -95,11 +87,10 @@ export default function PaymentCorrectionDialog({
 
     if (!parsedAmount || parsedAmount <= 0) return t("corrections.payment.amountInvalid");
 
-    const maxAmount = payment.remainingAmount ?? payment.amount;
-    if (parsedAmount > maxAmount) return t("corrections.payment.exceedsRemaining");
-
     if (parsedAmount === payment.amount && newMethod === payment.method) {
-      return t("corrections.payment.nothingChanged");
+      if (!(payment.personalLessonId && reasonCode === "wrong_amount")) {
+        return t("corrections.payment.nothingChanged");
+      }
     }
 
     return null;
@@ -117,27 +108,31 @@ export default function PaymentCorrectionDialog({
       ];
     }
 
-    if (isMethodOnlyChange) {
-      return [
-        t("corrections.payment.confirmLineClient", { client: payment.clientDisplay }),
+    const lines = [
+      t("corrections.payment.confirmLineClient", { client: payment.clientDisplay }),
+    ];
+    if (parsedAmount !== payment.amount) {
+      lines.push(
+        t("corrections.payment.confirmLineAmountChange", {
+          from: formatCurrency(payment.amount),
+          to: formatCurrency(parsedAmount),
+        })
+      );
+    }
+    if (payment.personalLessonId && (parsedAmount !== payment.amount || reasonCode === "wrong_amount")) {
+      lines.push(t("corrections.payment.confirmLineBilledUpdate"));
+    }
+    if (newMethod !== payment.method) {
+      lines.push(
         t("corrections.payment.confirmLineMethodChange", {
           from: getPaymentMethodLabel(payment.method, t),
           to: getPaymentMethodLabel(newMethod, t),
-        }),
-        t("corrections.payment.confirmLineNoRefund"),
-      ];
+        })
+      );
     }
-
-    return [
-      t("corrections.payment.confirmLineClient", { client: payment.clientDisplay }),
-      t("corrections.payment.confirmLineVoid", { amount: formatCurrency(parsedAmount) }),
-      t("corrections.payment.confirmLineRefundCreated", { amount: formatCurrency(parsedAmount) }),
-      t("corrections.payment.confirmLineNewPayment", {
-        amount: formatCurrency(parsedAmount),
-        method: getPaymentMethodLabel(newMethod, t),
-      }),
-    ];
-  }, [payment, mode, isMethodOnlyChange, parsedAmount, newMethod, t]);
+    lines.push(t("corrections.payment.confirmLineNoRefund"));
+    return lines;
+  }, [payment, mode, parsedAmount, newMethod, reasonCode, t]);
 
   const confirmDescription = (
     <ul className="list-disc pl-4 space-y-1 text-left">
@@ -174,31 +169,7 @@ export default function PaymentCorrectionDialog({
       return;
     }
 
-    if (isMethodOnlyChange) {
-      const res = await updatePaymentMethod.mutateAsync({
-        paymentId: payment.id,
-        newMethod,
-        reasonCode,
-        reasonComment: reasonComment.trim() || undefined,
-        idempotencyKey,
-      });
-      if (!res.success) {
-        toast(resolveMutationError(res.error, "corrections.error.methodUpdateFailed", t), "error");
-        return;
-      }
-      setSavedOperationNumber(res.operationNumber ?? null);
-      toast(
-        res.alreadyApplied
-          ? t("corrections.payment.alreadyApplied")
-          : t("corrections.payment.methodUpdateSuccess", {
-              op: formatOperationNumber(res.operationNumber),
-            }),
-        res.alreadyApplied ? "info" : "success"
-      );
-      return;
-    }
-
-    const res = await correctPayment.mutateAsync({
+    const res = await updatePaymentInPlace.mutateAsync({
       paymentId: payment.id,
       newAmount: parsedAmount,
       newMethod,
@@ -214,9 +185,13 @@ export default function PaymentCorrectionDialog({
     toast(
       res.alreadyApplied
         ? t("corrections.payment.alreadyApplied")
-        : t("corrections.payment.correctSuccess", {
-            op: formatOperationNumber(res.operationNumber),
-          }),
+        : res.billedRestated
+          ? t("corrections.payment.correctWithBilledSuccess", {
+              op: formatOperationNumber(res.operationNumber),
+            })
+          : t("corrections.payment.correctSuccess", {
+              op: formatOperationNumber(res.operationNumber),
+            }),
       res.alreadyApplied ? "info" : "success"
     );
   };
@@ -260,7 +235,11 @@ export default function PaymentCorrectionDialog({
               <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-100">
                 <div>
                   <p className="text-base font-semibold text-slate-900">{t("corrections.payment.title")}</p>
-                  <p className="text-xs text-slate-500 mt-1">{t("corrections.payment.subtitle")}</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {mode === "void"
+                      ? t("corrections.payment.subtitleVoid")
+                      : t("corrections.payment.subtitleCorrect")}
+                  </p>
                 </div>
                 <button type="button" onClick={handleClose} className="p-1 text-slate-400 hover:text-slate-600">
                   <X size={18} />
@@ -411,6 +390,7 @@ export default function PaymentCorrectionDialog({
         pending={isPending}
         onConfirm={() => void executeSubmit()}
         onCancel={() => setConfirmOpen(false)}
+        zClassName="z-[90]"
       />
     </>
   );
