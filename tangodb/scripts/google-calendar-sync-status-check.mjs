@@ -9,10 +9,11 @@ const GOOGLE_CALENDAR_SYNC_MAX_POLL_COUNT = 20;
 function resolveLessonGoogleSyncUiStatus(row) {
   if (!row) return null;
   if (!row.teacher_has_binding) return "not_connected";
-  if (row.has_pending_job || row.sync_status === "pending") return "pending";
+  if (row.has_pending_job) return "pending";
   if (row.sync_status === "failed" || Boolean(row.last_error)) return "error";
   if (row.sync_status === "synced") return "synced";
   if (row.sync_status === "detached") return "detached";
+  if (row.sync_status === "pending") return "stale";
   return "unknown";
 }
 
@@ -45,6 +46,10 @@ assert.equal(
   "pending"
 );
 assert.equal(
+  resolveLessonGoogleSyncUiStatus({ ...bound, sync_status: "pending", has_pending_job: false }),
+  "stale"
+);
+assert.notEqual(
   resolveLessonGoogleSyncUiStatus({ ...bound, sync_status: "pending", has_pending_job: false }),
   "pending"
 );

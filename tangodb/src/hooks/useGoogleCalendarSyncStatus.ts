@@ -50,8 +50,7 @@ export function useGoogleCalendarSyncStatus(
     staleTime: 30_000,
     refetchInterval: (q) => {
       const row = q.state.data as ScheduleEntryGoogleSyncStatus | null | undefined;
-      const ui = resolveLessonGoogleSyncUiStatus(row);
-      if (ui !== "pending") return false;
+      if (!row?.has_pending_job) return false;
       if (q.state.dataUpdateCount >= GOOGLE_CALENDAR_SYNC_MAX_POLL_COUNT) return false;
       return GOOGLE_CALENDAR_SYNC_POLL_INTERVAL_MS;
     },

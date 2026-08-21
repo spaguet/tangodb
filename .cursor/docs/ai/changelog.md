@@ -1,3 +1,5 @@
+2026-08-21 — fix(integrations): микропатч **2.8.61** — GCal sync badge: `pending` только при `has_pending_job`; orphaned link `sync_status=pending` без job → `stale`; poll interval только при активной outbox-задаче; invalidate `entry-sync-status` после мутаций персональных уроков.
+
 2026-08-20 — fix(data): микропатч **2.8.60** — автообновление UI после мутаций: общий `orgScopedQueryFilter` (org id — последний сегмент query key); исправлены оптимистичный кэш групповой посещаемости (`useMarkAttendance`), invalidate после офлайн-синка, payroll, teacher pay rules, Google Calendar binding/sync-status; `usePersonalLessons` переведён на общий хелпер.
 
 2026-08-20 — fix(attendance): микропатч **2.8.59** — подсветка кнопки «Пришёл»/«Не пришёл»/«Уважит.» в журнале персональных уроков: оптимистичное обновление и invalidate снова попадают в кэш `usePersonalLessons` (org id — последний сегмент query key, не второй).

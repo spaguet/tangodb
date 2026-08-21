@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-21 — GCal sync UI: orphaned `pending` link без outbox job
+
+- **Ошибка:** урок с `sync_status = pending` в `google_calendar_event_links`, но без активной задачи в outbox, показывал спиннер «Ожидает синхронизации» и опрашивал RPC каждые 15 с.
+- **Причина:** `resolveLessonGoogleSyncUiStatus` трактовал `sync_status === "pending"` как UI `pending` даже без `has_pending_job`; `refetchInterval` крутился на любой UI `pending`.
+- **Как избежать:** UI `pending` только при `has_pending_job`; orphaned link → `stale`; poll только при `has_pending_job`; invalidate `entry-sync-status` после CRUD персональных уроков.
+
 ### 2026-08-20 — org-scoped React Query key и invalidate/setQueriesData
 
 - **Ошибка:** после мутаций UI не обновлялся (кнопки посещаемости, payroll, Google Calendar) без F5.

@@ -168,6 +168,10 @@ function invalidatePersonalLessonRelatedQueries(
   void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: personalLessonChargesQueryKey, ...opts });
+  void queryClient.invalidateQueries({
+    ...orgScopedQueryFilter(["google-calendar", "entry-sync-status"], organizationId),
+    ...opts,
+  });
   if (options?.includePayments !== false) {
     void queryClient.invalidateQueries({ queryKey: paymentsQueryKey, ...opts });
   }

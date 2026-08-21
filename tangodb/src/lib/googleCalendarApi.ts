@@ -397,10 +397,11 @@ export function resolveLessonGoogleSyncUiStatus(
 ): LessonGoogleSyncUiStatus | null {
   if (!row) return null;
   if (!row.teacher_has_binding) return "not_connected";
-  if (row.has_pending_job || row.sync_status === "pending") return "pending";
+  if (row.has_pending_job) return "pending";
   if (row.sync_status === "failed" || Boolean(row.last_error)) return "error";
   if (row.sync_status === "synced") return "synced";
   if (row.sync_status === "detached") return "detached";
+  if (row.sync_status === "pending") return "stale";
   return "unknown";
 }
 
