@@ -161,20 +161,19 @@ BEGIN
   END IF;
 
   v_original_id := v_storno.reverses_payment_id;
-  IF v_original_id IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Сторно не связано с платежом');
-  END IF;
 
-  SELECT EXISTS (
-    SELECT 1
-    FROM payments rep
-    WHERE rep.organization_id = v_org_id
-      AND rep.operation_kind = 'payment'
-      AND rep.replaces_payment_id = v_original_id
-  ) INTO v_has_replacement;
+  IF v_original_id IS NOT NULL THEN
+    SELECT EXISTS (
+      SELECT 1
+      FROM payments rep
+      WHERE rep.organization_id = v_org_id
+        AND rep.operation_kind = 'payment'
+        AND rep.replaces_payment_id = v_original_id
+    ) INTO v_has_replacement;
 
-  IF v_has_replacement THEN
-    RETURN jsonb_build_object('success', false, 'error', 'corrections.payment.stornoNotOrphan');
+    IF v_has_replacement THEN
+      RETURN jsonb_build_object('success', false, 'error', 'corrections.payment.stornoNotOrphan');
+    END IF;
   END IF;
 
   v_lesson_id := v_storno.personal_lesson_id;

@@ -96,12 +96,13 @@ export function paymentEffectiveAmount(payment: Pick<PaymentWithCorrectionMeta, 
   return payment.operationKind === "storno" ? -payment.amount : payment.amount;
 }
 
-/** Storno row from void-only correction (no replacement payment on the original). */
+/** Storno row safe to remove: void-only correction (no replacement on the original), or unlinked storno. */
 export function isOrphanPaymentStorno(
   payment: PaymentWithCorrectionMeta,
   paymentById: Map<string, PaymentWithCorrectionMeta>
 ): boolean {
-  if (payment.operationKind !== "storno" || !payment.reversesPaymentId) return false;
+  if (payment.operationKind !== "storno") return false;
+  if (!payment.reversesPaymentId) return true;
   const original = paymentById.get(payment.reversesPaymentId);
   if (!original) return true;
   return original.correctionStatus !== "replaced";
