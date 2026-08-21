@@ -530,6 +530,8 @@ export type I18nKey =
   | "corrections.rental.voidSuccess"
   | "corrections.rental.correctSuccess"
   | "corrections.payment.amountInvalid"
+  | "corrections.payment.nothingChanged"
+  | "corrections.payment.exceedsRemaining"
   | "corrections.payment.correctAction"
   | "corrections.payment.status.active"
   | "corrections.payment.status.voided"

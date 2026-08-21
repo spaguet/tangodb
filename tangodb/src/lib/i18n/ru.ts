@@ -571,6 +571,8 @@ export const RU: Record<I18nKey, string> = {
   "corrections.rental.voidSuccess": "Сторно аренды создано · операция {{op}}",
   "corrections.rental.correctSuccess": "Оплата аренды исправлена · операция {{op}}",
   "corrections.payment.amountInvalid": "Укажите корректную сумму",
+  "corrections.payment.nothingChanged": "Измените сумму или способ оплаты",
+  "corrections.payment.exceedsRemaining": "Сумма больше доступного остатка платежа",
   "corrections.payment.correctAction": "Исправить",
   "corrections.payment.status.active": "Действует",
   "corrections.payment.status.voided": "Аннулирован",

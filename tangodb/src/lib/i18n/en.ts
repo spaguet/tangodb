@@ -574,6 +574,8 @@ export const EN: Record<I18nKey, string> = {
   "corrections.rental.voidSuccess": "Rental void created · operation {{op}}",
   "corrections.rental.correctSuccess": "Rental payment corrected · operation {{op}}",
   "corrections.payment.amountInvalid": "Enter a valid amount",
+  "corrections.payment.nothingChanged": "Change the amount or payment method",
+  "corrections.payment.exceedsRemaining": "Amount exceeds the remaining payment balance",
   "corrections.payment.correctAction": "Correct",
   "corrections.payment.status.active": "Active",
   "corrections.payment.status.voided": "Voided",

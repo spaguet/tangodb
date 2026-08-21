@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, X } from "lucide-react";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
@@ -43,13 +43,24 @@ export default function PaymentCorrectionDialog({
   const stornoPayment = useStornoPayment();
   const correctPayment = useCorrectPayment();
 
-  const [mode, setMode] = useState<CorrectionMode>("void");
-  const [reasonCode, setReasonCode] = useState<PaymentCorrectionReasonCode>("duplicate");
+  const [mode, setMode] = useState<CorrectionMode>("correct");
+  const [reasonCode, setReasonCode] = useState<PaymentCorrectionReasonCode>("wrong_method");
   const [reasonComment, setReasonComment] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [newMethod, setNewMethod] = useState<PaymentMethod>("cash");
-  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const [savedOperationNumber, setSavedOperationNumber] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!open || !payment) return;
+    setMode("correct");
+    setReasonCode("wrong_method");
+    setReasonComment("");
+    setNewAmount(String(payment.amount));
+    setNewMethod(payment.method);
+    setSavedOperationNumber(null);
+    setIdempotencyKey(crypto.randomUUID());
+  }, [open, payment?.id, payment?.amount, payment?.method]);
 
   const isPending = stornoPayment.isPending || correctPayment.isPending;
   const isSaved = savedOperationNumber != null;
@@ -93,6 +104,17 @@ export default function PaymentCorrectionDialog({
     const amount = Number(newAmount);
     if (!amount || amount <= 0) {
       toast(t("corrections.payment.amountInvalid"), "error");
+      return;
+    }
+
+    const maxAmount = payment.remainingAmount ?? payment.amount;
+    if (amount > maxAmount) {
+      toast(t("corrections.payment.exceedsRemaining"), "error");
+      return;
+    }
+
+    if (amount === payment.amount && newMethod === payment.method) {
+      toast(t("corrections.payment.nothingChanged"), "error");
       return;
     }
 
@@ -204,8 +226,8 @@ export default function PaymentCorrectionDialog({
                     value={mode}
                     onChange={(e) => setMode(e.target.value as CorrectionMode)}
                   >
-                    <option value="void">{t("corrections.payment.modeVoid")}</option>
                     <option value="correct">{t("corrections.payment.modeCorrect")}</option>
+                    <option value="void">{t("corrections.payment.modeVoid")}</option>
                   </AppSelect>
 
                   <AppSelect
