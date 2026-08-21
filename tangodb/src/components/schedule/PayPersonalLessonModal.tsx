@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Clock, X } from "lucide-react";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
@@ -114,6 +114,15 @@ export default function PayPersonalLessonModal({
   const updatePersonalLesson = useUpdatePersonalLesson();
   const paymentIdempotencyKey = usePaymentFormIdempotency(lesson != null);
   const paymentSubmit = usePaymentSubmitState();
+  const chargePaymentIdempotencyKeys = useRef<Record<string, string>>({});
+
+  const getChargePaymentIdempotencyKey = (chargeKey: string): string => {
+    const existing = chargePaymentIdempotencyKeys.current[chargeKey];
+    if (existing) return existing;
+    const key = crypto.randomUUID();
+    chargePaymentIdempotencyKeys.current[chargeKey] = key;
+    return key;
+  };
 
   const [bookingPaymentMode, setBookingPaymentMode] = useState<PersonalLessonPaymentMode | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
@@ -250,6 +259,7 @@ export default function PayPersonalLessonModal({
 
   useEffect(() => {
     paymentSubmit.reset();
+    chargePaymentIdempotencyKeys.current = {};
     if (!lessonId || !lesson) {
       setBookingPaymentMode(null);
       return;
@@ -419,7 +429,7 @@ export default function PayPersonalLessonModal({
     let paymentSucceeded = false;
     let paidCount = 0;
     const totalToPay = chargesToPay.length;
-    const batchIdempotencyKey = paymentIdempotencyKey || crypto.randomUUID();
+    const singlePaymentIdempotencyKey = paymentIdempotencyKey || crypto.randomUUID();
 
     const notifyPayAllPartial = async () => {
       toast(t("personal.pay.partialAll", { paid: paidCount, total: totalToPay }), "error");
@@ -452,10 +462,8 @@ export default function PayPersonalLessonModal({
           amount: amountNum,
           method: paymentMethod,
           idempotencyKey: payAllParticipants
-            ? `${batchIdempotencyKey}:${charge.id || String(i)}`
-            : i === 0
-              ? batchIdempotencyKey
-              : crypto.randomUUID(),
+            ? getChargePaymentIdempotencyKey(charge.id || charge.clientId)
+            : singlePaymentIdempotencyKey,
           venueRuleAcknowledged,
           priceId: isTariffMode ? (selectedTariff?.id ?? null) : null,
           tariffUnits:

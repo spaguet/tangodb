@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-21 — PayPersonalLessonModal pay-all: idempotency key не UUID
+
+- **Ошибка:** «Оплатить за всех участников» в попапе оплаты — `invalid input syntax for type uuid: "uuid:uuid"`.
+- **Причина:** P14 добавил `${batchKey}:${chargeId}` в `p_idempotency_key`; колонка/RPC — тип `uuid`, не text.
+- **Как избежать:** как в `PersonalLessonSaleForm` — стабильный `crypto.randomUUID()` на charge в ref/map; не склеивать UUID через `:`.
+
 ### 2026-08-21 — GCal sync UI: orphaned `pending` link без outbox job
 
 - **Ошибка:** урок с `sync_status = pending` в `google_calendar_event_links`, но без активной задачи в outbox, показывал спиннер «Ожидает синхронизации» и опрашивал RPC каждые 15 с.
