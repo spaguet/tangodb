@@ -16,6 +16,12 @@ export function resolveMutationError(
 ): string {
   if (!error) return translate(fallback);
   if (isI18nKey(error)) return translate(error);
+  if (
+    error.includes("audit_log_operation_check") ||
+    error.includes("violates check constraint")
+  ) {
+    return translate("corrections.error.storedProcedureFailed");
+  }
   return error;
 }
 

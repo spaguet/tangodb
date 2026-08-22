@@ -620,6 +620,7 @@ export const EN: Record<I18nKey, string> = {
   "corrections.error.correctFailed": "Payment correction failed",
   "corrections.error.methodUpdateFailed": "Failed to update payment method",
   "corrections.error.removeStornoFailed": "Failed to remove refund",
+  "corrections.error.storedProcedureFailed": "Payment operation failed on the server. Try again or contact support.",
   "corrections.error.attendanceFailed": "Attendance correction failed",
   "corrections.error.undoFailed": "Undo failed",
   "corrections.error.loadFailed": "Failed to load corrections",

@@ -16,6 +16,7 @@ interface ConfirmDialogProps {
   onCancel: () => void;
   onAlternateConfirm?: () => void;
   zClassName?: string;
+  error?: string | null;
 }
 
 export default function ConfirmDialog({
@@ -31,6 +32,7 @@ export default function ConfirmDialog({
   onCancel,
   onAlternateConfirm,
   zClassName = "z-50",
+  error = null,
 }: ConfirmDialogProps) {
   const { t } = useI18n();
   const resolvedConfirmLabel = confirmLabel ?? t("common.confirm");
@@ -74,6 +76,11 @@ export default function ConfirmDialog({
               <div className="space-y-1.5 pt-0.5">
                 <h3 className="text-sm font-semibold text-slate-900 tracking-tight">{title}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">{description}</p>
+                {error ? (
+                  <p className="text-xs text-rose-600 leading-relaxed font-medium" role="alert">
+                    {error}
+                  </p>
+                ) : null}
               </div>
             </div>
 

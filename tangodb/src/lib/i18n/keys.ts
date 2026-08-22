@@ -575,6 +575,7 @@ export type I18nKey =
   | "corrections.error.correctFailed"
   | "corrections.error.methodUpdateFailed"
   | "corrections.error.removeStornoFailed"
+  | "corrections.error.storedProcedureFailed"
   | "corrections.error.attendanceFailed"
   | "corrections.error.undoFailed"
   | "corrections.error.loadFailed"

@@ -32,6 +32,7 @@ import {
 } from "../lib/financeReports";
 import {
   aggregateEffectivePaymentTotal,
+  isOrphanPaymentStorno,
   paymentCorrectionReasonLabelKey,
   paymentEffectiveAmount,
   paymentStatusLabelKey,
@@ -212,6 +213,7 @@ function PaymentRow({
   onCorrect,
   canRemoveOrphanStorno,
   onRemoveOrphanStorno,
+  paymentById,
   teacherCtx,
   locationNameById,
   memberNameById,
@@ -225,6 +227,7 @@ function PaymentRow({
   onCorrect: (payment: PaymentWithCorrectionMeta) => void;
   canRemoveOrphanStorno: boolean;
   onRemoveOrphanStorno: (payment: PaymentWithCorrectionMeta) => void;
+  paymentById: Map<string, PaymentWithCorrectionMeta>;
   teacherCtx: TeacherRevenueContext;
   locationNameById: Map<string, string>;
   memberNameById: Map<string, string>;
@@ -232,6 +235,8 @@ function PaymentRow({
   onToggle: () => void;
 }) {
   const isRefund = payment.operationKind === "storno";
+  const canRemoveThisOrphanStorno =
+    canRemoveOrphanStorno && isRefund && isOrphanPaymentStorno(payment, paymentById);
   const effective = paymentEffectiveAmount(payment);
   const statusKey = payment.correctionStatus ? paymentStatusLabelKey(payment.correctionStatus) : null;
   const teacherId = resolvePaymentTeacherId(payment, teacherCtx);
@@ -345,7 +350,7 @@ function PaymentRow({
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
-          ) : canRemoveOrphanStorno && isRefund ? (
+          ) : canRemoveThisOrphanStorno ? (
             <button
               type="button"
               onClick={(e) => {
@@ -384,7 +389,7 @@ function PaymentRow({
                     value={payment.methodComment}
                   />
                 ) : null}
-                {canRemoveOrphanStorno ? (
+                {canRemoveThisOrphanStorno ? (
                   <div className="sm:col-span-2 lg:col-span-3 pt-1">
                     <button
                       type="button"
@@ -666,6 +671,7 @@ export default function FinancePaymentsPage() {
   const [teacherFilter, setTeacherFilter] = useState("all");
   const [correctionTarget, setCorrectionTarget] = useState<PaymentWithCorrectionMeta | null>(null);
   const [orphanStornoTarget, setOrphanStornoTarget] = useState<PaymentWithCorrectionMeta | null>(null);
+  const [orphanStornoError, setOrphanStornoError] = useState<string | null>(null);
   const [rentalCorrectionTarget, setRentalCorrectionTarget] =
     useState<RentalPaymentWithCorrectionMeta | null>(null);
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
@@ -999,7 +1005,11 @@ export default function FinancePaymentsPage() {
                               canCorrect={canCorrectPayments}
                               onCorrect={setCorrectionTarget}
                               canRemoveOrphanStorno={canCorrectPayments}
-                              onRemoveOrphanStorno={setOrphanStornoTarget}
+                              onRemoveOrphanStorno={(payment) => {
+                                setOrphanStornoError(null);
+                                setOrphanStornoTarget(payment);
+                              }}
+                              paymentById={paymentById}
                               teacherCtx={teacherCtx}
                               locationNameById={locationNameById}
                               memberNameById={memberNameById}
@@ -1121,7 +1131,7 @@ export default function FinancePaymentsPage() {
       </div>
       {toastMsg && (
         <div
-          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[80] px-4 py-2 rounded-xl text-sm shadow-lg ${
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 rounded-xl text-sm shadow-lg ${
             toastMsg.type === "error"
               ? "bg-rose-600 text-white"
               : toastMsg.type === "info"
@@ -1157,17 +1167,22 @@ export default function FinancePaymentsPage() {
         }
         confirmLabel={t("corrections.payment.removeOrphanStornoConfirm")}
         pending={removeOrphanPaymentStorno.isPending}
+        error={orphanStornoError}
         zClassName="z-[90]"
         onConfirm={() => {
           if (!orphanStornoTarget) return;
+          setOrphanStornoError(null);
           void removeOrphanPaymentStorno
             .mutateAsync({ stornoId: orphanStornoTarget.id })
             .then((res) => {
               if (!res.success) {
-                toast(
-                  resolveMutationError(res.error, "corrections.error.removeStornoFailed", t),
-                  "error"
+                const message = resolveMutationError(
+                  res.error,
+                  "corrections.error.removeStornoFailed",
+                  t
                 );
+                setOrphanStornoError(message);
+                toast(message, "error");
                 return;
               }
               toast(
@@ -1177,9 +1192,13 @@ export default function FinancePaymentsPage() {
                 res.alreadyApplied ? "info" : "success"
               );
               setOrphanStornoTarget(null);
+              setOrphanStornoError(null);
             });
         }}
-        onCancel={() => setOrphanStornoTarget(null)}
+        onCancel={() => {
+          setOrphanStornoTarget(null);
+          setOrphanStornoError(null);
+        }}
       />
     </div>
   );

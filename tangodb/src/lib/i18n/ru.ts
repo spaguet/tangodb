@@ -617,6 +617,7 @@ export const RU: Record<I18nKey, string> = {
   "corrections.error.correctFailed": "Не удалось исправить платёж",
   "corrections.error.methodUpdateFailed": "Не удалось изменить способ оплаты",
   "corrections.error.removeStornoFailed": "Не удалось удалить возврат",
+  "corrections.error.storedProcedureFailed": "Операция с платежом не выполнена на сервере. Попробуйте ещё раз или обратитесь в поддержку.",
   "corrections.error.attendanceFailed": "Не удалось исправить посещаемость",
   "corrections.error.undoFailed": "Не удалось отменить изменение",
   "corrections.error.loadFailed": "Не удалось загрузить корректировки",
