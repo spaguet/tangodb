@@ -33,7 +33,6 @@ import {
 } from "../lib/financeReports";
 import {
   aggregateEffectivePaymentTotal,
-  isOrphanPaymentStorno,
   paymentCorrectionReasonLabelKey,
   paymentEffectiveAmount,
   paymentStatusLabelKey,
@@ -214,7 +213,6 @@ function PaymentRow({
   onCorrect,
   canRemoveOrphanStorno,
   onRemoveOrphanStorno,
-  paymentById,
   teacherCtx,
   locationNameById,
   memberNameById,
@@ -228,7 +226,6 @@ function PaymentRow({
   onCorrect: (payment: PaymentWithCorrectionMeta) => void;
   canRemoveOrphanStorno: boolean;
   onRemoveOrphanStorno: (payment: PaymentWithCorrectionMeta) => void;
-  paymentById: Map<string, PaymentWithCorrectionMeta>;
   teacherCtx: TeacherRevenueContext;
   locationNameById: Map<string, string>;
   memberNameById: Map<string, string>;
@@ -236,8 +233,7 @@ function PaymentRow({
   onToggle: () => void;
 }) {
   const isRefund = payment.operationKind === "storno";
-  const canRemoveThisOrphanStorno =
-    canRemoveOrphanStorno && isRefund && isOrphanPaymentStorno(payment, paymentById);
+  const canRemoveThisRefund = canRemoveOrphanStorno && isRefund;
   const effective = paymentEffectiveAmount(payment);
   const statusKey = payment.correctionStatus ? paymentStatusLabelKey(payment.correctionStatus) : null;
   const teacherId = resolvePaymentTeacherId(payment, teacherCtx);
@@ -351,7 +347,7 @@ function PaymentRow({
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
-          ) : canRemoveThisOrphanStorno ? (
+          ) : canRemoveThisRefund ? (
             <button
               type="button"
               onClick={(e) => {
@@ -390,7 +386,7 @@ function PaymentRow({
                     value={payment.methodComment}
                   />
                 ) : null}
-                {canRemoveThisOrphanStorno ? (
+                {canRemoveThisRefund ? (
                   <div className="sm:col-span-2 lg:col-span-3 pt-1">
                     <button
                       type="button"
@@ -1010,7 +1006,6 @@ export default function FinancePaymentsPage() {
                                 setOrphanStornoError(null);
                                 setOrphanStornoTarget(payment);
                               }}
-                              paymentById={paymentById}
                               teacherCtx={teacherCtx}
                               locationNameById={locationNameById}
                               memberNameById={memberNameById}

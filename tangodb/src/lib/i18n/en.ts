@@ -580,7 +580,7 @@ export const EN: Record<I18nKey, string> = {
   "corrections.payment.removeOrphanStorno": "Remove erroneous refund",
   "corrections.payment.removeOrphanStornoTitle": "Remove erroneous refund?",
   "corrections.payment.removeOrphanStornoBody":
-    "The refund line {{amount}} for {{client}} will be removed from the log. The payment will remain without a refund.",
+    "The refund line {{amount}} for {{client}} will be removed from the log. The current payment stays. If this refund was part of a replacement, the superseded payment row is removed too.",
   "corrections.payment.removeOrphanStornoConfirm": "Remove refund",
   "corrections.payment.removeOrphanStornoSuccess": "Erroneous refund removed",
   "corrections.payment.stornoNotOrphan": "This refund is linked to a replacement payment and cannot be removed",

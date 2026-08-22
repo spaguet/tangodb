@@ -1,3 +1,5 @@
+2026-08-22 — fix(finance): микропатч **2.8.72** — корзина снова на **каждой** строке возврата; RPC `remove_orphan_payment_storno` при сторно+замене удаляет возврат и строку «Заменён», оставляет актуальный платёж (нет удвоения суммы).
+
 2026-08-22 — fix(finance): микропатч **2.8.71** — ошибки confirm-popup и toast через `createPortal` на `document.body` (не обрезаются `overflow-y-auto`); заметный alert-блок в диалоге; без дублирующего toast при ошибке удаления возврата.
 
 2026-08-22 — fix(finance): микропатч **2.8.70** — удаление ошибочного возврата: RPC `remove_orphan_payment_storno` больше не пишет в `audit_log` недопустимое `DELETE_ORPHAN_STORNO` (ломало транзакцию); то же для `update_payment_method` / `update_payment_in_place`; ошибка показывается в confirm-popup, toast поверх модалки.

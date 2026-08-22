@@ -577,7 +577,7 @@ export const RU: Record<I18nKey, string> = {
   "corrections.payment.removeOrphanStorno": "Удалить ошибочный возврат",
   "corrections.payment.removeOrphanStornoTitle": "Удалить ошибочный возврат?",
   "corrections.payment.removeOrphanStornoBody":
-    "Строка возврата {{amount}} для {{client}} будет удалена из журнала. Платёж останется без возврата.",
+    "Строка возврата {{amount}} для {{client}} будет удалена из журнала. Актуальный платёж останется. Если возврат был частью замены, строка «Заменён» тоже будет удалена.",
   "corrections.payment.removeOrphanStornoConfirm": "Удалить возврат",
   "corrections.payment.removeOrphanStornoSuccess": "Ошибочный возврат удалён",
   "corrections.payment.stornoNotOrphan": "Этот возврат связан с заменой платежа и не может быть удалён",
