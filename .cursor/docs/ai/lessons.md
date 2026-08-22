@@ -15,7 +15,7 @@
 
 - **Ошибка:** при «Удалить возврат» внизу экрана мелкий toast с техническим текстом (`corrections.payment-stored-procedure-failed` или constraint violation), под модалкой его не видно.
 - **Причина:** RPC `remove_orphan_payment_storno` после DELETE писал в `audit_log` операцию `DELETE_ORPHAN_STORNO`, а CHECK допускает только `INSERT|UPDATE|DELETE` — транзакция откатывалась.
-- **Как избежать:** для `audit_log.operation` использовать только допустимые значения; тип коррекции — в `new_data.correction_kind`; для DELETE платежа достаточно audit-триггера на `payments`.
+- **Как избежать:** для `audit_log.operation` использовать только допустимые значения; тип коррекции — в `new_data.correction_kind`; для DELETE платежа достаточно audit-триггера на `payments`. Confirm/toast рендерить через `createPortal(document.body)` — иначе `overflow-y-auto` на `<section>` в `App.tsx` обрезает `position: fixed` toast внизу экрана.
 
 ### 2026-08-21 — «Источник» в журнале платежей съезжал влево/вправо
 

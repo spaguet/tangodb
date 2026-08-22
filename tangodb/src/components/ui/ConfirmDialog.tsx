@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { AlertTriangle } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
@@ -31,7 +32,7 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   onAlternateConfirm,
-  zClassName = "z-50",
+  zClassName = "z-[200]",
   error = null,
 }: ConfirmDialogProps) {
   const { t } = useI18n();
@@ -47,13 +48,14 @@ export default function ConfirmDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onCancel]);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div
           className={`fixed inset-0 ${zClassName} flex items-center justify-center p-4`}
           role="dialog"
           aria-modal="true"
+          aria-labelledby="confirm-dialog-title"
         >
           <motion.div
             initial={{ opacity: 0 }}
@@ -73,18 +75,28 @@ export default function ConfirmDialog({
               <div className="w-10 h-10 shrink-0 bg-rose-50 rounded-full flex items-center justify-center text-rose-600">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <div className="space-y-1.5 pt-0.5">
-                <h3 className="text-sm font-semibold text-slate-900 tracking-tight">{title}</h3>
+              <div className="space-y-1.5 pt-0.5 min-w-0">
+                <h3
+                  id="confirm-dialog-title"
+                  className="text-sm font-semibold text-slate-900 tracking-tight"
+                >
+                  {title}
+                </h3>
                 <p className="text-xs text-slate-500 leading-relaxed">{description}</p>
-                {error ? (
-                  <p className="text-xs text-rose-600 leading-relaxed font-medium" role="alert">
-                    {error}
-                  </p>
-                ) : null}
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 pt-1">
+            {error ? (
+              <div
+                className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-800 leading-snug font-medium"
+                role="alert"
+                aria-live="assertive"
+              >
+                {error}
+              </div>
+            ) : null}
+
+            <div className="flex flex-col gap-2 pt-3">
               {onAlternateConfirm && alternateConfirmLabel ? (
                 <button
                   onClick={onAlternateConfirm}
@@ -114,6 +126,7 @@ export default function ConfirmDialog({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

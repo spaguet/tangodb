@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { CalendarDays, ChevronDown, Landmark, Pencil, Search, Trash2 } from "lucide-react";
 import LoadingState from "../components/ui/LoadingState";
@@ -1129,19 +1130,22 @@ export default function FinancePaymentsPage() {
           </>
         )}
       </div>
-      {toastMsg && (
-        <div
-          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 rounded-xl text-sm shadow-lg ${
-            toastMsg.type === "error"
-              ? "bg-rose-600 text-white"
-              : toastMsg.type === "info"
-                ? "bg-slate-700 text-white"
-                : "bg-indigo-600 text-white"
-          }`}
-        >
-          {toastMsg.msg}
-        </div>
-      )}
+      {toastMsg
+        ? createPortal(
+            <div
+              className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[210] max-w-[min(24rem,calc(100vw-2rem))] px-4 py-2.5 rounded-xl text-sm shadow-lg ${
+                toastMsg.type === "error"
+                  ? "bg-rose-600 text-white"
+                  : toastMsg.type === "info"
+                    ? "bg-slate-700 text-white"
+                    : "bg-indigo-600 text-white"
+              }`}
+            >
+              {toastMsg.msg}
+            </div>,
+            document.body
+          )
+        : null}
       <PaymentCorrectionDialog
         payment={correctionTarget}
         open={correctionTarget != null}
@@ -1168,7 +1172,6 @@ export default function FinancePaymentsPage() {
         confirmLabel={t("corrections.payment.removeOrphanStornoConfirm")}
         pending={removeOrphanPaymentStorno.isPending}
         error={orphanStornoError}
-        zClassName="z-[90]"
         onConfirm={() => {
           if (!orphanStornoTarget) return;
           setOrphanStornoError(null);
@@ -1176,13 +1179,9 @@ export default function FinancePaymentsPage() {
             .mutateAsync({ stornoId: orphanStornoTarget.id })
             .then((res) => {
               if (!res.success) {
-                const message = resolveMutationError(
-                  res.error,
-                  "corrections.error.removeStornoFailed",
-                  t
+                setOrphanStornoError(
+                  resolveMutationError(res.error, "corrections.error.removeStornoFailed", t)
                 );
-                setOrphanStornoError(message);
-                toast(message, "error");
                 return;
               }
               toast(
@@ -1193,6 +1192,14 @@ export default function FinancePaymentsPage() {
               );
               setOrphanStornoTarget(null);
               setOrphanStornoError(null);
+            })
+            .catch((err: unknown) => {
+              const message = resolveMutationError(
+                err instanceof Error ? err.message : undefined,
+                "corrections.error.removeStornoFailed",
+                t
+              );
+              setOrphanStornoError(message);
             });
         }}
         onCancel={() => {
