@@ -24,6 +24,10 @@ export const btnOpenCls =
 export const btnDestructiveCls =
   `${btnBaseCls} bg-rose-600 hover:bg-rose-700 text-white uppercase tracking-wider`;
 
+/** Удаление в ряду с btnOpenCls (мобильная строка) — rose outline, без uppercase. */
+export const btnDestructiveOpenCls =
+  `${btnBaseCls} text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200`;
+
 /** Обновить / отмена — slate, UPPERCASE. */
 export const btnRefreshCls =
   `${btnBaseCls} bg-slate-100 hover:bg-slate-200 text-slate-700 uppercase tracking-wider`;

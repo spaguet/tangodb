@@ -250,7 +250,8 @@ Focus outline (глобально в `index.css`):
 | Добавление / создание | `btnAddCls` | indigo filled | С заглавной буквы, **без** uppercase | «Добавить», «Создать правило», сохранить новую запись |
 | Добавление (мягкое) | `btnAddSoftCls` | indigo outline | С заглавной буквы | Вторичное создание в заголовке секции |
 | Открытие popup / страницы | `btnOpenCls` | indigo outline | С заглавной буквы, **без** uppercase | «Мероприятие», «Аренда», «Отпуск преподавателя», открыть диалог |
-| Удаление / предупреждение | `btnDestructiveCls` | rose filled | **UPPERCASE** | Удалить, аннулировать, опасное действие |
+| Удаление в ряду действий | `btnDestructiveOpenCls` | rose outline | С заглавной буквы, **без** uppercase | «Удалить» рядом с `btnOpenCls` (дебиторка на мобильном) |
+| Удаление / предупреждение | `btnDestructiveCls` | rose filled | **UPPERCASE** | Удалить, аннулировать, опасное действие в диалоге подтверждения |
 | Обновить / отмена | `btnRefreshCls` / `btnCancelCls` | slate | **UPPERCASE** | «Обновить», «Отмена» |
 | Текстовая ссылка «+ Добавить» | `btnAddLinkCls` | indigo text | С заглавной буквы | Внутри форм и секций |
 

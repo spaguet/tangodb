@@ -1,5 +1,6 @@
 import { paymentEffectiveAmount } from "../../lib/paymentCorrection";
 import type { PaymentWithCorrectionMeta } from "../../lib/paymentCorrection";
+import { debtOriginHintKey } from "../../lib/personalLessonDebtTrace";
 import { formatCurrency } from "../../lib/utils";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { useI18n } from "../../hooks/useI18n";
@@ -60,7 +61,12 @@ export default function PersonalLessonDebtBreakdown({
       ) : null}
 
       {!closed && billedAmount > 0 ? (
-        <p className="text-[11px] text-slate-500 leading-snug">{t("personal.pay.debtWhy")}</p>
+        <p className="text-[11px] text-slate-500 leading-snug">
+          {t(
+            debtOriginHintKey(billedAmount, paidAmount, remainingAmount, payments) ??
+              "personal.pay.debtWhy"
+          )}
+        </p>
       ) : null}
 
       <div>
