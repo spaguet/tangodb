@@ -157,7 +157,7 @@ function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string,
   return hasFilter ? suffix : null;
 }
 
-function invalidatePersonalLessonRelatedQueries(
+export function invalidatePersonalLessonRelatedQueries(
   queryClient: QueryClient,
   organizationId: string | null | undefined,
   options?: { refetchType?: "active"; includePayments?: boolean }
@@ -168,6 +168,7 @@ function invalidatePersonalLessonRelatedQueries(
   void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: personalLessonChargesQueryKey, ...opts });
+  void queryClient.invalidateQueries({ queryKey: ["personalLessonDebtTrace"], ...opts });
   void queryClient.invalidateQueries({
     ...orgScopedQueryFilter(["google-calendar", "entry-sync-status"], organizationId),
     ...opts,
@@ -608,11 +609,28 @@ export function useRestatePersonalLessonAmount() {
   const { organizationId } = useOrgQueryScope();
 
   return useMutation({
-    mutationFn: async (input: { lessonId: string; newAmount: number }) => {
-      const { data, error } = await supabase.rpc("restate_personal_lesson_amount", {
-        p_lesson_id: input.lessonId,
-        p_new_amount: input.newAmount,
-      });
+    mutationFn: async (input: {
+      lessonId: string;
+      newAmount: number;
+      chargeId?: string | null;
+      reasonCode?: string;
+      reasonComment?: string;
+    }) => {
+      const { data, error } = input.chargeId
+        ? await supabase.rpc(
+            "restate_personal_lesson_charge" as never,
+            {
+              p_lesson_id: input.lessonId,
+              p_new_amount: input.newAmount,
+              p_charge_id: input.chargeId,
+              p_reason_code: input.reasonCode ?? "wrong_amount",
+              p_reason_comment: input.reasonComment ?? null,
+            } as never
+          )
+        : await supabase.rpc("restate_personal_lesson_amount", {
+            p_lesson_id: input.lessonId,
+            p_new_amount: input.newAmount,
+          });
 
       if (error) return { success: false as const, error: error.message };
 

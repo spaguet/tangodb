@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertCircle, CalendarDays, ChevronDown, Coins, Pencil } from "lucide-react";
+import { AlertCircle, CalendarDays, ChevronDown, Coins, Pencil, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import LoadingState from "../components/ui/LoadingState";
 import QueryErrorState from "../components/ui/QueryErrorState";
@@ -29,7 +29,8 @@ import { formatCurrency } from "../lib/utils";
 import { toISODateLocal } from "../lib/scheduleWeek";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "../components/schedule/PayPersonalLessonModal";
 import AdjustDebtorAmountDialog from "../components/finance/AdjustDebtorAmountDialog";
-import { btnAddCls, btnOpenCls } from "../components/ui/buttonStyles";
+import DebtorLedgerTrace from "../components/finance/DebtorLedgerTrace";
+import { btnAddCls, btnDestructiveCls, btnOpenCls } from "../components/ui/buttonStyles";
 import AppSelect from "../components/ui/AppSelect";
 
 type DebtorTab = "all" | "clients" | "rentals";
@@ -74,6 +75,8 @@ function DebtorRow({
   onPayByTariff,
   onPayOutstanding,
   onAdjust,
+  onAdjustMember,
+  onWriteOff,
   formatDate,
   t,
 }: {
@@ -91,6 +94,8 @@ function DebtorRow({
   onPayByTariff: () => void;
   onPayOutstanding: () => void;
   onAdjust: () => void;
+  onAdjustMember: (member: DebtorEntry) => void;
+  onWriteOff: () => void;
   formatDate: ReturnType<typeof useI18n>["formatDate"];
   t: ReturnType<typeof useI18n>["t"];
 }) {
@@ -181,6 +186,19 @@ function DebtorRow({
                 {t("finance.debtors.openRenter")}
               </Link>
             ) : null}
+            {canAdjust && entry.kind === "personal" ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onWriteOff();
+                }}
+                className={btnDestructiveCls}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {t("finance.debtors.writeOff")}
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -264,6 +282,17 @@ function DebtorRow({
                 value={formatDebtorDetail(entry, t, formatDate)}
               />
             ) : null}
+            {entry.kind === "personal" ? (
+              <div className="sm:col-span-2 lg:col-span-3">
+                <DebtorLedgerTrace
+                  lessonId={entry.personalLessonId}
+                  chargeId={entry.personalLessonChargeId}
+                  billedAmount={entry.billedAmount ?? entry.amount}
+                  paidAmount={entry.paidAmount ?? 0}
+                  outstanding={entry.amount}
+                />
+              </div>
+            ) : null}
           </dl>
           {entry.kind === "subscription" ? (
             <p className="mt-2 text-[11px] text-slate-500 font-sans">{t("finance.debtors.subscriptionNote")}</p>
@@ -276,12 +305,31 @@ function DebtorRow({
                   {t("finance.debtors.openSchedule")}
                 </Link>
               ) : null}
-              {canAdjust ? (
+              {canAdjust && !isGroup ? (
                 <button type="button" onClick={onAdjust} className={btnOpenCls}>
                   <Pencil className="w-3.5 h-3.5" />
                   {t("finance.debtors.adjustAmount")}
                 </button>
               ) : null}
+              {canAdjust && entry.kind === "personal" ? (
+                <button type="button" onClick={onWriteOff} className={btnDestructiveCls}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {t("finance.debtors.writeOff")}
+                </button>
+              ) : null}
+              {isGroup && canAdjust
+                ? members.map((member) => (
+                    <button
+                      key={`adj-${member.id}`}
+                      type="button"
+                      onClick={() => onAdjustMember(member)}
+                      className={btnOpenCls}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      {t("finance.debtors.adjustMember", { name: member.clientDisplay })}
+                    </button>
+                  ))
+                : null}
             </div>
           ) : null}
         </div>
@@ -500,6 +548,8 @@ export default function FinanceDebtorsPage() {
                     onPayByTariff={() => openPersonalPayment(item, "tariff")}
                     onPayOutstanding={() => openPersonalPayment(item, "outstanding")}
                     onAdjust={() => setAdjustTarget(entry)}
+                    onAdjustMember={(member) => setAdjustTarget(member)}
+                    onWriteOff={() => setAdjustTarget(entry)}
                     formatDate={formatDate}
                     t={t}
                   />
