@@ -30,7 +30,7 @@ import { toISODateLocal } from "../lib/scheduleWeek";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "../components/schedule/PayPersonalLessonModal";
 import AdjustDebtorAmountDialog from "../components/finance/AdjustDebtorAmountDialog";
 import DebtorLedgerTrace from "../components/finance/DebtorLedgerTrace";
-import { btnAddCls, btnDestructiveCls, btnOpenCls } from "../components/ui/buttonStyles";
+import { btnAddCls, btnDestructiveOpenCls, btnOpenCls } from "../components/ui/buttonStyles";
 import AppSelect from "../components/ui/AppSelect";
 
 type DebtorTab = "all" | "clients" | "rentals";
@@ -186,19 +186,6 @@ function DebtorRow({
                 {t("finance.debtors.openRenter")}
               </Link>
             ) : null}
-            {canAdjust && entry.kind === "personal" ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onWriteOff();
-                }}
-                className={btnDestructiveCls}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                {t("finance.debtors.writeOff")}
-              </button>
-            ) : null}
           </div>
         </div>
       </div>
@@ -236,6 +223,14 @@ function DebtorRow({
               />
             ) : null}
             <DebtorDetailItem label={t("finance.debtors.outstanding")} value={amountLabel} />
+            {canAdjust && entry.kind === "personal" ? (
+              <div className="sm:col-span-2 lg:col-span-3">
+                <button type="button" onClick={onWriteOff} className={btnDestructiveOpenCls}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {t("finance.debtors.writeOffShort")}
+                </button>
+              </div>
+            ) : null}
             <DebtorDetailItem label={t("finance.debtors.dueStatus")} value={agingLabel} />
             {isGroup ? (
               <div className="sm:col-span-2 lg:col-span-3">
@@ -312,9 +307,9 @@ function DebtorRow({
                 </button>
               ) : null}
               {canAdjust && entry.kind === "personal" ? (
-                <button type="button" onClick={onWriteOff} className={btnDestructiveCls}>
+                <button type="button" onClick={onWriteOff} className={btnDestructiveOpenCls}>
                   <Trash2 className="w-3.5 h-3.5" />
-                  {t("finance.debtors.writeOff")}
+                  {t("finance.debtors.writeOffShort")}
                 </button>
               ) : null}
               {isGroup && canAdjust

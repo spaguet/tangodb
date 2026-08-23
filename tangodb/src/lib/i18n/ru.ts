@@ -2279,6 +2279,7 @@ export const RU: Record<I18nKey, string> = {
   "finance.debtors.adjustSplitNotSupported": "Для парного урока спишите или скорректируйте долг по каждому участнику отдельно",
   "finance.debtors.adjustMember": "Сумма · {{name}}",
   "finance.debtors.writeOff": "Удалить задолженность",
+  "finance.debtors.writeOffShort": "Удалить",
   "finance.debtors.writeOffTitle": "Удалить ошибочную задолженность?",
   "finance.debtors.writeOffConfirm":
     "Начисление {{billed}} будет приведено к уже принятым платежам {{paid}}. Долг {{debt}} исчезнет. Платежи в журнале не меняются.",

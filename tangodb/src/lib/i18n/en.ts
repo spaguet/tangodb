@@ -2281,6 +2281,7 @@ export const EN: Record<I18nKey, string> = {
   "finance.debtors.adjustSplitNotSupported": "For a pair lesson, write off or adjust each participant separately",
   "finance.debtors.adjustMember": "Amount · {{name}}",
   "finance.debtors.writeOff": "Remove debt",
+  "finance.debtors.writeOffShort": "Delete",
   "finance.debtors.writeOffTitle": "Remove this erroneous receivable?",
   "finance.debtors.writeOffConfirm":
     "Billed {{billed}} will be set to payments already received ({{paid}}). Outstanding {{debt}} will disappear. Journal payments stay unchanged.",

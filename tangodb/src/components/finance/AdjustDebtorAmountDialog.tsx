@@ -249,7 +249,7 @@ export default function AdjustDebtorAmountDialog({
                   disabled={pending}
                   className={btnDestructiveCls}
                 >
-                  {t("finance.debtors.writeOff")}
+                  {t("finance.debtors.writeOffShort")}
                 </button>
               ) : null}
               <button

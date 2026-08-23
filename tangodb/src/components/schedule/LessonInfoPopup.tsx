@@ -33,7 +33,7 @@ import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from ".
 import type { Client } from "../../types";
 import ClientCardModal from "../ClientCardModal";
 import ConfirmDialog from "../ui/ConfirmDialog";
-import { btnAddCls, btnCancelCls, btnDestructiveCls, btnOpenCls } from "../ui/buttonStyles";
+import { btnAddCls, btnCancelCls, btnDestructiveCls, btnDestructiveOpenCls, btnOpenCls } from "../ui/buttonStyles";
 import RequirePermission from "../RequirePermission";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
 import PersonalLessonDebtBreakdown from "./PersonalLessonDebtBreakdown";
@@ -530,10 +530,10 @@ export default function LessonInfoPopup({
                                   lessonDate: lesson.date,
                                 })
                               }
-                              className={btnDestructiveCls}
+                              className={btnDestructiveOpenCls}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                              {t("finance.debtors.writeOff")}
+                              {t("finance.debtors.writeOffShort")}
                             </button>
                           ) : null}
                         </div>

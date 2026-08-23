@@ -2209,6 +2209,7 @@ export type I18nKey =
   | "finance.debtors.adjustSplitNotSupported"
   | "finance.debtors.adjustMember"
   | "finance.debtors.writeOff"
+  | "finance.debtors.writeOffShort"
   | "finance.debtors.writeOffTitle"
   | "finance.debtors.writeOffConfirm"
   | "finance.debtors.writeOffConfirmAction"
