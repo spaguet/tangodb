@@ -1,5 +1,5 @@
 import { useRef, useState, useMemo } from "react";
-import { Mail, UserMinus, Users, Copy, Check, Edit, LifeBuoy, UserPlus, CalendarOff, ChevronDown } from "lucide-react";
+import { Mail, UserMinus, Users, Edit, LifeBuoy, UserPlus, CalendarOff, ChevronDown } from "lucide-react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import LoadingState from "../../components/ui/LoadingState";
@@ -91,8 +91,6 @@ export default function TeamSettingsPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [invitePreset, setInvitePreset] = useState<MemberPreset>("teacher");
-  const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [profileMember, setProfileMember] = useState<TeamMemberRow | null>(null);
   const [inviteScope, setInviteScope] = useState<TeacherScope | null>(DEFAULT_TEACHER_INVITE_SCOPE);
   const [inviteMetaOverride, setInviteMetaOverride] = useState<MemberMeta | null>(null);
@@ -187,7 +185,6 @@ export default function TeamSettingsPage() {
       setFirstName("");
       setLastName("");
       clearReinvitePreset();
-      setLastInviteUrl(result.invite_url ?? null);
       setInviteExpanded(true);
       showToast(
         result.email_sent ? t("team.inviteEmailSent") : t("team.inviteManualHint"),
@@ -219,7 +216,6 @@ export default function TeamSettingsPage() {
     );
     setInviteMetaOverride(meta);
     setReinviteSourceId(member.id);
-    setLastInviteUrl(null);
     setInviteExpanded(true);
     inviteFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -244,13 +240,6 @@ export default function TeamSettingsPage() {
   if (isError) return <QueryErrorState error={error} />;
 
   const canShowRecoveryGuide = currentRole === "owner" || currentRole === "director";
-
-  const copyInviteUrl = async () => {
-    if (!lastInviteUrl) return;
-    await navigator.clipboard.writeText(lastInviteUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const canAssignPreset = (preset: MemberPreset, forMemberId?: string): boolean => {
     const { role } = presetToRoleMeta(preset);
@@ -387,19 +376,6 @@ export default function TeamSettingsPage() {
             {invite.isPending ? "…" : t("team.sendInvite")}
           </button>
         </div>
-        {lastInviteUrl && (
-          <div className="flex items-center gap-2 p-2 bg-indigo-50 rounded-lg border border-indigo-100">
-            <p className="text-[11px] text-indigo-800 truncate flex-1 font-mono">{lastInviteUrl}</p>
-            <button
-              type="button"
-              onClick={copyInviteUrl}
-              className="shrink-0 p-1.5 text-indigo-600 hover:bg-indigo-100 rounded cursor-pointer"
-              aria-label={t("common.copy")}
-            >
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </button>
-          </div>
-        )}
         </div>
         )}
       </form>

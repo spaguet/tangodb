@@ -10,6 +10,7 @@ import {
   AuthLink,
 } from "./AuthLayout";
 import { parseAuthError } from "./authErrors";
+import { hasPendingInviteToken } from "./pendingInviteToken";
 import { useGuestI18n } from "../hooks/useI18n";
 import { getOrganizationIdFromSession } from "../lib/authClaims";
 import { getRememberMePreference } from "../lib/supabase";
@@ -26,6 +27,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const goAfterLogin = () => {
+    if (hasPendingInviteToken()) {
+      navigate("/accept-invite", { replace: true });
+      return;
+    }
     navigate("/", { replace: true });
   };
 
@@ -35,6 +40,10 @@ export default function LoginPage() {
     setError(null);
     try {
       const nextSession = await signInWithEmail(email.trim(), password, rememberMe);
+      if (hasPendingInviteToken()) {
+        navigate("/accept-invite", { replace: true });
+        return;
+      }
       if (nextSession.user.email_confirmed_at && !getOrganizationIdFromSession(nextSession)) {
         navigate("/auth/verify-email", { replace: true });
         return;

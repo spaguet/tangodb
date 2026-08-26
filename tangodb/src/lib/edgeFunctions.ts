@@ -31,7 +31,6 @@ export async function invokeEdgeFunction<T>(
 export interface InviteMemberResponse {
   ok: boolean;
   invite_id?: string;
-  invite_url?: string;
   email_sent?: boolean;
   expires_at?: string;
 }
@@ -61,17 +60,15 @@ export async function acceptInvite(token: string): Promise<AcceptInviteResponse>
 
 export interface PreviewInviteResponse {
   ok: boolean;
-  email?: string;
+  account_exists?: boolean;
   organization_name?: string | null;
   expires_at?: string;
 }
 
 export interface CompleteInviteResponse {
   ok: boolean;
-  access_token?: string;
-  refresh_token?: string;
-  organization_id?: string;
-  role?: string;
+  needs_login?: boolean;
+  account_created?: boolean;
 }
 
 export async function invokePublicEdgeFunction<T>(
@@ -100,7 +97,12 @@ export async function previewInvite(token: string): Promise<PreviewInviteRespons
 
 export async function completeInvite(
   token: string,
-  password: string
+  password: string,
+  email: string
 ): Promise<CompleteInviteResponse> {
-  return invokePublicEdgeFunction<CompleteInviteResponse>("complete-invite", { token, password });
+  return invokePublicEdgeFunction<CompleteInviteResponse>("complete-invite", {
+    token,
+    password,
+    email,
+  });
 }

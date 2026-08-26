@@ -3,48 +3,46 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useAuth } from "./AuthProvider";
+import { parseAuthError } from "./authErrors";
 import { acceptInvite, completeInvite, previewInvite } from "../lib/edgeFunctions";
 import { useI18n } from "../hooks/useI18n";
 import { supabase } from "../lib/supabase";
 import { membershipsQueryKey } from "../organization/OrganizationProvider";
 import {
+  clearPendingInviteToken,
+  peekPendingInviteToken,
+  storePendingInviteToken,
+} from "./pendingInviteToken";
+import {
   AuthButton,
   AuthError,
   AuthField,
   AuthLayout,
+  AuthLink,
 } from "./AuthLayout";
-
-const PENDING_INVITE_KEY = "tangodb_pending_invite_token";
-
-export function storePendingInviteToken(token: string) {
-  sessionStorage.setItem(PENDING_INVITE_KEY, token);
-}
-
-export function consumePendingInviteToken(): string | null {
-  const token = sessionStorage.getItem(PENDING_INVITE_KEY);
-  if (token) sessionStorage.removeItem(PENDING_INVITE_KEY);
-  return token;
-}
 
 export default function AcceptInvitePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { session, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { session, loading: authLoading, signInWithEmail } = useAuth();
+  const { t, locale } = useI18n();
   const tokenFromUrl = searchParams.get("token") ?? "";
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
   const [orgName, setOrgName] = useState<string | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [accountExists, setAccountExists] = useState(false);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [activeToken, setActiveToken] = useState("");
-  const previewStartedRef = useRef(false);
+  const [activeToken, setActiveToken] = useState(
+    () => tokenFromUrl || peekPendingInviteToken() || ""
+  );
   const acceptStartedRef = useRef(false);
+  const inviteAcceptedViaCompleteRef = useRef(false);
 
   const finishInviteSuccess = async () => {
     await supabase.auth.refreshSession();
@@ -60,31 +58,26 @@ export default function AcceptInvitePage() {
       setActiveToken(tokenFromUrl);
       return;
     }
-    const stored = sessionStorage.getItem(PENDING_INVITE_KEY);
+    const stored = peekPendingInviteToken();
     if (stored) setActiveToken(stored);
   }, [tokenFromUrl]);
 
   useEffect(() => {
-    if (authLoading || session || !activeToken || previewStartedRef.current) return;
+    if (authLoading || session || !activeToken) return;
 
-    previewStartedRef.current = true;
     let cancelled = false;
-    setPreviewLoading(true);
-    setFormError(null);
 
     previewInvite(activeToken)
       .then((data) => {
         if (cancelled) return;
-        setInviteEmail(data.email ?? "");
+        setAccountExists(data.account_exists === true);
         setOrgName(data.organization_name ?? null);
+        setPreviewReady(true);
       })
       .catch((err) => {
         if (cancelled) return;
         setStatus("error");
         setMessage(err instanceof Error ? err.message : t("auth.acceptInviteError"));
-      })
-      .finally(() => {
-        if (!cancelled) setPreviewLoading(false);
       });
 
     return () => {
@@ -95,8 +88,8 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     if (authLoading || !session || acceptStartedRef.current) return;
 
-    const token = tokenFromUrl || sessionStorage.getItem(PENDING_INVITE_KEY);
-    if (!token) return;
+    const token = tokenFromUrl || peekPendingInviteToken();
+    if (!token && !inviteAcceptedViaCompleteRef.current) return;
 
     acceptStartedRef.current = true;
     let cancelled = false;
@@ -104,7 +97,10 @@ export default function AcceptInvitePage() {
 
     (async () => {
       try {
-        await acceptInvite(token);
+        if (!inviteAcceptedViaCompleteRef.current) {
+          if (!token) throw new Error(t("auth.acceptInviteError"));
+          await acceptInvite(token);
+        }
         if (cancelled) return;
         await finishInviteSuccess();
       } catch (err) {
@@ -119,10 +115,27 @@ export default function AcceptInvitePage() {
     };
   }, [authLoading, session, tokenFromUrl, navigate, t]);
 
+  const handleExistingLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    setSubmitting(true);
+    try {
+      await signInWithEmail(email.trim(), password);
+    } catch (err) {
+      setFormError(parseAuthError(err, locale));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSetupPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
+    if (!email.trim()) {
+      setFormError(t("auth.acceptInviteError"));
+      return;
+    }
     if (password.length < 8) {
       setFormError(t("auth.passwordMinLength"));
       return;
@@ -134,19 +147,30 @@ export default function AcceptInvitePage() {
 
     setSubmitting(true);
     try {
-      const result = await completeInvite(activeToken, password);
-      if (!result.access_token || !result.refresh_token) {
+      const result = await completeInvite(activeToken, password, email.trim());
+      if (result.needs_login) {
+        setAccountExists(true);
+        setPassword("");
+        setConfirmPassword("");
+        return;
+      }
+      if (!result.ok || result.account_created !== true) {
         throw new Error(t("auth.acceptInviteError"));
       }
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: result.access_token,
-        refresh_token: result.refresh_token,
+      inviteAcceptedViaCompleteRef.current = true;
+      clearPendingInviteToken();
+      const { error: sessionError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
       });
-      if (sessionError) throw sessionError;
-      sessionStorage.removeItem(PENDING_INVITE_KEY);
+      if (sessionError) {
+        setAccountExists(true);
+        throw sessionError;
+      }
+      acceptStartedRef.current = true;
       await finishInviteSuccess();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : t("auth.acceptInviteError"));
+      setFormError(parseAuthError(err, locale));
     } finally {
       setSubmitting(false);
     }
@@ -172,11 +196,62 @@ export default function AcceptInvitePage() {
       );
     }
 
-    if (previewLoading || !inviteEmail) {
+    if (!activeToken) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+          <div className="max-w-md w-full bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-3 text-center">
+            <h1 className="text-lg font-semibold text-slate-900">{t("auth.acceptInvite")}</h1>
+            <p className="text-sm text-slate-500">{t("auth.acceptInviteError")}</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!previewReady) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50">
           <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
         </div>
+      );
+    }
+
+    if (accountExists) {
+      return (
+        <AuthLayout
+          title={t("auth.acceptInvite")}
+          subtitle={orgName ? `«${orgName}»` : "TangoDB CRM"}
+        >
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <UserPlus className="w-4 h-4 text-indigo-500 shrink-0" />
+            <p>{t("auth.acceptInviteHint")}</p>
+          </div>
+
+          <AuthError message={formError} />
+
+          <form onSubmit={handleExistingLogin} className="space-y-4">
+            <AuthField
+              label={t("auth.login.emailLabel")}
+              type="email"
+              value={email}
+              onChange={setEmail}
+              autoComplete="email"
+              required
+            />
+            <AuthField
+              label={t("auth.password")}
+              type="password"
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+              required
+            />
+            <AuthButton loading={submitting}>{t("auth.login.submit")}</AuthButton>
+          </form>
+
+          <p className="text-sm text-slate-500 text-center">
+            <AuthLink to="/auth/forgot-password">{t("auth.login.forgotPasswordLink")}</AuthLink>
+          </p>
+        </AuthLayout>
       );
     }
 
@@ -194,12 +269,12 @@ export default function AcceptInvitePage() {
 
         <form onSubmit={handleSetupPassword} className="space-y-4">
           <AuthField
-            label="Email"
+            label={t("auth.login.emailLabel")}
             type="email"
-            value={inviteEmail}
-            onChange={() => {}}
-            readOnly
+            value={email}
+            onChange={setEmail}
             autoComplete="email"
+            required
           />
           <AuthField
             label={t("auth.password")}

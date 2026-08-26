@@ -1,4 +1,4 @@
-import { hashInviteToken } from "../_shared/inviteToken.ts";
+import { hashInviteToken, isInviteTokenFormat } from "../_shared/inviteToken.ts";
 import {
   getClientIp,
   handleOptions,
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   }
 
   const plaintextToken = (body.token ?? "").trim();
-  if (!plaintextToken) {
+  if (!plaintextToken || !isInviteTokenFormat(plaintextToken)) {
     return jsonResponse({ error: "Invalid invite" }, 400, req);
   }
 

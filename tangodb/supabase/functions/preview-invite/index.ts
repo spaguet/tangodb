@@ -1,11 +1,12 @@
-import { hashInviteToken } from "../_shared/inviteToken.ts";
+import { findAuthUserByEmail } from "../_shared/authUsers.ts";
+import { hashInviteToken, isInviteTokenFormat } from "../_shared/inviteToken.ts";
 import {
   getClientIp,
   handleOptions,
   jsonResponse,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
-import { createServiceClient, logEvent } from "../_shared/supabase.ts";
+import { createServiceClient } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 15 * 60_000;
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
   }
 
   const plaintextToken = (body.token ?? "").trim();
-  if (!plaintextToken) {
+  if (!plaintextToken || !isInviteTokenFormat(plaintextToken)) {
     return jsonResponse({ error: "Invalid invite" }, 400, req);
   }
 
@@ -56,11 +57,13 @@ Deno.serve(async (req) => {
 
   const orgName =
     (invite.organizations as { name?: string } | null)?.name ?? null;
+  const inviteEmail = (invite.email as string).trim().toLowerCase();
+  const existing = await findAuthUserByEmail(inviteEmail);
 
   return jsonResponse(
     {
       ok: true,
-      email: invite.email as string,
+      account_exists: existing != null,
       organization_name: orgName,
       expires_at: invite.expires_at as string,
     },

@@ -1,12 +1,15 @@
-const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const INVITE_TOKEN_PREFIX = "TDB-INV-";
+const INVITE_TOKEN_BYTES = 16;
 
 export function generateInviteToken(): string {
-  const seg = (n: number) => {
-    const bytes = new Uint8Array(n);
-    crypto.getRandomValues(bytes);
-    return [...bytes].map((b) => INVITE_ALPHABET[b % INVITE_ALPHABET.length]).join("");
-  };
-  return `TDB-INV-${seg(4)}-${seg(4)}`;
+  const bytes = new Uint8Array(INVITE_TOKEN_BYTES);
+  crypto.getRandomValues(bytes);
+  const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `${INVITE_TOKEN_PREFIX}${hex}`;
+}
+
+export function isInviteTokenFormat(token: string): boolean {
+  return /^TDB-INV-[0-9a-f]{32}$/.test(token);
 }
 
 export async function hashInviteToken(plaintext: string, pepper: string): Promise<string> {

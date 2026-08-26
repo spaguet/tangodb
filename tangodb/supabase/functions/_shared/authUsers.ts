@@ -13,18 +13,3 @@ export async function findAuthUserByEmail(email: string): Promise<User | null> {
     if (data.users.length < perPage) return null;
   }
 }
-
-export async function ensureInvitedAuthUser(email: string): Promise<User> {
-  const admin = createServiceClient();
-  const existing = await findAuthUserByEmail(email);
-  if (existing) return existing;
-
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    email_confirm: true,
-  });
-  if (error || !data.user) {
-    throw error ?? new Error("Failed to create invited user");
-  }
-  return data.user;
-}

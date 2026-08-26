@@ -8,7 +8,6 @@ import {
   normalizeEmail,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
-import { ensureInvitedAuthUser } from "../_shared/authUsers.ts";
 import { createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 10;
@@ -112,15 +111,6 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Invite failed" }, 400, req);
   }
 
-  try {
-    await ensureInvitedAuthUser(email);
-  } catch (err) {
-    logEvent("invite_member_user_error", {
-      message: err instanceof Error ? err.message : "unknown",
-    });
-    return jsonResponse({ error: "Failed to prepare invited account" }, 500, req);
-  }
-
   const siteUrl = Deno.env.get("SITE_URL") ?? "https://tangodb.vercel.app";
   const inviteUrl = `${siteUrl}/accept-invite?token=${encodeURIComponent(plaintextToken)}`;
 
@@ -138,7 +128,6 @@ Deno.serve(async (req) => {
     {
       ok: true,
       invite_id: data?.invite_id,
-      invite_url: inviteUrl,
       email_sent: emailSent,
       expires_at: data?.expires_at,
     },

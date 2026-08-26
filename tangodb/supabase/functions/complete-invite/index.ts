@@ -1,6 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { findAuthUserByEmail } from "../_shared/authUsers.ts";
-import { hashInviteToken } from "../_shared/inviteToken.ts";
+import { hashInviteToken, isInviteTokenFormat } from "../_shared/inviteToken.ts";
 import {
   getClientIp,
   handleOptions,
@@ -9,7 +8,7 @@ import {
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, logEvent } from "../_shared/supabase.ts";
 
-const RATE_LIMIT = 10;
+const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 15 * 60_000;
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -38,9 +37,7 @@ Deno.serve(async (req) => {
   }
 
   const pepper = Deno.env.get("ACCESS_KEY_PEPPER");
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!pepper || !supabaseUrl || !anonKey) {
+  if (!pepper) {
     return jsonResponse({ error: "Service unavailable" }, 500, req);
   }
 
@@ -49,7 +46,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
-  let body: { token?: string; password?: string };
+  let body: { token?: string; password?: string; email?: string };
   try {
     body = await req.json();
   } catch {
@@ -57,13 +54,8 @@ Deno.serve(async (req) => {
   }
 
   const plaintextToken = (body.token ?? "").trim();
-  const password = body.password ?? "";
-
-  if (!plaintextToken) {
+  if (!plaintextToken || !isInviteTokenFormat(plaintextToken)) {
     return jsonResponse({ error: "Invalid invite" }, 400, req);
-  }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return jsonResponse({ error: "Password must be at least 8 characters" }, 400, req);
   }
 
   const tokenHash = await hashInviteToken(plaintextToken, pepper);
@@ -83,28 +75,34 @@ Deno.serve(async (req) => {
   }
 
   const email = (invite.email as string).trim().toLowerCase();
+  const existingUser = await findAuthUserByEmail(email);
 
-  let user = await findAuthUserByEmail(email);
-  if (!user) {
-    const { data, error } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
-    if (error || !data.user) {
-      logEvent("complete_invite_create_user_error", {
-        message: error?.message ?? "unknown",
-      });
-      return jsonResponse({ error: "Failed to create account" }, 400, req);
-    }
-    user = data.user;
-  } else {
-    const { error } = await admin.auth.admin.updateUserById(user.id, { password });
-    if (error) {
-      logEvent("complete_invite_password_error", { message: error.message });
-      return jsonResponse({ error: "Failed to set password" }, 400, req);
-    }
+  if (existingUser) {
+    logEvent("invite_needs_login", { organization_id: null });
+    return jsonResponse({ ok: true, needs_login: true }, 200, req);
   }
+
+  const password = body.password ?? "";
+  const providedEmail = (body.email ?? "").trim().toLowerCase();
+  if (!providedEmail || providedEmail !== email) {
+    return jsonResponse({ error: "Invalid invite" }, 400, req);
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return jsonResponse({ error: "Password must be at least 8 characters" }, 400, req);
+  }
+
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (error || !data.user) {
+    logEvent("complete_invite_create_user_error", {
+      message: error?.message ?? "unknown",
+    });
+    return jsonResponse({ error: "Failed to create account" }, 400, req);
+  }
+  const user = data.user;
 
   const { data: acceptData, error: acceptError } = await admin.rpc(
     "complete_organization_invite_for_user",
@@ -130,32 +128,7 @@ Deno.serve(async (req) => {
     await setActiveOrganization(admin, user.id, orgId, memberId);
   }
 
-  const anonClient = createClient(supabaseUrl, anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { data: signInData, error: signInError } = await anonClient.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (signInError || !signInData.session) {
-    logEvent("complete_invite_signin_error", {
-      message: signInError?.message ?? "no_session",
-    });
-    return jsonResponse({ error: "Account created but sign-in failed" }, 500, req);
-  }
-
   logEvent("invite_completed", { organization_id: orgId ?? null });
 
-  return jsonResponse(
-    {
-      ok: true,
-      access_token: signInData.session.access_token,
-      refresh_token: signInData.session.refresh_token,
-      organization_id: orgId,
-      role: acceptData?.role,
-    },
-    200,
-    req
-  );
+  return jsonResponse({ ok: true, account_created: true }, 200, req);
 });
