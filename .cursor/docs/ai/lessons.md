@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-26 — дебиторы: statement_timeout после write-off
+
+- **Ошибка:** Финансы → Дебиторы (и дашборд) — «Не удалось загрузить данные»: `canceling statement due to statement timeout`.
+- **Причина:** `20260931000001` переписал `personal_lesson_charge_net_payment` как `OR` + коррелированный `EXISTS` по всем платежам org. `financial_debtors_v` звал функцию трижды на каждое начисление (`amount`, `paid_amount`, `WHERE`). Без индекса по `payments.personal_lesson_charge_id` это nested loop «начисления × платежи».
+- **Как избежать:** хелпер оплаты charge — два отдельных SUM (по `personal_lesson_charge_id` и по unlinked `lesson_id+client_id`), не `OR`/`EXISTS` по всей таблице. Списки дебиторов — hash-агрегат платежей на org, не per-row RPC. После смены предиката в функции, которую читает view, сразу смотреть `EXPLAIN` и лимит statement_timeout.
+
 ### 2026-08-26 — «Удалить» в дебиторке: schema cache
 
 - **Ошибка:** прод-SPA звал `write_off_personal_lesson_debt`, PostgREST отвечал «function not found in the schema cache».
