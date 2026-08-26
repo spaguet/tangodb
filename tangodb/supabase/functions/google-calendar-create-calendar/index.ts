@@ -4,8 +4,7 @@ import {
   jsonResponse,
 } from "../_shared/http.ts";
 import {
-  createGoogleCalendar,
-  listGoogleCalendars,
+  findOrCreateDedicatedCalendar,
   loadGoogleOAuthConfigOrThrow,
   obtainAccessTokenForAccount,
   mapCalendarApiError,
@@ -98,35 +97,14 @@ Deno.serve(async (req) => {
     const config = await loadGoogleOAuthConfigOrThrow();
     const accessToken = await obtainAccessTokenForAccount(admin, config, googleAccountId, userId);
 
-    const existingCalendars = await listGoogleCalendars(accessToken);
-    const existing = existingCalendars.find(
-      (cal) => cal.summary.trim() === summary && cal.selectable
+    const { calendar, reused } = await findOrCreateDedicatedCalendar(
+      accessToken,
+      summary,
+      timeZone,
+      { alsoMatchPrefix: "TangoDB /" }
     );
-    if (existing) {
-      logEvent("gcal_create_calendar_reuse", {
-        user_id: userId,
-        google_account_id: googleAccountId,
-        organization_id: organizationId,
-        calendar_id: existing.id,
-      });
 
-      return jsonResponse({
-        ok: true,
-        reused: true,
-        calendar: {
-          id: existing.id,
-          summary: existing.summary,
-          timeZone: existing.timeZone,
-          accessRole: existing.accessRole,
-          selectable: existing.selectable,
-          primary: existing.primary,
-        },
-      }, 200, req);
-    }
-
-    const calendar = await createGoogleCalendar(accessToken, summary, timeZone);
-
-    logEvent("gcal_create_calendar", {
+    logEvent(reused ? "gcal_create_calendar_reuse" : "gcal_create_calendar", {
       user_id: userId,
       google_account_id: googleAccountId,
       organization_id: organizationId,
@@ -135,6 +113,7 @@ Deno.serve(async (req) => {
 
     return jsonResponse({
       ok: true,
+      reused,
       calendar: {
         id: calendar.id,
         summary: calendar.summary,

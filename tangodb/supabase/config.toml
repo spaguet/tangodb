@@ -428,6 +428,9 @@ verify_jwt = true
 [functions.calendar-sync-worker]
 verify_jwt = false
 
+[functions.calendar-sync-kick]
+verify_jwt = true
+
 [functions.calendar-reconcile-personal]
 verify_jwt = false
 

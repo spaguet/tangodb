@@ -9,6 +9,7 @@ import {
   mapCalendarApiError,
   obtainAccessTokenForAccount,
 } from "../_shared/googleCalendarClient.ts";
+import { isAppCreatedCalendarScopeOnly } from "../_shared/googleOAuth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
@@ -61,7 +62,16 @@ Deno.serve(async (req) => {
     const config = await loadGoogleOAuthConfigOrThrow();
     const forFreebusy = (body.purpose ?? "").trim() === "freebusy";
     const accessToken = await obtainAccessTokenForAccount(admin, config, googleAccountId, userId);
-    const calendars = await listGoogleCalendars(accessToken, { forFreebusy });
+    const { data: account } = await admin
+      .from("user_google_accounts")
+      .select("granted_scopes")
+      .eq("id", googleAccountId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    const restrictToAppCreated =
+      !forFreebusy &&
+      isAppCreatedCalendarScopeOnly(account?.granted_scopes as string[] | null | undefined);
+    const calendars = await listGoogleCalendars(accessToken, { forFreebusy, restrictToAppCreated });
 
     logEvent("gcal_list_calendars", {
       user_id: userId,

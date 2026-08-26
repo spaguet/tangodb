@@ -281,7 +281,7 @@ export async function upsertPersonalLesson(
 
   let targetBinding = binding;
   const syncAndSave = async () => {
-    const { eventId, etag } = await syncEventToGoogle(
+    const { eventId, etag, accessToken, recoveredFromConflict } = await syncEventToGoogle(
       admin,
       config,
       targetBinding,
@@ -291,20 +291,17 @@ export async function upsertPersonalLesson(
       currentLink
     );
 
-    const accessToken = await obtainAccessTokenForGoogleAccount(
-      admin,
-      config,
-      targetBinding.google_account_id
-    );
-    await cleanupStaleManagedEvents(
-      accessToken,
-      targetBinding.calendar_id,
-      {
-        sourceType: "personal_lesson",
-        sourceId: lesson.id,
-      },
-      eventId
-    );
+    if (recoveredFromConflict) {
+      await cleanupStaleManagedEvents(
+        accessToken,
+        targetBinding.calendar_id,
+        {
+          sourceType: "personal_lesson",
+          sourceId: lesson.id,
+        },
+        eventId
+      );
+    }
 
     await upsertLinkRow(admin, {
       organizationId: job.organization_id,

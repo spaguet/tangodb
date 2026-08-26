@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient, type QueryKey 
 import { asJson } from "../lib/json";
 import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { orgScopedQueryFilter } from "../lib/orgQueryFilter";
+import { kickCalendarSyncInBackground } from "../lib/googleCalendarApi";
 import { WEEKLY_RECURRENCE_SLOT_CAP } from "../lib/dateRecurrenceLimits";
 import { supabase } from "../lib/supabase";
 import { reportClientError } from "../lib/reportClientError";
@@ -160,7 +161,7 @@ function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string,
 export function invalidatePersonalLessonRelatedQueries(
   queryClient: QueryClient,
   organizationId: string | null | undefined,
-  options?: { refetchType?: "active"; includePayments?: boolean }
+  options?: { refetchType?: "active"; includePayments?: boolean; kickCalendar?: boolean }
 ) {
   const opts = options?.refetchType ? { refetchType: options.refetchType } : undefined;
   void queryClient.invalidateQueries({ ...orgScopedQueryFilter(personalLessonsQueryKey, organizationId), ...opts });
@@ -175,6 +176,9 @@ export function invalidatePersonalLessonRelatedQueries(
   });
   if (options?.includePayments !== false) {
     void queryClient.invalidateQueries({ queryKey: paymentsQueryKey, ...opts });
+  }
+  if (options?.kickCalendar) {
+    kickCalendarSyncInBackground(organizationId);
   }
 }
 
@@ -425,7 +429,7 @@ export function useAddPersonalLessons() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { includePayments: false });
+        invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { includePayments: false, kickCalendar: true });
       }
     },
   });
@@ -459,7 +463,7 @@ export function useDeletePersonalLesson() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { refetchType: "active" });
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { refetchType: "active", kickCalendar: true });
     },
   });
 }
@@ -492,7 +496,7 @@ export function useDeletePersonalLessonSeriesFromDate() {
       return { success: true as const, deletedCount: result.deleted_count ?? 0 };
     },
     onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { refetchType: "active" });
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { refetchType: "active", kickCalendar: true });
     },
   });
 }
@@ -599,7 +603,7 @@ export function useUpdatePersonalLesson() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId);
+      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { kickCalendar: true });
     },
   });
 }

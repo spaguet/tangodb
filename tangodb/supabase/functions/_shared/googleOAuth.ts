@@ -28,6 +28,20 @@ export const GOOGLE_FREEBUSY_SCOPE =
 export const GOOGLE_EVENTS_FREEBUSY_SCOPE =
   "https://www.googleapis.com/auth/calendar.events.freebusy";
 
+/** True when the app can only manage calendars it created (not the user's primary). */
+export function isAppCreatedCalendarScopeOnly(
+  grantedScopes: string[] | null | undefined
+): boolean {
+  const scopes = new Set(grantedScopes ?? []);
+  const hasAppCreated = scopes.has(
+    "https://www.googleapis.com/auth/calendar.app.created"
+  );
+  const hasFullCalendar =
+    scopes.has("https://www.googleapis.com/auth/calendar") ||
+    scopes.has("https://www.googleapis.com/auth/calendar.events");
+  return hasAppCreated && !hasFullCalendar;
+}
+
 export function mergeGrantedScopes(
   existing: string[] | null | undefined,
   fromToken: string
@@ -329,7 +343,12 @@ export async function decryptRefreshToken(
 export async function refreshGoogleAccessToken(
   config: GoogleOAuthConfig,
   refreshToken: string
-): Promise<{ access_token: string; expires_in: number; scope?: string }> {
+): Promise<{
+  access_token: string;
+  expires_in: number;
+  scope?: string;
+  refresh_token?: string;
+}> {
   const body = new URLSearchParams({
     client_id: config.clientId,
     client_secret: config.clientSecret,
@@ -351,7 +370,12 @@ export async function refreshGoogleAccessToken(
       err.error_description ?? `HTTP ${res.status}`
     );
   }
-  return payload as { access_token: string; expires_in: number; scope?: string };
+  return payload as {
+    access_token: string;
+    expires_in: number;
+    scope?: string;
+    refresh_token?: string;
+  };
 }
 
 export async function revokeGoogleToken(token: string): Promise<void> {

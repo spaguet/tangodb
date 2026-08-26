@@ -13,6 +13,7 @@ import {
   setFreebusyCalendarConfig,
   startGoogleCalendarOAuth,
   requestMemberCalendarReconcile,
+  kickCalendarSyncInBackground,
   type GoogleAccountSummary,
   type GoogleCalendarListEntry,
   type MemberGoogleCalendarBinding,
@@ -84,7 +85,10 @@ export function useGoogleCalendarIntegration() {
 
   const setBindingMutation = useMutation({
     mutationFn: setGoogleCalendarBinding,
-    onSuccess: invalidateAll,
+    onSuccess: () => {
+      kickCalendarSyncInBackground(organizationId);
+      return invalidateAll();
+    },
   });
 
   const disconnectMutation = useMutation({
@@ -101,7 +105,7 @@ export function useGoogleCalendarIntegration() {
 
   const syncFutureMutation = useMutation({
     mutationFn: async (organizationMemberId: string) => {
-      await requestMemberCalendarReconcile(organizationMemberId);
+      await requestMemberCalendarReconcile(organizationMemberId, organizationId);
       await invalidateAll();
     },
   });

@@ -8,6 +8,7 @@ export interface GoogleAccountSummary {
   status: GoogleAccountStatus;
   granted_scopes: string[] | null;
   last_verified_at: string | null;
+  refresh_token_issued_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -288,8 +289,23 @@ export interface CalendarSyncMetrics {
   oldest_pending_at: string | null;
 }
 
+export async function kickCalendarSync(organizationId: string): Promise<void> {
+  if (!organizationId) return;
+  await invokeFunction("calendar-sync-kick", { organization_id: organizationId }, {
+    timeoutMs: 55_000,
+  });
+}
+
+export function kickCalendarSyncInBackground(organizationId: string | null | undefined): void {
+  if (!organizationId) return;
+  void kickCalendarSync(organizationId).catch(() => {
+    /* queue still processed by cron */
+  });
+}
+
 export async function requestMemberCalendarReconcile(
-  organizationMemberId: string
+  organizationMemberId: string,
+  organizationId?: string | null
 ): Promise<void> {
   const { data, error } = await supabase.rpc("request_member_calendar_reconcile", {
     p_organization_member_id: organizationMemberId,
@@ -299,14 +315,22 @@ export async function requestMemberCalendarReconcile(
   if (payload && payload.ok !== true) {
     throw new Error("reconcile_request_failed");
   }
+  if (organizationId) {
+    await kickCalendarSync(organizationId);
+  }
 }
 
-export async function requestOrganizationCalendarReconcile(): Promise<void> {
+export async function requestOrganizationCalendarReconcile(
+  organizationId?: string | null
+): Promise<void> {
   const { data, error } = await supabase.rpc("request_organization_calendar_reconcile");
   if (error) throw new Error(error.message);
   const payload = data as { skipped?: boolean } | null;
   if (!payload) {
     throw new Error("reconcile_request_failed");
+  }
+  if (organizationId) {
+    await kickCalendarSync(organizationId);
   }
 }
 

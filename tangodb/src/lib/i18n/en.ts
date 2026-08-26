@@ -401,6 +401,7 @@ export const EN: Record<I18nKey, string> = {
   "integrations.googleCalendar.notConnectedHint": "Google Calendar is not connected. After sign-in, choose or create a TangoDB calendar for lesson sync.",
   "integrations.googleCalendar.connect": "Connect Google Calendar",
   "integrations.googleCalendar.reconnectRequired": "Google account must be reconnected (access revoked or expired).",
+  "integrations.googleCalendar.reconnectHintTesting": "If this happens about once a week, the Google Cloud OAuth app is still in Testing — refresh tokens last 7 days. Publish the app to Production, or reconnect the calendar.",
   "integrations.googleCalendar.selectCalendar": "Choose a calendar",
   "integrations.googleCalendar.selectCalendarHint": "Account {{email}}. Pick a writable calendar or create a new TangoDB calendar.",
   "integrations.googleCalendar.changeCalendar": "Change calendar",

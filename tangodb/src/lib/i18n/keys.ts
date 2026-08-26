@@ -362,6 +362,7 @@ export type I18nKey =
   | "integrations.googleCalendar.notConnectedHint"
   | "integrations.googleCalendar.connect"
   | "integrations.googleCalendar.reconnectRequired"
+  | "integrations.googleCalendar.reconnectHintTesting"
   | "integrations.googleCalendar.selectCalendar"
   | "integrations.googleCalendar.selectCalendarHint"
   | "integrations.googleCalendar.changeCalendar"

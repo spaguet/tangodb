@@ -12,6 +12,7 @@ import {
   setOrganizationGoogleCalendarBinding,
   startGoogleCalendarOAuth,
   requestOrganizationCalendarReconcile,
+  kickCalendarSyncInBackground,
   type GoogleAccountSummary,
   type GoogleCalendarListEntry,
   type OrganizationGoogleCalendarBinding,
@@ -73,7 +74,10 @@ export function useOrgGoogleCalendarIntegration() {
 
   const setBindingMutation = useMutation({
     mutationFn: setOrganizationGoogleCalendarBinding,
-    onSuccess: invalidateAll,
+    onSuccess: () => {
+      kickCalendarSyncInBackground(organizationId);
+      return invalidateAll();
+    },
   });
 
   const disconnectMutation = useMutation({
@@ -94,7 +98,7 @@ export function useOrgGoogleCalendarIntegration() {
 
   const syncFutureMutation = useMutation({
     mutationFn: async () => {
-      await requestOrganizationCalendarReconcile();
+      await requestOrganizationCalendarReconcile(organizationId);
       await invalidateAll();
     },
   });

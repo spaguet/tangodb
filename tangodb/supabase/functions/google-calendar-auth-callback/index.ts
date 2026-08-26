@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
     );
     const accountId = existingForUser?.id ?? subjectOwner?.id;
 
-    const row = {
+    const row: Record<string, unknown> = {
       user_id: oauthState.user_id,
       google_subject: claims.sub,
       google_email: claims.email,
@@ -140,6 +140,9 @@ Deno.serve(async (req) => {
       last_verified_at: nowIso,
       updated_at: nowIso,
     };
+    if (refreshToken) {
+      row.refresh_token_issued_at = nowIso;
+    }
 
     let savedAccountId = accountId as string | undefined;
 

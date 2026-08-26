@@ -302,7 +302,10 @@ export default function IntegrationsSettingsPage() {
           {primaryAccount && primaryAccount.status !== "active" && (
             <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${accountStatusTone}`}>
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{t("integrations.googleCalendar.reconnectRequired")}</span>
+              <div className="space-y-1">
+                <p>{t("integrations.googleCalendar.reconnectRequired")}</p>
+                <p className="opacity-90">{t("integrations.googleCalendar.reconnectHintTesting")}</p>
+              </div>
             </div>
           )}
           <button

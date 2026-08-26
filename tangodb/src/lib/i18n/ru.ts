@@ -398,6 +398,7 @@ export const RU: Record<I18nKey, string> = {
   "integrations.googleCalendar.notConnectedHint": "Google Calendar не подключён. После авторизации выберите или создайте календарь TangoDB для синхронизации уроков.",
   "integrations.googleCalendar.connect": "Подключить Google Calendar",
   "integrations.googleCalendar.reconnectRequired": "Требуется переподключение Google-аккаунта (доступ отозван или истёк).",
+  "integrations.googleCalendar.reconnectHintTesting": "Если это повторяется примерно раз в неделю, в Google Cloud приложение ещё в статусе Testing — refresh-токен живёт 7 дней. Нужно опубликовать OAuth-приложение (Production) или переподключать календарь.",
   "integrations.googleCalendar.selectCalendar": "Выберите календарь",
   "integrations.googleCalendar.selectCalendarHint": "Аккаунт {{email}}. Выберите календарь для записи уроков TangoDB или создайте новый.",
   "integrations.googleCalendar.changeCalendar": "Сменить календарь",

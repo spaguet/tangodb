@@ -1,4 +1,6 @@
-2026-08-26 — fix(finance): микропатч **2.8.75** — `financial_debtors_v` больше не вызывает `personal_lesson_charge_net_payment` на каждую строку (statement_timeout / «Не удалось загрузить данные»); два индексных SUM + hash-агрегаты платежей по org.
+2026-08-26 — fix(gcal): микропатч **2.8.76** — Google Calendar: кэш access token (не refresh на каждый job), повторное использование календаря `TangoDB / …` вместо создания нового при 404, drain очереди в одном тике + kick после мутаций расписания. Сообщение «срок истёк» уточнено (Testing OAuth = 7 дней).
+
+
 
 2026-08-26 — fix(finance): на production применены RPC списания дебиторки (`write_off_personal_lesson_debt` / `get_personal_lesson_debt_trace`); «Удалить» больше не падает на schema cache. Полная реализация — **2.8.73 / 2.8.74**.
 

@@ -240,6 +240,20 @@ Deno.serve(async (req) => {
     calendar_id: calendarId,
   });
 
+  const { error: reconcileError } = await admin.rpc("enqueue_calendar_sync", {
+    p_organization_id: organizationId,
+    p_source_type: "personal_lesson",
+    p_source_id: memberId,
+    p_occurrence_date: null,
+    p_operation: "reconcile_member",
+  });
+  if (reconcileError) {
+    logEvent("gcal_set_binding_reconcile_enqueue_error", {
+      binding_id: newBinding.id,
+      message: reconcileError.message,
+    });
+  }
+
   try {
     const oauthConfig = await loadGoogleOAuthConfigOrThrow();
     await registerWatchForBinding(admin, oauthConfig, {

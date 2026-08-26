@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-26 — Google Calendar: новый календарь на каждый 404 и «срок истёк»
+
+- **Ошибка:** при синхронизации появлялись лишние календари `TangoDB / …`; токен периодически «истекал»; автосинк был медленным и часто требовал кнопку «Синхронизировать будущие уроки».
+- **Причина:** worker на 404 insert (в т.ч. недоступный primary при `calendar.app.created`) всегда вызывал `calendars.insert` без поиска уже существующего календаря и без `calendars.get`; каждый job делал refresh access token; cron брал 20 задач раз в 2 минуты и не дренировал очередь; ручной sync только enqueue, без немедленного kick.
+- **Как избежать:** перед create — `calendars.get` и reuse по имени `TangoDB /`; кэшировать access token (память + БД) и сохранять rotated refresh token; drain нескольких batch в одном вызове + `calendar-sync-kick` после мутаций; primary не selectable при app-created scope.
+
 ### 2026-08-26 — дебиторы: statement_timeout после write-off
 
 - **Ошибка:** Финансы → Дебиторы (и дашборд) — «Не удалось загрузить данные»: `canceling statement due to statement timeout`.

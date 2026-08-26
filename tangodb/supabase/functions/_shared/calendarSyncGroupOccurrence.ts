@@ -24,11 +24,12 @@ import {
   removeStaleLinks,
   upsertLinkRow,
   recordBindingSuccess,
+  recreateMemberBindingCalendar,
   syncEventToGoogle,
   cleanupStaleManagedEvents,
   handleSyncJobError,
 } from "./calendarSyncCommon.ts";
-import { obtainAccessTokenForGoogleAccount } from "./googleCalendarClient.ts";
+import { GoogleCalendarApiError } from "./googleCalendarClient.ts";
 import type { GoogleOAuthConfig } from "./googleOAuth.ts";
 import { logEvent } from "./supabase.ts";
 
@@ -306,36 +307,35 @@ export async function upsertGroupOccurrence(
     return;
   }
 
-  try {
-    const { eventId, etag } = await syncEventToGoogle(
+  let targetBinding = binding;
+
+  const syncAndSave = async () => {
+    const { eventId, etag, accessToken, recoveredFromConflict } = await syncEventToGoogle(
       admin,
       config,
-      binding,
+      targetBinding,
       payload,
       desiredHash,
       deterministicEventId,
       currentLink
     );
 
-    const accessToken = await obtainAccessTokenForGoogleAccount(
-      admin,
-      config,
-      binding.google_account_id
-    );
-    await cleanupStaleManagedEvents(
-      accessToken,
-      binding.calendar_id,
-      {
-        sourceType: "group_occurrence",
-        sourceId: slot.id,
-        occurrenceKey: occurrenceDate,
-      },
-      eventId
-    );
+    if (recoveredFromConflict) {
+      await cleanupStaleManagedEvents(
+        accessToken,
+        targetBinding.calendar_id,
+        {
+          sourceType: "group_occurrence",
+          sourceId: slot.id,
+          occurrenceKey: occurrenceDate,
+        },
+        eventId
+      );
+    }
     await cleanupOverlappingGroupSlotEvents(
       admin,
       accessToken,
-      binding.calendar_id,
+      targetBinding.calendar_id,
       slot,
       occurrenceDate,
       eventId
@@ -343,7 +343,7 @@ export async function upsertGroupOccurrence(
 
     await upsertLinkRow(admin, {
       organizationId: job.organization_id,
-      memberBindingId: binding.id,
+      memberBindingId: targetBinding.id,
       sourceType: "group_occurrence",
       sourceId: slot.id,
       occurrenceDate,
@@ -351,7 +351,29 @@ export async function upsertGroupOccurrence(
       googleEtag: etag,
       desiredHash,
     });
-    await recordBindingSuccess(admin, binding.id);
+  };
+
+  try {
+    try {
+      await syncAndSave();
+    } catch (err) {
+      const canRepairMissingCalendar =
+        !currentLink &&
+        err instanceof GoogleCalendarApiError &&
+        err.status === 404;
+      if (!canRepairMissingCalendar) throw err;
+
+      const repairedBinding = await recreateMemberBindingCalendar(
+        admin,
+        config,
+        targetBinding
+      );
+      if (!repairedBinding) throw err;
+      targetBinding = repairedBinding;
+      await syncAndSave();
+    }
+
+    await recordBindingSuccess(admin, targetBinding.id);
     await markJobDone(admin, job.id);
 
     logEvent("gcal_sync_upsert_done", {
@@ -362,7 +384,7 @@ export async function upsertGroupOccurrence(
       link_status: "synced",
     });
   } catch (err) {
-    await handleSyncJobError(admin, job, binding.id, null, currentLink, err);
+    await handleSyncJobError(admin, job, targetBinding.id, null, currentLink, err);
 
     logEvent("gcal_sync_job_error", {
       organization_id: job.organization_id,

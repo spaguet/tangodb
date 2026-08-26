@@ -27,12 +27,14 @@ import {
   upsertOrgLinkRow,
   recordBindingSuccess,
   recordOrgBindingSuccess,
+  recreateMemberBindingCalendar,
   syncEventToGoogle,
   handleSyncJobError,
   type EventLinkRow,
   type MemberBindingRow,
   type OrganizationBindingRow,
 } from "./calendarSyncCommon.ts";
+import { GoogleCalendarApiError } from "./googleCalendarClient.ts";
 import type { GoogleOAuthConfig } from "./googleOAuth.ts";
 import { logEvent } from "./supabase.ts";
 
@@ -183,40 +185,62 @@ async function syncToBinding(
   }
 
   try {
-    const { eventId, etag } = await syncEventToGoogle(
-      admin,
-      config,
-      binding,
-      payload,
-      desiredHash,
-      deterministicEventId,
-      currentLink
-    );
+    let target = binding;
+    const write = async () => {
+      const { eventId, etag } = await syncEventToGoogle(
+        admin,
+        config,
+        target,
+        payload,
+        desiredHash,
+        deterministicEventId,
+        currentLink
+      );
 
-    if (recipientKind === "organization") {
-      await upsertOrgLinkRow(admin, {
-        organizationId: session.organization_id,
-        organizationBindingId: bindingId,
-        sourceType: "event_session",
-        sourceId: session.id,
-        occurrenceDate,
-        googleEventId: eventId,
-        googleEtag: etag,
-        desiredHash,
-      });
-      await recordOrgBindingSuccess(admin, bindingId);
-    } else {
-      await upsertLinkRow(admin, {
-        organizationId: session.organization_id,
-        memberBindingId: bindingId,
-        sourceType: "event_session",
-        sourceId: session.id,
-        occurrenceDate,
-        googleEventId: eventId,
-        googleEtag: etag,
-        desiredHash,
-      });
-      await recordBindingSuccess(admin, bindingId);
+      if (recipientKind === "organization") {
+        await upsertOrgLinkRow(admin, {
+          organizationId: session.organization_id,
+          organizationBindingId: bindingId,
+          sourceType: "event_session",
+          sourceId: session.id,
+          occurrenceDate,
+          googleEventId: eventId,
+          googleEtag: etag,
+          desiredHash,
+        });
+        await recordOrgBindingSuccess(admin, bindingId);
+      } else {
+        await upsertLinkRow(admin, {
+          organizationId: session.organization_id,
+          memberBindingId: bindingId,
+          sourceType: "event_session",
+          sourceId: session.id,
+          occurrenceDate,
+          googleEventId: eventId,
+          googleEtag: etag,
+          desiredHash,
+        });
+        await recordBindingSuccess(admin, bindingId);
+      }
+    };
+
+    try {
+      await write();
+    } catch (err) {
+      const canRepairMissingCalendar =
+        recipientKind === "member" &&
+        !currentLink &&
+        err instanceof GoogleCalendarApiError &&
+        err.status === 404;
+      if (!canRepairMissingCalendar) throw err;
+      const repaired = await recreateMemberBindingCalendar(
+        admin,
+        config,
+        target as MemberBindingRow
+      );
+      if (!repaired) throw err;
+      target = repaired;
+      await write();
     }
 
     logEvent("gcal_sync_upsert_done", {

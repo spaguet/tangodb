@@ -5,7 +5,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { GoogleCalendarEventResource } from "./calendarSyncPayload.ts";
 import {
-  createGoogleCalendar,
+  findOrCreateDedicatedCalendar,
   deleteCalendarEvent,
   getCalendarEvent,
   GoogleCalendarApiError,
@@ -15,6 +15,7 @@ import {
   updateCalendarEvent,
 } from "./googleCalendarClient.ts";
 import type { GoogleOAuthConfig } from "./googleOAuth.ts";
+import { logEvent } from "./supabase.ts";
 
 export const CANCEL_POLICY = "delete" as const;
 export const MAX_SYNC_ATTEMPTS = 10;
@@ -235,17 +236,39 @@ export async function recreateMemberBindingCalendar(
   }
 
   try {
-    const org = await loadOrgContext(admin, binding.organization_id);
     const accessToken = await obtainAccessTokenForGoogleAccount(
       admin,
       config,
       binding.google_account_id
     );
-    const calendar = await createGoogleCalendar(
+    const org = await loadOrgContext(admin, binding.organization_id);
+    const dedicated = await findOrCreateDedicatedCalendar(
       accessToken,
       `TangoDB / ${org.organizationName}`,
-      org.timezone
+      org.timezone,
+      { alsoMatchPrefix: "TangoDB /" }
     );
+    const calendar = dedicated.calendar;
+
+    if (calendar.id === binding.calendar_id) {
+      const clearedAt = new Date().toISOString();
+      await admin
+        .from("member_google_calendar_bindings")
+        .update({
+          last_error_code: null,
+          last_error_at: null,
+          updated_at: clearedAt,
+        })
+        .eq("id", binding.id)
+        .eq("last_error_code", repairCode);
+      logEvent("gcal_calendar_repair_already_bound", {
+        organization_id: binding.organization_id,
+        binding_id: binding.id,
+        calendar_id: binding.calendar_id,
+      });
+      return binding;
+    }
+
     const repairedAt = new Date().toISOString();
     const { data: updated, error: updateError } = await admin
       .from("member_google_calendar_bindings")
@@ -264,6 +287,11 @@ export async function recreateMemberBindingCalendar(
     if (updateError || !updated) {
       throw updateError ?? new Error("calendar_binding_repair_update_failed");
     }
+    logEvent(dedicated.reused ? "gcal_calendar_repair_reused" : "gcal_calendar_repair_created", {
+      organization_id: binding.organization_id,
+      binding_id: binding.id,
+      calendar_id: calendar.id,
+    });
     return updated as MemberBindingRow;
   } catch (err) {
     await admin
@@ -835,7 +863,7 @@ export async function syncEventToGoogle(
   desiredHash: string,
   deterministicEventId: string,
   existingLink: EventLinkRow | null
-): Promise<{ eventId: string; etag: string }> {
+): Promise<{ eventId: string; etag: string; accessToken: string; recoveredFromConflict: boolean }> {
   const accessToken = await obtainAccessTokenForGoogleAccount(
     admin,
     config,
@@ -850,7 +878,12 @@ export async function syncEventToGoogle(
         payload,
         deterministicEventId
       );
-      return { eventId: created.id, etag: created.etag };
+      return {
+        eventId: created.id,
+        etag: created.etag,
+        accessToken,
+        recoveredFromConflict: false,
+      };
     } catch (err) {
       if (err instanceof GoogleCalendarApiError && err.status === 409) {
         const existing = await getCalendarEvent(
@@ -865,7 +898,12 @@ export async function syncEventToGoogle(
           payload,
           existing.etag
         );
-        return { eventId: updated.id, etag: updated.etag };
+        return {
+          eventId: updated.id,
+          etag: updated.etag,
+          accessToken,
+          recoveredFromConflict: true,
+        };
       }
       throw err;
     }
@@ -875,6 +913,8 @@ export async function syncEventToGoogle(
     return {
       eventId: existingLink.google_event_id,
       etag: existingLink.google_etag ?? "",
+      accessToken,
+      recoveredFromConflict: false,
     };
   }
 
@@ -890,7 +930,12 @@ export async function syncEventToGoogle(
       payload,
       existingLink.google_etag
     );
-    return { eventId: updated.id, etag: updated.etag };
+    return {
+      eventId: updated.id,
+      etag: updated.etag,
+      accessToken,
+      recoveredFromConflict: false,
+    };
   } catch (err) {
     if (!(err instanceof GoogleCalendarApiError)) throw err;
 
@@ -907,7 +952,12 @@ export async function syncEventToGoogle(
         payload,
         fresh.etag
       );
-      return { eventId: updated.id, etag: updated.etag };
+      return {
+        eventId: updated.id,
+        etag: updated.etag,
+        accessToken,
+        recoveredFromConflict: false,
+      };
     }
 
     if (err.status === 404) {
@@ -917,7 +967,12 @@ export async function syncEventToGoogle(
         payload,
         deterministicEventId
       );
-      return { eventId: created.id, etag: created.etag };
+      return {
+        eventId: created.id,
+        etag: created.etag,
+        accessToken,
+        recoveredFromConflict: true,
+      };
     }
 
     throw err;

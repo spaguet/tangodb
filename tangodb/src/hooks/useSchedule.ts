@@ -16,6 +16,7 @@ import { useCalendarEventsForWeek, calendarEventsQueryKey } from "./useCalendarE
 import { useRentalsForWeek, rentalsQueryKey } from "./useRentals";
 import { scheduleGroupsQueryKey } from "./useScheduleGroups";
 import { groupCapacityQueryKey } from "./useGroupCapacity";
+import { kickCalendarSyncInBackground } from "../lib/googleCalendarApi";
 
 export const scheduleQueryKey = ["schedule"] as const;
 
@@ -187,11 +188,15 @@ export function useScheduleForWeek(
   };
 }
 
-function invalidateScheduleQueries(queryClient: ReturnType<typeof useQueryClient>) {
+function invalidateScheduleQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  organizationId?: string | null
+) {
   void queryClient.invalidateQueries({ queryKey: scheduleQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: calendarEventsQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: ["scheduleCancellations"], refetchType: "active" });
+  kickCalendarSyncInBackground(organizationId);
 }
 
 /** Закрыть слот с даты closingDate (не показывать с closingDate); при valid_from === closingDate — hard delete. */
@@ -311,7 +316,7 @@ export function useAddGroupSchedule() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        invalidateScheduleQueries(queryClient);
+        invalidateScheduleQueries(queryClient, organizationId);
         if ("classId" in result && result.classId) {
           void queryClient.invalidateQueries({ queryKey: scheduleGroupsQueryKey });
           void queryClient.invalidateQueries({ queryKey: groupCapacityQueryKey });
@@ -355,6 +360,7 @@ async function findActiveSuccessorSlotId(
 
 export function useUpdateGroupScheduleMetadata() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
@@ -388,7 +394,7 @@ export function useUpdateGroupScheduleMetadata() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) invalidateScheduleQueries(queryClient, organizationId);
     },
   });
 }
@@ -543,13 +549,14 @@ export function useEditGroupSchedule() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) invalidateScheduleQueries(queryClient, organizationId);
     },
   });
 }
 
 export function useUpdateGroupScheduleValidity() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
@@ -574,7 +581,7 @@ export function useUpdateGroupScheduleValidity() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) invalidateScheduleQueries(queryClient, organizationId);
     },
   });
 }
@@ -617,6 +624,7 @@ async function cancelGroupLessonOccurrencesRpc(
 
 export function useCancelGroupLessonOccurrence() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({ slotId, cancelDate }: { slotId: string; cancelDate: string }) => {
@@ -625,13 +633,14 @@ export function useCancelGroupLessonOccurrence() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) invalidateScheduleQueries(queryClient, organizationId);
     },
   });
 }
 
 export function useCancelGroupLessonOccurrences() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({ slotId, cancelDates }: { slotId: string; cancelDates: string[] }) => {
@@ -646,13 +655,14 @@ export function useCancelGroupLessonOccurrences() {
       };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) invalidateScheduleQueries(queryClient, organizationId);
     },
   });
 }
 
 export function useTeacherGroupVacation() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
@@ -695,13 +705,14 @@ export function useTeacherGroupVacation() {
       };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) invalidateScheduleQueries(queryClient, organizationId);
     },
   });
 }
 
 export function useMoveGroupLessonOccurrence() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
@@ -738,13 +749,14 @@ export function useMoveGroupLessonOccurrence() {
       return { success: true as const, newSlotId: result.new_slot_id ?? null };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) invalidateScheduleQueries(queryClient, organizationId);
     },
   });
 }
 
 export function useDeleteScheduleSlot() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async (input: string | { id: string; editDate?: string }) => {
@@ -757,7 +769,7 @@ export function useDeleteScheduleSlot() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) invalidateScheduleQueries(queryClient, organizationId);
     },
   });
 }
@@ -847,13 +859,14 @@ export function useReplaceGroupSchedule() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) invalidateScheduleQueries(queryClient, organizationId);
     },
   });
 }
 
 export function useDeleteGroupSchedule() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async ({
@@ -909,7 +922,7 @@ export function useDeleteGroupSchedule() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) invalidateScheduleQueries(queryClient);
+      if (result.success) invalidateScheduleQueries(queryClient, organizationId);
     },
   });
 }

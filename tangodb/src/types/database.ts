@@ -5946,12 +5946,15 @@ export type Database = {
       user_google_accounts: {
         Row: {
           created_at: string
+          encrypted_access_token: string | null
           encrypted_refresh_token: string | null
           google_email: string
           google_subject: string
           granted_scopes: string[]
           id: string
           last_verified_at: string | null
+          refresh_token_issued_at: string | null
+          access_token_expires_at: string | null
           status: string
           token_version: number
           updated_at: string
@@ -5959,12 +5962,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          encrypted_access_token?: string | null
           encrypted_refresh_token?: string | null
           google_email: string
           google_subject: string
           granted_scopes?: string[]
           id?: string
           last_verified_at?: string | null
+          refresh_token_issued_at?: string | null
+          access_token_expires_at?: string | null
           status?: string
           token_version?: number
           updated_at?: string
@@ -5972,12 +5978,15 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          encrypted_access_token?: string | null
           encrypted_refresh_token?: string | null
           google_email?: string
           google_subject?: string
           granted_scopes?: string[]
           id?: string
           last_verified_at?: string | null
+          refresh_token_issued_at?: string | null
+          access_token_expires_at?: string | null
           status?: string
           token_version?: number
           updated_at?: string
@@ -7173,6 +7182,7 @@ export type Database = {
         Args: {
           p_batch_size: number
           p_lease_seconds?: number
+          p_organization_id?: string | null
           p_worker_id: string
         }
         Returns: {
@@ -7763,6 +7773,7 @@ export type Database = {
           granted_scopes: string[]
           id: string
           last_verified_at: string
+          refresh_token_issued_at: string | null
           status: string
           updated_at: string
         }[]
