@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-26 — H23: SECURITY DEFINER + GRANT authenticated + p_org_id NULL = кросс-тенант write
+
+- **Ошибка:** любой залогиненный пользователь мог вызвать `expire_monthly_subscriptions` через PostgREST с `p_org_id: null` (все школы) или чужим UUID и массово переводить monthly-абонементы в `finished`.
+- **Причина:** `SECURITY DEFINER` без проверки членства; `GRANT EXECUTE … TO authenticated`; параметр `p_org_id DEFAULT NULL` расширял UPDATE на всю таблицу.
+- **Как избежать:** не давать клиенту EXECUTE на внутренние DEFINER-хелперы — только `REVOKE` у PostgREST-ролей. Не «чинить» guard'ом `auth.uid() IS NULL` / `service_role` в теле: `mark_attendance` вызывает `PERFORM` с JWT преподавателя. Внутренний `PERFORM` из других DEFINER оставить.
+
 ### 2026-08-26 — C1: инвайт перезаписывал пароль существующего пользователя
 
 - **Ошибка:** принятие приглашения на email, который уже есть в `auth.users`, вызывало `updateUserById({ password })`, логинило жертву и возвращало `access_token` / `refresh_token` в JSON. Учётка создавалась confirmed без пароля ещё до accept. Пригласивший получал plaintext `invite_url`.
