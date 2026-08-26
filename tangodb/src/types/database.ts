@@ -7647,6 +7647,10 @@ export type Database = {
           retry_count: number
         }[]
       }
+      get_personal_lesson_debt_trace: {
+        Args: { p_charge_id?: string | null; p_lesson_id: string }
+        Returns: Json
+      }
       get_personal_lesson_google_sync_status: {
         Args: { p_lesson_id: string }
         Returns: {
@@ -8976,6 +8980,15 @@ export type Database = {
           p_lesson_id: string
           p_reason_code?: string
           p_reason_comment?: string
+        }
+        Returns: Json
+      }
+      write_off_personal_lesson_debt: {
+        Args: {
+          p_charge_id?: string | null
+          p_lesson_id: string
+          p_reason_code: string
+          p_reason_comment?: string | null
         }
         Returns: Json
       }

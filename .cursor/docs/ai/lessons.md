@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-26 — удаление долга в дебиторке: RPC нет в schema cache
+
+- **Ошибка:** «Удалить» в «Корректировка суммы задолженности» → `Could not find the function public.write_off_personal_lesson_debt(...) in the schema cache`.
+- **Причина:** прод-SPA уже вызывал `write_off_personal_lesson_debt` / `get_personal_lesson_debt_trace`, а миграции с этими RPC в репозитории и на БД не было.
+- **Как избежать:** RPC и вызов в одном релизе; после `db:push` проверять, что PostgREST видит функцию (не деплоить только фронт). Списание долга — `billed = net paid`, не DELETE платежа; `audit_log.operation` только `INSERT|UPDATE|DELETE`.
+
 ### 2026-08-22 — удаление ошибочного возврата падало с нечитаемой ошибкой
 
 - **Ошибка:** при «Удалить возврат» внизу экрана мелкий toast с техническим текстом (`corrections.payment-stored-procedure-failed` или constraint violation), под модалкой его не видно.
