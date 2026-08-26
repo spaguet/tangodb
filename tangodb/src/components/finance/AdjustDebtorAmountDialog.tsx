@@ -2,24 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Pencil, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
-import {
-  usePersonalLessonDebtTrace,
-  useRestatePersonalLessonAmount,
-  useWriteOffPersonalLessonDebt,
-  type PersonalLessonDebtTraceKind,
-} from "../../hooks/usePersonalLessons";
+import { useWriteOffPersonalLessonDebt } from "../../hooks/usePersonalLessonDebt";
+import { useRestatePersonalLessonAmount } from "../../hooks/usePersonalLessons";
 import { useAdjustRentalAmount } from "../../hooks/useRentals";
-import {
-  PAYMENT_CORRECTION_REASONS,
-  type PaymentCorrectionReasonCode,
-} from "../../lib/paymentCorrection";
+import { PAYMENT_CORRECTION_REASONS } from "../../lib/paymentCorrection";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
 import type { DebtorEntry } from "../../lib/financeReports";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import { btnAddCls, btnDestructiveCls } from "../ui/buttonStyles";
-import type { I18nKey } from "../../lib/i18n/keys";
+import DebtorLedgerTrace from "./DebtorLedgerTrace";
 
 interface AdjustDebtorAmountDialogProps {
   entry: DebtorEntry | null;
@@ -29,99 +22,6 @@ interface AdjustDebtorAmountDialogProps {
 }
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
-
-function debtTraceEventLabel(kind: PersonalLessonDebtTraceKind): I18nKey {
-  switch (kind) {
-    case "charge_created":
-      return "finance.debtors.trace.event.chargeCreated";
-    case "storno":
-      return "finance.debtors.trace.event.storno";
-    case "billed_restated":
-      return "finance.debtors.trace.event.billedRestated";
-    case "write_off":
-      return "finance.debtors.trace.event.writeOff";
-    default:
-      return "finance.debtors.trace.event.payment";
-  }
-}
-
-function personalDebtTraceHint(
-  billed: number,
-  paid: number,
-  outstanding: number,
-  events: { kind: PersonalLessonDebtTraceKind }[]
-): I18nKey | null {
-  const hasJournalChange = events.some(
-    (event) => event.kind === "storno" || event.kind === "billed_restated" || event.kind === "write_off"
-  );
-  if (hasJournalChange && outstanding > 0.005) return "finance.debtors.trace.hintCorrection";
-  if (paid > 0.005 && outstanding > 0.005) return "finance.debtors.trace.hintPartial";
-  if (paid <= 0.005 && outstanding > 0.005) return "finance.debtors.trace.hintUnpaid";
-  return null;
-}
-
-function PersonalLessonDebtTrace({
-  lessonId,
-  chargeId,
-  billedAmount,
-  paidAmount,
-  outstanding,
-}: {
-  lessonId: string;
-  chargeId: string | null;
-  billedAmount: number;
-  paidAmount: number;
-  outstanding: number;
-}) {
-  const { t, formatDateTime } = useI18n();
-  const traceQuery = usePersonalLessonDebtTrace(lessonId, chargeId, { enabled: Boolean(lessonId) });
-  const events = traceQuery.data?.events ?? [];
-  const hint = personalDebtTraceHint(billedAmount, paidAmount, outstanding, events);
-
-  return (
-    <div className="space-y-2">
-      <p className={labelCls}>{t("finance.debtors.trace.title")}</p>
-      <p className="text-[11px] text-slate-600 leading-snug">
-        {t("finance.debtors.trace.formula", {
-          billed: formatCurrency(billedAmount),
-          paid: formatCurrency(paidAmount),
-          debt: formatCurrency(outstanding),
-        })}
-      </p>
-      {hint ? <p className="text-[11px] text-rose-700 leading-snug">{t(hint)}</p> : null}
-      {traceQuery.isLoading ? (
-        <p className="text-[11px] text-slate-500">{t("finance.debtors.trace.loading")}</p>
-      ) : traceQuery.isError ? (
-        <p className="text-[11px] text-rose-700">{t("finance.debtors.traceFailed")}</p>
-      ) : events.length === 0 ? (
-        <p className="text-[11px] text-slate-500">{t("finance.debtors.trace.empty")}</p>
-      ) : (
-        <ul className="space-y-1.5 max-h-36 overflow-y-auto">
-          {events.map((event, index) => (
-            <li
-              key={`${event.kind}-${event.at}-${index}`}
-              className="flex justify-between gap-3 text-[11px] text-slate-600"
-            >
-              <span className="min-w-0 truncate">
-                {event.at
-                  ? formatDateTime(event.at, {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "—"}
-                {" · "}
-                {t(debtTraceEventLabel(event.kind))}
-              </span>
-              <span className="shrink-0 font-medium tabular-nums">{formatCurrency(event.amount)}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 export default function AdjustDebtorAmountDialog({
   entry,
@@ -137,23 +37,18 @@ export default function AdjustDebtorAmountDialog({
   const paidAmount = entry?.paidAmount ?? 0;
   const billedAmount = entry?.billedAmount ?? entry?.amount ?? 0;
   const outstanding = entry?.amount ?? 0;
-  const isGroup = Boolean(entry?.id.startsWith("grp-"));
-  const canWriteOff =
-    entry?.kind === "personal" && Boolean(entry.personalLessonId) && outstanding > 0 && !isGroup;
 
   const [newOutstanding, setNewOutstanding] = useState("");
+  const [reasonCode, setReasonCode] = useState("wrong_amount");
   const [reason, setReason] = useState("");
-  const [reasonCode, setReasonCode] = useState<PaymentCorrectionReasonCode>("wrong_amount");
-  const [reasonComment, setReasonComment] = useState("");
-  const [confirmWriteOff, setConfirmWriteOff] = useState(false);
+  const [writeOffConfirmOpen, setWriteOffConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!entry) return;
     setNewOutstanding(outstanding > 0 ? String(outstanding) : "0");
-    setReason("");
     setReasonCode("wrong_amount");
-    setReasonComment("");
-    setConfirmWriteOff(false);
+    setReason("");
+    setWriteOffConfirmOpen(false);
   }, [entry, outstanding]);
 
   const parsedOutstanding = useMemo(() => {
@@ -163,6 +58,8 @@ export default function AdjustDebtorAmountDialog({
 
   const newBilled = parsedOutstanding != null ? paidAmount + parsedOutstanding : null;
   const pending = restatePersonal.isPending || adjustRental.isPending || writeOffPersonal.isPending;
+  const canWriteOff = entry?.kind === "personal" && outstanding > 0.005;
+  const canRestateAmount = entry?.kind !== "personal" || Boolean(entry.personalLessonChargeId);
 
   const handleSubmit = async () => {
     if (!entry) return;
@@ -180,7 +77,10 @@ export default function AdjustDebtorAmountDialog({
       if (!entry.personalLessonId) return;
       const res = await restatePersonal.mutateAsync({
         lessonId: entry.personalLessonId,
+        chargeId: entry.personalLessonChargeId,
         newAmount: newBilled,
+        reasonCode,
+        reasonComment: reason.trim() || undefined,
       });
       if (!res.success) {
         toast(resolveMutationError(res.error, "finance.debtors.adjustFailed", t), "error");
@@ -210,29 +110,19 @@ export default function AdjustDebtorAmountDialog({
     onClose();
   };
 
-  const handlePrepareWriteOff = () => {
-    if (!canWriteOff || !entry?.personalLessonId) return;
-    if (!reasonComment.trim()) {
-      toast(t("finance.debtors.writeOffReasonRequired"), "error");
-      return;
-    }
-    setConfirmWriteOff(true);
-  };
-
   const handleWriteOff = async () => {
-    if (!canWriteOff || !entry?.personalLessonId) return;
-    setConfirmWriteOff(false);
+    if (!entry?.personalLessonId) return;
     const res = await writeOffPersonal.mutateAsync({
       lessonId: entry.personalLessonId,
-      chargeId: entry.personalLessonChargeId ?? null,
+      chargeId: entry.personalLessonChargeId,
       reasonCode,
-      reasonComment: reasonComment.trim(),
+      reasonComment: reason.trim() || undefined,
     });
+    setWriteOffConfirmOpen(false);
     if (!res.success) {
       toast(resolveMutationError(res.error, "finance.debtors.writeOffFailed", t), "error");
       return;
     }
-    setConfirmWriteOff(false);
     toast(t("finance.debtors.writeOffSuccess"), "success");
     onSuccess();
     onClose();
@@ -253,7 +143,7 @@ export default function AdjustDebtorAmountDialog({
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            className="relative w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto"
+            className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-xl"
           >
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
               <div className="flex items-center gap-2 min-w-0">
@@ -285,18 +175,31 @@ export default function AdjustDebtorAmountDialog({
                   {t("finance.debtors.outstanding")}: {formatCurrency(outstanding)}
                 </p>
               </div>
-              <div>
-                <span className={labelCls}>{t("finance.debtors.adjustOutstanding")}</span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  className={fieldCls}
-                  value={newOutstanding}
-                  onChange={(e) => setNewOutstanding(e.target.value)}
+              {entry.kind === "personal" ? (
+                <DebtorLedgerTrace
+                  lessonId={entry.personalLessonId}
+                  chargeId={entry.personalLessonChargeId}
+                  billedAmount={billedAmount}
+                  paidAmount={paidAmount}
+                  outstanding={outstanding}
                 />
-              </div>
-              {newBilled != null && parsedOutstanding !== outstanding ? (
+              ) : null}
+              {canRestateAmount ? (
+                <div>
+                  <span className={labelCls}>{t("finance.debtors.adjustOutstanding")}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    className={fieldCls}
+                    value={newOutstanding}
+                    onChange={(e) => setNewOutstanding(e.target.value)}
+                  />
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-500">{t("finance.debtors.writeOffGroupHint")}</p>
+              )}
+              {canRestateAmount && newBilled != null && parsedOutstanding !== outstanding ? (
                 <p className="text-xs text-slate-500">
                   {t("finance.debtors.adjustPreview", {
                     billed: formatCurrency(newBilled),
@@ -304,76 +207,60 @@ export default function AdjustDebtorAmountDialog({
                   })}
                 </p>
               ) : null}
-              {entry.kind === "rental" ? (
-                <div>
-                  <span className={labelCls}>{t("schedule.rental.amountReasonLabel")}</span>
-                  <textarea
-                    className={`${fieldCls} min-h-[72px]`}
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder={t("schedule.rental.amountReasonPlaceholder")}
-                  />
-                </div>
-              ) : (
-                <>
-                  <AppSelect
-                    label={t("corrections.payment.reason")}
-                    value={reasonCode}
-                    onChange={(e) => setReasonCode(e.target.value as PaymentCorrectionReasonCode)}
-                  >
-                    {PAYMENT_CORRECTION_REASONS.map((r) => (
-                      <option key={r.code} value={r.code}>
-                        {t(r.labelKey as I18nKey)}
-                      </option>
-                    ))}
-                  </AppSelect>
-                  <div>
-                    <span className={labelCls}>{t("finance.debtors.writeOffReason")}</span>
-                    <textarea
-                      className={`${fieldCls} min-h-[72px]`}
-                      value={reasonComment}
-                      onChange={(e) => setReasonComment(e.target.value)}
-                      placeholder={t("finance.debtors.writeOffReasonPlaceholder")}
-                    />
-                  </div>
-                  {isGroup ? (
-                    <p className="text-[11px] text-slate-500">{t("finance.debtors.writeOffGroupHint")}</p>
-                  ) : entry.personalLessonId ? (
-                    <PersonalLessonDebtTrace
-                      lessonId={entry.personalLessonId}
-                      chargeId={entry.personalLessonChargeId ?? null}
-                      billedAmount={billedAmount}
-                      paidAmount={paidAmount}
-                      outstanding={outstanding}
-                    />
-                  ) : (
-                    <p className="text-[11px] text-slate-500">{t("finance.debtors.adjustPersonalHint")}</p>
-                  )}
-                </>
-              )}
+              {entry.kind === "personal" ? (
+                <AppSelect
+                  label={t("corrections.payment.reason")}
+                  value={reasonCode}
+                  onChange={(e) => setReasonCode(e.target.value)}
+                >
+                  {PAYMENT_CORRECTION_REASONS.map((item) => (
+                    <option key={item.code} value={item.code}>
+                      {t(item.labelKey)}
+                    </option>
+                  ))}
+                </AppSelect>
+              ) : null}
+              <div>
+                <span className={labelCls}>
+                  {entry.kind === "rental"
+                    ? t("schedule.rental.amountReasonLabel")
+                    : t("finance.debtors.writeOffReason")}
+                </span>
+                <textarea
+                  className={`${fieldCls} min-h-[72px]`}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder={
+                    entry.kind === "rental"
+                      ? t("schedule.rental.amountReasonPlaceholder")
+                      : t("finance.debtors.writeOffReasonPlaceholder")
+                  }
+                />
+              </div>
+              {entry.kind === "personal" ? (
+                <p className="text-[11px] text-slate-500">{t("finance.debtors.adjustPersonalHint")}</p>
+              ) : null}
             </div>
-            <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
+            <div className="flex flex-wrap justify-end gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
               {canWriteOff ? (
                 <button
                   type="button"
-                  onClick={handlePrepareWriteOff}
+                  onClick={() => setWriteOffConfirmOpen(true)}
                   disabled={pending}
                   className={btnDestructiveCls}
                 >
-                  {t("common.delete")}
+                  {t("finance.debtors.writeOffShort")}
                 </button>
-              ) : (
-                <span />
-              )}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={pending}
-                  className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
-                >
-                  {t("common.cancel")}
-                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={pending}
+                className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                {t("common.cancel")}
+              </button>
+              {canRestateAmount ? (
                 <button
                   type="button"
                   onClick={() => void handleSubmit()}
@@ -382,11 +269,11 @@ export default function AdjustDebtorAmountDialog({
                 >
                   {pending ? t("common.saving") : t("finance.debtors.adjustSubmit")}
                 </button>
-              </div>
+              ) : null}
             </div>
           </motion.div>
           <ConfirmDialog
-            open={confirmWriteOff}
+            open={writeOffConfirmOpen}
             title={t("finance.debtors.writeOffTitle")}
             description={t("finance.debtors.writeOffConfirm", {
               billed: formatCurrency(billedAmount),
@@ -396,7 +283,7 @@ export default function AdjustDebtorAmountDialog({
             confirmLabel={t("finance.debtors.writeOffConfirmAction")}
             pending={writeOffPersonal.isPending}
             onConfirm={() => void handleWriteOff()}
-            onCancel={() => setConfirmWriteOff(false)}
+            onCancel={() => setWriteOffConfirmOpen(false)}
             zClassName="z-[90]"
           />
         </div>

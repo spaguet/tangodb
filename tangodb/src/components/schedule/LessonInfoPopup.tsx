@@ -33,10 +33,12 @@ import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson } from ".
 import type { Client } from "../../types";
 import ClientCardModal from "../ClientCardModal";
 import ConfirmDialog from "../ui/ConfirmDialog";
-import { btnAddCls, btnCancelCls, btnDestructiveCls, btnOpenCls } from "../ui/buttonStyles";
+import { btnAddCls, btnCancelCls, btnDestructiveCls, btnDestructiveOpenCls, btnOpenCls } from "../ui/buttonStyles";
 import RequirePermission from "../RequirePermission";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
 import PersonalLessonDebtBreakdown from "./PersonalLessonDebtBreakdown";
+import AdjustDebtorAmountDialog from "../finance/AdjustDebtorAmountDialog";
+import type { DebtorEntry } from "../../lib/financeReports";
 import MoveGroupLessonDialog from "./MoveGroupLessonDialog";
 import CancelGroupLessonDialog from "./CancelGroupLessonDialog";
 import GoogleCalendarSyncStatusBadge from "../integrations/GoogleCalendarSyncStatusBadge";
@@ -102,6 +104,7 @@ export default function LessonInfoPopup({
   const [cancelOneConfirmOpen, setCancelOneConfirmOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
+  const [adjustDebtEntry, setAdjustDebtEntry] = useState<DebtorEntry | null>(null);
   const [profileClient, setProfileClient] = useState<Client | null>(null);
   const [reopenReason, setReopenReason] = useState("");
   const { data: directoryClients = [] } = useClientDirectory({
@@ -490,7 +493,7 @@ export default function LessonInfoPopup({
                         )}
                       </dd>
                       {showDebtAmounts && personalPayLesson ? (
-                        <div className="mt-2">
+                        <div className="mt-2 space-y-2">
                           <PersonalLessonDebtBreakdown
                             billedAmount={personalPayLesson.price ?? 0}
                             paidAmount={personalPayLesson.paidAmount ?? 0}
@@ -500,6 +503,39 @@ export default function LessonInfoPopup({
                             )}
                             payments={lessonPayments}
                           />
+                          {!isReadOnly &&
+                          can("finance.read") &&
+                          personalLessonRemainingAmount(
+                            personalPayLesson.price,
+                            personalPayLesson.paidAmount
+                          ) > 0.005 ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAdjustDebtEntry({
+                                  id: lesson.lessonId,
+                                  personalLessonId: lesson.lessonId,
+                                  personalLessonChargeId: null,
+                                  clientDisplay:
+                                    fullPersonalLesson?.clientDisplay ?? lesson.clientDisplay ?? "",
+                                  contact: "—",
+                                  kind: "personal",
+                                  detail: "",
+                                  amount: personalLessonRemainingAmount(
+                                    personalPayLesson.price,
+                                    personalPayLesson.paidAmount
+                                  ),
+                                  billedAmount: personalPayLesson.price ?? 0,
+                                  paidAmount: personalPayLesson.paidAmount ?? 0,
+                                  lessonDate: lesson.date,
+                                })
+                              }
+                              className={btnDestructiveOpenCls}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              {t("finance.debtors.writeOffShort")}
+                            </button>
+                          ) : null}
                         </div>
                       ) : null}
                     </div>
@@ -715,6 +751,16 @@ export default function LessonInfoPopup({
           setPayTarget(null);
           onPaymentSuccess?.();
           onClose();
+        }}
+      />
+
+      <AdjustDebtorAmountDialog
+        entry={adjustDebtEntry}
+        toast={toast}
+        onClose={() => setAdjustDebtEntry(null)}
+        onSuccess={() => {
+          setAdjustDebtEntry(null);
+          onPaymentSuccess?.();
         }}
       />
 

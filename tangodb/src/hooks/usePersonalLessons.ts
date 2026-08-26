@@ -157,7 +157,7 @@ function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string,
   return hasFilter ? suffix : null;
 }
 
-function invalidatePersonalLessonRelatedQueries(
+export function invalidatePersonalLessonRelatedQueries(
   queryClient: QueryClient,
   organizationId: string | null | undefined,
   options?: { refetchType?: "active"; includePayments?: boolean }
@@ -168,6 +168,7 @@ function invalidatePersonalLessonRelatedQueries(
   void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: financialDebtorsQueryKey, ...opts });
   void queryClient.invalidateQueries({ queryKey: personalLessonChargesQueryKey, ...opts });
+  void queryClient.invalidateQueries({ queryKey: ["personalLessonDebtTrace"], ...opts });
   void queryClient.invalidateQueries({
     ...orgScopedQueryFilter(["google-calendar", "entry-sync-status"], organizationId),
     ...opts,
@@ -608,11 +609,28 @@ export function useRestatePersonalLessonAmount() {
   const { organizationId } = useOrgQueryScope();
 
   return useMutation({
-    mutationFn: async (input: { lessonId: string; newAmount: number }) => {
-      const { data, error } = await supabase.rpc("restate_personal_lesson_amount", {
-        p_lesson_id: input.lessonId,
-        p_new_amount: input.newAmount,
-      });
+    mutationFn: async (input: {
+      lessonId: string;
+      newAmount: number;
+      chargeId?: string | null;
+      reasonCode?: string;
+      reasonComment?: string;
+    }) => {
+      const { data, error } = input.chargeId
+        ? await supabase.rpc(
+            "restate_personal_lesson_charge" as never,
+            {
+              p_lesson_id: input.lessonId,
+              p_new_amount: input.newAmount,
+              p_charge_id: input.chargeId,
+              p_reason_code: input.reasonCode ?? "wrong_amount",
+              p_reason_comment: input.reasonComment ?? null,
+            } as never
+          )
+        : await supabase.rpc("restate_personal_lesson_amount", {
+            p_lesson_id: input.lessonId,
+            p_new_amount: input.newAmount,
+          });
 
       if (error) return { success: false as const, error: error.message };
 
@@ -622,113 +640,6 @@ export function useRestatePersonalLessonAmount() {
       }
 
       return { success: true as const };
-    },
-    onSuccess: (result) => {
-      if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId);
-    },
-  });
-}
-
-export const personalLessonDebtTraceQueryKey = ["personalLessonDebtTrace"] as const;
-
-export type PersonalLessonDebtTraceKind =
-  | "charge_created"
-  | "payment"
-  | "storno"
-  | "billed_restated"
-  | "write_off";
-
-export interface PersonalLessonDebtTraceEvent {
-  kind: PersonalLessonDebtTraceKind;
-  at: string;
-  amount: number;
-  method: string | null;
-  comment: string | null;
-}
-
-function mapDebtTraceKind(value: unknown): PersonalLessonDebtTraceKind {
-  if (
-    value === "charge_created" ||
-    value === "payment" ||
-    value === "storno" ||
-    value === "billed_restated" ||
-    value === "write_off"
-  ) {
-    return value;
-  }
-  return "payment";
-}
-
-function mapDebtTracePayload(raw: unknown): { events: PersonalLessonDebtTraceEvent[] } {
-  const row = raw as { events?: unknown } | null;
-  const events = Array.isArray(row?.events) ? row.events : [];
-  return {
-    events: events.map((item) => {
-      const event = (item ?? {}) as Record<string, unknown>;
-      return {
-        kind: mapDebtTraceKind(event.kind),
-        at: String(event.at ?? ""),
-        amount: Number(event.amount) || 0,
-        method: event.method != null ? String(event.method) : null,
-        comment: event.comment != null ? String(event.comment) : null,
-      };
-    }),
-  };
-}
-
-export function usePersonalLessonDebtTrace(
-  lessonId: string | null | undefined,
-  chargeId: string | null | undefined,
-  options?: { enabled?: boolean }
-) {
-  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
-  const queryEnabled = orgEnabled && (options?.enabled ?? true) && Boolean(lessonId);
-
-  return useQuery({
-    queryKey: withOrgId([...personalLessonDebtTraceQueryKey, lessonId ?? "", chargeId ?? ""]),
-    enabled: queryEnabled,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_personal_lesson_debt_trace", {
-        p_lesson_id: lessonId as string,
-        p_charge_id: chargeId ?? null,
-      });
-      if (error) throw error;
-      const result = data as { success?: boolean; error?: string } | null;
-      if (!result || result.success === false) {
-        throw new Error(String(result?.error ?? "finance.debtors.traceFailed"));
-      }
-      return mapDebtTracePayload(result);
-    },
-    staleTime: 15 * 1000,
-  });
-}
-
-export function useWriteOffPersonalLessonDebt() {
-  const queryClient = useQueryClient();
-  const { organizationId } = useOrgQueryScope();
-
-  return useMutation({
-    mutationFn: async (input: {
-      lessonId: string;
-      chargeId?: string | null;
-      reasonCode?: string;
-      reasonComment?: string | null;
-    }) => {
-      const { data, error } = await supabase.rpc("write_off_personal_lesson_debt", {
-        p_lesson_id: input.lessonId,
-        p_charge_id: input.chargeId ?? null,
-        p_reason_code: input.reasonCode ?? "wrong_amount",
-        p_reason_comment: input.reasonComment ?? null,
-      });
-
-      if (error) return { success: false as const, error: error.message };
-
-      const result = data as { success?: boolean; error?: string; written_off?: number } | null;
-      if (!result?.success) {
-        return { success: false as const, error: result?.error ?? "finance.debtors.writeOffFailed" };
-      }
-
-      return { success: true as const, writtenOff: Number(result.written_off) || 0 };
     },
     onSuccess: (result) => {
       if (result.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId);
