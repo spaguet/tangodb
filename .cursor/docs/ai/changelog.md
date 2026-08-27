@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.80** — S04 / H33: `custom_access_token_hook` больше не копирует `platform_role` в JWT CRM; RLS `USING (false)` на platform-таблицы для `authenticated`; `REVOKE` write на `platform_audit_log`, `crm_product_versions`, UPDATE на `platform_payment_methods`; SELECT `config` кошельков для страницы лицензии сохранён.
+
 2026-08-27 — fix(security): микропатч **2.8.79** — S03 / H31: `migrate_organization_version` игнорирует клиентский `p_actor_user_id` (всегда `auth.uid()`); `REVOKE EXECUTE` у `authenticated`/`anon`/`PUBLIC`; Dev Console / `service_role` по-прежнему мигрирует с `p_actor_user_id`.
 
 2026-08-26 — fix(security): микропатч **2.8.78** — S02 / H23: `REVOKE EXECUTE` на `expire_monthly_subscriptions` у `authenticated`/`anon`/`PUBLIC`; кросс-тенантный RPC через PostgREST закрыт; внутренний `PERFORM` из журнала/freeze/замены партнёра без изменений.

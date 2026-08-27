@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — H33: `platform_role` в JWT CRM = PostgREST на все тенанты
+
+- **Ошибка:** `custom_access_token_hook` копировал `app_metadata.platform_role` в top-level JWT claim; политики `auth_platform_role() = 'developer'` открывали `platform_audit_log`, write `crm_product_versions`, SELECT всех `organization_version_migrations`; `is_dev_console_operator()` читает `auth.users.raw_app_meta_data` — снятие claim **не** закрывало UPDATE `platform_payment_methods`.
+- **Причина:** платформенная роль в клиентском JWT даёт developer из CRM SPA полный PostgREST-доступ к platform-таблицам; UPDATE кошельков завязан на `raw_app_meta_data`, не на claim.
+- **Как избежать:** не класть `platform_role` в CRM JWT; Dev Console — только Edge + `getUser().app_metadata` / allowlist; platform write только `service_role`; SELECT `platform_payment_methods.config` для purchase UI оставлять отдельно (L22).
+
 ### 2026-08-27 — H31: spoof `p_actor_user_id` в DEFINER migrate_organization_version
 
 - **Ошибка:** любой authenticated мог вызвать `migrate_organization_version` с `p_actor_user_id` = UUID platform-developer и мигрировать (или dry_run oracle) любую орг без членства.
