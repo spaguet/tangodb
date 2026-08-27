@@ -6812,6 +6812,93 @@ export type Database = {
           },
         ]
       }
+      organization_members_roster_v: {
+        Row: {
+          display_name: string | null
+          first_name: string | null
+          id: string | null
+          is_active: boolean | null
+          joined_at: string | null
+          last_name: string | null
+          meta: Json | null
+          organization_id: string | null
+          patronymic: string | null
+          role: string | null
+        }
+        Insert: {
+          display_name?: string | null
+          first_name?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          joined_at?: string | null
+          last_name?: string | null
+          meta?: Json | null
+          organization_id?: string | null
+          patronymic?: string | null
+          role?: string | null
+        }
+        Update: {
+          display_name?: string | null
+          first_name?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          joined_at?: string | null
+          last_name?: string | null
+          meta?: Json | null
+          organization_id?: string | null
+          patronymic?: string | null
+          role?: string | null
+        }
+        Relationships: []
+      }
+      organization_invites_team_v: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          email: string | null
+          expires_at: string | null
+          first_name: string | null
+          id: string | null
+          invited_by: string | null
+          last_name: string | null
+          meta: Json | null
+          organization_id: string | null
+          revoked_at: string | null
+          role: string | null
+          scope: Json | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          invited_by?: string | null
+          last_name?: string | null
+          meta?: Json | null
+          organization_id?: string | null
+          revoked_at?: string | null
+          role?: string | null
+          scope?: Json | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          invited_by?: string | null
+          last_name?: string | null
+          meta?: Json | null
+          organization_id?: string | null
+          revoked_at?: string | null
+          role?: string | null
+          scope?: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _apply_freeze_attendance_for_occurrence: {

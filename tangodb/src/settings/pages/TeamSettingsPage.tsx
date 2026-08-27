@@ -11,7 +11,7 @@ import { useToast } from "../../App";
 import {
   memberListLabel,
   memberRoleLabel,
-  useTeamMembers,
+  useTeamMembersFull,
   type TeamMemberRow,
 } from "../../hooks/useTeamMembers";
 import { useTeamInvites, useTeamMutations } from "../../hooks/useTeamInvites";
@@ -78,7 +78,7 @@ export default function TeamSettingsPage() {
   const invitePresets = getTeamRolePresets(t);
   const showToast = useToast();
   const { role: currentRole, can } = usePermissions();
-  const { data: members = [], isLoading, isError, error } = useTeamMembers();
+  const { data: members = [], isLoading, isError, error } = useTeamMembersFull();
   const { data: invites = [], isLoading: invitesLoading } = useTeamInvites();
   const { invite, revokeInvite, updateMember } = useTeamMutations();
   const disciplinesQuery = useDisciplines();

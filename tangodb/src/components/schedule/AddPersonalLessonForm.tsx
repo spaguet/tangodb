@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
-import { type TeamMemberRow } from "../../hooks/useTeamMembers";
+import { type TeamMemberRosterRow } from "../../hooks/useTeamMembers";
 import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
 import { useI18n } from "../../hooks/useI18n";
 import PersonalLessonSaleForm from "../personal-lessons/PersonalLessonSaleForm";
@@ -9,7 +9,7 @@ import type { ScheduleCellPrefill } from "./AddLessonTypePopup";
 
 interface AddPersonalLessonFormProps {
   prefill: ScheduleCellPrefill | null;
-  teacherOptions: TeamMemberRow[];
+  teacherOptions: TeamMemberRosterRow[];
   scheduleSlots: ScheduleSlotRef[];
   personalLessons: PersonalLessonRef[];
   toast: (msg: string, type?: "success" | "error" | "info") => void;

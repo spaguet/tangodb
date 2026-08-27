@@ -3,7 +3,7 @@ import { Check, ChevronDown, Copy, Edit, StopCircle, Trash2 } from "lucide-react
 import { useI18n } from "../../hooks/useI18n";
 import { useEndVenueCostRuleEarly, type VenueCostRuleVersion } from "../../hooks/useVenueCosts";
 import ConfirmDialog from "../ui/ConfirmDialog";
-import { memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
+import { memberListLabel, type TeamMemberRosterRow } from "../../hooks/useTeamMembers";
 import {
   diffVenueCostVersions,
   isVenueCostFixedPerLocation,
@@ -25,7 +25,7 @@ interface VenueCostVersionHistoryRowProps {
   teachers: Array<{ id: string; label: string }>;
   disciplines: Array<{ id: string; name: string }>;
   locations: Array<{ id: string; name: string }>;
-  teamMembers: TeamMemberRow[];
+  teamMembers: TeamMemberRosterRow[];
   onEditDraft: (draft: VenueCostRuleDraft) => void;
   onCopyToDraft: (draft: VenueCostRuleDraft) => void;
   onAccept: (versionId: string) => void;

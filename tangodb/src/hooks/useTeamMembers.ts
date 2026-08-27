@@ -5,25 +5,63 @@ import type { MemberRole, MemberMeta, TeacherScope } from "../types/organization
 import { normalizeTeacherScope } from "../lib/teacherScope";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
-export interface TeamMemberRow {
+/** Roster fields for schedule, finance labels, exports — no colleague PII (S19). */
+export interface TeamMemberRosterRow {
   id: string;
-  user_id: string;
   role: MemberRole;
-  scope: TeacherScope;
   meta: MemberMeta;
   display_name: string | null;
   first_name: string | null;
   last_name: string | null;
   patronymic: string | null;
-  contact_email: string | null;
-  phone: string | null;
-  telegram: string | null;
-  profile_notes: string | null;
   is_active: boolean;
   joined_at: string | null;
 }
 
+/** Full member row — TeamSettingsPage / MemberProfileModal only (S19). */
+export interface TeamMemberRow extends TeamMemberRosterRow {
+  user_id: string;
+  scope: TeacherScope;
+  contact_email: string | null;
+  phone: string | null;
+  telegram: string | null;
+  profile_notes: string | null;
+}
+
 export const teamMembersQueryKey = ["organization-team"] as const;
+export const teamMembersFullQueryKey = ["organization-team-full"] as const;
+
+const ROSTER_SELECT =
+  "id, role, meta, display_name, first_name, last_name, patronymic, is_active, joined_at";
+
+const FULL_SELECT =
+  "id, user_id, role, scope, meta, display_name, first_name, last_name, patronymic, contact_email, phone, telegram, profile_notes, is_active, joined_at";
+
+function mapRosterRow(row: Record<string, unknown>): TeamMemberRosterRow {
+  return {
+    id: row.id as string,
+    role: row.role as MemberRole,
+    meta: (row.meta as MemberMeta) ?? {},
+    display_name: (row.display_name as string | null) ?? null,
+    first_name: (row.first_name as string | null) ?? null,
+    last_name: (row.last_name as string | null) ?? null,
+    patronymic: (row.patronymic as string | null) ?? null,
+    is_active: row.is_active as boolean,
+    joined_at: (row.joined_at as string | null) ?? null,
+  };
+}
+
+function mapFullRow(row: Record<string, unknown>): TeamMemberRow {
+  return {
+    ...mapRosterRow(row),
+    user_id: row.user_id as string,
+    scope: normalizeTeacherScope(row.scope),
+    contact_email: (row.contact_email as string | null) ?? null,
+    phone: (row.phone as string | null) ?? null,
+    telegram: (row.telegram as string | null) ?? null,
+    profile_notes: (row.profile_notes as string | null) ?? null,
+  };
+}
 
 export function useTeamMembers(options?: { enabled?: boolean }) {
   const { enabled, organizationId, withOrgId } = useOrgQueryScope();
@@ -34,32 +72,40 @@ export function useTeamMembers(options?: { enabled?: boolean }) {
     enabled: queryEnabled,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("organization_members")
-        .select(
-          "id, user_id, role, scope, meta, display_name, first_name, last_name, patronymic, contact_email, phone, telegram, profile_notes, is_active, joined_at"
-        )
+        .from("organization_members_roster_v")
+        .select(ROSTER_SELECT)
         .eq("organization_id", organizationId!)
         .order("joined_at", { ascending: true });
 
       if (error) throw error;
 
-      return (data ?? []).map((row) => ({
-        id: row.id as string,
-        user_id: row.user_id as string,
-        role: row.role as MemberRole,
-        scope: normalizeTeacherScope(row.scope),
-        meta: (row.meta as MemberMeta) ?? {},
-        display_name: (row.display_name as string | null) ?? null,
-        first_name: (row.first_name as string | null) ?? null,
-        last_name: (row.last_name as string | null) ?? null,
-        patronymic: (row.patronymic as string | null) ?? null,
-        contact_email: (row.contact_email as string | null) ?? null,
-        phone: (row.phone as string | null) ?? null,
-        telegram: (row.telegram as string | null) ?? null,
-        profile_notes: (row.profile_notes as string | null) ?? null,
-        is_active: row.is_active as boolean,
-        joined_at: (row.joined_at as string | null) ?? null,
-      })) satisfies TeamMemberRow[];
+      return (data ?? []).map((row) =>
+        mapRosterRow(row as unknown as Record<string, unknown>)
+      ) satisfies TeamMemberRosterRow[];
+    },
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useTeamMembersFull(options?: { enabled?: boolean }) {
+  const { enabled, organizationId, withOrgId } = useOrgQueryScope();
+  const queryEnabled = enabled && !!organizationId && (options?.enabled ?? true);
+
+  return useQuery({
+    queryKey: withOrgId(teamMembersFullQueryKey),
+    enabled: queryEnabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("organization_members")
+        .select(FULL_SELECT)
+        .eq("organization_id", organizationId!)
+        .order("joined_at", { ascending: true });
+
+      if (error) throw error;
+
+      return (data ?? []).map((row) =>
+        mapFullRow(row as unknown as Record<string, unknown>)
+      ) satisfies TeamMemberRow[];
     },
     staleTime: 60 * 1000,
   });
@@ -86,7 +132,7 @@ export function memberRoleLabel(
 }
 
 export function memberDisplayName(
-  member: Pick<TeamMemberRow, "first_name" | "last_name" | "patronymic">
+  member: Pick<TeamMemberRosterRow, "first_name" | "last_name" | "patronymic">
 ): string | null {
   const parts = [member.last_name, member.first_name, member.patronymic].filter(Boolean);
   if (parts.length > 0) return parts.join(" ");
@@ -94,7 +140,7 @@ export function memberDisplayName(
 }
 
 export function memberListLabel(
-  member: Pick<TeamMemberRow, "first_name" | "last_name" | "patronymic" | "role" | "meta">,
+  member: Pick<TeamMemberRosterRow, "first_name" | "last_name" | "patronymic" | "role" | "meta">,
   locale?: string | null
 ): string {
   return memberDisplayName(member) ?? memberRoleLabel(member.role, member.meta, locale);

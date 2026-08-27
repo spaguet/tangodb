@@ -5,7 +5,7 @@ import { useAddGroupSchedule } from "../../hooks/useSchedule";
 import { useLocations } from "../../hooks/useLocations";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
-import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
+import { memberDisplayName, memberListLabel, type TeamMemberRosterRow } from "../../hooks/useTeamMembers";
 import { findScheduleConflict } from "../../lib/scheduleConflicts";
 import { computeSlotValidTo, defaultGroupRepeatConfig, type GroupRepeatConfig } from "../../lib/groupLessonRepeat";
 import { parseMaxCapacityInput } from "../../lib/groupCapacity";
@@ -26,7 +26,7 @@ import GoogleCalendarFreebusyWarning from "../integrations/GoogleCalendarFreebus
 interface AddGroupLessonFormProps {
   prefill: ScheduleCellPrefill | null;
   disciplines: Discipline[];
-  teacherOptions: TeamMemberRow[];
+  teacherOptions: TeamMemberRosterRow[];
   scheduleSlots: Array<{
     id?: string;
     dayOfWeek: number;

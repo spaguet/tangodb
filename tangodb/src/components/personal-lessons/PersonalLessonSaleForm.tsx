@@ -10,7 +10,7 @@ import { useSubscriptions } from "../../hooks/useSubscriptions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { usePermissions } from "../../hooks/usePermissions";
-import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
+import { memberDisplayName, memberListLabel, type TeamMemberRosterRow } from "../../hooks/useTeamMembers";
 import {
   translateConnectionBlockReason,
   translateMutationBlockedMessage,
@@ -93,7 +93,7 @@ function defaultLessonEntry(date: string): LessonDateEntry {
 export interface PersonalLessonSaleFormProps {
   mode: PersonalLessonSaleFormMode;
   prefill?: ScheduleCellPrefill | null;
-  teacherOptions: TeamMemberRow[];
+  teacherOptions: TeamMemberRosterRow[];
   scheduleSlots: ScheduleSlotRef[];
   personalLessons: PersonalLessonRef[];
   toast: (msg: string, type?: "success" | "error" | "info") => void;

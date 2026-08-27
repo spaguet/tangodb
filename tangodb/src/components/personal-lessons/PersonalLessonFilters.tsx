@@ -5,7 +5,7 @@ import { normalizeOrgModules, shouldShowDisciplinePicker, shouldShowLocationPick
 import { addDays, formatWeekRangeLabel, getWeekRange, toISODateLocal } from "../../lib/scheduleWeek";
 import { currentYearMonth, formatMonthTitle, shiftMonth } from "../../lib/utils";
 import type { Discipline } from "../../types";
-import { memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
+import { memberListLabel, type TeamMemberRosterRow } from "../../hooks/useTeamMembers";
 import { useI18n } from "../../hooks/useI18n";
 import AppSelect, { searchFieldCls, selectLabelCls } from "../ui/AppSelect";
 import DatePickerField from "../ui/DatePickerField";
@@ -25,7 +25,7 @@ interface PersonalLessonFiltersProps {
   onChange: (patch: Partial<PersonalLessonFilterState>) => void;
   locations: LocationOption[];
   disciplines: Discipline[];
-  teachers: TeamMemberRow[];
+  teachers: TeamMemberRosterRow[];
 }
 
 export default function PersonalLessonFilters({

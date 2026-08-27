@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 import { normalizeTeacherScope } from "../lib/teacherScope";
 import type { MemberRole, MemberMeta, TeacherScope } from "../types/organization";
 import { useOrgQueryScope } from "./useOrgQueryScope";
-import { teamMembersQueryKey } from "./useTeamMembers";
+import { teamMembersFullQueryKey, teamMembersQueryKey } from "./useTeamMembers";
 
 export interface PendingInvite {
   id: string;
@@ -29,7 +29,7 @@ export function useTeamInvites() {
     enabled: enabled && !!organizationId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("organization_invites")
+        .from("organization_invites_team_v")
         .select("id, email, first_name, last_name, role, scope, meta, expires_at, created_at")
         .is("accepted_at", null)
         .is("revoked_at", null)
@@ -64,6 +64,7 @@ export function useTeamMutations() {
   const invalidate = () => {
     if (organizationId) {
       queryClient.invalidateQueries({ queryKey: withOrgId(teamMembersQueryKey) });
+      queryClient.invalidateQueries({ queryKey: withOrgId(teamMembersFullQueryKey) });
       queryClient.invalidateQueries({ queryKey: withOrgId(teamInvitesQueryKey) });
       queryClient.invalidateQueries({ queryKey: withOrgId(["organization-audit"]) });
     }

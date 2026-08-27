@@ -3,7 +3,7 @@ import { CalendarDays, ClipboardList, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { auditTableLabel, useOrgAuditLog } from "../../hooks/useOrgAuditLog";
 import { useClientDirectory } from "../../hooks/useClients";
-import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
+import { memberListLabel, useTeamMembersFull } from "../../hooks/useTeamMembers";
 import { useI18n } from "../../hooks/useI18n";
 import {
   auditChangedFields,
@@ -98,7 +98,7 @@ export default function AuditLogSection() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
 
-  const { data: members = [] } = useTeamMembers();
+  const { data: members = [] } = useTeamMembersFull();
   const { data: clients = [] } = useClientDirectory();
   const { data: todayRows = [], isLoading: todayLoading } = useOrgAuditLog({ date: today, limit: 100 });
   const modalDate = parseDateInputValue(selectedDate);

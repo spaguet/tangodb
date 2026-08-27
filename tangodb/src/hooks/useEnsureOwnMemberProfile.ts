@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { supabase } from "../lib/supabase";
-import { teamMembersQueryKey } from "./useTeamMembers";
+import { teamMembersFullQueryKey, teamMembersQueryKey } from "./useTeamMembers";
 
 export function useEnsureOwnMemberProfile() {
   const queryClient = useQueryClient();
@@ -21,6 +21,9 @@ export function useEnsureOwnMemberProfile() {
       }
       void queryClient.invalidateQueries({
         queryKey: [...teamMembersQueryKey, organizationId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...teamMembersFullQueryKey, organizationId],
       });
     });
   }, [organizationId, memberId, orgLoading, queryClient]);

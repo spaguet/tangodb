@@ -14,7 +14,7 @@ import { useArchivedPrices, usePrices } from "../../hooks/usePrices";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { usePermissions } from "../../hooks/usePermissions";
-import { memberDisplayName, memberListLabel, type TeamMemberRow } from "../../hooks/useTeamMembers";
+import { memberDisplayName, memberListLabel, type TeamMemberRosterRow } from "../../hooks/useTeamMembers";
 import {
   translateConnectionBlockReason,
   translateMutationBlockedMessage,
@@ -71,7 +71,7 @@ interface EditLessonPopupProps {
   /** List view: time, location, discipline, teacher only (no date change). */
   personalListEdit?: boolean;
   disciplines: Discipline[];
-  teacherOptions: TeamMemberRow[];
+  teacherOptions: TeamMemberRosterRow[];
   scheduleSlots: ScheduleSlot[];
   personalLessons: Array<{
     id: string;
@@ -169,7 +169,7 @@ function makeGroupSlotRow(dayOfWeek = 1, timeStart = "19:00", timeEnd = "20:00")
 
 function resolveTeacherMemberId(
   lessonTeacherId: string | null | undefined,
-  teacherOptions: TeamMemberRow[],
+  teacherOptions: TeamMemberRosterRow[],
   selfMemberId?: string | null
 ): string {
   if (lessonTeacherId) return lessonTeacherId;
