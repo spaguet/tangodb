@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — H31: spoof `p_actor_user_id` в DEFINER migrate_organization_version
+
+- **Ошибка:** любой authenticated мог вызвать `migrate_organization_version` с `p_actor_user_id` = UUID platform-developer и мигрировать (или dry_run oracle) любую орг без членства.
+- **Причина:** `v_actor := coalesce(p_actor_user_id, auth.uid())` в `SECURITY DEFINER`; `GRANT EXECUTE … TO authenticated`; проверка `is_platform_developer(v_actor)` без членства в целевой орг.
+- **Как избежать:** никогда доверять `p_actor_user_id` из клиента — для JWT всегда `auth.uid()`; `p_actor_user_id` только при `auth.uid() IS NULL` (service_role / Dev Console Edge). `REVOKE EXECUTE` у PostgREST-ролей; платформенные операции только через Edge + service_role.
+
 ### 2026-08-26 — H23: SECURITY DEFINER + GRANT authenticated + p_org_id NULL = кросс-тенант write
 
 - **Ошибка:** любой залогиненный пользователь мог вызвать `expire_monthly_subscriptions` через PostgREST с `p_org_id: null` (все школы) или чужим UUID и массово переводить monthly-абонементы в `finished`.

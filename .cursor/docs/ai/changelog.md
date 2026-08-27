@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.79** — S03 / H31: `migrate_organization_version` игнорирует клиентский `p_actor_user_id` (всегда `auth.uid()`); `REVOKE EXECUTE` у `authenticated`/`anon`/`PUBLIC`; Dev Console / `service_role` по-прежнему мигрирует с `p_actor_user_id`.
+
 2026-08-26 — fix(security): микропатч **2.8.78** — S02 / H23: `REVOKE EXECUTE` на `expire_monthly_subscriptions` у `authenticated`/`anon`/`PUBLIC`; кросс-тенантный RPC через PostgREST закрыт; внутренний `PERFORM` из журнала/freeze/замены партнёра без изменений.
 
 2026-08-26 — fix(auth): микропатч **2.8.77** — S01 / C1: инвайт существующего email больше не меняет пароль и не выдаёт JWT; учётка нового invitee создаётся только в момент accept; `invite_url` не возвращается пригласившему; токен ≥128 бит (старые короткие инвайты отозваны — нужно отправить заново).
