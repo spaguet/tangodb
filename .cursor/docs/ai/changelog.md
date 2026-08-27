@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.102** — S26 / M59: `close_group_lesson_occurrence` считает present из `attendance` (+ single visits, pair=2); клиентский `p_confirmed_attendee_count` должен совпадать (`attendee_count_mismatch`); верхняя граница `classes.max_capacity`; venue-cost ledger не от фейкового count.
+
 2026-08-27 — fix(security): микропатч **2.8.101** — S25 / M48+M51+M52: `renter_document_upload_intents` + Storage policies (upload/delete только path из `prepare_renter_document_upload`; SELECT только finalized/intent); `exports` insert = `can_export_data()`, без `application/octet-stream`; RPC `save_teacher_pay_rate`, `REVOKE` write на `teacher_pay_rates`.
 
 2026-08-27 — fix(security): микропатч **2.8.100** — S24 / M41+M43+M45+M46+M53: `subscription_member_changes` / `subscription_freeze_periods` — SELECT только `can_read_operational()` / `can_read_financial()` / teacher scope; column-GRANT bundle на `organization_licenses` и `organization_subscriptions` (без `access_key_id` / Stripe provider ids); `organization_version_migrations` — только owner.
