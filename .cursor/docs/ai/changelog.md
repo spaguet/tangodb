@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.104** — S28 / H3+M8: default remember-me = false (`readRememberMePreference`, `signInWithEmail`); без галочки JWT в `sessionStorage`; `config.toml` — TOTP MFA optional (enroll/verify ON); WebAuthn MFA не на плане; session timebox 24h + S12 auth policy push. Чеклист Dashboard MFA — `lessons.md` § H3/M8.
+
 2026-08-27 — fix(security): микропатч **2.8.103** — S27 / M31+M32+L10: `auto_expose_new_tables = false`; ковровый `REVOKE ALL` у `anon`; явные `GRANT SELECT` (именованный список таблиц + masking views) и точечный write для SPA; `ALTER DEFAULT PRIVILEGES REVOKE ALL`; без write на RPC-only таблицы (attendance, payments, rental money, payroll settlements, …).
 
 2026-08-27 — fix(security): микропатч **2.8.102** — S26 / M59: `close_group_lesson_occurrence` считает present из `attendance` (+ single visits, pair=2); клиентский `p_confirmed_attendee_count` должен совпадать (`attendee_count_mismatch`); верхняя граница `classes.max_capacity`; venue-cost ledger не от фейкового count.

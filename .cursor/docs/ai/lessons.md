@@ -35,6 +35,22 @@
 - **Причина:** ключ «на всякий случай» в JSON для UI fallback; простой in-process limiter без shared store; dev-friendly skip captcha без проверки окружения.
 - **Как избежать:** демо-ключ только в email; rate limit через `edge_rate_limit_buckets` + `check_edge_rate_limit` (service_role); IP только `cf-connecting-ip`; без секрета Turnstile — `{ ok: false }` вне local dev (`ENVIRONMENT=local` или localhost URL); лог `turnstile_secret_missing` при деплое.
 
+### 2026-08-27 — H3/M8: JWT в localStorage по умолчанию; MFA не включена (S28)
+
+- **Ошибка:** `readRememberMePreference()` при отсутствии ключа возвращала `true`; `signInWithEmail(..., rememberMe = true)` — вызов без галочки (AcceptInvitePage) писал refresh в `localStorage`. MFA TOTP/WebAuthn в `config.toml` были `enroll_enabled = false`.
+- **Причина:** дефолт «удобнее оставаться в системе» без явного согласия; MFA в шаблоне Supabase CLI выключена; session timebox уже задан в S12.
+- **Как избежать:** default remember-me = **false** в `readRememberMePreference` и дефолте `signInWithEmail`; галочка = явное согласие на `localStorage`. В `config.toml`: TOTP `enroll_enabled`/`verify_enabled` = true (optional). WebAuthn MFA на текущем плане Supabase не поддерживается (422 при `config push`). Оператор сверяет production Dashboard:
+
+**Чеклист Supabase Dashboard → Authentication (production, MFA optional):**
+
+| Настройка | Требование |
+|-----------|------------|
+| Session timebox | **24h** в `config.toml`; на hosted Free push даёт 402 — задать в Dashboard при Pro |
+| MFA TOTP | enroll + verify **ON** (optional для пользователей) |
+| MFA WebAuthn / passkeys | **OFF** на текущем плане Supabase (422 при push); TOTP optional достаточно |
+| MFA required for all | **OFF** без продуктового решения; для owner — optional/recommended |
+| Remember-me default | клиент **false**; JWT в `localStorage` только после галочки |
+
 ### 2026-08-27 — H5: слабая политика Auth в `config.toml` (S12)
 
 - **Ошибка:** локальный `config.toml` допускал пароль 6 символов, регистрацию без confirm email, `max_frequency` 1s, без session timebox; production мог совпадать с этим шаблоном.

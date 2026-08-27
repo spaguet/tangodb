@@ -15,9 +15,9 @@ let usePersistentStorage = readRememberMePreference();
 function readRememberMePreference(): boolean {
   try {
     const stored = localStorage.getItem(REMEMBER_ME_PREF_KEY);
-    return stored === null ? true : stored === "true";
+    return stored === "true";
   } catch {
-    return true;
+    return false;
   }
 }
 

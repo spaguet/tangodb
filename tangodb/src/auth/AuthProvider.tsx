@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signInWithEmail = useCallback(async (email: string, password: string, rememberMe = true) => {
+  const signInWithEmail = useCallback(async (email: string, password: string, rememberMe = false) => {
     setAuthRememberMe(rememberMe);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;

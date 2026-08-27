@@ -1777,7 +1777,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 25 | **S25** | 1 | M48, M51, M52 | S24 | Storage документов/`exports`; REST `teacher_pay_rates` |
 | ✅ | 26 | **S26** | 1 | M59 | S25 | `attendee_count` закрытия группы из журнала, не с клиента |
 | ✅ | 27 | **S27** | 1 | M31, M32, L10 | S26 | Auto-expose OFF; `REVOKE` у `anon`; явные GRANT. Последним в волне 1, когда табличные write уже сняты точечно |
-| ☐ | 28 | **S28** | 2 | **H3**, M8 | S27 (волна 1 закрыта) | Сессия: remember-me, MFA/timebox |
+| ✅ | 28 | **S28** | 2 | **H3**, M8 | S27 (волна 1 закрыта) | Сессия: remember-me, MFA/timebox |
 | ☐ | 29 | **S29** | 2 | **H8**, M11 | S28 | Revoke при deactivate; не держать JWT орг час после увольнения |
 | ☐ | 30 | **S30** | 2 | M15, M39, M58 | S29 | `redirectTo` / `SITE_URL` / токен инвайта не в query и не в `sessionStorage` |
 | ☐ | 31 | **S31** | 2 | M17 | S30 | Recovery-код владельца не в JSON и не в `history.state` |
