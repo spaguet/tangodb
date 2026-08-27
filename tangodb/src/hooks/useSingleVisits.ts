@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import type { PaymentMethod, SingleVisit } from "../types";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { paymentsQueryKey } from "./usePayments";
 import { payrollQueryKey } from "./usePayroll";
@@ -14,6 +15,9 @@ export const singleVisitsQueryKey = ["single-visits"] as const;
 
 const SINGLE_VISITS_SELECT =
   "id, visit_date, schedule_slot_id, schedule_group_id, client_id, client_display, price_id, amount, method, attendance_status, location_id, discipline_id, teacher_member_id, created_at";
+
+const SINGLE_VISITS_SELECT_TEACHER =
+  "id, visit_date, schedule_slot_id, schedule_group_id, client_id, client_display, attendance_status, location_id, discipline_id, teacher_member_id, created_at";
 
 const mapSingleVisit = (row: Record<string, unknown>): SingleVisit => ({
   id: String(row.id),
@@ -56,22 +60,42 @@ function rangeFromFilter(filter?: SingleVisitsFilter): { dateFrom?: string; date
 
 export function useSingleVisits(filter?: SingleVisitsFilter) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const { role } = useOrganization();
+  const maskFinancial = role === "teacher";
   const queryEnabled = orgEnabled && (filter?.enabled ?? true);
   const range = rangeFromFilter(filter);
 
   return useQuery({
-    queryKey: withOrgId([...singleVisitsQueryKey, filter ?? {}]),
+    queryKey: withOrgId([...singleVisitsQueryKey, filter ?? {}, { maskFinancial }]),
     enabled: queryEnabled,
     queryFn: async () => {
+      const applyRange = <T extends { gte: (col: string, val: string) => T; lte: (col: string, val: string) => T }>(
+        query: T
+      ) => {
+        let scoped = query;
+        if (range.dateFrom) scoped = scoped.gte("visit_date", range.dateFrom);
+        if (range.dateTo) scoped = scoped.lte("visit_date", range.dateTo);
+        return scoped;
+      };
+
+      if (maskFinancial) {
+        let query = supabase
+          .from("single_visits_teacher_v")
+          .select(SINGLE_VISITS_SELECT_TEACHER)
+          .order("visit_date", { ascending: false })
+          .order("created_at", { ascending: false });
+        query = applyRange(query);
+        const { data, error } = await query;
+        if (error) throw error;
+        return (data ?? []).map((row) => mapSingleVisit(row as unknown as Record<string, unknown>));
+      }
+
       let query = supabase
         .from("single_visits")
         .select(SINGLE_VISITS_SELECT)
         .order("visit_date", { ascending: false })
         .order("created_at", { ascending: false });
-
-      if (range.dateFrom) query = query.gte("visit_date", range.dateFrom);
-      if (range.dateTo) query = query.lte("visit_date", range.dateTo);
-
+      query = applyRange(query);
       const { data, error } = await query;
       if (error) throw error;
       return (data ?? []).map((row) => mapSingleVisit(row as unknown as Record<string, unknown>));

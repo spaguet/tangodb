@@ -1388,7 +1388,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
             {groupSingleVisits.map((visit) => (
               <div key={visit.id} className="flex items-center justify-between gap-2 text-xs font-sans">
                 <span className="text-slate-700 truncate">{visit.clientDisplay}</span>
-                <span className="text-indigo-700 font-semibold whitespace-nowrap">{formatCurrency(visit.amount)}</span>
+                {showPrice ? (
+                  <span className="text-indigo-700 font-semibold whitespace-nowrap">{formatCurrency(visit.amount)}</span>
+                ) : null}
               </div>
             ))}
           </div>

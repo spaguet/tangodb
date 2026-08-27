@@ -6568,6 +6568,101 @@ export type Database = {
         }
         Relationships: []
       }
+      single_visits_teacher_v: {
+        Row: {
+          attendance_status: string | null
+          client_display: string | null
+          client_id: string | null
+          created_at: string | null
+          discipline_id: string | null
+          id: string | null
+          location_id: string | null
+          organization_id: string | null
+          schedule_group_id: string | null
+          schedule_slot_id: string | null
+          teacher_member_id: string | null
+          visit_date: string | null
+        }
+        Insert: {
+          attendance_status?: string | null
+          client_display?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          discipline_id?: string | null
+          id?: string | null
+          location_id?: string | null
+          organization_id?: string | null
+          schedule_group_id?: string | null
+          schedule_slot_id?: string | null
+          teacher_member_id?: string | null
+          visit_date?: string | null
+        }
+        Update: {
+          attendance_status?: string | null
+          client_display?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          discipline_id?: string | null
+          id?: string | null
+          location_id?: string | null
+          organization_id?: string | null
+          schedule_group_id?: string | null
+          schedule_slot_id?: string | null
+          teacher_member_id?: string | null
+          visit_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "single_visits_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "single_visits_organization_id_discipline_id_fkey"
+            columns: ["organization_id", "discipline_id"]
+            isOneToOne: false
+            referencedRelation: "disciplines"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "single_visits_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "single_visits_organization_id_location_id_fkey"
+            columns: ["organization_id", "location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "single_visits_organization_id_schedule_group_id_fkey"
+            columns: ["organization_id", "schedule_group_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "single_visits_organization_id_schedule_slot_id_fkey"
+            columns: ["organization_id", "schedule_slot_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_slots"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "single_visits_organization_id_teacher_member_id_fkey"
+            columns: ["organization_id", "teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
       subscriptions_teacher_v: {
         Row: {
           activation_date: string | null

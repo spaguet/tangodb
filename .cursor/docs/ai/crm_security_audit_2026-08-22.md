@@ -1765,7 +1765,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 13 | **S13** | 1 | **H2**, **H6**, M20 | S12 | Демо-ключ не в JSON; durable rate limit; Turnstile fail-closed |
 | ✅ | 14 | **S14** | 1 | **H4** | S13 | CSP / frame-ancestors / HSTS |
 | ✅ | 15 | **S15** | 1 | **H11** | S14 | Teacher write клиентов только при `teachers_can_edit_clients` |
-| ☐ | 16 | **S16** | 1 | **H19**, M30, **H20**, **H32** | S15 | `subscription_groups`; drop-in флаг + маскирование сумм |
+| ✅ | 16 | **S16** | 1 | **H19**, M30, **H20**, **H32** | S15 | `subscription_groups`; drop-in флаг + маскирование сумм |
 | ☐ | 17 | **S17** | 1 | **H24**, **H25**, **H28** | S16 | Финансы мастер-классов; rental series REST; привязки тарифов |
 | ☐ | 18 | **S18** | 1 | **H30**, M54, M55, M57 | S17 | Остатки обхода R4: charges, payroll lines, ставки, `sales_count` |
 | ☐ | 19 | **S19** | 1 | M13, M24, M28, M25 | S18 | Roster команды, заметки, `token_hash` инвайта |
