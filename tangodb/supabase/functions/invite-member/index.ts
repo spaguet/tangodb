@@ -15,6 +15,46 @@ const RATE_WINDOW_MS = 15 * 60_000;
 
 const ASSIGNABLE_ROLES = new Set(["director", "admin", "teacher", "accountant"]);
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function sanitizeMemberMeta(
+  role: string,
+  raw: Record<string, unknown> | undefined
+): Record<string, boolean> | null {
+  if (!raw) return null;
+  const meta: Record<string, boolean> = {};
+  if (role === "admin" && typeof raw.restricted_admin === "boolean") {
+    meta.restricted_admin = raw.restricted_admin;
+  }
+  if (role === "teacher" && typeof raw.can_edit_past_schedule === "boolean") {
+    meta.can_edit_past_schedule = raw.can_edit_past_schedule;
+  }
+  return Object.keys(meta).length > 0 ? meta : null;
+}
+
+function sanitizeTeacherScope(raw: Record<string, unknown> | undefined): Record<string, unknown> | null {
+  if (!raw) return null;
+  const disciplineIds = Array.isArray(raw.discipline_ids)
+    ? raw.discipline_ids.filter((id): id is string => typeof id === "string" && UUID_RE.test(id))
+    : [];
+  const locationIds = Array.isArray(raw.location_ids)
+    ? raw.location_ids.filter((id): id is string => typeof id === "string" && UUID_RE.test(id))
+    : [];
+  const scheduleGroupIds = Array.isArray(raw.schedule_group_ids)
+    ? raw.schedule_group_ids.filter((id): id is string => typeof id === "string" && UUID_RE.test(id))
+    : [];
+  return {
+    discipline_ids: disciplineIds,
+    location_ids: locationIds,
+    schedule_group_ids: scheduleGroupIds,
+    all_disciplines: raw.all_disciplines === true,
+    all_locations: raw.all_locations === true,
+    all_groups: raw.all_groups === true,
+    can_view_all_clients: raw.can_view_all_clients === true,
+  };
+}
+
 async function sendInviteEmail(
   email: string,
   inviteUrl: string,
@@ -89,12 +129,15 @@ Deno.serve(async (req) => {
   const plaintextToken = generateInviteToken();
   const tokenHash = await hashInviteToken(plaintextToken, pepper);
 
+  const sanitizedScope = role === "teacher" ? sanitizeTeacherScope(body.scope) : null;
+  const sanitizedMeta = sanitizeMemberMeta(role, body.meta);
+
   const { data, error } = await supabase.rpc("create_organization_invite", {
     p_email: email,
     p_role: role,
-    p_scope: body.scope ?? null,
+    p_scope: sanitizedScope,
     p_token_hash: tokenHash,
-    p_meta: body.meta ?? null,
+    p_meta: sanitizedMeta,
     p_first_name: firstName,
     p_last_name: lastName,
   });

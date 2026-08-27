@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — H9/H13: REST PATCH `organization_members.role` / эскалация scope/meta
+
+- **Ошибка:** `can_manage_team()` в RLS разрешал прямой `UPDATE` любых колонок, включая `role=owner` и `scope.can_view_all_clients`; RPC валидировал роли, но REST обходил.
+- **Причина:** `GRANT INSERT, UPDATE, DELETE ON organization_members TO authenticated` + политики без ограничения колонок; `p_scope`/`p_meta` в RPC без whitelist.
+- **Как избежать:** `REVOKE` write на `organization_members`; мутации только DEFINER RPC; триггер по `current_user IN ('authenticated','anon')`, не `auth.uid()`; `normalize_member_scope` / `normalize_member_meta` в RPC и Edge invite.
+
 ### 2026-08-27 — H33: `platform_role` в JWT CRM = PostgREST на все тенанты
 
 - **Ошибка:** `custom_access_token_hook` копировал `app_metadata.platform_role` в top-level JWT claim; политики `auth_platform_role() = 'developer'` открывали `platform_audit_log`, write `crm_product_versions`, SELECT всех `organization_version_migrations`; `is_dev_console_operator()` читает `auth.users.raw_app_meta_data` — снятие claim **не** закрывало UPDATE `platform_payment_methods`.
