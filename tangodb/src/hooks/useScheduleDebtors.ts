@@ -57,9 +57,14 @@ export function useScheduleDebtors(options?: { enabled?: boolean }) {
   }, [lessonsQuery.data, role, memberId]);
 
   const lessonIds = useMemo(() => filteredLessons.map((l) => l.id), [filteredLessons]);
+  const teacherDebtorList = role === "teacher";
 
   const chargesQuery = usePersonalLessonChargeBalances(lessonIds, {
-    enabled: personalLessonsEnabled && (options?.enabled ?? true) && lessonIds.length > 0,
+    enabled:
+      !teacherDebtorList &&
+      personalLessonsEnabled &&
+      (options?.enabled ?? true) &&
+      lessonIds.length > 0,
   });
 
   const lessonById = useMemo(
@@ -68,6 +73,50 @@ export function useScheduleDebtors(options?: { enabled?: boolean }) {
   );
 
   const data = useMemo((): ScheduleDebtorEntry[] => {
+    if (teacherDebtorList) {
+      return filteredLessons.map((lesson) => {
+        const participantIds = [
+          lesson.clientId1,
+          lesson.clientId2,
+          lesson.clientId3,
+          lesson.clientId4 ?? "",
+        ].filter(Boolean);
+        const payerId = lesson.clientId1;
+        const otherNames = participantIds
+          .filter((id) => id !== payerId)
+          .map((id) => {
+            const client = clientMap[id];
+            return client ? formatClientName(client.lastName, client.firstName) : "";
+          })
+          .filter(Boolean);
+        const debtorClient = clientMap[payerId];
+        const debtorDisplay = debtorClient
+          ? formatClientName(debtorClient.lastName, debtorClient.firstName)
+          : lesson.clientDisplay;
+
+        return {
+          id: lesson.id,
+          personalLessonId: lesson.id,
+          date: lesson.date,
+          timeStart: lesson.timeStart,
+          timeEnd: lesson.timeEnd,
+          clientDisplay: debtorDisplay,
+          clientId1: lesson.clientId1,
+          clientId2: lesson.clientId2,
+          clientId3: lesson.clientId3,
+          clientId4: lesson.clientId4,
+          payerClientId: payerId,
+          priceId: lesson.priceId,
+          otherParticipants: otherNames.length > 0 ? otherNames.join(", ") : null,
+          disciplineId: lesson.disciplineId ?? null,
+          locationId: lesson.locationId ?? null,
+          teacherMemberId: lesson.teacherMemberId ?? null,
+          billedAmount: 0,
+          paidAmount: 0,
+        };
+      });
+    }
+
     const charges = chargesQuery.data ?? [];
     const entries: ScheduleDebtorEntry[] = [];
 
@@ -120,13 +169,20 @@ export function useScheduleDebtors(options?: { enabled?: boolean }) {
     }
 
     return entries;
-  }, [chargesQuery.data, lessonById, clientMap, includeAmount]);
+  }, [
+    teacherDebtorList,
+    filteredLessons,
+    chargesQuery.data,
+    lessonById,
+    clientMap,
+    includeAmount,
+  ]);
 
   return {
     ...lessonsQuery,
-    isLoading: lessonsQuery.isLoading || chargesQuery.isLoading,
-    isError: lessonsQuery.isError || chargesQuery.isError,
-    error: lessonsQuery.error ?? chargesQuery.error,
+    isLoading: lessonsQuery.isLoading || (!teacherDebtorList && chargesQuery.isLoading),
+    isError: lessonsQuery.isError || (!teacherDebtorList && chargesQuery.isError),
+    error: lessonsQuery.error ?? (teacherDebtorList ? null : chargesQuery.error),
     data,
     showAmount: includeAmount,
   };

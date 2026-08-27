@@ -115,8 +115,9 @@ export function formatLineFormula(
   translate: (key: I18nKey, params?: Record<string, string | number>) => string
 ): string {
   if (line.lineCategory === "fixed") {
+    const amount = line.fixedRateAmount > 0 ? line.fixedRateAmount : line.accrualAmount;
     return translate("finance.payroll.detail.formulaFixed", {
-      amount: line.fixedRateAmount,
+      amount,
     });
   }
   if (line.percentRate > 0 && line.monetaryBase > 0) {

@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
 import { useI18n } from "../../hooks/useI18n";
+import { useOrganization } from "../../organization/OrganizationProvider";
 import { useTeacherSettlementDetail } from "../../hooks/usePayroll";
 import {
   formatLineFormula,
@@ -103,6 +104,8 @@ export default function TeacherSettlementDetailPanel({
   settlementId: string;
 }) {
   const { t, formatDate } = useI18n();
+  const { role } = useOrganization();
+  const showClientTitle = role !== "teacher";
   const detailQuery = useTeacherSettlementDetail(settlementId);
 
   const sections = useMemo(
@@ -184,7 +187,7 @@ export default function TeacherSettlementDetailPanel({
                   <SettlementLineRow
                     key={line.id}
                     line={line}
-                    showClientTitle={section.key !== "fixed"}
+                    showClientTitle={showClientTitle && section.key !== "fixed"}
                   />
                 ))}
               </ul>

@@ -190,16 +190,6 @@ export default function PayPersonalLessonModal({
     return unpaidCharges[0] ?? lessonCharges[0] ?? null;
   }, [lessonCharges, payerClientId, lesson?.chargeId, unpaidCharges]);
 
-  const billedAmount = selectedCharge?.billedAmount ?? lesson?.price ?? 0;
-  const paidSoFar = selectedCharge?.paidAmount ?? lesson?.paidAmount ?? 0;
-  const remainingDebt = selectedCharge?.remainingAmount ?? Math.max(billedAmount - paidSoFar, 0);
-  const totalBilledAll = lessonCharges.reduce((sum, charge) => sum + charge.billedAmount, 0);
-  const totalPaidAll = lessonCharges.reduce((sum, charge) => sum + charge.paidAmount, 0);
-  const totalRemainingAll = unpaidCharges.reduce((sum, c) => sum + c.remainingAmount, 0);
-  const hasPayments = lessonCharges.some((c) => c.paidAmount > 0);
-  const lessonPriceId = lesson?.priceId ?? null;
-  const tariffModeBlocked = !lessonPriceId && hasPayments;
-
   const activeLessonTariffs = useMemo(
     () =>
       filterPrivateLessonTariffsForSale(prices, {
@@ -217,6 +207,25 @@ export default function PayPersonalLessonModal({
       archivedPrices.find((p) => p.id === lesson.priceId)
     );
   }, [lesson?.priceId, prices, archivedPrices]);
+
+  const tariffBilledAmount = bookedTariff?.price ?? lesson?.price ?? 0;
+  const billedAmount =
+    (selectedCharge?.billedAmount ?? 0) > 0 ? selectedCharge!.billedAmount : tariffBilledAmount;
+  const remainingDebt =
+    selectedCharge?.remainingAmount ?? Math.max(billedAmount - (lesson?.paidAmount ?? 0), 0);
+  const paidSoFar =
+    (selectedCharge?.billedAmount ?? 0) > 0
+      ? (selectedCharge?.paidAmount ?? lesson?.paidAmount ?? 0)
+      : Math.max(billedAmount - remainingDebt, 0);
+  const totalBilledAll = lessonCharges.reduce(
+    (sum, charge) => sum + ((charge.billedAmount > 0 ? charge.billedAmount : tariffBilledAmount)),
+    0
+  );
+  const totalPaidAll = lessonCharges.reduce((sum, charge) => sum + charge.paidAmount, 0);
+  const totalRemainingAll = unpaidCharges.reduce((sum, c) => sum + c.remainingAmount, 0);
+  const hasPayments = lessonCharges.some((c) => c.paidAmount > 0);
+  const lessonPriceId = lesson?.priceId ?? null;
+  const tariffModeBlocked = !lessonPriceId && hasPayments;
 
   const lessonTariffs = useMemo(() => {
     const base = activeLessonTariffs;

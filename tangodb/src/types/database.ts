@@ -7800,6 +7800,10 @@ export type Database = {
           teacher_has_binding: boolean
         }[]
       }
+      get_personal_lesson_charge_balances: {
+        Args: { p_lesson_ids: string[] }
+        Returns: Json
+      }
       get_rental_accrual_report: {
         Args: {
           p_period_end: string

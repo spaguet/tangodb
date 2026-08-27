@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.94** — S18 / H30+M54+M55+M57: `DROP` teacher SELECT на `personal_lesson_charges` (RPC `get_personal_lesson_charge_balances` для оплаты); `useScheduleDebtors` у teacher без сумм; `get_teacher_settlement_detail` маскирует `monetary_base`/ФИО/ставки; `teacher_pay_rules` SELECT только `can_read_financial()`; `list_archived_prices` без `sales_count` для teacher.
+
 2026-08-27 — fix(security): микропатч **2.8.93** — S17 / H24+H25+H28: view `calendar_events_teacher_v` без финансовых колонок, `DROP` teacher SELECT на `calendar_events`; `useCalendarEventsForWeek` для teacher через view; `REVOKE` write на `rental_series*` и `renters`/`renter_*` (только RPC); write `price_disciplines` / `price_teacher_members` = `can_manage_prices()`.
 
 2026-08-27 — fix(security): микропатч **2.8.92** — S16 / H19+M30+H20+H32: `subscription_groups` teacher INSERT/DELETE только при `teacher_can_write_subscriptions()`; `REVOKE` write на `single_visits` (только `record_single_visit`); view `single_visits_teacher_v` без `amount`/`method`/`price_id`; `useSingleVisits` для teacher через view; журнал AttendancePanel без сумм.
