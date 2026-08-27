@@ -8641,6 +8641,10 @@ export type Database = {
         Args: { p_dry_run?: boolean; p_organization_id: string }
         Returns: Json
       }
+      save_teacher_pay_rate: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       save_teacher_pay_rule: {
         Args: { p_idempotency_key?: string; p_payload: Json }
         Returns: Json

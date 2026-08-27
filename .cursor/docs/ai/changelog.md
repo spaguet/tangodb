@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.101** — S25 / M48+M51+M52: `renter_document_upload_intents` + Storage policies (upload/delete только path из `prepare_renter_document_upload`; SELECT только finalized/intent); `exports` insert = `can_export_data()`, без `application/octet-stream`; RPC `save_teacher_pay_rate`, `REVOKE` write на `teacher_pay_rates`.
+
 2026-08-27 — fix(security): микропатч **2.8.100** — S24 / M41+M43+M45+M46+M53: `subscription_member_changes` / `subscription_freeze_periods` — SELECT только `can_read_operational()` / `can_read_financial()` / teacher scope; column-GRANT bundle на `organization_licenses` и `organization_subscriptions` (без `access_key_id` / Stripe provider ids); `organization_version_migrations` — только owner.
 
 2026-08-27 — fix(security): микропатч **2.8.99** — S23 / M38+M42+M47+M50: `preview_rental_conflicts` / `preview_calendar_event_conflicts` — accountant и teacher вне своих уроков без `client_display`; `get_rentals_for_schedule_week` — teacher только локации scope или при `teachers_can_view_full_schedule`; `get_schedule_calendar_sync_labels` — teacher только свои персоналки/группы, не `calendar_name` коллег.

@@ -247,19 +247,23 @@ export function useUpsertTeacherPayRate() {
 
       const effectiveFrom = input.effectiveFrom ?? new Date().toISOString().slice(0, 10);
 
-      const { error } = await supabase.from("teacher_pay_rates").insert({
-        organization_id: organizationId,
-        member_id: input.memberId,
-        pay_mode: input.payMode,
-        fixed_amount: input.fixedAmount,
-        rate_percent: Math.max(input.groupRatePercent, input.personalRatePercent, input.singleVisitRatePercent),
-        group_rate_percent: input.groupRatePercent,
-        personal_rate_percent: input.personalRatePercent,
-        single_visit_rate_percent: input.singleVisitRatePercent,
-        effective_from: effectiveFrom,
+      const { data, error } = await supabase.rpc("save_teacher_pay_rate", {
+        p_payload: {
+          member_id: input.memberId,
+          pay_mode: input.payMode,
+          fixed_amount: input.fixedAmount,
+          group_rate_percent: input.groupRatePercent,
+          personal_rate_percent: input.personalRatePercent,
+          single_visit_rate_percent: input.singleVisitRatePercent,
+          effective_from: effectiveFrom,
+        },
       });
 
       if (error) return { success: false as const, error: error.message };
+      const result = data as { success?: boolean; error_code?: string } | null;
+      if (!result?.success) {
+        return { success: false as const, error: result?.error_code ?? "teacher_pay_rate_save_failed" };
+      }
       return { success: true as const };
     },
     onSuccess: (result) => {
