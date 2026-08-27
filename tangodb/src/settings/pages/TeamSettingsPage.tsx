@@ -73,6 +73,15 @@ function inviteListLabel(inv: { first_name?: string | null; last_name?: string |
   return inv.email;
 }
 
+interface CreatedInviteLink {
+  id: string;
+  url: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  copied: boolean;
+}
+
 export default function TeamSettingsPage() {
   const { t, locale, formatDate } = useI18n();
   const invitePresets = getTeamRolePresets(t);
@@ -96,9 +105,8 @@ export default function TeamSettingsPage() {
   const [inviteMetaOverride, setInviteMetaOverride] = useState<MemberMeta | null>(null);
   const [reinviteSourceId, setReinviteSourceId] = useState<string | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<TeamMemberRow | null>(null);
-  const [inviteExpanded, setInviteExpanded] = useState(false);
-  const [createdInviteUrl, setCreatedInviteUrl] = useState<string | null>(null);
-  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+  const [inviteExpanded, setInviteExpanded] = useState(true);
+  const [createdInviteLinks, setCreatedInviteLinks] = useState<CreatedInviteLink[]>([]);
   const inviteFormRef = useRef<HTMLFormElement>(null);
 
   const activeMembers = members.filter((m) => m.is_active);
@@ -163,7 +171,10 @@ export default function TeamSettingsPage() {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !firstName.trim() || !lastName.trim()) return;
+    const inviteEmail = email.trim();
+    const inviteFirstName = firstName.trim();
+    const inviteLastName = lastName.trim();
+    if (!inviteEmail || !inviteFirstName || !inviteLastName) return;
     const { role, meta } = presetToRoleMeta(invitePreset);
     const scope =
       role === "teacher"
@@ -176,9 +187,9 @@ export default function TeamSettingsPage() {
     const mergedMeta = inviteMetaOverride ?? meta;
     try {
       const result = await invite.mutateAsync({
-        email: email.trim(),
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        email: inviteEmail,
+        firstName: inviteFirstName,
+        lastName: inviteLastName,
         role,
         meta: mergedMeta,
         scope,
@@ -186,13 +197,22 @@ export default function TeamSettingsPage() {
       if (!result.invite_url) {
         throw new Error(t("team.inviteError"));
       }
+      setCreatedInviteLinks((prev) => [
+        {
+          id: result.invite_id ?? `${inviteEmail}-${Date.now()}`,
+          url: result.invite_url as string,
+          email: inviteEmail,
+          firstName: inviteFirstName,
+          lastName: inviteLastName,
+          copied: false,
+        },
+        ...prev,
+      ]);
       setEmail("");
       setFirstName("");
       setLastName("");
       clearReinvitePreset();
       setInviteExpanded(true);
-      setCreatedInviteUrl(result.invite_url);
-      setInviteLinkCopied(false);
       showToast(t("team.inviteSuccess"), "success");
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
@@ -385,44 +405,69 @@ export default function TeamSettingsPage() {
       </form>
       )}
 
-      {canInvite && createdInviteUrl && (
-        <div className="bg-amber-50/90 rounded-xl border border-amber-200 shadow-xs p-3.5 space-y-2.5">
-          <p className="text-sm font-semibold text-slate-800">{t("team.inviteSuccess")}</p>
-          <p className="text-[11px] text-slate-600 leading-relaxed">{t("team.inviteLinkOnceHint")}</p>
-          <input
-            type="text"
-            readOnly
-            value={createdInviteUrl}
-            className={`${inputCls} font-mono text-[11px]`}
-            onFocus={(e) => e.currentTarget.select()}
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(createdInviteUrl);
-                  setInviteLinkCopied(true);
-                } catch {
-                  showToast(t("team.inviteError"), "error");
-                }
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 cursor-pointer"
+      {canInvite && createdInviteLinks.length > 0 && (
+        <div className="space-y-2">
+          {createdInviteLinks.map((item) => (
+            <div
+              key={item.id}
+              className="bg-amber-50/90 rounded-xl border border-amber-200 shadow-xs p-3.5 space-y-2.5"
             >
-              <Copy className="w-3.5 h-3.5" />
-              {inviteLinkCopied ? t("common.copied") : t("common.copy")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setCreatedInviteUrl(null);
-                setInviteLinkCopied(false);
-              }}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white/80 rounded-lg cursor-pointer"
-            >
-              {t("team.hideInviteLink")}
-            </button>
-          </div>
+              <p className="text-sm font-semibold text-slate-800">{t("team.inviteSuccess")}</p>
+              <p className="text-[11px] text-slate-600 leading-relaxed">{t("team.inviteLinkOnceHint")}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block space-y-1">
+                  <span className={labelCls}>{t("common.lastName")}</span>
+                  <input type="text" readOnly value={item.lastName} className={inputCls} />
+                </label>
+                <label className="block space-y-1">
+                  <span className={labelCls}>{t("common.firstName")}</span>
+                  <input type="text" readOnly value={item.firstName} className={inputCls} />
+                </label>
+                <label className="block space-y-1 sm:col-span-2">
+                  <span className={labelCls}>{t("team.inviteEmail")}</span>
+                  <input type="text" readOnly value={item.email} className={inputCls} />
+                </label>
+                <label className="block space-y-1 sm:col-span-2">
+                  <span className={labelCls}>{t("team.inviteLinkLabel")}</span>
+                  <input
+                    type="text"
+                    readOnly
+                    value={item.url}
+                    className={`${inputCls} font-mono text-[11px]`}
+                    onFocus={(e) => e.currentTarget.select()}
+                  />
+                </label>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(item.url);
+                      setCreatedInviteLinks((prev) =>
+                        prev.map((row) => (row.id === item.id ? { ...row, copied: true } : row))
+                      );
+                    } catch {
+                      showToast(t("team.inviteError"), "error");
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  {item.copied ? t("common.copied") : t("common.copy")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatedInviteLinks((prev) => prev.filter((row) => row.id !== item.id));
+                  }}
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white/80 rounded-lg cursor-pointer"
+                >
+                  {t("team.hideInviteLink")}
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
