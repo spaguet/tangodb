@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — M31+M32+L10: auto-expose ALL = REST write при дырявой RLS (S27)
+
+- **Ошибка:** на production Supabase auto-expose давал `GRANT ALL` новым таблицам ролям `anon`/`authenticated`; любая слабая RLS-политика превращалась в REST write/read.
+- **Причина:** implicit default Supabase до 2026-05-30; точечные REVOKE S05–S26 не закрывали будущие таблицы и не снимали ALL у `anon`.
+- **Как избежать:** `auto_expose_new_tables = false` в `config.toml` + Dashboard «Expose new tables = OFF»; после точечных REVOKE — ковровый `REVOKE ALL` у `anon` и явный именованный `GRANT SELECT`/write для SPA (не «и т.д.» — снимает views и GCal/должников); `ALTER DEFAULT PRIVILEGES REVOKE ALL`; не возвращать write на RPC-only таблицы.
+
 ### 2026-08-27 — M34+M49: DEFINER oracle по UUID; ковровый REVOKE EXECUTE у authenticated (S22)
 
 - **Ошибка:** `subscription_client_display_for_date`, `is_active_member`, `organization_allows_reads` и др. DEFINER RPC с `GRANT … TO authenticated` отдавали данные чужой орг при известном UUID; `CREATE FUNCTION` по умолчанию даёт EXECUTE роли `PUBLIC` (в т.ч. `anon`).

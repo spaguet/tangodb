@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.103** — S27 / M31+M32+L10: `auto_expose_new_tables = false`; ковровый `REVOKE ALL` у `anon`; явные `GRANT SELECT` (именованный список таблиц + masking views) и точечный write для SPA; `ALTER DEFAULT PRIVILEGES REVOKE ALL`; без write на RPC-only таблицы (attendance, payments, rental money, payroll settlements, …).
+
 2026-08-27 — fix(security): микропатч **2.8.102** — S26 / M59: `close_group_lesson_occurrence` считает present из `attendance` (+ single visits, pair=2); клиентский `p_confirmed_attendee_count` должен совпадать (`attendee_count_mismatch`); верхняя граница `classes.max_capacity`; venue-cost ledger не от фейкового count.
 
 2026-08-27 — fix(security): микропатч **2.8.101** — S25 / M48+M51+M52: `renter_document_upload_intents` + Storage policies (upload/delete только path из `prepare_renter_document_upload`; SELECT только finalized/intent); `exports` insert = `can_export_data()`, без `application/octet-stream`; RPC `save_teacher_pay_rate`, `REVOKE` write на `teacher_pay_rates`.
