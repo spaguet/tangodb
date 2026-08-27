@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
   }
 
   const clientIp = getClientIp(req);
-  if (!checkRateLimit(`invite-member:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+  if (!(await checkRateLimit(`invite-member:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS))) {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 

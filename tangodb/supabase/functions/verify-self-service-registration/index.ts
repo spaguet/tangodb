@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
   }
 
   const clientIp = getClientIp(req);
-  if (!checkRateLimit(`verify-self-service:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+  if (!(await checkRateLimit(`verify-self-service:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS))) {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Invalid email" }, 400, req);
   }
 
-  if (!checkRateLimit(`verify-self-service:email:${email}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+  if (!(await checkRateLimit(`verify-self-service:email:${email}`, RATE_LIMIT, RATE_WINDOW_MS))) {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 

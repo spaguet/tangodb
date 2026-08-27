@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.89** — S13 / H2+H6+M20: `request-demo-key` не возвращает plaintext `TDB-DEMO-*` в JSON (ключ только в email); durable rate limit через таблицу `edge_rate_limit_buckets` + RPC `check_edge_rate_limit` (вместо in-memory Map); IP только `cf-connecting-ip`; Turnstile fail-closed без `TURNSTILE_SECRET_KEY` на production/staging.
+
 2026-08-27 — fix(security): микропатч **2.8.88** — S12 / H5: `config.toml` Auth — min password 8 + `letters_digits`, confirm email ON, `secure_password_change`, session timebox 24h, email `max_frequency` 60s, redirect allowlist с prod `https://tangodb.vercel.app` (без wildcard preview). GoTrue captcha **не** включать до S37. Чеклист Dashboard — `lessons.md` § H5.
 
 2026-08-27 — fix(security): микропатч **2.8.87** — S11 / H29+M44+M37: `_is_finance_period_closed` на основную кассу (`record_*_payment`, `finish_subscription_with_refund`, `update_payment_in_place`, `restate_personal_lesson_charge`, `write_off_personal_lesson_debt`); storno/correct без изменений; UI продаж и дебиторов — `finance.error.periodClosed`.

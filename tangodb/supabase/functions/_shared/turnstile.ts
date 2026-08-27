@@ -1,11 +1,31 @@
+import { logEvent } from "./supabase.ts";
+
+function isLocalDevEnvironment(): boolean {
+  const env = (Deno.env.get("ENVIRONMENT") ?? "").toLowerCase();
+  if (env === "local" || env === "development" || env === "dev") {
+    return true;
+  }
+  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  return (
+    url.includes("127.0.0.1") ||
+    url.includes("localhost") ||
+    url.includes("kong:8000")
+  );
+}
+
 export async function verifyTurnstileToken(
   token: string,
   remoteIp?: string
 ): Promise<{ ok: boolean; error?: string }> {
   const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
   if (!secret) {
-    // Local/dev: skip when secret not configured
-    return { ok: true };
+    if (isLocalDevEnvironment()) {
+      return { ok: true };
+    }
+    logEvent("turnstile_secret_missing", {
+      environment: Deno.env.get("ENVIRONMENT") ?? "unknown",
+    });
+    return { ok: false, error: "turnstile_not_configured" };
   }
 
   const trimmed = token.trim();

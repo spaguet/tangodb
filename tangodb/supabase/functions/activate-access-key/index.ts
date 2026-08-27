@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
   }
 
   const clientIp = getClientIp(req);
-  if (!checkRateLimit(`activate-key:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+  if (!(await checkRateLimit(`activate-key:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS))) {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
   }
 
   const email = userData.user.email ?? "";
-  if (!checkRateLimit(`activate-key:email:${email || clientIp}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+  if (!(await checkRateLimit(`activate-key:email:${email || clientIp}`, RATE_LIMIT, RATE_WINDOW_MS))) {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 

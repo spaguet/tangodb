@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
   }
 
   const clientIp = getClientIp(req);
-  if (!checkRateLimit(`request-demo-key:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+  if (!(await checkRateLimit(`request-demo-key:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS))) {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Invalid email" }, 400, req);
   }
 
-  if (!checkRateLimit(`request-demo-key:email:${email}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+  if (!(await checkRateLimit(`request-demo-key:email:${email}`, RATE_LIMIT, RATE_WINDOW_MS))) {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
@@ -106,16 +106,18 @@ Deno.serve(async (req) => {
 
   const emailSent = await sendDemoKeyEmail(email, plaintextKey);
 
+  if (!emailSent) {
+    logEvent("demo_key_email_failed", { email_domain: email.split("@")[1] ?? "unknown" });
+    return jsonResponse({ error: "Service unavailable" }, 500, req);
+  }
+
   logEvent("demo_key_issued", { email_domain: email.split("@")[1] ?? "unknown" });
 
   return jsonResponse(
     {
       ok: true,
-      key: plaintextKey,
-      email_sent: emailSent,
-      message: emailSent
-        ? "Demo key sent to your email"
-        : "Demo key generated — save it now, it will not be shown again",
+      email_sent: true,
+      message: "Demo key sent to your email",
     },
     200,
     req

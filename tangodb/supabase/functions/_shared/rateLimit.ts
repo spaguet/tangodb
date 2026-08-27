@@ -1,17 +1,30 @@
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+import { createServiceClient, logEvent } from "./supabase.ts";
 
-export function checkRateLimit(
+export async function checkRateLimit(
   key: string,
   limit: number,
   windowMs: number
-): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(key);
-  if (!entry || entry.resetAt < now) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
+): Promise<boolean> {
+  const windowSeconds = Math.max(1, Math.ceil(windowMs / 1000));
+  try {
+    const admin = createServiceClient();
+    const { data, error } = await admin.rpc("check_edge_rate_limit", {
+      p_key: key,
+      p_limit: limit,
+      p_window_seconds: windowSeconds,
+    });
+    if (error) {
+      logEvent("rate_limit_rpc_error", {
+        code: error.code ?? "unknown",
+        message: error.message ?? "unknown",
+      });
+      return false;
+    }
+    return data === true;
+  } catch (err) {
+    logEvent("rate_limit_error", {
+      message: err instanceof Error ? err.message : "unknown",
+    });
+    return false;
   }
-  if (entry.count >= limit) return false;
-  entry.count++;
-  return true;
 }

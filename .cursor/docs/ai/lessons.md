@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — H2 + H6 + M20: демо-ключ в JSON, in-memory rate limit, Turnstile fail-open (S13)
+
+- **Ошибка:** `request-demo-key` возвращал `{ key: "TDB-DEMO-..." }` в HTTP-ответе; `rateLimit.ts` хранил счётчики в `Map` (не переживал масштабирование); `turnstile.ts` при пустом `TURNSTILE_SECRET_KEY` возвращал `{ ok: true }` на production.
+- **Причина:** ключ «на всякий случай» в JSON для UI fallback; простой in-process limiter без shared store; dev-friendly skip captcha без проверки окружения.
+- **Как избежать:** демо-ключ только в email; rate limit через `edge_rate_limit_buckets` + `check_edge_rate_limit` (service_role); IP только `cf-connecting-ip`; без секрета Turnstile — `{ ok: false }` вне local dev (`ENVIRONMENT=local` или localhost URL); лог `turnstile_secret_missing` при деплое.
+
 ### 2026-08-27 — H5: слабая политика Auth в `config.toml` (S12)
 
 - **Ошибка:** локальный `config.toml` допускал пароль 6 символов, регистрацию без confirm email, `max_frequency` 1s, без session timebox; production мог совпадать с этим шаблоном.

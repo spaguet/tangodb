@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   }
 
   const clientIp = getClientIp(req);
-  if (!checkRateLimit(`waitlist:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+  if (!(await checkRateLimit(`waitlist:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS))) {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       ? body.organization_id.trim()
       : null;
 
-  if (!checkRateLimit(`waitlist:email:${email}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+  if (!(await checkRateLimit(`waitlist:email:${email}`, RATE_LIMIT, RATE_WINDOW_MS))) {
     return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 

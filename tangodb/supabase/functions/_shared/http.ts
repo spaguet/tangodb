@@ -55,11 +55,10 @@ export function handleOptions(req: Request): Response {
   return new Response("ok", { headers: cors });
 }
 
+/** Trusted CDN client IP only (cf-connecting-ip). Do not use x-forwarded-for. */
 export function getClientIp(req: Request): string {
   const cf = req.headers.get("cf-connecting-ip");
   if (cf) return cf.trim();
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
   return "unknown";
 }
 
