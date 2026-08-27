@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — H10: REST PATCH `organizations.demo_expires_at` / `owner_user_id`
+
+- **Ошибка:** owner/director/admin могли прямым `UPDATE organizations` продлить истёкшее демо (`demo_expires_at` в будущее или `NULL`) и сменить `owner_user_id`/`status` без лицензии.
+- **Причина:** `GRANT SELECT, UPDATE ON organizations TO authenticated` + политика `organizations_update_admin` без ограничения колонок; `organization_allows_writes` смотрит `demo_expires_at`, но UPDATE был открыт.
+- **Как избежать:** `REVOKE UPDATE` на `organizations` у клиентских ролей; биллинговые поля — только `service_role`/DEFINER license RPC; отображаемое имя — `organization_settings.branding_name`, не `organizations.name`.
+
 ### 2026-08-27 — H9/H13: REST PATCH `organization_members.role` / эскалация scope/meta
 
 - **Ошибка:** `can_manage_team()` в RLS разрешал прямой `UPDATE` любых колонок, включая `role=owner` и `scope.can_view_all_clients`; RPC валидировал роли, но REST обходил.

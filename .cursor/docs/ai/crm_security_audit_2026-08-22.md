@@ -1755,7 +1755,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 3 | **S03** | 0 | **H31** | S02 | Кросс-тенантная миграция версии + spoof developer |
 | ✅ | 4 | **S04** | 0 | **H33** | S03 | `platform_role` в JWT CRM; write platform-таблиц. После S03, чтобы клиентский migrate уже был мёртв |
 | ✅ | 5 | **S05** | 0 | **H9**, **H13** | S04 | Director → owner и эскалация `scope`/`meta` через REST |
-| ☐ | 6 | **S06** | 0 | **H10** | S05 | Бессрочное демо / смена `owner_user_id` через `UPDATE organizations` |
+| ✅ | 6 | **S06** | 0 | **H10** | S05 | Бессрочное демо / смена `owner_user_id` через `UPDATE organizations` |
 | ☐ | 7 | **S07** | 0 | **H12** | S06 | Reception ≠ full admin. После S05–S06 REST на members/orgs уже закрыт; остаются helpers и settings |
 | ☐ | 8 | **S08** | 0 | **H14**, **H15**, **H27**, M27 | S07 | Журнал/абонементы только через RPC; finish/freeze с флагом продажи |
 | ☐ | 9 | **S09** | 0 | **H21**, **H22**, **H26**, **H16**, M19 | S08 | Касса и персоналки: REST write + R4 + чужие уроки |
