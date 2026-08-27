@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.99** — S23 / M38+M42+M47+M50: `preview_rental_conflicts` / `preview_calendar_event_conflicts` — accountant и teacher вне своих уроков без `client_display`; `get_rentals_for_schedule_week` — teacher только локации scope или при `teachers_can_view_full_schedule`; `get_schedule_calendar_sync_labels` — teacher только свои персоналки/группы, не `calendar_name` коллег.
+
 2026-08-27 — fix(security): микропатч **2.8.98** — S22 / M34+M56+M49: tenant guard в DEFINER (`is_active_member`, `member_role/scope`, `organization_allows_*`, subscription display/ids, `apply_scheduled`, `count_group_occupied_seats`, `venue_cost_gap_is_acknowledged`); `REVOKE EXECUTE` у `organization_has_*` / `is_platform_developer` / `teacher_member_has_future_lessons` от клиента; массовый `REVOKE EXECUTE … FROM PUBLIC, anon` (не от `authenticated`).
 
 2026-08-27 — fix(security): микропатч **2.8.97** — S21 / M33: `escapeCsvCell` — префикс `'` и кавычки для ячеек начинающихся с `= + - @ \t \r` (CSV formula injection); один хелпер для dashboard/finance/conducted lessons/rental invoice экспортов.
