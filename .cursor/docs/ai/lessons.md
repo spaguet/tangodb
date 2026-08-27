@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — H12: reception (`restricted_admin`) проходит `can_manage_team` / settings PATCH
+
+- **Ошибка:** admin с `meta.restricted_admin` (reception) мог менять `organization_settings` (сброс `finance_period_closed_until`, `modules`, `teachers_can_*`) и вызывать командные RPC, как полный admin.
+- **Причина:** R6 закрыл `can_read_operational` / `can_write_all_business`, но `can_manage_team` / `can_manage_settings` и политика `organization_settings_update_admin` не проверяли `is_restricted_admin()`.
+- **Как избежать:** во всех tenant `can_manage_*` и политиках settings — `AND NOT is_restricted_admin()`; в `create_organization_invite` / `update_team_member` явный guard; кассовые reception-RPC не открывать.
+
 ### 2026-08-27 — H10: REST PATCH `organizations.demo_expires_at` / `owner_user_id`
 
 - **Ошибка:** owner/director/admin могли прямым `UPDATE organizations` продлить истёкшее демо (`demo_expires_at` в будущее или `NULL`) и сменить `owner_user_id`/`status` без лицензии.

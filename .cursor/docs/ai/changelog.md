@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.83** — S07 / H12: `can_manage_team` / `can_manage_settings` + политика `organization_settings_update_admin` с `NOT is_restricted_admin()`; reception не PATCH настроек (`finance_period_closed_until`, `modules`, `teachers_can_*`) и не RPC инвайта/команды; owner/director без restricted — без изменений.
+
 2026-08-27 — fix(security): микропатч **2.8.82** — S06 / H10: `REVOKE UPDATE` на `organizations` у `authenticated`/`anon`; продление демо и смена `owner_user_id`/`status` только через `service_role`/license RPC; SELECT своей орг и `branding_name` в настройках без изменений.
 
 2026-08-27 — fix(security): микропатч **2.8.81** — S05 / H9 + H13: `REVOKE INSERT/UPDATE/DELETE` на `organization_members` у `authenticated`; триггер блокирует прямой REST (не `auth.uid()`); whitelist `scope`/`meta` в `create_organization_invite` / `update_team_member`; Edge `invite-member` санитизирует body.
