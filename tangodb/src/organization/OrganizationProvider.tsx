@@ -201,7 +201,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const roleMismatch = jwtRole != null && dbRole != null && jwtRole !== dbRole;
   const memberIdMismatch =
     jwtMemberId != null && dbMemberId != null && jwtMemberId !== dbMemberId;
-  const claimsMismatch = roleMismatch || memberIdMismatch;
+  const jwtOrgWithoutActiveMembership =
+    sessionOrganizationId != null &&
+    !membershipsLoading &&
+    !memberships.some((m) => m.organization_id === sessionOrganizationId);
+  const claimsMismatch =
+    roleMismatch || memberIdMismatch || jwtOrgWithoutActiveMembership;
 
   const refreshInFlightRef = useRef(false);
   const refreshAttemptsRef = useRef(0);
@@ -320,7 +325,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!session?.user.id || !organizationId || membershipsLoading) return;
 
-    if (!roleMismatch && !memberIdMismatch) {
+    if (!claimsMismatch) {
       refreshAttemptsRef.current = 0;
       lastRefreshFingerprintRef.current = null;
       mismatchLimitReportedRef.current = false;
@@ -396,6 +401,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     organizationId,
     membershipsLoading,
     claimsFingerprint,
+    claimsMismatch,
     dbRole,
     dbMemberId,
     roleMismatch,
