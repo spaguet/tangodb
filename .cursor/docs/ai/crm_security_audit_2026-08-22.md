@@ -1780,7 +1780,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 28 | **S28** | 2 | **H3**, M8 | S27 (волна 1 закрыта) | Сессия: remember-me, MFA/timebox |
 | ✅ | 29 | **S29** | 2 | **H8**, M11 | S28 | Revoke при deactivate; не держать JWT орг час после увольнения |
 | ✅ | 30 | **S30** | 2 | M15, M39, M58 | S29 | `redirectTo` / `SITE_URL` / токен инвайта не в query и не в `sessionStorage` |
-| ☐ | 31 | **S31** | 2 | M17 | S30 | Recovery-код владельца не в JSON и не в `history.state` |
+| ✅ | 31 | **S31** | 2 | M17 | S30 | Recovery-код владельца не в JSON и не в `history.state` |
 | ☐ | 32 | **S32** | 3 | **H7** | S31 (волна 2 закрыта) | Teacher PII карточки клиента через view |
 | ☐ | 33 | **S33** | 3 | M21 | S32 | Оставшиеся org-флаги §9 в SQL (что не закрыли S07–S20) |
 | ☐ | 34 | **S34** | 3 | M5, M6, M7 | S33 | `security_invoker`; `access_keys`; выключить GraphQL |

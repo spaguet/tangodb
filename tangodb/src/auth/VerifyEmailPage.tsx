@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { isDemoAlreadyUsedError, isRegistrationCaptchaRequired, parseAuthError } from "./authErrors";
 import RecoveryCodeModal from "./RecoveryCodeModal";
+import { takeRecoveryCode } from "./recoveryCodeHandoff";
 import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useSelfServiceDemo } from "../hooks/useSelfServiceDemo";
@@ -21,17 +22,26 @@ export default function VerifyEmailPage() {
   const location = useLocation();
   const attemptRef = useRef(false);
 
-  const initialRecoveryCode =
-    typeof (location.state as { recoveryCode?: string } | null)?.recoveryCode === "string"
-      ? (location.state as { recoveryCode: string }).recoveryCode
-      : null;
-
-  const [phase, setPhase] = useState<VerifyPhase>(initialRecoveryCode ? "recovery" : "idle");
-  const [recoveryCode, setRecoveryCode] = useState<string | null>(initialRecoveryCode);
+  const [boot] = useState(() => {
+    const code = takeRecoveryCode();
+    return {
+      code,
+      phase: (code ? "recovery" : "idle") as VerifyPhase,
+    };
+  });
+  const [phase, setPhase] = useState<VerifyPhase>(boot.phase);
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(boot.code);
   const [error, setError] = useState<string | null>(null);
   const [needsCaptcha, setNeedsCaptcha] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+
+  useEffect(() => {
+    const prev = location.state as { recoveryCode?: unknown } | null;
+    if (prev && Object.prototype.hasOwnProperty.call(prev, "recoveryCode")) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   const attemptCreateDemo = useCallback(
     async (opts?: { withCaptcha?: boolean }) => {
@@ -108,21 +118,23 @@ export default function VerifyEmailPage() {
     }
 
     if (!session) {
-      setPhase("idle");
+      setPhase((prev) => (prev === "recovery" ? prev : "idle"));
       return;
     }
 
     if (!session.user.email_confirmed_at) {
-      setPhase("idle");
+      setPhase((prev) => (prev === "recovery" ? prev : "idle"));
       return;
     }
+
+    if (recoveryCode || phase === "recovery") return;
 
     if (memberships.length > 0) {
       navigate("/", { replace: true });
       return;
     }
 
-    if (recoveryCode || attemptRef.current || needsCaptcha) return;
+    if (attemptRef.current || needsCaptcha) return;
 
     void attemptCreateDemo();
   }, [
@@ -131,12 +143,14 @@ export default function VerifyEmailPage() {
     session,
     memberships.length,
     recoveryCode,
+    phase,
     needsCaptcha,
     attemptCreateDemo,
     navigate,
   ]);
 
   const continueAfterRecovery = () => {
+    setRecoveryCode(null);
     setPhase("done");
     navigate("/onboarding", { replace: true });
   };

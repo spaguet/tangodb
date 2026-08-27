@@ -145,6 +145,7 @@ export type I18nKey =
   | "auth.recoveryCode.subtitle"
   | "auth.recoveryCode.instructions"
   | "auth.recoveryCode.continue"
+  | "auth.recoveryCode.emailHint"
   | "auth.aria.hidePassword"
   | "auth.aria.showPassword"
   | "auth.error.generic"

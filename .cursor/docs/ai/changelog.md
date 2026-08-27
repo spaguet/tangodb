@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.110** — S31 / M17: recovery-код владельца не пишется в `history.state` / `sessionStorage`; показ один раз из ответа `create-self-service-demo-org` (handoff в памяти модуля); копия письмом; повторный вызов API без plaintext; Dev Console transfer-owner по коду без изменений.
+
 2026-08-27 — feat: микропатч **2.8.109** — ссылка инвайта хранится в `organization_invites.invite_url` и видна owner/director в списке ожидающих до accept/revoke; после accept/revoke колонка очищается триггером; `token_hash` в REST по-прежнему скрыт.
 
 2026-08-27 — feat: микропатч **2.8.108** — карточка инвайт-ссылки показывает ФИО и email; несколько ссылок не затирают друг друга; форма приглашения открыта по умолчанию.

@@ -24,6 +24,7 @@ export default function RecoveryCodeModal({ code, onContinue }: RecoveryCodeModa
     <AuthLayout title="TangoDB" subtitle={t("auth.recoveryCode.subtitle")}>
       <div className="space-y-4">
         <p className="text-sm text-slate-600">{t("auth.recoveryCode.instructions")}</p>
+        <p className="text-sm text-slate-500">{t("auth.recoveryCode.emailHint")}</p>
 
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-center">
           <p className="text-xs uppercase tracking-widest text-amber-700 mb-1">Emergency Recovery Code</p>

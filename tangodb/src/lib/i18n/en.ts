@@ -158,6 +158,7 @@ export const EN: Record<I18nKey, string> = {
   "auth.recoveryCode.subtitle": "Emergency recovery code",
   "auth.recoveryCode.instructions":
     "Save this code in a safe place. You will need it when contacting support if you lose access to your email. The code will not be shown again.",
+  "auth.recoveryCode.emailHint": "A copy is also sent to your email when mail is configured.",
   "auth.recoveryCode.continue": "Continue to CRM",
   "auth.aria.hidePassword": "Hide password",
   "auth.aria.showPassword": "Show password",

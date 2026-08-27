@@ -7,6 +7,7 @@ import { useSelfServiceDemo } from "../hooks/useSelfServiceDemo";
 import { useGuestI18n } from "../hooks/useI18n";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { supabase } from "../lib/supabase";
+import { stashRecoveryCode } from "./recoveryCodeHandoff";
 import {
   AuthButton,
   AuthDeveloperContact,
@@ -82,10 +83,8 @@ export default function RegisterPage() {
         await refreshOrganization();
 
         if (result.recoveryCode) {
-          navigate("/auth/verify-email", {
-            replace: true,
-            state: { recoveryCode: result.recoveryCode },
-          });
+          stashRecoveryCode(result.recoveryCode);
+          navigate("/auth/verify-email", { replace: true });
         } else {
           navigate(result.alreadyHasOrg ? "/" : "/onboarding", { replace: true });
         }

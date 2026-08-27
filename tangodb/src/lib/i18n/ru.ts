@@ -158,6 +158,7 @@ export const RU: Record<I18nKey, string> = {
   "auth.recoveryCode.subtitle": "Аварийный код восстановления",
   "auth.recoveryCode.instructions":
     "Сохраните этот код в безопасном месте. Он понадобится при обращении в поддержку, если вы потеряете доступ к email. Повторно код не отобразится.",
+  "auth.recoveryCode.emailHint": "Копия также уходит на email, если почта настроена.",
   "auth.recoveryCode.continue": "Продолжить в CRM",
   "auth.aria.hidePassword": "Скрыть пароль",
   "auth.aria.showPassword": "Показать пароль",

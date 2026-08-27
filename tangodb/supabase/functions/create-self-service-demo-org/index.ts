@@ -2,6 +2,7 @@ import {
   generateRecoveryCode,
   hashRecoveryCode,
 } from "../_shared/recoveryCode.ts";
+import { sendTransactionalEmail } from "../_shared/email.ts";
 import {
   getClientIp,
   handleOptions,
@@ -11,6 +12,21 @@ import { ownerEmailHash } from "../_shared/emailHash.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 import { isDeveloper } from "../_shared/devAuth.ts";
+
+async function sendRecoveryCodeEmail(to: string, code: string): Promise<boolean> {
+  const subject = "TangoDB — emergency recovery code";
+  const text =
+    `Здравствуйте!\n\n` +
+    `Ваш аварийный код восстановления TangoDB (Emergency Recovery Code):\n\n` +
+    `${code}\n\n` +
+    `Сохраните его. Код понадобится при обращении в поддержку, если вы потеряете доступ к email. Повторно он не показывается.\n\n` +
+    `Hello!\n\n` +
+    `Your TangoDB emergency recovery code:\n\n` +
+    `${code}\n\n` +
+    `Save it. Support will ask for this code if you lose access to your email. It will not be shown again.\n`;
+
+  return sendTransactionalEmail({ to, subject, text });
+}
 
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 15 * 60_000;
@@ -148,9 +164,20 @@ Deno.serve(async (req) => {
     logEvent("self_service_refresh_error", { message: refreshError.message });
   }
 
+  let recoveryCodeEmailed = false;
+  if (recoveryCode) {
+    recoveryCodeEmailed = await sendRecoveryCodeEmail(email, recoveryCode);
+    if (!recoveryCodeEmailed) {
+      logEvent("self_service_recovery_email_failed", {
+        email_domain: email.includes("@") ? email.split("@")[1] : null,
+      });
+    }
+  }
+
   logEvent("self_service_demo_created", {
     email_domain: email.includes("@") ? email.split("@")[1] : null,
     platform_developer: isDeveloper(user, authHeader),
+    recovery_code_emailed: recoveryCodeEmailed,
   });
 
   return jsonResponse(
@@ -158,6 +185,7 @@ Deno.serve(async (req) => {
       ok: true,
       ...(data as Record<string, unknown>),
       ...(recoveryCode ? { recovery_code: recoveryCode } : {}),
+      recovery_code_emailed: recoveryCodeEmailed,
     },
     200,
     req

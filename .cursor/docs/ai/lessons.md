@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — M17: recovery-код в JSON и history.state (S31)
+
+- **Ошибка:** `create-self-service-demo-org` отдавал plaintext `recovery_code`; `RegisterPage` клал его в `navigate(..., { state })`, код жил в `history.state` после онбординга (XSS / расширение).
+- **Причина:** удобный проброс между GuestRoute `/register` и экраном кода без отдельного in-memory канала; повторный показ не был отрезан от memberships-редиректа.
+- **Как избежать:** один показ из ответа в React state; между страницами — take-once память модуля, не `location.state` / storage; копия только письмом; `already_has_org` без plaintext; не уводить с экрана кода, пока пользователь не нажал продолжить.
+
 ### 2026-08-27 — ссылка инвайта пропадала после обновления страницы
 
 - **Ошибка:** после ручного инвайта URL жил только в React state; reload стирал ссылку, а в БД был только hash.
