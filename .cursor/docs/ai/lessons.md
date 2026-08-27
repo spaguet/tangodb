@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — M34+M49: DEFINER oracle по UUID; ковровый REVOKE EXECUTE у authenticated (S22)
+
+- **Ошибка:** `subscription_client_display_for_date`, `is_active_member`, `organization_allows_reads` и др. DEFINER RPC с `GRANT … TO authenticated` отдавали данные чужой орг при известном UUID; `CREATE FUNCTION` по умолчанию даёт EXECUTE роли `PUBLIC` (в т.ч. `anon`).
+- **Причина:** membership/`auth_organization_id()` не сверялся с клиентским `p_org_id`; миграции не всегда делали `REVOKE FROM PUBLIC`; буквальный S22 шаг 5 «REVOKE ALL FUNCTIONS FROM authenticated» роняет RLS-хелперы и кассу.
+- **Как избежать:** в DEFINER при JWT: `p_org_id IS DISTINCT FROM auth_organization_id()` → false/пусто; `apply_scheduled` — только JWT org; внутренние oracle (`organization_has_*`, `is_platform_developer`) — `REVOKE` у `authenticated`/`anon`/`PUBLIC`; массовый revoke только `PUBLIC`+`anon`, не `authenticated`.
+
 ### 2026-08-27 — H11: teachers_can_edit_clients только в permissions.ts (S15)
 
 - **Ошибка:** преподаватель мог INSERT/UPDATE/DELETE `clients` через PostgREST при `teachers_can_edit_clients=false`; `teacher_can_write_clients()` проверял только JWT-scope, не org-флаг; `subscriptions_update_teacher` не валидировал `client_id2/3` в WITH CHECK.

@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.98** — S22 / M34+M56+M49: tenant guard в DEFINER (`is_active_member`, `member_role/scope`, `organization_allows_*`, subscription display/ids, `apply_scheduled`, `count_group_occupied_seats`, `venue_cost_gap_is_acknowledged`); `REVOKE EXECUTE` у `organization_has_*` / `is_platform_developer` / `teacher_member_has_future_lessons` от клиента; массовый `REVOKE EXECUTE … FROM PUBLIC, anon` (не от `authenticated`).
+
 2026-08-27 — fix(security): микропатч **2.8.97** — S21 / M33: `escapeCsvCell` — префикс `'` и кавычки для ячеек начинающихся с `= + - @ \t \r` (CSV formula injection); один хелпер для dashboard/finance/conducted lessons/rental invoice экспортов.
 
 2026-08-27 — fix(security): микропатч **2.8.96** — S20 / M26+M35+M36+M40: waitlist teacher SELECT по `teacher_can_access_class`; `REVOKE` write waitlist/spot_notifications (только RPC); `REVOKE INSERT`/`UPDATE(max_capacity)` на `classes`; `locations` write = `can_manage_settings()`; `schedule_slots_write_admin` через `member_can_write_schedule_as_leadership()` (`admin_can_edit_schedule`).
