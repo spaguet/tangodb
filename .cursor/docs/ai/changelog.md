@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.91** — S15 / H11: `teachers_can_edit_clients` в RLS (`teacher_can_write_clients` + `teacher_has_client_write_scope`); teacher DELETE на `clients` запрещён; `subscriptions_update_teacher` WITH CHECK на `client_id1..4` через `subscription_teacher_update_client_ids_valid` (GRANT UPDATE не возвращали — S08).
+
 2026-08-27 — fix(security): микропатч **2.8.90** — S14 / H4: security headers на Vercel (CRM + dev-console + корневой `vercel.json`) — CSP с `frame-ancestors 'self'`, Supabase/Turnstile/Telegram hosts, `X-Content-Type-Options`, `Referrer-Policy`, HSTS; `style-src 'unsafe-inline'` только для inline boot-стилей в `index.html` (SRI Telegram — S38).
 
 2026-08-27 — fix(security): микропатч **2.8.89** — S13 / H2+H6+M20: `request-demo-key` не возвращает plaintext `TDB-DEMO-*` в JSON (ключ только в email); durable rate limit через таблицу `edge_rate_limit_buckets` + RPC `check_edge_rate_limit` (вместо in-memory Map); IP только `cf-connecting-ip`; Turnstile fail-closed без `TURNSTILE_SECRET_KEY` на production/staging.

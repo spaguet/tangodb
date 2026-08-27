@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — H11: teachers_can_edit_clients только в permissions.ts (S15)
+
+- **Ошибка:** преподаватель мог INSERT/UPDATE/DELETE `clients` через PostgREST при `teachers_can_edit_clients=false`; `teacher_can_write_clients()` проверял только JWT-scope, не org-флаг; `subscriptions_update_teacher` не валидировал `client_id2/3` в WITH CHECK.
+- **Причина:** флаг завели в UI (`canTeacherWriteClients`), SQL-политики не синхронизировали; одноимённая SQL-функция означала «есть scope», не «разрешено настройкой».
+- **Как избежать:** org-флаги §9 дублировать в RLS/RPC как `teacher_can_write_subscriptions`; scope вынести в отдельный хелпер; DELETE клиентов teacher запретить; client_id* абонемента — WITH CHECK через `teacher_can_access_client` (страховка при возможном REVOKE S08).
+
 ### 2026-08-27 — H2 + H6 + M20: демо-ключ в JSON, in-memory rate limit, Turnstile fail-open (S13)
 
 - **Ошибка:** `request-demo-key` возвращал `{ key: "TDB-DEMO-..." }` в HTTP-ответе; `rateLimit.ts` хранил счётчики в `Map` (не переживал масштабирование); `turnstile.ts` при пустом `TURNSTILE_SECRET_KEY` возвращал `{ ok: true }` на production.

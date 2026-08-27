@@ -1764,7 +1764,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 12 | **S12** | 1 | **H5** | S11 (волна 0 закрыта) | Auth: пароль, confirm email, timebox, redirect allowlist (Captcha GoTrue — **S37**, не здесь) |
 | ✅ | 13 | **S13** | 1 | **H2**, **H6**, M20 | S12 | Демо-ключ не в JSON; durable rate limit; Turnstile fail-closed |
 | ✅ | 14 | **S14** | 1 | **H4** | S13 | CSP / frame-ancestors / HSTS |
-| ☐ | 15 | **S15** | 1 | **H11** | S14 | Teacher write клиентов только при `teachers_can_edit_clients` |
+| ✅ | 15 | **S15** | 1 | **H11** | S14 | Teacher write клиентов только при `teachers_can_edit_clients` |
 | ☐ | 16 | **S16** | 1 | **H19**, M30, **H20**, **H32** | S15 | `subscription_groups`; drop-in флаг + маскирование сумм |
 | ☐ | 17 | **S17** | 1 | **H24**, **H25**, **H28** | S16 | Финансы мастер-классов; rental series REST; привязки тарифов |
 | ☐ | 18 | **S18** | 1 | **H30**, M54, M55, M57 | S17 | Остатки обхода R4: charges, payroll lines, ставки, `sales_count` |
