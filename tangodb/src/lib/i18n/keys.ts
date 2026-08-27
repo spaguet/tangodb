@@ -592,6 +592,7 @@ export type I18nKey =
   | "team.inviteLinkOnceHint"
   | "team.hideInviteLink"
   | "team.inviteLinkLabel"
+  | "team.inviteLinkMissing"
   | "team.scope.title"
   | "team.scope.hint"
   | "team.scope.allDisciplines"

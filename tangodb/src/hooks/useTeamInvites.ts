@@ -15,6 +15,7 @@ export interface PendingInvite {
   role: MemberRole;
   scope: TeacherScope;
   meta: MemberMeta;
+  invite_url: string | null;
   expires_at: string;
   created_at: string;
 }
@@ -30,7 +31,7 @@ export function useTeamInvites() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organization_invites_team_v")
-        .select("id, email, first_name, last_name, role, scope, meta, expires_at, created_at")
+        .select("id, email, first_name, last_name, role, scope, meta, invite_url, expires_at, created_at")
         .is("accepted_at", null)
         .is("revoked_at", null)
         .gt("expires_at", new Date().toISOString())
@@ -50,6 +51,7 @@ export function useTeamInvites() {
             ? (row.meta as unknown as MemberMeta)
             : {},
         expires_at: row.expires_at as string,
+        invite_url: (row.invite_url as string | null) ?? null,
         created_at: row.created_at as string,
       })) satisfies PendingInvite[];
     },

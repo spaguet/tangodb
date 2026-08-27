@@ -73,15 +73,6 @@ function inviteListLabel(inv: { first_name?: string | null; last_name?: string |
   return inv.email;
 }
 
-interface CreatedInviteLink {
-  id: string;
-  url: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  copied: boolean;
-}
-
 export default function TeamSettingsPage() {
   const { t, locale, formatDate } = useI18n();
   const invitePresets = getTeamRolePresets(t);
@@ -106,7 +97,7 @@ export default function TeamSettingsPage() {
   const [reinviteSourceId, setReinviteSourceId] = useState<string | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<TeamMemberRow | null>(null);
   const [inviteExpanded, setInviteExpanded] = useState(true);
-  const [createdInviteLinks, setCreatedInviteLinks] = useState<CreatedInviteLink[]>([]);
+  const [copiedInviteIds, setCopiedInviteIds] = useState<Record<string, boolean>>({});
   const inviteFormRef = useRef<HTMLFormElement>(null);
 
   const activeMembers = members.filter((m) => m.is_active);
@@ -194,20 +185,9 @@ export default function TeamSettingsPage() {
         meta: mergedMeta,
         scope,
       });
-      if (!result.invite_url) {
+      if (!result.ok) {
         throw new Error(t("team.inviteError"));
       }
-      setCreatedInviteLinks((prev) => [
-        {
-          id: result.invite_id ?? `${inviteEmail}-${Date.now()}`,
-          url: result.invite_url as string,
-          email: inviteEmail,
-          firstName: inviteFirstName,
-          lastName: inviteLastName,
-          copied: false,
-        },
-        ...prev,
-      ]);
       setEmail("");
       setFirstName("");
       setLastName("");
@@ -405,96 +385,64 @@ export default function TeamSettingsPage() {
       </form>
       )}
 
-      {canInvite && createdInviteLinks.length > 0 && (
-        <div className="space-y-2">
-          {createdInviteLinks.map((item) => (
-            <div
-              key={item.id}
-              className="bg-amber-50/90 rounded-xl border border-amber-200 shadow-xs p-3.5 space-y-2.5"
-            >
-              <p className="text-sm font-semibold text-slate-800">{t("team.inviteSuccess")}</p>
-              <p className="text-[11px] text-slate-600 leading-relaxed">{t("team.inviteLinkOnceHint")}</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="block space-y-1">
-                  <span className={labelCls}>{t("common.lastName")}</span>
-                  <input type="text" readOnly value={item.lastName} className={inputCls} />
-                </label>
-                <label className="block space-y-1">
-                  <span className={labelCls}>{t("common.firstName")}</span>
-                  <input type="text" readOnly value={item.firstName} className={inputCls} />
-                </label>
-                <label className="block space-y-1 sm:col-span-2">
-                  <span className={labelCls}>{t("team.inviteEmail")}</span>
-                  <input type="text" readOnly value={item.email} className={inputCls} />
-                </label>
-                <label className="block space-y-1 sm:col-span-2">
-                  <span className={labelCls}>{t("team.inviteLinkLabel")}</span>
-                  <input
-                    type="text"
-                    readOnly
-                    value={item.url}
-                    className={`${inputCls} font-mono text-[11px]`}
-                    onFocus={(e) => e.currentTarget.select()}
-                  />
-                </label>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(item.url);
-                      setCreatedInviteLinks((prev) =>
-                        prev.map((row) => (row.id === item.id ? { ...row, copied: true } : row))
-                      );
-                    } catch {
-                      showToast(t("team.inviteError"), "error");
-                    }
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 cursor-pointer"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  {item.copied ? t("common.copied") : t("common.copy")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCreatedInviteLinks((prev) => prev.filter((row) => row.id !== item.id));
-                  }}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white/80 rounded-lg cursor-pointer"
-                >
-                  {t("team.hideInviteLink")}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {canInvite && !invitesLoading && invites.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
           <h3 className="font-sans text-sm font-semibold text-slate-800">{t("team.pendingInvites")}</h3>
-          <div className="space-y-1.5">
+          <p className="text-[11px] text-slate-500 leading-relaxed">{t("team.inviteLinkOnceHint")}</p>
+          <div className="space-y-2">
             {invites.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center justify-between gap-2 p-2.5 bg-amber-50/80 rounded-lg border border-amber-100"
+                className="p-2.5 bg-amber-50/80 rounded-lg border border-amber-100 space-y-2.5"
               >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{inviteListLabel(inv)}</p>
-                  <p className="text-[11px] text-slate-400 truncate">
-                    {inv.email} · {memberRoleLabel(inv.role, inv.meta, locale)} ·{" "}
-                    {t("settings.team.inviteExpires", { date: formatExpires(inv.expires_at, formatDate) })}
-                  </p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{inviteListLabel(inv)}</p>
+                    <p className="text-[11px] text-slate-400 truncate">
+                      {inv.email} · {memberRoleLabel(inv.role, inv.meta, locale)} ·{" "}
+                      {t("settings.team.inviteExpires", { date: formatExpires(inv.expires_at, formatDate) })}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => revokeInvite.mutate(inv.id)}
+                    disabled={revokeInvite.isPending}
+                    className="text-[10px] font-semibold uppercase text-rose-600 hover:bg-rose-50 px-2 py-1 rounded cursor-pointer shrink-0"
+                  >
+                    {t("team.revoke")}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => revokeInvite.mutate(inv.id)}
-                  disabled={revokeInvite.isPending}
-                  className="text-[10px] font-semibold uppercase text-rose-600 hover:bg-rose-50 px-2 py-1 rounded cursor-pointer"
-                >
-                  {t("team.revoke")}
-                </button>
+                {inv.invite_url ? (
+                  <>
+                    <label className="block space-y-1">
+                      <span className={labelCls}>{t("team.inviteLinkLabel")}</span>
+                      <input
+                        type="text"
+                        readOnly
+                        value={inv.invite_url}
+                        className={`${inputCls} font-mono text-[11px]`}
+                        onFocus={(e) => e.currentTarget.select()}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(inv.invite_url!);
+                          setCopiedInviteIds((prev) => ({ ...prev, [inv.id]: true }));
+                        } catch {
+                          showToast(t("team.inviteError"), "error");
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      {copiedInviteIds[inv.id] ? t("common.copied") : t("common.copy")}
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-[11px] text-slate-500">{t("team.inviteLinkMissing")}</p>
+                )}
               </div>
             ))}
           </div>

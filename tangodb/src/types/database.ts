@@ -1812,6 +1812,7 @@ export type Database = {
           role: string
           scope: Json
           token_hash: string
+          invite_url: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -1828,6 +1829,7 @@ export type Database = {
           role: string
           scope?: Json
           token_hash: string
+          invite_url?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -1844,6 +1846,7 @@ export type Database = {
           role?: string
           scope?: Json
           token_hash?: string
+          invite_url?: string | null
         }
         Relationships: [
           {
@@ -6860,6 +6863,7 @@ export type Database = {
           first_name: string | null
           id: string | null
           invited_by: string | null
+          invite_url: string | null
           last_name: string | null
           meta: Json | null
           organization_id: string | null
@@ -6875,6 +6879,7 @@ export type Database = {
           first_name?: string | null
           id?: string | null
           invited_by?: string | null
+          invite_url?: string | null
           last_name?: string | null
           meta?: Json | null
           organization_id?: string | null
@@ -6890,6 +6895,7 @@ export type Database = {
           first_name?: string | null
           id?: string | null
           invited_by?: string | null
+          invite_url?: string | null
           last_name?: string | null
           meta?: Json | null
           organization_id?: string | null
@@ -7579,6 +7585,7 @@ export type Database = {
         Args: {
           p_email: string
           p_first_name?: string
+          p_invite_url?: string
           p_last_name?: string
           p_meta?: Json
           p_role: string

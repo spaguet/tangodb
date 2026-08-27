@@ -118,6 +118,7 @@ Deno.serve(async (req) => {
 
   const plaintextToken = generateInviteToken();
   const tokenHash = await hashInviteToken(plaintextToken, pepper);
+  const inviteUrl = `${siteUrl}/accept-invite#token=${encodeURIComponent(plaintextToken)}`;
 
   const sanitizedScope = role === "teacher" ? sanitizeTeacherScope(body.scope) : null;
   const sanitizedMeta = sanitizeMemberMeta(role, body.meta);
@@ -130,6 +131,7 @@ Deno.serve(async (req) => {
     p_meta: sanitizedMeta,
     p_first_name: firstName,
     p_last_name: lastName,
+    p_invite_url: inviteUrl,
   });
 
   if (error) {
@@ -143,8 +145,6 @@ Deno.serve(async (req) => {
     logEvent("invite_member_error", { code: error.code ?? "unknown" });
     return jsonResponse({ error: "Invite failed" }, 400, req);
   }
-
-  const inviteUrl = `${siteUrl}/accept-invite#token=${encodeURIComponent(plaintextToken)}`;
 
   logEvent("invite_created", { role, email_domain: email.split("@")[1] ?? "unknown" });
 
