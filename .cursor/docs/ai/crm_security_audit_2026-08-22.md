@@ -1770,7 +1770,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 18 | **S18** | 1 | **H30**, M54, M55, M57 | S17 | Остатки обхода R4: charges, payroll lines, ставки, `sales_count` |
 | ☑ | 19 | **S19** | 1 | M13, M24, M28, M25 | S18 | Roster команды, заметки, `token_hash` инвайта |
 | ✅ | 20 | **S20** | 1 | M26, M35, M36, M40 | S19 | Waitlist; classes/locations; `admin_can_edit_schedule` в RLS |
-| ☐ | 21 | **S21** | 1 | M33 | S20 | CSV formula injection |
+| ✅ | 21 | **S21** | 1 | M33 | S20 | CSV formula injection |
 | ☐ | 22 | **S22** | 1 | M34, M56, M49 | S21 | DEFINER без членства; `REVOKE PUBLIC` у функций |
 | ☐ | 23 | **S23** | 1 | M38, M42, M47, M50 | S22 | Preview/occupancy PII и имена календарей |
 | ☐ | 24 | **S24** | 1 | M41, M43, M45, M46, M53 | S23 | Широкий SELECT member: замены, Stripe, лицензии, freeze, миграции |

@@ -8,10 +8,15 @@ import {
 const CSV_SEPARATOR = ";";
 const CSV_BOM = "\uFEFF";
 
+/** Prefix formula-like cells so Excel/LibreOffice do not execute on open (M33 / S21). */
+const CSV_FORMULA_PREFIX_RE = /^[=+\-@\t\r]/;
+
 function escapeCsvCell(value: unknown): string {
   const str = value == null ? "" : String(value);
-  const needsQuotes = /[;"\n\r]/.test(str);
-  const escaped = str.replace(/"/g, '""');
+  const isFormulaLike = CSV_FORMULA_PREFIX_RE.test(str);
+  const needsQuotes = isFormulaLike || /[;"\n\r]/.test(str);
+  const body = str.replace(/"/g, '""');
+  const escaped = isFormulaLike ? `'${body}` : body;
   return needsQuotes ? `"${escaped}"` : escaped;
 }
 

@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.97** — S21 / M33: `escapeCsvCell` — префикс `'` и кавычки для ячеек начинающихся с `= + - @ \t \r` (CSV formula injection); один хелпер для dashboard/finance/conducted lessons/rental invoice экспортов.
+
 2026-08-27 — fix(security): микропатч **2.8.96** — S20 / M26+M35+M36+M40: waitlist teacher SELECT по `teacher_can_access_class`; `REVOKE` write waitlist/spot_notifications (только RPC); `REVOKE INSERT`/`UPDATE(max_capacity)` на `classes`; `locations` write = `can_manage_settings()`; `schedule_slots_write_admin` через `member_can_write_schedule_as_leadership()` (`admin_can_edit_schedule`).
 
 2026-08-27 — fix(security): микропатч **2.8.95** — S19 / M13+M24+M28+M25: view `organization_members_roster_v` (ФИО без phone/telegram/`user_id`/`scope`); полный SELECT членов только `can_manage_team()` / своя строка; `useTeamMembers` → roster, `useTeamMembersFull` → TeamSettings; `client_notes` operational только свои заметки; view `organization_invites_team_v` без `token_hash`, `REVOKE SELECT` на базовую таблицу.

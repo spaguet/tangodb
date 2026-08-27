@@ -8,10 +8,14 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const source = readFileSync(resolve(__dirname, "../src/lib/exportCsv.ts"), "utf8");
 
+const CSV_FORMULA_PREFIX_RE = /^[=+\-@\t\r]/;
+
 function escapeCsvCell(value) {
   const str = value == null ? "" : String(value);
-  const needsQuotes = /[;"\n\r]/.test(str);
-  const escaped = str.replace(/"/g, '""');
+  const isFormulaLike = CSV_FORMULA_PREFIX_RE.test(str);
+  const needsQuotes = isFormulaLike || /[;"\n\r]/.test(str);
+  const body = str.replace(/"/g, '""');
+  const escaped = isFormulaLike ? `'${body}` : body;
   return needsQuotes ? `"${escaped}"` : escaped;
 }
 
@@ -34,6 +38,12 @@ if (!sample.startsWith("\uFEFF")) {
 
 if (!sample.includes('"Иван; ""Петров"""')) {
   console.error("FAIL: CSV escaping broken", sample);
+  process.exit(1);
+}
+
+const formulaSample = buildCsvContent([{ name: "=HYPERLINK(\"http://evil/\",\"x\")" }], { name: "Имя" });
+if (!formulaSample.includes("'=HYPERLINK")) {
+  console.error("FAIL: CSV formula injection not neutralized", formulaSample);
   process.exit(1);
 }
 
