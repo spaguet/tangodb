@@ -11,6 +11,25 @@
 
 ## Записи
 
+### 2026-08-27 — H5: слабая политика Auth в `config.toml` (S12)
+
+- **Ошибка:** локальный `config.toml` допускал пароль 6 символов, регистрацию без confirm email, `max_frequency` 1s, без session timebox; production мог совпадать с этим шаблоном.
+- **Причина:** дефолты Supabase CLI не синхронизированы с UI (RegisterPage уже требует 8) и с требованиями продукта; GoTrue captcha нельзя включать до S37 (`signUpWithEmail` без captcha token → 400).
+- **Как избежать:** держать `config.toml` как эталон staging; **не** включать `[auth.captcha]` / Dashboard Captcha до S37. Оператор сверяет production Dashboard вручную:
+
+**Чеклист Supabase Dashboard → Authentication (production, без Captcha):**
+
+| Настройка | Требование |
+|-----------|------------|
+| Confirm email | **ON** |
+| Minimum password length | **≥ 8** |
+| Password requirements | буквы + цифры (или строже) |
+| Secure password change | **ON** |
+| Session timebox | задан (например 24h), не «без лимита» |
+| Email rate limit (`max_frequency`) | **≥ 60s** между письмами |
+| Redirect URLs allowlist | только prod origin (`https://tangodb.vercel.app`), **без** `*.vercel.app` preview |
+| Captcha (GoTrue) | **OFF** до S37 |
+
 ### 2026-08-27 — H29: закрытый кассовый период только на аренде
 
 - **Ошибка:** `finance_period_closed_until` в SQL проверялся только в rental RPC; абонементы, персоналки, drop-in, мастер-классы, возвраты, списание AR (`write_off_personal_lesson_debt`) писались в «закрытом» месяце.

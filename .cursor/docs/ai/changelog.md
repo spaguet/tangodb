@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.88** — S12 / H5: `config.toml` Auth — min password 8 + `letters_digits`, confirm email ON, `secure_password_change`, session timebox 24h, email `max_frequency` 60s, redirect allowlist с prod `https://tangodb.vercel.app` (без wildcard preview). GoTrue captcha **не** включать до S37. Чеклист Dashboard — `lessons.md` § H5.
+
 2026-08-27 — fix(security): микропатч **2.8.87** — S11 / H29+M44+M37: `_is_finance_period_closed` на основную кассу (`record_*_payment`, `finish_subscription_with_refund`, `update_payment_in_place`, `restate_personal_lesson_charge`, `write_off_personal_lesson_debt`); storno/correct без изменений; UI продаж и дебиторов — `finance.error.periodClosed`.
 
 2026-08-27 — fix(security): микропатч **2.8.86** — S10 / H17+H18: `REVOKE` write на rental billing (`rental_invoices*`, advances, deposits, pricing_adjustments) и payroll (`teacher_settlements`, `teacher_settlement_payments`); SELECT у financial ролей сохранён; write только DEFINER RPC (`create_rental_*`, `record_rental_*`, `recalculate_teacher_settlement`, `record_teacher_settlement_payment`).
