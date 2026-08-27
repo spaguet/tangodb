@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.85** — S09 / H21+H22+H26+H16+M19: `REVOKE` write на `payments` (SELECT у `authenticated` сохранён; RLS SELECT `can_read_operational OR can_read_financial`); `personal_lessons_teacher_v` + `cancelled_at`/`price_id`; teacher-сетка всегда через view; `REVOKE UPDATE/DELETE` на `personal_lessons` (INSERT продажи + `teacher_can_write_personal_lessons`).
+
 2026-08-27 — fix(security): микропатч **2.8.84** — S08 / H14+H15+H27+M27: `REVOKE` write на `attendance` (журнал только `mark_attendance`/`correct_attendance`/offline sync); `REVOKE UPDATE/DELETE` на `subscriptions` (INSERT private/package сохранён); `finish_subscription` и freeze helper — teacher только при `teachers_can_sell_subscriptions`; `directors_can_mark_attendance` в RPC без изменений.
 
 2026-08-27 — fix(security): микропатч **2.8.83** — S07 / H12: `can_manage_team` / `can_manage_settings` + политика `organization_settings_update_admin` с `NOT is_restricted_admin()`; reception не PATCH настроек (`finance_period_closed_until`, `modules`, `teachers_can_*`) и не RPC инвайта/команды; owner/director без restricted — без изменений.

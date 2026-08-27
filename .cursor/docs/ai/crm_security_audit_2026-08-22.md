@@ -1758,7 +1758,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 6 | **S06** | 0 | **H10** | S05 | Бессрочное демо / смена `owner_user_id` через `UPDATE organizations` |
 | ✅ | 7 | **S07** | 0 | **H12** | S06 | Reception ≠ full admin. После S05–S06 REST на members/orgs уже закрыт; остаются helpers и settings |
 | ✅ | 8 | **S08** | 0 | **H14**, **H15**, **H27**, M27 | S07 | Журнал/абонементы только через RPC; finish/freeze с флагом продажи |
-| ☐ | 9 | **S09** | 0 | **H21**, **H22**, **H26**, **H16**, M19 | S08 | Касса и персоналки: REST write + R4 + чужие уроки |
+| ✅ | 9 | **S09** | 0 | **H21**, **H22**, **H26**, **H16**, M19 | S08 | Касса и персоналки: REST write + R4 + чужие уроки |
 | ☐ | 10 | **S10** | 0 | **H17**, **H18** | S09 | Rental billing и payroll settlements только RPC |
 | ☐ | 11 | **S11** | 0 | **H29**, M44, M37 | S10 | Закрытый период на всю кассу (в т.ч. `write_off` 2.8.73). После REVOKE REST, иначе PATCH обходит RPC |
 | ☐ | 12 | **S12** | 1 | **H5** | S11 (волна 0 закрыта) | Auth: пароль, confirm email, timebox, redirect allowlist (Captcha GoTrue — **S37**, не здесь) |

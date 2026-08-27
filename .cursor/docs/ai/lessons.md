@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — H21/H22/H26: FOR ALL на `payments` / `personal_lessons` = REST write без кассы и R4
+
+- **Ошибка:** reception/admin могли PATCH `payments` и `personal_lessons.paid`/`price` через PostgREST; teacher-сетка недели читала base `personal_lessons` (R4); `FOR ALL` write-политики давали UPDATE/DELETE уроков без RPC.
+- **Причина:** `GRANT` write + RLS `FOR ALL` на `personal_lessons_write_*`; teacher view без `cancelled_at`/`price_id` → хук обходил view при `excludeCancelled`; SELECT `payments` «только financial» ломает операционный дашборд admin.
+- **Как избежать:** `REVOKE` write на `payments` (SELECT оставить); view teacher дополнить `cancelled_at`+`price_id`, хук всегда на view; `FOR ALL` → INSERT-only + `REVOKE UPDATE/DELETE`; `teacher_can_write_personal_lessons()` на INSERT; не сужать RLS SELECT payments до `can_read_financial()`.
+
 ### 2026-08-27 — H14/H15: REST write на `attendance` / `subscriptions` обходит RPC и org-флаги
 
 - **Ошибка:** teacher/director могли PATCH `attendance` и `subscriptions.lessons_left` через PostgREST, минуя `mark_attendance` и списание уроков; teacher мог DELETE абонемент; `finish_subscription`/freeze не проверяли `teachers_can_sell_subscriptions`.

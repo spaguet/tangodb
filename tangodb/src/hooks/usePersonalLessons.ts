@@ -139,7 +139,7 @@ const personalLessonsSelect =
   "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, price, paid, paid_amount, subscription_id, location_id, teacher_member_id, attendance_status, price_id, payer_client_id, billing_split_mode";
 
 const personalLessonsSelectTeacher =
-  "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status";
+  "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status, price_id";
 
 function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string, unknown> | null {
   const suffix = {
@@ -208,7 +208,7 @@ export function usePersonalLessons(options?: UsePersonalLessonsOptions) {
     enabled: queryEnabled,
     queryFn: async () => {
       const selectColumns = maskFinancial ? personalLessonsSelectTeacher : personalLessonsSelect;
-      const useTeacherView = maskFinancial && resolved.excludeCancelled !== true;
+      const useTeacherView = maskFinancial;
 
       const data = useTeacherView
         ? await fetchAllPostgrestRows((from, to) => {
@@ -216,6 +216,10 @@ export function usePersonalLessons(options?: UsePersonalLessonsOptions) {
               .from("personal_lessons_teacher_v")
               .select(selectColumns)
               .order("date", { ascending: false });
+
+            if (resolved.excludeCancelled) {
+              query = query.is("cancelled_at", null);
+            }
 
             if (resolved.dateRange) {
               query = query
