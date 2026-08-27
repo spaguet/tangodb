@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.106** — S30 / M15+M39+M58: `requireSiteUrl()` только из `VITE_SITE_URL` (без `window.location.origin`) для auth redirect; Edge `invite-member` / `create-subscription-checkout` — 500 без `SITE_URL`, без fallback `tangodb.vercel.app`; инвайт-ссылка `#token=` + scrub query/hash; токен только в памяти компонента, не `sessionStorage`.
+
 2026-08-27 — fix(security): микропатч **2.8.105** — S29 / H8+M11: `auth_organization_id` / `auth_member_id` / `auth_member_role` требуют активное членство; при deactivate — `user_active_organizations` + `revoke_auth_sessions_for_user` (если орг была активной); `OrganizationProvider` — `claimsMismatch` при JWT org без активного membership → `refreshSession`.
 
 2026-08-27 — fix(security): микропатч **2.8.103** — S27 / M31+M32+L10: `auto_expose_new_tables = false`; ковровый `REVOKE ALL` у `anon`; явные `GRANT SELECT` (именованный список таблиц + masking views) и точечный write для SPA; `ALTER DEFAULT PRIVILEGES REVOKE ALL`; без write на RPC-only таблицы (attendance, payments, rental money, payroll settlements, …).

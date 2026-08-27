@@ -8,6 +8,7 @@ import {
   normalizeEmail,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { requireSiteUrl } from "../_shared/siteUrl.ts";
 import { createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 10;
@@ -154,8 +155,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Invite failed" }, 400, req);
   }
 
-  const siteUrl = Deno.env.get("SITE_URL") ?? "https://tangodb.vercel.app";
-  const inviteUrl = `${siteUrl}/accept-invite?token=${encodeURIComponent(plaintextToken)}`;
+  const siteUrl = requireSiteUrl();
+  if (!siteUrl) {
+    return jsonResponse({ error: "Service unavailable" }, 500, req);
+  }
+  const inviteUrl = `${siteUrl}/accept-invite#token=${encodeURIComponent(plaintextToken)}`;
 
   const { data: orgRow } = await supabase
     .from("organizations")

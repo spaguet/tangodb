@@ -5,6 +5,7 @@ import {
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createCheckoutSession } from "../_shared/stripe.ts";
+import { requireSiteUrl } from "../_shared/siteUrl.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 10;
@@ -85,7 +86,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Billing not configured" }, 503, req);
   }
 
-  const siteUrl = Deno.env.get("SITE_URL") ?? "https://tangodb.vercel.app";
+  const siteUrl = requireSiteUrl();
+  if (!siteUrl) {
+    return jsonResponse({ error: "Service unavailable" }, 500, req);
+  }
   const email = userData.user.email ?? "";
 
   try {

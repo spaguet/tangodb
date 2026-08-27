@@ -9,7 +9,7 @@ import {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { setAuthRememberMe, supabase } from "../lib/supabase";
-import { getSiteUrl } from "../lib/siteUrl";
+import { requireSiteUrl } from "../lib/siteUrl";
 import { t, getGuestLocale } from "../lib/i18n";
 
 interface AuthContextValue {
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${getSiteUrl()}/auth/verify-email`,
+          emailRedirectTo: `${requireSiteUrl()}/auth/verify-email`,
           data: trimmedName ? { display_name: trimmedName } : undefined,
         },
       });
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPasswordForEmail = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${getSiteUrl()}/auth/reset-password`,
+      redirectTo: `${requireSiteUrl()}/auth/reset-password`,
     });
     if (error) throw error;
   }, []);

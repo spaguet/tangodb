@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useAuth } from "./AuthProvider";
@@ -9,10 +9,9 @@ import { useI18n } from "../hooks/useI18n";
 import { supabase } from "../lib/supabase";
 import { membershipsQueryKey } from "../organization/OrganizationProvider";
 import {
-  clearPendingInviteToken,
-  peekPendingInviteToken,
-  storePendingInviteToken,
-} from "./pendingInviteToken";
+  extractInviteTokenFromUrl,
+  scrubInviteTokenFromUrl,
+} from "./inviteUrlToken";
 import {
   AuthButton,
   AuthError,
@@ -22,12 +21,10 @@ import {
 } from "./AuthLayout";
 
 export default function AcceptInvitePage() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { session, loading: authLoading, signInWithEmail } = useAuth();
   const { t, locale } = useI18n();
-  const tokenFromUrl = searchParams.get("token") ?? "";
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [orgName, setOrgName] = useState<string | null>(null);
@@ -38,9 +35,7 @@ export default function AcceptInvitePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [activeToken, setActiveToken] = useState(
-    () => tokenFromUrl || peekPendingInviteToken() || ""
-  );
+  const [activeToken, setActiveToken] = useState(() => extractInviteTokenFromUrl());
   const acceptStartedRef = useRef(false);
   const inviteAcceptedViaCompleteRef = useRef(false);
 
@@ -53,14 +48,11 @@ export default function AcceptInvitePage() {
   };
 
   useEffect(() => {
-    if (tokenFromUrl) {
-      storePendingInviteToken(tokenFromUrl);
-      setActiveToken(tokenFromUrl);
-      return;
-    }
-    const stored = peekPendingInviteToken();
-    if (stored) setActiveToken(stored);
-  }, [tokenFromUrl]);
+    const token = extractInviteTokenFromUrl();
+    if (!token) return;
+    scrubInviteTokenFromUrl();
+    setActiveToken(token);
+  }, []);
 
   useEffect(() => {
     if (authLoading || session || !activeToken) return;
@@ -88,7 +80,7 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     if (authLoading || !session || acceptStartedRef.current) return;
 
-    const token = tokenFromUrl || peekPendingInviteToken();
+    const token = activeToken;
     if (!token && !inviteAcceptedViaCompleteRef.current) return;
 
     acceptStartedRef.current = true;
@@ -113,7 +105,7 @@ export default function AcceptInvitePage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, session, tokenFromUrl, navigate, t]);
+  }, [authLoading, session, activeToken, navigate, t]);
 
   const handleExistingLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,7 +150,6 @@ export default function AcceptInvitePage() {
         throw new Error(t("auth.acceptInviteError"));
       }
       inviteAcceptedViaCompleteRef.current = true;
-      clearPendingInviteToken();
       const { error: sessionError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -322,7 +313,7 @@ export default function AcceptInvitePage() {
             </button>
           </>
         )}
-        {status === "idle" && !tokenFromUrl && (
+        {status === "idle" && !activeToken && (
           <p className="text-sm text-slate-500">{t("auth.acceptInviteError")}</p>
         )}
       </div>

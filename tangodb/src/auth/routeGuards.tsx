@@ -7,7 +7,6 @@ import { useApplyScheduledSubscriptionMemberChanges } from "../hooks/useApplySch
 import { useGuestI18n } from "../hooks/useI18n";
 import { getOrganizationIdFromSession } from "../lib/authClaims";
 import { isSyntheticTelegramEmail } from "../lib/telegram";
-import { hasPendingInviteToken } from "./pendingInviteToken";
 import {
   findFirstAccessibleSettingsSection,
   findFirstEnabledAccessiblePanelPath,
@@ -52,10 +51,7 @@ export function GuestRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
 
   if (loading) return <LoadingScreen label={t("common.loading.default")} />;
-  if (session) {
-    if (hasPendingInviteToken()) return <Navigate to="/accept-invite" replace />;
-    return <Navigate to="/" replace />;
-  }
+  if (session) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
