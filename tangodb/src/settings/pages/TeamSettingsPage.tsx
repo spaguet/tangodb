@@ -1,5 +1,5 @@
 import { useRef, useState, useMemo } from "react";
-import { Mail, UserMinus, Users, Edit, LifeBuoy, UserPlus, CalendarOff, ChevronDown } from "lucide-react";
+import { Mail, UserMinus, Users, Edit, LifeBuoy, UserPlus, CalendarOff, ChevronDown, Copy } from "lucide-react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import LoadingState from "../../components/ui/LoadingState";
@@ -97,6 +97,8 @@ export default function TeamSettingsPage() {
   const [reinviteSourceId, setReinviteSourceId] = useState<string | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<TeamMemberRow | null>(null);
   const [inviteExpanded, setInviteExpanded] = useState(false);
+  const [createdInviteUrl, setCreatedInviteUrl] = useState<string | null>(null);
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
   const inviteFormRef = useRef<HTMLFormElement>(null);
 
   const activeMembers = members.filter((m) => m.is_active);
@@ -181,15 +183,17 @@ export default function TeamSettingsPage() {
         meta: mergedMeta,
         scope,
       });
+      if (!result.invite_url) {
+        throw new Error(t("team.inviteError"));
+      }
       setEmail("");
       setFirstName("");
       setLastName("");
       clearReinvitePreset();
       setInviteExpanded(true);
-      showToast(
-        result.email_sent ? t("team.inviteEmailSent") : t("team.inviteManualHint"),
-        result.email_sent ? "success" : "info"
-      );
+      setCreatedInviteUrl(result.invite_url);
+      setInviteLinkCopied(false);
+      showToast(t("team.inviteSuccess"), "success");
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
       if (!showDirectorSlotError(message)) {
@@ -379,6 +383,47 @@ export default function TeamSettingsPage() {
         </div>
         )}
       </form>
+      )}
+
+      {canInvite && createdInviteUrl && (
+        <div className="bg-amber-50/90 rounded-xl border border-amber-200 shadow-xs p-3.5 space-y-2.5">
+          <p className="text-sm font-semibold text-slate-800">{t("team.inviteSuccess")}</p>
+          <p className="text-[11px] text-slate-600 leading-relaxed">{t("team.inviteLinkOnceHint")}</p>
+          <input
+            type="text"
+            readOnly
+            value={createdInviteUrl}
+            className={`${inputCls} font-mono text-[11px]`}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(createdInviteUrl);
+                  setInviteLinkCopied(true);
+                } catch {
+                  showToast(t("team.inviteError"), "error");
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 cursor-pointer"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              {inviteLinkCopied ? t("common.copied") : t("common.copy")}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCreatedInviteUrl(null);
+                setInviteLinkCopied(false);
+              }}
+              className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white/80 rounded-lg cursor-pointer"
+            >
+              {t("team.hideInviteLink")}
+            </button>
+          </div>
+        </div>
       )}
 
       {canInvite && !invitesLoading && invites.length > 0 && (

@@ -31,7 +31,7 @@ export async function invokeEdgeFunction<T>(
 export interface InviteMemberResponse {
   ok: boolean;
   invite_id?: string;
-  email_sent?: boolean;
+  invite_url?: string;
   expires_at?: string;
 }
 

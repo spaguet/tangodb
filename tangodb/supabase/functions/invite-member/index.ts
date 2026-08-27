@@ -1,4 +1,3 @@
-import { sendTransactionalEmail } from "../_shared/email.ts";
 import { hashInviteToken, generateInviteToken } from "../_shared/inviteToken.ts";
 import {
   getClientIp,
@@ -56,21 +55,6 @@ function sanitizeTeacherScope(raw: Record<string, unknown> | undefined): Record<
   };
 }
 
-async function sendInviteEmail(
-  email: string,
-  inviteUrl: string,
-  orgName: string
-): Promise<boolean> {
-  const subject = `TangoDB — приглашение в ${orgName}`;
-  const text =
-    `Здравствуйте!\n\n` +
-    `Вас пригласили в организацию «${orgName}» в TangoDB CRM.\n\n` +
-    `Примите приглашение: ${inviteUrl}\n\n` +
-    `Ссылка действует 7 дней.\n`;
-
-  return sendTransactionalEmail({ to: email, subject, text });
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions(req);
   if (req.method !== "POST") {
@@ -79,6 +63,11 @@ Deno.serve(async (req) => {
 
   const pepper = Deno.env.get("ACCESS_KEY_PEPPER");
   if (!pepper) {
+    return jsonResponse({ error: "Service unavailable" }, 500, req);
+  }
+
+  const siteUrl = requireSiteUrl();
+  if (!siteUrl) {
     return jsonResponse({ error: "Service unavailable" }, 500, req);
   }
 
@@ -155,19 +144,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Invite failed" }, 400, req);
   }
 
-  const siteUrl = requireSiteUrl();
-  if (!siteUrl) {
-    return jsonResponse({ error: "Service unavailable" }, 500, req);
-  }
   const inviteUrl = `${siteUrl}/accept-invite#token=${encodeURIComponent(plaintextToken)}`;
-
-  const { data: orgRow } = await supabase
-    .from("organizations")
-    .select("name")
-    .maybeSingle();
-
-  const orgName = (orgRow?.name as string | undefined) ?? "организацию";
-  const emailSent = await sendInviteEmail(email, inviteUrl, orgName);
 
   logEvent("invite_created", { role, email_domain: email.split("@")[1] ?? "unknown" });
 
@@ -175,7 +152,7 @@ Deno.serve(async (req) => {
     {
       ok: true,
       invite_id: data?.invite_id,
-      email_sent: emailSent,
+      invite_url: inviteUrl,
       expires_at: data?.expires_at,
     },
     200,
