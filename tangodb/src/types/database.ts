@@ -6345,6 +6345,39 @@ export type Database = {
       }
     }
     Views: {
+      calendar_events_teacher_v: {
+        Row: {
+          comment: string | null
+          event_type: string | null
+          guest_teacher: string | null
+          id: string | null
+          organization_id: string | null
+          organizer: string | null
+          planned_guest_count: number | null
+          title: string | null
+        }
+        Insert: {
+          comment?: string | null
+          event_type?: string | null
+          guest_teacher?: string | null
+          id?: string | null
+          organization_id?: string | null
+          organizer?: string | null
+          planned_guest_count?: number | null
+          title?: string | null
+        }
+        Update: {
+          comment?: string | null
+          event_type?: string | null
+          guest_teacher?: string | null
+          id?: string | null
+          organization_id?: string | null
+          organizer?: string | null
+          planned_guest_count?: number | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       finance_cost_entries_v: {
         Row: {
           amount: number | null

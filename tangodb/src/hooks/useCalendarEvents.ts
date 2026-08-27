@@ -7,6 +7,7 @@ import type {
   EventDisplayLesson,
   PaymentMethod,
 } from "../types";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { otherIncomeQueryKey } from "./useOtherIncome";
 import { scheduleQueryKey } from "./useSchedule";
@@ -267,78 +268,118 @@ export function useCreateCalendarEvent() {
   });
 }
 
+type CalendarEventSessionRow = {
+  id: string;
+  session_date: string;
+  time_start: string;
+  time_end: string;
+  location_id: string | null;
+  event_id: string;
+};
+
+function mapSessionRowToEventLesson(
+  row: CalendarEventSessionRow,
+  event: Record<string, unknown>,
+  maskFinancial: boolean
+): EventDisplayLesson {
+  return {
+    kind: "event",
+    sessionId: String(row.id),
+    eventId: String(row.event_id),
+    date: String(row.session_date).slice(0, 10),
+    timeStart: normalizeTime(String(row.time_start)),
+    timeEnd: normalizeTime(String(row.time_end)),
+    locationId: row.location_id != null ? String(row.location_id) : null,
+    title: String(event.title ?? ""),
+    eventType: (event.event_type as CalendarEventType) ?? "master_class",
+    guestTeacher: event.guest_teacher != null ? String(event.guest_teacher) : null,
+    organizer: event.organizer != null ? String(event.organizer) : null,
+    comment: event.comment != null ? String(event.comment) : null,
+    paymentStatus: maskFinancial
+      ? "unpaid"
+      : ((event.payment_status as CalendarEventPaymentStatus) ?? "unpaid"),
+    incomeAmount: maskFinancial
+      ? null
+      : event.income_amount != null
+        ? Number(event.income_amount)
+        : null,
+    paidAmount: maskFinancial
+      ? null
+      : event.paid_amount != null
+        ? Number(event.paid_amount)
+        : null,
+    currency: maskFinancial ? "RUB" : event.currency != null ? String(event.currency) : "RUB",
+    plannedGuestCount:
+      event.planned_guest_count != null ? Number(event.planned_guest_count) : null,
+    actualGuestCount: maskFinancial
+      ? null
+      : event.actual_guest_count != null
+        ? Number(event.actual_guest_count)
+        : null,
+  };
+}
+
 export function useCalendarEventsForWeek(weekStartISO: string, weekEndISO: string, enabled = true) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const { role } = useOrganization();
+  const maskFinancial = role === "teacher";
 
   return useQuery({
-    queryKey: withOrgId([...calendarEventsQueryKey, "week", weekStartISO]),
+    queryKey: withOrgId([...calendarEventsQueryKey, "week", weekStartISO, { maskFinancial }]),
     enabled: orgEnabled && enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: sessions, error: sessionsError } = await supabase
         .from("calendar_event_sessions")
-        .select(
-          `
-          id,
-          session_date,
-          time_start,
-          time_end,
-          location_id,
-          event_id,
-          calendar_events (
-            id,
-            title,
-            event_type,
-            guest_teacher,
-            organizer,
-            comment,
-            payment_status,
-            income_amount,
-            paid_amount,
-            currency,
-            planned_guest_count,
-            actual_guest_count
-          )
-        `
-        )
+        .select("id, session_date, time_start, time_end, location_id, event_id")
         .gte("session_date", weekStartISO)
         .lte("session_date", weekEndISO)
         .order("session_date")
         .order("time_start");
 
-      if (error) throw error;
+      if (sessionsError) throw sessionsError;
 
-      const lessons: EventDisplayLesson[] = [];
+      const sessionRows = (sessions ?? []) as CalendarEventSessionRow[];
+      if (sessionRows.length === 0) return [];
 
-      for (const row of data ?? []) {
-        const eventRaw = row.calendar_events as Record<string, unknown> | Record<string, unknown>[] | null;
-        const event = (Array.isArray(eventRaw) ? eventRaw[0] : eventRaw) as Record<string, unknown> | null;
-        if (!event) continue;
+      const eventIds = [...new Set(sessionRows.map((row) => String(row.event_id)))];
 
-        lessons.push({
-          kind: "event",
-          sessionId: String(row.id),
-          eventId: String(row.event_id),
-          date: String(row.session_date).slice(0, 10),
-          timeStart: normalizeTime(String(row.time_start)),
-          timeEnd: normalizeTime(String(row.time_end)),
-          locationId: row.location_id != null ? String(row.location_id) : null,
-          title: String(event.title ?? ""),
-          eventType: (event.event_type as CalendarEventType) ?? "master_class",
-          guestTeacher: event.guest_teacher != null ? String(event.guest_teacher) : null,
-          organizer: event.organizer != null ? String(event.organizer) : null,
-          comment: event.comment != null ? String(event.comment) : null,
-          paymentStatus: (event.payment_status as CalendarEventPaymentStatus) ?? "unpaid",
-          incomeAmount: event.income_amount != null ? Number(event.income_amount) : null,
-          paidAmount: event.paid_amount != null ? Number(event.paid_amount) : null,
-          currency: event.currency != null ? String(event.currency) : "RUB",
-          plannedGuestCount:
-            event.planned_guest_count != null ? Number(event.planned_guest_count) : null,
-          actualGuestCount:
-            event.actual_guest_count != null ? Number(event.actual_guest_count) : null,
+      if (maskFinancial) {
+        const { data: events, error: eventsError } = await supabase
+          .from("calendar_events_teacher_v")
+          .select("id, title, event_type, guest_teacher, organizer, comment, planned_guest_count")
+          .in("id", eventIds);
+
+        if (eventsError) throw eventsError;
+
+        const eventById = new Map(
+          (events ?? []).map((event) => [String(event.id), event as Record<string, unknown>])
+        );
+
+        return sessionRows.flatMap((row) => {
+          const event = eventById.get(String(row.event_id));
+          if (!event) return [];
+          return [mapSessionRowToEventLesson(row, event, true)];
         });
       }
 
-      return lessons;
+      const { data: events, error: eventsError } = await supabase
+        .from("calendar_events")
+        .select(
+          "id, title, event_type, guest_teacher, organizer, comment, payment_status, income_amount, paid_amount, currency, planned_guest_count, actual_guest_count"
+        )
+        .in("id", eventIds);
+
+      if (eventsError) throw eventsError;
+
+      const eventById = new Map(
+        (events ?? []).map((event) => [String(event.id), event as Record<string, unknown>])
+      );
+
+      return sessionRows.flatMap((row) => {
+        const event = eventById.get(String(row.event_id));
+        if (!event) return [];
+        return [mapSessionRowToEventLesson(row, event, false)];
+      });
     },
     staleTime: 60 * 1000,
   });

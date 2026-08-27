@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.93** — S17 / H24+H25+H28: view `calendar_events_teacher_v` без финансовых колонок, `DROP` teacher SELECT на `calendar_events`; `useCalendarEventsForWeek` для teacher через view; `REVOKE` write на `rental_series*` и `renters`/`renter_*` (только RPC); write `price_disciplines` / `price_teacher_members` = `can_manage_prices()`.
+
 2026-08-27 — fix(security): микропатч **2.8.92** — S16 / H19+M30+H20+H32: `subscription_groups` teacher INSERT/DELETE только при `teacher_can_write_subscriptions()`; `REVOKE` write на `single_visits` (только `record_single_visit`); view `single_visits_teacher_v` без `amount`/`method`/`price_id`; `useSingleVisits` для teacher через view; журнал AttendancePanel без сумм.
 
 2026-08-27 — fix(security): микропатч **2.8.91** — S15 / H11: `teachers_can_edit_clients` в RLS (`teacher_can_write_clients` + `teacher_has_client_write_scope`); teacher DELETE на `clients` запрещён; `subscriptions_update_teacher` WITH CHECK на `client_id1..4` через `subscription_teacher_update_client_ids_valid` (GRANT UPDATE не возвращали — S08).
