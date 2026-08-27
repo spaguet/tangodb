@@ -1773,7 +1773,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 21 | **S21** | 1 | M33 | S20 | CSV formula injection |
 | ☑ | 22 | **S22** | 1 | M34, M56, M49 | S21 | DEFINER без членства; `REVOKE PUBLIC` у функций |
 | ✅ | 23 | **S23** | 1 | M38, M42, M47, M50 | S22 | Preview/occupancy PII и имена календарей |
-| ☐ | 24 | **S24** | 1 | M41, M43, M45, M46, M53 | S23 | Широкий SELECT member: замены, Stripe, лицензии, freeze, миграции |
+| ✅ | 24 | **S24** | 1 | M41, M43, M45, M46, M53 | S23 | Широкий SELECT member: замены, Stripe, лицензии, freeze, миграции |
 | ☐ | 25 | **S25** | 1 | M48, M51, M52 | S24 | Storage документов/`exports`; REST `teacher_pay_rates` |
 | ☐ | 26 | **S26** | 1 | M59 | S25 | `attendee_count` закрытия группы из журнала, не с клиента |
 | ☐ | 27 | **S27** | 1 | M31, M32, L10 | S26 | Auto-expose OFF; `REVOKE` у `anon`; явные GRANT. Последним в волне 1, когда табличные write уже сняты точечно |
