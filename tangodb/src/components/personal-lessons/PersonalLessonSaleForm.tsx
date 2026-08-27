@@ -29,6 +29,7 @@ import {
 } from "../../lib/personalLessonDates";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { toISODateLocal, addDays } from "../../lib/scheduleWeek";
+import { isFinancePeriodClosed } from "../../lib/orgFinanceDate";
 import {
   exceedsWeeklySlotCap,
   maxRepeatEndDate,
@@ -754,6 +755,15 @@ export default function PersonalLessonSaleForm({
 
     const willRecordCashPayments =
       immediatePaid && bookingPaymentMode === "single" && !isPackageBooking;
+    if (willRecordCashPayments) {
+      const closedUntil = settings?.finance_period_closed_until ?? null;
+      for (const slot of slots) {
+        if (isFinancePeriodClosed(slot.date, closedUntil)) {
+          toast(t("finance.error.periodClosed"), "error");
+          return;
+        }
+      }
+    }
     const slotGroups = groupSlotsByTime(slots);
     const createdPaymentPlans: Array<{
       lessonId: string;

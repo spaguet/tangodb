@@ -24,6 +24,7 @@ import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { useScheduleGroups } from "../hooks/useScheduleGroups";
 import { useSchedule } from "../hooks/useSchedule";
 import { useRecordSubscriptionPayment, PAYMENT_METHODS, getPaymentMethodLabel } from "../hooks/usePayments";
+import { useFinancePeriodGate } from "../hooks/useFinancePeriodGate";
 import type { PaymentMethod } from "../types";
 import {
   translateConnectionBlockReason,
@@ -157,6 +158,7 @@ export default function SubscriptionsPanel({
   const addSubscription = useAddSubscription();
   const finishSubscription = useFinishSubscription();
   const recordSubscriptionPayment = useRecordSubscriptionPayment();
+  const financePeriod = useFinancePeriodGate();
   const { canAccessPanel } = usePermissions();
   const canManageFreeze = useCan("subscriptions.write") || useCan("attendance.write");
   const canReplacePartner = useCan("subscriptions.write");
@@ -496,6 +498,10 @@ export default function SubscriptionsPanel({
 
     const amount = getSubPrice();
     if (amount > 0 && res.id) {
+      if (financePeriod.isClosed) {
+        toast(t("finance.error.periodClosed"), "error");
+        return;
+      }
       const c1 = activeClients.find((c) => c.id === client1Id);
       const paymentPayload = {
         subscriptionId: res.id,
@@ -536,6 +542,10 @@ export default function SubscriptionsPanel({
 
   const confirmVenuePayment = async () => {
     if (!pendingVenuePayment) return;
+    if (financePeriod.isClosed) {
+      toast(t("finance.error.periodClosed"), "error");
+      return;
+    }
     const paymentRes = await recordSubscriptionPayment.mutateAsync({
       ...pendingVenuePayment,
       method: paymentMethod,

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Pencil, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import { useWriteOffPersonalLessonDebt } from "../../hooks/usePersonalLessonDebt";
+import { useFinancePeriodGate } from "../../hooks/useFinancePeriodGate";
 import { useRestatePersonalLessonAmount } from "../../hooks/usePersonalLessons";
 import { useAdjustRentalAmount } from "../../hooks/useRentals";
 import { PAYMENT_CORRECTION_REASONS } from "../../lib/paymentCorrection";
@@ -33,6 +34,7 @@ export default function AdjustDebtorAmountDialog({
   const restatePersonal = useRestatePersonalLessonAmount();
   const writeOffPersonal = useWriteOffPersonalLessonDebt();
   const adjustRental = useAdjustRentalAmount();
+  const financePeriod = useFinancePeriodGate(entry?.lessonDate ?? null);
 
   const paidAmount = entry?.paidAmount ?? 0;
   const billedAmount = entry?.billedAmount ?? entry?.amount ?? 0;
@@ -63,6 +65,10 @@ export default function AdjustDebtorAmountDialog({
 
   const handleSubmit = async () => {
     if (!entry) return;
+    if (entry.kind === "personal" && financePeriod.isClosed) {
+      toast(t("finance.error.periodClosed"), "error");
+      return;
+    }
     if (parsedOutstanding == null || parsedOutstanding < 0) {
       toast(t("finance.debtors.adjustInvalid"), "error");
       return;
@@ -112,6 +118,11 @@ export default function AdjustDebtorAmountDialog({
 
   const handleWriteOff = async () => {
     if (!entry?.personalLessonId) return;
+    if (financePeriod.isClosed) {
+      toast(t("finance.error.periodClosed"), "error");
+      setWriteOffConfirmOpen(false);
+      return;
+    }
     const res = await writeOffPersonal.mutateAsync({
       lessonId: entry.personalLessonId,
       chargeId: entry.personalLessonChargeId,

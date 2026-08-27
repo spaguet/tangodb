@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — H29: закрытый кассовый период только на аренде
+
+- **Ошибка:** `finance_period_closed_until` в SQL проверялся только в rental RPC; абонементы, персоналки, drop-in, мастер-классы, возвраты, списание AR (`write_off_personal_lesson_debt`) писались в «закрытом» месяце.
+- **Причина:** `_is_finance_period_closed` добавили в rental-контуре (2.8.x), основную кассу не подключили; UI `isFinancePeriodClosed` был только в аренде.
+- **Как избежать:** период на все money-in RPC + `update_payment_in_place` / `restate_*` / `write_off`; storno/correct оставить как correction path; UI продаж — тот же gate, что rental; дату операции брать из урока/визита/org TZ, не `current_date` сервера.
+
 ### 2026-08-27 — H21/H22/H26: FOR ALL на `payments` / `personal_lessons` = REST write без кассы и R4
 
 - **Ошибка:** reception/admin могли PATCH `payments` и `personal_lessons.paid`/`price` через PostgREST; teacher-сетка недели читала base `personal_lessons` (R4); `FOR ALL` write-политики давали UPDATE/DELETE уроков без RPC.

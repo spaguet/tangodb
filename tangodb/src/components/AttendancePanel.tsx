@@ -34,6 +34,7 @@ import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
 import { useClientDirectory } from "../hooks/useClients";
 import { singleVisitsQueryKey, useRecordSingleVisit, useSingleVisits } from "../hooks/useSingleVisits";
+import { useFinancePeriodGate } from "../hooks/useFinancePeriodGate";
 import VenueRulePaymentConfirmDialog from "./venue-costs/VenueRulePaymentConfirmDialog";
 import {
   useActiveGroupLessonClosure,
@@ -478,6 +479,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const markAttendance = useMarkAttendance();
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
   const recordSingleVisit = useRecordSingleVisit();
+  const financePeriod = useFinancePeriodGate(selectedDate);
   const undoAttendance = useUndoAttendanceCorrection();
   const singleVisitIdempotencyKey = usePaymentFormIdempotency(singleVisitOpen);
   const [attendanceCorrectionTarget, setAttendanceCorrectionTarget] =
@@ -862,6 +864,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     }
     if (!canRecordSingleVisit) {
       toast(t("attendance.singleVisit.error.noAccess"), "error");
+      return;
+    }
+    if (financePeriod.isClosed) {
+      toast(t("finance.error.periodClosed"), "error");
       return;
     }
     if (!singleVisitClientId || !selectedClient) {

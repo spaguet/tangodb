@@ -8,10 +8,10 @@ import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
 import { useI18n } from "../../hooks/useI18n";
 import { usePrices } from "../../hooks/usePrices";
-import {
-  useFinishSubscriptionWithRefund,
+import { useFinishSubscriptionWithRefund,
   usePreviewSubscriptionRefund,
 } from "../../hooks/useSubscriptionRefunds";
+import { useFinancePeriodGate } from "../../hooks/useFinancePeriodGate";
 import {
   isRefundAmountValid,
   previewRecommendedRefund,
@@ -46,6 +46,7 @@ export default function FinishSubscriptionWithRefundDialog({
 }: FinishSubscriptionWithRefundDialogProps) {
   const { t, formatDate } = useI18n();
   const finishWithRefund = useFinishSubscriptionWithRefund();
+  const financePeriod = useFinancePeriodGate();
 
   const [recipientClientId, setRecipientClientId] = useState("");
   const [amountInput, setAmountInput] = useState("");
@@ -203,6 +204,10 @@ export default function FinishSubscriptionWithRefundDialog({
 
   const handleSubmit = async () => {
     if (!subscription || !canSubmit) return;
+    if (financePeriod.isClosed) {
+      toast(t("finance.error.periodClosed"), "error");
+      return;
+    }
 
     const res = await finishWithRefund.mutateAsync({
       subscriptionId: subscription.id,

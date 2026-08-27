@@ -4,6 +4,7 @@ import { Coins, X } from "lucide-react";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { useRecordCalendarEventPayment } from "../../hooks/useCalendarEvents";
+import { useFinancePeriodGate } from "../../hooks/useFinancePeriodGate";
 import { useI18n } from "../../hooks/useI18n";
 import { formatCurrency } from "../../lib/utils";
 import type { EventDisplayLesson, PaymentMethod } from "../../types";
@@ -28,6 +29,7 @@ export default function RecordCalendarEventPaymentModal({
 }: RecordCalendarEventPaymentModalProps) {
   const { t, locale } = useI18n();
   const recordPayment = useRecordCalendarEventPayment();
+  const financePeriod = useFinancePeriodGate(lesson?.date);
 
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("cash");
@@ -51,6 +53,10 @@ export default function RecordCalendarEventPaymentModal({
 
   const handleSubmit = async () => {
     if (!lesson) return;
+    if (financePeriod.isClosed) {
+      toast(t("finance.error.periodClosed"), "error");
+      return;
+    }
     const value = Number(amount);
     if (!value || value <= 0) {
       toast(t("schedule.event.paymentAmountInvalid"), "error");

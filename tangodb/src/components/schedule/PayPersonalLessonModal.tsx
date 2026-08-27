@@ -9,6 +9,7 @@ import {
   useRecordPersonalLessonPayment,
 } from "../../hooks/usePayments";
 import { usePaymentFormIdempotency, usePaymentSubmitState } from "../../hooks/usePaymentFormIdempotency";
+import { useFinancePeriodGate } from "../../hooks/useFinancePeriodGate";
 import { useArchivedPrices, usePrices } from "../../hooks/usePrices";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { usePersonalLessonChargeBalances } from "../../hooks/usePersonalLessonCharges";
@@ -114,6 +115,7 @@ export default function PayPersonalLessonModal({
   const { data: disciplines = [] } = useDisciplines();
   const recordPersonalLessonPayment = useRecordPersonalLessonPayment();
   const updatePersonalLesson = useUpdatePersonalLesson();
+  const financePeriod = useFinancePeriodGate(lesson?.date);
   const paymentIdempotencyKey = usePaymentFormIdempotency(lesson != null);
   const paymentSubmit = usePaymentSubmitState();
   const chargePaymentIdempotencyKeys = useRef<Record<string, string>>({});
@@ -393,6 +395,10 @@ export default function PayPersonalLessonModal({
 
   const handlePayCash = async (venueRuleAcknowledged = false) => {
     if (!lesson) return;
+    if (financePeriod.isClosed) {
+      toast(t("finance.error.periodClosed"), "error");
+      return;
+    }
     if (connectionState !== "online") {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
