@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-27 — H14/H15: REST write на `attendance` / `subscriptions` обходит RPC и org-флаги
+
+- **Ошибка:** teacher/director могли PATCH `attendance` и `subscriptions.lessons_left` через PostgREST, минуя `mark_attendance` и списание уроков; teacher мог DELETE абонемент; `finish_subscription`/freeze не проверяли `teachers_can_sell_subscriptions`.
+- **Причина:** `GRANT INSERT, UPDATE, DELETE` на таблицы + RLS write-политики; RPC уже проверяли `directors_can_mark_attendance`, но REST write оставался; rollback `.delete()` в `useAddSubscription` — мёртвый код (группа идёт в `create_group_subscription`).
+- **Как избежать:** `REVOKE` write на `attendance`; `REVOKE UPDATE/DELETE` на `subscriptions` (INSERT для не-группы оставить); в `finish_subscription` и `member_can_manage_subscription_freeze` — `teacher_can_write_subscriptions()`; списание `lessons_left` только внутри RPC журнала, не триггером на REST.
+
 ### 2026-08-27 — H12: reception (`restricted_admin`) проходит `can_manage_team` / settings PATCH
 
 - **Ошибка:** admin с `meta.restricted_admin` (reception) мог менять `organization_settings` (сброс `finance_period_closed_until`, `modules`, `teachers_can_*`) и вызывать командные RPC, как полный admin.

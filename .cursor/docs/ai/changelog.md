@@ -1,3 +1,5 @@
+2026-08-27 — fix(security): микропатч **2.8.84** — S08 / H14+H15+H27+M27: `REVOKE` write на `attendance` (журнал только `mark_attendance`/`correct_attendance`/offline sync); `REVOKE UPDATE/DELETE` на `subscriptions` (INSERT private/package сохранён); `finish_subscription` и freeze helper — teacher только при `teachers_can_sell_subscriptions`; `directors_can_mark_attendance` в RPC без изменений.
+
 2026-08-27 — fix(security): микропатч **2.8.83** — S07 / H12: `can_manage_team` / `can_manage_settings` + политика `organization_settings_update_admin` с `NOT is_restricted_admin()`; reception не PATCH настроек (`finance_period_closed_until`, `modules`, `teachers_can_*`) и не RPC инвайта/команды; owner/director без restricted — без изменений.
 
 2026-08-27 — fix(security): микропатч **2.8.82** — S06 / H10: `REVOKE UPDATE` на `organizations` у `authenticated`/`anon`; продление демо и смена `owner_user_id`/`status` только через `service_role`/license RPC; SELECT своей орг и `branding_name` в настройках без изменений.

@@ -1,0 +1,144 @@
+-- S08 / H14, H15, H27, M27: attendance and subscription counter/status changes only via RPC.
+-- INSERT on subscriptions kept for private/package sale (useAddSubscription direct insert).
+-- Rollback .delete() in useAddSubscription is dead code (group sales use create_group_subscription).
+
+-- =============================================================================
+-- 1. attendance: write only mark_attendance / correct_attendance / sync_offline_*
+-- =============================================================================
+
+REVOKE INSERT, UPDATE, DELETE ON attendance FROM anon, authenticated;
+
+-- =============================================================================
+-- 2. subscriptions: block PATCH lessons_left/status and DELETE; keep INSERT
+-- =============================================================================
+
+REVOKE UPDATE, DELETE ON subscriptions FROM anon, authenticated;
+
+-- =============================================================================
+-- 3. finish_subscription: teachers need teachers_can_sell_subscriptions (H27)
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION finish_subscription(p_sub_id text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_org_id uuid := auth_organization_id();
+  v_role text := current_member_role();
+  v_sub_uuid uuid;
+BEGIN
+  IF auth.uid() IS NULL OR v_org_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Не авторизован');
+  END IF;
+
+  PERFORM apply_scheduled_subscription_member_changes(v_org_id);
+
+  IF NOT organization_allows_writes(v_org_id) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Организация в режиме только чтения');
+  END IF;
+
+  BEGIN
+    v_sub_uuid := p_sub_id::uuid;
+  EXCEPTION
+    WHEN invalid_text_representation THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Абонемент не найден');
+  END;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM subscriptions
+    WHERE id = v_sub_uuid
+      AND organization_id = v_org_id
+      AND status = 'active'
+  ) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Абонемент не найден или уже завершён');
+  END IF;
+
+  IF v_role = 'accountant' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Недостаточно прав');
+  END IF;
+
+  IF v_role = 'teacher' AND NOT teacher_can_write_subscriptions() THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Недостаточно прав');
+  END IF;
+
+  IF v_role = 'teacher' AND NOT teacher_can_access_subscription(v_sub_uuid) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Недостаточно прав для этого абонемента');
+  END IF;
+
+  PERFORM set_config('app.allow_subscription_counter_update', 'true', true);
+
+  UPDATE subscriptions
+  SET status = 'finished'
+  WHERE id = v_sub_uuid
+    AND organization_id = v_org_id;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+-- =============================================================================
+-- 4. freeze RPC gate: teachers need teachers_can_sell_subscriptions (H27)
+--    apply_subscription_freeze_period / cancel_subscription_freeze_period use this helper
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION member_can_manage_subscription_freeze(p_sub_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_org_id uuid := auth_organization_id();
+  v_role text := current_member_role();
+BEGIN
+  IF auth.uid() IS NULL OR v_org_id IS NULL THEN
+    RETURN false;
+  END IF;
+
+  IF NOT organization_allows_writes(v_org_id) THEN
+    RETURN false;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM subscriptions s
+    WHERE s.id = p_sub_id
+      AND s.organization_id = v_org_id
+  ) THEN
+    RETURN false;
+  END IF;
+
+  IF v_role = 'accountant' THEN
+    RETURN false;
+  END IF;
+
+  IF v_role = 'director' AND NOT directors_can_mark_attendance_setting() THEN
+    RETURN false;
+  END IF;
+
+  IF v_role = 'teacher' AND NOT teacher_can_write_subscriptions() THEN
+    RETURN false;
+  END IF;
+
+  IF v_role = 'teacher' AND NOT teacher_can_access_subscription(p_sub_id) THEN
+    RETURN false;
+  END IF;
+
+  IF v_role IN ('owner', 'director', 'admin') THEN
+    IF v_role = 'admin' AND is_restricted_admin() THEN
+      RETURN false;
+    END IF;
+    RETURN true;
+  END IF;
+
+  IF v_role = 'teacher' THEN
+    RETURN teacher_can_access_subscription(p_sub_id);
+  END IF;
+
+  RETURN false;
+END;
+$$;
