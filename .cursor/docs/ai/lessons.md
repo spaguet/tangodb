@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-28 — M1: модуль — UI, роль — API (S36)
+
+- **Ошибка:** скрытие `/finance`, баннер `isReadOnly` и флаги в `permissions.ts` воспринимались как защита API.
+- **Причина:** `PanelAccessRoute` / JSONB `modules` живут только в SPA; PostgREST смотрит RLS и роль (`can_read_financial`, `organization_allows_writes`).
+- **Как избежать:** модули (`finance_basic` и др.) не класть в RLS — сломает accountant при выключенном пункте меню. Деньги и write закрывать ролью + RPC/RLS (S07–S33). Storage `exports` — `can_export_data()` (уже S25). Не строить DLP на табличный SELECT (H8).
+
 ### 2026-08-28 — H7: R4 на финансы ≠ маскирование PII contacts (S32)
 
 - **Ошибка:** masking views R4 сняли финансовые колонки с абонементов/персоналок, но teacher `SELECT *` на `clients` отдавал телефон, telegram, email и данные опекунов.

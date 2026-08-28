@@ -1,3 +1,5 @@
+2026-08-28 — docs(security): S36 / M1 — инвентаризация «UI ≠ API»: JSONB-модули (`finance_basic` и др.) остаются UI-gate; роль/RLS — API. Storage `exports` уже `can_export_data()` (S25). Без бампа `2.8.y`. Волна 3 (S32–S36) закрыта.
+
 2026-08-28 — fix(security): микропатч **2.8.115** — S35 / M12+M23+M29: офлайн IndexedDB без phone/telegram/email; `expenses` write — `NOT _is_finance_period_closed` (GRANT insert/delete сохранён); `audit_log_leadership_v` без снимков для director, полный trail только owner; `REVOKE` SELECT на базовую `audit_log` у JWT.
 
 

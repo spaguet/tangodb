@@ -72,7 +72,8 @@
 - **Нормализация:** `normalizeOrgModules()` в `lib/orgModules.ts` — merge с defaults; `finance_basic` для старых org → `true`.
 - **Ключи с UI-gate:** `group_subscriptions`, `personal_lessons`, `finance_basic`, `multi_discipline`, `locations`; `pair_subscriptions` / `trio_lessons` — только фильтр тарифов.
 - **Точки gate:** desktop nav + mobile tabs (`App.tsx`), `PanelAccessRoute` (`routeGuards.tsx`), settings nav/redirect, financial tab на `/`, financial export в `DataExportPage`.
-- **Не gate:** операционная оплата при продаже; RBAC и RLS не заменяются.
+- **Модуль — UI, роль — API (S36 / M1):** JSONB-модули **не** дублируются в RLS. Скрытый пункт меню / `isReadOnly` не защищают PostgREST. Деньги: `can_read_financial()` / `can_read_operational()` по **роли** — выключенный `finance_basic` не открывает `payments` teacher; включённый модуль не даёт REST без финансовой роли. Accountant/owner при выключенном модуле по-прежнему читают финансовый REST (роль не снимается). Запись после демо/без лицензии — `organization_allows_writes()` (UI-баннер `isReadOnly` — слой сверху). Storage `exports` INSERT — `can_export_data()` (S25); табличного REST-экспорта нет. Insider SELECT таблиц, на которые уже есть RLS, — свойство SPA (H8), не DLP.
+- **Не gate:** операционная оплата при продаже; RBAC и RLS не заменяются модулем.
 
 ## i18n (S10)
 
