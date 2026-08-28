@@ -1,3 +1,5 @@
+2026-08-28 — fix(security): микропатч **2.8.119** — S40 / L1+L6+L13+L25: `submit-purchase-request` без хардкода email (секрет `DEVELOPER_NOTIFY_EMAIL` / `platform_payment_methods.config.contacts.email`); `crm_product_versions` без JWT SELECT; `landing-track-event` при лимите отвечает 429; локальный Realtime выключен (SPA не подписан). L7 без кода (SPA скачивается — норма). L8 allowlist Dev Console не снимали; `temporary_password` только в console. L14 не чинили (штат developer). L16 пропущен — закрыт S35.
+
 2026-08-28 — fix(security): микропатч **2.8.118** — S39 / L11+L15+L18+L21+L22+L24+L26+L27+L28: freebusy только ролям с записью сетки (не accountant); `organization_settings` явный SELECT без `rental_billing_profile` (без column-REVOKE); GCal `last_error` урока не teacher; leftover `allowed_users`/`is_allowed_teacher`/`auth_telegram_id` сняты; `window.open` документов с `noopener`; дашборд teacher без `VenueRuleExpiryNotice`, `get_venue_cost_rule_status` для кассы (reception/admin/teacher с продажей + financial), не `can_read_financial`-only. L15 каталог `prices` и L22 SELECT `platform_payment_methods.config` оставлены — нужны продаже и странице лицензии.
 
 

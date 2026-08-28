@@ -11,6 +11,20 @@
 
 ## Записи
 
+### 2026-08-28 — L1/L25: секреты и Realtime в Dashboard, не в git (S40)
+
+- **Ошибка:** notify-email разработчика жил в исходнике Edge; локальный Realtime был включён без подписок SPA.
+- **Причина:** fallback-константа в функции; `config.toml` копирует шаблон с `enabled = true`.
+- **Как избежать:** `DEVELOPER_NOTIFY_EMAIL` только в Supabase Secrets; SPA не шифровать. Hosted Realtime: не публиковать tenant-таблицы сверх дефолта, CRM не подписывается на `postgres_changes`.
+
+**Чеклист Supabase Dashboard (production, S40):**
+
+| Настройка | Требование |
+|-----------|------------|
+| Edge Secrets | `DEVELOPER_NOTIFY_EMAIL` задан (иначе заявка сохраняется, письмо нет — если нет email в `platform_payment_methods.config.contacts`) |
+| Realtime publications | не добавлять tenant-таблицы; SPA не использует канал |
+| Data API | `crm_product_versions` без SELECT у `authenticated` (миграция S40) |
+
 ### 2026-08-28 — M1: модуль — UI, роль — API (S36)
 
 - **Ошибка:** скрытие `/finance`, баннер `isReadOnly` и флаги в `permissions.ts` воспринимались как защита API.

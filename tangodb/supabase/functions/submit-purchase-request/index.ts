@@ -11,7 +11,14 @@ import { createServiceClient, createUserClient, logEvent } from "../_shared/supa
 
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 15 * 60_000;
-const DEFAULT_DEVELOPER_EMAIL = "omowdance@gmail.com";
+
+function resolveDeveloperNotifyEmail(configEmail: unknown): string | null {
+  const fromConfig = typeof configEmail === "string" ? configEmail.trim() : "";
+  if (isValidEmail(fromConfig)) return fromConfig;
+  const fromEnv = (Deno.env.get("DEVELOPER_NOTIFY_EMAIL") ?? "").trim();
+  if (isValidEmail(fromEnv)) return fromEnv;
+  return null;
+}
 
 interface SubmitPurchaseRequestBody {
   organization_id?: string;
@@ -96,10 +103,9 @@ Deno.serve(async (req) => {
     .eq("id", 1)
     .maybeSingle();
 
-  const developerEmailRaw =
-    (paymentConfig?.config as { contacts?: { email?: string } } | null)?.contacts?.email ??
-    DEFAULT_DEVELOPER_EMAIL;
-  const developerEmail = isValidEmail(developerEmailRaw) ? developerEmailRaw : DEFAULT_DEVELOPER_EMAIL;
+  const developerEmail = resolveDeveloperNotifyEmail(
+    (paymentConfig?.config as { contacts?: { email?: string } } | null)?.contacts?.email
+  );
 
   const requesterEmail = userData.user.email ?? (contactEmail || null);
   const { data: requestRow, error: insertError } = await admin
@@ -122,24 +128,29 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "request_save_failed" }, 500, req);
   }
 
-  const emailSent = await sendTransactionalEmail({
-    to: developerEmail,
-    subject: `TangoDB: заявка на полную версию — ${org.name}`,
-    text: [
-      "Новая заявка на покупку полной версии TangoDB.",
-      "",
-      `Request ID: ${requestRow.id}`,
-      `Organization: ${org.name} (${organizationId})`,
-      `Requester email: ${requesterEmail ?? "not provided"}`,
-      `Contact email: ${contactEmail || requesterEmail || "not provided"}`,
-      `Telegram: ${contactTelegram || "not provided"}`,
-      "",
-      "Комментарий пользователя:",
-      paymentComment,
-      "",
-      "Проверьте поступление средств и активируйте доступ в Dev Console → Inbox.",
-    ].join("\n"),
-  });
+  let emailSent = false;
+  if (developerEmail) {
+    emailSent = await sendTransactionalEmail({
+      to: developerEmail,
+      subject: `TangoDB: заявка на полную версию — ${org.name}`,
+      text: [
+        "Новая заявка на покупку полной версии TangoDB.",
+        "",
+        `Request ID: ${requestRow.id}`,
+        `Organization: ${org.name} (${organizationId})`,
+        `Requester email: ${requesterEmail ?? "not provided"}`,
+        `Contact email: ${contactEmail || requesterEmail || "not provided"}`,
+        `Telegram: ${contactTelegram || "not provided"}`,
+        "",
+        "Комментарий пользователя:",
+        paymentComment,
+        "",
+        "Проверьте поступление средств и активируйте доступ в Dev Console → Inbox.",
+      ].join("\n"),
+    });
+  } else {
+    logEvent("purchase_request_notify_email_missing", { request_id: requestRow.id });
+  }
 
   if (emailSent) {
     await admin

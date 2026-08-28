@@ -52,8 +52,7 @@ Deno.serve(async (req) => {
 
   const clientIp = getClientIp(req);
   if (!(await checkRateLimit(`landing-track-event:ip:${clientIp}`, RATE_LIMIT_IP, RATE_WINDOW_MS))) {
-    // M4: drop on edge — do not insert. Honest 429 is S40/L13.
-    return jsonResponse({ ok: true }, 200, req);
+    return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
   let body: TrackEventBody;
@@ -81,7 +80,7 @@ Deno.serve(async (req) => {
       RATE_WINDOW_MS
     ))
   ) {
-    return jsonResponse({ ok: true }, 200, req);
+    return jsonResponse({ error: "Too many requests" }, 429, req);
   }
 
   try {
