@@ -135,6 +135,38 @@ export const useActiveClients = () => useClients();
 export const useClientDirectory = (options?: { enabled?: boolean }) =>
   useClients({ includeArchived: true, enabled: options?.enabled });
 
+export function clientCardQueryKey(clientId: string) {
+  return [...clientsQueryKey, "card", clientId] as const;
+}
+
+export async function fetchClientCard(clientId: string): Promise<Client> {
+  const { data, error } = await supabase.rpc("get_client_card", { p_client_id: clientId });
+  if (error) throw error;
+
+  const result = data as {
+    success?: boolean;
+    error_code?: string;
+    client?: Record<string, unknown>;
+  } | null;
+
+  if (!result?.success || !result.client) {
+    throw new Error(result?.error_code ?? "get_client_card_failed");
+  }
+
+  return mapClient(result.client);
+}
+
+export function useClientCard(clientId: string | null, enabled: boolean) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+
+  return useQuery({
+    queryKey: withOrgId(clientCardQueryKey(clientId ?? "")),
+    enabled: orgEnabled && enabled && Boolean(clientId),
+    queryFn: () => fetchClientCard(clientId!),
+    staleTime: 60 * 1000,
+  });
+}
+
 export function useAddClient() {
   const queryClient = useQueryClient();
   const { organizationId, withOrgId } = useOrgQueryScope();

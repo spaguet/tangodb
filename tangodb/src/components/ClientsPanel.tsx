@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, UserPlus, FileText, Send, Edit, Trash2, X, Users, Archive, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
+  fetchClientCard,
   useAddClient,
   useArchiveClient,
   useClientDirectory,
@@ -23,6 +24,7 @@ import { resolveMutationError } from "../lib/resolveMutationError";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useCan } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
+import { useOrganization } from "../organization/OrganizationProvider";
 import ClientCardModal from "./ClientCardModal";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import RequirePermission from "./RequirePermission";
@@ -45,6 +47,7 @@ type ClientTab = "active" | "archive";
 
 export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const { t, formatDateTime } = useI18n();
+  const { role } = useOrganization();
   const { connectionState } = useOnlineStatus();
 
   const clientTabs = [
@@ -190,22 +193,31 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
     }
   };
 
-  const startEdit = (c: Client) => {
-    setEditingClient(c);
-    setEditFirst(c.firstName);
-    setEditLast(c.lastName);
-    setEditTg(c.telegram);
-    setEditPhone(c.phone);
-    setEditEmail(c.email);
-    setEditIsMinor(c.isMinor);
-    setEditGuardian1Name(c.guardian1Name);
-    setEditGuardian1Phone(c.guardian1Phone);
-    setEditGuardian1Telegram(c.guardian1Telegram);
-    setEditGuardian1Address(c.guardian1Address);
-    setEditGuardian2Name(c.guardian2Name);
-    setEditGuardian2Phone(c.guardian2Phone);
-    setEditGuardian2Telegram(c.guardian2Telegram);
-    setEditGuardian2Address(c.guardian2Address);
+  const startEdit = async (c: Client) => {
+    let full = c;
+    if (role === "teacher") {
+      try {
+        full = await fetchClientCard(c.id);
+      } catch {
+        toast(t("clients.error.saveFailed"), "error");
+        return;
+      }
+    }
+    setEditingClient(full);
+    setEditFirst(full.firstName);
+    setEditLast(full.lastName);
+    setEditTg(full.telegram);
+    setEditPhone(full.phone);
+    setEditEmail(full.email);
+    setEditIsMinor(full.isMinor);
+    setEditGuardian1Name(full.guardian1Name);
+    setEditGuardian1Phone(full.guardian1Phone);
+    setEditGuardian1Telegram(full.guardian1Telegram);
+    setEditGuardian1Address(full.guardian1Address);
+    setEditGuardian2Name(full.guardian2Name);
+    setEditGuardian2Phone(full.guardian2Phone);
+    setEditGuardian2Telegram(full.guardian2Telegram);
+    setEditGuardian2Address(full.guardian2Address);
   };
 
   const handleSaveEdit = async () => {
@@ -587,7 +599,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
                           <RequirePermission action="clients.write">
                           <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                             <button
-                              onClick={() => startEdit(c)}
+                              onClick={() => void startEdit(c)}
                               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
                               title={t("clients.action.edit")}
                               aria-label={`${t("clients.action.edit")} ${c.lastName} ${c.firstName}`}

@@ -7868,6 +7868,7 @@ export type Database = {
           horizon_start: string
         }[]
       }
+      get_client_card: { Args: { p_client_id: string }; Returns: Json }
       get_conducted_group_lessons_report: {
         Args: {
           p_date_from: string

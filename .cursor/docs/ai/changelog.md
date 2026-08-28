@@ -1,3 +1,5 @@
+2026-08-28 — fix: микропатч **2.8.112** — S32 follow-up: карточка клиента у teacher грузит телефон/telegram/email/опекунов через RPC `get_client_card` (один UUID). Массовый `GET /clients` по-прежнему без teacher SELECT.
+
 2026-08-28 — fix(security): микропатч **2.8.111** — S32 / H7: view `clients_teacher_v` (ФИО/id без телефона, telegram, email, опекунов); `useClients` / `useClientDirectory` для teacher читают view; `DROP` teacher SELECT на базовую `clients`. Журнал и абонементы по-прежнему показывают имена.
 
 2026-08-27 — fix(security): микропатч **2.8.110** — S31 / M17: recovery-код владельца не пишется в `history.state` / `sessionStorage`; показ один раз из ответа `create-self-service-demo-org` (handoff в памяти модуля); копия письмом; повторный вызов API без plaintext; Dev Console transfer-owner по коду без изменений.

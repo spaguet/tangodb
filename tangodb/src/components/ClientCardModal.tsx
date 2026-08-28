@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Send, X, Edit } from "lucide-react";
+import { Loader2, Send, X, Edit } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import type { Client } from "../types";
 import type { ToastType } from "../App";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useCan } from "../hooks/usePermissions";
-import { useUpdateClient } from "../hooks/useClients";
+import { useClientCard, useUpdateClient } from "../hooks/useClients";
+import { useOrganization } from "../organization/OrganizationProvider";
 import {
   translateConnectionBlockReason,
   translateMutationBlockedMessage,
@@ -111,9 +112,14 @@ export default function ClientCardModal({
   stackLayer = "default",
 }: ClientCardModalProps) {
   const { t } = useI18n();
+  const { role } = useOrganization();
   const canReadNotes = useCan("client_notes.read");
   const { connectionState } = useOnlineStatus();
   const updateClient = useUpdateClient();
+  const loadFullCard = role === "teacher";
+  const cardQuery = useClientCard(client?.id ?? null, Boolean(client) && loadFullCard);
+  const displayClient = loadFullCard ? (cardQuery.data ?? client) : client;
+  const cardPending = Boolean(loadFullCard && cardQuery.isFetching && !cardQuery.data);
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [editFirst, setEditFirst] = useState("");
   const [editLast, setEditLast] = useState("");
@@ -133,11 +139,11 @@ export default function ClientCardModal({
   const zClass = stackLayer === "above" ? "z-[60]" : "z-50";
 
   useEffect(() => {
-    if (!client) {
+    if (!displayClient) {
       setMode("view");
       return;
     }
-    const fields = populateEditFields(client);
+    const fields = populateEditFields(displayClient);
     setEditFirst(fields.firstName);
     setEditLast(fields.lastName);
     setEditTg(fields.telegram);
@@ -153,7 +159,7 @@ export default function ClientCardModal({
     setEditGuardian2Telegram(fields.guardian2Telegram);
     setEditGuardian2Address(fields.guardian2Address);
     setMode("view");
-  }, [client]);
+  }, [displayClient]);
 
   useEffect(() => {
     if (!client) return;
@@ -171,8 +177,8 @@ export default function ClientCardModal({
   }, [client, mode, onClose]);
 
   const startEdit = () => {
-    if (!client) return;
-    const fields = populateEditFields(client);
+    if (!displayClient || cardPending) return;
+    const fields = populateEditFields(displayClient);
     setEditFirst(fields.firstName);
     setEditLast(fields.lastName);
     setEditTg(fields.telegram);
@@ -191,7 +197,7 @@ export default function ClientCardModal({
   };
 
   const handleSaveEdit = async () => {
-    if (!client) return;
+    if (!displayClient) return;
     if (connectionState !== "online") {
       const blocked = translateMutationBlockedMessage(connectionState, t);
       if (blocked) toast(blocked, "error");
@@ -203,7 +209,7 @@ export default function ClientCardModal({
     }
 
     const res = await updateClient.mutateAsync({
-      clientId: client.id,
+      clientId: displayClient.id,
       firstName: editFirst,
       lastName: editLast,
       telegram: editTg,
@@ -247,7 +253,7 @@ export default function ClientCardModal({
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
               <h2 className="text-base font-semibold tracking-tight text-slate-900 min-w-0 truncate">
-                {mode === "edit" ? t("clients.modal.editTitle") : `${client.lastName} ${client.firstName}`}
+                {mode === "edit" ? t("clients.modal.editTitle") : `${(displayClient ?? client).lastName} ${(displayClient ?? client).firstName}`}
               </h2>
               <div className="flex items-center gap-1 shrink-0">
                 {mode === "view" ? (
@@ -255,7 +261,7 @@ export default function ClientCardModal({
                     <button
                       type="button"
                       onClick={startEdit}
-                      disabled={connectionState !== "online"}
+                      disabled={connectionState !== "online" || cardPending}
                       title={translateConnectionBlockReason(connectionState, t) ?? t("common.change")}
                       className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
                       aria-label={t("common.change")}
@@ -275,65 +281,71 @@ export default function ClientCardModal({
               </div>
             </div>
 
-            {mode === "view" ? (
+            {mode === "view" && displayClient ? (
               <>
                 <div className="space-y-3 font-sans">
+                  {cardPending ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
+                      <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                      {t("clients.loading")}
+                    </div>
+                  ) : null}
                   <div className="grid grid-cols-1 gap-3">
-                    <ProfileField label={t("clients.form.firstName")} value={client.firstName} />
-                    <ProfileField label={t("clients.form.lastName")} value={client.lastName} />
-                    <ProfileField label={t("clients.form.phone")} value={client.phone} />
-                    <ProfileField label={t("clients.form.email")} value={client.email} />
+                    <ProfileField label={t("clients.form.firstName")} value={displayClient.firstName} />
+                    <ProfileField label={t("clients.form.lastName")} value={displayClient.lastName} />
+                    <ProfileField label={t("clients.form.phone")} value={displayClient.phone} />
+                    <ProfileField label={t("clients.form.email")} value={displayClient.email} />
                   </div>
 
                   <div>
                     <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">Telegram</p>
-                    {client.telegram && normalizeTelegramContact(client.telegram) ? (
+                    {displayClient.telegram && normalizeTelegramContact(displayClient.telegram) ? (
                       <a
-                        href={normalizeTelegramContact(client.telegram)!}
+                        href={normalizeTelegramContact(displayClient.telegram)!}
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => {
                           e.preventDefault();
-                          openTelegramContact(client.telegram);
+                          openTelegramContact(displayClient.telegram);
                         }}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-0.5 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans transition-colors"
                       >
                         <Send className="w-3 h-3" />
-                        {formatTelegramDisplay(client.telegram)}
+                        {formatTelegramDisplay(displayClient.telegram)}
                       </a>
-                    ) : (
+                    ) : cardPending ? null : (
                       <span className="text-xs text-slate-400 italic">{t("clientCard.telegramNotSet")}</span>
                     )}
                   </div>
 
-                  {client.isMinor ? (
+                  {displayClient.isMinor ? (
                     <div className="space-y-2 border-t border-slate-100 pt-3">
                       <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
                         {t("clients.form.isMinor")}
                       </p>
                       <GuardianBlock
                         title={t("clients.form.guardian1")}
-                        name={client.guardian1Name}
-                        phone={client.guardian1Phone}
-                        telegram={client.guardian1Telegram}
-                        address={client.guardian1Address}
+                        name={displayClient.guardian1Name}
+                        phone={displayClient.guardian1Phone}
+                        telegram={displayClient.guardian1Telegram}
+                        address={displayClient.guardian1Address}
                         t={t}
                       />
                       <GuardianBlock
                         title={t("clients.form.guardian2")}
-                        name={client.guardian2Name}
-                        phone={client.guardian2Phone}
-                        telegram={client.guardian2Telegram}
-                        address={client.guardian2Address}
+                        name={displayClient.guardian2Name}
+                        phone={displayClient.guardian2Phone}
+                        telegram={displayClient.guardian2Telegram}
+                        address={displayClient.guardian2Address}
                         t={t}
                       />
                     </div>
                   ) : null}
                 </div>
 
-                <ClientSubscriptionParticipationPanel clientId={client.id} />
+                <ClientSubscriptionParticipationPanel clientId={displayClient.id} />
 
-                {canReadNotes && <ClientNotesPanel clientId={client.id} toast={toast} />}
+                {canReadNotes && <ClientNotesPanel clientId={displayClient.id} toast={toast} />}
               </>
             ) : (
               <div className="panel-form-stack font-sans">
