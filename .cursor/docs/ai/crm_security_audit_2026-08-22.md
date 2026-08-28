@@ -17,18 +17,21 @@
 **Пятая сверка (2026-08-26):** таблица порядка **S12** и чеклист Dashboard всё ещё требовали Captcha Auth (регистрация 400 до S37); **S09** «SELECT `payments` только финансовым ролям» роняет операционный дашборд admin и даёт 403 кассе teacher; teacher view / `personalLessonsSelectTeacher` **без `price_id`** — `PayPersonalLessonModal` не резолвит архивный тариф; **S39** неполный список колонок `organization_settings` (`org_preset`, `terminology`, `directors_can_*`). Находки SQL/Edge подтверждены. Код продукта при той сверке **не** менялся; версия в шапке «2.8.72» к этой дате уже была **устаревшей** (2.8.73/2.8.74 — 2026-08-23).  
 **Шестая сверка (2026-08-26):** код `APP_VERSION` **2.8.75**; хвост миграций **`20261002000001_personal_charge_net_payment_indexes.sql`**, не `20260930000002`. После аудита: `write_off_personal_lesson_debt` / `get_personal_lesson_debt_trace` (**2.8.73**) — DEFINER, `can_read_financial()`, **без** `_is_finance_period_closed` (тот же класс, что **H29**/M37, не новый ID). Промпт S\* с timestamp `> 20260930000002` встал бы **между** уже существующими `20260931`/`20261001`/`20261002`. **S22** ковровый REVOKE EXECUTE у `authenticated` убивает кассу и списание долга. **S19** один хук `useTeamMembers` без разделения — либо мёртвая карточка сотрудника, либо PII в roster. **S34** `security_invoker=true` на `financial_debtors_v` после S09 — страница дебиторов accountant падает, если нет SELECT на base. Находки C1/H\* по SQL и Edge **подтверждены**. В этом прогоне код продукта не менялся.  
 **Седьмая сверка (2026-08-26):** код `APP_VERSION` **2.8.76**; хвост миграций **`20261003000001_gcal_sync_token_cache_and_claim_org.sql`**. С шестой сверки продукт сдвинулся (GCal: кэш access token, org-scoped claim). **Не** новая утечка: `user_google_accounts.encrypted_access_token` — таблица по-прежнему `REVOKE ALL` у `anon`/`authenticated` (как refresh-token); `claim_calendar_sync_jobs(int,text,int,uuid)` GRANT только `service_role`; `calendar-sync-kick` проверяет активное членство в `organization_id` из body до drain. Промпт S\* с timestamp `≤ 20261002000001` встанет **перед** уже существующим `20261003`. **S39/L21** ошибочно: хуки bindings **не** селектят колонку `last_error` (на `member_google_calendar_bindings` / `organization_google_calendar_bindings` её **нет** — только `last_error_code` / `last_error_at`); текст ошибки Google — `google_calendar_event_links.last_error` и RPC урока (**L24**). **S04**: `is_dev_console_operator()` читает `auth.users.raw_app_meta_data`, не JWT — снятие `platform_role` из claim **само** не закрывает UPDATE кошельков. **S27**: `renter_documents` SELECT нужен `bindUploadedRenterDocument` (lookup по `storage_path`); payroll UI читает `teacher_settlements` / `teacher_settlement_payments` / `teacher_pay_rates` (после S10 — только SELECT). Находки C1/H\* по SQL и Edge **подтверждены**. В этом прогоне код продукта не менялся.  
-**Проверка production:** 2026-08-22 — `\dp` через `supabase db query --linked` на проект `tangodb` (`gizfpiujqjwbjtqfstbj`, ap-southeast-1); **M31 подтверждён**; **M32** (GRANT ALL у `anon`). Привилегии **функций** (`has_function_privilege` / `\df+`) на production **не** снимались — **M49**.
-**Версия CRM:** `2.8.103` (`tangodb/src/lib/appVersion.ts`, `tangodb/package.json`)  
+**Восьмая сверка (2026-08-28, после S01–S40):** очередь промптов **исчерпана**. Код `APP_VERSION` **2.8.119**; хвост миграций **`20261036000001_s40_crm_product_versions_no_jwt_select.sql`** — на production (local = remote). `npx tsc --noEmit` зелёный. **Новых H\*/M\*/L\* ID нет** (не открывать S41). Таблица «Кратко» и пункты C1/H\*/M\*/L\* ниже — **снимок находок на дату аудита**, не текущий статус продакшена. Актуальные GRANT/EXECUTE — секция **«Проверка production после S40»**. Живой смоук SPA owner на `https://tangodb.vercel.app` (**v2.8.119**): дашборд / финансы / расписание / журнал / клиенты / команда / настройки / лицензия / дебиторы — без белого экрана (регрессии S27/S39 не воспроизвелись). **Промпт по этой сверке (живой хвост, не код):** **«Хвост»** в «Тексты для нового чата» и длинный блок `#### Хвост`.  
+**Проверка production:** 2026-08-22 — `\dp` (секция ниже = **исторический** снимок до S01–S40; **M31/M32** тогда подтверждены). **2026-08-28** — повторный `db query --linked` после S40: `anon` без GRANT; write JWT на кассу/журнал/орг снят; см. **«Проверка production после S40»**.  
+**Версия CRM:** `2.8.119` (`tangodb/src/lib/appVersion.ts`, `tangodb/package.json`). Шапка раньше держала 2.8.103 / 2.8.76 — устарело к закрытию очереди.  
 **Область:** `tangodb/` (SPA, хуки, Edge Functions, RLS/миграции), `tangodb-dev-console/`, `tangodb-landing/` (конфиг/ключи).  
-**Метод:** статический разбор кода, политик RLS, `config.toml`, публичных Edge Functions. Боевой пентест, перехват трафика и проверка **production**-настроек Auth в Dashboard **не выполнялись**.  
-**Ограничение:** `tangodb/supabase/config.toml` описывает **локальный** стек. Часть пунктов ниже помечает «если production совпадает с config.toml» — это нужно сверить в Supabase Dashboard.  
-**Промпты починки:** раздел **«Промпты реализации»** в конце файла. **Тебе копировать в чат** — подраздел **«Тексты для нового чата»**. Длинные блоки `#### S01`…`S40` — инструкция агенту (он читает их сам). Порядок **S01 → S40**, без прыжков. H1 в очередь не входит.
+**Метод:** статический разбор кода, политик RLS, `config.toml`, публичных Edge Functions. **После S40 (2026-08-28):** GRANT/`has_function_privilege` на production + смоук owner в браузере. Боевой пентест teacher/reception/accountant JWT, перехват трафика и **Dashboard Auth** (Captcha / password / timebox) по-прежнему не полный проход.  
+**Ограничение:** `tangodb/supabase/config.toml` описывает **локальный** стек. Часть пунктов ниже помечает «если production совпадает с config.toml» — это нужно сверить в Supabase Dashboard (`lessons.md` чеклисты S12/S37/S40).  
+**Промпты починки:** раздел **«Промпты реализации»** в конце файла. **Тебе копировать в чат** — подраздел **«Тексты для нового чата»**. Длинные блоки `#### S01`…`S40` — инструкция агенту (он читает их сам). Порядок **S01 → S40**, без прыжков. H1 в очередь не входит. **S41 не выдумывать.** После закрытой очереди — только **«Хвост»** (восьмая сверка: живые проверки, не новый S\*).
 
-Стиль: только то, что подтверждено в коде. Не включены пожелания «можно улучшить», если нет реалистичного вреда. Пункты **H9–H11**, **M13–M19**, **L9–L11** добавлены вторым проходом; **H12–H13**, **M20–M22**, **L12–L13** — третьим; **H14–H16**, **M23–M27**, **L14–L15** — четвёртым; **H17–H22**, **M28–M32**, **L16** — пятым; **H23–H26**, **M33–M40**, **L17–L19** — шестым; **H27–H28**, **M41–M44** — седьмым; **H29–H30**, **M45–M48**, **L20–L22** — восьмым; **H31–H32**, **M49–M56**, **L23–L25** — девятым; **H33**, **M57–M59**, **L26–L28** — десятым; C1/H5/H7/H11/H15/H22/H24/H26/H27/H31/M1/M5/M10/M21/M34/M44/L21/L22/L23 уточнены. Сверка документа (errata, регрессии S\*) — после таблицы «Кратко» (четыре прохода 2026-08-22 + пятый–**седьмой** 2026-08-26).
+Стиль: только то, что подтверждено в коде. Не включены пожелания «можно улучшить», если нет реалистичного вреда. Пункты **H9–H11**, **M13–M19**, **L9–L11** добавлены вторым проходом; **H12–H13**, **M20–M22**, **L12–L13** — третьим; **H14–H16**, **M23–M27**, **L14–L15** — четвёртым; **H17–H22**, **M28–M32**, **L16** — пятым; **H23–H26**, **M33–M40**, **L17–L19** — шестым; **H27–H28**, **M41–M44** — седьмым; **H29–H30**, **M45–M48**, **L20–L22** — восьмым; **H31–H32**, **M49–M56**, **L23–L25** — девятым; **H33**, **M57–M59**, **L26–L28** — десятым; C1/H5/H7/H11/H15/H22/H24/H26/H27/H31/M1/M5/M10/M21/M34/M44/L21/L22/L23 уточнены. Сверка документа (errata, регрессии S\*) — после таблицы «Кратко» (четыре прохода 2026-08-22 + пятый–**седьмой** 2026-08-26 + **восьмая** 2026-08-28 после реализации).
 
 ---
 
 ## Кратко
+
+**Статус после S40 (2026-08-28):** промпты S01–S40 закрыты в коде и на linked production. Строки ниже — **инвентарь находок аудита**, не «сейчас открыто». H1 и L14 сознательно не чинились. Живой C1 (два аккаунта) и JWT teacher/reception — ещё ручной хвост, не новые ID (промпт **«Хвост»**).
 
 | Серьёзность | Кол-во | Суть |
 |-------------|--------|------|
@@ -57,7 +60,8 @@ ID **не перенумеровывались** (ссылки S\* живы). Д
 
 | Где | Ошибка | Как есть в коде |
 |-----|--------|-----------------|
-| **H23** | «единственный найденный RPC, который пишет чужой тенант» | После девятого прохода то же класс у **H31** (`migrate_organization_version`). Кросс-тенантный write без членства: H23 **и** H31. |
+| **`\dp` / M31 / M32 (2026-08-22)** | Секция «Проверка production `\dp`» и errata «на production ALL подтверждён» | Снимок **до** S01–S40. После **S27/S40** (2026-08-28): `anon` без GRANT; JWT write на кассу/журнал/орг снят. Актуальная таблица — «Проверка production после S40». |
+| **H23** | «единственный найденный RPC, который пишет чужой тенант» | После девятого прохода то же класс у **H31** (`migrate_organization_version`). Кросс-тенантный write без членства: H23 **и** H31. Оба **EXECUTE** у JWT сняты (S02/S03; подтверждено 2026-08-28). |
 | **H23 / S02** | Создаётся впечатление, что RPC зовёт SPA; «чинить cron'ом» | В `tangodb/src` вызова **нет** (только типы). `PERFORM expire_monthly_subscriptions(v_org_id)` идёт из **DEFINER** `mark_attendance`, freeze, partner-replacement. Cron Edge тоже **не** вызывает. |
 | **M19** | Отдельная «если GRANT ALL» | На production ALL подтверждён (**M31**). Это тот же контур, что **H21**. Чинить один раз (S09). |
 | **M30** | Отдельная средняя | Детализация **H19** (те же политики `subscription_groups_*_teacher`). |
@@ -151,7 +155,9 @@ SPA **штатно** пишет ряд таблиц через PostgREST, не �
 
 ## Что уже закрыто хорошо (не уязвимости)
 
-Эти контуры проверены и **не** дают чужим арендаторам чужие данные «просто так» — **кроме** точечных DEFINER-дыр **H23** (write), **H31** (migrate spoof), **M34** (oracle/PII по UUID) и **H33** (developer JWT → platform-таблицы всех тенантов):
+**Errata 2026-08-28:** абзац ниже и пометки «кроме H23/H31/H33» / «касса не закрыта — H29» — снимок **до** S01–S40. После очереди: H23/H31 EXECUTE у JWT нет; H33 `platform_role` не в CRM JWT + write platform снят; H29 период на money-in RPC (S11; storno/correct по-прежнему correction path). Текст пунктов C1/H\*/M\* в следующих разделах **не переписывался**.
+
+Эти контуры проверены и **не** дают чужим арендаторам чужие данные «просто так» — **кроме** точечных DEFINER-дыр **H23** (write), **H31** (migrate spoof), **M34** (oracle/PII по UUID) и **H33** (developer JWT → platform-таблицы всех тенантов) *на дату аудита*:
 
 - **RLS включён** на tenant-таблицах; изоляция идёт через `auth_organization_id()` (JWT) + `is_active_member` / `current_member_role()` **из БД**, не только из UI.
 - **Запись без лицензии/после демо** блокируется на SQL: `organization_allows_writes()` требует `demo_active` с `demo_expires_at > now()` **или** `licensed` + lifetime/активная подписка. UI `isReadOnly` — дополнительный слой, не единственный.  
@@ -1101,13 +1107,15 @@ DRM «запретить копирование фронта» для веб-CRM
 
 H1 (демо без оплаты) — **продуктовое решение**, не чинить как баг, если 30 дней + purge — осознанная воронка. **H10** (PATCH `demo_expires_at`) — это уже не воронка, а обход лимита. Имеет смысл явно писать в UI «это демо, не коммерческая лицензия» и гарантировать работающий cron purge.
 
-Таблица выше — **ранжирование риска**, не порядок работ. Исполнение только **S01 → S40**. Копировать в новый чат: раздел **«Промпты реализации»** → **«Тексты для нового чата»** (поиск по файлу: `Тексты для нового чата`). Не идти по этой таблице вместо промптов.
+Таблица выше — **ранжирование риска**, не порядок работ. Исполнение только **S01 → S40**. Копировать в новый чат: раздел **«Промпты реализации»** → **«Тексты для нового чата»** (поиск по файлу: `Тексты для нового чата`). Не идти по этой таблице вместо промптов. После очереди — **«Хвост»**, не S41.
 
-**Промпты для агента** — раздел **«Промпты реализации»** в конце этого файла. **Что вставлять в новый чат** — «Тексты для нового чата» (короткий блок). Длинный fenced-блок `#### S0N` копировать руками не обязательно: агент открывает его в этом файле. Один номер = один запуск. Порядок **S01 → S40**, без прыжков и без «заодно». Волну N+1 не начинать, пока не закрыты все промпты волны N. H1 в промпты не входит. После DoD поставь ✅ в колонке «Готово» таблицы последовательности.
+**Промпты для агента** — раздел **«Промпты реализации»** в конце этого файла. **Что вставлять в новый чат** — «Тексты для нового чата» (короткий блок). Длинный fenced-блок `#### S0N` копировать руками не обязательно: агент открывает его в этом файле. Один номер = один запуск. Порядок **S01 → S40**, без прыжков и без «заодно». Волну N+1 не начинать, пока не закрыты все промпты волны N. H1 в промпты не входит. После DoD поставь ✅ в колонке «Готово» таблицы последовательности. Очередь закрыта → копируй **«Хвост»** (восьмая сверка).
 
 ---
 
 ## Проверка production `\dp` (2026-08-22)
+
+**Исторический снимок до S01–S40.** Не читать как текущий GRANT на production. Актуальная таблица — **«Проверка production после S40»** сразу после этой секции.
 
 **Проект:** `tangodb` / `gizfpiujqjwbjtqfstbj` (ap-southeast-1), linked CLI.  
 **Метод:** `npx supabase db query --linked` → `information_schema.table_privileges`, `pg_policies`, `pg_class.relrowsecurity`.
@@ -1140,15 +1148,80 @@ H1 (демо без оплаты) — **продуктовое решение**,
 
 **Миграции vs production:** `payments`, `single_visits`, `rental_invoices*` — **нет** `GRANT TO authenticated` в SQL; на production ALL (auto-expose). `teacher_settlements` — в миграции `GRANT SELECT, INSERT, UPDATE`; на production также DELETE в GRANT.
 
-**Не проверялось:** живой POST/PATCH с JWT accountant/reception (только схема прав); настройка Dashboard «Expose new tables» (косвенно — ALL на таблицах без GRANT в миграциях = expose активен).
+**Не проверялось (на ту дату):** живой POST/PATCH с JWT accountant/reception (только схема прав); настройка Dashboard «Expose new tables» (косвенно — ALL на таблицах без GRANT в миграциях = expose активен).
+
+---
+
+## Проверка production после S40 (2026-08-28)
+
+**Проект:** тот же `tangodb` / `gizfpiujqjwbjtqfstbj`, `npx supabase db query --linked`.  
+**Код:** `APP_VERSION` **2.8.119**; миграции local = remote до `20261036000001`. Edge: `submit-purchase-request`, `landing-track-event` ACTIVE. Секрет `DEVELOPER_NOTIFY_EMAIL` задан.  
+**SPA:** `https://tangodb.vercel.app` — `v2.8.119`; заголовки S14 (CSP `frame-ancestors 'self'`, HSTS, `nosniff`, Referrer-Policy).  
+**Новых находок с ID нет.** S41 не открывать.
+
+| Проверка | Результат 2026-08-28 | Закрывает |
+|----------|----------------------|-----------|
+| GRANT `anon` на `public` | **пусто** (ни одной строки `role_table_grants`) | **M32 / S27** |
+| JWT write `payments`, `attendance`, `organizations`, `organization_members`, `rental_invoices`, `teacher_settlements`, `single_visits`, `audit_log`, `platform_payment_methods`, `platform_audit_log`, `rental_series`, `teacher_pay_rates`, `personal_lesson_charges` | нет INSERT/UPDATE/DELETE у `authenticated` | **H9–H10, H14, H17–H18, H21–H22, H25, M19** |
+| JWT write `personal_lessons`, `subscriptions` | только **INSERT** (продажа); UPDATE/DELETE отозваны | **H15, H16/H22/H26, S08/S09** |
+| `crm_product_versions` | гранты только `service_role`; SELECT-политики нет; осталась `crm_product_versions_write_denied_authenticated` | **L6 / S40**, write **H33 / S04** |
+| EXECUTE `expire_monthly_subscriptions`, `migrate_organization_version`, `is_platform_developer`, `organization_has_lifetime_license` | `anon` / `authenticated` / `PUBLIC` = **false** | **H23, H31, M34, M49** |
+| `pg_publication_tables` `supabase_realtime` | **пусто** (tenant-таблиц нет) | **L25 / S40** |
+| SELECT JWT на SPA-критичное | есть: `organization_settings`, `platform_payment_methods`, `clients`, `clients_teacher_v`, `personal_lessons_teacher_v`, `financial_debtors_v`, `audit_log_leadership_v`, roster/invites views, teacher calendar/visits views. Базовая `audit_log` — без SELECT у JWT (S35) | регрессии S27/S34/S39 **не** воспроизвелись |
+| Смоук owner в браузере | дашборд операционный + финансовый, расписание, журнал, клиенты, команда (инвайт), настройки `branding_name`, лицензия lifetime + `config` кошельков, дебиторы | не белый экран |
+
+**Остаток (не новый ID, не чинить кодом без нового аудита):**
+
+- **H1** — self-service demo без купленного ключа: продукт, не баг. **H10** (PATCH `demo_expires_at`) на SQL закрыт: у JWT нет UPDATE на `organizations`. *(хвост 2026-08-28: не чинили, как велено)*
+- **L14** — developer bypass лимита демо: сознательно не чинили (S40 шаг 6). *(хвост: не чинили)*
+- **Dashboard Auth** (Captcha Turnstile, min password, confirm email, session timebox, redirect allowlist) — чеклисты `lessons.md` § S12/S37; **осталось оператору** (Dashboard в этом прогоне не открывали).
+- Живой REST PATCH с JWT **teacher / reception / accountant** — **осталось оператору** (нет учётки роли; сессия в браузере — owner «Владелец»). GRANT write на production **прогнан** (см. результаты хвоста): UPDATE/DELETE у `authenticated` нет.
+- Живой **C1** (инвайт уже существующего email, два аккаунта) — **осталось оператору** (два ящика не гонялись).
+- `GET /graphql/v1` без ключа → **401** (**прогнано**). Схемы `graphql` / `graphql_public` есть; table GRANT у JWT на них **пусто**; `graphql_public.graphql()` EXECUTE у `anon`/`authenticated` = true (расширение). Живой POST GraphQL с anon/JWT и Dashboard «GraphQL = OFF» — **осталось оператору**.
+- `landing-track-event` 429 при лимите — в коде да; живой удар 40+ pageview на прод **не** делали (засорит `landing_events`).
+- Инсайдер со сессией по-прежнему может выгрузить данные своей орг через JWT+PostgREST / CSV / IndexedDB — это исходный ответ аудита, не дыра RLS.
+
+**Q&A аудита после фикса (не переписывать таблицу «Кратко»):** обход 30 дней демо через `PATCH organizations.demo_expires_at` (**H10**) с JWT **больше не проходит** (нет GRANT UPDATE). Воронка H1 жива.
+
+**Промпт по восьмой сверке:** копировать **«Хвост»** из «Тексты для нового чата». Это не S41 и не правка кода: живой C1, JWT teacher/reception/accountant, Dashboard Auth, GraphQL. H1/L14 не чинить.
+
+### Результаты хвоста (2026-08-28)
+
+**Прогон:** linked `gizfpiujqjwbjtqfstbj`, `npx supabase db query --linked`; SPA `https://tangodb.vercel.app` **v2.8.119**; сессия в браузере — **owner** (в сетке/финансах подпись «Владелец»). Код продукта / миграции / `APP_VERSION` **не** менялись. S41 не открывали. Регрессии относительно таблицы «после S40» **нет**.
+
+✅ в таблице последовательности у **Хвост** **не** ставили: шаги 4–7 (C1 два ящика, REST teacher/reception/accountant, Dashboard Auth) не прогнаны — нет учёток ролей и доступа в Dashboard.
+
+| Проверка | Роль/метод | Результат | Закрывает |
+|----------|------------|-----------|-----------|
+| GRANT `anon` на `public` | SQL `role_table_grants` | 0 строк | M32 / S27, без регрессии |
+| JWT write `payments`/`attendance`/`organizations`/`organization_members`/`rental_invoices`/`teacher_settlements`/`single_visits`/`audit_log`/`platform_*`/`rental_series`/`teacher_pay_rates`/`personal_lesson_charges` | SQL `authenticated` INSERT/UPDATE/DELETE | нет (кроме SELECT там, где нужен SPA) | H9–H10, H14, H17–H18, H21–H22, H25 |
+| JWT write `personal_lessons` / `subscriptions` | SQL | только **INSERT** + SELECT | H15, H16/H22/H26, S08/S09 |
+| `crm_product_versions` | SQL | грантов у `authenticated` нет | L6 / S40 |
+| EXECUTE `expire_monthly_subscriptions` / `migrate_organization_version` / `is_platform_developer` / `organization_has_lifetime_license` | SQL `anon`/`authenticated`/`PUBLIC` | все **false** | H23, H31, M34, M49 |
+| `supabase_realtime` | SQL `pg_publication_tables` | 0 tenant-таблиц | L25 / S40 |
+| GraphQL без ключа | `GET /graphql/v1` | **401** `UNAUTHORIZED_MISSING_API_KEY` | шаг 2 частично |
+| GraphQL с anon key / JWT owner | HTTP POST | **осталось оператору** (живой POST с ключом не гоняли). Postgres: table GRANT на `graphql`/`graphql_public` пуст; `graphql_public.graphql()` EXECUTE у `anon`/`authenticated` = true; Dashboard GraphQL=OFF не смотрели | M7 / S34 |
+| Dashboard Auth (S12/S28/S37/S40) | Supabase Dashboard | **осталось оператору** | H5, M8, M9, L19, L25 |
+| Живой C1, два ящика | complete-invite | **осталось оператору** | C1 |
+| REST write JWT **teacher** | PostgREST | **осталось оператору** (нет учётки; сессия owner) | H14–H16, H24, H26–H27, H30, H32, M41–M47, M57, M59, L28 |
+| REST write JWT **reception** | PostgREST | **осталось оператору** | H9, H10, H12, H28, L28 |
+| REST write JWT **accountant** | PostgREST | **осталось оператору** | H17–H22, H29, M44 |
+| Storage renter-documents / exports / `teacher_pay_rates` PATCH | JWT | не гоняли (шаг 8 необязателен) | M48, M51, M52 |
+| Смоук owner SPA | браузер, v2.8.119 | дашборд операционный + финансовый, `/schedule`, `/attendance`, `/clients`, `/settings/team`, `/settings/license` (lifetime), `/finance/payments` — без белого экрана | регрессии S27/S39 не воспроизвелись |
+| H1 / L14 | — | не чинили, как велено | продукт / штат developer |
+| landing-track-event 40+ | production | не били | L13 в коде |
+
+**Дыры прогона (оператору):** (1) два реальных ящика для C1; (2) JWT teacher, затем reception, затем accountant — REST из шагов 5–7; (3) Dashboard Auth чеклисты `lessons.md` S12/S28/S37/S40 и GraphQL=OFF; (4) по желанию POST `/graphql/v1` с anon и с JWT.
 
 ---
 
 ## Что этот аудит не покрыл
 
-- Фактические настройки **production** Supabase Auth / Network Restrictions / leaked service_role — **`\dp` на ключевые таблицы проверён 2026-08-22** (см. секцию выше); живые REST write-тесты с role JWT не гонялись.  
-- Привилегии **функций** у `anon`/`PUBLIC` (`has_function_privilege`) — **не** проверялись на production (**M49**).  
-- Права бота Telegram и Mini App `initData` (legacy synthetic email ещё есть в `routeGuards`; отдельный Telegram-login в Edge Functions **не найден** — вход email/password). Leftover v1 `allowed_users` / `is_allowed_teacher()` / `auth_telegram_id()` — **L26** (живых политик на бизнес-таблицах нет).  
+**Дополнено 2026-08-28:** GRANT/EXECUTE ключевых таблиц и функций на production **сняты повторно** (секция «после S40»). Живые write-тесты с JWT teacher/reception/accountant и C1 на двух ящиках — по-прежнему нет. Dashboard Auth — чеклист, не этот прогон.
+
+- Фактические настройки **production** Supabase Auth / Network Restrictions / leaked service_role — **`\dp` 2026-08-22 исторический**; GRANT после S40 — секция выше. Живые REST write с role JWT (не owner) не гонялись.  
+- Привилегии **функций** у `anon`/`PUBLIC` (`has_function_privilege`) — **частично** 2026-08-28: `expire_monthly_subscriptions`, `migrate_organization_version`, `is_platform_developer`, `organization_has_lifetime_license` — EXECUTE нет. Остальной каталог функций массово не снимали.  
+- Права бота Telegram и Mini App `initData` (legacy synthetic email ещё есть в `routeGuards`; отдельный Telegram-login в Edge Functions **не найден** — вход email/password). Leftover v1 `allowed_users` / `is_allowed_teacher()` / `auth_telegram_id()` — **L26** (S39 снял leftover; живых политик на бизнес-таблицах не было).  
 - Нагрузочный DoS PostgREST / Realtime.  
 - Цепочка зависимостей npm (supply chain).  
 - Физический доступ к бэкапам и Supabase Dashboard.  
@@ -1259,12 +1332,13 @@ H1 (self-service demo 30 дней) **не** входит в промпты: эт
 7. После каждого промпта с миграцией: UI-пути через существующие RPC **и прямые хуки** (продажа не-группы, сетка `schedule_slots`, `useAddPersonalLessons`, `usePersonalLessons({ excludeCancelled: true })`, `useCalendarEventsForWeek`, `useLocations`, `useExpenses`, `useTeamMembers`, `useDisciplines`, `useClientNotes`, `usePlatformPaymentConfig`, `useSingleVisits` в журнале, `usePersonalLessonChargeBalances` / должники сетки / `PayPersonalLessonModal`, `checkVenueRuleBeforePayment` при `record_*`, `useWriteOffPersonalLessonDebt` / FinanceDebtorsPage, `OrganizationProvider` включая `organization_settings.select("*")`) должны остаться рабочими, пока этот промпт явно не перевёл их на RPC/view. Нельзя «закрыть таблицу» и оставить хук.
 8. Не `REVOKE EXECUTE FROM authenticated` на функции, которые вызываются **из RLS-политик** (`organization_allows_writes/reads`, `is_active_member`, `member_role`, …) — это роняет весь CRM. См. S22.
 9. Не ставить `security_invoker=true` на teacher masking views **и** на `financial_debtors_v`. Не включать GoTrue captcha до S37 (ни config.toml, ни Dashboard). Триггеры на `organization_members` не завязывать на `auth.uid()`. Не column-REVOKE при хуке `select("*")`. `REVOKE ALL ON ALL TABLES` включает views — вернуть GRANT SELECT на masking views. Не сажать `get_venue_cost_rule_status` на `can_read_financial()` — касса reception/teacher зовёт его из `checkVenueRuleBeforePayment`. Не сужать RLS/`GRANT SELECT` `payments` до «только financial» — операционный дашборд admin и касса teacher. Не `REVOKE EXECUTE FROM authenticated` коврово (S22). В S04 не считать снятие JWT `platform_role` достаточным для UPDATE кошельков (`is_dev_console_operator` читает `auth.users`).
+10. **После S40:** очередь S\* закрыта. Следующий копируемый блок — **«Хвост»** (восьмая сверка). Это не S41. Не чинить H1/L14 и не менять код, пока нет регрессии относительно «Проверка production после S40».
 
-Очередь с нуля: начинай с **S01**. Ничего из S\* в коде ещё не закрыто.
+Очередь S01–S40 в коде **закрыта** (восьмая сверка, 2.8.119). С нуля больше не начинай S01. Живой остаток — **«Хвост»**.
 
 ### Тексты для нового чата (копируй один блок)
 
-Это **твоя** очередь: один fenced-блок = один новый чат. Агент обязан открыть этот файл, прочитать сверку / таблицу регрессий / «Общие правила» и выполнить длинный блок `#### S0N` буквально. Не склеивай два номера. Не перефразируй шаги.
+Это **твоя** очередь: один fenced-блок = один новый чат. Агент обязан открыть этот файл, прочитать сверку / таблицу регрессий / «Общие правила» и выполнить длинный блок `#### S0N` буквально. Не склеивай два номера. Не перефразируй шаги. После S40 копируй **«Хвост»**, не выдумывай S41.
 
 **Волна 0 — сразу** (S01 … S11)
 
@@ -1726,7 +1800,23 @@ Default remember-me = false в readRememberMePreference И в дефолте а�
 Когда DoD S40 закрыт — стоп. Не начинай S01 заново и не выдумывай S41. В ответе: таблица S01–S40 (что закрыто этим прогоном / что уже было). Волна 4 и вся очередь закрыты только если S37–S40 все с DoD.
 ```
 
-Длинные блоки `#### S01` … `#### S40` ниже — источник шагов, файлов и DoD. Их не обязательно копировать в чат.
+**После очереди — восьмая сверка (не S41)**
+
+**Хвост**
+
+```
+Прочитай .cursor/docs/ai/AI_CONTEXT.md, затем .cursor/docs/ai/crm_security_audit_2026-08-22.md: шапка «Восьмая сверка», секция «Проверка production после S40» (включая «Остаток»), «Что этот аудит не покрыл», «Общие правила» не применять к правке RLS/кода. Чеклисты Dashboard в .cursor/docs/ai/lessons.md (S12, S28, S37, S40). Длинный блок #### Хвост.
+
+Задача: только живой хвост восьмой сверки. S01–S40 уже закрыты. Не выдумывать S41. Новых H*/M*/L* ID не открывать. H1 и L14 не чинить.
+
+ЗАПРЕЩЕНО: миграции, RLS, GRANT, Edge, бамп 2.8.y, «заодно починить» — пока таблица «Проверка production после S40» не опровергнута. Регрессия (write JWT вернулся, белый экран, EXECUTE expire_monthly у authenticated) → стоп, опиши факт, не чини в этом чате.
+
+Не спамить landing-track-event 40+ pageview на прод. Не считать инсайдерский выгруз своей орг новой дырой.
+
+Не переходи ни к какому S*. DoD закрыт — стоп. Ответ: что прогнано / что осталось оператору; правки только в этом аудит-файле (результаты хвоста).
+```
+
+Длинные блоки `#### S01` … `#### S40` и `#### Хвост` ниже — источник шагов, файлов и DoD. Их не обязательно копировать в чат.
 
 ### Последовательность выполнения промптов
 
@@ -1734,7 +1824,7 @@ Default remember-me = false в readRememberMePreference И в дефолте а�
 
 **Канон одной строкой:**
 
-S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → S11 → S12 → S13 → S14 → S15 → S16 → S17 → S18 → S19 → S20 → S21 → S22 → S23 → S24 → S25 → S26 → S27 → S28 → S29 → S30 → S31 → S32 → S33 → S34 → S35 → S36 → S37 → S38 → S39 → S40
+S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → S11 → S12 → S13 → S14 → S15 → S16 → S17 → S18 → S19 → S20 → S21 → S22 → S23 → S24 → S25 → S26 → S27 → S28 → S29 → S30 → S31 → S32 → S33 → S34 → S35 → S36 → S37 → S38 → S39 → S40 → **Хвост**
 
 **Волны (следующую не начинать, пока не закрыта текущая):**
 
@@ -1745,6 +1835,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | **2** | S28 … S31 | Сессия, увольнение, origin инвайта/сброса, recovery-код |
 | **3** | S32 … S36 | PII teacher, оставшиеся флаги, views/GraphQL, офлайн/audit, остаток UI≠API |
 | **4** | S37 … S40 | Публичные Edge, гигиена, низкие SELECT/legacy |
+| **хвост** | **Хвост** | Восьмая сверка: живые проверки после S40. Не S41 |
 
 После DoD поставь ✅ вместо ☐.
 
@@ -1768,10 +1859,10 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 16 | **S16** | 1 | **H19**, M30, **H20**, **H32** | S15 | `subscription_groups`; drop-in флаг + маскирование сумм |
 | ✅ | 17 | **S17** | 1 | **H24**, **H25**, **H28** | S16 | Финансы мастер-классов; rental series REST; привязки тарифов |
 | ✅ | 18 | **S18** | 1 | **H30**, M54, M55, M57 | S17 | Остатки обхода R4: charges, payroll lines, ставки, `sales_count` |
-| ☑ | 19 | **S19** | 1 | M13, M24, M28, M25 | S18 | Roster команды, заметки, `token_hash` инвайта |
+| ✅ | 19 | **S19** | 1 | M13, M24, M28, M25 | S18 | Roster команды, заметки, `token_hash` инвайта |
 | ✅ | 20 | **S20** | 1 | M26, M35, M36, M40 | S19 | Waitlist; classes/locations; `admin_can_edit_schedule` в RLS |
 | ✅ | 21 | **S21** | 1 | M33 | S20 | CSV formula injection |
-| ☑ | 22 | **S22** | 1 | M34, M56, M49 | S21 | DEFINER без членства; `REVOKE PUBLIC` у функций |
+| ✅ | 22 | **S22** | 1 | M34, M56, M49 | S21 | DEFINER без членства; `REVOKE PUBLIC` у функций |
 | ✅ | 23 | **S23** | 1 | M38, M42, M47, M50 | S22 | Preview/occupancy PII и имена календарей |
 | ✅ | 24 | **S24** | 1 | M41, M43, M45, M46, M53 | S23 | Широкий SELECT member: замены, Stripe, лицензии, freeze, миграции |
 | ✅ | 25 | **S25** | 1 | M48, M51, M52 | S24 | Storage документов/`exports`; REST `teacher_pay_rates` |
@@ -1790,6 +1881,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 38 | **S38** | 4 | L2, L3, L4, L5, L9, L12, L17, L19, L20 | S37 | Гигиена Edge/Auth/config |
 | ✅ | 39 | **S39** | 4 | L11, L15, L18, L21, L22, L24, L26, L27, L28 | S38 | Узкие SELECT/legacy/tabnabbing |
 | ✅ | 40 | **S40** | 4 | L1, L6, L7, L8, L13, L14, L16, L25 | S39 | Информационный остаток и чеклист Dashboard |
+| ☐ | — | **Хвост** | хвост | живые C1 / JWT ролей / Dashboard Auth / GraphQL | S40 | Восьмая сверка. Не S41, не код |
 
 **Вытащены вперёд** (в аудите стоят в более поздней волне, но чинятся здесь, потому что тот же код/политика):
 
@@ -1802,7 +1894,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 - M32, L10 → **S27** (тот же GRANT/auto-expose, что M31)
 - L23 не чинится: superseded **H33** / **S04**
 
-Ручные проверки из раздела «Что этот аудит не покрыл» гонять **после DoD того S\*, который закрывает пункт**, не откладывая все проверки на конец файла.
+Ручные проверки из раздела «Что этот аудит не покрыл» гонять **после DoD того S\*, который закрывает пункт**. Что к восьмой сверке так и не гонялось (C1 два ящика, JWT teacher/reception/accountant, Dashboard Auth, GraphQL JWT) — промпт **«Хвост»**, не новый S\*.
 
 ### Общие правила (все промпты с кодом)
 
@@ -3057,6 +3149,85 @@ DoD: is_allowed_teacher нет или всегда false; нет политик 
 DoD: хардкода omowdance@gmail.com в функции нет (env). Очередь промптов исчерпана. tsc зелёный если был код.
 
 Стоп. Не начинай S01 заново и не выдумывай S41.
+```
+
+#### Хвост — восьмая сверка: живые проверки после S40
+
+**Предшественник:** S40 (очередь S01–S40 закрыта, `APP_VERSION` ≥ 2.8.119).  
+**Закрывает:** не новый ID. Снимает ручной остаток восьмой сверки: C1 два аккаунта, JWT teacher/reception/accountant, Dashboard Auth, GraphQL.  
+**Не чинит:** H1, L14, инсайдерский выгруз своей орг (H8 как свойство SPA+RLS).
+
+```
+Задача: Хвост восьмой сверки аудита безопасности CRM 2026-08-22. Живые проверки после S40. Не S41. Не код.
+
+Предшественник: S40 закрыт (таблица последовательности ✅ 1–40; хвост миграций ≥ 20261036000001 на production).
+
+Прочитай сначала:
+- шапка «Восьмая сверка (2026-08-28, после S01–S40)»
+- «Проверка production после S40» целиком, особенно «Остаток»
+- «Что этот аудит не покрыл» (абзац 2026-08-28 и список «Проверку C1 / H9 / …» ниже)
+- .cursor/docs/ai/lessons.md чеклисты Dashboard: S12 (Auth без Captcha-как-в-старом-тексте; confirm/password/timebox/allowlist), S28 (MFA optional / timebox), S37 (Captcha ON + Turnstile), S40 (секрет DEVELOPER_NOTIFY_EMAIL, Realtime, crm_product_versions)
+- не перечитывать пункты C1/H*/M*/L* как «ещё открыто» — это снимок на дату аудита
+
+ЗАПРЕЩЕНО на весь прогон:
+- выдумывать S41 или новые H*/M*/L* ID
+- миграции, RLS, GRANT, Edge, хуки, бамп 2.8.y, changelog продукта
+- чинить H1 (демо-воронка) и L14 (developer bypass демо)
+- 40+ запросов landing-track-event на production (засорит landing_events; 429 уже в коде S40)
+- считать «инсайдер с JWT выгружает свою орг» новой дырой
+- чинить код «заодно», если нашлась регрессия: стоп, опиши факт в ответе и в этом файле, новый чат на точечный фикс
+
+Ожидаемое состояние (не ломать, только сверить; расхождение = регрессия → стоп):
+- anon без GRANT на public
+- JWT write на payments/attendance/organizations/organization_members/rental_invoices/teacher_settlements/single_visits/audit_log/platform_* /rental_series/teacher_pay_rates/personal_lesson_charges — нет
+- personal_lessons и subscriptions: у JWT только INSERT
+- EXECUTE expire_monthly_subscriptions / migrate_organization_version / is_platform_developer / organization_has_lifetime_license у anon/authenticated/PUBLIC = false
+- supabase_realtime: tenant-таблиц нет
+- SPA owner https://tangodb.vercel.app без белого экрана (уже смоук 2026-08-28 — не обязателен повтор, если версия та же)
+
+Делай строго по шагам. Нет учётки роли / нет доступа в Dashboard → не выдумывай результат, пометь «осталось оператору» и иди дальше.
+
+1. База. Не гонять весь GRANT-дамп заново, если нет подозрения на регрессию. Если гоняешь: npx supabase db query --linked — только те же проверки, что таблица «после S40». APP_VERSION в коде = шапка. tsc не обязателен (кода нет).
+
+2. GraphQL. GET /graphql/v1 без ключа — 401 (уже было). С anon key и с JWT owner: Data API GraphQL не должен отдавать tenant-таблицы. S34 убрал graphql_public из config.toml api.schemas. Оператор: Dashboard → GraphQL = OFF. Записать факт, не «чинить» расширение graphql в Postgres (схемы могут остаться).
+
+3. Dashboard Auth — чеклисты lessons.md, не config.toml. Спросить оператора или остановиться со списком. Нужно: Confirm email ON; password ≥8 + complexity; secure password change ON; session timebox; max_frequency ≥60s; redirect allowlist только https://tangodb.vercel.app без *.vercel.app; Captcha ON + Turnstile (после SPA с captchaToken); refresh token reuse 0; MFA TOTP optional; секрет DEVELOPER_NOTIFY_EMAIL; Expose new tables OFF. Не включать Captcha, если SPA без captchaToken — это регресс S12.
+
+4. Живой C1. Два реальных ящика. Инвайт email уже существующего пользователя в другую орг: пароль жертвы не меняется; complete-invite не отдаёт access_token/refresh_token; сессия жертвы не выдаётся по одной ссылке. Пригласивший не получает plaintext token в JSON, если канал — только UI-копия по продукту после S01 follow-up. Без двух ящиков — не симулировать, пометить «осталось оператору».
+
+5. JWT teacher (не owner). REST, не только UI. Ожидание: 403 или пусто, UI-RPC живы.
+   - PATCH attendance / PATCH subscriptions.lessons_left / DELETE subscriptions — отказ (H14/H15). mark_attendance и продажа не-группы INSERT работают.
+   - GET calendar_events?select=income_amount,paid_amount — отказ или без сумм; сетка недели мастер-классы без ошибки и без сумм в JSON (H24).
+   - GET personal_lessons base?select=price и PATCH чужого/вчерашнего урока — отказ; excludeCancelled сетка жива (H16/H26).
+   - finish_subscription / apply_subscription_freeze_period при teachers_can_sell_subscriptions=false — отказ (H27).
+   - GET personal_lesson_charges?select=billed_amount — отказ или без сумм; блок должников сетки без ошибки; PayPersonalLessonModal открывается (H30).
+   - GET single_visits?select=amount,method — отказ или без сумм; журнал drop-in (кто/дата/слот) жив (H32).
+   - GET subscription_member_changes чужого абонемента — пусто/403 (M41). preview_calendar_event_conflicts вне scope — без client_display чужих (M42).
+   - organization_licenses.access_key_id / organization_subscriptions.stripe_* — не видно; license_type и status для isReadOnly читаются (M43/M45). OrganizationProvider не белый экран.
+   - freeze periods без scope — пусто/403 (M46). get_rentals_for_schedule_week — не чужие залы (M47).
+   - rpc expire_monthly_subscriptions и migrate_organization_version — 403 (H23/H31).
+   - list_archived_prices без sales_count, RPC не forbidden (M57). close_group_lesson_occurrence с фейковым attendee_count — error (M59).
+   - Дашборд teacher без баннера venue-rule; record_personal_lesson_payment не падает из-за get_venue_cost_rule_status (L28).
+
+6. JWT reception (restricted_admin). PATCH organization_members.role, organizations.demo_expires_at, organization_settings.finance_period_closed_until — отказ (H9/H10/H12). INSERT/DELETE price_disciplines в обход UI — отказ; owner/director syncPrice* жив (H28). record_subscription_payment не падает из-за venue-status (L28).
+
+7. JWT accountant. Прямой PATCH rental_invoices / teacher_settlements / payments / personal_lessons.paid — отказ (H17–H22). RPC record_* / recalculate_teacher_settlement живы. update_payment_in_place и write_off_personal_lesson_debt / record_subscription_payment в закрытом периоде — periodClosed; storno/correct на закрытый день ещё разрешены (H29/M44, correction path). Не открывать и не закрывать период «чтобы проверить», если оператор не дал тестовую орг.
+
+8. Storage / прочее из «Что этот аудит не покрыл», только если есть учётка: renter-documents upload в обход prepare_renter_document_upload — 403 (M48); exports без can_export_data — 403 (M51); PATCH teacher_pay_rates в обход save_teacher_pay_rule — 403 (M52). Не обязательны, если шаги 5–7 закрыты.
+
+9. Запиши результаты в этот же файл: секция сразу после «Промпт по восьмой сверке» (перед «Что этот аудит не покрыл»). Заголовок «Результаты хвоста (дата)». Таблица: проверка | роль/метод | результат | закрывает. Пункты «Остаток» пометь прогнано / осталось оператору. В таблице последовательности поставь ✅ у **Хвост**, только если шаги 4–7 прогнаны (не «отложено»). Если часть осталась оператору — ✅ не ставить, в ответе список дыр прогона.
+
+10. Финальный ответ агента: таблица что прогнано / что нет; регрессий нет или стоп-факт; S41 нет; код не менялся.
+
+DoD:
+- Результаты хвоста в этом файле, не только в чате.
+- C1 два ящика: либо факт «пароль/JWT не утекли», либо явно «осталось оператору».
+- Хотя бы одна роль не-owner (teacher или reception или accountant) прогнана по REST write из шага 5–7, либо явно «нет учётки, не гонялось».
+- GraphQL и Dashboard: факт или «осталось оператору».
+- Код продукта, миграции, версия — без изменений.
+- S41 не создан.
+
+Стоп. Не начинай S01 и не выдумывай S41.
 ```
 
 
