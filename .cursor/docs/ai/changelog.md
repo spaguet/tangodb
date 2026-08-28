@@ -1,3 +1,5 @@
+2026-08-28 — fix(security): микропатч **2.8.113** — S33 / M21: `can_manage_team()` читает `admin_can_manage_team` (+ `NOT is_restricted_admin`); `teachers_can_view_full_schedule` в `teacher_can_access_lesson` / `teacher_can_access_schedule_slot` (выкл. = только свои), occupancy RPC (`preview_*`, `get_rentals_for_schedule_week`) и teacher calendar sessions. Продажа персоналок уже S09 — не дублировали.
+
 2026-08-28 — fix: микропатч **2.8.112** — S32 follow-up: карточка клиента у teacher грузит телефон/telegram/email/опекунов через RPC `get_client_card` (один UUID). Массовый `GET /clients` по-прежнему без teacher SELECT.
 
 2026-08-28 — fix(security): микропатч **2.8.111** — S32 / H7: view `clients_teacher_v` (ФИО/id без телефона, telegram, email, опекунов); `useClients` / `useClientDirectory` для teacher читают view; `DROP` teacher SELECT на базовую `clients`. Журнал и абонементы по-прежнему показывают имена.
