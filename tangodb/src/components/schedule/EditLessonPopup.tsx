@@ -1306,7 +1306,7 @@ export default function EditLessonPopup({
                 {googleSyncStatus.uiStatus && (
                   <GoogleCalendarSyncStatusBadge
                     status={googleSyncStatus.uiStatus}
-                    lastError={googleSyncStatus.row?.last_error}
+                    lastError={isTeacher ? null : googleSyncStatus.row?.last_error}
                     compact
                   />
                 )}

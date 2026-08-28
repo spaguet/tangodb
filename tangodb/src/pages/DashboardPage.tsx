@@ -149,11 +149,12 @@ export default function DashboardPage() {
 }
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
-  const venueStatusQuery = useVenueCostRuleStatus();
+  const { role } = usePermissions();
+  const venueStatusQuery = useVenueCostRuleStatus({ enabled: role !== "teacher" });
   return (
     <div className="panel-page-stack">
       <DemoDashboardBanner />
-      {venueStatusQuery.data?.acknowledgementRequired && (
+      {role !== "teacher" && venueStatusQuery.data?.acknowledgementRequired && (
         <VenueRuleExpiryNotice status={venueStatusQuery.data} />
       )}
       {children}

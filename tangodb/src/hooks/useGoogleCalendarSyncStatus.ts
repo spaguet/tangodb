@@ -10,6 +10,7 @@ import {
   type LessonGoogleSyncUiStatus,
   type ScheduleEntryGoogleSyncStatus,
 } from "../lib/googleCalendarApi";
+import { useOrganization } from "../organization/OrganizationProvider";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const googleCalendarSyncStatusQueryKey = (
@@ -31,6 +32,7 @@ export function useGoogleCalendarSyncStatus(
   options?: { enabled?: boolean }
 ) {
   const { organizationId, enabled: orgEnabled } = useOrgQueryScope();
+  const { role } = useOrganization();
   const enabled = orgEnabled && Boolean(target) && (options?.enabled ?? true);
   const [pollFetchCount, setPollFetchCount] = useState(0);
 
@@ -71,9 +73,13 @@ export function useGoogleCalendarSyncStatus(
     pollFetchCount
   );
 
+  const canSeeLastError = role === "owner" || role === "director";
+  const row =
+    query.data && !canSeeLastError ? { ...query.data, last_error: null } : (query.data ?? null);
+
   return {
     ...query,
     uiStatus,
-    row: query.data ?? null,
+    row,
   };
 }

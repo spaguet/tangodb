@@ -555,7 +555,7 @@ export default function LessonInfoPopup({
                 {googleSyncStatus.uiStatus && (
                   <GoogleCalendarSyncStatusBadge
                     status={googleSyncStatus.uiStatus}
-                    lastError={googleSyncStatus.row?.last_error}
+                    lastError={role === "teacher" ? null : googleSyncStatus.row?.last_error}
                   />
                 )}
               </dl>

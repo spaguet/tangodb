@@ -59,6 +59,10 @@ interface OrganizationContextValue {
 
 const OrganizationContext = createContext<OrganizationContextValue | null>(null);
 
+/** Explicit member SELECT — never `"*"` (L18: extra columns like rental_billing_profile). */
+const ORGANIZATION_SETTINGS_MEMBER_COLUMNS =
+  "organization_id, locale, currency_code, currency_display, timezone, week_starts_on, org_preset, terminology, modules, freeze_max_count, freeze_min_lessons, freeze_enabled, low_balance_threshold, teachers_can_manage_disciplines, teachers_can_sell_subscriptions, teachers_can_sell_personal_lessons, directors_can_mark_attendance, teachers_can_edit_clients, teachers_can_export, teachers_can_view_full_schedule, admin_can_export, admin_can_manage_team, admin_can_accept_payments, admin_can_edit_schedule, teachers_can_record_single_visits, admin_can_record_single_visits, pair_cycle_enabled, branding_name, branding_logo_url, finance_period_closed_until, updated_at";
+
 function mapMemberMeta(raw: unknown): MemberMeta {
   if (!raw || typeof raw !== "object") return {};
   const meta = raw as Record<string, unknown>;
@@ -227,7 +231,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           .select("id, name, slug, status, demo_expires_at, data_purge_at")
           .eq("id", organizationId!)
           .maybeSingle(),
-        supabase.from("organization_settings").select("*").eq("organization_id", organizationId!).maybeSingle(),
+        supabase
+          .from("organization_settings")
+          .select(ORGANIZATION_SETTINGS_MEMBER_COLUMNS)
+          .eq("organization_id", organizationId!)
+          .maybeSingle(),
         supabase
           .from("organization_licenses")
           .select("license_type, activated_at, expires_at")
@@ -257,7 +265,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         : null;
 
       const settings = settingsRes.data
-        ? mapSettings(settingsRes.data as Record<string, unknown>)
+        ? mapSettings(settingsRes.data as unknown as Record<string, unknown>)
         : null;
 
       const license = licenseRes.data

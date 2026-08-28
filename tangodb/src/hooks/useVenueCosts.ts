@@ -195,11 +195,11 @@ export function venueRuleAckFailureFromRpc(result: RpcObject | null): VenueRuleA
   };
 }
 
-export function useVenueCostRuleStatus() {
+export function useVenueCostRuleStatus(options?: { enabled?: boolean }) {
   const { enabled, withOrgId } = useOrgQueryScope();
   return useQuery({
     queryKey: withOrgId(venueCostStatusQueryKey),
-    enabled,
+    enabled: enabled && (options?.enabled ?? true),
     queryFn: fetchVenueCostRuleStatus,
     staleTime: 30_000,
   });

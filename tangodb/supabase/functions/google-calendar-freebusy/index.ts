@@ -95,13 +95,30 @@ Deno.serve(async (req) => {
 
   const { data: callerMember } = await admin
     .from("organization_members")
-    .select("id, is_active")
+    .select("id, is_active, role, meta")
     .eq("organization_id", teacherMember.organization_id)
     .eq("user_id", callerId)
     .eq("is_active", true)
     .maybeSingle();
 
   if (!callerMember) {
+    return jsonResponse({ error: "Forbidden" }, 403, req);
+  }
+
+  const callerRole = String(callerMember.role ?? "");
+  const callerMeta = (callerMember.meta ?? {}) as { restricted_admin?: boolean };
+  const isRestrictedAdmin = callerMeta.restricted_admin === true;
+  let canQueryFreebusy =
+    callerRole === "owner" || callerRole === "director" || callerRole === "teacher";
+  if (callerRole === "admin" && !isRestrictedAdmin) {
+    const { data: scheduleSettings } = await admin
+      .from("organization_settings")
+      .select("admin_can_edit_schedule")
+      .eq("organization_id", teacherMember.organization_id)
+      .maybeSingle();
+    canQueryFreebusy = scheduleSettings?.admin_can_edit_schedule !== false;
+  }
+  if (!canQueryFreebusy) {
     return jsonResponse({ error: "Forbidden" }, 403, req);
   }
 

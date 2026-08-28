@@ -995,7 +995,7 @@ function ContractsTab({
                       type="button"
                       onClick={() =>
                         void downloadDocument.mutateAsync(d.id).then((res) => {
-                          if (res.success) window.open(res.url, "_blank");
+                          if (res.success) window.open(res.url, "_blank", "noopener,noreferrer");
                           else toast(resolveMutationError(res.error, "renters.error.documentUploadFailed", t), "error");
                         })
                       }

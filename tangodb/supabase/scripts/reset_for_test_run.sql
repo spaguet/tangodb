@@ -50,7 +50,6 @@ BEGIN
   DELETE FROM platform_org_notes;
   DELETE FROM billing_webhook_events;
   DELETE FROM platform_audit_log;
-  DELETE FROM allowed_users;
 
   FOR r IN
     SELECT c.relname AS table_name, t.tgname AS trigger_name
