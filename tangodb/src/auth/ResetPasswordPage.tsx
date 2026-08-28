@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { useGuestI18n } from "../hooks/useI18n";
@@ -13,7 +13,7 @@ import {
 
 export default function ResetPasswordPage() {
   const { t } = useGuestI18n();
-  const { session, updatePassword } = useAuth();
+  const { passwordRecovery, loading: authLoading, updatePassword, signOut } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,15 +21,15 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!session) return;
-  }, [session]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
+    if (!passwordRecovery) {
+      setError(t("auth.resetPassword.noSessionHint"));
+      return;
+    }
     if (password.length < 8) {
       setError(t("auth.passwordMinLength"));
       return;
@@ -43,7 +43,8 @@ export default function ResetPasswordPage() {
     try {
       await updatePassword(password);
       setSuccess(t("auth.resetPassword.success"));
-      setTimeout(() => navigate("/", { replace: true }), 1200);
+      await signOut();
+      setTimeout(() => navigate("/login", { replace: true }), 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("auth.resetPassword.error"));
     } finally {
@@ -51,7 +52,23 @@ export default function ResetPasswordPage() {
     }
   };
 
-  if (!session) {
+  if (success) {
+    return (
+      <AuthLayout title="TangoDB" subtitle={t("auth.resetPassword.subtitle")}>
+        <AuthSuccess message={success} />
+      </AuthLayout>
+    );
+  }
+
+  if (authLoading) {
+    return (
+      <AuthLayout title="TangoDB" subtitle={t("auth.resetPassword.subtitle")}>
+        <p className="text-sm text-slate-500">{t("auth.loading.checkingSession")}</p>
+      </AuthLayout>
+    );
+  }
+
+  if (!passwordRecovery) {
     return (
       <AuthLayout title="TangoDB" subtitle={t("auth.resetPassword.subtitle")}>
         <p className="text-sm text-slate-500">

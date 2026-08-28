@@ -1,1 +1,8 @@
-export { ProtectedRoute, GuestRoute, AuthFlowRoute, OrgWorkspaceRoute, PanelAccessRoute } from "./routeGuards";
+export {
+  ProtectedRoute,
+  GuestRoute,
+  AuthFlowRoute,
+  OrgWorkspaceRoute,
+  PanelAccessRoute,
+  RecoveryGate,
+} from "./routeGuards";

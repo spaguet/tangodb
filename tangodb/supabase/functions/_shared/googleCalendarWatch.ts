@@ -14,6 +14,9 @@ import {
 import { markJobDone, type OutboxJob } from "./calendarSyncCommon.ts";
 import type { GoogleOAuthConfig } from "./googleOAuth.ts";
 import { logEvent } from "./supabase.ts";
+import { constantTimeEqual } from "./constantTime.ts";
+
+export { constantTimeEqual };
 
 const WATCH_TTL_MS = 6 * 24 * 60 * 60 * 1000;
 
@@ -31,20 +34,6 @@ export type WatchChannelRow = {
   expiration: string;
   calendar_sync_token: string | null;
 };
-
-export function constantTimeEqual(a: string, b: string): boolean {
-  const enc = new TextEncoder();
-  const left = enc.encode(a);
-  const right = enc.encode(b);
-  if (left.length !== right.length) {
-    return false;
-  }
-  let diff = 0;
-  for (let i = 0; i < left.length; i++) {
-    diff |= left[i] ^ right[i];
-  }
-  return diff === 0;
-}
 
 function webhookUrlOrNull(): string | null {
   const url = (Deno.env.get("GOOGLE_CALENDAR_WEBHOOK_URL") ?? "").trim();

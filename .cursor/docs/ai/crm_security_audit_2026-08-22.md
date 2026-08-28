@@ -1787,7 +1787,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 35 | **S35** | 3 | M12, M23, M29 | S34 | Офлайн PII; `expenses` + период; `audit_log` без полных diff director |
 | ✅ | 36 | **S36** | 3 | M1 | S35 | Остаток «UI ≠ API»: модули/флаги, которые ещё только в `permissions.ts` |
 | ✅ | 37 | **S37** | 4 | M4, M9, M10, M14, M18 | S36 (волна 3 закрыта) | Публичные Edge; Turnstile на signup; тексты ошибок; enumeration; waitlist org |
-| ☐ | 38 | **S38** | 4 | L2, L3, L4, L5, L9, L12, L17, L19, L20 | S37 | Гигиена Edge/Auth/config |
+| ✅ | 38 | **S38** | 4 | L2, L3, L4, L5, L9, L12, L17, L19, L20 | S37 | Гигиена Edge/Auth/config |
 | ☐ | 39 | **S39** | 4 | L11, L15, L18, L21, L22, L24, L26, L27, L28 | S38 | Узкие SELECT/legacy/tabnabbing |
 | ☐ | 40 | **S40** | 4 | L1, L6, L7, L8, L13, L14, L16, L25 | S39 | Информационный остаток и чеклист Dashboard |
 

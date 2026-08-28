@@ -99,6 +99,7 @@
 | Email rate limit (`max_frequency`) | **≥ 60s** между письмами |
 | Redirect URLs allowlist | только prod origin (`https://tangodb.vercel.app`), **без** `*.vercel.app` preview |
 | Captcha (GoTrue) | **OFF** до S37 (закрыто в S37 — см. чеклист ниже) |
+| Refresh token reuse interval | **0** (S38/L19; не копировать CLI default 10s) |
 
 ### 2026-08-28 — M4/M9/M10/M14/M18: публичные Edge, signup captcha, ошибки, enumeration (S37)
 
@@ -116,6 +117,7 @@
 | CRM `VITE_TURNSTILE_SITE_KEY` | задан на Vercel (tangodb) |
 | Dev Console `VITE_TURNSTILE_SITE_KEY` | задан на Vercel (tangodb-dev-console) — иначе вход в консоль 400 после Captcha ON |
 | Confirm email / password / timebox / allowlist | без изменений с S12 |
+| Refresh token reuse interval | **0** (S38/L19; Dashboard → Auth → Sessions / Refresh token reuse) |
 
 Порядок: сначала задеплоить SPA с `captchaToken`, потом включить Captcha в Dashboard. Наоборот — логин/регистрация 400.
 

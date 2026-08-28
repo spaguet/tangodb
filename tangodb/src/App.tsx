@@ -20,6 +20,7 @@ import {
   GuestRoute,
   OrgWorkspaceRoute,
   PanelAccessRoute,
+  RecoveryGate,
 } from "./auth/ProtectedRoute";
 import LoginPage from "./auth/LoginPage";
 import RegisterPage from "./auth/RegisterPage";
@@ -547,6 +548,7 @@ export default function App() {
         <OrganizationProvider>
           <SettingsProvider>
           <BrowserRouter>
+            <RecoveryGate>
             <Routes>
               <Route
                 path="/login"
@@ -621,6 +623,7 @@ export default function App() {
                 </Route>
               </Route>
             </Routes>
+            </RecoveryGate>
           </BrowserRouter>
           </SettingsProvider>
         </OrganizationProvider>

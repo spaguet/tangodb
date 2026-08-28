@@ -12,7 +12,8 @@ port = 54321
 # endpoints. GraphQL (`graphql_public`) is unused in tangodb/ — S34/M7, do not re-add.
 schemas = ["public"]
 # Extra schemas to add to the search_path of every request.
-extra_search_path = ["public", "extensions"]
+# S38/L20: public only — do not include `extensions` (search_path hijack surface).
+extra_search_path = ["public"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
@@ -176,7 +177,8 @@ jwt_expiry = 3600
 enable_refresh_token_rotation = true
 # Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.
 # Requires enable_refresh_token_rotation = true.
-refresh_token_reuse_interval = 10
+# S38/L19: 0 = reuse is treated as theft (revoke family). Do not copy the CLI default of 10s to prod.
+refresh_token_reuse_interval = 0
 # Allow/disallow new user signups to your project.
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.

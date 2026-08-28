@@ -7,16 +7,58 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Session } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { setAuthRememberMe, supabase } from "../lib/supabase";
 import { requireSiteUrl } from "../lib/siteUrl";
 import { t, getGuestLocale } from "../lib/i18n";
 import { goTrueCaptchaToken, isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import { isUserAlreadyRegistered } from "./authErrors";
 
+const PASSWORD_RECOVERY_FLAG = "tangodb.password_recovery";
+
+function readPasswordRecoveryFlag(): boolean {
+  try {
+    return sessionStorage.getItem(PASSWORD_RECOVERY_FLAG) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writePasswordRecoveryFlag(on: boolean): void {
+  try {
+    if (on) sessionStorage.setItem(PASSWORD_RECOVERY_FLAG, "1");
+    else sessionStorage.removeItem(PASSWORD_RECOVERY_FLAG);
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+function urlLooksLikePasswordRecovery(): boolean {
+  if (typeof window === "undefined") return false;
+  const hash = window.location.hash.replace(/^#/, "");
+  const hashParams = new URLSearchParams(hash);
+  if (hashParams.get("type") === "recovery") return true;
+  if (window.location.hash.includes("type=recovery")) return true;
+  const query = new URLSearchParams(window.location.search);
+  if (window.location.pathname.includes("/auth/reset-password") && query.has("code")) {
+    return true;
+  }
+  return readPasswordRecoveryFlag();
+}
+
+function enterPasswordRecovery(): void {
+  writePasswordRecoveryFlag(true);
+}
+
+function exitPasswordRecovery(): void {
+  writePasswordRecoveryFlag(false);
+}
+
 interface AuthContextValue {
   session: Session | null;
   loading: boolean;
+  /** True while GoTrue recovery JWT is active — CRM shell must not mount. */
+  passwordRecovery: boolean;
   signInWithEmail: (
     email: string,
     password: string,
@@ -44,27 +86,60 @@ function requireGoTrueCaptcha(captchaToken: string | null | undefined): string |
   return token;
 }
 
+function applyAuthEvent(
+  event: AuthChangeEvent,
+  nextSession: Session | null,
+  setSession: (s: Session | null) => void,
+  setPasswordRecovery: (v: boolean) => void
+): void {
+  if (event === "PASSWORD_RECOVERY") {
+    enterPasswordRecovery();
+    setPasswordRecovery(true);
+    setSession(null);
+    return;
+  }
+  if (event === "SIGNED_OUT") {
+    exitPasswordRecovery();
+    setPasswordRecovery(false);
+    setSession(null);
+    return;
+  }
+  if (readPasswordRecoveryFlag() || urlLooksLikePasswordRecovery()) {
+    enterPasswordRecovery();
+    setPasswordRecovery(true);
+    setSession(null);
+    return;
+  }
+  setPasswordRecovery(false);
+  setSession(nextSession);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [passwordRecovery, setPasswordRecovery] = useState(() => urlLooksLikePasswordRecovery());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function bootstrapSession() {
-      const { data } = await supabase.auth.getSession();
-      if (cancelled) return;
-
-      setSession(data.session);
-      setLoading(false);
-    }
-
-    bootstrapSession();
-
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (cancelled) return;
+      applyAuthEvent(event, nextSession, setSession, setPasswordRecovery);
+      setLoading(false);
+    });
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      if (readPasswordRecoveryFlag() || urlLooksLikePasswordRecovery()) {
+        enterPasswordRecovery();
+        setPasswordRecovery(true);
+        setSession(null);
+        setLoading(false);
+        return;
+      }
+      setSession(data.session);
       setLoading(false);
     });
 
@@ -134,6 +209,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    exitPasswordRecovery();
+    setPasswordRecovery(false);
+    setSession(null);
     await supabase.auth.signOut();
   }, []);
 
@@ -141,13 +219,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       loading,
+      passwordRecovery,
       signInWithEmail,
       signUpWithEmail,
       resetPasswordForEmail,
       updatePassword,
       signOut,
     }),
-    [session, loading, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut]
+    [
+      session,
+      loading,
+      passwordRecovery,
+      signInWithEmail,
+      signUpWithEmail,
+      resetPasswordForEmail,
+      updatePassword,
+      signOut,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

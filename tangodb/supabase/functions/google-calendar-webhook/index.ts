@@ -24,9 +24,7 @@ Deno.serve(async (req) => {
       return new Response(null, { status: 404 });
     }
 
-    if (!constantTimeEqual(watch.channel_id, channelId)) {
-      return new Response(null, { status: 403 });
-    }
+    // Lookup is already by channel_id; comparing it to itself is a no-op (S38/L4).
     if (!constantTimeEqual(watch.resource_id, resourceId)) {
       return new Response(null, { status: 403 });
     }

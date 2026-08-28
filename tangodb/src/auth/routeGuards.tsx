@@ -36,6 +36,19 @@ function LoadingScreen({ label }: { label: string }) {
   );
 }
 
+/** Recovery JWT must not open the CRM shell — only /auth/reset-password. */
+export function RecoveryGate({ children }: { children: React.ReactNode }) {
+  const { t } = useGuestI18n();
+  const { passwordRecovery, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) return <LoadingScreen label={t("auth.loading.checkingSession")} />;
+  if (passwordRecovery && location.pathname !== "/auth/reset-password") {
+    return <Navigate to="/auth/reset-password" replace />;
+  }
+  return <>{children}</>;
+}
+
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { t } = useGuestI18n();
   const { session, loading } = useAuth();

@@ -104,7 +104,7 @@ export const EN: Record<I18nKey, string> = {
   "auth.resetPassword.noSessionHint":
     "Open the link from the password recovery email or request a new one.",
   "auth.resetPassword.requestNewLink": "request a new one",
-  "auth.resetPassword.success": "Password updated. Redirecting...",
+  "auth.resetPassword.success": "Password updated. Sign in with the new password.",
   "auth.resetPassword.error": "Failed to update password",
   "auth.resetPassword.newPasswordLabel": "New password",
   "auth.resetPassword.submit": "Save password",

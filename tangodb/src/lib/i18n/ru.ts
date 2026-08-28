@@ -104,7 +104,7 @@ export const RU: Record<I18nKey, string> = {
   "auth.resetPassword.noSessionHint":
     "Откройте ссылку из письма для восстановления пароля или запросите новую.",
   "auth.resetPassword.requestNewLink": "запросите новую",
-  "auth.resetPassword.success": "Пароль обновлён. Перенаправляем...",
+  "auth.resetPassword.success": "Пароль обновлён. Войдите с новым паролем.",
   "auth.resetPassword.error": "Не удалось обновить пароль",
   "auth.resetPassword.newPasswordLabel": "Новый пароль",
   "auth.resetPassword.submit": "Сохранить пароль",
