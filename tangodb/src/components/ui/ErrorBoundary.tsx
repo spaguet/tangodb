@@ -12,13 +12,13 @@ interface State {
   error?: Error;
 }
 
-function DefaultErrorFallback({ error }: { error?: Error }) {
+function DefaultErrorFallback() {
   const { t } = useI18n();
 
   return (
     <div className="p-6 text-center text-rose-600">
       <p className="font-semibold">{t("common.error.boundaryTitle")}</p>
-      <p className="text-xs text-slate-500 mt-1">{error?.message}</p>
+      <p className="text-xs text-slate-500 mt-1">{t("common.error.boundaryHint")}</p>
     </div>
   );
 }
@@ -41,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        this.props.fallback ?? <DefaultErrorFallback error={this.state.error} />
+        this.props.fallback ?? <DefaultErrorFallback />
       );
     }
     return this.props.children;

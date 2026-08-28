@@ -220,6 +220,7 @@ export type I18nKey =
   | "common.error.loadFailed"
   | "common.retryLoad"
   | "common.error.boundaryTitle"
+  | "common.error.boundaryHint"
   // demo
   | "demo.purchaseCta"
   | "demo.banner.retentionTitle"

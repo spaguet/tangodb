@@ -80,10 +80,6 @@ Deno.serve(async (req) => {
       .eq("owner_email_hash", emailHash)
       .maybeSingle();
 
-    if (retention) {
-      return jsonResponse({ error: "Demo already used for this email" }, 409, req);
-    }
-
     const { data: existingDemoKey } = await admin
       .from("access_keys")
       .select("id")
@@ -91,8 +87,11 @@ Deno.serve(async (req) => {
       .ilike("email", email)
       .maybeSingle();
 
-    if (existingDemoKey) {
-      return jsonResponse({ error: "Demo already used for this email" }, 409, req);
+    // M14: never 409 here — same 200 as a fresh challenge. Quota is enforced in create-org RPC.
+    if (retention || existingDemoKey) {
+      logEvent("self_service_demo_quota_hit", {
+        email_domain: email.split("@")[1] ?? "unknown",
+      });
     }
   }
 

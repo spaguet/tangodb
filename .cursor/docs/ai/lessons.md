@@ -98,7 +98,26 @@
 | Session timebox | задан (например 24h), не «без лимита» |
 | Email rate limit (`max_frequency`) | **≥ 60s** между письмами |
 | Redirect URLs allowlist | только prod origin (`https://tangodb.vercel.app`), **без** `*.vercel.app` preview |
-| Captcha (GoTrue) | **OFF** до S37 |
+| Captcha (GoTrue) | **OFF** до S37 (закрыто в S37 — см. чеклист ниже) |
+
+### 2026-08-28 — M4/M9/M10/M14/M18: публичные Edge, signup captcha, ошибки, enumeration (S37)
+
+- **Ошибка:** `signUpWithEmail` шёл в GoTrue без captcha token; `parseAuthError`/`ErrorBoundary` показывали сырой Postgres/GoTrue; `request-demo-key` и `verify-self-service-registration` отвечали 409 «already requested/used»; waitlist писал чужой `organization_id`.
+- **Причина:** Turnstile был только на RegisterPage → verify-self-service; GoTrue captcha откладывали до волны 4; публичные 409 удобны для UI и одновременно enumerating; waitlist доверял body.
+- **Как избежать:** `[auth.captcha]` Turnstile + `options.captchaToken` на signup/sign-in/recover (и Dev Console login). Токен одноразовый — не слать тот же Turnstile и в verify-self-service, и в signUp. Неизвестные ошибки — i18n generic + `reportClientError`. Public demo endpoints — одинаковый 200. Waitlist org id — только активный member.
+
+**Чеклист Supabase Dashboard → Authentication (production, Captcha ON) — после деплоя SPA 2.8.116:**
+
+| Настройка | Требование |
+|-----------|------------|
+| Captcha protection | **ON** |
+| Provider | **Turnstile** |
+| Secret | тот же, что `TURNSTILE_SECRET_KEY` Edge / Cloudflare site |
+| CRM `VITE_TURNSTILE_SITE_KEY` | задан на Vercel (tangodb) |
+| Dev Console `VITE_TURNSTILE_SITE_KEY` | задан на Vercel (tangodb-dev-console) — иначе вход в консоль 400 после Captcha ON |
+| Confirm email / password / timebox / allowlist | без изменений с S12 |
+
+Порядок: сначала задеплоить SPA с `captchaToken`, потом включить Captcha в Dashboard. Наоборот — логин/регистрация 400.
 
 ### 2026-08-27 — H29: закрытый кассовый период только на аренде
 

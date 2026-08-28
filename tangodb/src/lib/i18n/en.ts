@@ -166,9 +166,8 @@ export const EN: Record<I18nKey, string> = {
   "auth.error.invalidCredentials": "Invalid email or password",
   "auth.error.emailNotConfirmed": "Confirm your email before signing in",
   "auth.error.userAlreadyRegistered":
-    "A user with this email is already registered. Sign in with this email to continue demo CRM creation.",
-  "auth.error.demoUsedEmail":
-    "A demo for this email has already been used. Activate a license key or contact support.",
+    "Check your email and confirm it — after that the 30-day demo CRM will be opened.",
+  "auth.error.demoUsedEmail": "Request failed",
   "auth.error.captchaFailed": "Captcha verification failed. Please try again.",
   "auth.error.completeRegistrationCaptcha":
     "Captcha verification is required. Complete it below to create your demo CRM.",
@@ -242,6 +241,7 @@ export const EN: Record<I18nKey, string> = {
   "common.error.loadFailed": "Failed to load data",
   "common.retryLoad": "Retry loading",
   "common.error.boundaryTitle": "Something went wrong",
+  "common.error.boundaryHint": "Try refreshing the page. If it happens again, contact support.",
 
   // demo
   "demo.purchaseCta": "Buy full version",

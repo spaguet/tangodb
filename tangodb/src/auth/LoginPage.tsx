@@ -10,6 +10,7 @@ import {
   AuthLink,
 } from "./AuthLayout";
 import { parseAuthError } from "./authErrors";
+import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import { useGuestI18n } from "../hooks/useI18n";
 import { getOrganizationIdFromSession } from "../lib/authClaims";
 import { getRememberMePreference } from "../lib/supabase";
@@ -24,6 +25,8 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(getRememberMePreference);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const goAfterLogin = () => {
     navigate("/", { replace: true });
@@ -34,7 +37,11 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      const nextSession = await signInWithEmail(email.trim(), password, rememberMe);
+      if (isTurnstileConfigured() && !turnstileToken) {
+        setError(t("auth.register.captchaRequired"));
+        return;
+      }
+      const nextSession = await signInWithEmail(email.trim(), password, rememberMe, turnstileToken);
       if (nextSession.user.email_confirmed_at && !getOrganizationIdFromSession(nextSession)) {
         navigate("/auth/verify-email", { replace: true });
         return;
@@ -42,6 +49,8 @@ export default function LoginPage() {
       goAfterLogin();
     } catch (err) {
       setError(parseAuthError(err, locale));
+      setTurnstileResetKey((k) => k + 1);
+      setTurnstileToken(null);
     } finally {
       setLoading(false);
     }
@@ -87,6 +96,11 @@ export default function LoginPage() {
           </label>
           <AuthLink to="/auth/forgot-password">{t("auth.login.forgotPasswordLink")}</AuthLink>
         </div>
+        <TurnstileWidget
+          resetKey={turnstileResetKey}
+          onToken={setTurnstileToken}
+          onError={() => setTurnstileToken(null)}
+        />
         <AuthButton loading={loading}>{t("auth.login.submit")}</AuthButton>
       </form>
 

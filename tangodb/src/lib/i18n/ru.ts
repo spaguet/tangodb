@@ -166,9 +166,8 @@ export const RU: Record<I18nKey, string> = {
   "auth.error.invalidCredentials": "Неверный email или пароль",
   "auth.error.emailNotConfirmed": "Подтвердите email перед входом",
   "auth.error.userAlreadyRegistered":
-    "Пользователь с таким email уже зарегистрирован. Войдите с этим email, чтобы продолжить создание демо-CRM.",
-  "auth.error.demoUsedEmail":
-    "Демо для этого email уже использовалось. Активируйте лицензионный ключ или обратитесь в поддержку.",
+    "Проверьте почту и подтвердите email — после этого откроется демо-версия CRM на 30 дней.",
+  "auth.error.demoUsedEmail": "Не удалось выполнить запрос",
   "auth.error.captchaFailed": "Не удалось пройти проверку captcha. Попробуйте ещё раз.",
   "auth.error.completeRegistrationCaptcha":
     "Нужна проверка captcha. Пройдите её ниже и создайте демо-CRM.",
@@ -241,6 +240,7 @@ export const RU: Record<I18nKey, string> = {
   "common.error.loadFailed": "Не удалось загрузить данные",
   "common.retryLoad": "Повторить загрузку",
   "common.error.boundaryTitle": "Произошла ошибка",
+  "common.error.boundaryHint": "Обновите страницу. Если ошибка повторится, напишите в поддержку.",
 
   // demo
   "demo.purchaseCta": "Купить полную версию",

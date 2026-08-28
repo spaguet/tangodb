@@ -133,3 +133,11 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
 export function isTurnstileConfigured(): boolean {
   return Boolean(SITE_KEY);
 }
+
+/** Token to send to GoTrue. Omit when the widget is in local bypass mode. */
+export function goTrueCaptchaToken(token: string | null | undefined): string | undefined {
+  if (!isTurnstileConfigured()) return undefined;
+  const value = token?.trim();
+  if (!value || value === "dev-bypass") return undefined;
+  return value;
+}

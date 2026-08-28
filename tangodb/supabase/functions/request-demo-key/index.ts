@@ -16,6 +16,12 @@ import { createServiceClient, logEvent } from "../_shared/supabase.ts";
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 15 * 60_000;
 
+const DEMO_KEY_ACCEPTED = {
+  ok: true,
+  email_sent: true,
+  message: "Demo key sent to your email",
+} as const;
+
 async function sendDemoKeyEmail(email: string, key: string): Promise<boolean> {
   const siteUrl = Deno.env.get("SITE_URL") ?? "https://tangodb.vercel.app";
   const subject = "TangoDB — ваш демо-ключ на 30 дней";
@@ -70,7 +76,8 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (existing) {
-    return jsonResponse({ error: "Demo key already requested for this email" }, 409, req);
+    logEvent("demo_key_already_requested", { email_domain: email.split("@")[1] ?? "unknown" });
+    return jsonResponse(DEMO_KEY_ACCEPTED, 200, req);
   }
 
   const { data: version, error: versionError } = await admin
@@ -98,7 +105,8 @@ Deno.serve(async (req) => {
 
   if (insertError) {
     if (insertError.code === "23505") {
-      return jsonResponse({ error: "Demo key already requested for this email" }, 409, req);
+      logEvent("demo_key_already_requested", { email_domain: email.split("@")[1] ?? "unknown" });
+      return jsonResponse(DEMO_KEY_ACCEPTED, 200, req);
     }
     logEvent("request_demo_key_insert_error", { code: insertError.code ?? "unknown" });
     return jsonResponse({ error: "Service unavailable" }, 500, req);
@@ -113,13 +121,5 @@ Deno.serve(async (req) => {
 
   logEvent("demo_key_issued", { email_domain: email.split("@")[1] ?? "unknown" });
 
-  return jsonResponse(
-    {
-      ok: true,
-      email_sent: true,
-      message: "Demo key sent to your email",
-    },
-    200,
-    req
-  );
+  return jsonResponse(DEMO_KEY_ACCEPTED, 200, req);
 });

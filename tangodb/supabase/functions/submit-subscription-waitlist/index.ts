@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Invalid email" }, 400, req);
   }
 
-  const organizationId =
+  const requestedOrgId =
     typeof body.organization_id === "string" && body.organization_id.trim()
       ? body.organization_id.trim()
       : null;
@@ -55,6 +55,19 @@ Deno.serve(async (req) => {
   }
 
   const admin = createServiceClient();
+
+  let organizationId: string | null = null;
+  if (requestedOrgId) {
+    const { data: membership } = await admin
+      .from("organization_members")
+      .select("id")
+      .eq("organization_id", requestedOrgId)
+      .eq("user_id", userData.user.id)
+      .eq("is_active", true)
+      .maybeSingle();
+    organizationId = membership ? requestedOrgId : null;
+  }
+
   const since = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
   const { data: existing } = await admin
     .from("platform_waitlist")

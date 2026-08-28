@@ -215,11 +215,14 @@ token_verifications = 30
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
 web3 = 30
 
-# Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
-# [auth.captcha]
-# enabled = true
-# provider = "hcaptcha"
-# secret = ""
+# S37/M9: GoTrue captcha on signup/sign-in/recover. SPA must pass options.captchaToken
+# (RegisterPage / LoginPage / ForgotPasswordPage / AcceptInvitePage). Dashboard Captcha
+# must use the same Turnstile secret as TURNSTILE_SECRET_KEY. Enabling this without
+# the token in signUp() yields 400 (that was the S12 regression).
+[auth.captcha]
+enabled = true
+provider = "turnstile"
+secret = "env(TURNSTILE_SECRET_KEY)"
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
@@ -376,44 +379,57 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# Public Edge (verify_jwt = false): comment is the reason it stays public. Cron uses
+# CRON_SECRET, not JWT. Do not flip complete-invite to true — new invitees have no session (S01).
+
 [functions.request-demo-key]
 verify_jwt = false
+# Public: demo-key form on the landing has no session. Durable rate limit (S13). No plaintext key (H2).
 
 [functions.preview-invite]
 verify_jwt = false
+# Public: invitee opens the link before login (S01). Capability is the invite token, not a JWT.
 
 [functions.complete-invite]
 verify_jwt = false
+# Public: new invitee has no session yet (S01). verify_jwt=true would break accept-without-login.
 
 [functions.activate-access-key]
 verify_jwt = true
 
 [functions.demo-lifecycle]
 verify_jwt = false
+# Cron/worker: authenticated with CRON_SECRET (L5), not a user JWT.
 
 [functions.purge-expired-demo-orgs]
 verify_jwt = false
+# Cron: CRON_SECRET. JWT would block scheduled purge.
 
 [functions.create-subscription-checkout]
 verify_jwt = true
 
 [functions.stripe-webhook]
 verify_jwt = false
+# Public: Stripe signs the body. JWT would block webhook deliveries.
 
 [functions.verify-self-service-registration]
 verify_jwt = false
+# Public: Turnstile challenge before signup/demo org. No session yet.
 
 [functions.create-self-service-demo-org]
 verify_jwt = true
 
 [functions.landing-track-event]
 verify_jwt = false
+# Public: marketing landing has no auth. Drop on edge when over durable IP/visitor limit
+# (no Turnstile — landing has no widget). Never insert past the cap (M4).
 
 [functions.google-calendar-auth-start]
 verify_jwt = true
 
 [functions.google-calendar-auth-callback]
 verify_jwt = false
+# Public: Google OAuth redirect has no CRM JWT. State/token in the callback.
 
 [functions.google-calendar-disconnect]
 verify_jwt = true
@@ -432,21 +448,26 @@ verify_jwt = true
 
 [functions.calendar-sync-worker]
 verify_jwt = false
+# Cron/worker: CRON_SECRET, not a user JWT.
 
 [functions.calendar-sync-kick]
 verify_jwt = true
 
 [functions.calendar-reconcile-personal]
 verify_jwt = false
+# Cron: CRON_SECRET.
 
 [functions.calendar-extend-group-horizon]
 verify_jwt = false
+# Cron: CRON_SECRET.
 
 [functions.google-calendar-webhook]
 verify_jwt = false
+# Public: Google push notifications. Channel token (L4), not a CRM JWT.
 
 [functions.google-calendar-renew-watches]
 verify_jwt = false
+# Cron: CRON_SECRET.
 
 [functions.google-calendar-freebusy]
 verify_jwt = true

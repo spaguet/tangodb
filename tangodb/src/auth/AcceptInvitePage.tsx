@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { parseAuthError } from "./authErrors";
+import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import { acceptInvite, completeInvite, previewInvite } from "../lib/edgeFunctions";
 import { useI18n } from "../hooks/useI18n";
 import { supabase } from "../lib/supabase";
@@ -36,6 +37,8 @@ export default function AcceptInvitePage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeToken, setActiveToken] = useState(() => extractInviteTokenFromUrl());
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const acceptStartedRef = useRef(false);
   const inviteAcceptedViaCompleteRef = useRef(false);
 
@@ -66,10 +69,10 @@ export default function AcceptInvitePage() {
         setOrgName(data.organization_name ?? null);
         setPreviewReady(true);
       })
-      .catch((err) => {
+      .catch(() => {
         if (cancelled) return;
         setStatus("error");
-        setMessage(err instanceof Error ? err.message : t("auth.acceptInviteError"));
+        setMessage(t("auth.acceptInviteError"));
       });
 
     return () => {
@@ -98,7 +101,7 @@ export default function AcceptInvitePage() {
       } catch (err) {
         if (cancelled) return;
         setStatus("error");
-        setMessage(err instanceof Error ? err.message : t("auth.acceptInviteError"));
+        setMessage(parseAuthError(err, locale));
       }
     })();
 
@@ -112,9 +115,15 @@ export default function AcceptInvitePage() {
     setFormError(null);
     setSubmitting(true);
     try {
-      await signInWithEmail(email.trim(), password);
+      if (isTurnstileConfigured() && !turnstileToken) {
+        setFormError(t("auth.register.captchaRequired"));
+        return;
+      }
+      await signInWithEmail(email.trim(), password, false, turnstileToken);
     } catch (err) {
       setFormError(parseAuthError(err, locale));
+      setTurnstileResetKey((k) => k + 1);
+      setTurnstileToken(null);
     } finally {
       setSubmitting(false);
     }
@@ -139,29 +148,30 @@ export default function AcceptInvitePage() {
 
     setSubmitting(true);
     try {
+      if (isTurnstileConfigured() && !turnstileToken) {
+        setFormError(t("auth.register.captchaRequired"));
+        return;
+      }
       const result = await completeInvite(activeToken, password, email.trim());
       if (result.needs_login) {
         setAccountExists(true);
         setPassword("");
         setConfirmPassword("");
+        setTurnstileResetKey((k) => k + 1);
+        setTurnstileToken(null);
         return;
       }
       if (!result.ok || result.account_created !== true) {
         throw new Error(t("auth.acceptInviteError"));
       }
       inviteAcceptedViaCompleteRef.current = true;
-      const { error: sessionError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-      if (sessionError) {
-        setAccountExists(true);
-        throw sessionError;
-      }
+      await signInWithEmail(email.trim(), password, false, turnstileToken);
       acceptStartedRef.current = true;
       await finishInviteSuccess();
     } catch (err) {
       setFormError(parseAuthError(err, locale));
+      setTurnstileResetKey((k) => k + 1);
+      setTurnstileToken(null);
     } finally {
       setSubmitting(false);
     }
@@ -236,6 +246,11 @@ export default function AcceptInvitePage() {
               autoComplete="current-password"
               required
             />
+            <TurnstileWidget
+              resetKey={turnstileResetKey}
+              onToken={setTurnstileToken}
+              onError={() => setTurnstileToken(null)}
+            />
             <AuthButton loading={submitting}>{t("auth.login.submit")}</AuthButton>
           </form>
 
@@ -282,6 +297,11 @@ export default function AcceptInvitePage() {
             onChange={setConfirmPassword}
             autoComplete="new-password"
             required
+          />
+          <TurnstileWidget
+            resetKey={turnstileResetKey}
+            onToken={setTurnstileToken}
+            onError={() => setTurnstileToken(null)}
           />
           <AuthButton loading={submitting}>{t("auth.acceptInviteSubmit")}</AuthButton>
         </form>

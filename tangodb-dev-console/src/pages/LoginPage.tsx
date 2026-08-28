@@ -1,18 +1,44 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
+import TurnstileWidget, {
+  goTrueCaptchaToken,
+  isTurnstileConfigured,
+} from "../components/TurnstileWidget";
+
+function parseSignInError(message: string): string {
+  const lower = message.toLowerCase();
+  if (message === "Invalid login credentials") return "Invalid email or password";
+  if (lower.includes("captcha")) return "Captcha verification failed. Try again.";
+  return "Sign in failed";
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) setError(signInError.message);
+    const captchaToken = goTrueCaptchaToken(turnstileToken);
+    if (isTurnstileConfigured() && !captchaToken) {
+      setError("Complete the captcha");
+      return;
+    }
+    setLoading(true);
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: captchaToken ? { captchaToken } : undefined,
+    });
+    if (signInError) {
+      setError(parseSignInError(signInError.message));
+      setTurnstileResetKey((k) => k + 1);
+      setTurnstileToken(null);
+    }
     setLoading(false);
   };
 
@@ -41,6 +67,7 @@ export default function LoginPage() {
           required
           className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
         />
+        <TurnstileWidget resetKey={turnstileResetKey} onToken={setTurnstileToken} />
         <button
           type="submit"
           disabled={loading}

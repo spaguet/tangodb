@@ -1,3 +1,5 @@
+2026-08-28 — fix(security): микропатч **2.8.116** — S37 / M4+M9+M10+M14+M18: комментарии «почему публичная» на Edge с `verify_jwt=false`; landing-track-event drop на durable IP/visitor limit; GoTrue captcha Turnstile + `captchaToken` в signUp/signIn/reset; ErrorBoundary/`parseAuthError` без сырого текста API; одинаковый ответ signup/request-demo-key/verify-self-service (без enumeration); waitlist `organization_id` только для активного member. Чеклист Dashboard Captcha — `lessons.md` § S37.
+
 2026-08-28 — docs(security): S36 / M1 — инвентаризация «UI ≠ API»: JSONB-модули (`finance_basic` и др.) остаются UI-gate; роль/RLS — API. Storage `exports` уже `can_export_data()` (S25). Без бампа `2.8.y`. Волна 3 (S32–S36) закрыта.
 
 2026-08-28 — fix(security): микропатч **2.8.115** — S35 / M12+M23+M29: офлайн IndexedDB без phone/telegram/email; `expenses` write — `NOT _is_finance_period_closed` (GRANT insert/delete сохранён); `audit_log_leadership_v` без снимков для director, полный trail только owner; `REVOKE` SELECT на базовую `audit_log` у JWT.

@@ -6,7 +6,8 @@ import {
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, logEvent } from "../_shared/supabase.ts";
 
-const RATE_LIMIT = 120;
+const RATE_LIMIT_IP = 120;
+const RATE_LIMIT_VISITOR = 40;
 const RATE_WINDOW_MS = 15 * 60_000;
 
 const ALLOWED_EVENTS = new Set([
@@ -50,7 +51,8 @@ Deno.serve(async (req) => {
   }
 
   const clientIp = getClientIp(req);
-  if (!(await checkRateLimit(`landing-track-event:ip:${clientIp}`, RATE_LIMIT, RATE_WINDOW_MS))) {
+  if (!(await checkRateLimit(`landing-track-event:ip:${clientIp}`, RATE_LIMIT_IP, RATE_WINDOW_MS))) {
+    // M4: drop on edge — do not insert. Honest 429 is S40/L13.
     return jsonResponse({ ok: true }, 200, req);
   }
 
@@ -69,6 +71,16 @@ Deno.serve(async (req) => {
   const visitorId = requireText(body.visitor_id, 128);
   const path = requireText(body.path, 512);
   if (!visitorId || !path) {
+    return jsonResponse({ ok: true }, 200, req);
+  }
+
+  if (
+    !(await checkRateLimit(
+      `landing-track-event:visitor:${visitorId}`,
+      RATE_LIMIT_VISITOR,
+      RATE_WINDOW_MS
+    ))
+  ) {
     return jsonResponse({ ok: true }, 200, req);
   }
 

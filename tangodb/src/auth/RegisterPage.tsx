@@ -3,11 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { parseAuthError } from "./authErrors";
 import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
-import { useSelfServiceDemo } from "../hooks/useSelfServiceDemo";
 import { useGuestI18n } from "../hooks/useI18n";
-import { useOrganization } from "../organization/OrganizationProvider";
-import { supabase } from "../lib/supabase";
-import { stashRecoveryCode } from "./recoveryCodeHandoff";
 import {
   AuthButton,
   AuthDeveloperContact,
@@ -22,8 +18,6 @@ export default function RegisterPage() {
   const { t, locale } = useGuestI18n();
   const { signUpWithEmail } = useAuth();
   const navigate = useNavigate();
-  const { verifyRegistrationChallenge, createDemoOrganization } = useSelfServiceDemo();
-  const { refreshOrganization } = useOrganization();
   const [login, setLogin] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,12 +58,11 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      await verifyRegistrationChallenge(normalizedEmail, turnstileToken);
-
       const { needsEmailConfirmation } = await signUpWithEmail(
         normalizedEmail,
         password,
-        trimmedLogin
+        trimmedLogin,
+        turnstileToken
       );
 
       if (needsEmailConfirmation) {
@@ -77,17 +70,7 @@ export default function RegisterPage() {
         setTurnstileResetKey((k) => k + 1);
         setTurnstileToken(null);
       } else {
-        const result = await createDemoOrganization();
-        const { error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) throw refreshError;
-        await refreshOrganization();
-
-        if (result.recoveryCode) {
-          stashRecoveryCode(result.recoveryCode);
-          navigate("/auth/verify-email", { replace: true });
-        } else {
-          navigate(result.alreadyHasOrg ? "/" : "/onboarding", { replace: true });
-        }
+        navigate("/auth/verify-email", { replace: true });
       }
     } catch (err) {
       setError(parseAuthError(err, locale));
