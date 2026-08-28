@@ -61,7 +61,7 @@ export function useOrgAuditLog(options?: {
     enabled,
     queryFn: async () => {
       let query = supabase
-        .from("audit_log")
+        .from("audit_log_leadership_v")
         .select("id, table_name, operation, row_id, old_data, new_data, changed_at, changed_by")
         .order("changed_at", { ascending: false })
         .limit(limit);

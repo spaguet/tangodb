@@ -305,4 +305,18 @@ export function useOfflineSecurityReset() {
       void clear();
     }
   }, [session, clear]);
+
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === "hidden" && !session) {
+        void clear();
+      }
+    };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onHide);
+    };
+  }, [session, clear]);
 }

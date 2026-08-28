@@ -1,5 +1,6 @@
 import { OFFLINE_STORES, SNAPSHOT_MAX_AGE_MS } from "./constants";
 import { idbDelete, idbGet, idbPut, migrateOfflineSchemaIfNeeded } from "./idb";
+import { stripOfflineContactPii } from "./stripContactPii";
 import type { OfflineNamespace, OfflineQueue, ShiftSnapshot } from "./types";
 import { offlineNamespaceKey } from "./types";
 
@@ -26,7 +27,7 @@ export async function loadShiftSnapshot(ns: OfflineNamespace): Promise<ShiftSnap
   const raw = await idbGet<ShiftSnapshot>(OFFLINE_STORES.snapshots, snapshotKey(ns));
   if (!raw || raw.schemaVersion !== 1) return null;
   if (raw.userId !== ns.userId || raw.organizationId !== ns.organizationId) return null;
-  return raw;
+  return stripOfflineContactPii(raw);
 }
 
 export async function saveShiftSnapshot(snapshot: ShiftSnapshot): Promise<void> {
@@ -35,7 +36,7 @@ export async function saveShiftSnapshot(snapshot: ShiftSnapshot): Promise<void> 
     userId: snapshot.userId,
     organizationId: snapshot.organizationId,
   });
-  await idbPut(OFFLINE_STORES.snapshots, key, snapshot);
+  await idbPut(OFFLINE_STORES.snapshots, key, stripOfflineContactPii(snapshot));
 }
 
 export async function deleteShiftSnapshot(ns: OfflineNamespace): Promise<void> {
@@ -47,7 +48,7 @@ export async function loadOfflineQueue(ns: OfflineNamespace): Promise<OfflineQue
   const raw = await idbGet<OfflineQueue>(OFFLINE_STORES.queues, snapshotKey(ns));
   if (!raw || raw.schemaVersion !== 1) return emptyQueue(ns);
   if (raw.userId !== ns.userId || raw.organizationId !== ns.organizationId) return emptyQueue(ns);
-  return raw;
+  return stripOfflineContactPii(raw);
 }
 
 export async function saveOfflineQueue(queue: OfflineQueue): Promise<void> {
@@ -56,7 +57,11 @@ export async function saveOfflineQueue(queue: OfflineQueue): Promise<void> {
     userId: queue.userId,
     organizationId: queue.organizationId,
   });
-  await idbPut(OFFLINE_STORES.queues, key, { ...queue, updatedAt: new Date().toISOString() });
+  await idbPut(
+    OFFLINE_STORES.queues,
+    key,
+    stripOfflineContactPii({ ...queue, updatedAt: new Date().toISOString() })
+  );
 }
 
 export async function clearOfflineData(ns: OfflineNamespace): Promise<void> {

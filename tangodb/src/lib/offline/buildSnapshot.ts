@@ -3,8 +3,31 @@ import {
   SNAPSHOT_WINDOW_PAST_DAYS,
   OFFLINE_SCHEMA_VERSION,
 } from "./constants";
+import { stripOfflineContactPii } from "./stripContactPii";
 import type { ShiftSnapshot, SnapshotLocation, SnapshotScheduleDate } from "./types";
 import type { SubForDate } from "../../types";
+
+function sanitizeSubForOffline(s: SubForDate): SubForDate {
+  return {
+    subId: s.subId,
+    type: s.type,
+    pairMonth: s.pairMonth,
+    client1: s.client1,
+    client2: s.client2,
+    client3: s.client3,
+    lessonsLeft: s.lessonsLeft,
+    lessonsTotal: s.lessonsTotal,
+    freezeUsed: s.freezeUsed,
+    activationDate: s.activationDate,
+    billingModel: s.billingModel,
+    expiresAt: s.expiresAt ?? null,
+    daysLeft: s.daysLeft,
+    currentStatus: s.currentStatus,
+    canFreeze: s.canFreeze,
+    priceId: s.priceId,
+    category: s.category,
+  };
+}
 
 function addDays(dateStr: string, days: number): string {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -50,7 +73,7 @@ export function buildShiftSnapshot(input: BuildSnapshotInput): ShiftSnapshot {
   for (const dateStr of datesInWindow) {
     const subs = input.getSubsForDate(dateStr);
     if (subs.length > 0) {
-      subsByDate[dateStr] = subs.map((s) => ({ ...s }));
+      subsByDate[dateStr] = subs.map(sanitizeSubForOffline);
     }
   }
 
@@ -58,7 +81,7 @@ export function buildShiftSnapshot(input: BuildSnapshotInput): ShiftSnapshot {
     (e) => e.date >= start && e.date <= end
   );
 
-  return {
+  return stripOfflineContactPii({
     schemaVersion: OFFLINE_SCHEMA_VERSION,
     userId: input.userId,
     organizationId: input.organizationId,
@@ -66,10 +89,10 @@ export function buildShiftSnapshot(input: BuildSnapshotInput): ShiftSnapshot {
     timezone: input.timezone,
     windowStart: start,
     windowEnd: end,
-    locations: input.locations,
+    locations: input.locations.map((loc) => ({ id: loc.id, name: loc.name })),
     scheduleDates: filteredSchedule,
     subsByDate,
-  };
+  });
 }
 
 export function scheduleDatesFromSnapshot(

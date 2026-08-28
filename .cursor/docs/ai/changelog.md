@@ -1,4 +1,5 @@
-2026-08-28 — fix(security): микропатч **2.8.114** — S34 / M5+M6+M7: masking views и `financial_debtors_v` остаются `security_invoker=false`; venue-cost/rental register — `true`; `REVOKE` SELECT на `access_keys` у JWT (активация только Edge/RPC); `graphql_public` убран из `api.schemas` (Data API production — только `public`; в tangodb/ нет GraphQL-клиента).
+2026-08-28 — fix(security): микропатч **2.8.115** — S35 / M12+M23+M29: офлайн IndexedDB без phone/telegram/email; `expenses` write — `NOT _is_finance_period_closed` (GRANT insert/delete сохранён); `audit_log_leadership_v` без снимков для director, полный trail только owner; `REVOKE` SELECT на базовую `audit_log` у JWT.
+
 
 2026-08-28 — fix(security): микропатч **2.8.113** — S33 / M21: `can_manage_team()` читает `admin_can_manage_team` (+ `NOT is_restricted_admin`); `teachers_can_view_full_schedule` в `teacher_can_access_lesson` / `teacher_can_access_schedule_slot` (выкл. = только свои), occupancy RPC (`preview_*`, `get_rentals_for_schedule_week`) и teacher calendar sessions. Продажа персоналок уже S09 — не дублировали.
 

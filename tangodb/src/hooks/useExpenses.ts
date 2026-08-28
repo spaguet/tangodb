@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { monthDateRange } from "../lib/financeReports";
+import { isFinancePeriodClosed } from "../lib/orgFinanceDate";
 import { supabase } from "../lib/supabase";
 import type { Expense, ExpenseCategory, ExpenseInput } from "../types/expense";
 import { useOrganization } from "../organization/OrganizationProvider";
@@ -41,6 +42,28 @@ function buildExpensesQuery(filter?: ExpensesFilter) {
   return query;
 }
 
+function isExpensePeriodWriteDenied(error: { message?: string; code?: string } | null): boolean {
+  if (!error) return false;
+  const msg = error.message ?? "";
+  return (
+    error.code === "42501" ||
+    error.code === "PGRST301" ||
+    /row-level security|violates row-level security|permission denied/i.test(msg)
+  );
+}
+
+function mapExpenseWriteError(
+  error: { message?: string; code?: string } | null,
+  emptyResult: boolean
+): string {
+  if (isExpensePeriodWriteDenied(error)) {
+    return "finance.error.periodClosed";
+  }
+  if (error?.message) return error.message;
+  if (emptyResult) return "finance.error.periodClosed";
+  return "finance.expenses.error.save";
+}
+
 export function useExpenses(filter?: ExpensesFilter) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const queryEnabled = orgEnabled && (filter?.enabled ?? true);
@@ -70,26 +93,34 @@ export function sumExpenses(items: Expense[]): number {
 export function useCreateExpense() {
   const queryClient = useQueryClient();
   const { organizationId } = useOrgQueryScope();
-  const { memberId } = useOrganization();
+  const { memberId, settings } = useOrganization();
 
   return useMutation({
     mutationFn: async (input: ExpenseInput) => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
+      if (isFinancePeriodClosed(input.expenseDate, settings?.finance_period_closed_until)) {
+        return { success: false as const, error: "finance.error.periodClosed" };
+      }
 
-      const { error } = await supabase.from("expenses").insert({
-        organization_id: organizationId,
-        amount: input.amount,
-        category: input.category,
-        description: input.description.trim() || null,
-        expense_date: input.expenseDate,
-        payee: input.payee?.trim() || null,
-        document_number: input.documentNumber?.trim() || null,
-        created_by: memberId ?? null,
-      });
+      const { data, error } = await supabase
+        .from("expenses")
+        .insert({
+          organization_id: organizationId,
+          amount: input.amount,
+          category: input.category,
+          description: input.description.trim() || null,
+          expense_date: input.expenseDate,
+          payee: input.payee?.trim() || null,
+          document_number: input.documentNumber?.trim() || null,
+          created_by: memberId ?? null,
+        })
+        .select("id");
 
-      if (error) return { success: false as const, error: error.message };
+      if (error || !data?.length) {
+        return { success: false as const, error: mapExpenseWriteError(error, !data?.length) };
+      }
       return { success: true as const };
     },
     onSuccess: (result) => {
@@ -103,10 +134,15 @@ export function useCreateExpense() {
 
 export function useUpdateExpense() {
   const queryClient = useQueryClient();
+  const { settings } = useOrganization();
 
   return useMutation({
     mutationFn: async (input: ExpenseInput & { id: string }) => {
-      const { error } = await supabase
+      if (isFinancePeriodClosed(input.expenseDate, settings?.finance_period_closed_until)) {
+        return { success: false as const, error: "finance.error.periodClosed" };
+      }
+
+      const { data, error } = await supabase
         .from("expenses")
         .update({
           amount: input.amount,
@@ -117,9 +153,12 @@ export function useUpdateExpense() {
           document_number: input.documentNumber?.trim() || null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", input.id);
+        .eq("id", input.id)
+        .select("id");
 
-      if (error) return { success: false as const, error: error.message };
+      if (error || !data?.length) {
+        return { success: false as const, error: mapExpenseWriteError(error, !data?.length) };
+      }
       return { success: true as const };
     },
     onSuccess: (result) => {
@@ -133,11 +172,23 @@ export function useUpdateExpense() {
 
 export function useDeleteExpense() {
   const queryClient = useQueryClient();
+  const { settings } = useOrganization();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("expenses").delete().eq("id", id);
-      if (error) return { success: false as const, error: error.message };
+    mutationFn: async (input: { id: string; expenseDate: string }) => {
+      if (isFinancePeriodClosed(input.expenseDate, settings?.finance_period_closed_until)) {
+        return { success: false as const, error: "finance.error.periodClosed" };
+      }
+
+      const { data, error } = await supabase
+        .from("expenses")
+        .delete()
+        .eq("id", input.id)
+        .select("id");
+
+      if (error || !data?.length) {
+        return { success: false as const, error: mapExpenseWriteError(error, !data?.length) };
+      }
       return { success: true as const };
     },
     onSuccess: (result) => {

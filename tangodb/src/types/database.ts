@@ -6348,6 +6348,42 @@ export type Database = {
       }
     }
     Views: {
+      audit_log_leadership_v: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          id: string | null
+          new_data: Json | null
+          old_data: Json | null
+          operation: string | null
+          organization_id: string | null
+          row_id: string | null
+          table_name: string | null
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          operation?: string | null
+          organization_id?: string | null
+          row_id?: string | null
+          table_name?: string | null
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          operation?: string | null
+          organization_id?: string | null
+          row_id?: string | null
+          table_name?: string | null
+        }
+        Relationships: []
+      }
       calendar_events_teacher_v: {
         Row: {
           comment: string | null

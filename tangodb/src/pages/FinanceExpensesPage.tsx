@@ -18,8 +18,10 @@ import {
 import { useFinanceCosts, useVenueCostRuleStatus } from "../hooks/useVenueCosts";
 import VenueRuleExpiryNotice from "../components/venue-costs/VenueRuleExpiryNotice";
 import FinanceMonthExportButton from "../components/finance/FinanceMonthExportButton";
+import { useFinancePeriodGate } from "../hooks/useFinancePeriodGate";
 import { usePermissions } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
+import { isFinancePeriodClosed } from "../lib/orgFinanceDate";
 import { EXPENSE_CATEGORIES, expenseCategoryKey } from "../lib/expenseCategories";
 import { canManageVenueCostRules } from "../lib/permissions";
 import { resolveMutationError } from "../lib/resolveMutationError";
@@ -144,6 +146,7 @@ export default function FinanceExpensesPage() {
   const { can, role } = usePermissions();
   const canWrite = can("expenses.write");
   const canManageVenueRules = canManageVenueCostRules(role);
+  const { closedUntil, minOperationDate } = useFinancePeriodGate();
 
   const todayIso = toISODateLocal(new Date());
   const defaultMonthRange = useMemo(() => monthDateRange(currentYearMonth()), []);
@@ -157,6 +160,7 @@ export default function FinanceExpensesPage() {
   const [form, setForm] = useState<ExpenseInput>(emptyForm);
   const [venueExpanded, setVenueExpanded] = useState(false);
   const [teacherExpenseExpanded, setTeacherExpenseExpanded] = useState(false);
+  const formPeriod = useFinancePeriodGate(form.expenseDate);
 
   const expensesFilter = useMemo(
     () => ({
@@ -242,6 +246,14 @@ export default function FinanceExpensesPage() {
       toast(t("finance.expenses.error.futureDate"), "error");
       return;
     }
+    if (formPeriod.isClosed) {
+      toast(t("finance.error.periodClosed"), "error");
+      return;
+    }
+    if (editing && isFinancePeriodClosed(editing.expenseDate, closedUntil)) {
+      toast(t("finance.error.periodClosed"), "error");
+      return;
+    }
 
     const res = editing
       ? await updateExpense.mutateAsync({ ...form, id: editing.id })
@@ -258,7 +270,15 @@ export default function FinanceExpensesPage() {
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
-    const res = await deleteExpense.mutateAsync(deleteTarget.id);
+    if (isFinancePeriodClosed(deleteTarget.expenseDate, closedUntil)) {
+      toast(t("finance.error.periodClosed"), "error");
+      setDeleteTarget(null);
+      return;
+    }
+    const res = await deleteExpense.mutateAsync({
+      id: deleteTarget.id,
+      expenseDate: deleteTarget.expenseDate,
+    });
     if (!res.success) {
       toast(resolveMutationError(res.error, "finance.expenses.error.delete", t), "error");
     } else {
@@ -376,7 +396,9 @@ export default function FinanceExpensesPage() {
                 <ExpenseRow
                   key={expense.id}
                   expense={expense}
-                  canWrite={canWrite}
+                  canWrite={
+                    canWrite && !isFinancePeriodClosed(expense.expenseDate, closedUntil)
+                  }
                   onEdit={openEdit}
                   onDelete={setDeleteTarget}
                   formatDate={formatDate}
@@ -640,16 +662,20 @@ export default function FinanceExpensesPage() {
                   label={t("finance.expenses.dateLabel")}
                   value={form.expenseDate}
                   onChange={(iso) => setForm((f) => ({ ...f, expenseDate: iso }))}
+                  min={minOperationDate}
                   max={todayIso}
                   required
                 />
+                {formPeriod.isClosed ? (
+                  <p className="text-xs text-rose-600">{t("finance.error.periodClosed")}</p>
+                ) : null}
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={pending}
+                  disabled={pending || formPeriod.isClosed}
                   className={`flex-1 ${btnAddCls}`}
                 >
                   {t("common.save")}

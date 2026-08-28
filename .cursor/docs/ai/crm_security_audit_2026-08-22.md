@@ -1784,7 +1784,7 @@ S01 → S02 → S03 → S04 → S05 → S06 → S07 → S08 → S09 → S10 → 
 | ✅ | 32 | **S32** | 3 | **H7** | S31 (волна 2 закрыта) | Teacher PII карточки клиента через view |
 | ✅ | 33 | **S33** | 3 | M21 | S32 | Оставшиеся org-флаги §9 в SQL (что не закрыли S07–S20) |
 | ✅ | 34 | **S34** | 3 | M5, M6, M7 | S33 | `security_invoker`; `access_keys`; выключить GraphQL |
-| ☐ | 35 | **S35** | 3 | M12, M23, M29 | S34 | Офлайн PII; `expenses` + период; `audit_log` без полных diff director |
+| ✅ | 35 | **S35** | 3 | M12, M23, M29 | S34 | Офлайн PII; `expenses` + период; `audit_log` без полных diff director |
 | ☐ | 36 | **S36** | 3 | M1 | S35 | Остаток «UI ≠ API»: модули/флаги, которые ещё только в `permissions.ts` |
 | ☐ | 37 | **S37** | 4 | M4, M9, M10, M14, M18 | S36 (волна 3 закрыта) | Публичные Edge; Turnstile на signup; тексты ошибок; enumeration; waitlist org |
 | ☐ | 38 | **S38** | 4 | L2, L3, L4, L5, L9, L12, L17, L19, L20 | S37 | Гигиена Edge/Auth/config |
