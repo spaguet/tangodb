@@ -1,3 +1,5 @@
+2026-08-28 — fix(security): микропатч **2.8.111** — S32 / H7: view `clients_teacher_v` (ФИО/id без телефона, telegram, email, опекунов); `useClients` / `useClientDirectory` для teacher читают view; `DROP` teacher SELECT на базовую `clients`. Журнал и абонементы по-прежнему показывают имена.
+
 2026-08-27 — fix(security): микропатч **2.8.110** — S31 / M17: recovery-код владельца не пишется в `history.state` / `sessionStorage`; показ один раз из ответа `create-self-service-demo-org` (handoff в памяти модуля); копия письмом; повторный вызов API без plaintext; Dev Console transfer-owner по коду без изменений.
 
 2026-08-27 — feat: микропатч **2.8.109** — ссылка инвайта хранится в `organization_invites.invite_url` и видна owner/director в списке ожидающих до accept/revoke; после accept/revoke колонка очищается триггером; `token_hash` в REST по-прежнему скрыт.

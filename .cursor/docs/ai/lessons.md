@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-28 — H7: R4 на финансы ≠ маскирование PII contacts (S32)
+
+- **Ошибка:** masking views R4 сняли финансовые колонки с абонементов/персоналок, но teacher `SELECT *` на `clients` отдавал телефон, telegram, email и данные опекунов.
+- **Причина:** журнал, сетка и продажа берут ФИО из той же строки `clients`; R4 закрыли деньги, контактную карточку не трогали.
+- **Как избежать:** сначала view без contact PII и перевод `useClients` / `useClientDirectory` (teacher) на view, потом `DROP` teacher SELECT на base. Не DROP раньше хука — пустые ФИО. Teacher UPDATE не должен слать пустые phone/email/guardian с формы, иначе затрёт PII, которых нет во view.
+
 ### 2026-08-27 — M17: recovery-код в JSON и history.state (S31)
 
 - **Ошибка:** `create-self-service-demo-org` отдавал plaintext `recovery_code`; `RegisterPage` клал его в `navigate(..., { state })`, код жил в `history.state` после онбординга (XSS / расширение).

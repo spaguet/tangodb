@@ -3,13 +3,14 @@ import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { reportClientError } from "../lib/reportClientError";
 import { supabase } from "../lib/supabase";
 import { normalizeTelegramForStorage } from "../lib/telegram";
+import { useOrganization } from "../organization/OrganizationProvider";
 import type { Client } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const clientsQueryKey = ["clients"] as const;
 
-export function clientsListQueryKey(includeArchived: boolean) {
-  return [...clientsQueryKey, { includeArchived }] as const;
+export function clientsListQueryKey(includeArchived: boolean, maskPii = false) {
+  return [...clientsQueryKey, { includeArchived, maskPii }] as const;
 }
 
 export type GuardianFields = {
@@ -31,6 +32,20 @@ export type ClientFormInput = {
   email?: string;
   isMinor?: boolean;
 } & GuardianFields;
+
+const CONTACT_PII_COLUMNS = [
+  "telegram",
+  "phone",
+  "email",
+  "guardian1_name",
+  "guardian1_phone",
+  "guardian1_telegram",
+  "guardian1_address",
+  "guardian2_name",
+  "guardian2_phone",
+  "guardian2_telegram",
+  "guardian2_address",
+] as const;
 
 const mapClient = (row: Record<string, unknown>): Client => ({
   id: row.id as string,
@@ -72,21 +87,45 @@ function clientRowFromInput(input: ClientFormInput) {
   };
 }
 
+type ClientWritableRow = ReturnType<typeof clientRowFromInput>;
+
+function clientUpdatePayload(input: ClientFormInput, omitEmptyContactPii: boolean): Partial<ClientWritableRow> {
+  const row = clientRowFromInput(input);
+  if (!omitEmptyContactPii) return row;
+  const payload: Partial<ClientWritableRow> = {
+    first_name: row.first_name,
+    last_name: row.last_name,
+    is_minor: row.is_minor,
+  };
+  for (const key of CONTACT_PII_COLUMNS) {
+    if (row[key]) payload[key] = row[key];
+  }
+  return payload;
+}
+
 export function useClients(options?: { includeArchived?: boolean; enabled?: boolean }) {
   const includeArchived = options?.includeArchived ?? false;
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const { role } = useOrganization();
+  const maskPii = role === "teacher";
   const queryEnabled = orgEnabled && (options?.enabled ?? true);
 
   return useQuery({
-    queryKey: withOrgId(clientsListQueryKey(includeArchived)),
+    queryKey: withOrgId(clientsListQueryKey(includeArchived, maskPii)),
     enabled: queryEnabled,
     queryFn: async () => {
-      const data = await fetchAllPostgrestRows((from, to) => {
-        let query = supabase.from("clients").select("*").order("last_name");
-        if (!includeArchived) query = query.is("archived_at", null);
-        return query.range(from, to);
-      });
-      return data.map(mapClient);
+      const data = maskPii
+        ? await fetchAllPostgrestRows((from, to) => {
+            let query = supabase.from("clients_teacher_v").select("*").order("last_name");
+            if (!includeArchived) query = query.is("archived_at", null);
+            return query.range(from, to);
+          })
+        : await fetchAllPostgrestRows((from, to) => {
+            let query = supabase.from("clients").select("*").order("last_name");
+            if (!includeArchived) query = query.is("archived_at", null);
+            return query.range(from, to);
+          });
+      return data.map((row) => mapClient(row as unknown as Record<string, unknown>));
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -99,6 +138,8 @@ export const useClientDirectory = (options?: { enabled?: boolean }) =>
 export function useAddClient() {
   const queryClient = useQueryClient();
   const { organizationId, withOrgId } = useOrgQueryScope();
+  const { role } = useOrganization();
+  const maskPii = role === "teacher";
 
   return useMutation({
     mutationFn: async (input: ClientFormInput) => {
@@ -109,7 +150,7 @@ export function useAddClient() {
       const fTrim = input.firstName.trim();
       const lTrim = input.lastName.trim();
       const cached =
-        queryClient.getQueryData<Client[]>(withOrgId(clientsListQueryKey(false))) ?? [];
+        queryClient.getQueryData<Client[]>(withOrgId(clientsListQueryKey(false, maskPii))) ?? [];
       const exists = cached.some(
         (c) =>
           !c.archivedAt &&
@@ -148,12 +189,14 @@ export function useAddClient() {
 
 export function useUpdateClient() {
   const queryClient = useQueryClient();
+  const { role } = useOrganization();
+  const maskPii = role === "teacher";
 
   return useMutation({
     mutationFn: async ({ clientId, ...input }: ClientFormInput & { clientId: string }) => {
       const { error } = await supabase
         .from("clients")
-        .update(clientRowFromInput(input))
+        .update(clientUpdatePayload(input, maskPii))
         .eq("id", clientId);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };

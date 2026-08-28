@@ -6381,6 +6381,36 @@ export type Database = {
         }
         Relationships: []
       }
+      clients_teacher_v: {
+        Row: {
+          archived_at: string | null
+          created_at: string | null
+          first_name: string | null
+          id: string | null
+          is_minor: boolean | null
+          last_name: string | null
+          organization_id: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          is_minor?: boolean | null
+          last_name?: string | null
+          organization_id?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          is_minor?: boolean | null
+          last_name?: string | null
+          organization_id?: string | null
+        }
+        Relationships: []
+      }
       finance_cost_entries_v: {
         Row: {
           amount: number | null
