@@ -5,7 +5,7 @@ import { usePermissions } from "../hooks/usePermissions";
 import { useEnsureOwnMemberProfile } from "../hooks/useEnsureOwnMemberProfile";
 import { useApplyScheduledSubscriptionMemberChanges } from "../hooks/useApplyScheduledSubscriptionMemberChanges";
 import { useGuestI18n } from "../hooks/useI18n";
-import { getOrganizationIdFromSession } from "../lib/authClaims";
+import { getOrganizationIdFromSession, isRenterActorFromSession } from "../lib/authClaims";
 import { isSyntheticTelegramEmail } from "../lib/telegram";
 import {
   findFirstAccessibleSettingsSection,
@@ -24,6 +24,25 @@ import {
   moduleKeyFromSettingsSection,
   normalizeOrgModules,
 } from "../lib/orgModules";
+
+export function RenterActorDenied() {
+  const { t } = useGuestI18n();
+  const { signOut } = useAuth();
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm text-center space-y-4">
+        <p className="text-sm text-slate-600">{t("auth.renterActor.crmDenied")}</p>
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+        >
+          {t("auth.renterActor.signOut")}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function LoadingScreen({ label }: { label: string }) {
   return (
@@ -64,7 +83,12 @@ export function GuestRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
 
   if (loading) return <LoadingScreen label={t("common.loading.default")} />;
-  if (session) return <Navigate to="/" replace />;
+  if (session) {
+    if (isRenterActorFromSession(session)) {
+      return <RenterActorDenied />;
+    }
+    return <Navigate to="/" replace />;
+  }
   return <>{children}</>;
 }
 
@@ -85,6 +109,9 @@ export function AuthFlowRoute() {
 
   if (loading) return <LoadingScreen label={t("auth.loading.checkingSession")} />;
   if (!session) return <Navigate to="/login" replace state={{ from: location }} />;
+  if (isRenterActorFromSession(session)) {
+    return <RenterActorDenied />;
+  }
   return <Outlet />;
 }
 
@@ -108,6 +135,10 @@ export function OrgWorkspaceRoute() {
   }
 
   if (!session) return <Navigate to="/login" replace state={{ from: location }} />;
+
+  if (isRenterActorFromSession(session)) {
+    return <RenterActorDenied />;
+  }
 
   if (memberships.length === 0) {
     if (location.pathname === "/activate-key") return <Outlet />;
@@ -185,7 +216,9 @@ export function PanelAccessRoute() {
     return <Outlet />;
   }
 
-  const isRentalInboxRoute = location.pathname.startsWith("/finance/rental-inbox");
+  const isRentalInboxRoute =
+    location.pathname.startsWith("/finance/rental-inbox") ||
+    location.pathname.startsWith("/finance/renter-topup");
   if (isRentalInboxRoute && canAccessRentalInboxRoute(role, modules, options)) {
     return <Outlet />;
   }

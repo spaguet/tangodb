@@ -100,6 +100,7 @@ function mapConflict(row: Record<string, unknown>): RentalConflict {
 }
 
 function mapScheduleRow(row: Record<string, unknown>): RentalDisplayLesson {
+  const channel = row.channel === "miniapp" ? "miniapp" : "cashier";
   return {
     kind: "rental",
     rentalId: String(row.rental_id),
@@ -115,6 +116,8 @@ function mapScheduleRow(row: Record<string, unknown>): RentalDisplayLesson {
     fixedAmount: row.fixed_amount != null ? Number(row.fixed_amount) : null,
     paidAmount: row.paid_amount != null ? Number(row.paid_amount) : null,
     currency: row.currency != null ? String(row.currency) : "RUB",
+    channel,
+    lifecycle: row.lifecycle != null ? String(row.lifecycle) : null,
   };
 }
 

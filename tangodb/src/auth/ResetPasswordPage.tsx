@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { useGuestI18n } from "../hooks/useI18n";
+import { isRenterActorFromSession } from "../lib/authClaims";
+import { RenterActorDenied } from "./ProtectedRoute";
 import {
   AuthButton,
   AuthError,
@@ -13,13 +15,24 @@ import {
 
 export default function ResetPasswordPage() {
   const { t } = useGuestI18n();
-  const { passwordRecovery, loading: authLoading, updatePassword, signOut } = useAuth();
+  const { passwordRecovery, loading: authLoading, updatePassword, signOut, session } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  if (authLoading) {
+    return (
+      <AuthLayout title="TangoDB" subtitle={t("auth.resetPassword.subtitle")}>
+        <p className="text-sm text-slate-500">{t("auth.loading.checkingSession")}</p>
+      </AuthLayout>
+    );
+  }
+  if (session && isRenterActorFromSession(session)) {
+    return <RenterActorDenied />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

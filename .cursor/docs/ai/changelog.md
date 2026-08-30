@@ -1,3 +1,62 @@
+2026-08-30 — feat(hall-rent): R6 2.9.11 — `platform_purchase_requests.request_kind` (trigger: kind только service_role); `submit-purchase-request` / Dev Console inbox ветвятся по kind; activate add-on пишет только `organization_addons` (без lifetime CRM); CRM hall-rent: статус add-on + «оплатить модуль». Миграция `20261046000001`.
+
+2026-08-30 — feat(hall-rent): R5 2.9.10 — надёжность 50/75: `_renter_apply_reliability` (идемпотентный `renter_reliability_events`, on_time++/untimely++), пороги штрафника/бана, bounce snapshot до charge, отмена будущего через R1c helpers, `reset_renter_reliability` + enqueue R4; CRM-баннеры penalty gap (settings + карточка). Миграции `20261045000001`–`20261045000002`.
+
+2026-08-30 — feat(hall-rent): R4 2.9.9 — `renter_telegram_outbox` + enqueue в SQL-хелперах смены фазы (create/FIFO/expiry/T−24/topup/cancel/debt); drain `sendMessage` в том же `renter-booking-worker` (gate: add-on + `bot_started`, не mint/`allows_write`); кнопка Mini App из `_renter_miniapp_direct_link`; stubs enqueue для R5 (бан/штрафник). Миграция `20261044000001`.
+
+2026-08-30 — feat(hall-rent): R3c 2.9.8 — кабинет `tangodb-renter/`: два раздела (сетка 3 недель + «Мои записи»), quote/create/pack/cancel/delete_hold через RPC R1c/R2, occupancy refetch на focus/visibility (без setInterval), idempotency в sessionStorage, wallet/topup/QR/profile, баннер бота по `bot_started`, locale из bootstrap (vi→ru), vitest на occupied/free merge.
+
+2026-08-30 — feat(hall-rent): R3b 2.9.7 — отдельное Vite-приложение `tangodb-renter/` (порт 3002): mint через `renter-telegram-auth`, namespaced `auth.storageKey` по org, guard `actor=renter`, CSP `frame-ancestors` для Telegram Web, первый экран с `renter_bootstrap`, без сетки брони и без импорта `tangodb/src`.
+
+2026-08-30 — feat(hall-rent): R2 2.9.5 — QR Storage `org-rental-qr`, allowlist чата, AES токена бота в `_shared/telegramToken.ts` + setWebhook (`verify_jwt=false`), persist Start/write в `renter_telegram_dialog`, отдельный inbox пополнений и staff-topup (`operation_idempotency`, `amount_fact`), кошелёк на карточке через патч `get_renter_detail` (не `renter_get_wallet`). Миграции `20261042000001`–`20261042000004` (00003: аванс без `notes`; 00004: QR delete без `storage.objects`).
+
+2026-08-30 — feat(hall-rent): R1d 2.9.4 — worker `renter-booking-worker` (claim FOR UPDATE SKIP LOCKED + `run_renter_booking_maintenance` зовёт helpers R1c, drain Telegram no-op); RPC ставок часа / `miniapp_enabled`; `telegram_id` строкой в upsert/detail/list; сетка: `channel`/`lifecycle`, Mini App `paid_amount`/`payment_status` NULL; LessonBlock холд = slate + диагональ без rose; отдельная бронь канала и попап отмены (касса 2.5 не тронута). Миграции `20261041000001`–`20261041000002`.
+
+2026-08-30 — feat(hall-rent): R1c 2.9.3 — RPC слота Mini App: `renter_create_booking` / `renter_create_recurring_pack` / `renter_cancel_*` / `renter_delete_hold` / `renter_quote_booking` / occupancy / bootstrap / `list_mine` / wallet; FIFO+debt_settle, lock = awaiting ∪ новый слот, пакет через `rental_series`+patterns, early-close helper. Миграции `20261040000001`–`20261040000002`.
+
+2026-08-30 — feat(hall-rent): R1b 2.9.2 — ledger кошелька `renter_wallet_ledger`, SQL-хелперы `wallet_balance`/`reserved_prepay`/`spendable`/`available`, lock `_renter_wallet_lock_key`, одноразовый backfill нераспределённых авансов (перевод, не копия), currency-guard на ненулевой кошелёк, allocate 2.5 не ест leftover из кошелька; `rental_money_register_v` без UNION ledger. Миграция `20261039000001`.
+
+2026-08-30 — feat(hall-rent): R1a 2.9.1 — `create_rental_series` берёт `_rental_location_lock_key` по `(location_id, date)`; кассовые write-RPC и unpaid-inbox/`financial_debtors_v`/`_renter_debt_total` не трогают `channel=miniapp`; `list_renter_rentals` оставляет холды видимыми с `channel`/`lifecycle` и `paid_amount`/`payment_status` = NULL. Миграции `20261038000001`–`20261038000002`.
+
+2026-08-30 — feat(hall-rent): R0 каркас Mini App 2.9.0 — `rentals.channel`/`lifecycle`, `renters.telegram_id` (partial unique) + revoke сессий, `location_rental_hour_rates`, `organization_addons` fail-closed, хук JWT `actor=renter` без org-claims, запрет INSERT `organization_members` для renter. Миграции `20261037000001`–`20261037000004`.
+
+2026-08-30 — docs(hall-rent): четвёртая сверка промптов R0–R6 в `renter_telegram_miniapp.md` — send только при Start (`bot_started`); lock create = новый слот ∪ awaiting renter; патч worker без потери enqueue; нет table CHECK на инвариант кошелька; catch-up п.3 ограничен `time_end`; пакет через `rental_series_patterns`; одно имя `renter_quote_booking`; `paid_amount` NULL на холде; `operation_idempotency` на topup; `organization_addons.status` active|paused. Код продукта не менялся.
+
+2026-08-29 — docs(hall-rent): вторая сверка промптов R0–R6 в `renter_telegram_miniapp.md` — ловушки нарезки (`rentals.channel` vs `organization_renter_channel`, Edge `activate-access-key`, persist Start/write-access, staff `renter_id`/quote, патч той же worker RPC). Код продукта не менялся.
+
+2026-08-29 — docs(hall-rent): сверка промптов R0–R6 в `renter_telegram_miniapp.md` — дыры нарезки (list_mine/wallet, request_kind в R0, enqueue до outbox, revoke telegram_id), ветка JWT staff vs renter, видимость слотов на карточке, TTL хеша ≠ auth_date. Код продукта не менялся.
+
+2026-08-29 — docs(hall-rent): промпты реализации R0–R6 (§8) в `renter_telegram_miniapp.md` — нарезка этапа 0–6 из §5.8, короткие блоки для нового чата + длинные DoD. Код продукта не менялся.
+
+
+
+2026-08-29 — docs(hall-rent): одиннадцатая сверка `renter_telegram_miniapp.md` — mint vs pooler/orphan user; кассовый `update_rental` на Mini App; idempotency пакета; `untimely++` при закрытой кассе; bounce штрафника; currency/TZ; HMAC ordinal; add-on fail-closed. Код продукта не менялся.
+
+2026-08-29 — docs(hall-rent): десятая сверка `renter_telegram_miniapp.md` — два лимита слотов (не «8»); FIFO не после `time_start`; mint lock пары org+telegram; surcharge по слотам; pack preview 4 недель; AES бота ≠ Google; кнопка Mini App не из формы. Код продукта не менялся.
+
+
+2026-08-29 — docs(hall-rent): девятая сверка `renter_telegram_miniapp.md` — SQL-gate ≠ UI `rentals.write`; lock = `_rental_location_lock_key` (не `time_start`); CORS Mini App не в `ALLOWED_ORIGINS`; SRI/telegram-web-app.js; `t.me/share`; `request_kind` только Edge; UNIQUE bot; mint при archive; `NUMERIC(12,2)`. Код продукта не менялся.
+
+
+
+2026-08-29 — docs(hall-rent): восьмая сверка `renter_telegram_miniapp.md` — граница T−24 cancel vs charge; пакет без полной FIFO-активации = ROLLBACK (не бан с 4 холдов); cooldown на overlap; `untimely++` при выкл. add-on; renter JWT → demo-org; storageKey по org; CORS webhook; parse_mode; CHECK cancelled_reason. Код продукта не менялся.
+
+2026-08-29 — docs(hall-rent): седьмая сверка `renter_telegram_miniapp.md` — дыры: renter-cancel после старта обходил remainder; mint при выкл. add-on блокировал отмену холда; повтор initData hash ломал вход; `untimely++` при suspended org; rate-limit до HMAC; глобальный jwt_expiry. HMAC: Bot API 8.0 (`signature` в HMAC). Код продукта не менялся.
+
+2026-08-29 — docs(hall-rent): шестая сверка `renter_telegram_miniapp.md` — HMAC: `signature` **входит** в data-check-string (пятая сверка ошибочно исключала его); activate add-on не лицензирует CRM; renter-email не угадываемый; роль `authenticated` общая; Direct Link не стартует бота; FIFO charge в окне 24 ч; griefing refund-cancel; `miniapp_enabled`. Код продукта не менялся.
+
+
+
+2026-08-29 — docs(hall-rent): пятая сверка `renter_telegram_miniapp.md` — ошибки (S39 хук без copy `telegram_id`), дыры денег (remainder vs `reserved_prepay`, backfill=копия аванса), уязвимости (HMAC replay 24ч, JWT `authenticated`, кассовый inbox на холдах Mini App, webhook `bot_id`, общий origin). Код продукта не менялся.
+
+2026-08-29 — docs(hall-rent): четвёртая сверка `renter_telegram_miniapp.md` — раннее закрытие пакета vs `completed`, `spendable` vs `debt_settle`, кассовая отмена vs Mini App, catch-up и знаменатель надёжности, snapshot ставок / 3 kind, backfill кошелька, add-on без lifetime key. Код продукта не менялся.
+
+2026-08-29 — docs(hall-rent): третья сверка `renter_telegram_miniapp.md` — HMAC Telegram (key=`WebAppData`), JWT арендатора vs `auth_organization_id()`, касса vs ledger 50/50, catch-up после `time_end`, штрафник vs пересчёт пакета, нет автоmerge карточек, HALL-RENT-9 на topup. Код продукта не менялся.
+
+2026-08-29 — docs(hall-rent): вторая сверка `renter_telegram_miniapp.md` — закрыты внутренние противоречия (2.9 vs откат Atelier, «кассир» vs отмена слота, `settled` vs occupancy, долг vs FIFO, Vault vs GCAL-1, add-on vs lifetime) и дыры (наследование холда, последняя дата пакета, HMAC `start_param`, catch-up worker). Код продукта не менялся.
+
+2026-08-29 — docs(hall-rent): сверка `renter_telegram_miniapp.md` с CRM 2.8.119 — фактические несостыковки (S39/L26 vs leftover `telegram.ts`, роль «кассир», `booking_status` vs `lifecycle`, HALL-RENT-23) и дыры логики (таймер холда vs `time_start`, FIFO как вычисляемый резерв, округление 50/50, auth на пару org+telegram). Код продукта не менялся.
+
 2026-08-28 — docs(security): результаты **хвоста** восьмой сверки в `crm_security_audit_2026-08-22.md` (GRANT/EXECUTE/Realtime без регрессии, GraphQL без ключа 401, смоук owner 2.8.119). C1 / JWT teacher·reception·accountant / Dashboard Auth — осталось оператору. Код продукта не менялся.
 
 2026-08-28 — docs(security): промпт **«Хвост»** по восьмой сверке (живой C1 / JWT ролей / Dashboard Auth / GraphQL; не S41, не код) в `crm_security_audit_2026-08-22.md`.

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { useGuestI18n } from "../hooks/useI18n";
+import { isRenterActorFromSession } from "../lib/authClaims";
+import { RenterActorDenied } from "./ProtectedRoute";
 import { isCaptchaAuthError, parseAuthError } from "./authErrors";
 import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import {
@@ -14,13 +16,24 @@ import {
 
 export default function ForgotPasswordPage() {
   const { t, locale } = useGuestI18n();
-  const { resetPasswordForEmail } = useAuth();
+  const { resetPasswordForEmail, session, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+
+  if (authLoading) {
+    return (
+      <AuthLayout title="TangoDB" subtitle={t("auth.forgotPassword.subtitle")}>
+        <p className="text-sm text-slate-500">{t("auth.loading.checkingSession")}</p>
+      </AuthLayout>
+    );
+  }
+  if (session && isRenterActorFromSession(session)) {
+    return <RenterActorDenied />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

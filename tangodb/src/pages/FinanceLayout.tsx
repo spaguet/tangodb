@@ -1,6 +1,6 @@
 import { useMemo, Fragment } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { Landmark, TrendingUp, AlertCircle, Wallet, Receipt, History, FileBarChart, Inbox } from "lucide-react";
+import { Landmark, TrendingUp, AlertCircle, Wallet, Receipt, History, FileBarChart, Inbox, Banknote } from "lucide-react";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { isRentalInboxOnly } from "../lib/permissions";
@@ -22,6 +22,7 @@ const FINANCE_NAV_ICONS: Record<string, typeof Landmark> = {
   "/finance/corrections": History,
   "/finance/rental-accruals": FileBarChart,
   "/finance/rental-inbox": Inbox,
+  "/finance/renter-topup": Banknote,
 };
 
 export default function FinanceLayout() {
@@ -41,11 +42,15 @@ export default function FinanceLayout() {
     }
 
     if (rentalInboxOnly) {
-      return items.filter((item) => item.path === "/finance/rental-inbox");
+      return items.filter(
+        (item) => item.path === "/finance/rental-inbox" || item.path === "/finance/renter-topup"
+      );
     }
 
     return items.filter((item) => {
-      if (item.path === "/finance/rental-inbox") return can("rentals.payments.write");
+      if (item.path === "/finance/rental-inbox" || item.path === "/finance/renter-topup") {
+        return can("rentals.payments.write");
+      }
       if (item.path === "/finance/corrections") return can("finance.read");
       if (item.path === "/finance/expenses") return can("expenses.read");
       if (item.path === "/finance/payroll") {

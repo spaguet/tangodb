@@ -6,6 +6,7 @@ interface SubmitPurchaseRequestInput {
   paymentComment: string;
   contactEmail?: string;
   contactTelegram?: string;
+  requestKind?: "crm_license" | "renter_miniapp_addon";
 }
 
 export function useSubmitPurchaseRequest() {
@@ -17,6 +18,7 @@ export function useSubmitPurchaseRequest() {
           payment_comment: input.paymentComment,
           contact_email: input.contactEmail || undefined,
           contact_telegram: input.contactTelegram || undefined,
+          request_kind: input.requestKind ?? "crm_license",
         },
       });
 

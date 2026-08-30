@@ -189,6 +189,7 @@ export function getFinanceNav(t: TranslateFn): FinanceNavItem[] {
     { label: t("finance.nav.corrections"), path: "/finance/corrections", section: "operations" },
     { label: t("finance.nav.rentalAccruals"), path: "/finance/rental-accruals", section: "operations" },
     { label: t("finance.nav.rentalInbox"), path: "/finance/rental-inbox", section: "operations" },
+    { label: t("finance.nav.renterTopup"), path: "/finance/renter-topup", section: "operations" },
   ];
 }
 

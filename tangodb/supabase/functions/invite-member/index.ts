@@ -7,6 +7,7 @@ import {
   normalizeEmail,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { isRenterActor, renterActorForbidden } from "../_shared/staffAuth.ts";
 import { requireSiteUrl } from "../_shared/siteUrl.ts";
 import { createUserClient, logEvent } from "../_shared/supabase.ts";
 
@@ -114,6 +115,9 @@ Deno.serve(async (req) => {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) {
     return jsonResponse({ error: "Unauthorized" }, 401, req);
+  }
+  if (isRenterActor(userData.user)) {
+    return renterActorForbidden(req);
   }
 
   const plaintextToken = generateInviteToken();

@@ -60,6 +60,7 @@ function mapListItem(row: Record<string, unknown>): RenterListItem {
     hasExpiringDocument: Boolean(row.has_expiring_document),
     hasOverdueDebt: Boolean(row.has_overdue_debt),
     hasNextActionDue: Boolean(row.has_next_action_due),
+    telegramId: row.telegram_id != null ? String(row.telegram_id) : null,
   };
 }
 
@@ -129,6 +130,28 @@ function mapFinance(row: Record<string, unknown> | null): RenterFinanceSummary |
     paidTotal: Number(row.paid_total ?? 0),
     debtTotal: Number(row.debt_total ?? 0),
     overpaidTotal: Number(row.overpaid_total ?? 0),
+    walletBalance: Number(row.wallet_balance ?? 0),
+    spendable: Number(row.spendable ?? 0),
+    reservedPrepay: Number(row.reserved_prepay ?? 0),
+    miniappDebtTotal: Number(row.miniapp_debt_total ?? 0),
+    walletEntries: Array.isArray(row.wallet_entries)
+      ? (row.wallet_entries as Record<string, unknown>[]).map((entry) => ({
+          id: String(entry.id),
+          entryType: String(entry.entry_type ?? ""),
+          amount: Number(entry.amount) || 0,
+          createdAt: String(entry.created_at ?? ""),
+        }))
+      : [],
+    miniappDebts: Array.isArray(row.miniapp_debts)
+      ? (row.miniapp_debts as Record<string, unknown>[]).map((debt) => ({
+          rentalId: String(debt.rental_id),
+          rentalDate: String(debt.rental_date ?? "").slice(0, 10),
+          timeStart: String(debt.time_start ?? ""),
+          timeEnd: String(debt.time_end ?? ""),
+          debtAmount: Number(debt.debt_amount) || 0,
+          locationId: debt.location_id != null ? String(debt.location_id) : null,
+        }))
+      : [],
   };
 }
 
@@ -149,11 +172,14 @@ function mapRentalRow(row: Record<string, unknown>): RenterRentalRow {
     locationId: String(row.location_id),
     purpose: row.purpose != null ? String(row.purpose) : null,
     bookingStatus: (row.booking_status as "confirmed" | "cancelled") ?? "confirmed",
+    channel: row.channel === "miniapp" ? "miniapp" : "cashier",
+    lifecycle: row.lifecycle != null ? String(row.lifecycle) : null,
     fixedAmount: row.fixed_amount != null ? Number(row.fixed_amount) : null,
     currency: row.currency != null ? String(row.currency) : null,
     paidAmount: row.paid_amount != null ? Number(row.paid_amount) : null,
     paymentStatus: row.payment_status != null ? String(row.payment_status) : null,
     cancelledAt: row.cancelled_at != null ? String(row.cancelled_at) : null,
+    debtAmount: row.debt_amount != null ? Number(row.debt_amount) : null,
   };
 }
 
@@ -195,6 +221,9 @@ function upsertPayload(input: RenterUpsertInput) {
   }
   if (input.duplicateCreateReason) {
     payload.duplicate_create_reason = input.duplicateCreateReason;
+  }
+  if (input.telegramId !== undefined) {
+    payload.telegram_id = input.telegramId ?? "";
   }
   return asJson(payload);
 }
@@ -290,6 +319,15 @@ export function useRenterDetail(renterId: string | null, enabled = true) {
           archivedAt: renter.archived_at != null ? String(renter.archived_at) : null,
           nextRentalDate:
             renter.next_rental_date != null ? String(renter.next_rental_date).slice(0, 10) : null,
+          telegramId: renter.telegram_id != null ? String(renter.telegram_id) : null,
+          onTimeCount: renter.on_time_count != null ? Number(renter.on_time_count) : null,
+          untimelyCount: renter.untimely_count != null ? Number(renter.untimely_count) : null,
+          bookingBannedAt:
+            renter.booking_banned_at != null ? String(renter.booking_banned_at) : null,
+          penaltyTariffAppliedAt:
+            renter.penalty_tariff_applied_at != null
+              ? String(renter.penalty_tariff_applied_at)
+              : null,
         },
         contacts: ((result.contacts as unknown[]) ?? []).map((row) =>
           mapContact(row as Record<string, unknown>)
@@ -835,6 +873,35 @@ export function useDeleteRenterCommunication() {
     onSuccess: (result, variables) => {
       if (result.success) {
         invalidateRenterCaches(queryClient, variables.renterId);
+      }
+    },
+  });
+}
+
+export function useResetRenterReliability() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (renterId: string) => {
+      const { data, error } = await supabase.rpc("reset_renter_reliability", {
+        p_renter_id: renterId,
+      });
+
+      if (error) return { success: false as const, error: error.message };
+
+      const result = data as { success?: boolean; error?: string } | null;
+      if (!result?.success) {
+        return {
+          success: false as const,
+          error: result?.error ?? "renters.error.reliabilityResetFailed",
+        };
+      }
+
+      return { success: true as const };
+    },
+    onSuccess: (result, renterId) => {
+      if (result.success) {
+        invalidateRenterCaches(queryClient, renterId);
       }
     },
   });

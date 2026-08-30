@@ -12,6 +12,7 @@ const mapRenter = (row: Record<string, unknown>): Renter => ({
   displayName: String(row.display_name ?? ""),
   contactPhone: row.contact_phone != null ? String(row.contact_phone) : null,
   contactEmail: row.contact_email != null ? String(row.contact_email) : null,
+  telegramId: row.telegram_id != null ? String(row.telegram_id) : null,
 });
 
 /** Active renters for rental picker (uses list_renters RPC, active-only default). */

@@ -81,27 +81,6 @@ export type Database = {
           },
         ]
       }
-      allowed_users: {
-        Row: {
-          created_at: string | null
-          display_name: string | null
-          is_active: boolean
-          telegram_id: number
-        }
-        Insert: {
-          created_at?: string | null
-          display_name?: string | null
-          is_active?: boolean
-          telegram_id: number
-        }
-        Update: {
-          created_at?: string | null
-          display_name?: string | null
-          is_active?: boolean
-          telegram_id?: number
-        }
-        Relationships: []
-      }
       attendance: {
         Row: {
           attendance_status: string
@@ -238,6 +217,13 @@ export type Database = {
             columns: ["organization_id", "created_by_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "attendance_corrections_organization_id_created_by_member_i_fkey"
+            columns: ["organization_id", "created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -378,6 +364,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "calendar_event_sessions_organization_id_event_id_fkey"
+            columns: ["organization_id", "event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "calendar_event_sessions_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -460,6 +453,13 @@ export type Database = {
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "calendar_events_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -580,6 +580,13 @@ export type Database = {
             referencedRelation: "organization_members"
             referencedColumns: ["organization_id", "id"]
           },
+          {
+            foreignKeyName: "class_teachers_organization_id_member_id_fkey"
+            columns: ["organization_id", "member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
         ]
       }
       classes: {
@@ -642,6 +649,13 @@ export type Database = {
             referencedRelation: "organization_members"
             referencedColumns: ["organization_id", "id"]
           },
+          {
+            foreignKeyName: "classes_organization_id_primary_teacher_member_id_fkey"
+            columns: ["organization_id", "primary_teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
         ]
       }
       client_notes: {
@@ -678,10 +692,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "client_notes_organization_id_author_member_id_fkey"
+            columns: ["organization_id", "author_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "client_notes_organization_id_client_id_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_notes_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -865,6 +893,24 @@ export type Database = {
           },
         ]
       }
+      edge_rate_limit_buckets: {
+        Row: {
+          bucket_key: string
+          count: number
+          reset_at: string
+        }
+        Insert: {
+          bucket_key: string
+          count?: number
+          reset_at: string
+        }
+        Update: {
+          bucket_key?: string
+          count?: number
+          reset_at?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
@@ -911,6 +957,13 @@ export type Database = {
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "expenses_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -1159,6 +1212,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "group_capacity_overrides_organization_id_created_by_member_fkey"
+            columns: ["organization_id", "created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "group_capacity_overrides_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -1228,10 +1288,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "group_spot_notifications_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "group_spot_notifications_organization_id_dismissed_by_memb_fkey"
             columns: ["organization_id", "dismissed_by_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "group_spot_notifications_organization_id_dismissed_by_memb_fkey"
+            columns: ["organization_id", "dismissed_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -1303,10 +1377,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "group_waitlist_entries_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "group_waitlist_entries_organization_id_created_by_member_i_fkey"
             columns: ["organization_id", "created_by_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "group_waitlist_entries_organization_id_created_by_member_i_fkey"
+            columns: ["organization_id", "created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -1321,6 +1409,13 @@ export type Database = {
             columns: ["organization_id", "updated_by_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "group_waitlist_entries_organization_id_updated_by_member_i_fkey"
+            columns: ["organization_id", "updated_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
         ]
@@ -1362,6 +1457,13 @@ export type Database = {
             columns: ["organization_id", "created_by_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "group_waitlist_status_events_organization_id_created_by_me_fkey"
+            columns: ["organization_id", "created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -1512,6 +1614,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "lesson_occurrence_closures_organization_id_closed_by_fkey"
+            columns: ["organization_id", "closed_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "lesson_occurrence_closures_organization_id_discipline_id_fkey"
             columns: ["organization_id", "discipline_id"]
             isOneToOne: false
@@ -1540,6 +1649,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "lesson_occurrence_closures_organization_id_reopened_by_fkey"
+            columns: ["organization_id", "reopened_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "lesson_occurrence_closures_organization_id_rule_version_id_fkey"
             columns: ["organization_id", "rule_version_id"]
             isOneToOne: false
@@ -1560,6 +1676,61 @@ export type Database = {
             referencedRelation: "organization_members"
             referencedColumns: ["organization_id", "id"]
           },
+          {
+            foreignKeyName: "lesson_occurrence_closures_teacher_member_fk"
+            columns: ["organization_id", "teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      location_rental_hour_rates: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          kind: string
+          location_id: string
+          organization_id: string
+          price: number
+          valid_from: string
+        }
+        Insert: {
+          created_at?: string
+          currency: string
+          id?: string
+          kind: string
+          location_id: string
+          organization_id: string
+          price: number
+          valid_from: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          kind?: string
+          location_id?: string
+          organization_id?: string
+          price?: number
+          valid_from?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_rental_hour_rates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_rental_hour_rates_organization_id_location_id_fkey"
+            columns: ["organization_id", "location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["organization_id", "id"]
+          },
         ]
       }
       locations: {
@@ -1567,6 +1738,7 @@ export type Database = {
           address: string
           created_at: string
           id: string
+          miniapp_enabled: boolean
           name: string
           organization_id: string
         }
@@ -1574,6 +1746,7 @@ export type Database = {
           address?: string
           created_at?: string
           id?: string
+          miniapp_enabled?: boolean
           name: string
           organization_id?: string
         }
@@ -1581,6 +1754,7 @@ export type Database = {
           address?: string
           created_at?: string
           id?: string
+          miniapp_enabled?: boolean
           name?: string
           organization_id?: string
         }
@@ -1670,6 +1844,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "member_google_calendar_bindin_organization_id_organization_fkey"
+            columns: ["organization_id", "organization_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "member_google_calendar_bindings_google_account_id_fkey"
             columns: ["google_account_id"]
             isOneToOne: false
@@ -1713,6 +1894,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "operation_idempotency_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_addons: {
+        Row: {
+          addon_code: string
+          created_at: string
+          id: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          addon_code: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          addon_code?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          period_end?: string
+          period_start?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_addons_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1781,6 +2003,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "organization_google_calendar__organization_id_configured_b_fkey"
+            columns: ["organization_id", "configured_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "organization_google_calendar_bindings_google_account_id_fkey"
             columns: ["google_account_id"]
             isOneToOne: false
@@ -1804,6 +2033,7 @@ export type Database = {
           expires_at: string
           first_name: string | null
           id: string
+          invite_url: string | null
           invited_by: string
           last_name: string | null
           meta: Json
@@ -1812,7 +2042,6 @@ export type Database = {
           role: string
           scope: Json
           token_hash: string
-          invite_url: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -1821,6 +2050,7 @@ export type Database = {
           expires_at: string
           first_name?: string | null
           id?: string
+          invite_url?: string | null
           invited_by: string
           last_name?: string | null
           meta?: Json
@@ -1829,7 +2059,6 @@ export type Database = {
           role: string
           scope?: Json
           token_hash: string
-          invite_url?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -1838,6 +2067,7 @@ export type Database = {
           expires_at?: string
           first_name?: string | null
           id?: string
+          invite_url?: string | null
           invited_by?: string
           last_name?: string | null
           meta?: Json
@@ -1846,7 +2076,6 @@ export type Database = {
           role?: string
           scope?: Json
           token_hash?: string
-          invite_url?: string | null
         }
         Relationships: [
           {
@@ -1854,6 +2083,13 @@ export type Database = {
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["id"]
           },
           {
@@ -2353,10 +2589,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "other_income_organization_id_calendar_event_id_fkey"
+            columns: ["organization_id", "calendar_event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "other_income_organization_id_created_by_fkey"
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "other_income_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -2471,10 +2721,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "payments_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "payments_organization_id_created_by_fkey"
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "payments_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -2517,6 +2781,13 @@ export type Database = {
             columns: ["organization_id", "single_visit_id"]
             isOneToOne: false
             referencedRelation: "single_visits"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "payments_organization_id_single_visit_id_fkey"
+            columns: ["organization_id", "single_visit_id"]
+            isOneToOne: false
+            referencedRelation: "single_visits_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -2580,6 +2851,13 @@ export type Database = {
             columns: ["organization_id", "client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "personal_lesson_charges_org_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -2696,10 +2974,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "personal_lessons_cancelled_by_fkey"
+            columns: ["organization_id", "cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "personal_lessons_organization_id_client_id1_fkey"
             columns: ["organization_id", "client_id1"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "personal_lessons_organization_id_client_id1_fkey"
+            columns: ["organization_id", "client_id1"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -2710,8 +3002,29 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "personal_lessons_organization_id_client_id2_fkey"
+            columns: ["organization_id", "client_id2"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "personal_lessons_organization_id_client_id3_fkey"
             columns: ["organization_id", "client_id3"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "personal_lessons_organization_id_client_id3_fkey"
+            columns: ["organization_id", "client_id3"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "personal_lessons_organization_id_client_id4_fkey"
+            columns: ["organization_id", "client_id4"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["organization_id", "id"]
@@ -2720,7 +3033,7 @@ export type Database = {
             foreignKeyName: "personal_lessons_organization_id_client_id4_fkey"
             columns: ["organization_id", "client_id4"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -2752,6 +3065,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "personal_lessons_organization_id_payer_client_id_fkey"
+            columns: ["organization_id", "payer_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "personal_lessons_organization_id_price_id_fkey"
             columns: ["organization_id", "price_id"]
             isOneToOne: false
@@ -2777,6 +3097,13 @@ export type Database = {
             columns: ["organization_id", "teacher_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "personal_lessons_organization_id_teacher_member_id_fkey"
+            columns: ["organization_id", "teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
         ]
@@ -2875,6 +3202,7 @@ export type Database = {
           organization_id: string
           organization_name: string
           payment_comment: string
+          request_kind: string
           requester_email: string | null
           requester_user_id: string
           status: string
@@ -2893,6 +3221,7 @@ export type Database = {
           organization_id: string
           organization_name: string
           payment_comment: string
+          request_kind?: string
           requester_email?: string | null
           requester_user_id: string
           status?: string
@@ -2911,6 +3240,7 @@ export type Database = {
           organization_id?: string
           organization_name?: string
           payment_comment?: string
+          request_kind?: string
           requester_email?: string | null
           requester_user_id?: string
           status?: string
@@ -3043,6 +3373,13 @@ export type Database = {
             columns: ["organization_id", "member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "price_teacher_members_organization_id_member_id_fkey"
+            columns: ["organization_id", "member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -3183,6 +3520,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "rental_advance_allocations_organization_id_allocated_by_fkey"
+            columns: ["organization_id", "allocated_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "rental_advance_allocations_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -3247,6 +3591,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "rental_advances_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "rental_advances_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -3308,6 +3659,13 @@ export type Database = {
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "rental_deposit_movements_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -3510,6 +3868,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "rental_invoice_payments_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "rental_invoice_payments_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -3607,6 +3972,13 @@ export type Database = {
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "rental_invoices_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -3723,6 +4095,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "rental_payments_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "rental_payments_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -3792,6 +4171,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "rental_pricing_adjustments_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "rental_pricing_adjustments_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -3809,6 +4195,7 @@ export type Database = {
       }
       rental_series: {
         Row: {
+          channel: string
           contract_id: string | null
           created_at: string
           created_by: string | null
@@ -3819,12 +4206,13 @@ export type Database = {
           purpose: string | null
           renter_id: string
           status: string
-          tariff_id: string
+          tariff_id: string | null
           updated_at: string
           valid_from: string
           valid_to: string
         }
         Insert: {
+          channel?: string
           contract_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -3835,12 +4223,13 @@ export type Database = {
           purpose?: string | null
           renter_id: string
           status?: string
-          tariff_id: string
+          tariff_id?: string | null
           updated_at?: string
           valid_from: string
           valid_to: string
         }
         Update: {
+          channel?: string
           contract_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -3851,7 +4240,7 @@ export type Database = {
           purpose?: string | null
           renter_id?: string
           status?: string
-          tariff_id?: string
+          tariff_id?: string | null
           updated_at?: string
           valid_from?: string
           valid_to?: string
@@ -3869,6 +4258,13 @@ export type Database = {
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "rental_series_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -3941,6 +4337,13 @@ export type Database = {
             columns: ["organization_id", "cancelled_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "rental_series_exceptions_organization_id_cancelled_by_fkey"
+            columns: ["organization_id", "cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -4140,18 +4543,26 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          channel: string
           created_at: string
           created_by: string | null
           currency: string
+          debt_amount: number
           final_amount: number | null
           fixed_amount: number
+          hold_expires_at: string | null
           id: string
           idempotency_key: string | null
           internal_comment: string | null
+          lifecycle: string | null
           location_id: string
           organization_id: string
+          prepay_amount: number
+          prepay_charged_at: string | null
           pricing_breakdown: Json | null
           purpose: string | null
+          remainder_amount: number
+          remainder_charged_at: string | null
           rental_date: string
           rental_series_id: string | null
           renter_id: string
@@ -4171,18 +4582,26 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
+          channel?: string
           created_at?: string
           created_by?: string | null
           currency?: string
+          debt_amount?: number
           final_amount?: number | null
           fixed_amount?: number
+          hold_expires_at?: string | null
           id?: string
           idempotency_key?: string | null
           internal_comment?: string | null
+          lifecycle?: string | null
           location_id: string
           organization_id: string
+          prepay_amount?: number
+          prepay_charged_at?: string | null
           pricing_breakdown?: Json | null
           purpose?: string | null
+          remainder_amount?: number
+          remainder_charged_at?: string | null
           rental_date: string
           rental_series_id?: string | null
           renter_id: string
@@ -4202,18 +4621,26 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
+          channel?: string
           created_at?: string
           created_by?: string | null
           currency?: string
+          debt_amount?: number
           final_amount?: number | null
           fixed_amount?: number
+          hold_expires_at?: string | null
           id?: string
           idempotency_key?: string | null
           internal_comment?: string | null
+          lifecycle?: string | null
           location_id?: string
           organization_id?: string
+          prepay_amount?: number
+          prepay_charged_at?: string | null
           pricing_breakdown?: Json | null
           purpose?: string | null
+          remainder_amount?: number
+          remainder_charged_at?: string | null
           rental_date?: string
           rental_series_id?: string | null
           renter_id?: string
@@ -4233,10 +4660,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "rentals_organization_id_cancelled_by_fkey"
+            columns: ["organization_id", "cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "rentals_organization_id_created_by_fkey"
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "rentals_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -4325,6 +4766,13 @@ export type Database = {
             columns: ["organization_id", "author_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_communications_organization_id_author_member_id_fkey"
+            columns: ["organization_id", "author_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -4534,6 +4982,65 @@ export type Database = {
           },
         ]
       }
+      renter_document_upload_intents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          organization_id: string
+          renter_id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          organization_id: string
+          renter_id: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          renter_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renter_document_upload_intents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renter_document_upload_intents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renter_document_upload_intents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renter_document_upload_intents_renter_id_fkey"
+            columns: ["renter_id"]
+            isOneToOne: false
+            referencedRelation: "renters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       renter_documents: {
         Row: {
           category: string | null
@@ -4615,13 +5122,90 @@ export type Database = {
             referencedRelation: "organization_members"
             referencedColumns: ["organization_id", "id"]
           },
+          {
+            foreignKeyName: "renter_documents_organization_id_uploaded_by_fkey"
+            columns: ["organization_id", "uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      renter_wallet_ledger: {
+        Row: {
+          advance_id: string | null
+          amount: number
+          created_at: string
+          entry_type: string
+          id: string
+          organization_id: string
+          phase: string | null
+          rental_id: string | null
+          renter_id: string
+          topup_request_id: string | null
+        }
+        Insert: {
+          advance_id?: string | null
+          amount: number
+          created_at?: string
+          entry_type: string
+          id?: string
+          organization_id: string
+          phase?: string | null
+          rental_id?: string | null
+          renter_id: string
+          topup_request_id?: string | null
+        }
+        Update: {
+          advance_id?: string | null
+          amount?: number
+          created_at?: string
+          entry_type?: string
+          id?: string
+          organization_id?: string
+          phase?: string | null
+          rental_id?: string | null
+          renter_id?: string
+          topup_request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renter_wallet_ledger_organization_id_advance_id_fkey"
+            columns: ["organization_id", "advance_id"]
+            isOneToOne: false
+            referencedRelation: "rental_advances"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_wallet_ledger_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renter_wallet_ledger_organization_id_rental_id_fkey"
+            columns: ["organization_id", "rental_id"]
+            isOneToOne: false
+            referencedRelation: "rentals"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_wallet_ledger_organization_id_renter_id_fkey"
+            columns: ["organization_id", "renter_id"]
+            isOneToOne: false
+            referencedRelation: "renters"
+            referencedColumns: ["organization_id", "id"]
+          },
         ]
       }
       renters: {
         Row: {
           actual_address: string | null
           archived_at: string | null
+          auth_user_id: string | null
           blocked_reason: string | null
+          booking_banned_at: string | null
           contact_email: string | null
           contact_phone: string | null
           counterparty_type: string
@@ -4637,18 +5221,24 @@ export type Database = {
           norm_phone: string | null
           norm_tax_id: string | null
           notes: string | null
+          on_time_count: number
           organization_id: string
           payment_due_days: number | null
+          penalty_tariff_applied_at: string | null
           preferred_location_ids: string[]
           registration_number: string | null
           status: string
           tax_id: string | null
+          telegram_id: string | null
+          untimely_count: number
           updated_at: string
         }
         Insert: {
           actual_address?: string | null
           archived_at?: string | null
+          auth_user_id?: string | null
           blocked_reason?: string | null
+          booking_banned_at?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           counterparty_type?: string
@@ -4664,18 +5254,24 @@ export type Database = {
           norm_phone?: string | null
           norm_tax_id?: string | null
           notes?: string | null
+          on_time_count?: number
           organization_id: string
           payment_due_days?: number | null
+          penalty_tariff_applied_at?: string | null
           preferred_location_ids?: string[]
           registration_number?: string | null
           status?: string
           tax_id?: string | null
+          telegram_id?: string | null
+          untimely_count?: number
           updated_at?: string
         }
         Update: {
           actual_address?: string | null
           archived_at?: string | null
+          auth_user_id?: string | null
           blocked_reason?: string | null
+          booking_banned_at?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           counterparty_type?: string
@@ -4691,12 +5287,16 @@ export type Database = {
           norm_phone?: string | null
           norm_tax_id?: string | null
           notes?: string | null
+          on_time_count?: number
           organization_id?: string
           payment_due_days?: number | null
+          penalty_tariff_applied_at?: string | null
           preferred_location_ids?: string[]
           registration_number?: string | null
           status?: string
           tax_id?: string | null
+          telegram_id?: string | null
+          untimely_count?: number
           updated_at?: string
         }
         Relationships: [
@@ -4705,6 +5305,13 @@ export type Database = {
             columns: ["organization_id", "duplicate_create_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renters_duplicate_create_by_fk"
+            columns: ["organization_id", "duplicate_create_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -4805,6 +5412,13 @@ export type Database = {
             referencedRelation: "organization_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "schedule_occurrence_cancellations_teacher_member_id_fkey"
+            columns: ["teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["id"]
+          },
         ]
       }
       schedule_slots: {
@@ -4902,6 +5516,13 @@ export type Database = {
             referencedRelation: "organization_members"
             referencedColumns: ["organization_id", "id"]
           },
+          {
+            foreignKeyName: "schedule_slots_organization_id_teacher_member_id_fkey"
+            columns: ["organization_id", "teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
         ]
       }
       self_service_demo_challenges: {
@@ -4992,10 +5613,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "single_visits_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "single_visits_organization_id_created_by_fkey"
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "single_visits_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -5045,6 +5680,13 @@ export type Database = {
             columns: ["organization_id", "teacher_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "single_visits_organization_id_teacher_member_id_fkey"
+            columns: ["organization_id", "teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
         ]
@@ -5104,10 +5746,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "subscription_freeze_periods_organization_id_cancelled_by_m_fkey"
+            columns: ["organization_id", "cancelled_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "subscription_freeze_periods_organization_id_created_by_mem_fkey"
             columns: ["organization_id", "created_by_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "subscription_freeze_periods_organization_id_created_by_mem_fkey"
+            columns: ["organization_id", "created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -5241,6 +5897,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "subscription_member_changes_organization_id_created_by_mem_fkey"
+            columns: ["organization_id", "created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "subscription_member_changes_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -5255,10 +5918,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "subscription_member_changes_organization_id_incoming_clien_fkey"
+            columns: ["organization_id", "incoming_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "subscription_member_changes_organization_id_outgoing_clien_fkey"
             columns: ["organization_id", "outgoing_client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "subscription_member_changes_organization_id_outgoing_clien_fkey"
+            columns: ["organization_id", "outgoing_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -5371,6 +6048,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "subscription_refunds_cancelled_by_member_id_fkey"
+            columns: ["organization_id", "cancelled_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "subscription_refunds_organization_id_client_id_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
@@ -5378,10 +6062,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "subscription_refunds_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "subscription_refunds_organization_id_created_by_member_id_fkey"
             columns: ["organization_id", "created_by_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "subscription_refunds_organization_id_created_by_member_id_fkey"
+            columns: ["organization_id", "created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -5506,6 +6204,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "subscriptions_finished_by_member_id_fkey"
+            columns: ["organization_id", "finished_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "subscriptions_organization_id_class_id_fkey"
             columns: ["organization_id", "class_id"]
             isOneToOne: false
@@ -5520,10 +6225,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "subscriptions_organization_id_client_id1_fkey"
+            columns: ["organization_id", "client_id1"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "subscriptions_organization_id_client_id2_fkey"
             columns: ["organization_id", "client_id2"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "subscriptions_organization_id_client_id2_fkey"
+            columns: ["organization_id", "client_id2"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -5534,10 +6253,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "subscriptions_organization_id_client_id3_fkey"
+            columns: ["organization_id", "client_id3"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "subscriptions_organization_id_client_id4_fkey"
             columns: ["organization_id", "client_id4"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "subscriptions_organization_id_client_id4_fkey"
+            columns: ["organization_id", "client_id4"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -5618,6 +6351,13 @@ export type Database = {
             referencedRelation: "organization_members"
             referencedColumns: ["organization_id", "id"]
           },
+          {
+            foreignKeyName: "teacher_pay_rates_organization_id_member_id_fkey"
+            columns: ["organization_id", "member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
         ]
       }
       teacher_pay_rules: {
@@ -5678,6 +6418,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "teacher_pay_rules_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "teacher_pay_rules_organization_id_discipline_id_fkey"
             columns: ["organization_id", "discipline_id"]
             isOneToOne: false
@@ -5696,6 +6443,13 @@ export type Database = {
             columns: ["organization_id", "member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "teacher_pay_rules_organization_id_member_id_fkey"
+            columns: ["organization_id", "member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -5796,6 +6550,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "teacher_settlement_line_items_organization_id_member_id_fkey"
+            columns: ["organization_id", "member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "teacher_settlement_line_items_organization_id_settlement_i_fkey"
             columns: ["organization_id", "settlement_id"]
             isOneToOne: false
@@ -5844,6 +6605,13 @@ export type Database = {
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "teacher_settlement_payments_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -5908,6 +6676,13 @@ export type Database = {
             referencedRelation: "organization_members"
             referencedColumns: ["organization_id", "id"]
           },
+          {
+            foreignKeyName: "teacher_settlements_organization_id_member_id_fkey"
+            columns: ["organization_id", "member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
         ]
       }
       user_active_organizations: {
@@ -5938,6 +6713,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_active_organizations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_active_organizations_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -5948,6 +6730,7 @@ export type Database = {
       }
       user_google_accounts: {
         Row: {
+          access_token_expires_at: string | null
           created_at: string
           encrypted_access_token: string | null
           encrypted_refresh_token: string | null
@@ -5957,13 +6740,13 @@ export type Database = {
           id: string
           last_verified_at: string | null
           refresh_token_issued_at: string | null
-          access_token_expires_at: string | null
           status: string
           token_version: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          access_token_expires_at?: string | null
           created_at?: string
           encrypted_access_token?: string | null
           encrypted_refresh_token?: string | null
@@ -5973,13 +6756,13 @@ export type Database = {
           id?: string
           last_verified_at?: string | null
           refresh_token_issued_at?: string | null
-          access_token_expires_at?: string | null
           status?: string
           token_version?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          access_token_expires_at?: string | null
           created_at?: string
           encrypted_access_token?: string | null
           encrypted_refresh_token?: string | null
@@ -5989,7 +6772,6 @@ export type Database = {
           id?: string
           last_verified_at?: string | null
           refresh_token_issued_at?: string | null
-          access_token_expires_at?: string | null
           status?: string
           token_version?: number
           updated_at?: string
@@ -6114,6 +6896,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "venue_cost_accruals_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "venue_cost_accruals_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -6139,6 +6928,13 @@ export type Database = {
             columns: ["organization_id", "single_visit_id"]
             isOneToOne: false
             referencedRelation: "single_visits"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "venue_cost_accruals_organization_id_single_visit_id_fkey"
+            columns: ["organization_id", "single_visit_id"]
+            isOneToOne: false
+            referencedRelation: "single_visits_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -6205,10 +7001,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "venue_cost_rule_versions_organization_id_accepted_by_fkey"
+            columns: ["organization_id", "accepted_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "venue_cost_rule_versions_organization_id_created_by_fkey"
             columns: ["organization_id", "created_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "venue_cost_rule_versions_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -6263,6 +7073,13 @@ export type Database = {
             columns: ["organization_id", "acknowledged_by"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "venue_rule_gap_acknowledgemen_organization_id_acknowledged_fkey"
+            columns: ["organization_id", "acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -6324,6 +7141,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "venue_rule_payment_acknowledg_organization_id_acknowledged_fkey"
+            columns: ["organization_id", "acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "venue_rule_payment_acknowledg_organization_id_expired_rule_fkey"
             columns: ["organization_id", "expired_rule_id"]
             isOneToOne: false
@@ -6348,6 +7172,39 @@ export type Database = {
       }
     }
     Views: {
+      _financial_debtors_v_unfiltered: {
+        Row: {
+          amount: number | null
+          billed_amount: number | null
+          client_display: string | null
+          client_id1: string | null
+          client_id2: string | null
+          client_id3: string | null
+          client_id4: string | null
+          contact: string | null
+          detail: string | null
+          discipline_id: string | null
+          id: string | null
+          kind: string | null
+          lesson_date: string | null
+          lesson_time_end: string | null
+          lesson_time_start: string | null
+          lessons_left: number | null
+          lessons_total: number | null
+          location_id: string | null
+          organization_id: string | null
+          other_participants: string | null
+          paid_amount: number | null
+          payer_client_id: string | null
+          personal_lesson_charge_id: string | null
+          personal_lesson_id: string | null
+          price_id: string | null
+          rental_id: string | null
+          renter_id: string | null
+          teacher_member_id: string | null
+        }
+        Relationships: []
+      }
       audit_log_leadership_v: {
         Row: {
           changed_at: string | null
@@ -6364,8 +7221,8 @@ export type Database = {
           changed_at?: string | null
           changed_by?: string | null
           id?: string | null
-          new_data?: Json | null
-          old_data?: Json | null
+          new_data?: never
+          old_data?: never
           operation?: string | null
           organization_id?: string | null
           row_id?: string | null
@@ -6375,14 +7232,22 @@ export type Database = {
           changed_at?: string | null
           changed_by?: string | null
           id?: string | null
-          new_data?: Json | null
-          old_data?: Json | null
+          new_data?: never
+          old_data?: never
           operation?: string | null
           organization_id?: string | null
           row_id?: string | null
           table_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       calendar_events_teacher_v: {
         Row: {
@@ -6415,7 +7280,15 @@ export type Database = {
           planned_guest_count?: number | null
           title?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients_teacher_v: {
         Row: {
@@ -6445,7 +7318,15 @@ export type Database = {
           last_name?: string | null
           organization_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_cost_entries_v: {
         Row: {
@@ -6507,9 +7388,130 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_invites_team_v: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          email: string | null
+          expires_at: string | null
+          first_name: string | null
+          id: string | null
+          invite_url: string | null
+          invited_by: string | null
+          last_name: string | null
+          meta: Json | null
+          organization_id: string | null
+          revoked_at: string | null
+          role: string | null
+          scope: Json | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          invite_url?: string | null
+          invited_by?: string | null
+          last_name?: string | null
+          meta?: Json | null
+          organization_id?: string | null
+          revoked_at?: string | null
+          role?: string | null
+          scope?: Json | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          invite_url?: string | null
+          invited_by?: string | null
+          last_name?: string | null
+          meta?: Json | null
+          organization_id?: string | null
+          revoked_at?: string | null
+          role?: string | null
+          scope?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_invites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members_roster_v: {
+        Row: {
+          display_name: string | null
+          first_name: string | null
+          id: string | null
+          is_active: boolean | null
+          joined_at: string | null
+          last_name: string | null
+          meta: Json | null
+          organization_id: string | null
+          patronymic: string | null
+          role: string | null
+        }
+        Insert: {
+          display_name?: string | null
+          first_name?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          joined_at?: string | null
+          last_name?: string | null
+          meta?: never
+          organization_id?: string | null
+          patronymic?: string | null
+          role?: string | null
+        }
+        Update: {
+          display_name?: string | null
+          first_name?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          joined_at?: string | null
+          last_name?: string | null
+          meta?: never
+          organization_id?: string | null
+          patronymic?: string | null
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       personal_lessons_teacher_v: {
         Row: {
           attendance_status: string | null
+          cancelled_at: string | null
           client_id1: string | null
           client_id2: string | null
           client_id3: string | null
@@ -6521,6 +7523,7 @@ export type Database = {
           location_id: string | null
           organization_id: string | null
           paid: string | null
+          price_id: string | null
           subscription_id: string | null
           teacher_member_id: string | null
           time_end: string | null
@@ -6529,6 +7532,7 @@ export type Database = {
         }
         Insert: {
           attendance_status?: string | null
+          cancelled_at?: string | null
           client_id1?: string | null
           client_id2?: string | null
           client_id3?: string | null
@@ -6540,6 +7544,7 @@ export type Database = {
           location_id?: string | null
           organization_id?: string | null
           paid?: string | null
+          price_id?: string | null
           subscription_id?: string | null
           teacher_member_id?: string | null
           time_end?: string | null
@@ -6548,6 +7553,7 @@ export type Database = {
         }
         Update: {
           attendance_status?: string | null
+          cancelled_at?: string | null
           client_id1?: string | null
           client_id2?: string | null
           client_id3?: string | null
@@ -6559,6 +7565,7 @@ export type Database = {
           location_id?: string | null
           organization_id?: string | null
           paid?: string | null
+          price_id?: string | null
           subscription_id?: string | null
           teacher_member_id?: string | null
           time_end?: string | null
@@ -6574,10 +7581,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "personal_lessons_organization_id_client_id1_fkey"
+            columns: ["organization_id", "client_id1"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "personal_lessons_organization_id_client_id2_fkey"
             columns: ["organization_id", "client_id2"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "personal_lessons_organization_id_client_id2_fkey"
+            columns: ["organization_id", "client_id2"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -6588,10 +7609,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "personal_lessons_organization_id_client_id3_fkey"
+            columns: ["organization_id", "client_id3"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "personal_lessons_organization_id_client_id4_fkey"
             columns: ["organization_id", "client_id4"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "personal_lessons_organization_id_client_id4_fkey"
+            columns: ["organization_id", "client_id4"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -6616,6 +7651,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "personal_lessons_organization_id_price_id_fkey"
+            columns: ["organization_id", "price_id"]
+            isOneToOne: false
+            referencedRelation: "prices"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "personal_lessons_organization_id_subscription_id_fkey"
             columns: ["organization_id", "subscription_id"]
             isOneToOne: false
@@ -6634,6 +7676,13 @@ export type Database = {
             columns: ["organization_id", "teacher_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "personal_lessons_organization_id_teacher_member_id_fkey"
+            columns: ["organization_id", "teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
         ]
@@ -6722,6 +7771,13 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "single_visits_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "single_visits_organization_id_discipline_id_fkey"
             columns: ["organization_id", "discipline_id"]
             isOneToOne: false
@@ -6761,6 +7817,13 @@ export type Database = {
             columns: ["organization_id", "teacher_member_id"]
             isOneToOne: false
             referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "single_visits_organization_id_teacher_member_id_fkey"
+            columns: ["organization_id", "teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
             referencedColumns: ["organization_id", "id"]
           },
         ]
@@ -6845,10 +7908,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "subscriptions_organization_id_client_id1_fkey"
+            columns: ["organization_id", "client_id1"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "subscriptions_organization_id_client_id2_fkey"
             columns: ["organization_id", "client_id2"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "subscriptions_organization_id_client_id2_fkey"
+            columns: ["organization_id", "client_id2"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -6859,10 +7936,24 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "subscriptions_organization_id_client_id3_fkey"
+            columns: ["organization_id", "client_id3"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "subscriptions_organization_id_client_id4_fkey"
             columns: ["organization_id", "client_id4"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "subscriptions_organization_id_client_id4_fkey"
+            columns: ["organization_id", "client_id4"]
+            isOneToOne: false
+            referencedRelation: "clients_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -6880,96 +7971,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      organization_members_roster_v: {
-        Row: {
-          display_name: string | null
-          first_name: string | null
-          id: string | null
-          is_active: boolean | null
-          joined_at: string | null
-          last_name: string | null
-          meta: Json | null
-          organization_id: string | null
-          patronymic: string | null
-          role: string | null
-        }
-        Insert: {
-          display_name?: string | null
-          first_name?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          joined_at?: string | null
-          last_name?: string | null
-          meta?: Json | null
-          organization_id?: string | null
-          patronymic?: string | null
-          role?: string | null
-        }
-        Update: {
-          display_name?: string | null
-          first_name?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          joined_at?: string | null
-          last_name?: string | null
-          meta?: Json | null
-          organization_id?: string | null
-          patronymic?: string | null
-          role?: string | null
-        }
-        Relationships: []
-      }
-      organization_invites_team_v: {
-        Row: {
-          accepted_at: string | null
-          created_at: string | null
-          email: string | null
-          expires_at: string | null
-          first_name: string | null
-          id: string | null
-          invited_by: string | null
-          invite_url: string | null
-          last_name: string | null
-          meta: Json | null
-          organization_id: string | null
-          revoked_at: string | null
-          role: string | null
-          scope: Json | null
-        }
-        Insert: {
-          accepted_at?: string | null
-          created_at?: string | null
-          email?: string | null
-          expires_at?: string | null
-          first_name?: string | null
-          id?: string | null
-          invited_by?: string | null
-          invite_url?: string | null
-          last_name?: string | null
-          meta?: Json | null
-          organization_id?: string | null
-          revoked_at?: string | null
-          role?: string | null
-          scope?: Json | null
-        }
-        Update: {
-          accepted_at?: string | null
-          created_at?: string | null
-          email?: string | null
-          expires_at?: string | null
-          first_name?: string | null
-          id?: string | null
-          invited_by?: string | null
-          invite_url?: string | null
-          last_name?: string | null
-          meta?: Json | null
-          organization_id?: string | null
-          revoked_at?: string | null
-          role?: string | null
-          scope?: Json | null
-        }
-        Relationships: []
       }
     }
     Functions: {
@@ -7010,6 +8011,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _calendar_event_operation_date: {
+        Args: { p_event_id: string; p_org_id: string }
+        Returns: string
+      }
       _calendar_event_payment_status: {
         Args: { p_income_amount: number; p_paid_amount: number }
         Returns: string
@@ -7020,6 +8025,56 @@ export type Database = {
           p_slot: Database["public"]["Tables"]["schedule_slots"]["Row"]
         }
         Returns: undefined
+      }
+      _cashier_apply_rental_pricing_adjustment: {
+        Args: { p_new_amount: number; p_reason: string; p_rental_id: string }
+        Returns: Json
+      }
+      _cashier_cancel_rental: {
+        Args: {
+          p_financial_action?: string
+          p_idempotency_key?: string
+          p_penalty_amount?: number
+          p_reason: string
+          p_rental_id: string
+        }
+        Returns: Json
+      }
+      _cashier_cancel_rental_series_occurrence: {
+        Args: {
+          p_date: string
+          p_financial_action?: string
+          p_idempotency_key?: string
+          p_penalty_amount?: number
+          p_reason: string
+          p_series_id: string
+        }
+        Returns: Json
+      }
+      _cashier_create_rental: { Args: { p_payload: Json }; Returns: Json }
+      _cashier_record_rental_payment: {
+        Args: {
+          p_amount: number
+          p_fiscal_acquiring_id?: string
+          p_fiscal_cash_register_id?: string
+          p_fiscal_receipt_number?: string
+          p_fiscal_status?: string
+          p_fiscal_terminal_id?: string
+          p_idempotency_key?: string
+          p_method?: string
+          p_method_comment?: string
+          p_operation_date?: string
+          p_rental_id: string
+        }
+        Returns: Json
+      }
+      _cashier_update_rental: {
+        Args: { p_payload: Json; p_rental_id: string }
+        Returns: Json
+      }
+      _cashier_update_rental_series: {
+        Args: { p_payload: Json; p_scope?: string; p_series_id: string }
+        Returns: Json
       }
       _expand_group_slot_dates_in_range: {
         Args: {
@@ -7049,6 +8104,15 @@ export type Database = {
           p_timezone: string
         }
         Returns: boolean
+      }
+      _group_occurrence_present_attendee_count: {
+        Args: {
+          p_occurrence_date: string
+          p_org_id: string
+          p_schedule_group_id: string
+          p_schedule_slot_id: string
+        }
+        Returns: number
       }
       _group_slot_occurrences_in_range: {
         Args: {
@@ -7088,6 +8152,13 @@ export type Database = {
         Returns: string
       }
       _org_timezone: { Args: { p_org_id: string }; Returns: string }
+      _payment_operation_date: {
+        Args: {
+          p_org_id: string
+          p_payment: Database["public"]["Tables"]["payments"]["Row"]
+        }
+        Returns: string
+      }
       _purge_demo_organization_core: {
         Args: {
           p_actor_user_id?: string
@@ -7098,40 +8169,23 @@ export type Database = {
         }
         Returns: Json
       }
-      _record_personal_lesson_payment_impl:
-        | {
-            Args: {
-              p_amount: number
-              p_client_id?: string
-              p_idempotency_key?: string
-              p_lesson_duration_minutes?: number
-              p_lesson_id: string
-              p_method?: string
-              p_price_id?: string
-              p_tariff_duration_minutes?: number
-              p_tariff_label?: string
-              p_tariff_price?: number
-              p_tariff_units?: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_charge_id?: string
-              p_client_id?: string
-              p_idempotency_key?: string
-              p_lesson_duration_minutes?: number
-              p_lesson_id: string
-              p_method?: string
-              p_price_id?: string
-              p_tariff_duration_minutes?: number
-              p_tariff_label?: string
-              p_tariff_price?: number
-              p_tariff_units?: number
-            }
-            Returns: Json
-          }
+      _record_personal_lesson_payment_impl: {
+        Args: {
+          p_amount: number
+          p_charge_id?: string
+          p_client_id?: string
+          p_idempotency_key?: string
+          p_lesson_duration_minutes?: number
+          p_lesson_id: string
+          p_method?: string
+          p_price_id?: string
+          p_tariff_duration_minutes?: number
+          p_tariff_label?: string
+          p_tariff_price?: number
+          p_tariff_units?: number
+        }
+        Returns: Json
+      }
       _record_schedule_cancellations: {
         Args: {
           p_dates: string[]
@@ -7160,6 +8214,10 @@ export type Database = {
           p_subscription_id: string
         }
         Returns: Json
+      }
+      _rental_acquire_location_date_locks: {
+        Args: { p_org_id: string; p_pairs: Json }
+        Returns: number[]
       }
       _rental_billing_profile: { Args: { p_org_id: string }; Returns: Json }
       _rental_cancel_financial_action_valid: {
@@ -7211,15 +8269,64 @@ export type Database = {
         Args: { p_org_id: string; p_rental_id: string }
         Returns: number
       }
+      _rental_payload_is_miniapp_channel: {
+        Args: { p_payload: Json }
+        Returns: boolean
+      }
       _rental_payment_status: {
         Args: { p_fixed_amount: number; p_paid_amount: number }
         Returns: string
+      }
+      _rental_reject_miniapp_series_write: {
+        Args: { p_org_id: string; p_series_id: string }
+        Returns: Json
+      }
+      _rental_reject_miniapp_write: {
+        Args: { p_org_id: string; p_rental_id: string }
+        Returns: Json
       }
       _rental_resolve_fiscal_status: {
         Args: { p_method: string; p_org_id: string; p_requested: string }
         Returns: string
       }
+      _rental_sorted_location_date_pairs: {
+        Args: { p_pairs: Json }
+        Returns: {
+          location_id: string
+          occurrence_date: string
+        }[]
+      }
+      _renter_acquire_miniapp_locks: {
+        Args: { p_extra_pairs?: Json; p_org_id: string; p_renter_id: string }
+        Returns: number[]
+      }
+      _renter_actor_ctx: {
+        Args: never
+        Returns: {
+          is_renter: boolean
+          jwt_renter_id: string
+          member_id: string
+          org_id: string
+          telegram_id: number
+        }[]
+      }
+      _renter_after_pack_slot_terminal: {
+        Args: { p_series_id: string }
+        Returns: undefined
+      }
       _renter_allowed_document_mimes: { Args: never; Returns: string[] }
+      _renter_apply_reliability: {
+        Args: { p_allowed: boolean; p_phase: string; p_rental_id: string }
+        Returns: undefined
+      }
+      _renter_apply_wallet: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
+      _renter_assert_wallet_invariant: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
       _renter_audit_with_reason: {
         Args: {
           p_new_data: Json
@@ -7231,22 +8338,246 @@ export type Database = {
         }
         Returns: undefined
       }
+      _renter_cancel_one_slot: {
+        Args: { p_is_renter: boolean; p_member_id: string; p_rental_id: string }
+        Returns: string
+      }
+      _renter_charge_prepay: { Args: { p_rental_id: string }; Returns: boolean }
+      _renter_charge_remainder: {
+        Args: { p_rental_id: string }
+        Returns: boolean
+      }
+      _renter_check_rpc_rate_limit: {
+        Args: { p_org_id: string; p_telegram_id: number }
+        Returns: boolean
+      }
+      _renter_compute_hold_expires_at: {
+        Args: { p_created_at: string; p_time_start_ts: string }
+        Returns: string
+      }
+      _renter_create_gates: {
+        Args: { p_need_addon: boolean; p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
+      _renter_currency_minor: { Args: { p_currency: string }; Returns: number }
+      _renter_debt_settle: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
       _renter_debt_total: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: number
       }
+      _renter_delete_hold_slot: {
+        Args: { p_member_id: string; p_rental_id: string }
+        Returns: undefined
+      }
       _renter_document_max_bytes: { Args: never; Returns: number }
+      _renter_early_close_pack: {
+        Args: { p_series_id: string }
+        Returns: undefined
+      }
+      _renter_effective_kind: {
+        Args: { p_base_kind: string; p_org_id: string; p_renter_id: string }
+        Returns: string
+      }
+      _renter_expire_and_catchup: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
+      _renter_fifo_activate: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
       _renter_has_active_or_future_rental: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: boolean
+      }
+      _renter_hour_rate: {
+        Args: {
+          p_date: string
+          p_kind: string
+          p_location_id: string
+          p_org_id: string
+        }
+        Returns: number
+      }
+      _renter_inherited_hold_expires_at: {
+        Args: {
+          p_location_id: string
+          p_org_id: string
+          p_renter_id: string
+          p_time_end: string
+          p_time_start: string
+        }
+        Returns: string
+      }
+      _renter_insert_occurrence: {
+        Args: {
+          p_created_by: string
+          p_date: string
+          p_idempotency_key: string
+          p_kind: string
+          p_location_id: string
+          p_org_id: string
+          p_renter_id: string
+          p_series_id: string
+          p_time_end: string
+          p_time_start: string
+        }
+        Returns: string
       }
       _renter_is_bookable: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: boolean
       }
+      _renter_jwt_app_metadata: { Args: never; Returns: Json }
+      _renter_location_channel_ok: {
+        Args: { p_date: string; p_location_id: string; p_org_id: string }
+        Returns: boolean
+      }
+      _renter_location_has_three_kinds: {
+        Args: { p_date: string; p_location_id: string; p_org_id: string }
+        Returns: boolean
+      }
+      _renter_location_slot_busy: {
+        Args: {
+          p_date: string
+          p_exclude_rental_id?: string
+          p_location_id: string
+          p_org_id: string
+          p_time_end: string
+          p_time_start: string
+        }
+        Returns: boolean
+      }
+      _renter_lock_candidate_pairs: {
+        Args: { p_extra_pairs?: Json; p_org_id: string; p_renter_id: string }
+        Returns: {
+          location_id: string
+          occurrence_date: string
+        }[]
+      }
+      _renter_mark_terminal: {
+        Args: {
+          p_cancelled_by: string
+          p_lifecycle: string
+          p_reason: string
+          p_rental_id: string
+        }
+        Returns: undefined
+      }
       _renter_next_rental_date: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: string
+      }
+      _renter_occupancy_window: {
+        Args: { p_org_id: string }
+        Returns: {
+          window_end: string
+          window_start: string
+        }[]
+      }
+      _renter_org_currency: { Args: { p_org_id: string }; Returns: string }
+      _renter_public_rental_json: { Args: { p_id: string }; Returns: Json }
+      _renter_quote_slot_amounts: {
+        Args: {
+          p_date: string
+          p_kind: string
+          p_location_id: string
+          p_org_id: string
+          p_time_end: string
+          p_time_start: string
+        }
+        Returns: Json
+      }
+      _renter_raise: { Args: { p_code: string }; Returns: undefined }
+      _renter_refund_prepay: { Args: { p_rental_id: string }; Returns: boolean }
+      _renter_require_renter_ctx: {
+        Args: never
+        Returns: {
+          org_id: string
+          renter_id: string
+          telegram_id: number
+        }[]
+      }
+      _renter_round_money: {
+        Args: { p_amount: number; p_currency: string }
+        Returns: number
+      }
+      _renter_rpc_caught: { Args: never; Returns: Json }
+      _renter_slot_ts: {
+        Args: { p_date: string; p_org_id: string; p_time: string }
+        Returns: string
+      }
+      _renter_staff_create_renter_ok: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
+      _renter_try_complete_pack: {
+        Args: { p_series_id: string }
+        Returns: undefined
+      }
+      _renter_unfinished_counts: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: {
+          awaiting_n: number
+          unfinished_n: number
+        }[]
+      }
+      _renter_validate_slot_grid: {
+        Args: { p_time_end: string; p_time_start: string }
+        Returns: undefined
+      }
+      _renter_wallet_available: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: number
+      }
+      _renter_wallet_backfill_unallocated_advances: {
+        Args: never
+        Returns: number
+      }
+      _renter_wallet_balance: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: number
+      }
+      _renter_wallet_debt_outstanding: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: number
+      }
+      _renter_wallet_insert_entry: {
+        Args: {
+          p_amount: number
+          p_entry_type: string
+          p_org_id: string
+          p_phase: string
+          p_rental_id: string
+          p_renter_id: string
+        }
+        Returns: string
+      }
+      _renter_wallet_lock_key: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: number
+      }
+      _renter_wallet_reserved_prepay: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: number
+      }
+      _renter_wallet_spendable: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: number
+      }
+      _restate_personal_lesson_charge_billed: {
+        Args: {
+          p_charge_id: string
+          p_kind: string
+          p_new_billed: number
+          p_org_id: string
+          p_reason_code: string
+          p_reason_comment: string
+        }
+        Returns: Json
       }
       _round_rental_minutes: {
         Args: {
@@ -7328,6 +8659,7 @@ export type Database = {
         Args: { p_class_id: string; p_client_id: string; p_comment?: string }
         Returns: Json
       }
+      admin_can_manage_team_setting: { Args: never; Returns: boolean }
       allocate_rental_advance: {
         Args: { p_advance_id: string; p_amount: number; p_invoice_id: string }
         Returns: Json
@@ -7369,8 +8701,8 @@ export type Database = {
       auth_member_role: { Args: never; Returns: string }
       auth_organization_id: { Args: never; Returns: string }
       auth_platform_role: { Args: never; Returns: string }
+      auth_renter_id: { Args: never; Returns: string }
       auth_teacher_scope: { Args: never; Returns: Json }
-      auth_telegram_id: { Args: never; Returns: number }
       auth_user_id: { Args: never; Returns: string }
       billed_from_tariff: {
         Args: {
@@ -7455,6 +8787,10 @@ export type Database = {
         }
         Returns: Json
       }
+      check_edge_rate_limit: {
+        Args: { p_key: string; p_limit: number; p_window_seconds: number }
+        Returns: boolean
+      }
       check_operation_idempotency: {
         Args: {
           p_fingerprint: string
@@ -7465,11 +8801,18 @@ export type Database = {
         Returns: Json
       }
       check_renter_duplicates: { Args: { p_payload: Json }; Returns: Json }
+      claim_renter_booking_maintenance: {
+        Args: { p_batch_size?: number }
+        Returns: {
+          organization_id: string
+          renter_id: string
+        }[]
+      }
       claim_calendar_sync_jobs: {
         Args: {
           p_batch_size: number
           p_lease_seconds?: number
-          p_organization_id?: string | null
+          p_organization_id?: string
           p_worker_id: string
         }
         Returns: {
@@ -7520,6 +8863,7 @@ export type Database = {
         Args: { p_idempotency_key?: string; p_personal_lesson_id: string }
         Returns: Json
       }
+      commit_organization_renter_bot: { Args: { p_payload: Json }; Returns: Json }
       complete_organization_invite_for_user: {
         Args: { p_token_hash: string; p_user_id: string }
         Returns: Json
@@ -7578,35 +8922,6 @@ export type Database = {
         }
         Returns: Json
       }
-      update_payment_in_place: {
-        Args: {
-          p_idempotency_key?: string
-          p_new_amount: number
-          p_new_method: string
-          p_payment_id: string
-          p_reason_code: string
-          p_reason_comment?: string
-        }
-        Returns: Json
-      }
-      update_payment_method: {
-        Args: {
-          p_idempotency_key?: string
-          p_new_method: string
-          p_payment_id: string
-          p_reason_code: string
-          p_reason_comment?: string
-        }
-        Returns: Json
-      }
-      remove_orphan_payment_storno: {
-        Args: {
-          p_idempotency_key?: string
-          p_reason_comment?: string
-          p_storno_id: string
-        }
-        Returns: Json
-      }
       correct_rental_payment: {
         Args: {
           p_idempotency_key?: string
@@ -7660,6 +8975,7 @@ export type Database = {
         }
         Returns: Json
       }
+      create_organization_rental_qr_asset: { Args: { p_payload: Json }; Returns: Json }
       create_rental: { Args: { p_payload: Json }; Returns: Json }
       create_rental_invoice: { Args: { p_payload: Json }; Returns: Json }
       create_rental_series: { Args: { p_payload: Json }; Returns: Json }
@@ -7709,6 +9025,7 @@ export type Database = {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       debug_auth_context: { Args: never; Returns: Json }
       default_teacher_scope: { Args: never; Returns: Json }
+      delete_organization_rental_qr_asset: { Args: { p_id: string }; Returns: Json }
       delete_personal_lesson: { Args: { p_lesson_id: string }; Returns: Json }
       delete_personal_lesson_series_from_date: {
         Args: { p_lesson_id: string }
@@ -7946,8 +9263,12 @@ export type Database = {
           retry_count: number
         }[]
       }
+      get_personal_lesson_charge_balances: {
+        Args: { p_lesson_ids: string[] }
+        Returns: Json
+      }
       get_personal_lesson_debt_trace: {
-        Args: { p_charge_id?: string | null; p_lesson_id: string }
+        Args: { p_charge_id?: string; p_lesson_id: string }
         Returns: Json
       }
       get_personal_lesson_google_sync_status: {
@@ -7961,10 +9282,6 @@ export type Database = {
           teacher_has_binding: boolean
         }[]
       }
-      get_personal_lesson_charge_balances: {
-        Args: { p_lesson_ids: string[] }
-        Returns: Json
-      }
       get_rental_accrual_report: {
         Args: {
           p_period_end: string
@@ -7973,6 +9290,8 @@ export type Database = {
         }
         Returns: Json
       }
+      get_organization_renter_bot_internal: { Args: { p_org: string }; Returns: Json }
+      get_organization_renter_channel: { Args: never; Returns: Json }
       get_rental_billing_profile: { Args: never; Returns: Json }
       get_rental_detail: { Args: { p_rental_id: string }; Returns: Json }
       get_rental_invoice_document: {
@@ -8045,7 +9364,6 @@ export type Database = {
         Args: { p_org_id: string; p_user_id: string }
         Returns: boolean
       }
-      is_allowed_teacher: { Args: never; Returns: boolean }
       is_dev_console_operator: { Args: never; Returns: boolean }
       is_platform_developer: { Args: { p_user_id: string }; Returns: boolean }
       is_platform_developer_email: {
@@ -8057,6 +9375,7 @@ export type Database = {
         Args: { p_invoice_id: string }
         Returns: Json
       }
+      jsonb_uuid_text_array: { Args: { p_value: Json }; Returns: Json }
       list_archived_prices: { Args: never; Returns: Json }
       list_my_google_accounts: {
         Args: never
@@ -8066,11 +9385,12 @@ export type Database = {
           granted_scopes: string[]
           id: string
           last_verified_at: string
-          refresh_token_issued_at: string | null
+          refresh_token_issued_at: string
           status: string
           updated_at: string
         }[]
       }
+      list_organization_rental_qr_assets: { Args: never; Returns: Json }
       list_rental_money_register: {
         Args: { p_date_from?: string; p_date_to?: string }
         Returns: Json
@@ -8088,6 +9408,7 @@ export type Database = {
         }
         Returns: Json
       }
+      list_location_rental_hour_rates: { Args: never; Returns: Json }
       list_rental_tariffs: {
         Args: { p_location_id?: string; p_status?: string }
         Returns: Json
@@ -8105,6 +9426,10 @@ export type Database = {
         Returns: Json
       }
       list_renter_rentals: { Args: { p_renter_id: string }; Returns: Json }
+      list_renter_topup_inbox: {
+        Args: { p_limit?: number; p_offset?: number; p_status?: string }
+        Returns: Json
+      }
       list_renters: {
         Args: {
           p_has_debt?: boolean
@@ -8117,6 +9442,10 @@ export type Database = {
       }
       list_teacher_pay_rules: { Args: { p_member_id: string }; Returns: Json }
       list_venue_cost_rule_versions: { Args: never; Returns: Json }
+      lookup_renter_channel_by_webhook_token: {
+        Args: { p_webhook_token: string }
+        Returns: Json
+      }
       mark_attendance: {
         Args: {
           p_date: string
@@ -8180,6 +9509,7 @@ export type Database = {
         Returns: boolean
       }
       member_can_update_class_capacity: { Args: never; Returns: boolean }
+      member_can_write_schedule_as_leadership: { Args: never; Returns: boolean }
       member_can_write_schedule_slot: {
         Args: { p_slot_id: string }
         Returns: boolean
@@ -8192,6 +9522,7 @@ export type Database = {
         Args: { p_org_id: string; p_user_id: string }
         Returns: Json
       }
+      member_scope_has_ui_access: { Args: { p_scope: Json }; Returns: boolean }
       migrate_organization_version: {
         Args: {
           p_actor_user_id?: string
@@ -8220,6 +9551,14 @@ export type Database = {
         Returns: number
       }
       normalize_hhmm: { Args: { t: string }; Returns: string }
+      normalize_member_meta: {
+        Args: { p_meta: Json; p_role: string }
+        Returns: Json
+      }
+      normalize_member_scope: {
+        Args: { p_role: string; p_scope: Json }
+        Returns: Json
+      }
       normalize_renter_email: { Args: { p_email: string }; Returns: string }
       normalize_renter_phone: { Args: { p_phone: string }; Returns: string }
       normalize_renter_tax_id: { Args: { p_tax_id: string }; Returns: string }
@@ -8609,6 +9948,14 @@ export type Database = {
         }
         Returns: string
       }
+      remove_orphan_payment_storno: {
+        Args: {
+          p_idempotency_key?: string
+          p_reason_comment?: string
+          p_storno_id: string
+        }
+        Returns: Json
+      }
       rental_payment_correction_status: {
         Args: { p_org_id: string; p_payment_id: string }
         Returns: string
@@ -8621,6 +9968,34 @@ export type Database = {
         Args: { p_org_id: string; p_payment_id: string }
         Returns: number
       }
+      renter_bootstrap: { Args: never; Returns: Json }
+      renter_cancel_occurrence: { Args: { p_rental_id: string }; Returns: Json }
+      renter_cancel_pack: { Args: { p_series_id: string }; Returns: Json }
+      renter_create_booking: { Args: { p_payload: Json }; Returns: Json }
+      renter_create_recurring_pack: { Args: { p_payload: Json }; Returns: Json }
+      renter_delete_hold: { Args: { p_rental_id: string }; Returns: Json }
+      renter_get_occupancy: {
+        Args: { p_from?: string; p_location_id: string; p_to?: string }
+        Returns: Json
+      }
+      renter_get_wallet: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
+      renter_list_active_qr: { Args: never; Returns: Json }
+      renter_list_locations: { Args: never; Returns: Json }
+      renter_list_mine: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
+      renter_miniapp_addon_is_active: {
+        Args: { p_org: string }
+        Returns: boolean
+      }
+      renter_quote_booking: { Args: { p_payload: Json }; Returns: Json }
+      renter_submit_topup: { Args: { p_payload: Json }; Returns: Json }
+      renter_telegram_webhook_ingest: { Args: { p_payload: Json }; Returns: Json }
+      renter_update_profile: { Args: { p_payload: Json }; Returns: Json }
       reopen_lesson_occurrence_closure: {
         Args: {
           p_closure_id: string
@@ -8645,6 +10020,8 @@ export type Database = {
         Returns: Json
       }
       request_organization_calendar_reconcile: { Args: never; Returns: Json }
+      reset_renter_reliability: { Args: { p_renter_id: string }; Returns: Json }
+      resolve_renter_topup: { Args: { p_payload: Json }; Returns: Json }
       resolve_subscription_freeze_policy: {
         Args: { p_sub: Database["public"]["Tables"]["subscriptions"]["Row"] }
         Returns: {
@@ -8689,6 +10066,17 @@ export type Database = {
         Args: { p_lesson_id: string; p_new_amount: number }
         Returns: Json
       }
+      restate_personal_lesson_charge: {
+        Args: {
+          p_charge_id?: string
+          p_lesson_id: string
+          p_new_amount: number
+          p_reason_code?: string
+          p_reason_comment?: string
+        }
+        Returns: Json
+      }
+      restore_organization_renter_bot: { Args: { p_payload: Json }; Returns: Json }
       retry_calendar_sync_dead_job: {
         Args: { p_job_id: string }
         Returns: Json
@@ -8697,11 +10085,19 @@ export type Database = {
         Args: { p_error_codes?: string[] }
         Returns: Json
       }
+      revoke_auth_sessions_for_user: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       revoke_organization_invite: {
         Args: { p_invite_id: string }
         Returns: undefined
       }
       run_demo_lifecycle: { Args: never; Returns: Json }
+      run_renter_booking_maintenance: {
+        Args: { p_batch_size?: number }
+        Returns: Json
+      }
       run_group_occurrence_horizon_extension: { Args: never; Returns: Json }
       run_personal_lessons_calendar_reconciliation: {
         Args: never
@@ -8715,10 +10111,7 @@ export type Database = {
         Args: { p_dry_run?: boolean; p_organization_id: string }
         Returns: Json
       }
-      save_teacher_pay_rate: {
-        Args: { p_payload: Json }
-        Returns: Json
-      }
+      save_teacher_pay_rate: { Args: { p_payload: Json }; Returns: Json }
       save_teacher_pay_rule: {
         Args: { p_idempotency_key?: string; p_payload: Json }
         Returns: Json
@@ -8757,11 +10150,16 @@ export type Database = {
         Args: { p_organization_id: string }
         Returns: undefined
       }
+      set_location_miniapp_enabled: {
+        Args: { p_enabled: boolean; p_location_id: string }
+        Returns: Json
+      }
       slugify_org_name: { Args: { p_name: string }; Returns: string }
       split_billed_equally: {
         Args: { p_count: number; p_total: number }
         Returns: number[]
       }
+      staff_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
       store_operation_idempotency: {
         Args: {
           p_fingerprint: string
@@ -8946,6 +10344,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      subscription_teacher_update_client_ids_valid: {
+        Args: {
+          p_client_id1: string
+          p_client_id2: string
+          p_client_id3: string
+          p_client_id4: string
+          p_subscription_id: string
+        }
+        Returns: boolean
+      }
       sync_member_profile_from_auth: {
         Args: { p_member_id: string }
         Returns: undefined
@@ -9024,9 +10432,15 @@ export type Database = {
         Args: { p_date: string; p_schedule_group_id: string }
         Returns: boolean
       }
+      teacher_can_view_schedule_location: {
+        Args: { p_location_id: string }
+        Returns: boolean
+      }
       teacher_can_write_clients: { Args: never; Returns: boolean }
+      teacher_can_write_personal_lessons: { Args: never; Returns: boolean }
       teacher_can_write_subscriptions: { Args: never; Returns: boolean }
       teacher_has_any_scope: { Args: never; Returns: boolean }
+      teacher_has_client_write_scope: { Args: never; Returns: boolean }
       teacher_has_discipline_access: {
         Args: { p_discipline_id: string }
         Returns: boolean
@@ -9084,6 +10498,7 @@ export type Database = {
         Returns: number
       }
       teacher_scope_has_access: { Args: { p_scope: Json }; Returns: boolean }
+      teachers_can_view_full_schedule_setting: { Args: never; Returns: boolean }
       telegram_id_hash: { Args: { p_telegram_id: string }; Returns: string }
       undo_attendance_correction: {
         Args: { p_correction_id: string; p_idempotency_key?: string }
@@ -9105,6 +10520,29 @@ export type Database = {
         Args: { p_comment?: string; p_entry_id: string; p_new_status: string }
         Returns: Json
       }
+      update_payment_in_place: {
+        Args: {
+          p_idempotency_key?: string
+          p_new_amount: number
+          p_new_method: string
+          p_payment_id: string
+          p_reason_code: string
+          p_reason_comment?: string
+        }
+        Returns: Json
+      }
+      update_payment_method: {
+        Args: {
+          p_idempotency_key?: string
+          p_new_method: string
+          p_payment_id: string
+          p_reason_code: string
+          p_reason_comment?: string
+        }
+        Returns: Json
+      }
+      update_organization_rental_qr_asset: { Args: { p_payload: Json }; Returns: Json }
+      update_organization_renter_channel: { Args: { p_payload: Json }; Returns: Json }
       update_personal_lesson: {
         Args: { p_lesson_id: string; p_payload: Json }
         Returns: Json
@@ -9156,6 +10594,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      upsert_location_rental_hour_rate: { Args: { p_payload: Json }; Returns: Json }
       upsert_rental_tariff: { Args: { p_payload: Json }; Returns: Json }
       upsert_renter: { Args: { p_payload: Json }; Returns: Json }
       upsert_renter_contact: { Args: { p_payload: Json }; Returns: Json }
@@ -9293,10 +10732,10 @@ export type Database = {
       }
       write_off_personal_lesson_debt: {
         Args: {
-          p_charge_id?: string | null
+          p_charge_id?: string
           p_lesson_id: string
-          p_reason_code: string
-          p_reason_comment?: string | null
+          p_reason_code?: string
+          p_reason_comment?: string
         }
         Returns: Json
       }

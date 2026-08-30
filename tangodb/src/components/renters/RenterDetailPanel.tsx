@@ -23,10 +23,14 @@ import type {
   RenterCommunication,
 } from "../../types";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
+import { isMiniAppRentalChannel, miniAppLifecycleI18nKey } from "../../lib/rentalMiniAppDisplay";
+import { parseTelegramIdInput } from "../../lib/renterNormalize";
+import { canManageMiniAppRentals, canWriteRentals } from "../../lib/permissions";
 import { useI18n } from "../../hooks/useI18n";
 import { useCan, usePermissions } from "../../hooks/usePermissions";
-import { canWriteRentals } from "../../lib/permissions";
+import { useStaffRenterWalletTopup } from "../../hooks/useRenterTopupInbox";
 import CreateRentalDialog from "../schedule/CreateRentalDialog";
+import CreateMiniAppBookingDialog from "../schedule/CreateMiniAppBookingDialog";
 import { useLocations } from "../../hooks/useLocations";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import {
@@ -38,8 +42,10 @@ import {
   useRenterDetail,
   useRenterRentals,
   useUploadRenterDocument,
+  useUpsertRenter,
   useUpsertRenterContact,
   useUpsertRenterContract,
+  useResetRenterReliability,
 } from "../../hooks/useRenterCrm";
 import { useRenterRentalFinance, useRenterRentalInvoices, useRenterRentalAdvances, useRenterRentalAdvanceAllocations } from "../../hooks/useRentalInvoices";
 import { useIssueRentalInvoiceDocument, useRentalBillingProfile } from "../../hooks/useRentalBillingProfile";
@@ -58,6 +64,7 @@ import { translateMutationBlockedMessage } from "../../hooks/useOnlineStatus";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
 import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "../ui/AppSelect";
+import { btnAddCls } from "../ui/buttonStyles";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import LoadingState from "../ui/LoadingState";
 import PageTabs, { pageTabPanelCls } from "../ui/PageTabs";
@@ -76,22 +83,27 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const navigate = useNavigate();
   const { t, formatDate, formatDateTime } = useI18n();
   const { connectionState } = useOnlineStatus();
-  const { role, options } = usePermissions();
+  const { role, options, isReadOnly } = usePermissions();
   const canWrite = useCan("renters.write");
   const canWriteRentalsSlot = canWriteRentals(role, options);
+  const canWriteMiniApp = canManageMiniAppRentals(role, options);
   const canOpenSchedule = useCan("schedule.read");
   const canSeeFinance = useCan("renters.finance.read");
   const canWriteRentalFinance = useCan("finance.read");
+  const canRecordPayments = useCan("rentals.payments.write");
+  const canWritePayments = !isReadOnly && canRecordPayments;
   const canSeeDocuments = useCan("renters.documents.read");
   const canWriteDocuments = useCan("renters.documents.write");
   const canWriteContacts = useCan("renters.contacts.write");
   const canWriteContracts = useCan("renters.contracts.write");
+  const canManageSettings = useCan("settings.manage");
 
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveForce, setArchiveForce] = useState(false);
   const [archiveReason, setArchiveReason] = useState("");
   const [createRentalOpen, setCreateRentalOpen] = useState(false);
+  const [createMiniAppOpen, setCreateMiniAppOpen] = useState(false);
 
   const detailQuery = useRenterDetail(renterId);
   const rentalsQuery = useRenterRentals(renterId, activeTab === "rentals" || activeTab === "finance");
@@ -230,21 +242,28 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
             formatDate={formatDate}
             t={t}
             canWriteRentals={canWriteRentalsSlot}
+            canWriteMiniApp={canWriteMiniApp}
+            hasTelegram={Boolean(renter.telegramId)}
             canOpenSchedule={canOpenSchedule}
             onCreateRental={() => setCreateRentalOpen(true)}
+            onCreateMiniApp={() => setCreateMiniAppOpen(true)}
           />
         ) : null}
 
         {activeTab === "finance" && canSeeFinance ? (
           <FinanceTab
             renterId={renterId}
+            renter={renter}
             finance={finance}
             rentals={rentalsQuery.data ?? []}
             locationMap={locationMap}
             canWrite={canWriteRentalFinance}
+            canWritePayments={canWritePayments}
+            canManageSettings={canManageSettings}
             toast={toast}
             t={t}
             formatDate={formatDate}
+            formatDateTime={formatDateTime}
           />
         ) : null}
 
@@ -287,6 +306,18 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
         onClose={() => setCreateRentalOpen(false)}
         onSuccess={() => {
           setCreateRentalOpen(false);
+          void rentalsQuery.refetch();
+        }}
+      />
+
+      <CreateMiniAppBookingDialog
+        open={createMiniAppOpen}
+        preselectedRenterId={renterId}
+        locations={locationOptions}
+        toast={toast}
+        onClose={() => setCreateMiniAppOpen(false)}
+        onSuccess={() => {
+          setCreateMiniAppOpen(false);
           void rentalsQuery.refetch();
         }}
       />
@@ -349,10 +380,12 @@ function OverviewTab({
 }) {
   const { t } = useI18n();
   const { connectionState } = useOnlineStatus();
+  const upsertRenter = useUpsertRenter();
   const [contactName, setContactName] = useState("");
   const [contactRole, setContactRole] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactPrimary, setContactPrimary] = useState(false);
+  const [telegramId, setTelegramId] = useState(renter.telegramId ?? "");
 
   const warnings: string[] = [];
   if (renter.status === "blocked" && renter.blockedReason) {
@@ -377,6 +410,26 @@ function OverviewTab({
     setContactRole("");
     setContactPhone("");
     setContactPrimary(false);
+  };
+
+  const handleSaveTelegram = async () => {
+    const parsed = parseTelegramIdInput(telegramId);
+    if (!parsed.ok) {
+      toast(t("renters.error.telegramIdInvalid"), "error");
+      return;
+    }
+    const res = await upsertRenter.mutateAsync({
+      renterId,
+      displayName: renter.displayName,
+      counterpartyType: renter.counterpartyType ?? "individual",
+      status: renter.status,
+      telegramId: parsed.value,
+    });
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "renters.error.saveFailed", t), "error");
+      return;
+    }
+    toast(t("renters.success.updated"), "success");
   };
 
   return (
@@ -408,6 +461,30 @@ function OverviewTab({
               <dd>{renter.contactEmail}</dd>
             </>
           ) : null}
+          <dt className={labelCls}>{t("renters.form.telegramId")}</dt>
+          <dd>
+            {canWrite ? (
+              <div className="flex flex-wrap gap-2 items-center">
+                <input
+                  className={inputCls}
+                  inputMode="numeric"
+                  value={telegramId}
+                  onChange={(e) => setTelegramId(e.target.value)}
+                  placeholder={t("renters.form.telegramIdPlaceholder")}
+                />
+                <button
+                  type="button"
+                  disabled={connectionState !== "online" || upsertRenter.isPending}
+                  onClick={() => void handleSaveTelegram()}
+                  className="text-xs font-semibold text-indigo-600 cursor-pointer disabled:opacity-50"
+                >
+                  {t("common.save")}
+                </button>
+              </div>
+            ) : (
+              renter.telegramId ?? "—"
+            )}
+          </dd>
           {renter.legalAddress ? (
             <>
               <dt className={labelCls}>{t("renters.form.legalAddress")}</dt>
@@ -439,6 +516,8 @@ function OverviewTab({
               <StatBox label={t("renters.detail.turnover")} value={formatCurrency(finance.fixedTotal)} />
               <StatBox label={t("renters.detail.paid")} value={formatCurrency(finance.paidTotal)} />
               <StatBox label={t("renters.detail.debt")} value={formatCurrency(finance.debtTotal)} highlight={finance.debtTotal > 0} />
+              <StatBox label={t("renters.detail.spendable")} value={formatCurrency(finance.spendable)} />
+              <StatBox label={t("renters.detail.reservedPrepay")} value={formatCurrency(finance.reservedPrepay)} />
             </>
           ) : null}
         </div>
@@ -525,8 +604,11 @@ function RentalsTab({
   formatDate,
   t,
   canWriteRentals,
+  canWriteMiniApp,
+  hasTelegram,
   canOpenSchedule,
   onCreateRental,
+  onCreateMiniApp,
 }: {
   rentals: RenterRentalRow[];
   locationMap: Map<string, string>;
@@ -535,13 +617,28 @@ function RentalsTab({
   formatDate: (d: string) => string;
   t: (key: import("../../lib/i18n/keys").I18nKey) => string;
   canWriteRentals: boolean;
+  canWriteMiniApp: boolean;
+  hasTelegram: boolean;
   canOpenSchedule: boolean;
   onCreateRental: () => void;
+  onCreateMiniApp: () => void;
 }) {
   return (
     <div className="space-y-3">
-      {canWriteRentals ? (
-        <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        {canWriteMiniApp ? (
+          <button
+            type="button"
+            onClick={onCreateMiniApp}
+            disabled={!hasTelegram}
+            title={!hasTelegram ? t("schedule.miniapp.needTelegram") : undefined}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer disabled:opacity-50"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {t("schedule.miniapp.createTitle")}
+          </button>
+        ) : null}
+        {canWriteRentals ? (
           <button
             type="button"
             onClick={onCreateRental}
@@ -550,8 +647,8 @@ function RentalsTab({
             <Plus className="w-3.5 h-3.5" />
             {t("renters.rentals.createNew")}
           </button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
       {rentals.length === 0 ? (
         <p className="text-sm text-slate-400">{t("renters.detail.noRentals")}</p>
       ) : (
@@ -578,11 +675,21 @@ function RentalsTab({
                     {formatDate(r.rentalDate)} {r.timeStart}–{r.timeEnd}
                   </td>
                   <td className="py-2 pr-3">{locationMap.get(r.locationId) ?? "—"}</td>
-                  <td className="py-2 pr-3">{r.bookingStatus}</td>
+                  <td className="py-2 pr-3">
+                    {r.channel === "miniapp"
+                      ? t(miniAppLifecycleI18nKey(r.lifecycle))
+                      : r.bookingStatus}
+                  </td>
                   {canSeeFinance ? (
                     <>
                       <td className="py-2 pr-3">{r.fixedAmount != null ? formatCurrency(r.fixedAmount) : "—"}</td>
-                      <td className="py-2 pr-3">{r.paymentStatus ?? "—"}</td>
+                      <td className="py-2 pr-3">
+                        {r.channel === "miniapp"
+                          ? (r.debtAmount != null && r.debtAmount > 0
+                            ? formatCurrency(r.debtAmount)
+                            : t(miniAppLifecycleI18nKey(r.lifecycle)))
+                          : (r.paymentStatus ?? "—")}
+                      </td>
                     </>
                   ) : null}
                   <td className="py-2">
@@ -610,22 +717,30 @@ function RentalsTab({
 
 function FinanceTab({
   renterId,
+  renter,
   finance,
   rentals,
   locationMap,
   canWrite,
+  canWritePayments,
+  canManageSettings,
   toast,
   t,
   formatDate,
+  formatDateTime,
 }: {
   renterId: string;
+  renter: RenterDetailCore;
   finance: RenterFinanceSummary | null;
   rentals: RenterRentalRow[];
   locationMap: Map<string, string>;
   canWrite: boolean;
+  canWritePayments: boolean;
+  canManageSettings: boolean;
   toast: RenterDetailPanelProps["toast"];
   t: (key: import("../../lib/i18n/keys").I18nKey, vars?: Record<string, string | number>) => string;
   formatDate: (d: string) => string;
+  formatDateTime: (iso: string | Date) => string;
 }) {
   const monthRange = monthDateRange(currentYearMonth());
   const rentalFinanceQuery = useRenterRentalFinance(renterId);
@@ -634,6 +749,10 @@ function FinanceTab({
   const allocationsQuery = useRenterRentalAdvanceAllocations(renterId);
   const billingProfileQuery = useRentalBillingProfile();
   const issueDocument = useIssueRentalInvoiceDocument();
+  const staffTopup = useStaffRenterWalletTopup();
+  const resetReliability = useResetRenterReliability();
+  const [staffAmount, setStaffAmount] = useState("");
+  const [staffMethod, setStaffMethod] = useState<"cash" | "qr">("cash");
 
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
   const [payInvoice, setPayInvoice] = useState<RentalInvoice | null>(null);
@@ -645,9 +764,10 @@ function FinanceTab({
 
   if (!finance) return null;
   const extended = rentalFinanceQuery.data;
-  const withDebt = rentals.filter(
-    (r) => r.fixedAmount != null && r.paidAmount != null && rentalRemainingAmount(r.fixedAmount, r.paidAmount) > 0
-  );
+  const withDebt = rentals.filter((r) => {
+    if (isMiniAppRentalChannel(r)) return (r.debtAmount ?? 0) > 0;
+    return r.fixedAmount != null && r.paidAmount != null && rentalRemainingAmount(r.fixedAmount, r.paidAmount) > 0;
+  });
   const invoices = invoicesQuery.data ?? [];
   const advances = advancesQuery.data ?? [];
   const allocations = allocationsQuery.data ?? [];
@@ -662,6 +782,29 @@ function FinanceTab({
     void invoicesQuery.refetch();
     void advancesQuery.refetch();
     void allocationsQuery.refetch();
+  };
+
+  const onTime = renter.onTimeCount ?? 0;
+  const untimely = renter.untimelyCount ?? 0;
+  const completed = onTime + untimely;
+  const reliabilityRatio = completed >= 4 ? untimely / completed : 0;
+  const showPenaltyGapBanner =
+    completed >= 4 && reliabilityRatio >= 0.5 && !renter.penaltyTariffAppliedAt;
+  const canResetReliability =
+    canManageSettings &&
+    (renter.bookingBannedAt != null ||
+      renter.penaltyTariffAppliedAt != null ||
+      onTime > 0 ||
+      untimely > 0);
+
+  const handleResetReliability = async () => {
+    const res = await resetReliability.mutateAsync(renterId);
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "renters.error.reliabilityResetFailed", t), "error");
+      return;
+    }
+    toast(t("renters.detail.reliabilityResetSuccess"), "success");
+    refreshFinance();
   };
 
   const handleIssueDocument = async (invoice: RentalInvoice) => {
@@ -679,6 +822,26 @@ function FinanceTab({
         : t("rentalBilling.success.documentIssued", { number: res.documentNumber ?? "" }),
       "success"
     );
+    refreshFinance();
+  };
+
+  const handleStaffTopup = async () => {
+    const amount = Number(staffAmount.replace(",", "."));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast(t("renter.topup.amountInvalid"), "error");
+      return;
+    }
+    const res = await staffTopup.mutateAsync({
+      renterId,
+      amount,
+      method: staffMethod,
+    });
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "renter.topup.amountInvalid", t), "error");
+      return;
+    }
+    setStaffAmount("");
+    toast(t("renters.detail.staffTopupSuccess"), "success");
     refreshFinance();
   };
 
@@ -704,6 +867,118 @@ function FinanceTab({
         <StatBox label={t("renters.detail.debt")} value={formatCurrency(finance.debtTotal)} highlight={finance.debtTotal > 0} />
         <StatBox label={t("renters.detail.overpaid")} value={formatCurrency(finance.overpaidTotal)} />
       </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <StatBox label={t("renters.detail.walletBalance")} value={formatCurrency(finance.walletBalance)} />
+        <StatBox label={t("renters.detail.spendable")} value={formatCurrency(finance.spendable)} />
+        <StatBox label={t("renters.detail.reservedPrepay")} value={formatCurrency(finance.reservedPrepay)} />
+        <StatBox
+          label={t("renters.detail.miniappDebt")}
+          value={formatCurrency(finance.miniappDebtTotal)}
+          highlight={finance.miniappDebtTotal > 0}
+        />
+      </div>
+
+      <div className="rounded-lg border border-slate-100 p-3 space-y-2">
+        <h4 className="text-sm font-semibold text-slate-800">{t("renters.detail.reliability")}</h4>
+        <p className="text-xs text-slate-600">
+          {t("renters.detail.reliabilityOnTime")}: {onTime}
+          {" · "}
+          {t("renters.detail.reliabilityUntimely")}: {untimely}
+        </p>
+        {renter.penaltyTariffAppliedAt ? (
+          <p className="text-xs font-medium text-amber-700">{t("renters.detail.reliabilityPenalty")}</p>
+        ) : null}
+        {renter.bookingBannedAt ? (
+          <p className="text-xs font-semibold text-rose-600">{t("renters.detail.reliabilityBanned")}</p>
+        ) : null}
+        {showPenaltyGapBanner ? (
+          <p className="text-xs font-medium text-amber-700 rounded-md bg-amber-50 border border-amber-100 px-2 py-1.5">
+            {t("renters.detail.reliabilityPenaltyGap")}
+          </p>
+        ) : null}
+        {canResetReliability ? (
+          <button
+            type="button"
+            className="py-1.5 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50"
+            disabled={resetReliability.isPending}
+            onClick={() => {
+              void handleResetReliability();
+            }}
+          >
+            {t("renters.detail.reliabilityReset")}
+          </button>
+        ) : null}
+      </div>
+
+      {canWritePayments ? (
+        <div className="rounded-lg border border-slate-100 p-3 space-y-2">
+          <h4 className="text-sm font-semibold text-slate-800">{t("renters.detail.staffTopup")}</h4>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="field-stack">
+              <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                {t("renters.detail.staffTopupAmount")}
+              </label>
+              <input
+                className={inputCls}
+                inputMode="decimal"
+                value={staffAmount}
+                onChange={(e) => setStaffAmount(e.target.value)}
+              />
+            </div>
+            <AppSelect
+              label={t("renters.detail.staffTopupMethod")}
+              value={staffMethod}
+              onChange={(e) => setStaffMethod(e.target.value === "qr" ? "qr" : "cash")}
+            >
+              <option value="cash">{t("renterTopup.method.cash")}</option>
+              <option value="qr">{t("renterTopup.method.qr")}</option>
+            </AppSelect>
+            <button
+              type="button"
+              className={btnAddCls}
+              disabled={staffTopup.isPending}
+              onClick={() => {
+                void handleStaffTopup();
+              }}
+            >
+              {t("renters.detail.staffTopup")}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {finance.walletEntries.length > 0 ? (
+        <div>
+          <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("renters.detail.walletEntries")}</h4>
+          <ul className="text-xs space-y-1">
+            {finance.walletEntries.map((entry) => (
+              <li key={entry.id} className="flex justify-between border-b border-slate-50 py-1">
+                <span>
+                  {formatDateTime(entry.createdAt)} · {entry.entryType}
+                </span>
+                <span className="text-slate-700">{formatCurrency(entry.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {finance.miniappDebts.length > 0 ? (
+        <div>
+          <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("renters.detail.miniappDebts")}</h4>
+          <ul className="text-xs space-y-1">
+            {finance.miniappDebts.map((debt) => (
+              <li key={debt.rentalId} className="flex justify-between border-b border-slate-50 py-1">
+                <span>
+                  {formatDate(debt.rentalDate)} · {locationMap.get(debt.locationId ?? "") ?? debt.timeStart}
+                </span>
+                <span className="text-rose-600 font-semibold">{formatCurrency(debt.debtAmount)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {extended ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -834,7 +1109,9 @@ function FinanceTab({
               <li key={r.id} className="flex justify-between border-b border-slate-50 py-1">
                 <span>{formatDate(r.rentalDate)} · {locationMap.get(r.locationId)}</span>
                 <span className="text-rose-600 font-semibold">
-                  {formatCurrency(rentalRemainingAmount(r.fixedAmount, r.paidAmount))}
+                  {isMiniAppRentalChannel(r)
+                    ? formatCurrency(r.debtAmount ?? 0)
+                    : formatCurrency(rentalRemainingAmount(r.fixedAmount, r.paidAmount))}
                 </span>
               </li>
             ))}

@@ -656,6 +656,16 @@ export function canWriteRentalTariffs(role: MemberRole | null, options?: Permiss
   return can(role, "schedule.write", options) && can(role, "finance.read", options);
 }
 
+/** Mini App occupancy/create: SQL member_can_manage_rentals — not accountant, not reception. */
+export function canManageMiniAppRentals(role: MemberRole | null, options?: PermissionOptions): boolean {
+  if (!role) return false;
+  if (role === "owner" || role === "director") return true;
+  if (role === "admin" && !options?.restrictedAdmin) {
+    return options?.adminCanEditSchedule ?? true;
+  }
+  return false;
+}
+
 /** Hall-rent settings: draft/accept venue cost rules (owner, director, accountant). */
 export function canManageVenueCostRules(role: MemberRole | null): boolean {
   return role === "owner" || role === "director" || role === "accountant";
@@ -996,6 +1006,27 @@ export function assertReceptionPermissions(): void {
   }
   if (canWriteRentalTariffs("admin", adminOpts)) {
     throw new Error("admin must not write rental tariffs without finance.read (stage 7)");
+  }
+  if (!canManageMiniAppRentals("owner", adminOpts)) {
+    throw new Error("owner must manage Mini App rentals (R1d)");
+  }
+  if (!canManageMiniAppRentals("director", adminOpts)) {
+    throw new Error("director must manage Mini App rentals (R1d)");
+  }
+  if (!canManageMiniAppRentals("admin", adminOpts)) {
+    throw new Error("full admin with schedule write must manage Mini App rentals (R1d)");
+  }
+  if (canManageMiniAppRentals("admin", { ...adminOpts, adminCanEditSchedule: false })) {
+    throw new Error("admin without schedule write must not manage Mini App rentals (R1d)");
+  }
+  if (canManageMiniAppRentals("accountant", adminOpts)) {
+    throw new Error("accountant must not manage Mini App rentals (R1d)");
+  }
+  if (canManageMiniAppRentals("admin", receptionOpts)) {
+    throw new Error("reception must not manage Mini App rentals (R1d)");
+  }
+  if (canManageMiniAppRentals("teacher", teacherOpts)) {
+    throw new Error("teacher must not manage Mini App rentals (R1d)");
   }
   const teacherNoExportOpts: PermissionOptions = { ...teacherOpts, teachersCanExport: false };
   if (can("teacher", "dashboard.export", teacherNoExportOpts)) {

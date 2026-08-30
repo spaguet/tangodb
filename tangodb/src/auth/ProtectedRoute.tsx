@@ -5,4 +5,5 @@ export {
   OrgWorkspaceRoute,
   PanelAccessRoute,
   RecoveryGate,
+  RenterActorDenied,
 } from "./routeGuards";

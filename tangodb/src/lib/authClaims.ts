@@ -24,6 +24,20 @@ export function getOrganizationIdFromSession(session: Session | null): string | 
   return readClaim(session, "organization_id");
 }
 
+/** Mini App principal — must not enter CRM team routes. */
+export function isRenterActorFromSession(session: Session | null): boolean {
+  if (!session) return false;
+  const fromUser = session.user?.app_metadata?.actor;
+  if (fromUser === "renter") return true;
+  if (!session.access_token) return false;
+  const payload = decodeJwtPayload(session.access_token);
+  const appMeta = payload?.app_metadata;
+  if (appMeta && typeof appMeta === "object" && !Array.isArray(appMeta)) {
+    return (appMeta as Record<string, unknown>).actor === "renter";
+  }
+  return false;
+}
+
 export function getMemberIdFromSession(session: Session | null): string | null {
   return readClaim(session, "member_id");
 }

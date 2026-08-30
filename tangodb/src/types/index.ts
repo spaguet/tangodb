@@ -193,6 +193,8 @@ export interface RentalDisplayLesson {
   fixedAmount?: number | null;
   paidAmount?: number | null;
   currency?: string;
+  channel?: RentalChannel;
+  lifecycle?: string | null;
 }
 
 export type RentalTariffType = "hourly" | "fixed";
@@ -609,6 +611,7 @@ export interface Renter {
   displayName: string;
   contactPhone?: string | null;
   contactEmail?: string | null;
+  telegramId?: string | null;
 }
 
 export interface RenterListItem {
@@ -624,6 +627,7 @@ export interface RenterListItem {
   hasExpiringDocument: boolean;
   hasOverdueDebt: boolean;
   hasNextActionDue: boolean;
+  telegramId: string | null;
 }
 
 export interface RenterDetailCore {
@@ -645,6 +649,11 @@ export interface RenterDetailCore {
   notes: string | null;
   archivedAt: string | null;
   nextRentalDate: string | null;
+  telegramId: string | null;
+  onTimeCount: number | null;
+  untimelyCount: number | null;
+  bookingBannedAt: string | null;
+  penaltyTariffAppliedAt: string | null;
 }
 
 export interface RenterContact {
@@ -696,11 +705,33 @@ export interface RenterCommunication {
   createdAt: string;
 }
 
+export interface RenterWalletLedgerEntry {
+  id: string;
+  entryType: string;
+  amount: number;
+  createdAt: string;
+}
+
+export interface RenterMiniAppDebtRow {
+  rentalId: string;
+  rentalDate: string;
+  timeStart: string;
+  timeEnd: string;
+  debtAmount: number;
+  locationId: string | null;
+}
+
 export interface RenterFinanceSummary {
   fixedTotal: number;
   paidTotal: number;
   debtTotal: number;
   overpaidTotal: number;
+  walletBalance: number;
+  spendable: number;
+  reservedPrepay: number;
+  miniappDebtTotal: number;
+  walletEntries: RenterWalletLedgerEntry[];
+  miniappDebts: RenterMiniAppDebtRow[];
 }
 
 export interface RenterRentalCounts {
@@ -730,6 +761,8 @@ export interface RenterDuplicateMatch {
   matchFields: string[];
 }
 
+export type RentalChannel = "cashier" | "miniapp";
+
 export interface RenterRentalRow {
   id: string;
   rentalDate: string;
@@ -738,11 +771,14 @@ export interface RenterRentalRow {
   locationId: string;
   purpose: string | null;
   bookingStatus: "confirmed" | "cancelled";
+  channel: RentalChannel;
+  lifecycle: string | null;
   fixedAmount: number | null;
   currency: string | null;
   paidAmount: number | null;
   paymentStatus: string | null;
   cancelledAt: string | null;
+  debtAmount: number | null;
 }
 
 export interface RenterUpsertInput {
@@ -763,6 +799,7 @@ export interface RenterUpsertInput {
   preferredLocationIds?: string[];
   paymentDueDays?: number | null;
   duplicateCreateReason?: string;
+  telegramId?: string | null;
 }
 
 export interface ActiveSubscription {

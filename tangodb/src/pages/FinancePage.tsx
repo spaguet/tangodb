@@ -9,6 +9,7 @@ import FinancePayrollPage from "./FinancePayrollPage";
 import FinanceCorrectionsPage from "./FinanceCorrectionsPage";
 import FinanceRentalAccrualsPage from "./FinanceRentalAccrualsPage";
 import FinanceRentalInboxPage from "./FinanceRentalInboxPage";
+import FinanceRenterTopupPage from "./FinanceRenterTopupPage";
 import { isRentalInboxOnly } from "../lib/permissions";
 
 function FinanceIndexRedirect() {
@@ -35,6 +36,7 @@ export default function FinancePage() {
         <Route path="corrections" element={<FinanceCorrectionsPage />} />
         <Route path="rental-accruals" element={<FinanceRentalAccrualsPage />} />
         <Route path="rental-inbox" element={<FinanceRentalInboxPage />} />
+        <Route path="renter-topup" element={<FinanceRenterTopupPage />} />
       </Route>
       <Route path="*" element={<FinanceIndexRedirect />} />
     </Routes>

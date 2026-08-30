@@ -36,5 +36,6 @@ project/
 | Промпты реализации того же контура | `tangodb_personal_tariff_duration_payments_prompts.md` |
 | Аудит CRM 2026-08-19 + промпты починки | `.cursor/docs/ai/crm_audit_2026-08-19.md` |
 | Аудит безопасности CRM 2026-08-22 + промпты S01–S40 + хвост восьмой сверки | `.cursor/docs/ai/crm_security_audit_2026-08-22.md` |
+| Самообслуживание арендаторов (Telegram Mini App, кошелёк, холды) | `.cursor/docs/ai/renter_telegram_miniapp.md` (§1–§7 спека; **§8 промпты R0–R6**) |
 
 Не загружай остальные файлы без необходимости.

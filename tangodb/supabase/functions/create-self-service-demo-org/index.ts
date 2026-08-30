@@ -10,6 +10,7 @@ import {
 } from "../_shared/http.ts";
 import { ownerEmailHash } from "../_shared/emailHash.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { isRenterActor, renterActorForbidden } from "../_shared/staffAuth.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 import { isDeveloper } from "../_shared/devAuth.ts";
 
@@ -54,6 +55,9 @@ Deno.serve(async (req) => {
   }
 
   const user = userData.user;
+  if (isRenterActor(user)) {
+    return renterActorForbidden(req);
+  }
   const email = user.email ?? "";
   if (!email) {
     return jsonResponse({ error: "Email required" }, 400, req);

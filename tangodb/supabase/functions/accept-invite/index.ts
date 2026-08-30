@@ -5,6 +5,7 @@ import {
   jsonResponse,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { isRenterActor, renterActorForbidden } from "../_shared/staffAuth.ts";
 import { createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 10;
@@ -44,6 +45,14 @@ Deno.serve(async (req) => {
   }
 
   const supabase = createUserClient(authHeader);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    return jsonResponse({ error: "Unauthorized" }, 401, req);
+  }
+  if (isRenterActor(userData.user)) {
+    return renterActorForbidden(req);
+  }
+
   const tokenHash = await hashInviteToken(plaintextToken, pepper);
 
   const { data, error } = await supabase.rpc("accept_organization_invite", {

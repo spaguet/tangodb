@@ -523,6 +523,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 | Персональный | `sky-400` / `sky-500` | Персональные уроки |
 | Мероприятие | `violet-600` / `violet-700` | Мастер-класс / открытый урок (`calendar_events`); **исключение** из общего запрета violet для отличия от уроков |
 | Аренда зала | `slate-600` / `slate-700` | Сдача зала арендаторам |
+| Аренда Mini App, холд (`awaiting_payment`) | тот же slate + диагональные полосы (`repeating-linear-gradient`), **без** `ring-rose-500` | Неоплаченный холд канала; долг Mini App (`lifecycle=debt`) — rose как касса |
 
 ---
 
@@ -530,6 +531,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-08-30 | Расписание: холд Mini App — slate с диагональной штриховкой, без rose; `lifecycle=debt` — `ring-rose-500`. |
 | 2026-08-01 | Компактные контролы h-8 (32px): поля, select, кнопки — эталон Telegram в header; add/save/open без uppercase по всему CRM. |
 | 2026-08-01 | `btnOpenCls` — sentence case (как add), без uppercase: Мероприятие / Аренда / Отпуск преподавателя. |
 | 2026-06-20 | RBAC R5: FinanceLayout (sub-nav как Settings), split Operational/Financial dashboard. |

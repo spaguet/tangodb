@@ -455,6 +455,24 @@ verify_jwt = true
 verify_jwt = false
 # Cron/worker: CRON_SECRET, not a user JWT.
 
+[functions.renter-booking-worker]
+verify_jwt = false
+# Cron every 2 min (ops/Dashboard, not pg_cron in repo). CRON_SECRET. Calls SQL helpers R1c.
+
+[functions.renter-telegram-auth]
+verify_jwt = false
+# Public: Mini App HMAC initData mint. CORS = RENTER_MINIAPP_ORIGIN only (not ALLOWED_ORIGINS).
+
+[functions.renter-telegram-webhook]
+verify_jwt = false
+# Public: Telegram Bot API. Secret header + webhook_token, not a CRM JWT.
+
+[functions.renter-telegram-set-bot]
+verify_jwt = true
+
+[functions.renter-qr-upload]
+verify_jwt = true
+
 [functions.calendar-sync-kick]
 verify_jwt = true
 

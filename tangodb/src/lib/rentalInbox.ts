@@ -18,5 +18,7 @@ export function inboxItemToRentalLesson(item: RentalPaymentInboxItem): RentalDis
     fixedAmount: item.effectiveAmount,
     paidAmount: item.paidAmount,
     currency: item.currency,
+    channel: "cashier",
+    lifecycle: null,
   };
 }

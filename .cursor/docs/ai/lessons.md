@@ -11,6 +11,30 @@
 
 ## Записи
 
+### 2026-08-30 — rental_advances.notes не существует (R2 credit topup)
+
+- **Ошибка:** `_renter_credit_wallet_topup` падал на `column "notes" of relation "rental_advances" does not exist`.
+- **Причина:** в INSERT скопировали несуществующую колонку; тот же промах уже чинили в `20260873000001`.
+- **Как избежать:** колонки `rental_advances` — amount/allocated_amount/currency/method/idempotency_key/created_by/operation_date. Заметки не писать. Перед INSERT сверять CREATE TABLE + поздние ALTER, не «как invoices».
+
+### 2026-08-30 — Storage protect_delete (R2 QR)
+
+- **Ошибка:** `delete_organization_rental_qr_asset` падал на `Direct deletion from storage tables is not allowed`.
+- **Причина:** hosted Storage ставит `storage.protect_delete()`; `DELETE FROM storage.objects` из SQL запрещён.
+- **Как избежать:** метаданные в RPC; объект — Storage API (service_role Edge). Не копировать DELETE из `renter_documents` на новые bucket.
+
+### 2026-08-30 — фикстуры R1c: archived_at, jsonb text, занятость зала
+
+- **Ошибка:** SQL-тесты R1c падали на `renters_archived_at_consistency`, на `(jsonb ->> 'success') IS NOT TRUE` и на `renter.booking.conflict` у пакета.
+- **Причина:** `status=archived` требует `archived_at IS NOT NULL`. `->>` даёт text, не boolean. Occupancy считается по залу, не по арендатору: разовая на 08:00 блокирует пакет 08:00 в том же зале.
+- **Как избежать:** архивного арендатора вставлять с `archived_at`. Для JSON сравнивать `->> 'success' IS DISTINCT FROM 'true'` или `(-> 'success')::boolean`. Пакет/quote в тестах ставить на свободный интервал, не на время `_r1c_slot_at`.
+
+### 2026-08-30 — SQL three-valued logic: CHECK и `IF NOT` пропускают NULL (R0 Mini App)
+
+- **Ошибка:** `INSERT rentals channel=miniapp` без `lifecycle` проходил CHECK; `renter_miniapp_addon_is_active(чужой org)` для renter JWT возвращал true.
+- **Причина:** `CHECK (miniapp AND lifecycle IN (...))` при `lifecycle IS NULL` даёт NULL, а CHECK принимает всё, что не FALSE. `IF NOT (auth_organization_id() = p_org OR …)` при NULL org-claim тоже NULL — ветка отказа не выполняется.
+- **Как избежать:** для дискриминатора писать `(channel = 'cashier') = (lifecycle IS NULL) AND …`. Для boolean-гейта: `IF v_visible IS NOT TRUE THEN RETURN false` (NULL ≠ pass). В SQL-тестах R0 сразу проверять INSERT miniapp без lifecycle и helper с чужим `p_org` на renter JWT.
+
 ### 2026-08-28 — L1/L25: секреты и Realtime в Dashboard, не в git (S40)
 
 - **Ошибка:** notify-email разработчика жил в исходнике Edge; локальный Realtime был включён без подписок SPA.

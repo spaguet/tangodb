@@ -7,6 +7,7 @@ import {
   normalizeEmail,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { isRenterActor, renterActorForbidden } from "../_shared/staffAuth.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 5;
@@ -20,11 +21,14 @@ function resolveDeveloperNotifyEmail(configEmail: unknown): string | null {
   return null;
 }
 
+type PurchaseRequestKind = "crm_license" | "renter_miniapp_addon";
+
 interface SubmitPurchaseRequestBody {
   organization_id?: string;
   payment_comment?: string;
   contact_email?: string;
   contact_telegram?: string;
+  request_kind?: PurchaseRequestKind;
 }
 
 function trimText(value: unknown, max = 4000): string {
@@ -58,9 +62,15 @@ Deno.serve(async (req) => {
   const paymentComment = trimText(body.payment_comment);
   const contactEmail = normalizeEmail(trimText(body.contact_email, 160));
   const contactTelegram = trimText(body.contact_telegram, 160);
+  const requestKindRaw = trimText(body.request_kind, 40);
+  const requestKind: PurchaseRequestKind =
+    requestKindRaw === "renter_miniapp_addon" ? "renter_miniapp_addon" : "crm_license";
 
   if (!organizationId) {
     return jsonResponse({ error: "organization_required" }, 400, req);
+  }
+  if (requestKindRaw && requestKindRaw !== requestKind) {
+    return jsonResponse({ error: "invalid_request_kind" }, 400, req);
   }
   if (paymentComment.length < 20) {
     return jsonResponse({ error: "payment_comment_too_short" }, 400, req);
@@ -73,6 +83,9 @@ Deno.serve(async (req) => {
   const { data: userData, error: userError } = await userClient.auth.getUser();
   if (userError || !userData.user) {
     return jsonResponse({ error: "Unauthorized" }, 401, req);
+  }
+  if (isRenterActor(userData.user)) {
+    return renterActorForbidden(req);
   }
 
   const admin = createServiceClient();
@@ -97,6 +110,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "license_permission_required" }, 403, req);
   }
 
+  if (requestKind === "renter_miniapp_addon" && org.status !== "licensed") {
+    return jsonResponse({ error: "addon_requires_licensed_org" }, 403, req);
+  }
+
   const { data: paymentConfig } = await admin
     .from("platform_payment_methods")
     .select("config")
@@ -118,6 +135,7 @@ Deno.serve(async (req) => {
       contact_email: contactEmail || requesterEmail,
       contact_telegram: contactTelegram || null,
       payment_comment: paymentComment,
+      request_kind: requestKind,
       status: "new",
     })
     .select("id, created_at")
@@ -128,25 +146,45 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "request_save_failed" }, 500, req);
   }
 
+  const isAddonRequest = requestKind === "renter_miniapp_addon";
   let emailSent = false;
   if (developerEmail) {
     emailSent = await sendTransactionalEmail({
       to: developerEmail,
-      subject: `TangoDB: заявка на полную версию — ${org.name}`,
-      text: [
-        "Новая заявка на покупку полной версии TangoDB.",
-        "",
-        `Request ID: ${requestRow.id}`,
-        `Organization: ${org.name} (${organizationId})`,
-        `Requester email: ${requesterEmail ?? "not provided"}`,
-        `Contact email: ${contactEmail || requesterEmail || "not provided"}`,
-        `Telegram: ${contactTelegram || "not provided"}`,
-        "",
-        "Комментарий пользователя:",
-        paymentComment,
-        "",
-        "Проверьте поступление средств и активируйте доступ в Dev Console → Inbox.",
-      ].join("\n"),
+      subject: isAddonRequest
+        ? `TangoDB: заявка на модуль Mini App — ${org.name}`
+        : `TangoDB: заявка на полную версию — ${org.name}`,
+      text: isAddonRequest
+        ? [
+            "Новая заявка на оплату модуля Mini App (аренда зала).",
+            "",
+            `Request ID: ${requestRow.id}`,
+            `Kind: renter_miniapp_addon`,
+            `Organization: ${org.name} (${organizationId})`,
+            `Requester email: ${requesterEmail ?? "not provided"}`,
+            `Contact email: ${contactEmail || requesterEmail || "not provided"}`,
+            `Telegram: ${contactTelegram || "not provided"}`,
+            "",
+            "Комментарий пользователя:",
+            paymentComment,
+            "",
+            "Проверьте поступление средств и активируйте период add-on в Dev Console → Inbox.",
+            "Не активировать lifetime CRM — только organization_addons.",
+          ].join("\n")
+        : [
+            "Новая заявка на покупку полной версии TangoDB.",
+            "",
+            `Request ID: ${requestRow.id}`,
+            `Organization: ${org.name} (${organizationId})`,
+            `Requester email: ${requesterEmail ?? "not provided"}`,
+            `Contact email: ${contactEmail || requesterEmail || "not provided"}`,
+            `Telegram: ${contactTelegram || "not provided"}`,
+            "",
+            "Комментарий пользователя:",
+            paymentComment,
+            "",
+            "Проверьте поступление средств и активируйте доступ в Dev Console → Inbox.",
+          ].join("\n"),
     });
   } else {
     logEvent("purchase_request_notify_email_missing", { request_id: requestRow.id });
@@ -166,6 +204,7 @@ Deno.serve(async (req) => {
     target_id: requestRow.id,
     metadata: {
       organization_id: organizationId,
+      request_kind: requestKind,
       email_sent: emailSent,
       requester_domain: requesterEmail?.split("@")[1] ?? null,
     },

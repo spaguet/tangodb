@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { ToastType } from "../../App";
 import type { RenterCounterpartyType, RenterDuplicateMatch, RenterStatus } from "../../types";
+import { parseTelegramIdInput } from "../../lib/renterNormalize";
 import { useI18n } from "../../hooks/useI18n";
 import { useCan } from "../../hooks/usePermissions";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
@@ -63,6 +64,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [taxId, setTaxId] = useState("");
+  const [telegramId, setTelegramId] = useState("");
 
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicates, setDuplicates] = useState<RenterDuplicateMatch[]>([]);
@@ -97,7 +99,14 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
       contactEmail,
       taxId,
       counterpartyType,
+      telegramId,
     };
+
+    const parsedTg = parseTelegramIdInput(payload.telegramId ?? telegramId);
+    if (!parsedTg.ok) {
+      toast(t("renters.error.telegramIdInvalid"), "error");
+      return false;
+    }
 
     const res = await upsertRenter.mutateAsync({
       displayName: payload.displayName ?? displayName,
@@ -105,6 +114,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
       contactPhone: payload.contactPhone ?? contactPhone,
       contactEmail: payload.contactEmail ?? contactEmail,
       taxId: payload.taxId ?? taxId,
+      telegramId: parsedTg.value,
       duplicateCreateReason: duplicateReason,
     });
 
@@ -118,6 +128,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
     setContactPhone("");
     setContactEmail("");
     setTaxId("");
+    setTelegramId("");
     setPendingPayload(null);
     setDuplicateOpen(false);
     return true;
@@ -149,6 +160,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
         contactEmail,
         taxId,
         counterpartyType,
+        telegramId,
       });
       setDuplicateOpen(true);
       return;
@@ -197,6 +209,16 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
             <div className="field-stack">
               <label className={labelCls}>{t("renters.form.email")}</label>
               <input type="email" className={inputCls} value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+            </div>
+            <div className="field-stack">
+              <label className={labelCls}>{t("renters.form.telegramId")}</label>
+              <input
+                className={inputCls}
+                inputMode="numeric"
+                value={telegramId}
+                onChange={(e) => setTelegramId(e.target.value)}
+                placeholder={t("renters.form.telegramIdPlaceholder")}
+              />
             </div>
             {(counterpartyType === "sole_proprietor" || counterpartyType === "company") && (
               <div className="field-stack">
