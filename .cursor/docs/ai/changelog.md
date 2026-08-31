@@ -1,3 +1,5 @@
+2026-08-31 — ops(hall-rent): production smoke — CRM **2.9.11** на Vercel; миграция R6 на `gizfpiujqjwbjtqfstbj`; cron `renter-booking-worker` `*/2 * * * *` (скрипт `supabase/scripts/schedule_renter_booking_worker_cron.sql`); `RENTER_MINIAPP_ORIGIN=https://tangodb-renter.vercel.app`; worker HTTP 200; npm `test:db:renter-miniapp-r6`; фикс дубля `organization_members` в R6 SQL-тесте.
+
 2026-08-30 — feat(hall-rent): R6 2.9.11 — `platform_purchase_requests.request_kind` (trigger: kind только service_role); `submit-purchase-request` / Dev Console inbox ветвятся по kind; activate add-on пишет только `organization_addons` (без lifetime CRM); CRM hall-rent: статус add-on + «оплатить модуль». Миграция `20261046000001`.
 
 2026-08-30 — feat(hall-rent): R5 2.9.10 — надёжность 50/75: `_renter_apply_reliability` (идемпотентный `renter_reliability_events`, on_time++/untimely++), пороги штрафника/бана, bounce snapshot до charge, отмена будущего через R1c helpers, `reset_renter_reliability` + enqueue R4; CRM-баннеры penalty gap (settings + карточка). Миграции `20261045000001`–`20261045000002`.

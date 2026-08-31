@@ -56,11 +56,11 @@ BEGIN
     (v_org_licensed, 'R6 Licensed Org', 'licensed', v_version_id)
   ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status;
 
-  INSERT INTO organization_members (organization_id, user_id, role, is_active)
+  INSERT INTO organization_members (id, organization_id, user_id, role, is_active)
   VALUES
-    (v_org_demo, v_owner, 'owner', true),
-    (v_org_licensed, v_owner, 'owner', true)
-  ON CONFLICT DO NOTHING;
+    (v_member, v_org_licensed, v_owner, 'owner', true),
+    ('a0600000-0000-4000-8000-000000000012', v_org_demo, v_owner, 'owner', true)
+  ON CONFLICT (organization_id, user_id) DO NOTHING;
 
   INSERT INTO organization_settings (organization_id, timezone, currency_code)
   VALUES
@@ -68,7 +68,7 @@ BEGIN
     (v_org_licensed, 'Europe/Moscow', 'RUB')
   ON CONFLICT (organization_id) DO NOTHING;
 
-  PERFORM _hall_rent_test_set_jwt(v_owner, v_org_licensed, 'owner');
+  PERFORM _hall_rent_test_set_jwt(v_owner, v_org_licensed, v_member, 'owner');
 
   v_raised := false;
   BEGIN
@@ -147,7 +147,9 @@ BEGIN
   );
 
   UPDATE organization_addons
-  SET status = 'active', period_end = _org_local_date(v_org_demo) - 1
+  SET status = 'active',
+      period_start = _org_local_date(v_org_demo) - 30,
+      period_end = _org_local_date(v_org_demo) - 1
   WHERE organization_id = v_org_demo AND addon_code = 'renter_miniapp';
 
   PERFORM _test_assert(

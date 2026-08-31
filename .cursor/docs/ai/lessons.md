@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-08-31 — R6 SQL-тест: дубль member и CHECK period (ops)
+
+- **Ошибка:** `renter_miniapp_r6_addon_purchase_test.sql` падал на production: duplicate `(organization_id, user_id)` и `organization_addons_check` при `period_end < period_start`.
+- **Причина:** два INSERT в `organization_members` с одним owner; expired-addon сценарий менял только `period_end`.
+- **Как избежать:** один INSERT с явными `id` + `ON CONFLICT (organization_id, user_id)`; для expired — сдвигать и `period_start`, и `period_end`.
+
 ### 2026-08-30 — rental_advances.notes не существует (R2 credit topup)
 
 - **Ошибка:** `_renter_credit_wallet_topup` падал на `column "notes" of relation "rental_advances" does not exist`.
