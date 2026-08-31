@@ -5,7 +5,14 @@ import { useI18n } from "../../hooks/useI18n";
 import { useSubmitPurchaseRequest } from "../../hooks/useSubmitPurchaseRequest";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
+import { overlayPaymentAmounts } from "../../lib/paymentConfig";
 import DeveloperContacts from "../../components/license/DeveloperContacts";
+import CryptoPaymentCards from "../../components/license/CryptoPaymentCards";
+import {
+  BankTransferSection,
+  MirPaymentSection,
+  VietnameseBankTransferSection,
+} from "../../components/license/ManualPaymentSections";
 import LoadingState from "../../components/ui/LoadingState";
 import { btnAddCls } from "../../components/ui/buttonStyles";
 import { fieldCls } from "../../components/ui/AppSelect";
@@ -50,6 +57,17 @@ export default function MiniAppAddonPurchaseSection({
           ? "hallRent.miniapp.addonExpired"
           : "hallRent.miniapp.addonOff";
   const periodLabel = formatPeriod(addonPeriodStart, addonPeriodEnd);
+  const addonPrice = paymentConfig.config.renterMiniappAddon;
+  const priceLabel = addonPrice?.amount
+    ? t("hallRent.miniapp.purchase.priceMonthly", {
+        amount: [addonPrice.amount, addonPrice.currency].filter(Boolean).join(" "),
+      })
+    : null;
+  const methodsForAddon = overlayPaymentAmounts(
+    paymentConfig.config,
+    addonPrice?.amount,
+    addonPrice?.currency
+  );
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -87,7 +105,7 @@ export default function MiniAppAddonPurchaseSection({
           <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
           {t("hallRent.miniapp.purchase.title")}
         </p>
-        <p className={`text-xs leading-relaxed ${addonActive ? "text-emerald-700" : "text-slate-600"}`}>
+        <p className={`text-xs leading-relaxed ${addonActive ? "text-indigo-700" : "text-slate-600"}`}>
           {t(statusKey)}
         </p>
         {periodLabel ? (
@@ -95,6 +113,25 @@ export default function MiniAppAddonPurchaseSection({
             {t("hallRent.miniapp.purchase.period", { period: periodLabel })}
           </p>
         ) : null}
+        {addonPeriodEnd && !addonActive ? (
+          <p className="text-xs text-amber-800">
+            {t("hallRent.miniapp.purchase.renewHint", { end: addonPeriodEnd })}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="rounded-lg border border-indigo-100 bg-white px-3 py-2.5 space-y-1">
+        <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+          {t("hallRent.miniapp.purchase.priceLabel")}
+        </p>
+        {priceLabel ? (
+          <p className="text-lg font-semibold text-slate-900 leading-tight">{priceLabel}</p>
+        ) : (
+          <p className="text-sm text-slate-600">{t("hallRent.miniapp.purchase.priceUnset")}</p>
+        )}
+        <p className="text-xs text-slate-500 leading-relaxed">
+          {t("hallRent.miniapp.purchase.billing")}
+        </p>
       </div>
 
       {canPurchase && !isLicensed ? (
@@ -112,6 +149,22 @@ export default function MiniAppAddonPurchaseSection({
               {t("hallRent.miniapp.purchase.hint")}
             </p>
             <DeveloperContacts contacts={paymentConfig.config.contacts} embedded />
+            {!!methodsForAddon.crypto?.length ||
+            methodsForAddon.bankTransfer ||
+            methodsForAddon.vietnameseBankTransfer ||
+            methodsForAddon.mir ? (
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                  {t("hallRent.miniapp.purchase.methodsTitle")}
+                </p>
+                {!!methodsForAddon.crypto?.length && (
+                  <CryptoPaymentCards methods={methodsForAddon.crypto} />
+                )}
+                <BankTransferSection config={methodsForAddon.bankTransfer} />
+                <VietnameseBankTransferSection config={methodsForAddon.vietnameseBankTransfer} />
+                <MirPaymentSection config={methodsForAddon.mir} />
+              </div>
+            ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <label className="block space-y-1">
@@ -167,7 +220,9 @@ export default function MiniAppAddonPurchaseSection({
                 <Send className="w-3.5 h-3.5" />
                 {submitRequest.isPending
                   ? t("license.purchase.request.submitting")
-                  : t("hallRent.miniapp.purchase.submit")}
+                  : addonActive
+                    ? t("hallRent.miniapp.purchase.submitRenew")
+                    : t("hallRent.miniapp.purchase.submit")}
               </button>
             </form>
           </>

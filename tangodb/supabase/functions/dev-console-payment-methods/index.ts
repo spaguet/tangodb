@@ -103,6 +103,12 @@ Deno.serve(async (req) => {
       has_vietnamese_bank: Boolean(config.vietnameseBankTransfer),
       has_mir: Boolean(config.mir),
       has_contacts: Boolean(config.contacts),
+      has_miniapp_addon_price: Boolean(
+        config.renterMiniappAddon &&
+          typeof config.renterMiniappAddon === "object" &&
+          !Array.isArray(config.renterMiniappAddon) &&
+          Boolean((config.renterMiniappAddon as { amount?: unknown }).amount)
+      ),
     },
   });
 

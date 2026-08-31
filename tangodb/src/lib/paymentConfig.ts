@@ -46,12 +46,18 @@ export interface DeveloperContactsConfig {
   whatsappUrl: string;
 }
 
+export interface RenterMiniappAddonPrice {
+  amount: string;
+  currency: string;
+}
+
 export interface ManualPaymentConfig {
   crypto?: CryptoPaymentMethod[];
   bankTransfer?: BankTransferConfig | null;
   vietnameseBankTransfer?: VietnameseBankTransferConfig | null;
   mir?: MirPaymentConfig | null;
   contacts?: DeveloperContactsConfig | null;
+  renterMiniappAddon?: RenterMiniappAddonPrice | null;
 }
 
 const EMPTY_CONFIG: ManualPaymentConfig = {};
@@ -97,6 +103,13 @@ export function parseManualPaymentConfig(raw: unknown): ManualPaymentConfig {
       ? normalizeContacts(value.contacts as Record<string, unknown>)
       : null;
 
+  const renterMiniappAddon =
+    value.renterMiniappAddon &&
+    typeof value.renterMiniappAddon === "object" &&
+    !Array.isArray(value.renterMiniappAddon)
+      ? normalizeAddonPrice(value.renterMiniappAddon as Record<string, unknown>)
+      : null;
+
   return {
     crypto: crypto?.length ? crypto : undefined,
     bankTransfer: bankTransfer?.beneficiary || bankTransfer?.ibanOrAccount ? bankTransfer : null,
@@ -106,6 +119,7 @@ export function parseManualPaymentConfig(raw: unknown): ManualPaymentConfig {
         : null,
     mir: mir?.recipient || mir?.phoneOrCard ? mir : null,
     contacts,
+    renterMiniappAddon,
   };
 }
 
@@ -152,6 +166,38 @@ function normalizeContacts(row: Record<string, unknown>): DeveloperContactsConfi
     email: String(row.email ?? "").trim(),
     telegramUrl: String(row.telegramUrl ?? "").trim(),
     whatsappUrl: String(row.whatsappUrl ?? "").trim(),
+  };
+}
+
+function normalizeAddonPrice(row: Record<string, unknown>): RenterMiniappAddonPrice | null {
+  const amount = String(row.amount ?? "").trim();
+  const currency = String(row.currency ?? "").trim();
+  if (!amount) return null;
+  return { amount, currency };
+}
+
+/** Show platform QR/accounts on the Mini App page without leaking CRM lifetime amounts. */
+export function overlayPaymentAmounts(
+  config: ManualPaymentConfig,
+  amount?: string | null,
+  currency?: string | null
+): ManualPaymentConfig {
+  const nextAmount = amount?.trim() || undefined;
+  const nextCurrency = currency?.trim() || undefined;
+  const patch = <T extends { amount?: string; currency?: string }>(row: T): T => ({
+    ...row,
+    amount: nextAmount,
+    currency: nextCurrency,
+  });
+
+  return {
+    ...config,
+    crypto: config.crypto?.map((row) => patch(row)),
+    bankTransfer: config.bankTransfer ? patch(config.bankTransfer) : null,
+    vietnameseBankTransfer: config.vietnameseBankTransfer
+      ? patch(config.vietnameseBankTransfer)
+      : null,
+    mir: config.mir ? patch(config.mir) : null,
   };
 }
 

@@ -46,12 +46,18 @@ export interface DeveloperContactsConfig {
   whatsappUrl: string;
 }
 
+export interface RenterMiniappAddonPrice {
+  amount: string;
+  currency: string;
+}
+
 export interface PaymentConfigFormState {
   crypto: CryptoPaymentMethod[];
   bankTransfer: BankTransferConfig;
   vietnameseBankTransfer: VietnameseBankTransferConfig;
   mir: MirPaymentConfig;
   contacts: DeveloperContactsConfig;
+  renterMiniappAddon: RenterMiniappAddonPrice;
 }
 
 export type ManualPaymentConfigPayload = {
@@ -68,6 +74,7 @@ export type ManualPaymentConfigPayload = {
   vietnameseBankTransfer?: Partial<VietnameseBankTransferConfig> | null;
   mir?: Partial<MirPaymentConfig> | null;
   contacts?: Partial<DeveloperContactsConfig> | null;
+  renterMiniappAddon?: Partial<RenterMiniappAddonPrice> | null;
 };
 
 export const emptyCryptoRow = (): CryptoPaymentMethod => ({
@@ -115,6 +122,10 @@ export const emptyPaymentConfigForm = (): PaymentConfigFormState => ({
     email: "",
     telegramUrl: "",
     whatsappUrl: "",
+  },
+  renterMiniappAddon: {
+    amount: "",
+    currency: "",
   },
 });
 
@@ -173,6 +184,9 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
     whatsappUrl: trim(form.contacts.whatsappUrl),
   };
 
+  const addonAmount = trim(form.renterMiniappAddon.amount);
+  const addonCurrency = trim(form.renterMiniappAddon.currency);
+
   const payload: ManualPaymentConfigPayload = {};
 
   if (crypto.length) payload.crypto = crypto;
@@ -182,6 +196,12 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
   }
   if (mir.recipient || mir.phoneOrCard) payload.mir = mir;
   if (contacts.email || contacts.telegramUrl || contacts.whatsappUrl) payload.contacts = contacts;
+  if (addonAmount) {
+    payload.renterMiniappAddon = {
+      amount: addonAmount,
+      currency: addonCurrency || undefined,
+    };
+  }
 
   return payload;
 }
@@ -257,6 +277,18 @@ export function configToFormState(raw: unknown): PaymentConfigFormState {
       email: String(contacts.email ?? ""),
       telegramUrl: String(contacts.telegramUrl ?? ""),
       whatsappUrl: String(contacts.whatsappUrl ?? ""),
+    };
+  }
+
+  if (
+    value.renterMiniappAddon &&
+    typeof value.renterMiniappAddon === "object" &&
+    !Array.isArray(value.renterMiniappAddon)
+  ) {
+    const addon = value.renterMiniappAddon as Record<string, unknown>;
+    form.renterMiniappAddon = {
+      amount: String(addon.amount ?? ""),
+      currency: String(addon.currency ?? ""),
     };
   }
 

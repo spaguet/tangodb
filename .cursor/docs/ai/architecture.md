@@ -11,11 +11,13 @@
 
 ## Platform payment config
 
-- `platform_payment_methods.config` — единый публично читаемый JSON-конфиг ручных способов оплаты для страницы лицензии CRM.
+- `platform_payment_methods.config` — единый публично читаемый JSON-конфиг ручных способов оплаты для страницы лицензии CRM и модуля Mini App.
+- `config.renterMiniappAddon` — `{ amount, currency }` ежемесячная цена add-on (не суммы lifetime CRM в bank/crypto/mir). Правка: Dev Console `/payment-methods`.
 - Dev Console (`/payment-methods`) обновляет конфиг через Edge Function `dev-console-payment-methods` с developer-доступом.
 - Загруженные QR оплаты хранятся в конфиге как небольшие `data:image/...` строки; CRM только отображает загруженные изображения и не генерирует QR на клиенте.
-- `platform_purchase_requests` — входящие заявки из CRM после самостоятельной оплаты. CRM создаёт заявку через Edge Function `submit-purchase-request`; функция отправляет email разработчику при настроенном Resend и сохраняет заявку для Dev Console.
-- Dev Console (`/inbox`) читает заявки через `dev-console-purchase-inbox`; после ручной проверки оплаты developer активирует lifetime-доступ организации, создаётся consumed lifetime key и обновляется `organization_licenses`.
+- `platform_purchase_requests` — входящие заявки из CRM после самостоятельной оплаты. CRM создаёт заявку через Edge Function `submit-purchase-request` (`request_kind`: `crm_license` | `renter_miniapp_addon`); функция отправляет email разработчику при настроенном Resend и сохраняет заявку для Dev Console.
+- Dev Console (`/inbox`) читает заявки через `dev-console-purchase-inbox`. Lifetime CRM: consumed key + `organization_licenses`. Mini App add-on: только `organization_addons` (период + `active`/`paused`), без лицензии CRM.
+- Гейт Mini App fail-closed: `renter_miniapp_addon_is_active` — нет строки / `paused` / период не покрывает «сегодня» в TZ организации = выкл (бронь канала и исходящий бот). Автосписания нет: без продления периода модуль гаснет сам; пауза до конца периода — Inbox.
 
 ## Слои (tangodb/)
 

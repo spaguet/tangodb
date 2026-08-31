@@ -123,6 +123,13 @@ Deno.serve(async (req) => {
   const developerEmail = resolveDeveloperNotifyEmail(
     (paymentConfig?.config as { contacts?: { email?: string } } | null)?.contacts?.email
   );
+  const addonPriceRaw = (paymentConfig?.config as {
+    renterMiniappAddon?: { amount?: string; currency?: string };
+  } | null)?.renterMiniappAddon;
+  const addonPriceLabel = [addonPriceRaw?.amount, addonPriceRaw?.currency]
+    .map((part) => (typeof part === "string" ? part.trim() : ""))
+    .filter(Boolean)
+    .join(" ");
 
   const requesterEmail = userData.user.email ?? (contactEmail || null);
   const { data: requestRow, error: insertError } = await admin
@@ -156,10 +163,11 @@ Deno.serve(async (req) => {
         : `TangoDB: заявка на полную версию — ${org.name}`,
       text: isAddonRequest
         ? [
-            "Новая заявка на оплату модуля Mini App (аренда зала).",
+            "Новая заявка на оплату модуля Mini App (аренда зала, ежемесячно).",
             "",
             `Request ID: ${requestRow.id}`,
             `Kind: renter_miniapp_addon`,
+            `Configured monthly price: ${addonPriceLabel || "not configured"}`,
             `Organization: ${org.name} (${organizationId})`,
             `Requester email: ${requesterEmail ?? "not provided"}`,
             `Contact email: ${contactEmail || requesterEmail || "not provided"}`,

@@ -144,6 +144,37 @@ export default function PaymentMethodsPage() {
         <p className="text-sm text-slate-400">Загрузка…</p>
       ) : (
         <div className="space-y-4">
+          <Section
+            title="Mini App add-on — ежемесячная цена"
+            description="Сумма модуля аренды зала. CRM показывает её на /settings/hall-rent. Реквизиты ниже общие с лицензией CRM; эту сумму не путать с lifetime CRM. Без продления периода модуль сам выключается; пауза вручную — Inbox."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field
+                label="Сумма в месяц"
+                type="number"
+                value={form.renterMiniappAddon.amount}
+                onChange={(amount) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    renterMiniappAddon: { ...prev.renterMiniappAddon, amount },
+                  }))
+                }
+                placeholder="500000"
+              />
+              <Field
+                label="Валюта"
+                value={form.renterMiniappAddon.currency}
+                onChange={(currency) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    renterMiniappAddon: { ...prev.renterMiniappAddon, currency },
+                  }))
+                }
+                placeholder="VND, RUB, USD"
+              />
+            </div>
+          </Section>
+
           <Section title="Криптовалюта" description="Один блок = одна монета/сеть. QR строится из адреса или URI template.">
             <div className="space-y-4">
               {form.crypto.map((row, index) => (
