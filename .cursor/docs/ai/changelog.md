@@ -1,3 +1,5 @@
+2026-08-31 — fix(hall-rent): микропатч **2.9.13** — минимум комментария заявки на оплату 10 символов (было 20; «Оплатил 500000 донг» = 19); подсказка «минимум N символов» под полем в CRM и на лицензии.
+
 2026-08-31 — feat(hall-rent): микропатч **2.9.12** — ежемесячная цена Mini App add-on в `platform_payment_methods.config.renterMiniappAddon`; Dev Console `/payment-methods` задаёт сумму; CRM hall-rent показывает стоимость, «/ месяц», реквизиты платформы (сумма модуля, не lifetime CRM) и продление. Гейт без оплаты без изменений: `paused` или `period_end` < сегодня → выкл.
 
 2026-08-31 — ops(hall-rent): production smoke — CRM **2.9.11** на Vercel; миграция R6 на `gizfpiujqjwbjtqfstbj`; cron `renter-booking-worker` `*/2 * * * *` (скрипт `supabase/scripts/schedule_renter_booking_worker_cron.sql`); `RENTER_MINIAPP_ORIGIN=https://tangodb-renter.vercel.app`; worker HTTP 200; **Mini App** задеплоен на `https://tangodb-renter.vercel.app` (Vercel project `tangodb-renter`); npm `test:db:renter-miniapp-r6`; фикс дубля `organization_members` в R6 SQL-тесте.

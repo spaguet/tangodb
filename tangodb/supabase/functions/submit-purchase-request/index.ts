@@ -8,6 +8,7 @@ import {
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { isRenterActor, renterActorForbidden } from "../_shared/staffAuth.ts";
+import { PURCHASE_REQUEST_COMMENT_MIN_LENGTH } from "../_shared/purchaseRequest.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 5;
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
   if (requestKindRaw && requestKindRaw !== requestKind) {
     return jsonResponse({ error: "invalid_request_kind" }, 400, req);
   }
-  if (paymentComment.length < 20) {
+  if (paymentComment.length < PURCHASE_REQUEST_COMMENT_MIN_LENGTH) {
     return jsonResponse({ error: "payment_comment_too_short" }, 400, req);
   }
   if (contactEmail && !isValidEmail(contactEmail)) {

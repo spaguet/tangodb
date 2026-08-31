@@ -8,6 +8,10 @@ import type { DeveloperContactsConfig } from "../../lib/paymentConfig";
 import DeveloperContacts from "./DeveloperContacts";
 import { btnAddCls } from "../ui/buttonStyles";
 import { fieldCls } from "../ui/AppSelect";
+import {
+  isPurchaseCommentValid,
+  PURCHASE_REQUEST_COMMENT_MIN_LENGTH,
+} from "../../lib/purchaseRequest";
 
 interface PurchaseRequestPanelProps {
   contacts: DeveloperContactsConfig | null | undefined;
@@ -22,6 +26,9 @@ export default function PurchaseRequestPanel({ contacts }: PurchaseRequestPanelP
   const [contactEmail, setContactEmail] = useState("");
   const [contactTelegram, setContactTelegram] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const commentLen = paymentComment.trim().length;
+  const commentValid = isPurchaseCommentValid(paymentComment);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -76,6 +83,14 @@ export default function PurchaseRequestPanel({ contacts }: PurchaseRequestPanelP
             placeholder={t("license.purchase.request.commentPlaceholder")}
             className="w-full min-h-[7rem] resize-none bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-xs transition-all"
           />
+          {!commentValid ? (
+            <p className="text-[10px] text-slate-400">
+              {t("license.purchase.request.commentMinHint", {
+                min: PURCHASE_REQUEST_COMMENT_MIN_LENGTH,
+                current: commentLen,
+              })}
+            </p>
+          ) : null}
         </label>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -112,7 +127,7 @@ export default function PurchaseRequestPanel({ contacts }: PurchaseRequestPanelP
 
         <button
           type="submit"
-          disabled={submitRequest.isPending || paymentComment.trim().length < 20}
+          disabled={submitRequest.isPending || !commentValid}
           className={`w-full ${btnAddCls}`}
         >
           <Send className="w-3.5 h-3.5" />

@@ -321,6 +321,7 @@ export type I18nKey =
   | "license.purchase.request.success"
   | "license.purchase.request.error"
   | "license.purchase.request.commentTooShort"
+  | "license.purchase.request.commentMinHint"
   | "license.waitlist.stripeSoon"
   | "license.waitlist.month"
   | "license.waitlist.year"

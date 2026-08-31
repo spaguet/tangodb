@@ -16,6 +16,10 @@ import {
 import LoadingState from "../../components/ui/LoadingState";
 import { btnAddCls } from "../../components/ui/buttonStyles";
 import { fieldCls } from "../../components/ui/AppSelect";
+import {
+  isPurchaseCommentValid,
+  PURCHASE_REQUEST_COMMENT_MIN_LENGTH,
+} from "../../lib/purchaseRequest";
 
 function formatPeriod(start: string | null | undefined, end: string | null | undefined): string {
   if (!start || !end) return "";
@@ -68,6 +72,8 @@ export default function MiniAppAddonPurchaseSection({
     addonPrice?.amount,
     addonPrice?.currency
   );
+  const commentLen = paymentComment.trim().length;
+  const commentValid = isPurchaseCommentValid(paymentComment);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -178,6 +184,14 @@ export default function MiniAppAddonPurchaseSection({
                   placeholder={t("hallRent.miniapp.purchase.commentPlaceholder")}
                   className="w-full min-h-[6rem] resize-none bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-3.5 py-2.5 text-xs transition-all"
                 />
+                {!commentValid ? (
+                  <p className="text-[10px] text-slate-400">
+                    {t("license.purchase.request.commentMinHint", {
+                      min: PURCHASE_REQUEST_COMMENT_MIN_LENGTH,
+                      current: commentLen,
+                    })}
+                  </p>
+                ) : null}
               </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -214,7 +228,7 @@ export default function MiniAppAddonPurchaseSection({
 
               <button
                 type="submit"
-                disabled={submitRequest.isPending || paymentComment.trim().length < 20}
+                disabled={submitRequest.isPending || !commentValid}
                 className={`w-full ${btnAddCls}`}
               >
                 <Send className="w-3.5 h-3.5" />

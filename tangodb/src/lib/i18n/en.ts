@@ -357,7 +357,8 @@ export const EN: Record<I18nKey, string> = {
   "license.purchase.request.submitting": "Sending...",
   "license.purchase.request.success": "Payment information sent to the developer",
   "license.purchase.request.error": "Failed to send payment information",
-  "license.purchase.request.commentTooShort": "Add more details for payment verification.",
+  "license.purchase.request.commentTooShort": "Add more details for payment verification (at least 10 characters).",
+  "license.purchase.request.commentMinHint": "At least {{min}} characters · {{current}} now",
   "license.waitlist.stripeSoon":
     "Monthly subscription is coming soon. Stripe checkout is not available yet. Leave your email and we will notify you at launch.",
   "license.waitlist.month": "Month",
