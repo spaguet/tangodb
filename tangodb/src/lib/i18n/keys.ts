@@ -1859,6 +1859,8 @@ export type I18nKey =
   | "hallRent.miniapp.botTokenPlaceholder"
   | "hallRent.miniapp.botTokenSet"
   | "hallRent.miniapp.appShortName"
+  | "hallRent.miniapp.appShortNameHint"
+  | "hallRent.miniapp.appShortNamePlaceholder"
   | "hallRent.miniapp.miniappUrl"
   | "hallRent.miniapp.botfatherHint"
   | "hallRent.miniapp.copyUrl"

@@ -141,8 +141,10 @@ export default function MiniAppChannelSection() {
           id="renter-app-short"
           className={inputCls}
           value={shownShort}
+          placeholder={t("hallRent.miniapp.appShortNamePlaceholder")}
           onChange={(e) => setShortName(e.target.value)}
         />
+        <p className="text-[10px] text-slate-400">{t("hallRent.miniapp.appShortNameHint")}</p>
       </div>
 
       <button
