@@ -7,6 +7,9 @@ import { minutesToTime, normalizeTime, timeToMinutes } from "./scheduleWeek";
 export interface ScheduleConflict {
   message: string;
   conflictTime: string;
+  otherTimeStart?: string;
+  otherTimeEnd?: string;
+  otherLabel?: string;
 }
 
 export interface ScheduleConflictParams {
@@ -24,6 +27,7 @@ export interface PersonalLessonRef {
   timeStart: string;
   timeEnd: string;
   locationId?: string | null;
+  clientDisplay?: string;
 }
 
 export interface ScheduleSlotRef {
@@ -60,6 +64,53 @@ function conflictText(key: I18nKey, translate?: TranslateFn, locale?: string | n
   return t(locale, key);
 }
 
+function conflictTextWithParams(
+  key: I18nKey,
+  params: Record<string, string | number>,
+  translate?: TranslateFn,
+  locale?: string | null
+): string {
+  if (translate) return translate(key, params);
+  return t(locale, key, params);
+}
+
+function personalConflictLabel(display?: string | null): string | undefined {
+  const label = display?.trim();
+  if (!label || label === "schedule.lessonInfo.clientNotSpecified") return undefined;
+  return label;
+}
+
+export function isExactPersonalSlotMatch(
+  slot: { date: string; timeStart: string; timeEnd: string; locationId: string | null },
+  lesson: PersonalLessonRef
+): boolean {
+  try {
+    return (
+      lesson.date === slot.date &&
+      locationsMatch(lesson.locationId, slot.locationId) &&
+      normalizeTime(lesson.timeStart) === normalizeTime(slot.timeStart) &&
+      normalizeTime(lesson.timeEnd || lesson.timeStart) === normalizeTime(slot.timeEnd)
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Dates that already have a personal lesson at the same location and time (not a conflict to re-create). */
+export function filterNewPersonalSeriesSlots<T extends { date: string; timeStart: string; timeEnd: string }>(
+  slots: T[],
+  params: { locationId: string | null; excludeLessonId?: string },
+  personalLessons: PersonalLessonRef[]
+): T[] {
+  return slots.filter((slot) => {
+    const exists = personalLessons.some((lesson) => {
+      if (params.excludeLessonId && lesson.id === params.excludeLessonId) return false;
+      return isExactPersonalSlotMatch({ ...slot, locationId: params.locationId }, lesson);
+    });
+    return !exists;
+  });
+}
+
 /** Conflict check for a concrete date + location; compares times in minutes (HH:MM). */
 export function findScheduleConflict(
   params: ScheduleConflictParams,
@@ -88,9 +139,20 @@ export function findScheduleConflict(
     if (lesson.date !== date) continue;
     const lessonEnd = lesson.timeEnd || lesson.timeStart;
     if (timesOverlapMinutes(timeStartNorm, timeEndNorm, lesson.timeStart, lessonEnd)) {
+      const otherLabel = personalConflictLabel(lesson.clientDisplay);
       return {
-        message: conflictText("utils.conflict.personalLesson", translate, locale),
+        message: otherLabel
+          ? conflictTextWithParams(
+              "utils.conflict.personalLessonNamed",
+              { name: otherLabel },
+              translate,
+              locale
+            )
+          : conflictText("utils.conflict.personalLesson", translate, locale),
         conflictTime: overlapStartTime(timeStartNorm, timeEndNorm, lesson.timeStart, lessonEnd),
+        otherTimeStart: lesson.timeStart,
+        otherTimeEnd: lessonEnd,
+        otherLabel,
       };
     }
   }
@@ -110,6 +172,8 @@ export function findScheduleConflict(
       return {
         message: conflictText("utils.conflict.groupLesson", translate, locale),
         conflictTime: overlapStartTime(timeStartNorm, timeEndNorm, slot.time, slotEnd),
+        otherTimeStart: slot.time,
+        otherTimeEnd: slotEnd,
       };
     }
   }
@@ -128,18 +192,19 @@ export function formatScheduleConflictToast(
     month: "long",
     year: "numeric",
   });
-  if (translate) {
-    return translate("utils.conflict.toast", {
-      date: dateLabel,
-      time: conflict.conflictTime,
-      reason: conflict.message,
-    });
-  }
-  return t(locale, "utils.conflict.toast", {
+  const timeLabel =
+    conflict.otherTimeStart && conflict.otherTimeEnd
+      ? `${conflict.otherTimeStart}–${conflict.otherTimeEnd}`
+      : conflict.conflictTime;
+  const params = {
     date: dateLabel,
-    time: conflict.conflictTime,
+    time: timeLabel,
     reason: conflict.message,
-  });
+  };
+  if (translate) {
+    return translate("utils.conflict.toast", params);
+  }
+  return t(locale, "utils.conflict.toast", params);
 }
 
 export { findBookingScheduleConflict } from "./utils";
