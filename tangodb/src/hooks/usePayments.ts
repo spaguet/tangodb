@@ -157,8 +157,7 @@ export function useRecordSubscriptionPayment() {
 
 export function useRecordPersonalLessonPayment() {
   const queryClient = useQueryClient();
-  const { organizationId, withOrgId } = useOrgQueryScope();
-  const venueStatusQueryKey = withOrgId(venueCostStatusQueryKey);
+  const { organizationId } = useOrgQueryScope();
 
   return useMutation({
     mutationFn: async (input: {
@@ -178,14 +177,6 @@ export function useRecordPersonalLessonPayment() {
       lessonDurationMinutes?: number | null;
       chargeId?: string | null;
     }) => {
-      const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false, {
-        lessonDate: input.lessonDate ?? null,
-        cache: {
-          queryClient,
-          statusQueryKey: venueStatusQueryKey,
-        },
-      });
-      if (venueGuard) return venueGuard;
       const { data, error } = await supabase.rpc("record_personal_lesson_payment", {
         p_lesson_id: input.lessonId,
         p_amount: input.amount,

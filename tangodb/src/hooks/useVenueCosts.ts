@@ -183,14 +183,7 @@ export async function checkVenueRuleBeforePayment(
 ): Promise<VenueRuleAckRequiredFailure | null> {
   if (acknowledged) return null;
   const lessonDate = options?.lessonDate ?? null;
-  const fetchStatus = () => fetchVenueCostRuleStatus({ lessonDate });
-  const status = options?.cache
-    ? await options.cache.queryClient.fetchQuery({
-        queryKey: [...options.cache.statusQueryKey, lessonDate ?? "today"],
-        queryFn: fetchStatus,
-        staleTime: 30_000,
-      })
-    : await fetchStatus();
+  const status = await fetchVenueCostRuleStatus({ lessonDate });
   return status.acknowledgementRequired
     ? { success: false, error: "venue_rule_ack_required", errorCode: "venue_rule_ack_required", venueRuleStatus: status }
     : null;
