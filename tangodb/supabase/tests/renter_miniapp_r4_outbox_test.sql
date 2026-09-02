@@ -52,8 +52,14 @@ BEGIN
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES
     (v_org, 'R4 Outbox Org', 'r4-outbox', 'licensed', v_version_id, v_user),
-    (v_org_off, 'R4 Off Org', 'r4-off', 'licensed', v_version_id, v_user)
-  ON CONFLICT (id) DO NOTHING;
+    (v_org_off, 'R4 Off Org', 'r4-off', 'demo_active', v_version_id, v_user)
+  ON CONFLICT (id) DO UPDATE SET
+    status = EXCLUDED.status,
+    owner_user_id = EXCLUDED.owner_user_id;
+
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET license_type = 'lifetime', activated_at = now();
 
   INSERT INTO organization_members (id, organization_id, user_id, role, display_name)
   VALUES (v_member, v_org, v_user, 'owner', 'R4 Owner')

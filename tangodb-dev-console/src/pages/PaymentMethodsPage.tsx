@@ -145,34 +145,12 @@ export default function PaymentMethodsPage() {
       ) : (
         <div className="space-y-4">
           <Section
-            title="Mini App add-on — ежемесячная цена"
-            description="Сумма модуля аренды зала. CRM показывает её на /settings/hall-rent. Реквизиты ниже общие с лицензией CRM; эту сумму не путать с lifetime CRM. Без продления периода модуль сам выключается; пауза вручную — Inbox."
+            title="Mini App — доступ с CRM"
+            description="Отдельная ежемесячная цена модуля временно не используется. Mini App открывается при купленном доступе к CRM (lifetime или ежемесячная подписка CRM) и выключен на демо 30 дней. Поле в конфиге сохраняется для будущего возврата оплаты модуля."
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field
-                label="Сумма в месяц"
-                type="number"
-                value={form.renterMiniappAddon.amount}
-                onChange={(amount) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    renterMiniappAddon: { ...prev.renterMiniappAddon, amount },
-                  }))
-                }
-                placeholder="500000"
-              />
-              <Field
-                label="Валюта"
-                value={form.renterMiniappAddon.currency}
-                onChange={(currency) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    renterMiniappAddon: { ...prev.renterMiniappAddon, currency },
-                  }))
-                }
-                placeholder="VND, RUB, USD"
-              />
-            </div>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Сумма add-on в конфиге не показывается в CRM, пока модуль входит в лицензию CRM.
+            </p>
           </Section>
 
           <Section title="Криптовалюта" description="Один блок = одна монета/сеть. QR строится из адреса или URI template.">

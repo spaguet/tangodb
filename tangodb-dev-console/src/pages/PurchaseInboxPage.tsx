@@ -177,7 +177,7 @@ export default function PurchaseInboxPage() {
             Inbox
           </h2>
           <p className="text-sm text-slate-400">
-            Заявки на оплату: lifetime CRM или ежемесячный модуль Mini App (add-on не лицензирует CRM).
+            Заявки на оплату lifetime CRM. Отдельная оплата Mini App временно отключена: модуль входит в купленный доступ к CRM.
           </p>
         </div>
         <button

@@ -449,9 +449,8 @@ BEGIN
   WHERE renter_id = v_renter AND topup_request_id = v_req2;
   PERFORM _test_assert(v_n = 1, 'two confirms → one ledger');
 
-  -- add-on off
-  UPDATE organization_addons SET status = 'paused'
-  WHERE organization_id = v_org AND addon_code = 'renter_miniapp';
+  -- add-on off (demo CRM)
+  UPDATE organizations SET status = 'demo_active' WHERE id = v_org;
   PERFORM _r2_set_renter_jwt(v_renter_user, v_org, 93001);
   v_result := renter_submit_topup(jsonb_build_object('amount', 40, 'method', 'cash'));
   PERFORM _test_assert(v_result ->> 'error' = 'renter.addonInactive', 'submit_topup off add-on');
@@ -460,8 +459,7 @@ BEGIN
     'renter_id', v_renter2, 'amount', 25, 'method', 'cash', 'idempotency_key', gen_random_uuid()
   ));
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'staff-topup allowed when add-on off');
-  UPDATE organization_addons SET status = 'active'
-  WHERE organization_id = v_org AND addon_code = 'renter_miniapp';
+  UPDATE organizations SET status = 'licensed' WHERE id = v_org;
 
   -- archived / ban can submit
   PERFORM _r2_set_renter_jwt(v_renter_user, v_org, 93003);

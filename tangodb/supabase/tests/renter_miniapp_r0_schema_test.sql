@@ -215,9 +215,10 @@ BEGIN
   UPDATE renters SET telegram_id = NULL WHERE id = v_renter;
 
   PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
+  DELETE FROM organization_addons WHERE organization_id IN (v_org, v_org_b);
   PERFORM _test_assert(
-    renter_miniapp_addon_is_active(v_org) IS FALSE,
-    'add-on without row is false'
+    renter_miniapp_addon_is_active(v_org) IS TRUE,
+    'licensed lifetime without addon row is true'
   );
 
   INSERT INTO organization_addons (
@@ -229,43 +230,48 @@ BEGIN
     period_start = EXCLUDED.period_start,
     period_end = EXCLUDED.period_end;
 
-  PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
-  PERFORM _test_assert(
-    renter_miniapp_addon_is_active(v_org) IS FALSE,
-    'paused add-on is false'
-  );
-
-  UPDATE organization_addons
-  SET status = 'active',
-      period_start = current_date - 40,
-      period_end = current_date - 1
-  WHERE organization_id = v_org;
-
-  PERFORM _test_assert(
-    renter_miniapp_addon_is_active(v_org) IS FALSE,
-    'past period add-on is false'
-  );
-
-  v_today := _org_local_date(v_org);
-  UPDATE organization_addons
-  SET status = 'active',
-      period_start = v_today,
-      period_end = v_today + 30
-  WHERE organization_id = v_org;
-
   PERFORM _test_assert(
     renter_miniapp_addon_is_active(v_org) IS TRUE,
-    'active covering period is true for member of org'
+    'paused addon row does not turn off licensed CRM'
   );
 
-  INSERT INTO organization_addons (
-    organization_id, addon_code, status, period_start, period_end
+  UPDATE organizations SET status = 'demo_active' WHERE id = v_org;
+  PERFORM _test_assert(
+    renter_miniapp_addon_is_active(v_org) IS FALSE,
+    'demo org is false even with addon row'
+  );
+  UPDATE organizations SET status = 'licensed' WHERE id = v_org;
+
+  DELETE FROM organization_licenses WHERE organization_id = v_org;
+  INSERT INTO organization_subscriptions (
+    organization_id, plan, billing_period, status, current_period_start, current_period_end
   )
-  VALUES (v_org_b, 'renter_miniapp', 'active', v_today, v_today + 30)
-  ON CONFLICT (organization_id, addon_code) DO UPDATE SET
-    status = 'active',
-    period_start = EXCLUDED.period_start,
-    period_end = EXCLUDED.period_end;
+  VALUES (v_org, 'standard', 'monthly', 'active', now(), now() + interval '30 days')
+  ON CONFLICT (organization_id) DO UPDATE SET
+    plan = EXCLUDED.plan,
+    billing_period = EXCLUDED.billing_period,
+    status = EXCLUDED.status,
+    current_period_start = EXCLUDED.current_period_start,
+    current_period_end = EXCLUDED.current_period_end;
+  PERFORM _test_assert(
+    renter_miniapp_addon_is_active(v_org) IS TRUE,
+    'licensed monthly CRM subscription without lifetime is true'
+  );
+
+  UPDATE organization_subscriptions
+  SET status = 'past_due'
+  WHERE organization_id = v_org;
+  PERFORM _test_assert(
+    renter_miniapp_addon_is_active(v_org) IS FALSE,
+    'past_due CRM subscription is false'
+  );
+
+  DELETE FROM organization_subscriptions WHERE organization_id = v_org;
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET
+    license_type = 'lifetime',
+    activated_at = now();
 
   PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
   PERFORM _test_assert(
@@ -276,7 +282,7 @@ BEGIN
   PERFORM _r0_set_renter_jwt(v_renter_user, v_org);
   PERFORM _test_assert(
     renter_miniapp_addon_is_active(v_org) IS TRUE,
-    'renter helper for own org is true when add-on active'
+    'renter helper for own licensed org is true'
   );
   PERFORM _test_assert(
     renter_miniapp_addon_is_active(v_org_b) IS FALSE,
@@ -394,6 +400,7 @@ BEGIN
     'clearing telegram_id revokes old auth sessions'
   );
 
+  v_today := _org_local_date(v_org);
   INSERT INTO location_rental_hour_rates (
     organization_id, location_id, kind, price, currency, valid_from
   )

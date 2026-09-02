@@ -11,13 +11,13 @@
 
 ## Platform payment config
 
-- `platform_payment_methods.config` — единый публично читаемый JSON-конфиг ручных способов оплаты для страницы лицензии CRM и модуля Mini App.
-- `config.renterMiniappAddon` — `{ amount, currency }` ежемесячная цена add-on (не суммы lifetime CRM в bank/crypto/mir). Правка: Dev Console `/payment-methods`.
+- `platform_payment_methods.config` — единый публично читаемый JSON-конфиг ручных способов оплаты для страницы лицензии CRM (и, когда вернут, модуля Mini App).
+- `config.renterMiniappAddon` — `{ amount, currency }` ежемесячная цена add-on; **временно не используется** (HALL-RENT-SELF-2): Mini App входит в купленный CRM.
 - Dev Console (`/payment-methods`) обновляет конфиг через Edge Function `dev-console-payment-methods` с developer-доступом.
 - Загруженные QR оплаты хранятся в конфиге как небольшие `data:image/...` строки; CRM только отображает загруженные изображения и не генерирует QR на клиенте.
-- `platform_purchase_requests` — входящие заявки из CRM после самостоятельной оплаты. CRM создаёт заявку через Edge Function `submit-purchase-request` (`request_kind`: `crm_license` | `renter_miniapp_addon`); функция отправляет email разработчику при настроенном Resend и сохраняет заявку для Dev Console.
-- Dev Console (`/inbox`) читает заявки через `dev-console-purchase-inbox`. Lifetime CRM: consumed key + `organization_licenses`. Mini App add-on: только `organization_addons` (период + `active`/`paused`), без лицензии CRM.
-- Гейт Mini App fail-closed: `renter_miniapp_addon_is_active` — нет строки / `paused` / период не покрывает «сегодня» в TZ организации = выкл (бронь канала и исходящий бот). Автосписания нет: без продления периода модуль гаснет сам; пауза до конца периода — Inbox.
+- `platform_purchase_requests` — входящие заявки из CRM после самостоятельной оплаты. CRM создаёт заявку через Edge Function `submit-purchase-request` (`request_kind`: `crm_license`; `renter_miniapp_addon` временно отклоняется).
+- Dev Console (`/inbox`) читает заявки через `dev-console-purchase-inbox`. Lifetime CRM: consumed key + `organization_licenses`. Ветка Mini App add-on в Inbox сохранена, новых заявок нет.
+- Гейт Mini App fail-closed: `renter_miniapp_addon_is_active` — `organizations.status = licensed` **и** (lifetime **или** активная подписка CRM). Демо / нет купленного доступа = выкл (бронь канала и исходящий бот). `organization_addons` не источник истины, пока действует HALL-RENT-SELF-2.
 
 ## Слои (tangodb/)
 

@@ -111,8 +111,8 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "license_permission_required" }, 403, req);
   }
 
-  if (requestKind === "renter_miniapp_addon" && org.status !== "licensed") {
-    return jsonResponse({ error: "addon_requires_licensed_org" }, 403, req);
+  if (requestKind === "renter_miniapp_addon") {
+    return jsonResponse({ error: "addon_purchase_disabled" }, 403, req);
   }
 
   const { data: paymentConfig } = await admin

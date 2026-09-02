@@ -62,6 +62,10 @@ BEGIN
     ('a0600000-0000-4000-8000-000000000012', v_org_demo, v_owner, 'owner', true)
   ON CONFLICT (organization_id, user_id) DO NOTHING;
 
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org_licensed, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET license_type = 'lifetime', activated_at = now();
+
   INSERT INTO organization_settings (organization_id, timezone, currency_code)
   VALUES
     (v_org_demo, 'Europe/Moscow', 'RUB'),
@@ -136,6 +140,19 @@ BEGIN
   PERFORM _test_assert(v_org_status = 'demo_active', 'addon activate must not set organizations.status=licensed');
   PERFORM _test_assert(v_addon_code = 'renter_miniapp', 'addon_code must be renter_miniapp');
   PERFORM _test_assert(v_addon_status = 'active', 'addon status must be active');
+
+  PERFORM _hall_rent_test_set_jwt(v_owner, v_org_licensed, v_member, 'owner');
+  DELETE FROM organization_addons WHERE organization_id = v_org_licensed;
+  PERFORM _test_assert(
+    renter_miniapp_addon_is_active(v_org_licensed) IS TRUE,
+    'licensed CRM without addon row is true'
+  );
+
+  PERFORM _hall_rent_test_set_jwt(v_owner, v_org_demo, 'a0600000-0000-4000-8000-000000000012', 'owner');
+  PERFORM _test_assert(
+    renter_miniapp_addon_is_active(v_org_demo) IS FALSE,
+    'demo org stays false even with active addon row'
+  );
 
   UPDATE organization_addons
   SET status = 'paused'

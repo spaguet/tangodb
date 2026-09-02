@@ -13,7 +13,6 @@ import RentalBillingProfileSection from "../../components/rental-billing/RentalB
 import MiniAppHourRatesSection from "../components/MiniAppHourRatesSection";
 import MiniAppAddonPurchaseSection from "../components/MiniAppAddonPurchaseSection";
 import MiniAppChannelSection from "../components/MiniAppChannelSection";
-import { useLocationRentalHourRates } from "../../hooks/useLocationRentalHourRates";
 
 /** Preserve ?new=1 when old /settings/venue-costs bookmarks are opened. */
 export function VenueCostsLegacyRedirect() {
@@ -31,7 +30,6 @@ export default function HallRentSettingsPage() {
   const canReadVenue = can("finance.read");
   const canManageChannel = can("settings.manage");
   const canManageAddon = canManageMiniAppRentals(role, options);
-  const hourRatesQuery = useLocationRentalHourRates(canReadTariffs || canManageAddon);
   const hasAnyBlock = canReadTariffs || canReadVenue || canManageChannel;
 
   return (
@@ -73,15 +71,7 @@ export default function HallRentSettingsPage() {
             </p>
           </div>
           <MiniAppHourRatesSection />
-          {canManageAddon ? (
-            <MiniAppAddonPurchaseSection
-              addonActive={hourRatesQuery.data?.addonActive ?? false}
-              addonStatus={hourRatesQuery.data?.addonStatus ?? null}
-              addonPeriodStart={hourRatesQuery.data?.addonPeriodStart ?? null}
-              addonPeriodEnd={hourRatesQuery.data?.addonPeriodEnd ?? null}
-              canPurchase={canManageAddon}
-            />
-          ) : null}
+          {canManageAddon ? <MiniAppAddonPurchaseSection /> : null}
         </section>
       )}
 

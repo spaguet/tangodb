@@ -86,7 +86,11 @@ BEGIN
 
   INSERT INTO organizations (id, name, slug, status, crm_version_id, owner_user_id)
   VALUES (v_org, 'R3a Org', 'r3a-org', 'licensed', v_version_id, v_user)
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET status = 'licensed', owner_user_id = EXCLUDED.owner_user_id;
+
+  INSERT INTO organization_licenses (organization_id, crm_version_id, license_type, activated_at)
+  VALUES (v_org, v_version_id, 'lifetime', now())
+  ON CONFLICT (organization_id) DO UPDATE SET license_type = 'lifetime', activated_at = now();
 
   INSERT INTO organization_settings (organization_id, timezone, currency_code, locale)
   VALUES (v_org, 'Europe/Moscow', 'RUB', 'ru')
@@ -110,8 +114,8 @@ BEGIN
   v_result := renter_telegram_mint_channel(v_org);
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'mint channel for org');
 
-  -- INSERT new renter without add-on → forbidden
-  DELETE FROM organization_addons WHERE organization_id = v_org;
+  -- INSERT new renter without paid CRM → forbidden
+  UPDATE organizations SET status = 'demo_active' WHERE id = v_org;
   v_result := renter_telegram_mint_prepare(jsonb_build_object(
     'organization_id', v_org,
     'telegram_id', '94001',
@@ -124,10 +128,8 @@ BEGIN
     'INSERT without add-on rejected'
   );
 
-  -- Active add-on → INSERT ok
-  INSERT INTO organization_addons (organization_id, addon_code, status, period_start, period_end)
-  VALUES (v_org, 'renter_miniapp', 'active', CURRENT_DATE - 1, CURRENT_DATE + 30)
-  ON CONFLICT DO NOTHING;
+  -- Paid CRM → INSERT ok
+  UPDATE organizations SET status = 'licensed' WHERE id = v_org;
 
   v_result := renter_telegram_mint_prepare(jsonb_build_object(
     'organization_id', v_org,
@@ -156,14 +158,14 @@ BEGIN
   ));
   PERFORM _test_assert((v_result ->> 'idempotent')::boolean, 'same hash idempotent');
 
-  -- Existing renter without add-on (after delete addon row)
+  -- Existing renter without add-on (demo CRM still mints existing card)
   INSERT INTO renters (id, organization_id, display_name, telegram_id, counterparty_type, status, auth_user_id)
   VALUES (v_renter, v_org, 'Existing R3a', 94002, 'individual', 'active', v_renter_user)
   ON CONFLICT (id) DO UPDATE SET
     telegram_id = 94002,
     auth_user_id = v_renter_user;
 
-  DELETE FROM organization_addons WHERE organization_id = v_org;
+  UPDATE organizations SET status = 'demo_active' WHERE id = v_org;
 
   v_result := renter_telegram_mint_prepare(jsonb_build_object(
     'organization_id', v_org,

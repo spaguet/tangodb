@@ -1028,8 +1028,8 @@ BEGIN
     'update_rental Mini App refused'
   );
 
-  -- add-on off: create/pack/quote fail; bootstrap/list/occupancy/list_mine/cancel ok
-  UPDATE organization_addons SET status = 'paused' WHERE organization_id = v_org;
+  -- module off (demo CRM): create/pack/quote fail; bootstrap/list/occupancy/list_mine/cancel ok
+  UPDATE organizations SET status = 'demo_active' WHERE id = v_org;
   PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
   v_result := renter_create_booking(jsonb_build_object(
     'renter_id', v_renter, 'location_id', v_loc_a,
@@ -1072,7 +1072,7 @@ BEGIN
     'cancel works with add-on off: ' || COALESCE(v_result ->> 'error', 'ok')
   );
 
-  UPDATE organization_addons SET status = 'active' WHERE organization_id = v_org;
+  UPDATE organizations SET status = 'licensed' WHERE id = v_org;
 
   -- Renter JWT ignores client renter_id
   PERFORM _r1c_set_renter_jwt(v_renter_user, v_org, 91001);

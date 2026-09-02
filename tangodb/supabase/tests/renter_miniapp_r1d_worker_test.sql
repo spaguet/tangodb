@@ -469,10 +469,10 @@ BEGIN
   UPDATE organizations SET status = 'licensed' WHERE id = v_org;
 
   -- ---------------------------------------------------------------------------
-  -- add-on off does not stop expiry
+  -- add-on off (demo CRM) does not stop expiry
   -- ---------------------------------------------------------------------------
   PERFORM _r1d_purge_renter(v_renter);
-  UPDATE organization_addons SET status = 'paused' WHERE organization_id = v_org AND addon_code = 'renter_miniapp';
+  UPDATE organizations SET status = 'demo_active' WHERE id = v_org;
   v_id := _r1d_insert_slot(
     v_org, v_renter, v_loc,
     (now() AT TIME ZONE v_tz)::date + 1, '18:00', '19:00',
@@ -483,7 +483,7 @@ BEGIN
   PERFORM _test_assert(v_life = 'auto_deleted', 'add-on off still expires holds');
   SELECT untimely_count INTO v_untimely FROM renters WHERE id = v_renter;
   PERFORM _test_assert(v_untimely = 0, 'add-on off does not increment untimely');
-  UPDATE organization_addons SET status = 'active' WHERE organization_id = v_org AND addon_code = 'renter_miniapp';
+  UPDATE organizations SET status = 'licensed' WHERE id = v_org;
 
   -- ---------------------------------------------------------------------------
   -- finance period closed still expires
