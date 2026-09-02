@@ -1517,6 +1517,7 @@ export type I18nKey =
   | "schedule.error.cancelDatesEmpty"
   | "schedule.error.cancelDatesDuplicate"
   | "schedule.error.cancelNotRecurring"
+  | "schedule.error.cancelHasLinkedVisits"
   | "schedule.error.vacationForbidden"
   | "schedule.error.vacationInvalidRange"
   | "schedule.error.vacationFailed"

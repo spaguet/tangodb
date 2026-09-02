@@ -35,7 +35,8 @@ export function corsHeadersFor(req: Request): HeadersInit | null {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type",
+      "authorization, x-client-info, apikey, content-type, x-supabase-api-version, prefer, x-region",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
     Vary: "Origin",
   };
 }

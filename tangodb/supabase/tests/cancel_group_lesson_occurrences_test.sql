@@ -81,6 +81,19 @@ BEGIN
   )
   ON CONFLICT (id) DO NOTHING;
 
+  INSERT INTO clients (id, organization_id, first_name, last_name)
+  VALUES ('eeeeeeee-eeee-eeee-eeee-000000000501', v_org, 'Drop', 'In')
+  ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO single_visits (
+    organization_id, visit_date, schedule_slot_id, schedule_group_id,
+    client_id, amount, method
+  )
+  VALUES (
+    v_org, date '2026-06-03', v_series, v_class,
+    'eeeeeeee-eeee-eeee-eeee-000000000501', 0, 'cash'
+  );
+
   PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
   PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_user::text)::text, true);
@@ -97,6 +110,16 @@ BEGIN
 
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'Batch cancel should succeed');
   PERFORM _test_assert((v_result ->> 'cancelled_count')::integer = 2, 'Should cancel 2 dates');
+  PERFORM _test_assert(
+    EXISTS (
+      SELECT 1
+      FROM single_visits sv
+      WHERE sv.organization_id = v_org
+        AND sv.schedule_slot_id = v_series
+        AND sv.visit_date = date '2026-06-03'
+    ),
+    'Drop-in visit must survive slot split'
+  );
 
   PERFORM _test_assert(
     NOT EXISTS (

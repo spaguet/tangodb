@@ -76,7 +76,10 @@ function isEdgeTransportError(message: string): boolean {
     normalized.includes("failed to send a request to the edge function") ||
     normalized.includes("failed to fetch") ||
     normalized.includes("networkerror") ||
-    normalized.includes("load failed")
+    normalized.includes("load failed") ||
+    normalized === "request_timeout" ||
+    normalized === "origin_not_allowed" ||
+    normalized === "allowed_origins_not_configured"
   );
 }
 
@@ -85,6 +88,10 @@ async function parseFunctionError(error: unknown): Promise<string> {
   if (fnError.context) {
     try {
       const body = (await fnError.context.json()) as { error?: string; code?: string };
+      const codeOrError = body.code ?? body.error;
+      if (codeOrError && isEdgeTransportError(codeOrError)) {
+        return "integrations.googleCalendar.errorEdgeFunctionUnreachable";
+      }
       if (body.code) return body.code;
       if (body.error) return body.error;
     } catch {

@@ -11,6 +11,18 @@
 
 ## Записи
 
+### 2026-09-02 — сырой i18n-ключ в toast (camelCase)
+
+- **Ошибка:** toast показывал `hooks.error.personalOverlap` и `integrations.googleCalendar.errorEdgeFunctionUnreachable` вместо перевода.
+- **Причина:** `isI18nKey` разрешал только `[a-z0-9_]`; сегменты вроде `personalOverlap` / `googleCalendar` не считались ключами, и `resolveMutationError` отдавал строку как есть.
+- **Как избежать:** regex ключей — `[a-z][a-zA-Z0-9_]*` на сегмент; mutation toast только через `resolveMutationError`, не `res.error` напрямую.
+
+### 2026-09-02 — отмена группы vs FK single_visits
+
+- **Ошибка:** отмена даты группового занятия падала на `single_visits_organization_id_schedule_slot_id_fkey`.
+- **Причина:** `_apply_group_slot_cancellations_locked` делал `DELETE` слота перед split/reinsert; `single_visits.schedule_slot_id` — `ON DELETE RESTRICT`.
+- **Как избежать:** не удалять строку `schedule_slots` при split — UPDATE первого сегмента, INSERT остальных; полное закрытие — `valid_to = valid_from - 1`.
+
 ### 2026-08-31 — R6 SQL-тест: дубль member и CHECK period (ops)
 
 - **Ошибка:** `renter_miniapp_r6_addon_purchase_test.sql` падал на production: duplicate `(organization_id, user_id)` и `organization_addons_check` при `period_end < period_start`.

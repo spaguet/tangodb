@@ -776,7 +776,7 @@ export default function EditLessonPopup({
       });
 
       if (!res.success) {
-        toast(res.error ?? t("schedule.error.updateFailed"), "error");
+        toast(resolveMutationError(res.error, "schedule.error.updateFailed", t), "error");
         return;
       }
 
@@ -805,7 +805,7 @@ export default function EditLessonPopup({
           validTo: update.validTo,
         });
         if (!res.success) {
-          toast(res.error ?? t("schedule.error.updateFailed"), "error");
+          toast(resolveMutationError(res.error, "schedule.error.updateFailed", t), "error");
           return;
         }
       }
@@ -827,7 +827,7 @@ export default function EditLessonPopup({
         teacherMemberId: resolvedTeacherMemberId,
       });
       if (!metaRes.success) {
-        toast(metaRes.error ?? t("schedule.error.updateFailed"), "error");
+        toast(resolveMutationError(metaRes.error, "schedule.error.updateFailed", t), "error");
         return;
       }
 
@@ -839,7 +839,7 @@ export default function EditLessonPopup({
           validTo: computeSlotValidTo(validFrom, repeatConfig),
         });
         if (!res.success) {
-          toast(res.error ?? t("schedule.error.updateFailed"), "error");
+          toast(resolveMutationError(res.error, "schedule.error.updateFailed", t), "error");
           return;
         }
       }
@@ -876,7 +876,7 @@ export default function EditLessonPopup({
       });
 
       if (!res.success) {
-        toast(res.error ?? t("schedule.error.updateFailed"), "error");
+        toast(resolveMutationError(res.error, "schedule.error.updateFailed", t), "error");
         return;
       }
     }
@@ -885,7 +885,7 @@ export default function EditLessonPopup({
       if (!row.id) continue;
       const res = await deleteScheduleSlot.mutateAsync({ id: row.id, editDate: todayISO });
       if (!res.success) {
-        toast(res.error ?? t("schedule.error.deleteScheduleFailed"), "error");
+        toast(resolveMutationError(res.error, "schedule.error.deleteScheduleFailed", t), "error");
         return;
       }
     }
@@ -909,7 +909,7 @@ export default function EditLessonPopup({
       });
 
       if (!res.success) {
-        toast(res.error ?? t("schedule.error.addScheduleFailed"), "error");
+        toast(resolveMutationError(res.error, "schedule.error.addScheduleFailed", t), "error");
         return;
       }
     }
@@ -924,7 +924,7 @@ export default function EditLessonPopup({
           validTo: computeSlotValidTo(validFrom, repeatConfig),
         });
         if (!res.success) {
-          toast(res.error ?? t("schedule.error.updateFailed"), "error");
+          toast(resolveMutationError(res.error, "schedule.error.updateFailed", t), "error");
           return;
         }
       }
@@ -1137,7 +1137,7 @@ export default function EditLessonPopup({
     });
 
     if (!res.success) {
-      toast(res.error ?? t("common.saveFailed"), "error");
+      toast(resolveMutationError(res.error, "common.saveFailed", t), "error");
       return;
     }
 

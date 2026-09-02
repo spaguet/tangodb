@@ -199,7 +199,7 @@ function invalidateScheduleQueries(
   kickCalendarSyncInBackground(organizationId);
 }
 
-/** Закрыть слот с даты closingDate (не показывать с closingDate); при valid_from === closingDate — hard delete. */
+/** Закрыть слот с даты closingDate (не показывать с closingDate); не hard-delete — FK single_visits. */
 async function closeScheduleSlotByDate(
   id: string,
   closingDate: string
@@ -215,14 +215,9 @@ async function closeScheduleSlotByDate(
 
   const validFrom = String(slot.valid_from ?? "2000-01-01").slice(0, 10);
   const validTo = addDays(closingDate, -1);
+  const closedTo = validTo < validFrom ? addDays(validFrom, -1) : validTo;
 
-  if (validTo < validFrom) {
-    const { error } = await supabase.from(scheduleTable).delete().eq("id", id);
-    if (error) return { success: false as const, error: error.message };
-    return { success: true as const };
-  }
-
-  const { error } = await supabase.from(scheduleTable).update({ valid_to: validTo }).eq("id", id);
+  const { error } = await supabase.from(scheduleTable).update({ valid_to: closedTo }).eq("id", id);
   if (error) return { success: false as const, error: error.message };
   return { success: true as const };
 }

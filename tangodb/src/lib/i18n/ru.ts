@@ -1587,6 +1587,8 @@ export const RU: Record<I18nKey, string> = {
   "schedule.error.cancelDatesEmpty": "Выберите хотя бы одну дату для отмены",
   "schedule.error.cancelDatesDuplicate": "В запросе есть повторяющиеся даты",
   "schedule.error.cancelNotRecurring": "Пакетная отмена доступна только для регулярных занятий",
+  "schedule.error.cancelHasLinkedVisits":
+    "Нельзя удалить слот: на это занятие уже есть разовые посещения. Отмена даты сохраняет историю.",
   "schedule.error.vacationForbidden": "Недостаточно прав для оформления отпуска преподавателя",
   "schedule.error.vacationInvalidRange": "Укажите корректный диапазон дат отпуска",
   "schedule.error.vacationFailed": "Не удалось оформить отпуск преподавателя",

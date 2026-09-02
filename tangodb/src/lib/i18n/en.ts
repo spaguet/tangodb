@@ -1589,6 +1589,8 @@ export const EN: Record<I18nKey, string> = {
   "schedule.error.cancelDatesEmpty": "Select at least one class date to cancel",
   "schedule.error.cancelDatesDuplicate": "Duplicate dates in cancel request",
   "schedule.error.cancelNotRecurring": "Batch cancel is only available for recurring classes",
+  "schedule.error.cancelHasLinkedVisits":
+    "Cannot remove this class slot because drop-in visits already exist. Cancelling a date keeps that history.",
   "schedule.error.vacationForbidden": "Insufficient permission to schedule teacher vacation",
   "schedule.error.vacationInvalidRange": "Enter a valid vacation date range",
   "schedule.error.vacationFailed": "Failed to schedule teacher vacation",
