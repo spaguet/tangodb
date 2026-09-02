@@ -87,7 +87,11 @@ export async function fetchBootstrap(
 export function prepareTelegramWebApp(): void {
   const webApp = window.Telegram?.WebApp;
   if (!webApp) return;
-  webApp.ready();
-  webApp.expand();
-  webApp.requestWriteAccess?.();
+  try {
+    webApp.ready();
+    webApp.expand();
+    webApp.requestWriteAccess?.();
+  } catch {
+    // Telegram Desktop injects WebApp; some methods throw in a plain browser.
+  }
 }

@@ -46,33 +46,40 @@ export default function App() {
     let cancelled = false;
 
     async function run() {
-      if (supabaseEnvError) {
-        setErrorKey("envMissing");
-        setPhase("error");
-        return;
-      }
-
-      prepareTelegramWebApp();
-      const initData = await waitForTelegramInitData();
-      if (cancelled) return;
-
-      if (!initData) {
-        setErrorKey("openInTelegram");
-        setPhase("error");
-        return;
-      }
-
-      const orgId = parseStartParamFromInitData(initData);
-      if (!orgId) {
-        setErrorKey("missingStartParam");
-        setPhase("error");
-        return;
-      }
-      setOrganizationId(orgId);
-
-      const supabase = getRenterSupabase(orgId);
-
+      let orgId: string | null = null;
       try {
+        if (supabaseEnvError) {
+          setErrorKey("envMissing");
+          setPhase("error");
+          return;
+        }
+
+        try {
+          window.Telegram?.WebApp?.ready();
+          window.Telegram?.WebApp?.expand();
+        } catch {
+          // Ignore: ready/expand are best-effort until initData exists.
+        }
+
+        const initData = await waitForTelegramInitData();
+        if (cancelled) return;
+
+        if (!initData) {
+          setErrorKey("openInTelegram");
+          setPhase("error");
+          return;
+        }
+
+        orgId = parseStartParamFromInitData(initData);
+        if (!orgId) {
+          setErrorKey("missingStartParam");
+          setPhase("error");
+          return;
+        }
+        setOrganizationId(orgId);
+
+        const supabase = getRenterSupabase(orgId);
+
         const { data: existing } = await supabase.auth.getSession();
         if (existing.session) {
           try {
@@ -88,6 +95,7 @@ export default function App() {
         }
 
         setPhase("signingIn");
+        prepareTelegramWebApp();
 
         const minted = await mintRenterSession(initData);
         const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
@@ -110,7 +118,9 @@ export default function App() {
         const key = err instanceof Error ? toMessageKey(err.message) : "authForbidden";
         setErrorKey(key);
         setPhase("error");
-        await getRenterSupabase(orgId).auth.signOut();
+        if (orgId) {
+          await getRenterSupabase(orgId).auth.signOut();
+        }
       }
     }
 

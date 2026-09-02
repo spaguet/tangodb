@@ -2,7 +2,12 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function getRawInitData(): string {
-  return (window.Telegram?.WebApp?.initData ?? "").trim();
+  try {
+    const raw = window.Telegram?.WebApp?.initData;
+    return typeof raw === "string" ? raw.trim() : "";
+  } catch {
+    return "";
+  }
 }
 
 /** telegram-web-app.js can populate initData a tick after the module graph runs. */
