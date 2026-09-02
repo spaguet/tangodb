@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { btnPrimaryCls, btnSecondaryCls, fieldCls, labelCls, panelCls } from "../../lib/crmUi";
 import { formatMoney } from "../../lib/format";
 import { slotEndOptions, slotStartOptions, snapTime } from "../../lib/grid";
 import {
@@ -43,7 +44,6 @@ export default function BookingSheet({
   const [message, setMessage] = useState<string | null>(null);
 
   const starts = useMemo(() => slotStartOptions(), []);
-
   const endOptions = useMemo(() => slotEndOptions(timeStart), [timeStart]);
 
   useEffect(() => {
@@ -102,20 +102,20 @@ export default function BookingSheet({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-t-2xl bg-[var(--tg-theme-bg-color,#0f172a)] p-4 pb-8 space-y-3"
+        className="w-full max-w-md space-y-3 rounded-t-2xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">{t(locale, "bookSlot")}</h2>
-        <p className="text-sm opacity-70">
+        <h2 className="text-lg font-semibold text-slate-900">{t(locale, "bookSlot")}</h2>
+        <p className="text-sm text-slate-500">
           {date} · {formatTimeRange(timeStart, timeEnd || "…")}
         </p>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span>{t(locale, "startTime")}</span>
+        <label className="flex flex-col gap-1">
+          <span className={labelCls}>{t(locale, "startTime")}</span>
           <select
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2"
+            className={fieldCls}
             value={timeStart}
             onChange={(e) => {
               setTimeStart(e.target.value);
@@ -130,13 +130,9 @@ export default function BookingSheet({
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span>{t(locale, "endTime")}</span>
-          <select
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2"
-            value={timeEnd}
-            onChange={(e) => setTimeEnd(e.target.value)}
-          >
+        <label className="flex flex-col gap-1">
+          <span className={labelCls}>{t(locale, "endTime")}</span>
+          <select className={fieldCls} value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)}>
             {endOptions.map((te) => (
               <option key={te} value={te}>
                 {te}
@@ -146,32 +142,30 @@ export default function BookingSheet({
         </label>
 
         {quoting ? (
-          <p className="text-sm opacity-70">{t(locale, "quoteLoading")}</p>
+          <p className="text-sm text-slate-500">{t(locale, "quoteLoading")}</p>
         ) : quote ? (
-          <div className="rounded-lg bg-white/5 p-3 text-sm space-y-1">
-            <p>
+          <div className={`${panelCls} space-y-1 p-3 text-sm`}>
+            <p className="text-slate-800">
               {t(locale, "cost")}: {formatMoney(quote.cost, quote.currency, locale)}
             </p>
-            <p className="opacity-80">
+            <p className="text-slate-600">
               {t(locale, "prepay")}: {formatMoney(quote.prepay, quote.currency, locale)}
             </p>
-            {quote.busy ? (
-              <p className="text-rose-300">{t(locale, "bookingConflict")}</p>
-            ) : null}
+            {quote.busy ? <p className="text-rose-600">{t(locale, "bookingConflict")}</p> : null}
           </div>
         ) : null}
 
-        {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-        {message ? <p className="text-sm text-emerald-300">{message}</p> : null}
+        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+        {message ? <p className="text-sm font-medium text-indigo-600">{message}</p> : null}
 
         <div className="flex gap-2 pt-2">
-          <button type="button" className="flex-1 rounded-lg border border-white/20 py-2.5" onClick={onClose}>
+          <button type="button" className={`flex-1 ${btnSecondaryCls}`} onClick={onClose}>
             {t(locale, "cancel")}
           </button>
           <button
             type="button"
             disabled={submitting || quoting || !quote || quote.busy}
-            className="flex-1 rounded-lg bg-[var(--tg-theme-button-color,#38bdf8)] py-2.5 text-white disabled:opacity-50"
+            className={`flex-1 ${btnPrimaryCls}`}
             onClick={() => void submit()}
           >
             {t(locale, "confirmBook")}

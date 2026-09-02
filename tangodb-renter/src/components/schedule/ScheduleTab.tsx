@@ -2,6 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
 import {
+  btnOpenCls,
+  btnWeekNavCls,
+  fieldCls,
+  labelCls,
+  panelCls,
+  weekChipActiveCls,
+  weekChipCls,
+} from "../../lib/crmUi";
+import {
   formatWeekRangeLabel,
   occupancyDaysFromWindow,
   occupancyWeeksFromWindow,
@@ -113,27 +122,23 @@ export default function ScheduleTab({
 
   if (loading && !occupancy) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="h-8 w-8 rounded-full border-2 border-[var(--tg-theme-button-color,#38bdf8)] border-t-transparent animate-spin" />
+      <div className="flex justify-center bg-slate-50 py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-3 bg-slate-50 text-slate-800">
       <div className="flex shrink-0 flex-col gap-3 px-4">
         {!bootstrap.addonActive ? (
-          <p className="text-xs opacity-70 leading-relaxed">{t(locale, "addonInactiveCreate")}</p>
+          <p className="text-xs leading-relaxed text-slate-500">{t(locale, "addonInactiveCreate")}</p>
         ) : null}
 
         {locations.length > 1 ? (
           <label className="flex flex-col gap-1 text-sm">
-            <span className="opacity-70">{t(locale, "selectHall")}</span>
-            <select
-              className="rounded-lg border border-white/15 bg-white/5 px-3 py-2"
-              value={locationId}
-              onChange={(e) => setLocationId(e.target.value)}
-            >
+            <span className={labelCls}>{t(locale, "selectHall")}</span>
+            <select className={fieldCls} value={locationId} onChange={(e) => setLocationId(e.target.value)}>
               {locations.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name}
@@ -142,42 +147,40 @@ export default function ScheduleTab({
             </select>
           </label>
         ) : locations[0] ? (
-          <p className="text-sm opacity-80">{locations[0].name}</p>
+          <p className="text-sm font-medium text-slate-700">{locations[0].name}</p>
         ) : null}
 
         {bootstrap.addonActive ? (
-          <button
-            type="button"
-            className="rounded-lg border border-white/20 px-3 py-2 text-sm"
-            onClick={() => setPackOpen(true)}
-          >
+          <button type="button" className={btnOpenCls} onClick={() => setPackOpen(true)}>
             {t(locale, "recurringPack")}
           </button>
         ) : null}
 
-        {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
         {weeks.length > 0 ? (
-          <div className="flex flex-col gap-2">
+          <div className={`flex flex-col gap-2 ${panelCls} p-3`}>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 aria-label={t(locale, "prevWeek")}
                 disabled={safeWeekIndex === 0}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-lg disabled:opacity-30"
+                className={btnWeekNavCls}
                 onClick={() => setWeekIndex((n) => Math.max(0, n - 1))}
               >
                 ‹
               </button>
               <div className="flex min-w-0 flex-1 flex-col items-center">
-                <span className="text-sm font-semibold text-center leading-tight">{weekLabel}</span>
-                <span className="text-[10px] opacity-60">
+                <span className="text-center text-sm font-semibold text-slate-800 leading-tight">
+                  {weekLabel}
+                </span>
+                <span className="text-[10px] text-slate-400">
                   {tFill(locale, "weekOf", { n: safeWeekIndex + 1, total: weeks.length })}
                 </span>
                 {safeWeekIndex !== 0 ? (
                   <button
                     type="button"
-                    className="text-[10px] font-semibold text-[var(--tg-theme-button-color,#38bdf8)]"
+                    className="text-[10px] font-semibold text-indigo-600 hover:underline"
                     onClick={() => setWeekIndex(0)}
                   >
                     {t(locale, "thisWeek")}
@@ -188,7 +191,7 @@ export default function ScheduleTab({
                 type="button"
                 aria-label={t(locale, "nextWeek")}
                 disabled={safeWeekIndex >= weeks.length - 1}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-lg disabled:opacity-30"
+                className={btnWeekNavCls}
                 onClick={() => setWeekIndex((n) => Math.min(weeks.length - 1, n + 1))}
               >
                 ›
@@ -200,9 +203,7 @@ export default function ScheduleTab({
                   key={week[0]}
                   type="button"
                   className={`min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-[10px] leading-tight ${
-                    i === safeWeekIndex
-                      ? "bg-[var(--tg-theme-button-color,#38bdf8)] text-white"
-                      : "bg-white/5"
+                    i === safeWeekIndex ? weekChipActiveCls : weekChipCls
                   }`}
                   onClick={() => setWeekIndex(i)}
                 >
@@ -210,21 +211,21 @@ export default function ScheduleTab({
                 </button>
               ))}
             </div>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] opacity-75">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
               <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500/50" />
+                <span className="h-2.5 w-2.5 rounded-sm border border-slate-200 bg-white" />
                 {t(locale, "free")}
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-rose-500/40" />
+                <span className="h-2.5 w-2.5 rounded-sm bg-slate-200" />
                 {t(locale, "busy")}
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-sky-500/60" />
+                <span className="h-2.5 w-2.5 rounded-sm bg-slate-600" />
                 {t(locale, "mine")}
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="slot-hold h-2.5 w-2.5 rounded-sm border border-white/20" />
+                <span className="slot-hold h-2.5 w-2.5 rounded-sm border border-slate-700" />
                 {t(locale, "mineHold")}
               </span>
             </div>
@@ -233,7 +234,7 @@ export default function ScheduleTab({
       </div>
 
       {occupancy && weekDays.length > 0 ? (
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 border-t border-slate-200">
           <WeeklyOccupancyGrid
             locale={locale}
             timezone={bootstrap.timezone}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
+import { btnPrimaryCls, btnSecondaryCls, fieldCls, labelCls, panelCls } from "../../lib/crmUi";
 import { formatMoney } from "../../lib/format";
 import { slotEndOptions, slotStartOptions } from "../../lib/grid";
 import {
@@ -24,6 +25,9 @@ type PackSheetProps = {
   onClose: () => void;
   onSuccess: () => void;
 };
+
+const weekdayActiveCls = "bg-indigo-600 text-white border border-indigo-600";
+const weekdayIdleCls = "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
 
 export default function PackSheet({
   locale,
@@ -123,21 +127,17 @@ export default function PackSheet({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40" onClick={onClose}>
       <div
-        className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-t-2xl bg-[var(--tg-theme-bg-color,#0f172a)] p-4 pb-8 space-y-3"
+        className="max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">{t(locale, "recurringPack")}</h2>
-        <p className="text-xs opacity-70">{t(locale, "packActivateNote")}</p>
+        <h2 className="text-lg font-semibold text-slate-900">{t(locale, "recurringPack")}</h2>
+        <p className="text-xs text-slate-500">{t(locale, "packActivateNote")}</p>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span>{t(locale, "packStart")}</span>
-          <select
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2"
-            value={validFrom}
-            onChange={(e) => setValidFrom(e.target.value)}
-          >
+        <label className="flex flex-col gap-1">
+          <span className={labelCls}>{t(locale, "packStart")}</span>
+          <select className={fieldCls} value={validFrom} onChange={(e) => setValidFrom(e.target.value)}>
             {days.map((d) => (
               <option key={d} value={d}>
                 {d}
@@ -146,15 +146,15 @@ export default function PackSheet({
           </select>
         </label>
 
-        <div className="text-sm">
-          <span className="opacity-70">{t(locale, "weekdays")}</span>
-          <div className="flex flex-wrap gap-1.5 mt-1">
+        <div>
+          <span className={labelCls}>{t(locale, "weekdays")}</span>
+          <div className="mt-1 flex flex-wrap gap-1.5">
             {[1, 2, 3, 4, 5, 6, 7].map((d) => (
               <button
                 key={d}
                 type="button"
-                className={`rounded-md px-2 py-1 text-xs ${
-                  weekdays.includes(d) ? "bg-[var(--tg-theme-button-color,#38bdf8)]" : "bg-white/10"
+                className={`rounded-md px-2 py-1 text-xs font-semibold ${
+                  weekdays.includes(d) ? weekdayActiveCls : weekdayIdleCls
                 }`}
                 onClick={() => toggleWeekday(d)}
               >
@@ -165,13 +165,9 @@ export default function PackSheet({
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <label className="flex flex-col gap-1 text-sm">
-            <span>{t(locale, "startTime")}</span>
-            <select
-              className="rounded-lg border border-white/15 bg-white/5 px-2 py-2"
-              value={timeStart}
-              onChange={(e) => setTimeStart(e.target.value)}
-            >
+          <label className="flex flex-col gap-1">
+            <span className={labelCls}>{t(locale, "startTime")}</span>
+            <select className={fieldCls} value={timeStart} onChange={(e) => setTimeStart(e.target.value)}>
               {starts.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -179,13 +175,9 @@ export default function PackSheet({
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span>{t(locale, "endTime")}</span>
-            <select
-              className="rounded-lg border border-white/15 bg-white/5 px-2 py-2"
-              value={timeEnd}
-              onChange={(e) => setTimeEnd(e.target.value)}
-            >
+          <label className="flex flex-col gap-1">
+            <span className={labelCls}>{t(locale, "endTime")}</span>
+            <select className={fieldCls} value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)}>
               {endOptions.map((te) => (
                 <option key={te} value={te}>
                   {te}
@@ -196,27 +188,27 @@ export default function PackSheet({
         </div>
 
         {quoting ? (
-          <p className="text-sm opacity-70">{t(locale, "quoteLoading")}</p>
+          <p className="text-sm text-slate-500">{t(locale, "quoteLoading")}</p>
         ) : occurrences ? (
-          <div className="rounded-lg bg-white/5 p-3 text-sm space-y-1">
-            <p>
+          <div className={`${panelCls} space-y-1 p-3 text-sm`}>
+            <p className="text-slate-800">
               {t(locale, "cost")}: {formatMoney(totalCost, currency, locale)} ({occurrences.length}{" "}
               {locale === "en" ? "sessions" : "занятий"})
             </p>
-            {hasBusy ? <p className="text-rose-300">{t(locale, "bookingConflict")}</p> : null}
+            {hasBusy ? <p className="text-rose-600">{t(locale, "bookingConflict")}</p> : null}
           </div>
         ) : null}
 
-        {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
         <div className="flex gap-2 pt-2">
-          <button type="button" className="flex-1 rounded-lg border border-white/20 py-2.5" onClick={onClose}>
+          <button type="button" className={`flex-1 ${btnSecondaryCls}`} onClick={onClose}>
             {t(locale, "cancel")}
           </button>
           <button
             type="button"
             disabled={submitting || quoting || hasBusy || weekdays.length === 0}
-            className="flex-1 rounded-lg bg-[var(--tg-theme-button-color,#38bdf8)] py-2.5 text-white disabled:opacity-50"
+            className={`flex-1 ${btnPrimaryCls}`}
             onClick={() => void submit()}
           >
             {t(locale, "confirmBook")}

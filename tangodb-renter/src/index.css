@@ -7,13 +7,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Mini App hold — same diagonal pattern as CRM LessonBlock rental hold (slate, not rose). */
 .slot-hold {
-  background-color: color-mix(in srgb, var(--tg-theme-hint-color, #94a3b8) 35%, transparent);
+  background-color: rgb(71 85 105);
   background-image: repeating-linear-gradient(
     -45deg,
     transparent,
-    transparent 4px,
-    color-mix(in srgb, var(--tg-theme-hint-color, #94a3b8) 55%, transparent) 4px,
-    color-mix(in srgb, var(--tg-theme-hint-color, #94a3b8) 55%, transparent) 8px
+    transparent 5px,
+    rgba(255, 255, 255, 0.22) 5px,
+    rgba(255, 255, 255, 0.22) 9px
   );
 }
