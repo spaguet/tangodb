@@ -46,6 +46,7 @@ import {
   deleteEventSession,
   upsertEventSession,
 } from "./calendarSyncEventSession.ts";
+import { deleteRental, upsertRental } from "./calendarSyncRental.ts";
 import { processIncrementalSyncJob } from "./googleCalendarWatch.ts";
 
 export { CANCEL_POLICY, LEASE_SECONDS, type OutboxJob } from "./calendarSyncCommon.ts";
@@ -527,6 +528,15 @@ export async function processCalendarSyncJob(
       return;
     }
     await upsertEventSession(admin, config, job);
+    return;
+  }
+
+  if (job.source_type === "rental") {
+    if (job.operation === "delete") {
+      await deleteRental(admin, config, job);
+      return;
+    }
+    await upsertRental(admin, config, job);
     return;
   }
 

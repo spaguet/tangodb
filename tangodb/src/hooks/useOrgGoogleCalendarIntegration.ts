@@ -12,36 +12,44 @@ import {
   setOrganizationGoogleCalendarBinding,
   startGoogleCalendarOAuth,
   requestOrganizationCalendarReconcile,
+  requestOrganizationRentalsCalendarReconcile,
   kickCalendarSyncInBackground,
   type GoogleAccountSummary,
   type GoogleCalendarListEntry,
   type OrganizationGoogleCalendarBinding,
+  type OrgGoogleCalendarPurpose,
 } from "../lib/googleCalendarApi";
 
 export const orgGoogleCalendarQueryKeys = {
   accounts: ["google-calendar", "accounts"] as const,
-  binding: ["google-calendar", "org-binding"] as const,
+  binding: (purpose: OrgGoogleCalendarPurpose) =>
+    ["google-calendar", "org-binding", purpose] as const,
 };
 
-export function useOrgGoogleCalendarIntegration() {
+export function useOrgGoogleCalendarIntegration(
+  purpose: OrgGoogleCalendarPurpose = "events"
+) {
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const { role } = usePermissions();
-  const scopedOrgBindingKey = withOrgId(orgGoogleCalendarQueryKeys.binding);
+  const scopedOrgBindingKey = withOrgId(orgGoogleCalendarQueryKeys.binding(purpose));
 
   const canManage = role === "owner" || role === "director";
+
+  const bindingQuery = useQuery({
+    queryKey: scopedOrgBindingKey,
+    queryFn: () => fetchOrganizationGoogleBinding(purpose),
+    enabled: orgEnabled && canManage,
+  });
+
+  const orgBindingEnabled = Boolean(bindingQuery.data?.enabled);
 
   const accountsQuery = useQuery({
     queryKey: orgGoogleCalendarQueryKeys.accounts,
     queryFn: fetchMyGoogleAccounts,
     enabled: canManage,
-  });
-
-  const bindingQuery = useQuery({
-    queryKey: scopedOrgBindingKey,
-    queryFn: fetchOrganizationGoogleBinding,
-    enabled: orgEnabled && canManage,
+    refetchInterval: canManage && orgBindingEnabled ? 60_000 : false,
   });
 
   const invalidateAll = async () => {
@@ -68,12 +76,14 @@ export function useOrgGoogleCalendarIntegration() {
   const createCalendarMutation = useMutation({
     mutationFn: (googleAccountId: string) => {
       if (!organizationId) throw new Error("organization_missing");
-      return createGoogleCalendar(googleAccountId, organizationId);
+      return createGoogleCalendar(googleAccountId, organizationId, { purpose });
     },
   });
 
   const setBindingMutation = useMutation({
-    mutationFn: setOrganizationGoogleCalendarBinding,
+    mutationFn: (
+      input: Omit<Parameters<typeof setOrganizationGoogleCalendarBinding>[0], "purpose">
+    ) => setOrganizationGoogleCalendarBinding({ ...input, purpose }),
     onSuccess: () => {
       kickCalendarSyncInBackground(organizationId);
       return invalidateAll();
@@ -98,24 +108,35 @@ export function useOrgGoogleCalendarIntegration() {
 
   const syncFutureMutation = useMutation({
     mutationFn: async () => {
-      await requestOrganizationCalendarReconcile(organizationId);
+      if (purpose === "rentals") {
+        await requestOrganizationRentalsCalendarReconcile(organizationId);
+      } else {
+        await requestOrganizationCalendarReconcile(organizationId);
+      }
       await invalidateAll();
     },
   });
 
-  const primaryAccount: GoogleAccountSummary | null =
-    accountsQuery.data?.find((a) => a.status === "active") ??
-    accountsQuery.data?.[0] ??
-    null;
-
+  const accounts = accountsQuery.data ?? [];
   const orgBinding: OrganizationGoogleCalendarBinding | null = bindingQuery.data ?? null;
 
-  const isConfigured = Boolean(primaryAccount && primaryAccount.status === "active" && orgBinding);
+  const boundAccount: GoogleAccountSummary | null =
+    accounts.find((account) => account.id === orgBinding?.google_account_id) ?? null;
+
+  const primaryAccount: GoogleAccountSummary | null =
+    boundAccount ??
+    accounts.find((account) => account.status === "active") ??
+    accounts[0] ??
+    null;
+
+  const isConfigured = Boolean(orgBinding?.enabled);
 
   return {
     canManage,
-    accounts: accountsQuery.data ?? [],
+    purpose,
+    accounts,
     primaryAccount,
+    boundAccount,
     binding: orgBinding,
     isConfigured,
     isLoading: accountsQuery.isLoading || bindingQuery.isLoading,
@@ -136,4 +157,4 @@ export function useOrgGoogleCalendarIntegration() {
   };
 }
 
-export type { GoogleAccountSummary, GoogleCalendarListEntry, OrganizationGoogleCalendarBinding };
+export type { GoogleAccountSummary, GoogleCalendarListEntry, OrganizationGoogleCalendarBinding, OrgGoogleCalendarPurpose };

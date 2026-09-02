@@ -14,13 +14,20 @@ import { registerWatchForBinding, stopWatchForBinding } from "../_shared/googleC
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 15 * 60_000;
 
+type OrgBindingPurpose = "events" | "rentals";
+
 type SetOrgBindingBody = {
   google_account_id?: string;
   calendar_id?: string;
   calendar_name?: string;
   timezone?: string;
   delete_old_events?: boolean;
+  purpose?: string;
 };
+
+function parseOrgBindingPurpose(value: string | undefined): OrgBindingPurpose {
+  return value === "rentals" ? "rentals" : "events";
+}
 
 async function writeAuditLog(
   admin: ReturnType<typeof createServiceClient>,
@@ -79,6 +86,7 @@ Deno.serve(async (req) => {
   const calendarName = (body.calendar_name ?? "").trim();
   const timezone = (body.timezone ?? "").trim();
   const deleteOldEvents = body.delete_old_events === true;
+  const purpose = parseOrgBindingPurpose(body.purpose);
 
   if (!googleAccountId) {
     return jsonResponse({ error: "google_account_id required" }, 400, req);
@@ -134,6 +142,7 @@ Deno.serve(async (req) => {
     .select("id, calendar_id, google_account_id")
     .eq("organization_id", organizationId)
     .eq("enabled", true)
+    .eq("purpose", purpose)
     .maybeSingle();
 
   if (
@@ -194,6 +203,7 @@ Deno.serve(async (req) => {
       calendar_id: calendarId,
       calendar_name: calendarName,
       timezone,
+      purpose,
       enabled: true,
       cleanup_pending: false,
       disabled_at: null,
@@ -220,19 +230,24 @@ Deno.serve(async (req) => {
       calendar_id: calendarId,
       calendar_name: calendarName,
       timezone,
+      purpose,
       replaced_binding_id: activeBinding?.id ?? null,
       delete_old_events: deleteOldEvents,
     },
   });
 
-  const { error: reconcileError } = await admin.rpc(
-    "execute_organization_event_sessions_reconcile",
-    { p_organization_id: organizationId }
-  );
+  const reconcileRpc =
+    purpose === "rentals"
+      ? "execute_organization_rentals_reconcile"
+      : "execute_organization_event_sessions_reconcile";
+  const { error: reconcileError } = await admin.rpc(reconcileRpc, {
+    p_organization_id: organizationId,
+  });
 
   if (reconcileError) {
     logEvent("gcal_org_reconcile_enqueue_error", {
       organization_id: organizationId,
+      purpose,
       message: reconcileError.message,
     });
   }
@@ -242,6 +257,7 @@ Deno.serve(async (req) => {
     organization_id: organizationId,
     binding_id: newBinding.id as string,
     calendar_id: calendarId,
+    purpose,
   });
 
   try {

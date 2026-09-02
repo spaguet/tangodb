@@ -95,7 +95,9 @@
 
 ## Google Calendar sync (GCAL)
 
-- **Outbox:** `calendar_sync_outbox` + `enqueue_calendar_sync` (триггеры на `personal_lessons`, `schedule_slots`, `schedule_occurrence_cancellations`); worker — Edge Function `calendar-sync-worker`.
+- **Outbox:** `calendar_sync_outbox` + `enqueue_calendar_sync` (триггеры на `personal_lessons`, `schedule_slots`, `schedule_occurrence_cancellations`, `calendar_event_sessions`, `rentals`); worker — Edge Function `calendar-sync-worker`.
+- **Hall rental calendar (GCAL-5):** подтверждённые `rentals` (`booking_status = confirmed`) идут только в org-binding `purpose = rentals` — отдельный Google-аккаунт или отдельный календарь на том же аккаунте, не преподавательский и не `purpose = events`. Payload без сумм, телефона и внутренней заметки. Reconcile: `execute_organization_rentals_reconcile` / `request_organization_rentals_calendar_reconcile`. UI: Настройки → Интеграции, блок «Календарь аренды зала».
+
 - **Drain / kick:** cron-тик `calendar-sync-worker` обрабатывает несколько batch (до ~110 с) и при остатке очереди вызывает себя снова; UI после CRUD расписания и кнопки «Синхронизировать» зовёт `calendar-sync-kick` (org-scoped claim). Default batch 40.
 - **Access token cache:** `user_google_accounts.encrypted_access_token` + `access_token_expires_at`; refresh только когда токен истекает; новый `refresh_token` от Google сохраняется. In-memory cache внутри одного вызова worker.
 - **Group occurrence enqueue (Prompt 9):** горизонт 7 дней назад / 90 вперёд через `gcal_group_occurrence_horizon_bounds` + `_group_slot_occurrences_in_range`; триггеры на `schedule_slots` (union OLD/NEW при UPDATE), отмена → delete по `schedule_occurrence_cancellations`; `move_group_lesson_occurrence` — явный delete/upsert; ежедневное продление — RPC `run_group_occurrence_horizon_extension` + cron `calendar-extend-group-horizon`.

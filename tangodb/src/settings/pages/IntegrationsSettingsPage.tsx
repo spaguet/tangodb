@@ -544,7 +544,8 @@ export default function IntegrationsSettingsPage() {
 
       {isConfigured && <GoogleCalendarFreebusySection />}
 
-      {showTeamSection && <OrgEventsGoogleSyncSection />}
+      {showTeamSection && <OrgEventsGoogleSyncSection purpose="events" />}
+      {showTeamSection && <OrgEventsGoogleSyncSection purpose="rentals" />}
       {showTeamSection && <TeamGoogleSyncSection />}
     </div>
   );

@@ -345,3 +345,72 @@ export function buildEventSessionGoogleEvent(input: {
     },
   };
 }
+
+export function buildRentalDescription(input: {
+  renterName: string;
+  locationName: string | null;
+  purpose: string | null;
+  organizationName: string;
+  scheduleUrl: string;
+}): string {
+  const lines: string[] = ["Аренда зала"];
+  const renter = input.renterName.trim();
+  if (renter) {
+    lines.push(`Арендатор: ${renter}`);
+  }
+  const location = (input.locationName ?? "").trim();
+  if (location) {
+    lines.push(`Локация: ${location}`);
+  }
+  const purpose = (input.purpose ?? "").trim();
+  if (purpose) {
+    lines.push(`Цель: ${purpose}`);
+  }
+  lines.push(`Организация: ${input.organizationName}`);
+  lines.push(`Открыть в CRM: ${input.scheduleUrl}`);
+  lines.push("Управляется TangoDB. Изменяйте аренду в CRM.");
+  return lines.join("\n");
+}
+
+export function buildRentalGoogleEvent(input: {
+  rentalId: string;
+  organizationId: string;
+  rentalDate: string;
+  timeStart: string;
+  timeEnd: string;
+  timeZone: string;
+  renterName: string;
+  purpose: string | null;
+  locationName: string | null;
+  organizationName: string;
+  scheduleUrl: string;
+}): GoogleCalendarEventResource {
+  const renter = input.renterName.trim() || "арендатор";
+  const location = (input.locationName ?? "").trim();
+  const summary = location ? `Аренда · ${location} · ${renter}` : `Аренда · ${renter}`;
+
+  return {
+    summary,
+    description: buildRentalDescription({
+      renterName: renter,
+      locationName: input.locationName,
+      purpose: input.purpose,
+      organizationName: input.organizationName,
+      scheduleUrl: input.scheduleUrl,
+    }),
+    location: location || undefined,
+    start: toGoogleDateTime(input.rentalDate, input.timeStart, input.timeZone),
+    end: toGoogleDateTime(input.rentalDate, input.timeEnd, input.timeZone),
+    transparency: "opaque",
+    visibility: "default",
+    reminders: { useDefault: true },
+    extendedProperties: {
+      private: {
+        managedBy: "tangodb",
+        organizationId: input.organizationId,
+        sourceType: "rental",
+        sourceId: input.rentalId,
+      },
+    },
+  };
+}

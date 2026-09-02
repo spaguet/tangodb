@@ -246,7 +246,7 @@ export async function recreateMemberBindingCalendar(
       accessToken,
       `TangoDB / ${org.organizationName}`,
       org.timezone,
-      { alsoMatchPrefix: "TangoDB /" }
+      { alsoMatchPrefix: "TangoDB /", excludeSummaryIncludes: "/ rentals" }
     );
     const calendar = dedicated.calendar;
 
@@ -327,13 +327,15 @@ export async function loadActiveMemberEventsBinding(
 
 export async function loadActiveOrgBinding(
   admin: SupabaseClient,
-  organizationId: string
+  organizationId: string,
+  purpose: "events" | "rentals" = "events"
 ): Promise<OrganizationBindingRow | null> {
   const { data } = await admin
     .from("organization_google_calendar_bindings")
     .select(ORG_BINDING_SELECT)
     .eq("organization_id", organizationId)
     .eq("enabled", true)
+    .eq("purpose", purpose)
     .maybeSingle();
 
   return (data as OrganizationBindingRow | null) ?? null;

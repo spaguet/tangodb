@@ -19,6 +19,7 @@ const DEFAULT_TIMEZONE = "Europe/Moscow";
 type CreateBody = {
   google_account_id?: string;
   organization_id?: string;
+  purpose?: string;
 };
 
 Deno.serve(async (req) => {
@@ -91,7 +92,10 @@ Deno.serve(async (req) => {
 
   const timeZone =
     (settings?.timezone as string | undefined)?.trim() || DEFAULT_TIMEZONE;
-  const summary = `TangoDB / ${orgName}`;
+  const isRentalCalendar = body.purpose === "rentals";
+  const summary = isRentalCalendar
+    ? `TangoDB / ${orgName} / rentals`
+    : `TangoDB / ${orgName}`;
 
   try {
     const config = await loadGoogleOAuthConfigOrThrow();
@@ -101,7 +105,9 @@ Deno.serve(async (req) => {
       accessToken,
       summary,
       timeZone,
-      { alsoMatchPrefix: "TangoDB /" }
+      isRentalCalendar
+        ? undefined
+        : { alsoMatchPrefix: "TangoDB /", excludeSummaryIncludes: "/ rentals" }
     );
 
     logEvent(reused ? "gcal_create_calendar_reuse" : "gcal_create_calendar", {

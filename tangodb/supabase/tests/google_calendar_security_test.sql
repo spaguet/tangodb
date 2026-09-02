@@ -156,6 +156,31 @@ BEGIN
   WHERE organization_id = v_org_a;
   PERFORM gcal_security_test_assert(v_count >= 1, 'owner should read own org outbox');
 
+  INSERT INTO organization_google_calendar_bindings (
+    organization_id, google_account_id, configured_by_member_id,
+    calendar_id, calendar_name, timezone, enabled, purpose
+  ) VALUES
+    (v_org_a, v_google_account_a, v_member_a, 'org-events@google.com', 'TangoDB / A', 'Europe/Moscow', true, 'events'),
+    (v_org_a, v_google_account_a, v_member_a, 'org-rentals@google.com', 'TangoDB / A / rentals', 'Europe/Moscow', true, 'rentals');
+
+  SELECT count(*) INTO v_count
+  FROM organization_google_calendar_bindings
+  WHERE organization_id = v_org_a AND enabled;
+  PERFORM gcal_security_test_assert(v_count = 2, 'events and rentals org bindings can both be enabled');
+
+  v_caught := false;
+  BEGIN
+    INSERT INTO organization_google_calendar_bindings (
+      organization_id, google_account_id, configured_by_member_id,
+      calendar_id, calendar_name, timezone, enabled, purpose
+    ) VALUES (
+      v_org_a, v_google_account_a, v_member_a, 'org-events-2@google.com', 'TangoDB / A 2', 'Europe/Moscow', true, 'events'
+    );
+  EXCEPTION WHEN unique_violation THEN
+    v_caught := true;
+  END;
+  PERFORM gcal_security_test_assert(v_caught, 'second active events org binding must fail unique purpose');
+
   RAISE NOTICE 'google_calendar_security_test: OK';
 END;
 $$;

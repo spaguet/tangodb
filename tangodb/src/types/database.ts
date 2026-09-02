@@ -1957,6 +1957,7 @@ export type Database = {
           last_error_code: string | null
           last_success_at: string | null
           organization_id: string
+          purpose: string
           timezone: string
           updated_at: string
         }
@@ -1974,6 +1975,7 @@ export type Database = {
           last_error_code?: string | null
           last_success_at?: string | null
           organization_id: string
+          purpose?: string
           timezone: string
           updated_at?: string
         }
@@ -1991,6 +1993,7 @@ export type Database = {
           last_error_code?: string | null
           last_success_at?: string | null
           organization_id?: string
+          purpose?: string
           timezone?: string
           updated_at?: string
         }
@@ -9146,6 +9149,10 @@ export type Database = {
         Args: { p_organization_id: string }
         Returns: Json
       }
+      execute_organization_rentals_reconcile: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
       execute_version_migration_script: {
         Args: {
           p_dry_run: boolean
@@ -10023,6 +10030,7 @@ export type Database = {
         Returns: Json
       }
       request_organization_calendar_reconcile: { Args: never; Returns: Json }
+      request_organization_rentals_calendar_reconcile: { Args: never; Returns: Json }
       reset_renter_reliability: { Args: { p_renter_id: string }; Returns: Json }
       resolve_renter_topup: { Args: { p_payload: Json }; Returns: Json }
       resolve_subscription_freeze_policy: {

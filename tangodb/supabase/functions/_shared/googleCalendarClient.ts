@@ -433,7 +433,7 @@ export async function findOrCreateDedicatedCalendar(
   accessToken: string,
   summary: string,
   timeZone: string,
-  options?: { alsoMatchPrefix?: string }
+  options?: { alsoMatchPrefix?: string; excludeSummaryIncludes?: string }
 ): Promise<{ calendar: GoogleCreatedCalendar; reused: boolean }> {
   const listed = await listGoogleCalendars(accessToken);
   const exact = listed.find(
@@ -447,10 +447,14 @@ export async function findOrCreateDedicatedCalendar(
   }
 
   const prefix = options?.alsoMatchPrefix?.trim();
+  const exclude = options?.excludeSummaryIncludes?.trim();
   if (prefix) {
-    const prefixed = listed.find(
-      (cal) => cal.summary.trim().startsWith(prefix) && (cal.selectable || !cal.primary)
-    );
+    const prefixed = listed.find((cal) => {
+      const name = cal.summary.trim();
+      if (!name.startsWith(prefix)) return false;
+      if (exclude && name.includes(exclude)) return false;
+      return cal.selectable || !cal.primary;
+    });
     if (prefixed) {
       return {
         calendar: {

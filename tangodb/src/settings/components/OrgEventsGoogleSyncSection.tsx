@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  Building2,
   CalendarHeart,
   CheckCircle2,
   ExternalLink,
@@ -14,19 +15,61 @@ import LoadingState from "../../components/ui/LoadingState";
 import { useToast } from "../../App";
 import { useOrgGoogleCalendarIntegration } from "../../hooks/useOrgGoogleCalendarIntegration";
 import { useI18n } from "../../hooks/useI18n";
-import { resolveMutationError, isI18nKey } from "../../lib/resolveMutationError";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { I18nKey } from "../../lib/i18n/keys";
-import type { GoogleCalendarListEntry } from "../../lib/googleCalendarApi";
+import type { GoogleCalendarListEntry, OrgGoogleCalendarPurpose } from "../../lib/googleCalendarApi";
 import { listGoogleCalendars } from "../../lib/googleCalendarApi";
 
 type DisconnectMode = "leave" | "delete" | null;
 
-export default function OrgEventsGoogleSyncSection() {
+const copyByPurpose: Record<
+  OrgGoogleCalendarPurpose,
+  {
+    loading: I18nKey;
+    title: I18nKey;
+    subtitle: I18nKey;
+    connectHint: I18nKey;
+    saveSuccess: I18nKey;
+    statusConnected: I18nKey;
+    statusNotConfigured: I18nKey;
+    createCalendar: I18nKey;
+  }
+> = {
+  events: {
+    loading: "integrations.googleCalendar.orgEvents.loading",
+    title: "integrations.googleCalendar.orgEvents.title",
+    subtitle: "integrations.googleCalendar.orgEvents.subtitle",
+    connectHint: "integrations.googleCalendar.orgEvents.connectHint",
+    saveSuccess: "integrations.googleCalendar.orgEvents.saveSuccess",
+    statusConnected: "integrations.googleCalendar.orgEvents.status.connected",
+    statusNotConfigured: "integrations.googleCalendar.orgEvents.status.notConfigured",
+    createCalendar: "integrations.googleCalendar.createCalendar",
+  },
+  rentals: {
+    loading: "integrations.googleCalendar.orgRentals.loading",
+    title: "integrations.googleCalendar.orgRentals.title",
+    subtitle: "integrations.googleCalendar.orgRentals.subtitle",
+    connectHint: "integrations.googleCalendar.orgRentals.connectHint",
+    saveSuccess: "integrations.googleCalendar.orgRentals.saveSuccess",
+    statusConnected: "integrations.googleCalendar.orgRentals.status.connected",
+    statusNotConfigured: "integrations.googleCalendar.orgRentals.status.notConfigured",
+    createCalendar: "integrations.googleCalendar.orgRentals.createCalendar",
+  },
+};
+
+export default function OrgEventsGoogleSyncSection({
+  purpose = "events",
+}: {
+  purpose?: OrgGoogleCalendarPurpose;
+}) {
   const { t, formatDateTime } = useI18n();
   const toast = useToast();
+  const copy = copyByPurpose[purpose];
   const {
     canManage,
+    accounts,
     primaryAccount,
+    boundAccount,
     binding,
     isConfigured,
     isLoading,
@@ -37,10 +80,11 @@ export default function OrgEventsGoogleSyncSection() {
     disconnect,
     verify,
     syncFuture,
-  } = useOrgGoogleCalendarIntegration();
+  } = useOrgGoogleCalendarIntegration(purpose);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [calendars, setCalendars] = useState<GoogleCalendarListEntry[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState("");
   const [selectedCalendarId, setSelectedCalendarId] = useState("");
   const [deleteOldOnChange, setDeleteOldOnChange] = useState(false);
   const [disconnectMode, setDisconnectMode] = useState<DisconnectMode>(null);
@@ -52,6 +96,27 @@ export default function OrgEventsGoogleSyncSection() {
     []
   );
 
+  const activeAccounts = useMemo(
+    () => accounts.filter((account) => account.status === "active"),
+    [accounts]
+  );
+
+  const selectedAccount =
+    activeAccounts.find((account) => account.id === selectedAccountId) ??
+    activeAccounts[0] ??
+    null;
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const preferred =
+      boundAccount?.status === "active"
+        ? boundAccount.id
+        : primaryAccount?.status === "active"
+          ? primaryAccount.id
+          : activeAccounts[0]?.id ?? "";
+    setSelectedAccountId((current) => current || preferred);
+  }, [pickerOpen, boundAccount?.id, boundAccount?.status, primaryAccount?.id, primaryAccount?.status, activeAccounts]);
+
   const loadCalendars = useCallback(
     async (googleAccountId: string) => {
       setLoadingCalendars(true);
@@ -61,7 +126,15 @@ export default function OrgEventsGoogleSyncSection() {
         const writable = list.filter((c) => c.selectable);
         if (writable.length > 0) {
           const preferred =
-            writable.find((c) => c.summary.startsWith("TangoDB /")) ?? writable[0];
+            (binding?.google_account_id === googleAccountId
+              ? writable.find((c) => c.id === binding.calendar_id)
+              : undefined) ??
+            writable.find((c) =>
+              purpose === "rentals"
+                ? c.summary.includes("/ rentals")
+                : c.summary.startsWith("TangoDB /") && !c.summary.includes("/ rentals")
+            ) ??
+            writable[0];
           setSelectedCalendarId(preferred.id);
         } else {
           setSelectedCalendarId("");
@@ -79,22 +152,25 @@ export default function OrgEventsGoogleSyncSection() {
         setLoadingCalendars(false);
       }
     },
-    [toast, t]
+    [toast, t, binding?.google_account_id, binding?.calendar_id, purpose]
   );
 
   useEffect(() => {
-    if (!pickerOpen || !primaryAccount) {
+    if (!pickerOpen || !selectedAccount) {
       calendarsFetchedForRef.current = null;
       return;
     }
-    const accountId = primaryAccount.id;
+    const accountId = selectedAccount.id;
     if (calendarsFetchedForRef.current === accountId) return;
     calendarsFetchedForRef.current = accountId;
     void loadCalendars(accountId);
-  }, [pickerOpen, primaryAccount?.id, loadCalendars]);
+  }, [pickerOpen, selectedAccount?.id, loadCalendars]);
 
   const needsCalendarSetup =
-    primaryAccount?.status === "active" && !binding && !pickerOpen;
+    purpose === "events" &&
+    primaryAccount?.status === "active" &&
+    !binding &&
+    !pickerOpen;
 
   useEffect(() => {
     if (needsCalendarSetup && primaryAccount) {
@@ -105,7 +181,7 @@ export default function OrgEventsGoogleSyncSection() {
   if (!canManage) return null;
 
   if (isLoading) {
-    return <LoadingState label={t("integrations.googleCalendar.orgEvents.loading")} />;
+    return <LoadingState label={t(copy.loading)} />;
   }
 
   const handleConnect = async () => {
@@ -124,9 +200,9 @@ export default function OrgEventsGoogleSyncSection() {
   };
 
   const handleCreateCalendar = async () => {
-    if (!primaryAccount) return;
+    if (!selectedAccount) return;
     try {
-      const calendar = await createCalendar.mutateAsync(primaryAccount.id);
+      const calendar = await createCalendar.mutateAsync(selectedAccount.id);
       setCalendars((prev) => {
         const exists = prev.some((c) => c.id === calendar.id);
         return exists ? prev : [...prev, calendar];
@@ -146,13 +222,13 @@ export default function OrgEventsGoogleSyncSection() {
   };
 
   const handleSaveCalendar = async () => {
-    if (!primaryAccount || !selectedCalendarId) return;
+    if (!selectedAccount || !selectedCalendarId) return;
     const selected = calendars.find((c) => c.id === selectedCalendarId);
     if (!selected) return;
 
     try {
       await setBinding.mutateAsync({
-        googleAccountId: primaryAccount.id,
+        googleAccountId: selectedAccount.id,
         calendarId: selected.id,
         calendarName: selected.summary,
         timezone: selected.timeZone,
@@ -160,7 +236,7 @@ export default function OrgEventsGoogleSyncSection() {
       });
       setPickerOpen(false);
       setDeleteOldOnChange(false);
-      toast(t("integrations.googleCalendar.orgEvents.saveSuccess"), "success");
+      toast(t(copy.saveSuccess), "success");
     } catch (err) {
       toast(
         resolveMutationError(
@@ -190,9 +266,10 @@ export default function OrgEventsGoogleSyncSection() {
   };
 
   const handleVerify = async () => {
-    if (!primaryAccount) return;
+    const accountId = boundAccount?.id ?? selectedAccount?.id ?? primaryAccount?.id;
+    if (!accountId) return;
     try {
-      await verify.mutateAsync(primaryAccount.id);
+      await verify.mutateAsync(accountId);
       toast(t("integrations.googleCalendar.verifySuccess"), "success");
     } catch (err) {
       toast(
@@ -227,34 +304,30 @@ export default function OrgEventsGoogleSyncSection() {
     }
   };
 
+  const displayAccount = boundAccount ?? primaryAccount;
   const accountStatusTone =
-    primaryAccount?.status === "active"
+    displayAccount?.status === "active"
       ? "text-indigo-700 bg-indigo-50 border-indigo-100"
-      : primaryAccount?.status === "revoked"
+      : displayAccount?.status === "revoked"
         ? "text-amber-800 bg-amber-50 border-amber-100"
         : "text-rose-700 bg-rose-50 border-rose-100";
 
   const writableCalendars = calendars.filter((c) => c.selectable);
+  const Icon = purpose === "rentals" ? Building2 : CalendarHeart;
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
       <div className="flex items-start gap-3">
-        <CalendarHeart className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+        <Icon className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
         <div>
-          <h3 className="text-sm font-semibold text-slate-900">
-            {t("integrations.googleCalendar.orgEvents.title")}
-          </h3>
-          <p className="text-xs text-slate-500 mt-1">
-            {t("integrations.googleCalendar.orgEvents.subtitle")}
-          </p>
+          <h3 className="text-sm font-semibold text-slate-900">{t(copy.title)}</h3>
+          <p className="text-xs text-slate-500 mt-1">{t(copy.subtitle)}</p>
         </div>
       </div>
 
-      {!primaryAccount || primaryAccount.status !== "active" ? (
+      {activeAccounts.length === 0 ? (
         <div className="space-y-3">
-          <p className="text-sm text-slate-600">
-            {t("integrations.googleCalendar.orgEvents.connectHint")}
-          </p>
+          <p className="text-sm text-slate-600">{t(copy.connectHint)}</p>
           <button
             type="button"
             onClick={() => void handleConnect()}
@@ -271,9 +344,26 @@ export default function OrgEventsGoogleSyncSection() {
         </div>
       ) : pickerOpen ? (
         <div className="space-y-4">
+          <AppSelect
+            label={t("integrations.googleCalendar.accountLabel")}
+            value={selectedAccount?.id ?? ""}
+            onChange={(e) => {
+              setSelectedAccountId(e.target.value);
+              calendarsFetchedForRef.current = null;
+              setCalendars([]);
+              setSelectedCalendarId("");
+            }}
+          >
+            {activeAccounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.google_email}
+              </option>
+            ))}
+          </AppSelect>
+
           <p className="text-xs text-slate-500">
             {t("integrations.googleCalendar.selectCalendarHint", {
-              email: primaryAccount.google_email,
+              email: selectedAccount?.google_email ?? "",
             })}
           </p>
 
@@ -302,13 +392,26 @@ export default function OrgEventsGoogleSyncSection() {
             <button
               type="button"
               onClick={() => void handleCreateCalendar()}
-              disabled={createCalendar.isPending || !organizationId}
+              disabled={createCalendar.isPending || !organizationId || !selectedAccount}
               className={btnOpenCls}
             >
               {createCalendar.isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : null}
-              {t("integrations.googleCalendar.createCalendar")}
+              {t(copy.createCalendar)}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleConnect()}
+              disabled={connect.isPending}
+              className={btnRefreshCls}
+            >
+              {connect.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <ExternalLink className="w-3.5 h-3.5" />
+              )}
+              {t("integrations.googleCalendar.connectAnotherAccount")}
             </button>
           </div>
 
@@ -328,7 +431,7 @@ export default function OrgEventsGoogleSyncSection() {
             <button
               type="button"
               onClick={() => void handleSaveCalendar()}
-              disabled={setBinding.isPending || !selectedCalendarId}
+              disabled={setBinding.isPending || !selectedCalendarId || !selectedAccount}
               className={btnAddCls}
             >
               {setBinding.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
@@ -351,13 +454,13 @@ export default function OrgEventsGoogleSyncSection() {
             )}
             <div className="space-y-1 text-sm min-w-0">
               <p className="font-semibold">
-                {isConfigured
-                  ? t("integrations.googleCalendar.orgEvents.status.connected")
-                  : t("integrations.googleCalendar.orgEvents.status.notConfigured")}
+                {isConfigured ? t(copy.statusConnected) : t(copy.statusNotConfigured)}
               </p>
-              <p className="text-xs opacity-80 truncate">
-                {t("integrations.googleCalendar.accountEmail")}: {primaryAccount.google_email}
-              </p>
+              {displayAccount && (
+                <p className="text-xs opacity-80 truncate">
+                  {t("integrations.googleCalendar.accountEmail")}: {displayAccount.google_email}
+                </p>
+              )}
               {binding && (
                 <>
                   <p className="text-xs opacity-80 truncate">
@@ -384,19 +487,21 @@ export default function OrgEventsGoogleSyncSection() {
           )}
 
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void handleVerify()}
-              disabled={verify.isPending}
-              className={btnOpenCls}
-            >
-              {verify.isPending ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3.5 h-3.5" />
-              )}
-              {t("integrations.googleCalendar.verify")}
-            </button>
+            {isConfigured && boundAccount && (
+              <button
+                type="button"
+                onClick={() => void handleVerify()}
+                disabled={verify.isPending}
+                className={btnOpenCls}
+              >
+                {verify.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3.5 h-3.5" />
+                )}
+                {t("integrations.googleCalendar.verify")}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => void handleSyncFuture()}
@@ -414,64 +519,69 @@ export default function OrgEventsGoogleSyncSection() {
               type="button"
               onClick={() => {
                 setDeleteOldOnChange(false);
+                setSelectedAccountId(boundAccount?.id ?? primaryAccount?.id ?? "");
                 setPickerOpen(true);
               }}
               className={btnOpenCls}
             >
-              {t("integrations.googleCalendar.changeCalendar")}
+              {isConfigured
+                ? t("integrations.googleCalendar.changeCalendar")
+                : t("integrations.googleCalendar.selectCalendar")}
             </button>
           </div>
 
-          <div className="border-t border-slate-100 pt-4 space-y-3">
-            <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-              <Unplug className="w-4 h-4 text-slate-500" />
-              {t("integrations.googleCalendar.disconnect")}
-            </h4>
-            {disconnectMode ? (
-              <div className="space-y-3">
-                <p className="text-xs text-slate-600">
-                  {disconnectMode === "delete"
-                    ? t("integrations.googleCalendar.disconnectDeleteFutureHint")
-                    : t("integrations.googleCalendar.disconnectLeaveHint")}
-                </p>
+          {isConfigured && (
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                <Unplug className="w-4 h-4 text-slate-500" />
+                {t("integrations.googleCalendar.disconnect")}
+              </h4>
+              {disconnectMode ? (
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-600">
+                    {disconnectMode === "delete"
+                      ? t("integrations.googleCalendar.disconnectDeleteFutureHint")
+                      : t("integrations.googleCalendar.disconnectLeaveHint")}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleDisconnect()}
+                      disabled={disconnect.isPending}
+                      className={btnDestructiveCls}
+                    >
+                      {disconnect.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                      {t("integrations.googleCalendar.confirmDisconnect")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDisconnectMode(null)}
+                      className={btnRefreshCls}
+                    >
+                      {t("common.cancel")}
+                    </button>
+                  </div>
+                </div>
+              ) : (
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => void handleDisconnect()}
-                    disabled={disconnect.isPending}
-                    className={btnDestructiveCls}
+                    onClick={() => setDisconnectMode("leave")}
+                    className={btnRefreshCls}
                   >
-                    {disconnect.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                    {t("integrations.googleCalendar.confirmDisconnect")}
+                    {t("integrations.googleCalendar.disconnectLeaveEvents")}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setDisconnectMode(null)}
+                    onClick={() => setDisconnectMode("delete")}
                     className={btnRefreshCls}
                   >
-                    {t("common.cancel")}
+                    {t("integrations.googleCalendar.disconnectDeleteFuture")}
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDisconnectMode("leave")}
-                  className={btnRefreshCls}
-                >
-                  {t("integrations.googleCalendar.disconnectLeaveEvents")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDisconnectMode("delete")}
-                  className={btnRefreshCls}
-                >
-                  {t("integrations.googleCalendar.disconnectDeleteFuture")}
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
