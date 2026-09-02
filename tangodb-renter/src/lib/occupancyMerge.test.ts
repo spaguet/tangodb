@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyInterval } from "./occupancyMerge";
+import { classifyInterval, findOverlappingMine } from "./occupancyMerge";
 import type { BusySlot, MineSlot } from "./types";
 
 describe("classifyInterval", () => {
@@ -45,5 +45,11 @@ describe("classifyInterval", () => {
   it("does not treat adjacent slots as overlap", () => {
     expect(classifyInterval("2026-09-01", "12:00", "12:30", busy, [])).toBe("free");
     expect(classifyInterval("2026-09-01", "09:30", "10:00", busy, [])).toBe("free");
+  });
+
+  it("finds own booking on a later 30-min cell of the same interval", () => {
+    expect(findOverlappingMine("2026-09-01", "14:30", mine)?.id).toBe("a");
+    expect(findOverlappingMine("2026-09-01", "15:30", mine)?.id).toBe("a");
+    expect(findOverlappingMine("2026-09-01", "16:00", mine)).toBeUndefined();
   });
 });

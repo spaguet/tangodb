@@ -24,7 +24,7 @@ export default function CabinetScreen({
   const [mineRefresh, setMineRefresh] = useState(0);
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-[var(--tg-theme-bg-color,#0f172a)] text-[var(--tg-theme-text-color,#f8fafc)]">
+    <div className="flex h-[100dvh] flex-col bg-[var(--tg-theme-bg-color,#0f172a)] text-[var(--tg-theme-text-color,#f8fafc)]">
       <header className="px-4 pt-4 pb-2">
         <p className="text-xs uppercase tracking-wide opacity-60">{t(locale, "studioSubtitle")}</p>
         <h1 className="text-xl font-semibold leading-tight">{bootstrap.studioName}</h1>
@@ -34,7 +34,7 @@ export default function CabinetScreen({
 
       <TabBar locale={locale} active={tab} onChange={setTab} />
 
-      <main className="flex-1 overflow-y-auto pt-3">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
         {tab === "schedule" ? (
           <ScheduleTab
             locale={locale}
@@ -42,14 +42,20 @@ export default function CabinetScreen({
             organizationId={organizationId}
             supabase={supabase}
             onBooked={() => setMineRefresh((n) => n + 1)}
+            onOpenMine={() => {
+              setMineRefresh((n) => n + 1);
+              setTab("mine");
+            }}
           />
         ) : (
-          <MineTab
-            locale={locale}
-            bootstrap={bootstrap}
-            supabase={supabase}
-            refreshKey={mineRefresh}
-          />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <MineTab
+              locale={locale}
+              bootstrap={bootstrap}
+              supabase={supabase}
+              refreshKey={mineRefresh}
+            />
+          </div>
         )}
       </main>
     </div>

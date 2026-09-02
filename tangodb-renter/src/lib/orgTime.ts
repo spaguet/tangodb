@@ -59,6 +59,28 @@ export function occupancyWindowDays(timezone: string): {
   return { start: monday, end, days };
 }
 
+export function occupancyDaysFromWindow(windowFrom: string, count = 21): string[] {
+  const days: string[] = [];
+  for (let i = 0; i < count; i++) {
+    days.push(addCalendarDays(windowFrom, i));
+  }
+  return days;
+}
+
+/** Split the occupancy window into Mon–Sun weeks (ISO, 7 days each). */
+export function occupancyWeeksFromWindow(windowFrom: string, count = 21): string[][] {
+  const days = occupancyDaysFromWindow(windowFrom, count);
+  const weeks: string[][] = [];
+  for (let i = 0; i < days.length; i += 7) {
+    weeks.push(days.slice(i, i + 7));
+  }
+  return weeks;
+}
+
+export function calendarDayNumber(isoDate: string): number {
+  return Number(isoDate.slice(8, 10));
+}
+
 export function formatShortDate(isoDate: string, locale: string): string {
   const noon = dateAtUtcNoon(isoDate);
   return new Intl.DateTimeFormat(locale, {
@@ -66,6 +88,38 @@ export function formatShortDate(isoDate: string, locale: string): string {
     day: "numeric",
     month: "short",
   }).format(noon);
+}
+
+/** Week range for a Mon–Sun pair of calendar dates (org TZ, not browser local). */
+export function formatWeekRangeLabel(
+  fromIso: string,
+  toIso: string,
+  locale: string,
+  withYear = true
+): string {
+  const start = dateAtUtcNoon(fromIso);
+  const end = dateAtUtcNoon(toIso);
+  const loc = locale.startsWith("en") ? "en-US" : "ru-RU";
+  const startDay = start.getUTCDate();
+  const endDay = end.getUTCDate();
+  const year = end.getUTCFullYear();
+  const monthFmt = new Intl.DateTimeFormat(loc, { month: "short", timeZone: "UTC" });
+  const startMonth = monthFmt.format(start);
+  const endMonth = monthFmt.format(end);
+  const sameMonth =
+    start.getUTCMonth() === end.getUTCMonth() && start.getUTCFullYear() === end.getUTCFullYear();
+  if (sameMonth) {
+    if (loc === "ru-RU") return withYear ? `${startDay}–${endDay} ${startMonth} ${year}` : `${startDay}–${endDay} ${startMonth}`;
+    return withYear ? `${startMonth} ${startDay}–${endDay}, ${year}` : `${startMonth} ${startDay}–${endDay}`;
+  }
+  if (loc === "ru-RU") {
+    return withYear
+      ? `${startDay} ${startMonth} – ${endDay} ${endMonth} ${year}`
+      : `${startDay} ${startMonth} – ${endDay} ${endMonth}`;
+  }
+  return withYear
+    ? `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${year}`
+    : `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
 }
 
 export function formatTimeRange(start: string, end: string): string {

@@ -7,7 +7,7 @@
 ## Приложения
 
 - `tangodb/` — основное приложение (React + Vite, TanStack Query, Zustand, Supabase). Vercel: корневой `vercel.json` (`cd tangodb && npm run build`), production `https://tangodb.vercel.app`.
-- `tangodb-renter/` — Telegram Mini App арендатора (React + Vite, порт 3002). Свой origin `https://tangodb-renter.vercel.app`. **Vercel project Root Directory = `tangodb-renter`** — иначе Git-деплой берёт корневой `vercel.json` и заливает CRM на домен кабинета. Бандл: только `VITE_SUPABASE_URL` + anon key; auth через Edge `renter-telegram-auth` (`initData` / Telegram ID).
+- `tangodb-renter/` — Telegram Mini App арендатора (React + Vite, порт 3002). Свой origin `https://tangodb-renter.vercel.app`. **Vercel project Root Directory = `tangodb-renter`** — иначе Git-деплой берёт корневой `vercel.json` и заливает CRM на домен кабинета. Бандл: только `VITE_SUPABASE_URL` + anon key; auth через Edge `renter-telegram-auth` (`initData` / Telegram ID). Расписание: недельная таблица ячеек занято/свободно (шаг 30 мин) и выбор недели внутри окна occupancy (текущая пн–вс + две будущие, TZ организации); не импортирует `tangodb/src`.
 - `tangodb-dev-console/` — админ-консоль (React + Vite, Supabase)
 
 ## Platform payment config

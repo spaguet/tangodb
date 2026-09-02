@@ -71,6 +71,10 @@ const messages = {
     botBanner: "Откройте бота студии в Telegram и нажмите Start — иначе уведомления не придут.",
     addonInactiveCreate: "Бронирование временно недоступно. Отмена холдов и просмотр записей доступны.",
     addonInactiveTopup: "Заявки на пополнение недоступны — обратитесь в студию.",
+    prevWeek: "Предыдущая неделя",
+    nextWeek: "Следующая неделя",
+    thisWeek: "Эта неделя",
+    weekOf: "Неделя {n} из {total}",
 
     bookingConflict: "Слот недоступен. Выберите другое время.",
     bookingInvalid: "Проверьте дату и время.",
@@ -167,6 +171,10 @@ const messages = {
     botBanner: "Open the studio bot in Telegram and tap Start — otherwise you won't get notifications.",
     addonInactiveCreate: "Booking is temporarily unavailable. You can still view bookings and delete holds.",
     addonInactiveTopup: "Top-up requests are unavailable — contact the studio.",
+    prevWeek: "Previous week",
+    nextWeek: "Next week",
+    thisWeek: "This week",
+    weekOf: "Week {n} of {total}",
 
     bookingConflict: "This slot is unavailable. Choose another time.",
     bookingInvalid: "Check date and time.",
@@ -205,6 +213,17 @@ export function resolveLocale(hint?: string | null): Locale {
 
 export function t(locale: Locale, key: MessageKey): string {
   return messages[locale][key] ?? messages.ru[key];
+}
+
+export function tFill(
+  locale: Locale,
+  key: MessageKey,
+  vars: Record<string, string | number>
+): string {
+  return Object.entries(vars).reduce(
+    (s, [name, value]) => s.replaceAll(`{${name}}`, String(value)),
+    t(locale, key)
+  );
 }
 
 export const WEEKDAY_LABELS: Record<number, MessageKey> = {

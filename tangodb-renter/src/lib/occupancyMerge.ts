@@ -1,4 +1,4 @@
-import { rangesOverlap, timeToMinutes } from "./grid";
+import { rangesOverlap, SLOT_MINUTES, timeToMinutes } from "./grid";
 import type { BusySlot, MineSlot } from "./types";
 
 export type SlotState = "free" | "busy" | "mine" | "mine_hold";
@@ -48,4 +48,18 @@ export function daySlotStates(
     map.set(start, classifyInterval(date, start, end, busy, mine));
   }
   return map;
+}
+
+/** Own booking that covers this 30-min cell (any overlap, not only exact start). */
+export function findOverlappingMine(
+  date: string,
+  timeStart: string,
+  mine: MineSlot[]
+): MineSlot | undefined {
+  const s1 = timeToMinutes(timeStart);
+  const e1 = s1 + SLOT_MINUTES;
+  return mine.find((m) => {
+    if (m.date !== date) return false;
+    return rangesOverlap(s1, e1, timeToMinutes(m.time_start), timeToMinutes(m.time_end));
+  });
 }
