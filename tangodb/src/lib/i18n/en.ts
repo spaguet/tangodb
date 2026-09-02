@@ -1779,16 +1779,18 @@ export const EN: Record<I18nKey, string> = {
     "Connect Telegram so renters can book the hall and send payment receipts. You do not need to build your own Mini App — the cabinet is already hosted.",
   "hallRent.miniapp.setup.title": "How to set this up",
   "hallRent.miniapp.setup.intro":
-    "The renter cabinet is already built in TangoDB. You only need your own Telegram bot and a chat where payment receipts arrive.",
+    "The renter cabinet is already hosted in TangoDB — you do not build your own app. You need: a Telegram bot, /newapp registration (for the renter link), and a chat where payment receipts arrive.",
   "hallRent.miniapp.setup.step1":
-    "Create a bot. In Telegram open @BotFather → /newbot → pick a name and username. Copy the token (a long string) and later paste it into “Bot token”.",
+    "Create a bot: @BotFather → /newbot → name and username (e.g. mystudio_bot). Copy the token — a long string — and paste it later into “Bot token”.",
   "hallRent.miniapp.setup.step2":
-    "Attach the cabinet to your bot. In @BotFather send /newapp (or: your bot → Bot Settings → Mini App / Menu Button). Choose this bot. The Web App URL is TangoDB’s ready cabinet — copy it with the button below. You do not write your own Mini App. The short name is Latin letters with no spaces, for example booking. Paste that name in the field below.",
+    "Register the cabinet for the renter link: @BotFather → /newapp → choose this bot. Title and description — anything. Photo is required at exactly 640×360 px (cannot be skipped; /empty does not work here). On the GIF step send /empty. Cabinet URL — copy with the button below. Pick a short name in Latin letters, e.g. booking — this is not the bot’s @username! Paste it into “Cabinet short name in the bot”. Check with /myapps in BotFather.",
   "hallRent.miniapp.setup.step3":
-    "Set the chat for receipts. This can be a studio group or a personal chat with the person who takes payments. The renter opens this chat from the cabinet and sends a screenshot of the transfer. Paste a link: https://t.me/username, a group invite (https://t.me/+…), or tg://user?id=…",
+    "Optional — “Open” button in the bot chat: @BotFather → your bot → Bot Settings → Configure Mini App (or Menu Button). Use the same cabinet URL. No short name is asked here — it does not replace the renter link from /newapp.",
   "hallRent.miniapp.setup.step4":
-    "Click “Save chat and name” and “Save token”. A renter link then appears — send it to people who book the hall.",
+    "Receipts chat: a studio group or a personal chat where the renter sends a payment screenshot. Link: https://t.me/username, a group invite (https://t.me/+…), or tg://user?id=…",
   "hallRent.miniapp.setup.step5":
+    "Save in CRM: chat, short name from /newapp, and bot token → “Save chat and name”, then “Save token”. A renter link appears — send it to people who book the hall.",
+  "hallRent.miniapp.setup.step6":
     "Optionally upload payment QR codes (bank, wallet). Renters see them when they top up.",
   "hallRent.miniapp.webAppUrlCopy": "Copy cabinet URL",
   "hallRent.miniapp.chatUrl": "Chat for top-up receipts",
@@ -1801,7 +1803,7 @@ export const EN: Record<I18nKey, string> = {
   "hallRent.miniapp.botTokenSet": "Token saved · …{{last4}}",
   "hallRent.miniapp.appShortName": "Cabinet short name in the bot",
   "hallRent.miniapp.appShortNameHint":
-    "The name you set in @BotFather (Latin letters, no spaces). You do not need to build your own Mini App.",
+    "Short name from the last /newapp step (Latin letters, no spaces, e.g. booking). Not the bot username (@my_bot).",
   "hallRent.miniapp.appShortNamePlaceholder": "e.g. booking",
   "hallRent.miniapp.miniappUrl": "Link for renters",
   "hallRent.miniapp.botfatherHint":

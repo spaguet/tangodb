@@ -1880,6 +1880,7 @@ export type I18nKey =
   | "hallRent.miniapp.setup.step3"
   | "hallRent.miniapp.setup.step4"
   | "hallRent.miniapp.setup.step5"
+  | "hallRent.miniapp.setup.step6"
   | "hallRent.miniapp.webAppUrlCopy"
   | "hallRent.miniapp.chatUrl"
   | "hallRent.miniapp.chatUrlHint"

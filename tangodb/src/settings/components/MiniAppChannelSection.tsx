@@ -160,6 +160,7 @@ export default function MiniAppChannelSection() {
             <li>{t("hallRent.miniapp.setup.step3")}</li>
             <li>{t("hallRent.miniapp.setup.step4")}</li>
             <li>{t("hallRent.miniapp.setup.step5")}</li>
+            <li>{t("hallRent.miniapp.setup.step6")}</li>
           </ol>
         </div>
       </details>
