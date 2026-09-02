@@ -119,6 +119,7 @@ export default function PayPersonalLessonModal({
   const paymentIdempotencyKey = usePaymentFormIdempotency(lesson != null);
   const paymentSubmit = usePaymentSubmitState();
   const chargePaymentIdempotencyKeys = useRef<Record<string, string>>({});
+  const initializedLessonIdRef = useRef<string | null>(null);
 
   const getChargePaymentIdempotencyKey = (chargeKey: string): string => {
     const existing = chargePaymentIdempotencyKeys.current[chargeKey];
@@ -276,23 +277,28 @@ export default function PayPersonalLessonModal({
   const tariffSelectLocked = hasPayments;
 
   useEffect(() => {
-    paymentSubmit.reset();
-    chargePaymentIdempotencyKeys.current = {};
     if (!lessonId || !lesson) {
+      initializedLessonIdRef.current = null;
       setBookingPaymentMode(null);
       return;
     }
+
+    if (initializedLessonIdRef.current === lessonId) {
+      return;
+    }
+
+    initializedLessonIdRef.current = lessonId;
+    paymentSubmit.reset();
+    chargePaymentIdempotencyKeys.current = {};
 
     setLinkedSubscriptionId("");
     setPaymentMethod("cash");
     setPayAllParticipants(false);
 
     const initialMode = lesson.paymentMode ?? null;
-    if (initialMode === "tariff" && tariffModeBlocked) {
-      setBookingPaymentMode("outstanding");
-    } else {
-      setBookingPaymentMode(initialMode);
-    }
+    const resolvedMode =
+      initialMode === "tariff" && tariffModeBlocked ? "outstanding" : initialMode;
+    setBookingPaymentMode(resolvedMode);
 
     const defaultPayer = lesson.payerClientId ?? lesson.clientId1;
     setPayerClientId(
@@ -305,26 +311,19 @@ export default function PayPersonalLessonModal({
       setSelectedLessonTariffId("");
     }
 
-    const mode = initialMode === "tariff" && tariffModeBlocked ? "outstanding" : initialMode;
-    if (mode === "outstanding") {
-      setPaymentAmount(remainingDebt > 0 ? remainingDebt.toString() : "");
-    } else if (mode === "tariff") {
+    if (resolvedMode === "outstanding" || resolvedMode === "tariff") {
       setPaymentAmount(remainingDebt > 0 ? remainingDebt.toString() : "");
     } else {
       setPaymentAmount("");
     }
-  }, [
-    lessonId,
-    lesson?.paymentMode,
-    lesson?.priceId,
-    lesson?.payerClientId,
-    lesson?.clientId1,
-    lesson?.price,
-    lesson?.paidAmount,
-    participants,
-    remainingDebt,
-    tariffModeBlocked,
-  ]);
+  }, [lessonId, lesson, participants, remainingDebt, tariffModeBlocked]);
+
+  useEffect(() => {
+    if (!lesson) return;
+    if (bookingPaymentMode === "tariff" && tariffModeBlocked) {
+      setBookingPaymentMode("outstanding");
+    }
+  }, [lesson, bookingPaymentMode, tariffModeBlocked]);
 
   useEffect(() => {
     if (!lesson || bookingPaymentMode !== "tariff") return;
