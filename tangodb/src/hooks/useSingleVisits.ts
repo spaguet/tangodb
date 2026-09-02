@@ -121,8 +121,11 @@ export function useRecordSingleVisit() {
       venueRuleAcknowledged?: boolean;
     }) => {
       const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false, {
-        queryClient,
-        statusQueryKey: venueStatusQueryKey,
+        lessonDate: input.visitDate,
+        cache: {
+          queryClient,
+          statusQueryKey: venueStatusQueryKey,
+        },
       });
       if (venueGuard) return venueGuard;
       const { data, error } = await supabase.rpc("record_single_visit", {

@@ -69,7 +69,7 @@ import SellPackageModal from "../ui/SellPackageModal";
 import TimeSelect from "../ui/TimeSelect";
 import type { ScheduleCellPrefill } from "../schedule/AddLessonTypePopup";
 import VenueRulePaymentConfirmDialog from "../venue-costs/VenueRulePaymentConfirmDialog";
-import { useVenueCostRuleStatus, type VenueCostRuleStatus } from "../../hooks/useVenueCosts";
+import { fetchVenueCostRuleStatus, type VenueCostRuleStatus } from "../../hooks/useVenueCosts";
 import { useGoogleCalendarFreebusy } from "../../hooks/useGoogleCalendarFreebusy";
 import GoogleCalendarFreebusyWarning from "../integrations/GoogleCalendarFreebusyWarning";
 
@@ -214,7 +214,6 @@ export default function PersonalLessonSaleForm({
   const showLocationInForm = shouldShowLocationPicker(orgModules, accessibleLocations.length);
   const addPersonalLessons = useAddPersonalLessons();
   const recordPersonalLessonPayment = useRecordPersonalLessonPayment();
-  const venueStatusQuery = useVenueCostRuleStatus();
   const lessonPaymentIdempotencyKeys = useRef<Record<string, string>>({});
   const bookingInFlightRef = useRef(false);
   const pendingVenueBookingRef = useRef<{ immediatePaid: boolean } | null>(null);
@@ -228,7 +227,7 @@ export default function PersonalLessonSaleForm({
   };
   const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
   const [pendingVenuePayment, setPendingVenuePayment] = useState<{
-    payments: Array<{ lessonId: string; amount: number; billing: TariffBilling | null }>;
+    payments: Array<{ lessonId: string; date: string; amount: number; billing: TariffBilling | null }>;
     clientId: string;
     clientDisplay: string;
     tariff: Price | null;
@@ -319,6 +318,7 @@ export default function PersonalLessonSaleForm({
       timeStart: lesson.timeStart,
       timeEnd: lesson.timeEnd,
       locationId: lesson.locationId,
+      clientDisplay: lesson.clientDisplay,
     }));
   }, [conflictCheckDateRange, lessonsInRangeQuery.data, personalLessons]);
 
@@ -608,14 +608,6 @@ export default function PersonalLessonSaleForm({
       setVenueConfirmStatus(null);
     }
 
-    if (immediatePaid && !venueRuleAcknowledged) {
-      const currentStatus = (await venueStatusQuery.refetch()).data;
-      if (currentStatus?.acknowledgementRequired) {
-        pendingVenueBookingRef.current = { immediatePaid: true };
-        setVenueConfirmStatus(currentStatus);
-        return;
-      }
-    }
     if (connectionState !== "online") {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
       return;
@@ -654,6 +646,17 @@ export default function PersonalLessonSaleForm({
 
     const slots = resolveLessonSlots();
     if (!slots?.length) return;
+
+    const earliestLessonDate = [...slots].map((slot) => slot.date).sort()[0];
+
+    if (immediatePaid && !venueRuleAcknowledged) {
+      const currentStatus = await fetchVenueCostRuleStatus({ lessonDate: earliestLessonDate });
+      if (currentStatus.acknowledgementRequired) {
+        pendingVenueBookingRef.current = { immediatePaid: true };
+        setVenueConfirmStatus(currentStatus);
+        return;
+      }
+    }
 
     const manualPriceNum = parseFloat(manualLessonPrice);
     const isPackageBooking = bookingPaymentMode === "package";
@@ -725,6 +728,7 @@ export default function PersonalLessonSaleForm({
         timeStart: lesson.timeStart,
         timeEnd: lesson.timeEnd,
         locationId: lesson.locationId,
+        clientDisplay: lesson.clientDisplay,
       }));
     }
 
@@ -767,6 +771,7 @@ export default function PersonalLessonSaleForm({
     const slotGroups = groupSlotsByTime(slots);
     const createdPaymentPlans: Array<{
       lessonId: string;
+      date: string;
       amount: number;
       billing: TariffBilling | null;
     }> = [];
@@ -807,9 +812,10 @@ export default function PersonalLessonSaleForm({
           return;
         }
         if (res.ids) {
-          for (const lessonId of res.ids) {
+          for (let i = 0; i < res.ids.length; i += 1) {
             createdPaymentPlans.push({
-              lessonId,
+              lessonId: res.ids[i],
+              date: group.dates[i] ?? group.dates[0] ?? earliestLessonDate,
               amount: groupPrice,
               billing: groupBilling,
             });
@@ -844,6 +850,7 @@ export default function PersonalLessonSaleForm({
             method: "cash",
             idempotencyKey: getLessonPaymentIdempotencyKey(plan.lessonId),
             venueRuleAcknowledged,
+            lessonDate: plan.date,
             priceId: selectedTariff?.id ?? null,
             tariffUnits: plan.billing?.tariffUnits ?? null,
             tariffDurationMinutes: selectedTariff?.durationMinutes ?? null,
@@ -912,6 +919,7 @@ export default function PersonalLessonSaleForm({
         method: "cash",
         idempotencyKey: getLessonPaymentIdempotencyKey(plan.lessonId),
         venueRuleAcknowledged: true,
+        lessonDate: plan.date,
         priceId: pending.tariff?.id ?? null,
         tariffUnits: plan.billing?.tariffUnits ?? null,
         tariffDurationMinutes: pending.tariff?.durationMinutes ?? null,
@@ -1456,6 +1464,7 @@ export default function PersonalLessonSaleForm({
       <VenueRulePaymentConfirmDialog
         status={venueConfirmStatus}
         pending={addPersonalLessons.isPending || recordPersonalLessonPayment.isPending}
+        stackLayer={isScheduleCell ? "above" : undefined}
         onConfirm={() => {
           void confirmVenuePayment();
         }}

@@ -9339,7 +9339,10 @@ export type Database = {
           pending_jobs_count: number
         }[]
       }
-      get_venue_cost_rule_status: { Args: { p_at?: string }; Returns: Json }
+      get_venue_cost_rule_status: {
+        Args: { p_at?: string; p_lesson_date?: string };
+        Returns: Json;
+      }
       group_occurrence_revenue: {
         Args: {
           p_occurrence_date: string

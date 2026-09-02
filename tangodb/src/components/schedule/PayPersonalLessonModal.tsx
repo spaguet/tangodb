@@ -10,7 +10,7 @@ import {
 } from "../../hooks/usePayments";
 import { usePaymentFormIdempotency, usePaymentSubmitState } from "../../hooks/usePaymentFormIdempotency";
 import { useFinancePeriodGate } from "../../hooks/useFinancePeriodGate";
-import { useArchivedPrices, usePrices } from "../../hooks/usePrices";
+import { usePriceById, usePrices } from "../../hooks/usePrices";
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { usePersonalLessonChargeBalances } from "../../hooks/usePersonalLessonCharges";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
@@ -104,11 +104,12 @@ export default function PayPersonalLessonModal({
   const { t, locale, formatDate } = useI18n();
   const { connectionState } = useOnlineStatus();
   const { data: prices = [] } = usePrices();
-  const needsArchivedLookup = Boolean(
+  const needsBookedTariffLookup = Boolean(
     lesson?.priceId && !prices.some((p) => p.id === lesson.priceId)
   );
-  const { data: archivedPrices = [], isFetched: archivedPricesFetched } =
-    useArchivedPrices(needsArchivedLookup);
+  const { data: bookedPriceById, isFetched: bookedPriceByIdFetched } = usePriceById(
+    needsBookedTariffLookup ? lesson?.priceId ?? null : null
+  );
   const { data: subscriptions = [] } = useSubscriptions();
   const { data: directoryClients = [] } = useClientDirectory();
   const { data: activeClients = [] } = useClients();
@@ -203,11 +204,8 @@ export default function PayPersonalLessonModal({
 
   const bookedTariff = useMemo(() => {
     if (!lesson?.priceId) return undefined;
-    return (
-      prices.find((p) => p.id === lesson.priceId) ??
-      archivedPrices.find((p) => p.id === lesson.priceId)
-    );
-  }, [lesson?.priceId, prices, archivedPrices]);
+    return prices.find((p) => p.id === lesson.priceId) ?? bookedPriceById ?? undefined;
+  }, [lesson?.priceId, prices, bookedPriceById]);
 
   const tariffBilledAmount = bookedTariff?.price ?? lesson?.price ?? 0;
   const billedAmount =
@@ -258,8 +256,8 @@ export default function PayPersonalLessonModal({
   }, [subscriptions, lesson]);
 
   const selectedTariff = useMemo(
-    () => resolveTariffById(selectedLessonTariffId || lessonPriceId, lessonTariffs, archivedPrices),
-    [selectedLessonTariffId, lessonPriceId, lessonTariffs, archivedPrices]
+    () => resolveTariffById(selectedLessonTariffId || lessonPriceId, lessonTariffs, bookedPriceById ? [bookedPriceById] : []),
+    [selectedLessonTariffId, lessonPriceId, lessonTariffs, bookedPriceById]
   );
 
   const lessonMinutes = lesson ? lessonDurationMinutes(lesson.timeStart, lesson.timeEnd) : 0;
@@ -333,7 +331,7 @@ export default function PayPersonalLessonModal({
         if (current === lesson.priceId) return current;
         if (lessonTariffs.some((t) => t.id === lesson.priceId)) return lesson.priceId;
         if (bookedTariff) return lesson.priceId;
-        if (needsArchivedLookup && !archivedPricesFetched) return lesson.priceId;
+        if (needsBookedTariffLookup && !bookedPriceByIdFetched) return lesson.priceId;
         return lesson.priceId;
       }
       if (current && lessonTariffs.some((t) => t.id === current)) return current;
@@ -348,8 +346,8 @@ export default function PayPersonalLessonModal({
     remainingDebt,
     tariffSelectLocked,
     bookedTariff,
-    needsArchivedLookup,
-    archivedPricesFetched,
+    needsBookedTariffLookup,
+    bookedPriceByIdFetched,
   ]);
 
   useEffect(() => {
@@ -486,6 +484,7 @@ export default function PayPersonalLessonModal({
             ? getChargePaymentIdempotencyKey(charge.id || charge.clientId)
             : singlePaymentIdempotencyKey,
           venueRuleAcknowledged,
+          lessonDate: lesson.date,
           priceId: isTariffMode ? (selectedTariff?.id ?? null) : null,
           tariffUnits:
             isTariffMode && selectedTariff?.durationMinutes != null && lessonMinutes > 0
@@ -799,7 +798,9 @@ export default function PayPersonalLessonModal({
 
                   {bookingPaymentMode === "tariff" && (
                     <>
-                      {lessonTariffs.length > 0 ? (
+                      {needsBookedTariffLookup && !bookedPriceByIdFetched ? (
+                        <p className="text-xs text-slate-500">{t("common.loading")}</p>
+                      ) : lessonTariffs.length > 0 ? (
                         <AppSelect
                           label={t("common.tariffPerLesson")}
                           value={selectedLessonTariffId}

@@ -153,8 +153,14 @@ export function mapVenueCostVersion(row: RpcObject): VenueCostRuleVersion {
   };
 }
 
-export async function fetchVenueCostRuleStatus(): Promise<VenueCostRuleStatus> {
-  const { data, error } = await supabase.rpc("get_venue_cost_rule_status", { p_at: null });
+export async function fetchVenueCostRuleStatus(options?: {
+  asOf?: string | null;
+  lessonDate?: string | null;
+}): Promise<VenueCostRuleStatus> {
+  const { data, error } = await supabase.rpc("get_venue_cost_rule_status", {
+    p_at: options?.asOf ?? null,
+    p_lesson_date: options?.lessonDate ?? null,
+  });
   if (error) throw error;
   const result = data as RpcObject | null;
   if (!result?.success) throw new Error(String(result?.error_code ?? "venue_cost_status_failed"));
@@ -170,16 +176,21 @@ export interface VenueRuleAckRequiredFailure {
 
 export async function checkVenueRuleBeforePayment(
   acknowledged: boolean,
-  cache?: { queryClient: QueryClient; statusQueryKey: readonly unknown[] }
+  options?: {
+    lessonDate?: string | null;
+    cache?: { queryClient: QueryClient; statusQueryKey: readonly unknown[] };
+  }
 ): Promise<VenueRuleAckRequiredFailure | null> {
   if (acknowledged) return null;
-  const status = cache
-    ? await cache.queryClient.fetchQuery({
-        queryKey: cache.statusQueryKey,
-        queryFn: fetchVenueCostRuleStatus,
+  const lessonDate = options?.lessonDate ?? null;
+  const fetchStatus = () => fetchVenueCostRuleStatus({ lessonDate });
+  const status = options?.cache
+    ? await options.cache.queryClient.fetchQuery({
+        queryKey: [...options.cache.statusQueryKey, lessonDate ?? "today"],
+        queryFn: fetchStatus,
         staleTime: 30_000,
       })
-    : await fetchVenueCostRuleStatus();
+    : await fetchStatus();
   return status.acknowledgementRequired
     ? { success: false, error: "venue_rule_ack_required", errorCode: "venue_rule_ack_required", venueRuleStatus: status }
     : null;

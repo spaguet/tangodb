@@ -77,6 +77,25 @@ export function usePrices() {
   });
 }
 
+export function usePriceById(priceId: string | null | undefined, enabled = true) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+
+  return useQuery({
+    queryKey: withOrgId([...pricesQueryKey, "byId", priceId]),
+    enabled: orgEnabled && enabled && !!priceId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("prices")
+        .select("*, price_teacher_members(member_id), price_disciplines(discipline_id)")
+        .eq("id", priceId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? mapPrice(data as Record<string, unknown>) : null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useArchivedPrices(enabled = true) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
 

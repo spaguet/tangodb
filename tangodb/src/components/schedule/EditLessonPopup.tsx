@@ -8,9 +8,9 @@ import {
   useUpdateGroupScheduleMetadata,
   useUpdateGroupScheduleValidity,
 } from "../../hooks/useSchedule";
-import { useAddPersonalLessons, useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
+import { useAddPersonalLessons, usePersonalLessons, useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
-import { useArchivedPrices, usePrices } from "../../hooks/usePrices";
+import { usePriceById, usePrices } from "../../hooks/usePrices";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -20,7 +20,8 @@ import {
   translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
-import { findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
+import { filterNewPersonalSeriesSlots, findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
+import type { PersonalLessonRef } from "../../lib/scheduleConflicts";
 import { useUpdateClassMaxCapacity } from "../../hooks/useGroupWaitlist";
 import { useScheduleGroups } from "../../hooks/useScheduleGroups";
 import { parseMaxCapacityInput } from "../../lib/groupCapacity";
@@ -73,13 +74,7 @@ interface EditLessonPopupProps {
   disciplines: Discipline[];
   teacherOptions: TeamMemberRosterRow[];
   scheduleSlots: ScheduleSlot[];
-  personalLessons: Array<{
-    id: string;
-    date: string;
-    timeStart: string;
-    timeEnd: string;
-    locationId?: string | null;
-  }>;
+  personalLessons: PersonalLessonRef[];
   toast: (msg: string, type?: "success" | "error" | "info") => void;
   onClose: () => void;
   onSuccess: () => void;
@@ -467,23 +462,91 @@ export default function EditLessonPopup({
     return [...groupIntervals, ...personalIntervals];
   }, [lesson, personalDate, scheduleSlots, personalLessons]);
 
+  const expandedPersonalEditSlots = useMemo(() => {
+    if (!lesson || lesson.kind !== "personal" || personalListEdit) return [];
+    if (!personalRepeatConfig.repeatWeekly) return [];
+    const date = personalDate || lesson.date;
+    return expandPersonalLessonWeeklySlots(date, timeStart, timeEnd, personalRepeatConfig).filter(
+      (slot) => slot.date && slot.timeStart && slot.timeEnd
+    );
+  }, [lesson, personalListEdit, personalRepeatConfig, personalDate, timeStart, timeEnd]);
+
+  const conflictCheckDateRange = useMemo(() => {
+    if (!lesson || lesson.kind !== "personal" || personalListEdit) return null;
+    const dates = [personalDate || lesson.date, ...expandedPersonalEditSlots.map((slot) => slot.date)];
+    const unique = [...new Set(dates.filter(Boolean))].sort();
+    if (unique.length === 0) return null;
+    if (unique.length === 1 && unique[0] === lesson.date && expandedPersonalEditSlots.length === 0) {
+      return null;
+    }
+    return { start: unique[0], end: unique[unique.length - 1] };
+  }, [lesson, personalListEdit, personalDate, expandedPersonalEditSlots]);
+
+  const lessonsInRangeQuery = usePersonalLessons({
+    dateRange: conflictCheckDateRange ?? undefined,
+    excludeCancelled: true,
+    enabled: Boolean(conflictCheckDateRange),
+  });
+
+  const personalLessonsForConflict = useMemo((): PersonalLessonRef[] => {
+    if (!conflictCheckDateRange) return personalLessons;
+    return (lessonsInRangeQuery.data ?? []).map((item) => ({
+      id: item.id,
+      date: item.date,
+      timeStart: item.timeStart,
+      timeEnd: item.timeEnd,
+      locationId: item.locationId,
+      clientDisplay: item.clientDisplay,
+    }));
+  }, [conflictCheckDateRange, lessonsInRangeQuery.data, personalLessons]);
+
+  const personalSeriesSlotsToCreate = useMemo(() => {
+    if (!lesson || lesson.kind !== "personal") return [];
+    const date = personalDate || lesson.date;
+    const extra = expandedPersonalEditSlots.filter((slot) => slot.date !== date);
+    const effectiveLocationId = personalListEdit ? locationId : lesson.locationId;
+    return filterNewPersonalSeriesSlots(
+      extra,
+      { locationId: effectiveLocationId ?? null, excludeLessonId: lesson.lessonId },
+      personalLessonsForConflict
+    );
+  }, [
+    lesson,
+    personalDate,
+    expandedPersonalEditSlots,
+    personalListEdit,
+    locationId,
+    personalLessonsForConflict,
+  ]);
+
+  const personalOccupancyUnchanged =
+    lesson?.kind === "personal" &&
+    (personalDate || lesson.date) === lesson.date &&
+    timeStart === lesson.timeStart &&
+    timeEnd === lesson.timeEnd &&
+    (teacherMemberId || lesson.teacherMemberId || "") === (lesson.teacherMemberId || "");
+
   const freebusySlots = useMemo(() => {
     if (!lesson) return [];
     if (lesson.kind === "personal") {
       const date = personalDate || lesson.date;
-      if (!personalListEdit && personalRepeatConfig.repeatWeekly) {
-        return expandPersonalLessonWeeklySlots(date, timeStart, timeEnd, personalRepeatConfig).filter(
-          (slot) => slot.date && slot.timeStart && slot.timeEnd
-        );
-      }
-      return [{ date, timeStart, timeEnd }];
+      const current = personalOccupancyUnchanged ? [] : [{ date, timeStart, timeEnd }];
+      return [...current, ...personalSeriesSlotsToCreate];
     }
     return groupSlotRows.map((row) => ({
       date: dateForDayOfWeekInWeek(lesson.date, row.dayOfWeek),
       timeStart: row.timeStart,
       timeEnd: row.timeEnd,
     }));
-  }, [lesson, personalDate, timeStart, timeEnd, groupSlotRows, personalRepeatConfig, personalListEdit]);
+  }, [
+    lesson,
+    personalDate,
+    timeStart,
+    timeEnd,
+    groupSlotRows,
+    personalOccupancyUnchanged,
+    personalSeriesSlotsToCreate,
+  ]);
 
   const resolvedTeacherForFreebusy =
     teacherMemberId || lesson?.teacherMemberId || "";
@@ -537,12 +600,14 @@ export default function EditLessonPopup({
     return personalListEdit ? locationId : (lesson.locationId ?? "");
   }, [lesson, personalListEdit, locationId]);
 
-  const needsArchivedTariffLookup = Boolean(
+  const needsBookedTariffLookup = Boolean(
     lesson?.kind === "personal" &&
       lesson.priceId &&
       !prices.some((price) => price.id === lesson.priceId)
   );
-  const { data: archivedPrices = [] } = useArchivedPrices(needsArchivedTariffLookup);
+  const { data: bookedPriceById } = usePriceById(
+    needsBookedTariffLookup ? lesson?.priceId ?? null : null
+  );
 
   const activeLessonTariffs = useMemo(
     () =>
@@ -558,9 +623,10 @@ export default function EditLessonPopup({
     if (lesson?.kind !== "personal" || !lesson.priceId) return undefined;
     return (
       prices.find((price) => price.id === lesson.priceId) ??
-      archivedPrices.find((price) => price.id === lesson.priceId)
+      bookedPriceById ??
+      undefined
     );
-  }, [lesson, prices, archivedPrices]);
+  }, [lesson, prices, bookedPriceById]);
 
   const lessonTariffs = useMemo(() => {
     if (lesson?.kind !== "personal") return [];
@@ -653,12 +719,17 @@ export default function EditLessonPopup({
 
   useEffect(() => {
     if (lesson?.kind !== "personal") return;
-    if (selectedClientIds.length < 2) {
-      if (selectedClientIds[0]) setPayerClientId(selectedClientIds[0]);
+    if (selectedClientIds.length === 0) {
+      setPayerClientId("");
       return;
     }
-    if (payerClientId && selectedClientIds.includes(payerClientId)) return;
-    setPayerClientId("");
+    if (selectedClientIds.length === 1) {
+      setPayerClientId(selectedClientIds[0]);
+      return;
+    }
+    if (!payerClientId || !selectedClientIds.includes(payerClientId)) {
+      setPayerClientId(selectedClientIds[0]);
+    }
   }, [lesson, selectedClientIds, payerClientId]);
 
   const handleSaveGroup = async () => {
@@ -996,6 +1067,19 @@ export default function EditLessonPopup({
       return;
     }
 
+    let lessonsForConflict = personalLessonsForConflict;
+    if (conflictCheckDateRange) {
+      const { data: rangeLessons } = await lessonsInRangeQuery.refetch();
+      lessonsForConflict = (rangeLessons ?? []).map((item) => ({
+        id: item.id,
+        date: item.date,
+        timeStart: item.timeStart,
+        timeEnd: item.timeEnd,
+        locationId: item.locationId,
+        clientDisplay: item.clientDisplay,
+      }));
+    }
+
     const conflict = findScheduleConflict(
       {
         date: targetDate,
@@ -1004,7 +1088,7 @@ export default function EditLessonPopup({
         locationId: personalListEdit ? locationId : lesson.locationId,
         excludeLessonId: lesson.lessonId,
       },
-      personalLessons,
+      lessonsForConflict,
       scheduleSlots,
       t,
       locale
@@ -1042,8 +1126,12 @@ export default function EditLessonPopup({
         return;
       }
 
-      additionalSlots = expandedSlots.filter((slot) => slot.date !== targetDate);
       const effectiveLocationId = personalListEdit ? locationId : lesson.locationId;
+      additionalSlots = filterNewPersonalSeriesSlots(
+        expandedSlots.filter((slot) => slot.date !== targetDate),
+        { locationId: effectiveLocationId ?? null, excludeLessonId: lesson.lessonId },
+        lessonsForConflict
+      );
 
       for (const slot of additionalSlots) {
         const seriesConflict = findScheduleConflict(
@@ -1053,7 +1141,7 @@ export default function EditLessonPopup({
             timeEnd: slot.timeEnd,
             locationId: effectiveLocationId,
           },
-          personalLessons,
+          lessonsForConflict,
           scheduleSlots,
           t,
           locale
@@ -1670,6 +1758,7 @@ export default function EditLessonPopup({
                         config={personalRepeatConfig}
                         onChange={(patch) => setPersonalRepeatConfig((prev) => ({ ...prev, ...patch }))}
                         minEndDate={personalDate || lesson.date}
+                        hint={t("personal.edit.repeatWeeklyHint")}
                       />
                     )}
 

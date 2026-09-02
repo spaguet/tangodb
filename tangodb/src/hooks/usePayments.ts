@@ -106,8 +106,10 @@ export function useRecordSubscriptionPayment() {
       venueRuleAcknowledged?: boolean;
     }) => {
       const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false, {
-        queryClient,
-        statusQueryKey: venueStatusQueryKey,
+        cache: {
+          queryClient,
+          statusQueryKey: venueStatusQueryKey,
+        },
       });
       if (venueGuard) return venueGuard;
       const { data, error } = await supabase.rpc("record_subscription_payment", {
@@ -167,6 +169,7 @@ export function useRecordPersonalLessonPayment() {
       method: PaymentMethod;
       idempotencyKey?: string;
       venueRuleAcknowledged?: boolean;
+      lessonDate?: string | null;
       priceId?: string | null;
       tariffUnits?: number | null;
       tariffDurationMinutes?: number | null;
@@ -176,8 +179,11 @@ export function useRecordPersonalLessonPayment() {
       chargeId?: string | null;
     }) => {
       const venueGuard = await checkVenueRuleBeforePayment(input.venueRuleAcknowledged ?? false, {
-        queryClient,
-        statusQueryKey: venueStatusQueryKey,
+        lessonDate: input.lessonDate ?? null,
+        cache: {
+          queryClient,
+          statusQueryKey: venueStatusQueryKey,
+        },
       });
       if (venueGuard) return venueGuard;
       const { data, error } = await supabase.rpc("record_personal_lesson_payment", {
