@@ -1763,24 +1763,43 @@ export const RU: Record<I18nKey, string> = {
   "hallRent.miniapp.error.saveRate": "Не удалось сохранить ставку",
   "hallRent.miniapp.error.saveFlag": "Не удалось сохранить флаг Mini App",
   "hallRent.miniapp.channelTitle": "Бот, чат и QR",
-  "hallRent.miniapp.channelSubtitle": "Ссылка на чат студии, токен бота и макеты QR для пополнения. Учитель этот блок не видит.",
-  "hallRent.miniapp.chatUrl": "Чат студии в Telegram",
-  "hallRent.miniapp.chatUrlHint": "Только https://t.me/username, приглашение или tg://resolve / tg://user. Не t.me/share.",
+  "hallRent.miniapp.channelSubtitle":
+    "Подключите Telegram, чтобы арендаторы бронировали зал и присылали чеки. Своё приложение писать не нужно — кабинет уже готов.",
+  "hallRent.miniapp.setup.title": "Как настроить — по шагам",
+  "hallRent.miniapp.setup.intro":
+    "Кабинет арендатора уже сделан в TangoDB. Вам нужен свой Telegram-бот и чат, куда приходят чеки об оплате.",
+  "hallRent.miniapp.setup.step1":
+    "Создайте бота. В Telegram откройте @BotFather → команда /newbot → придумайте имя и username. Скопируйте токен (длинная строка) и позже вставьте его в поле «Токен бота».",
+  "hallRent.miniapp.setup.step2":
+    "Подключите кабинет к боту. В @BotFather отправьте /newapp (или: ваш бот → Bot Settings → Mini App / Menu Button). Выберите этого бота. URL приложения — готовый кабинет TangoDB, скопируйте его кнопкой ниже. Своё Mini App писать не нужно. Короткое имя — латиницей без пробелов, например booking. Это имя вставьте в поле ниже.",
+  "hallRent.miniapp.setup.step3":
+    "Укажите чат для чеков. Это может быть группа студии или личный чат администратора, который принимает оплату. Арендатор из кабинета откроет этот чат и пришлёт скрин перевода. Вставьте ссылку: https://t.me/username, приглашение в группу (https://t.me/+…) или tg://user?id=…",
+  "hallRent.miniapp.setup.step4":
+    "Нажмите «Сохранить чат и имя» и «Сохранить токен». После этого появится ссылка для арендаторов — отправьте её тем, кто берёт зал.",
+  "hallRent.miniapp.setup.step5":
+    "По желанию загрузите QR-коды оплаты (банк, кошелёк). Арендатор увидит их, когда будет пополнять баланс.",
+  "hallRent.miniapp.webAppUrlCopy": "Скопировать адрес кабинета",
+  "hallRent.miniapp.chatUrl": "Чат для чеков о пополнении",
+  "hallRent.miniapp.chatUrlHint":
+    "Группа студии или личный чат администратора. Сюда арендаторы присылают скрин оплаты.",
+  "hallRent.miniapp.chatUrlPlaceholder": "https://t.me/username или приглашение в группу",
   "hallRent.miniapp.botToken": "Токен бота",
-  "hallRent.miniapp.botTokenPlaceholder": "Вставьте новый токен для замены",
+  "hallRent.miniapp.botTokenPlaceholder": "Вставьте токен из @BotFather",
+  "hallRent.miniapp.botTokenHint": "Выдаёт @BotFather после /newbot. В интерфейсе целиком не показывается.",
   "hallRent.miniapp.botTokenSet": "Токен задан · …{{last4}}",
-  "hallRent.miniapp.appShortName": "Имя Mini App в боте",
+  "hallRent.miniapp.appShortName": "Короткое имя кабинета в боте",
   "hallRent.miniapp.appShortNameHint":
-    "В @BotFather откройте вашего бота → Bot Settings → Menu Button (или Web App). Скопируйте короткое имя приложения — латиница, без пробелов. Оно же в конце ссылки: t.me/ваш_бот/имя (например booking).",
+    "Имя, которое вы задали в @BotFather (латиница, без пробелов). Своё Mini App писать не нужно.",
   "hallRent.miniapp.appShortNamePlaceholder": "например booking",
   "hallRent.miniapp.miniappUrl": "Ссылка для арендаторов",
   "hallRent.miniapp.botfatherHint":
-    "Отправьте эту ссылку арендаторам в Telegram или повесьте её кнопкой в меню бота (в @BotFather: Menu Button → тот же адрес). По ссылке открывается бронирование именно вашей студии.",
+    "Отправьте эту ссылку людям, которые берут зал. По ней открывается кабинет вашей студии в Telegram.",
   "hallRent.miniapp.copyUrl": "Скопировать ссылку",
-  "hallRent.miniapp.saveChannel": "Сохранить чат и имя приложения",
-  "hallRent.miniapp.saveBot": "Сохранить токен и webhook",
-  "hallRent.miniapp.qrLibrary": "Библиотека QR",
-  "hallRent.miniapp.qrLabel": "Подпись",
+  "hallRent.miniapp.saveChannel": "Сохранить чат и имя",
+  "hallRent.miniapp.saveBot": "Сохранить токен",
+  "hallRent.miniapp.qrLibrary": "QR-коды для оплаты",
+  "hallRent.miniapp.qrHint": "Макеты, которые арендатор видит при пополнении баланса.",
+  "hallRent.miniapp.qrLabel": "Подпись (банк, кошелёк)",
   "hallRent.miniapp.qrActive": "Действующий",
   "hallRent.miniapp.qrUpload": "Загрузить QR",
   "hallRent.miniapp.qrEmpty": "Нет макетов QR.",
@@ -1789,7 +1808,7 @@ export const RU: Record<I18nKey, string> = {
   "hallRent.miniapp.qrUploaded": "QR загружен",
   "hallRent.miniapp.qrDeleted": "QR удалён",
   "hallRent.miniapp.miniappUrlEmpty":
-    "Появится автоматически после сохранения имени Mini App и токена бота.",
+    "Появится автоматически после сохранения короткого имени и токена бота.",
   "hallRent.miniapp.error.saveChannel": "Не удалось сохранить канал",
   "hallRent.miniapp.error.saveBot": "Не удалось сохранить токен бота",
   "hallRent.miniapp.error.copyUrl": "Не удалось скопировать ссылку",

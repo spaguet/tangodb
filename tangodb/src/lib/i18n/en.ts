@@ -408,6 +408,12 @@ export const EN: Record<I18nKey, string> = {
   "integrations.googleCalendar.connect": "Connect Google Calendar",
   "integrations.googleCalendar.reconnectRequired": "Google account must be reconnected (access revoked or expired).",
   "integrations.googleCalendar.reconnectHintTesting": "If this happens about once a week, the Google Cloud OAuth app is still in Testing — refresh tokens last 7 days. Publish the app to Production, or reconnect the calendar.",
+  "integrations.googleCalendar.syncStoppedTitle": "Google Calendar sync has stopped",
+  "integrations.googleCalendar.syncStoppedBody":
+    "Google access expired or was revoked — CRM changes will not reach your calendar until you reconnect in Settings.",
+  "integrations.googleCalendar.syncStoppedAction": "Reconnect",
+  "integrations.googleCalendar.syncStoppedToast":
+    "Google Calendar sync stopped. Reconnect your account under Settings → Integrations.",
   "integrations.googleCalendar.selectCalendar": "Choose a calendar",
   "integrations.googleCalendar.selectCalendarHint": "Account {{email}}. Pick a writable calendar or create a new TangoDB calendar.",
   "integrations.googleCalendar.changeCalendar": "Change calendar",
@@ -950,6 +956,7 @@ export const EN: Record<I18nKey, string> = {
   "utils.dow.short.sat": "Sat",
   "utils.dow.short.sun": "Sun",
   "utils.conflict.personalLesson": "a private lesson is already scheduled at this time",
+  "utils.conflict.personalLessonNamed": "a private lesson is already scheduled ({{name}})",
   "utils.conflict.groupLesson": "another group lesson is already scheduled at this time",
   "utils.conflict.groupSchedule": "Conflict: {{day}} {{time}} — {{reason}}",
 
@@ -1565,6 +1572,8 @@ export const EN: Record<I18nKey, string> = {
     "How many tariff quanta fit in the lesson duration; set by the tariff duration in prices, not manually.",
   "personal.edit.slotChangedWithPayments":
     "The lesson already has payments — the billed amount will not change when you adjust the time slot.",
+  "personal.edit.repeatWeeklyHint":
+    "New dates are created only when the slot is free. Existing lessons at this time are not duplicated.",
   "schedule.title": "Schedule",
   "schedule.empty": "Schedule is empty",
   "schedule.error.loadFailed": "Failed to load schedule",
@@ -1756,24 +1765,43 @@ export const EN: Record<I18nKey, string> = {
   "hallRent.miniapp.error.saveRate": "Could not save the rate",
   "hallRent.miniapp.error.saveFlag": "Could not save the Mini App flag",
   "hallRent.miniapp.channelTitle": "Bot, chat and QR",
-  "hallRent.miniapp.channelSubtitle": "Studio Telegram chat, bot token and QR artwork for top-ups. Teachers do not see this block.",
-  "hallRent.miniapp.chatUrl": "Studio Telegram chat",
-  "hallRent.miniapp.chatUrlHint": "Only https://t.me/username, invite links, or tg://resolve / tg://user. Not t.me/share.",
+  "hallRent.miniapp.channelSubtitle":
+    "Connect Telegram so renters can book the hall and send payment receipts. You do not need to build your own Mini App — the cabinet is already hosted.",
+  "hallRent.miniapp.setup.title": "How to set this up",
+  "hallRent.miniapp.setup.intro":
+    "The renter cabinet is already built in TangoDB. You only need your own Telegram bot and a chat where payment receipts arrive.",
+  "hallRent.miniapp.setup.step1":
+    "Create a bot. In Telegram open @BotFather → /newbot → pick a name and username. Copy the token (a long string) and later paste it into “Bot token”.",
+  "hallRent.miniapp.setup.step2":
+    "Attach the cabinet to your bot. In @BotFather send /newapp (or: your bot → Bot Settings → Mini App / Menu Button). Choose this bot. The Web App URL is TangoDB’s ready cabinet — copy it with the button below. You do not write your own Mini App. The short name is Latin letters with no spaces, for example booking. Paste that name in the field below.",
+  "hallRent.miniapp.setup.step3":
+    "Set the chat for receipts. This can be a studio group or a personal chat with the person who takes payments. The renter opens this chat from the cabinet and sends a screenshot of the transfer. Paste a link: https://t.me/username, a group invite (https://t.me/+…), or tg://user?id=…",
+  "hallRent.miniapp.setup.step4":
+    "Click “Save chat and name” and “Save token”. A renter link then appears — send it to people who book the hall.",
+  "hallRent.miniapp.setup.step5":
+    "Optionally upload payment QR codes (bank, wallet). Renters see them when they top up.",
+  "hallRent.miniapp.webAppUrlCopy": "Copy cabinet URL",
+  "hallRent.miniapp.chatUrl": "Chat for top-up receipts",
+  "hallRent.miniapp.chatUrlHint":
+    "A studio group or the administrator’s personal chat. Renters send a payment screenshot here.",
+  "hallRent.miniapp.chatUrlPlaceholder": "https://t.me/username or a group invite",
   "hallRent.miniapp.botToken": "Bot token",
-  "hallRent.miniapp.botTokenPlaceholder": "Paste a new token to rotate",
+  "hallRent.miniapp.botTokenPlaceholder": "Paste the token from @BotFather",
+  "hallRent.miniapp.botTokenHint": "Issued by @BotFather after /newbot. The full token is not shown in the UI.",
   "hallRent.miniapp.botTokenSet": "Token saved · …{{last4}}",
-  "hallRent.miniapp.appShortName": "Mini App name in your bot",
+  "hallRent.miniapp.appShortName": "Cabinet short name in the bot",
   "hallRent.miniapp.appShortNameHint":
-    "In @BotFather open your bot → Bot Settings → Menu Button (or Web App). Copy the short app name — Latin letters, no spaces. It is the last part of t.me/your_bot/name (for example booking).",
+    "The name you set in @BotFather (Latin letters, no spaces). You do not need to build your own Mini App.",
   "hallRent.miniapp.appShortNamePlaceholder": "e.g. booking",
   "hallRent.miniapp.miniappUrl": "Link for renters",
   "hallRent.miniapp.botfatherHint":
-    "Share this link with renters in Telegram or add it as a menu button in your bot (@BotFather → Menu Button → same URL). It opens booking for your studio only.",
+    "Send this link to people who book the hall. It opens your studio’s cabinet in Telegram.",
   "hallRent.miniapp.copyUrl": "Copy link",
-  "hallRent.miniapp.saveChannel": "Save chat and app name",
-  "hallRent.miniapp.saveBot": "Save token and webhook",
-  "hallRent.miniapp.qrLibrary": "QR library",
-  "hallRent.miniapp.qrLabel": "Caption",
+  "hallRent.miniapp.saveChannel": "Save chat and name",
+  "hallRent.miniapp.saveBot": "Save token",
+  "hallRent.miniapp.qrLibrary": "Payment QR codes",
+  "hallRent.miniapp.qrHint": "Artwork renters see when they top up their balance.",
+  "hallRent.miniapp.qrLabel": "Caption (bank, wallet)",
   "hallRent.miniapp.qrActive": "Active",
   "hallRent.miniapp.qrUpload": "Upload QR",
   "hallRent.miniapp.qrEmpty": "No QR artwork yet.",
@@ -1782,7 +1810,7 @@ export const EN: Record<I18nKey, string> = {
   "hallRent.miniapp.qrUploaded": "QR uploaded",
   "hallRent.miniapp.qrDeleted": "QR deleted",
   "hallRent.miniapp.miniappUrlEmpty":
-    "Appears automatically after you save the Mini App name and bot token.",
+    "Appears automatically after you save the short name and bot token.",
   "hallRent.miniapp.error.saveChannel": "Could not save channel settings",
   "hallRent.miniapp.error.saveBot": "Could not save the bot token",
   "hallRent.miniapp.error.copyUrl": "Could not copy the link",

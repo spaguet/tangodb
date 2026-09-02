@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
-import { btnAddCls, btnCancelCls } from "../../components/ui/buttonStyles";
+import { btnAddCls, btnCancelCls, btnOpenCls } from "../../components/ui/buttonStyles";
 import { useToast } from "../../App";
 import { useI18n } from "../../hooks/useI18n";
 import {
@@ -19,6 +20,10 @@ import {
 import { resolveMutationError } from "../../lib/resolveMutationError";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const hintCls = "text-[10px] text-slate-500 leading-relaxed";
+
+/** Production Mini App origin — paste this URL in BotFather, not a studio-built app. */
+const RENTER_MINIAPP_WEB_APP_URL = "https://tangodb-renter.vercel.app";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -85,14 +90,18 @@ export default function MiniAppChannelSection() {
     toast(t("hallRent.miniapp.botSaved"), "success");
   };
 
-  const handleCopyUrl = async () => {
-    if (!channel?.miniappUrl) return;
+  const copyText = async (value: string) => {
     try {
-      await navigator.clipboard.writeText(channel.miniappUrl);
+      await navigator.clipboard.writeText(value);
       toast(t("common.copied"), "success");
     } catch {
       toast(t("hallRent.miniapp.error.copyUrl"), "error");
     }
+  };
+
+  const handleCopyUrl = async () => {
+    if (!channel?.miniappUrl) return;
+    await copyText(channel.miniappUrl);
   };
 
   const handleUploadQr = async (file: File) => {
@@ -120,6 +129,41 @@ export default function MiniAppChannelSection() {
 
   return (
     <div className="space-y-4">
+      <details className="group rounded-lg border border-slate-200 bg-slate-50">
+        <summary className="flex items-center justify-between gap-3 px-3 py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+          <span className="text-xs font-semibold text-slate-700">
+            {t("hallRent.miniapp.setup.title")}
+          </span>
+          <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180 shrink-0" />
+        </summary>
+        <div className="px-3 pb-3 pt-1 space-y-3 border-t border-slate-100">
+          <p className="text-xs text-slate-600 leading-relaxed">{t("hallRent.miniapp.setup.intro")}</p>
+          <ol className="text-xs text-slate-600 space-y-2.5 list-decimal pl-4 leading-relaxed">
+            <li>{t("hallRent.miniapp.setup.step1")}</li>
+            <li>
+              <span>{t("hallRent.miniapp.setup.step2")}</span>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <code className="text-[11px] text-slate-700 break-all bg-white border border-slate-200 rounded px-1.5 py-0.5">
+                  {RENTER_MINIAPP_WEB_APP_URL}
+                </code>
+                <button
+                  type="button"
+                  className={btnOpenCls}
+                  onClick={() => {
+                    void copyText(RENTER_MINIAPP_WEB_APP_URL);
+                  }}
+                >
+                  {t("hallRent.miniapp.webAppUrlCopy")}
+                </button>
+              </div>
+            </li>
+            <li>{t("hallRent.miniapp.setup.step3")}</li>
+            <li>{t("hallRent.miniapp.setup.step4")}</li>
+            <li>{t("hallRent.miniapp.setup.step5")}</li>
+          </ol>
+        </div>
+      </details>
+
       <div className="field-stack">
         <label className={labelCls} htmlFor="renter-chat-url">
           {t("hallRent.miniapp.chatUrl")}
@@ -128,9 +172,10 @@ export default function MiniAppChannelSection() {
           id="renter-chat-url"
           className={inputCls}
           value={shownChat}
+          placeholder={t("hallRent.miniapp.chatUrlPlaceholder")}
           onChange={(e) => setChatUrl(e.target.value)}
         />
-        <p className="text-[10px] text-slate-400">{t("hallRent.miniapp.chatUrlHint")}</p>
+        <p className={hintCls}>{t("hallRent.miniapp.chatUrlHint")}</p>
       </div>
 
       <div className="field-stack">
@@ -144,7 +189,7 @@ export default function MiniAppChannelSection() {
           placeholder={t("hallRent.miniapp.appShortNamePlaceholder")}
           onChange={(e) => setShortName(e.target.value)}
         />
-        <p className="text-[10px] text-slate-400">{t("hallRent.miniapp.appShortNameHint")}</p>
+        <p className={hintCls}>{t("hallRent.miniapp.appShortNameHint")}</p>
       </div>
 
       <button
@@ -170,7 +215,7 @@ export default function MiniAppChannelSection() {
         ) : (
           <p className="text-xs text-slate-400">{t("hallRent.miniapp.miniappUrlEmpty")}</p>
         )}
-        <p className="text-[10px] text-slate-400">{t("hallRent.miniapp.botfatherHint")}</p>
+        <p className={hintCls}>{t("hallRent.miniapp.botfatherHint")}</p>
       </div>
 
       <div className="field-stack">
@@ -191,6 +236,7 @@ export default function MiniAppChannelSection() {
           placeholder={t("hallRent.miniapp.botTokenPlaceholder")}
           onChange={(e) => setBotToken(e.target.value)}
         />
+        <p className={hintCls}>{t("hallRent.miniapp.botTokenHint")}</p>
       </div>
 
       <button
@@ -205,7 +251,10 @@ export default function MiniAppChannelSection() {
       </button>
 
       <div className="border-t border-slate-100 pt-3 space-y-3">
-        <h4 className="text-sm font-semibold text-slate-800">{t("hallRent.miniapp.qrLibrary")}</h4>
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold text-slate-800">{t("hallRent.miniapp.qrLibrary")}</h4>
+          <p className={hintCls}>{t("hallRent.miniapp.qrHint")}</p>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="field-stack">
             <label className={labelCls} htmlFor="renter-qr-label">
