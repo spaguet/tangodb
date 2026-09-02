@@ -2,12 +2,15 @@ import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import type { VenueCostRuleStatus } from "../../hooks/useVenueCosts";
+import { isVenuePaymentAckRequired } from "../../lib/venueCostPaymentGate";
 import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import VenueRuleExpiryNotice from "./VenueRuleExpiryNotice";
 
 interface VenueRulePaymentConfirmDialogProps {
   status: VenueCostRuleStatus | null;
   pending?: boolean;
+  /** Lesson / visit date for contextual gate (hides dialog when rule still covers the day). */
+  serviceDate?: string | null;
   /** When opened from another modal (e.g. personal lesson payment), render above z-[60] overlays. */
   stackLayer?: "default" | "above";
   onConfirm: () => void;
@@ -17,15 +20,23 @@ interface VenueRulePaymentConfirmDialogProps {
 export default function VenueRulePaymentConfirmDialog({
   status,
   pending = false,
+  serviceDate,
   stackLayer = "default",
   onConfirm,
   onCancel,
 }: VenueRulePaymentConfirmDialogProps) {
   const { t } = useI18n();
   const zClass = stackLayer === "above" ? "z-[70]" : "z-50";
+  const visible =
+    status &&
+    isVenuePaymentAckRequired(
+      status.acknowledgementRequired,
+      status.latestValidTo,
+      serviceDate
+    );
   return (
     <AnimatePresence>
-      {status && (
+      {visible && (
         <div className={`fixed inset-0 ${zClass} flex items-center justify-center p-4`} role="dialog" aria-modal="true">
           <motion.div
             initial={{ opacity: 0 }}
@@ -44,7 +55,7 @@ export default function VenueRulePaymentConfirmDialog({
               <AlertTriangle className="w-5 h-5 text-amber-600" />
               <h3 className="text-base font-semibold text-slate-900">{t("venueCosts.paymentConfirm.title")}</h3>
             </div>
-            <VenueRuleExpiryNotice status={status} compact />
+            <VenueRuleExpiryNotice status={status} compact serviceDate={serviceDate} />
             <p className="text-xs text-slate-600 leading-relaxed">{t("venueCosts.paymentConfirm.body")}</p>
             <div className="flex gap-2">
               <button

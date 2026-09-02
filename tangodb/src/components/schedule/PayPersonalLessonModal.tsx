@@ -949,6 +949,7 @@ export default function PayPersonalLessonModal({
       />
       <VenueRulePaymentConfirmDialog
         status={venueConfirmStatus}
+        serviceDate={lesson?.date}
         pending={recordPersonalLessonPayment.isPending}
         stackLayer="above"
         onConfirm={() => void handlePayCash(true)}

@@ -1470,6 +1470,7 @@ export default function PersonalLessonSaleForm({
       />
       <VenueRulePaymentConfirmDialog
         status={venueConfirmStatus}
+        serviceDate={pendingVenuePayment?.payments[0]?.date ?? lessonEntries[0]?.date}
         pending={addPersonalLessons.isPending || recordPersonalLessonPayment.isPending}
         stackLayer={isScheduleCell ? "above" : undefined}
         onConfirm={() => {

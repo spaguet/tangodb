@@ -1928,6 +1928,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
       <VenueRulePaymentConfirmDialog
         status={venueConfirmStatus}
+        serviceDate={selectedDate}
         pending={recordSingleVisit.isPending}
         onConfirm={() => void handleRecordSingleVisit(true)}
         onCancel={() => setVenueConfirmStatus(null)}

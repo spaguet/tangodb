@@ -2,15 +2,30 @@ import { AlertTriangle, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../../hooks/useI18n";
 import type { VenueCostRuleStatus } from "../../hooks/useVenueCosts";
+import { isVenuePaymentAckRequired } from "../../lib/venueCostPaymentGate";
 
 interface VenueRuleExpiryNoticeProps {
   status: VenueCostRuleStatus;
   compact?: boolean;
+  /** Lesson / visit date — suppress notice when the rule still covers this day. */
+  serviceDate?: string | null;
 }
 
-export default function VenueRuleExpiryNotice({ status, compact = false }: VenueRuleExpiryNoticeProps) {
+export default function VenueRuleExpiryNotice({
+  status,
+  compact = false,
+  serviceDate,
+}: VenueRuleExpiryNoticeProps) {
   const { t, formatDate } = useI18n();
-  if (!status.acknowledgementRequired) return null;
+  if (
+    !isVenuePaymentAckRequired(
+      status.acknowledgementRequired,
+      status.latestValidTo,
+      serviceDate
+    )
+  ) {
+    return null;
+  }
 
   return (
     <div className={`rounded-xl border border-amber-200 bg-amber-50 text-amber-900 ${compact ? "p-3" : "p-4"}`}>
