@@ -10,14 +10,18 @@ type TabBarProps = {
 
 export default function TabBar({ locale, active, onChange }: TabBarProps) {
   const base =
-    "flex-1 py-2.5 text-sm font-medium transition-colors border-b-2";
+    "flex-1 py-3 text-sm font-semibold transition-colors border-b-2 bg-white";
   return (
-    <nav className="flex border-b border-white/10" role="tablist">
+    <nav className="flex shrink-0 border-b border-slate-200 shadow-xs" role="tablist">
       <button
         type="button"
         role="tab"
         aria-selected={active === "schedule"}
-        className={`${base} ${active === "schedule" ? "border-[var(--tg-theme-button-color,#38bdf8)] text-[var(--tg-theme-button-color,#38bdf8)]" : "border-transparent opacity-70"}`}
+        className={`${base} ${
+          active === "schedule"
+            ? "border-indigo-600 text-indigo-700"
+            : "border-transparent text-slate-500 hover:text-slate-700"
+        }`}
         onClick={() => onChange("schedule")}
       >
         {t(locale, "tabSchedule")}
@@ -26,7 +30,11 @@ export default function TabBar({ locale, active, onChange }: TabBarProps) {
         type="button"
         role="tab"
         aria-selected={active === "mine"}
-        className={`${base} ${active === "mine" ? "border-[var(--tg-theme-button-color,#38bdf8)] text-[var(--tg-theme-button-color,#38bdf8)]" : "border-transparent opacity-70"}`}
+        className={`${base} ${
+          active === "mine"
+            ? "border-indigo-600 text-indigo-700"
+            : "border-transparent text-slate-500 hover:text-slate-700"
+        }`}
         onClick={() => onChange("mine")}
       >
         {t(locale, "tabMine")}

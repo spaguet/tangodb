@@ -25,17 +25,22 @@ export const weekChipActiveCls = "bg-indigo-600 text-white border border-indigo-
 export const weekChipCls =
   "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50";
 
+export const sectionTitleCls = "text-base font-semibold text-slate-800 tracking-tight";
+
+export const btnDestructiveOpenCls =
+  "inline-flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-60";
+
 export function occupancyCellClass(state: SlotState, isToday: boolean): string {
   const todayCol = isToday ? "bg-slate-100/80" : "bg-white";
   switch (state) {
     case "free":
       return `${todayCol} hover:bg-indigo-50/60 active:bg-indigo-100/50`;
     case "busy":
-      return "bg-slate-200/90";
+      return "bg-slate-400/90 ring-1 ring-inset ring-slate-500";
     case "mine":
-      return "bg-slate-600 text-white ring-1 ring-inset ring-slate-700/40";
+      return "bg-indigo-600 text-white ring-1 ring-inset ring-indigo-700";
     case "mine_hold":
-      return "slot-hold text-white";
+      return "slot-hold text-white ring-1 ring-inset ring-slate-500";
     default:
       return todayCol;
   }

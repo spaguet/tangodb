@@ -5,7 +5,7 @@ import BotBanner from "../components/BotBanner";
 import TabBar, { type CabinetTab } from "../components/TabBar";
 import MineTab from "../components/mine/MineTab";
 import ScheduleTab from "../components/schedule/ScheduleTab";
-import { t, type Locale } from "../i18n/strings";
+import { type Locale } from "../i18n/strings";
 
 type CabinetScreenProps = {
   locale: Locale;
@@ -24,17 +24,12 @@ export default function CabinetScreen({
   const [mineRefresh, setMineRefresh] = useState(0);
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-[var(--tg-theme-bg-color,#0f172a)] text-[var(--tg-theme-text-color,#f8fafc)]">
-      <header className="px-4 pt-4 pb-2">
-        <p className="text-xs uppercase tracking-wide opacity-60">{t(locale, "studioSubtitle")}</p>
-        <h1 className="text-xl font-semibold leading-tight">{bootstrap.studioName}</h1>
-      </header>
-
-      <BotBanner locale={locale} botStarted={bootstrap.botStarted} />
-
+    <div className="flex h-[100dvh] flex-col bg-slate-50 text-slate-800">
       <TabBar locale={locale} active={tab} onChange={setTab} />
 
-      <main className="flex min-h-0 flex-1 flex-col overflow-hidden pt-3">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <BotBanner locale={locale} botStarted={bootstrap.botStarted} />
+
         {tab === "schedule" ? (
           <ScheduleTab
             locale={locale}

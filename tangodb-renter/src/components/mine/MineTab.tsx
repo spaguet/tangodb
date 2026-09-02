@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
+import {
+  btnDestructiveOpenCls,
+  btnOpenCls,
+  btnPrimaryCls,
+  btnSecondaryCls,
+  fieldCls,
+  labelCls,
+  panelCls,
+  sectionTitleCls,
+} from "../../lib/crmUi";
 import { formatMoney, holdCountdown } from "../../lib/format";
 import { formatShortDate, formatTimeRange } from "../../lib/orgTime";
 import {
@@ -166,8 +176,8 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
 
   if (loading && !wallet) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="h-8 w-8 rounded-full border-2 border-[var(--tg-theme-button-color,#38bdf8)] border-t-transparent animate-spin" />
+      <div className="flex justify-center bg-slate-50 py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
       </div>
     );
   }
@@ -176,84 +186,89 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
   const debt = wallet?.debt_amount ?? 0;
   const seenSeries = new Set<string>();
 
+  const methodActiveCls = "bg-indigo-600 text-white border border-indigo-600";
+  const methodIdleCls = "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50";
+
   return (
-    <div className="flex flex-col gap-4 px-4 pb-8">
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+    <div className="flex flex-col gap-4 bg-slate-50 px-4 pb-8 pt-3 text-slate-800">
+      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
       {wallet ? (
-        <section className="rounded-xl bg-white/5 p-3 space-y-2 text-sm">
+        <section className={`${panelCls} space-y-2 p-3 text-sm`}>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-xs opacity-60">{t(locale, "walletBalance")}</p>
-              <p className="font-medium">{formatMoney(wallet.wallet_balance, currency, locale)}</p>
+              <p className={labelCls}>{t(locale, "walletBalance")}</p>
+              <p className="font-semibold text-slate-800">
+                {formatMoney(wallet.wallet_balance, currency, locale)}
+              </p>
             </div>
             <div>
-              <p className="text-xs opacity-60">{t(locale, "spendable")}</p>
-              <p className="font-medium">{formatMoney(wallet.spendable, currency, locale)}</p>
+              <p className={labelCls}>{t(locale, "spendable")}</p>
+              <p className="font-semibold text-slate-800">
+                {formatMoney(wallet.spendable, currency, locale)}
+              </p>
             </div>
             <div>
-              <p className="text-xs opacity-60">{t(locale, "reservedPrepay")}</p>
-              <p>{formatMoney(wallet.reserved_prepay, currency, locale)}</p>
+              <p className={labelCls}>{t(locale, "reservedPrepay")}</p>
+              <p className="text-slate-700">{formatMoney(wallet.reserved_prepay, currency, locale)}</p>
             </div>
             <div>
-              <p className="text-xs opacity-60">{t(locale, "debt")}</p>
-              <p className={debt > 0 ? "text-rose-300 font-medium" : ""}>
+              <p className={labelCls}>{t(locale, "debt")}</p>
+              <p className={debt > 0 ? "font-semibold text-rose-600" : "text-slate-700"}>
                 {formatMoney(debt, currency, locale)}
               </p>
             </div>
           </div>
           {debt > 0 ? (
-            <p className="text-xs text-amber-200/90 leading-relaxed">{t(locale, "debtWarning")}</p>
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs leading-relaxed text-amber-900">
+              {t(locale, "debtWarning")}
+            </p>
           ) : null}
         </section>
       ) : null}
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold opacity-80">{t(locale, "tabMine")}</h2>
+        <h2 className={sectionTitleCls}>{t(locale, "tabMine")}</h2>
         {bookings.length === 0 ? (
-          <p className="text-sm opacity-60">{t(locale, "noBookings")}</p>
+          <p className="text-sm text-slate-500">{t(locale, "noBookings")}</p>
         ) : (
           bookings.map((r) => {
             const seriesId = r.rental_series_id;
             const showPackCancel =
               seriesId && !seenSeries.has(seriesId) ? (seenSeries.add(seriesId), true) : false;
             return (
-            <RentalCard
-              key={r.id}
-              locale={locale}
-              rental={r}
-              currency={currency}
-              busy={actionId === r.id || actionId === (r.rental_series_id ?? "")}
-              onDeleteHold={() => void onDeleteHold(r.id)}
-              onCancel={() => void onCancel(r.id)}
-              onCancelPack={
-                showPackCancel && seriesId ? () => void onCancelPack(seriesId) : undefined
-              }
-            />
+              <RentalCard
+                key={r.id}
+                locale={locale}
+                rental={r}
+                currency={currency}
+                busy={actionId === r.id || actionId === (r.rental_series_id ?? "")}
+                onDeleteHold={() => void onDeleteHold(r.id)}
+                onCancel={() => void onCancel(r.id)}
+                onCancelPack={
+                  showPackCancel && seriesId ? () => void onCancelPack(seriesId) : undefined
+                }
+              />
             );
           })
         )}
         {bookings.length < bookingsTotal ? (
-          <button
-            type="button"
-            className="w-full rounded-lg border border-white/15 py-2 text-sm"
-            onClick={() => void loadMoreBookings()}
-          >
+          <button type="button" className={`w-full ${btnSecondaryCls}`} onClick={() => void loadMoreBookings()}>
             {t(locale, "loadMore")}
           </button>
         ) : null}
       </section>
 
-      <section className="rounded-xl bg-white/5 p-3 space-y-3">
-        <h2 className="text-sm font-semibold">{t(locale, "topup")}</h2>
+      <section className={`${panelCls} space-y-3 p-3`}>
+        <h2 className={sectionTitleCls}>{t(locale, "topup")}</h2>
         {!bootstrap.addonActive ? (
-          <p className="text-xs opacity-70">{t(locale, "addonInactiveTopup")}</p>
+          <p className="text-xs text-slate-500">{t(locale, "addonInactiveTopup")}</p>
         ) : (
           <>
             <input
               type="number"
               inputMode="decimal"
-              className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm"
+              className={fieldCls}
               placeholder={t(locale, "topupAmount")}
               value={topupAmount}
               onChange={(e) => setTopupAmount(e.target.value)}
@@ -261,14 +276,18 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
             <div className="flex gap-2">
               <button
                 type="button"
-                className={`flex-1 rounded-lg py-2 text-xs ${topupMethod === "cash" ? "bg-[var(--tg-theme-button-color,#38bdf8)]" : "bg-white/10"}`}
+                className={`flex-1 rounded-lg py-2 text-xs font-semibold ${
+                  topupMethod === "cash" ? methodActiveCls : methodIdleCls
+                }`}
                 onClick={() => setTopupMethod("cash")}
               >
                 {t(locale, "topupMethodCash")}
               </button>
               <button
                 type="button"
-                className={`flex-1 rounded-lg py-2 text-xs ${topupMethod === "qr" ? "bg-[var(--tg-theme-button-color,#38bdf8)]" : "bg-white/10"}`}
+                className={`flex-1 rounded-lg py-2 text-xs font-semibold ${
+                  topupMethod === "qr" ? methodActiveCls : methodIdleCls
+                }`}
                 onClick={() => setTopupMethod("qr")}
                 disabled={qrs.length === 0}
               >
@@ -276,11 +295,7 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
               </button>
             </div>
             {topupMethod === "qr" && qrs.length > 0 ? (
-              <select
-                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm"
-                value={topupQrId}
-                onChange={(e) => setTopupQrId(e.target.value)}
-              >
+              <select className={fieldCls} value={topupQrId} onChange={(e) => setTopupQrId(e.target.value)}>
                 {qrs.map((q) => (
                   <option key={q.id} value={q.id}>
                     {q.label ?? q.id.slice(0, 8)}
@@ -289,32 +304,19 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
               </select>
             ) : null}
             {topupMethod === "qr" && qrs.length === 0 ? (
-              <p className="text-xs opacity-70">{t(locale, "topupNoQr")}</p>
+              <p className="text-xs text-slate-500">{t(locale, "topupNoQr")}</p>
             ) : null}
             {qrs.map((q) =>
               topupMethod === "qr" && q.id === topupQrId ? (
-                <img
-                  key={q.id}
-                  src={q.signed_url}
-                  alt=""
-                  className="mx-auto max-h-40 rounded-lg"
-                />
+                <img key={q.id} src={q.signed_url} alt="" className="mx-auto max-h-40 rounded-lg border border-slate-200" />
               ) : null
             )}
-            <button
-              type="button"
-              className="w-full rounded-lg bg-[var(--tg-theme-button-color,#38bdf8)] py-2.5 text-sm text-white"
-              onClick={() => void submitTopup()}
-            >
+            <button type="button" className={`w-full ${btnPrimaryCls}`} onClick={() => void submitTopup()}>
               {t(locale, "topupSubmit")}
             </button>
-            {topupMsg ? <p className="text-xs text-emerald-300">{topupMsg}</p> : null}
+            {topupMsg ? <p className="text-xs font-medium text-indigo-600">{topupMsg}</p> : null}
             {bootstrap.chatUrl ? (
-              <button
-                type="button"
-                className="w-full rounded-lg border border-white/20 py-2 text-sm"
-                onClick={openChat}
-              >
+              <button type="button" className={`w-full ${btnOpenCls}`} onClick={openChat}>
                 {t(locale, "topupOpenChat")}
               </button>
             ) : null}
@@ -322,34 +324,25 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
         )}
       </section>
 
-      <section className="rounded-xl bg-white/5 p-3 space-y-3">
-        <h2 className="text-sm font-semibold">{t(locale, "profile")}</h2>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="opacity-70">{t(locale, "displayName")}</span>
-          <input
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            maxLength={80}
-          />
+      <section className={`${panelCls} space-y-3 p-3`}>
+        <h2 className={sectionTitleCls}>{t(locale, "profile")}</h2>
+        <label className="flex flex-col gap-1">
+          <span className={labelCls}>{t(locale, "displayName")}</span>
+          <input className={fieldCls} value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={80} />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="opacity-70">{t(locale, "phone")}</span>
+        <label className="flex flex-col gap-1">
+          <span className={labelCls}>{t(locale, "phone")}</span>
           <input
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2"
+            className={fieldCls}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             inputMode="tel"
           />
         </label>
-        <button
-          type="button"
-          className="w-full rounded-lg border border-white/20 py-2 text-sm"
-          onClick={() => void saveProfile()}
-        >
+        <button type="button" className={`w-full ${btnSecondaryCls}`} onClick={() => void saveProfile()}>
           {t(locale, "saveProfile")}
         </button>
-        {profileMsg ? <p className="text-xs text-emerald-300">{profileMsg}</p> : null}
+        {profileMsg ? <p className="text-xs font-medium text-indigo-600">{profileMsg}</p> : null}
       </section>
     </div>
   );
@@ -376,62 +369,48 @@ function RentalCard({
 }: RentalCardProps) {
   const isHold = rental.lifecycle === "awaiting_payment";
   const canDeleteHold = isHold;
-  const canCancel =
-    !isHold && ["active", "prepaid_charged"].includes(rental.lifecycle);
+  const canCancel = !isHold && ["active", "prepaid_charged"].includes(rental.lifecycle);
   const countdown = isHold ? holdCountdown(rental.hold_expires_at) : null;
   const isPack = Boolean(rental.rental_series_id);
 
   return (
     <div
-      className={`rounded-lg border p-3 text-sm space-y-2 ${
-        isHold ? "slot-hold border-slate-400/30" : "border-white/10 bg-white/5"
+      className={`rounded-xl border p-3 text-sm space-y-2 shadow-xs ${
+        isHold
+          ? "slot-hold border-slate-300 text-slate-800"
+          : "border-slate-200 bg-white border-l-4 border-l-indigo-600"
       }`}
     >
       <div className="flex justify-between gap-2">
-        <span>{formatShortDate(rental.rental_date, locale === "en" ? "en" : "ru")}</span>
-        <span className="opacity-80">
-          {formatTimeRange(rental.time_start, rental.time_end)}
+        <span className="font-medium text-slate-800">
+          {formatShortDate(rental.rental_date, locale === "en" ? "en" : "ru")}
         </span>
+        <span className="text-slate-600">{formatTimeRange(rental.time_start, rental.time_end)}</span>
       </div>
-      <p className="text-xs opacity-70">{rental.lifecycle}</p>
+      <p className="text-xs text-slate-500">{rental.lifecycle}</p>
       {rental.fixed_amount != null ? (
-        <p className="text-xs">
+        <p className="text-xs font-medium text-slate-700">
           {formatMoney(rental.fixed_amount, rental.currency ?? currency, locale)}
         </p>
       ) : null}
       {countdown ? (
-        <p className="text-xs text-amber-200">
+        <p className="text-xs font-medium text-amber-800">
           {t(locale, "holdExpires")}: {countdown}
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">
         {canDeleteHold ? (
-          <button
-            type="button"
-            disabled={busy}
-            className="rounded-md border border-white/20 px-2 py-1 text-xs"
-            onClick={onDeleteHold}
-          >
+          <button type="button" disabled={busy} className={btnSecondaryCls} onClick={onDeleteHold}>
             {t(locale, "deleteHold")}
           </button>
         ) : null}
         {canCancel ? (
-          <button
-            type="button"
-            disabled={busy}
-            className="rounded-md border border-white/20 px-2 py-1 text-xs"
-            onClick={onCancel}
-          >
+          <button type="button" disabled={busy} className={btnSecondaryCls} onClick={onCancel}>
             {t(locale, "cancelBooking")}
           </button>
         ) : null}
         {isPack && onCancelPack ? (
-          <button
-            type="button"
-            disabled={busy}
-            className="rounded-md border border-rose-400/40 px-2 py-1 text-xs text-rose-200"
-            onClick={onCancelPack}
-          >
+          <button type="button" disabled={busy} className={btnDestructiveOpenCls} onClick={onCancelPack}>
             {t(locale, "cancelPack")}
           </button>
         ) : null}
