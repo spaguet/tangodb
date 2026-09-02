@@ -1,4 +1,4 @@
-2026-09-02 — fix(hall-rent): микропатч **2.9.29** — Mini App аренды больше не открывает логин CRM: `tangodb-renter` должен деплоиться со своего Root Directory (не корневой `vercel.json` CRM); CRM с Telegram `startapp` (UUID студии) сразу передаёт в кабинет арендатора; вход по Telegram ID через `renter-telegram-auth`.
+2026-09-02 — fix(hall-rent): микропатч **2.9.29** — Mini App аренды больше не открывает логин CRM: `tangodb-renter` должен деплоиться со своего Root Directory (не корневой `vercel.json` CRM); CRM с Telegram `startapp` (UUID студии) сразу передаёт в кабинет арендатора; вход по Telegram ID через `renter-telegram-auth`. Кабинет не зовёт `requestWriteAccess` до `initData` и не зависает на «Загрузка» вне Telegram.
 
 2026-09-02 — fix(hall-rent): микропатч **2.9.28** — блок «Бот, чат и QR»: пошаговое руководство разделяет /newapp (короткое имя, фото 640×360, /empty только для GIF) и Configure Mini App / Menu Button (кнопка Open); подсказка поля короткого имени — не @username бота.
 
