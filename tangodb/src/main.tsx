@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import { assertReceptionPermissions, assertPayrollPermissions } from "./lib/permissions.ts";
+import { redirectCrmTelegramToRenterMiniapp } from "./lib/renterMiniappHandoff.ts";
 import "./index.css";
 
 if (import.meta.env.DEV) {
@@ -14,30 +15,36 @@ function showBootError() {
   if (el) el.classList.add("visible");
 }
 
-let appMounted = false;
+function bootCrm() {
+  let appMounted = false;
 
-// Only fatal script/chunk load failures should hide the whole shell.
-window.addEventListener("error", (event) => {
-  const target = event.target;
-  if (target instanceof HTMLScriptElement || target instanceof HTMLLinkElement) {
+  // Only fatal script/chunk load failures should hide the whole shell.
+  window.addEventListener("error", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLScriptElement || target instanceof HTMLLinkElement) {
+      showBootError();
+    }
+  });
+
+  try {
+    createRoot(document.getElementById("root")!).render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
+    appMounted = true;
+  } catch {
     showBootError();
   }
-});
 
-try {
-  createRoot(document.getElementById("root")!).render(
-    <StrictMode>
-      <App />
-    </StrictMode>
-  );
-  appMounted = true;
-} catch {
-  showBootError();
+  if (import.meta.env.DEV) {
+    window.addEventListener("unhandledrejection", (event) => {
+      if (!appMounted) showBootError();
+      console.error("[TangoDB] Unhandled rejection", event.reason);
+    });
+  }
 }
 
-if (import.meta.env.DEV) {
-  window.addEventListener("unhandledrejection", (event) => {
-    if (!appMounted) showBootError();
-    console.error("[TangoDB] Unhandled rejection", event.reason);
-  });
+if (!redirectCrmTelegramToRenterMiniapp()) {
+  bootCrm();
 }

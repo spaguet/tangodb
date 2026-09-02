@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-09-02 — Mini App аренды открывал логин CRM
+
+- **Ошибка:** ссылка `t.me/<bot>/booking?startapp=<org>` показывала «Вход в CRM» вместо кабинета арендатора с входом по Telegram ID.
+- **Причина:** Vercel-проект `tangodb-renter` собирался из корня репозитория (корневой `vercel.json` = CRM). BotFather URL `https://tangodb-renter.vercel.app` был верный, но на origin лежала CRM. Telegram Desktop WebView не режется `frame-ancestors 'self'`.
+- **Как избежать:** Root Directory проекта Mini App = `tangodb-renter`; после деплоя проверять `<title>` «аренда зала», не «Панель Управления». CRM с `tgWebAppStartParam` UUID не монтировать логин команды — handoff на origin кабинета.
+
 ### 2026-09-02 — блок Mini App: технические подсказки вместо сценария
 
 - **Ошибка:** владелец не понимал, группа это или личный чат, и нужно ли ему своё Mini App.

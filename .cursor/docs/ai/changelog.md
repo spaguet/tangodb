@@ -1,3 +1,5 @@
+2026-09-02 — fix(hall-rent): микропатч **2.9.29** — Mini App аренды больше не открывает логин CRM: `tangodb-renter` должен деплоиться со своего Root Directory (не корневой `vercel.json` CRM); CRM с Telegram `startapp` (UUID студии) сразу передаёт в кабинет арендатора; вход по Telegram ID через `renter-telegram-auth`.
+
 2026-09-02 — fix(hall-rent): микропатч **2.9.28** — блок «Бот, чат и QR»: пошаговое руководство разделяет /newapp (короткое имя, фото 640×360, /empty только для GIF) и Configure Mini App / Menu Button (кнопка Open); подсказка поля короткого имени — не @username бота.
 
 2026-09-02 — feat(gcal): микропатч **2.9.27** — аренда зала выгружается в отдельный Google Calendar (`purpose=rentals`): другой аккаунт или другой календарь на том же аккаунте, не календарь уроков/мероприятий. Миграция `20261051000001`. Worker `source_type=rental`. UI в Интеграциях.

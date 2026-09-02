@@ -5,6 +5,19 @@ export function getRawInitData(): string {
   return (window.Telegram?.WebApp?.initData ?? "").trim();
 }
 
+/** telegram-web-app.js can populate initData a tick after the module graph runs. */
+export async function waitForTelegramInitData(timeoutMs = 2000): Promise<string> {
+  const started = Date.now();
+  let raw = getRawInitData();
+  if (raw) return raw;
+  while (Date.now() - started < timeoutMs) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    raw = getRawInitData();
+    if (raw) return raw;
+  }
+  return getRawInitData();
+}
+
 export function parseStartParamFromInitData(initData: string): string | null {
   if (!initData) return null;
   const value = new URLSearchParams(initData).get("start_param")?.trim() ?? "";

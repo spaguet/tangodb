@@ -18,12 +18,10 @@ import {
   useUploadOrganizationRentalQr,
 } from "../../hooks/useOrganizationRentalQr";
 import { resolveMutationError } from "../../lib/resolveMutationError";
+import { PRODUCTION_RENTER_MINIAPP_ORIGIN } from "../../lib/renterMiniappHandoff";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
 const hintCls = "text-[10px] text-slate-500 leading-relaxed";
-
-/** Production Mini App origin — paste this URL in BotFather, not a studio-built app. */
-const RENTER_MINIAPP_WEB_APP_URL = "https://tangodb-renter.vercel.app";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -144,13 +142,13 @@ export default function MiniAppChannelSection() {
               <span>{t("hallRent.miniapp.setup.step2")}</span>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <code className="text-[11px] text-slate-700 break-all bg-white border border-slate-200 rounded px-1.5 py-0.5">
-                  {RENTER_MINIAPP_WEB_APP_URL}
+                  {PRODUCTION_RENTER_MINIAPP_ORIGIN}
                 </code>
                 <button
                   type="button"
                   className={btnOpenCls}
                   onClick={() => {
-                    void copyText(RENTER_MINIAPP_WEB_APP_URL);
+                    void copyText(PRODUCTION_RENTER_MINIAPP_ORIGIN);
                   }}
                 >
                   {t("hallRent.miniapp.webAppUrlCopy")}
