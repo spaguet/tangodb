@@ -8,6 +8,8 @@ import VenueRuleExpiryNotice from "./VenueRuleExpiryNotice";
 interface VenueRulePaymentConfirmDialogProps {
   status: VenueCostRuleStatus | null;
   pending?: boolean;
+  /** When opened from another modal (e.g. personal lesson payment), render above z-[60] overlays. */
+  stackLayer?: "default" | "above";
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -15,14 +17,16 @@ interface VenueRulePaymentConfirmDialogProps {
 export default function VenueRulePaymentConfirmDialog({
   status,
   pending = false,
+  stackLayer = "default",
   onConfirm,
   onCancel,
 }: VenueRulePaymentConfirmDialogProps) {
   const { t } = useI18n();
+  const zClass = stackLayer === "above" ? "z-[70]" : "z-50";
   return (
     <AnimatePresence>
       {status && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div className={`fixed inset-0 ${zClass} flex items-center justify-center p-4`} role="dialog" aria-modal="true">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
