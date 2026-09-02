@@ -1,3 +1,5 @@
+2026-09-02 — fix(gcal): микропатч **2.9.18** — в Google Calendar уходят все клиенты парного урока (заголовок `Вероника и Аня · …`, блок «Клиенты:» в описании). Раньше имена склеивались через запятую (недельный вид Google оставлял только первое) и не дублировались в описании; `&` в HTML-описании обрезал хвост. Миграция `20261049000001` ставит upsert будущих пар/троек/`&` в именах. Worker + kick.
+
 2026-09-02 — fix(schedule/gcal): микропатч **2.9.16** — toast больше не показывает сырые ключи `hooks.error.personalOverlap` / `integrations.googleCalendar.errorEdgeFunctionUnreachable` (`isI18nKey` допускает camelCase). Отмена группового слота не DELETE-ит строку `schedule_slots`, если на неё ссылаются разовые посещения. CORS Edge Function: `Allow-Methods` и заголовки supabase-js. Миграция `20261048000001`.
 
 2026-09-02 — feat(hall-rent): микропатч **2.9.15** — отдельная оплата Mini App временно снята. Модуль входит в купленный доступ к CRM (lifetime или активная ежемесячная подписка CRM) и выключен на демо 30 дней. Гейт `renter_miniapp_addon_is_active` больше не читает `organization_addons`; заявка `renter_miniapp_addon` отклоняется. Миграция `20261047000001`.

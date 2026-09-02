@@ -60,12 +60,40 @@ export function formatClientLabel(
   return fn;
 }
 
+/** Split a stored display that already concatenates people ("Вероника & Аня", "Аня, Лиза"). */
+export function expandClientLabels(clientLabels: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of clientLabels) {
+    const parts = raw
+      .split(/\s+&\s+|\s*,\s*|\s*;\s*|\s+и\s+/u)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const labels = parts.length > 0 ? parts : raw.trim() ? [raw.trim()] : [];
+    for (const label of labels) {
+      if (label === "Клиент" && seen.size > 0) continue;
+      if (seen.has(label)) continue;
+      seen.add(label);
+      out.push(label);
+    }
+  }
+  return out;
+}
+
+/**
+ * Join people with " и ", not comma (Google week view keeps only the first
+ * comma-separated token) and not "&" (event description is HTML; "&" eats the rest).
+ */
+export function joinClientLabelsForGoogle(clientLabels: string[]): string {
+  const labels = expandClientLabels(clientLabels);
+  return labels.length > 0 ? labels.join(" и ") : "Клиент";
+}
+
 export function buildPersonalLessonSummary(
   clientLabels: string[],
   disciplineName: string | null
 ): string {
-  const clients =
-    clientLabels.length > 0 ? clientLabels.join(", ") : "Клиент";
+  const clients = joinClientLabelsForGoogle(clientLabels);
   const discipline = (disciplineName ?? "").trim();
   if (discipline) return `${clients} · ${discipline}`;
   return clients;
@@ -75,8 +103,13 @@ export function buildPersonalLessonDescription(input: {
   locationName: string | null;
   organizationName: string;
   scheduleUrl: string;
+  clientLabels?: string[];
 }): string {
   const lines: string[] = [];
+  const clients = joinClientLabelsForGoogle(input.clientLabels ?? []);
+  if (clients && clients !== "Клиент") {
+    lines.push(`Клиенты: ${clients}`);
+  }
   const location = (input.locationName ?? "").trim();
   if (location) {
     lines.push(`Локация: ${location}`);
@@ -114,6 +147,7 @@ export function buildPersonalLessonGoogleEvent(input: {
       locationName: input.locationName,
       organizationName: input.organizationName,
       scheduleUrl: input.scheduleUrl,
+      clientLabels: input.clientLabels,
     }),
     start: toGoogleDateTime(input.date, input.timeStart, input.timeZone),
     end: toGoogleDateTime(input.date, input.timeEnd, input.timeZone),

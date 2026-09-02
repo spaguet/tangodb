@@ -84,15 +84,42 @@ async function loadClients(
   const map = new Map<string, ClientRow>();
   if (!unique.length) return map;
 
-  const { data } = await admin
+  const { data, error } = await admin
     .from("clients")
     .select("id, first_name, last_name")
     .eq("organization_id", organizationId)
     .in("id", unique);
 
+  if (error) {
+    logEvent("gcal_load_clients_error", {
+      organization_id: organizationId,
+      client_count: unique.length,
+      message: error.message,
+    });
+  }
+
   for (const row of (data ?? []) as ClientRow[]) {
     map.set(row.id, row);
   }
+
+  const missing = unique.filter((id) => !map.has(id));
+  for (const id of missing) {
+    const { data: row, error: rowError } = await admin
+      .from("clients")
+      .select("id, first_name, last_name")
+      .eq("organization_id", organizationId)
+      .eq("id", id)
+      .maybeSingle();
+    if (rowError) {
+      logEvent("gcal_load_client_error", {
+        organization_id: organizationId,
+        message: rowError.message,
+      });
+      continue;
+    }
+    if (row) map.set((row as ClientRow).id, row as ClientRow);
+  }
+
   return map;
 }
 

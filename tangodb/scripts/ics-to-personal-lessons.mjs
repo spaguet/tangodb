@@ -335,7 +335,7 @@ function splitNames(chunk) {
   if (/^пары$/i.test(cleaned)) return [];
 
   const parts = cleaned
-    .split(/\s*,\s*|\s+и\s+/)
+    .split(/\s+&\s+|\s*,\s*|\s+и\s+/)
     .map((p) => p.trim())
     .filter(Boolean)
     .filter((p) => !/^партн[её]р$/i.test(p));
