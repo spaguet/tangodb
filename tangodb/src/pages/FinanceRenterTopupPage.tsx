@@ -5,7 +5,7 @@ import QueryErrorState from "../components/ui/QueryErrorState";
 import AppSelect from "../components/ui/AppSelect";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { fieldCls as inputCls } from "../components/ui/AppSelect";
-import { btnAddCls, btnCancelCls } from "../components/ui/buttonStyles";
+import { btnAddCls, btnCancelCls, btnOpenCls } from "../components/ui/buttonStyles";
 import {
   useRenterTopupInbox,
   useResolveRenterTopup,
@@ -27,6 +27,7 @@ export default function FinanceRenterTopupPage() {
   const [status, setStatus] = useState<RenterTopupInboxFilterStatus>("pending");
   const [page, setPage] = useState(0);
   const [amountDraft, setAmountDraft] = useState<Record<string, string>>({});
+  const [editAmountId, setEditAmountId] = useState<string | null>(null);
   const [rejectItem, setRejectItem] = useState<RenterTopupInboxItem | null>(null);
 
   const filter = useMemo(
@@ -54,9 +55,14 @@ export default function FinanceRenterTopupPage() {
     return t("renterTopup.status.pending");
   };
 
-  const handleConfirm = async (item: RenterTopupInboxItem) => {
+  const factAmount = (item: RenterTopupInboxItem) => {
     const raw = amountDraft[item.id];
-    const fact = raw == null || raw.trim() === "" ? item.amount : Number(raw.replace(",", "."));
+    if (raw == null || raw.trim() === "") return item.amount;
+    return Number(raw.replace(",", "."));
+  };
+
+  const handleConfirm = async (item: RenterTopupInboxItem) => {
+    const fact = factAmount(item);
     if (!Number.isFinite(fact) || fact <= 0) {
       toast(t("renter.topup.amountInvalid"), "error");
       return;
@@ -74,6 +80,7 @@ export default function FinanceRenterTopupPage() {
       res.alreadyApplied ? t("renterTopup.success.already") : t("renterTopup.success.confirmed"),
       "success"
     );
+    setEditAmountId(null);
   };
 
   const handleReject = async () => {
@@ -105,8 +112,14 @@ export default function FinanceRenterTopupPage() {
             <h2 className="font-sans text-sm font-semibold text-slate-800 truncate">
               {t("renterTopup.title")}
             </h2>
+            {status === "pending" && total > 0 ? (
+              <span className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[10px] font-semibold text-white">
+                {total}
+              </span>
+            ) : null}
           </div>
           <p className="text-xs text-slate-500 font-sans mt-1">{t("renterTopup.hint")}</p>
+          <p className="text-xs text-slate-500 font-sans mt-1">{t("renterTopup.receiptHint")}</p>
         </div>
 
         <div className="px-3 py-3 border-b border-slate-100 max-w-xs">
@@ -150,19 +163,35 @@ export default function FinanceRenterTopupPage() {
                 ) : null}
                 {item.status === "pending" && canResolve ? (
                   <div className="flex flex-wrap items-end gap-2">
-                    <div className="field-stack">
-                      <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
-                        {t("renterTopup.amountFact")}
-                      </label>
-                      <input
-                        className={inputCls}
-                        inputMode="decimal"
-                        value={amountDraft[item.id] ?? String(item.amount)}
-                        onChange={(e) =>
-                          setAmountDraft((prev) => ({ ...prev, [item.id]: e.target.value }))
-                        }
-                      />
-                    </div>
+                    {editAmountId === item.id ? (
+                      <div className="field-stack">
+                        <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                          {t("renterTopup.amountFact")}
+                        </label>
+                        <input
+                          className={inputCls}
+                          inputMode="decimal"
+                          value={amountDraft[item.id] ?? String(item.amount)}
+                          onChange={(e) =>
+                            setAmountDraft((prev) => ({ ...prev, [item.id]: e.target.value }))
+                          }
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className={btnOpenCls}
+                        onClick={() => {
+                          setEditAmountId(item.id);
+                          setAmountDraft((prev) => ({
+                            ...prev,
+                            [item.id]: prev[item.id] ?? String(item.amount),
+                          }));
+                        }}
+                      >
+                        {t("renterTopup.editAmount")}
+                      </button>
+                    )}
                     <button
                       type="button"
                       className={btnAddCls}
@@ -171,7 +200,7 @@ export default function FinanceRenterTopupPage() {
                         void handleConfirm(item);
                       }}
                     >
-                      {t("renterTopup.confirm")}
+                      {t("renterTopup.creditNow", { amount: formatCurrency(factAmount(item)) })}
                     </button>
                     <button
                       type="button"

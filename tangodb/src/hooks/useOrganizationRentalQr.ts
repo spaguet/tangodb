@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { asJson } from "../lib/json";
+import { resolveOrgRentalQrUrl } from "../lib/orgRentalQrUrl";
 import { supabase } from "../lib/supabase";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
@@ -44,7 +45,18 @@ export function useOrganizationRentalQrAssets(enabled = true) {
       if (!result?.success) {
         throw new Error(result?.error ?? "hallRent.miniapp.error.qrUpload");
       }
-      return (result.assets ?? []).map(mapAsset);
+      const origin = import.meta.env.VITE_SUPABASE_URL ?? "";
+      return Promise.all(
+        (result.assets ?? []).map(async (row) => {
+          const mapped = mapAsset(row);
+          mapped.signedUrl = await resolveOrgRentalQrUrl(
+            supabase,
+            { signedUrl: mapped.signedUrl, storagePath: mapped.storagePath },
+            origin
+          );
+          return mapped;
+        })
+      );
     },
     staleTime: 15 * 1000,
   });

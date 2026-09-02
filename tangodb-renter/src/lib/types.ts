@@ -78,5 +78,6 @@ export type QuotePackOccurrence = QuoteOneTime & {
 export type QrAsset = {
   id: string;
   label: string | null;
-  signed_url: string;
+  signed_url: string | null;
+  storage_path: string | null;
 };

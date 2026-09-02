@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { asJson } from "../lib/json";
+import { resolveOrgRentalQrUrl } from "../lib/orgRentalQrUrl";
 import { supabase } from "../lib/supabase";
 import { renterDetailQueryKey } from "./useRenterCrm";
 import { rentersQueryKey } from "./useRenters";
@@ -20,6 +21,7 @@ export interface RenterTopupInboxItem {
   status: RenterTopupStatus;
   amountFact: number | null;
   qrAssetId: string | null;
+  qrStoragePath: string | null;
   qrSignedUrl: string | null;
   createdAt: string;
   resolvedAt: string | null;
@@ -42,6 +44,7 @@ function mapItem(row: Record<string, unknown>): RenterTopupInboxItem {
     status: (row.status as RenterTopupStatus) ?? "pending",
     amountFact: row.amount_fact != null ? Number(row.amount_fact) : null,
     qrAssetId: row.qr_asset_id != null ? String(row.qr_asset_id) : null,
+    qrStoragePath: row.qr_storage_path != null ? String(row.qr_storage_path) : null,
     qrSignedUrl: row.qr_signed_url != null ? String(row.qr_signed_url) : null,
     createdAt: String(row.created_at ?? ""),
     resolvedAt: row.resolved_at != null ? String(row.resolved_at) : null,
@@ -51,10 +54,13 @@ function mapItem(row: Record<string, unknown>): RenterTopupInboxItem {
 export function useRenterTopupInbox(filter: RenterTopupInboxFilter = {}) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const queryEnabled = orgEnabled && (filter.enabled ?? true);
+  const pendingWatch = (filter.status ?? "pending") === "pending";
 
   return useQuery({
     queryKey: withOrgId([...renterTopupInboxQueryKey, filter]),
     enabled: queryEnabled,
+    refetchInterval: pendingWatch ? 15_000 : false,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("list_renter_topup_inbox", {
         p_status: filter.status ?? "pending",
@@ -73,11 +79,23 @@ export function useRenterTopupInbox(filter: RenterTopupInboxFilter = {}) {
       if (!payload?.success) {
         throw new Error(payload?.error ?? "renterTopup.error.loadFailed");
       }
+      const origin = import.meta.env.VITE_SUPABASE_URL ?? "";
+      const items = await Promise.all(
+        (payload.items ?? []).map(async (row) => {
+          const item = mapItem(row);
+          item.qrSignedUrl = await resolveOrgRentalQrUrl(
+            supabase,
+            { signedUrl: item.qrSignedUrl, storagePath: item.qrStoragePath },
+            origin
+          );
+          return item;
+        })
+      );
       return {
         total: Number(payload.total ?? 0),
         limit: Number(payload.limit ?? 50),
         offset: Number(payload.offset ?? 0),
-        items: (payload.items ?? []).map(mapItem),
+        items,
       };
     },
     staleTime: 15 * 1000,

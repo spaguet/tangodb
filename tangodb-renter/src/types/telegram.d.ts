@@ -9,6 +9,11 @@ export interface TelegramWebApp {
   expand: () => void;
   requestWriteAccess?: (callback?: (granted: boolean) => void) => void;
   openTelegramLink?: (url: string) => void;
+  openLink?: (url: string) => void;
+  downloadFile?: (
+    params: { url: string; file_name: string },
+    callback?: (status: "downloading" | "cancelled" | "failed" | "success") => void
+  ) => void;
   onEvent?: (eventType: string, callback: () => void) => void;
   offEvent?: (eventType: string, callback: () => void) => void;
   colorScheme: "light" | "dark";

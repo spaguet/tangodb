@@ -177,8 +177,13 @@ export async function rpcUpdateProfile(
 export async function rpcListActiveQr(supabase: SupabaseClient): Promise<QrAsset[]> {
   const { data, error } = await supabase.rpc("renter_list_active_qr");
   if (error) throw new Error(error.message);
-  const result = unwrap<{ assets: QrAsset[] }>(data);
-  return result.assets ?? [];
+  const result = unwrap<{ assets: Record<string, unknown>[] }>(data);
+  return (result.assets ?? []).map((row) => ({
+    id: String(row.id),
+    label: row.label != null ? String(row.label) : null,
+    signed_url: row.signed_url != null ? String(row.signed_url) : null,
+    storage_path: row.storage_path != null ? String(row.storage_path) : null,
+  }));
 }
 
 export async function rpcSubmitTopup(

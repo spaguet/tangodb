@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
 import {
   btnDestructiveOpenCls,
-  btnOpenCls,
   btnPrimaryCls,
   btnSecondaryCls,
   fieldCls,
@@ -24,6 +23,8 @@ import {
   rpcUpdateProfile,
 } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
+import { qrDownloadFilename, resolveOrgRentalQrUrl } from "../../lib/qrUrl";
+import { copyText, downloadQrToDevice, openStudioChat, topupDraftMessage } from "../../lib/studioChat";
 import type { QrAsset, RentalItem, WalletData } from "../../lib/types";
 import { t, type Locale } from "../../i18n/strings";
 
@@ -50,6 +51,8 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
   const [topupMethod, setTopupMethod] = useState<"qr" | "cash">("cash");
   const [topupQrId, setTopupQrId] = useState("");
   const [topupMsg, setTopupMsg] = useState<string | null>(null);
+  const [receiptSent, setReceiptSent] = useState(false);
+  const [chatOpened, setChatOpened] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
@@ -67,8 +70,14 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
     if (bootstrap.addonActive) {
       try {
         const assets = await rpcListActiveQr(supabase);
-        setQrs(assets);
-        if (assets[0]) setTopupQrId(assets[0].id);
+        const resolved = await Promise.all(
+          assets.map(async (asset) => ({
+            ...asset,
+            signed_url: await resolveOrgRentalQrUrl(supabase, asset),
+          }))
+        );
+        setQrs(resolved);
+        if (resolved[0]) setTopupQrId((prev) => prev || resolved[0].id);
       } catch {
         setQrs([]);
       }
@@ -139,10 +148,36 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
     }
   };
 
+  const draftForAmount = (amountLabel: string) =>
+    topupDraftMessage({ locale, amountLabel, method: topupMethod });
+
+  const openChatWithDraft = async (amountLabel: string) => {
+    const url = bootstrap.chatUrl;
+    if (!url) {
+      setError(t(locale, "topupNeedChat"));
+      return;
+    }
+    const copied = await copyText(draftForAmount(amountLabel));
+    openStudioChat(url);
+    setChatOpened(true);
+    setTopupMsg(copied ? t(locale, "topupCopied") : t(locale, "topupReceiptHint"));
+  };
+
   const submitTopup = async () => {
     setTopupMsg(null);
     setError(null);
     const amount = Number(topupAmount.replace(",", "."));
+    const amountLabel = Number.isFinite(amount)
+      ? formatMoney(amount, bootstrap.currencyCode, locale)
+      : topupAmount;
+    if (topupMethod === "qr" && !bootstrap.chatUrl) {
+      setError(t(locale, "topupNeedChat"));
+      return;
+    }
+    if (bootstrap.chatUrl && (!receiptSent || !chatOpened)) {
+      setError(t(locale, "topupNeedReceipt"));
+      return;
+    }
     try {
       await rpcSubmitTopup(supabase, {
         amount,
@@ -151,16 +186,19 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
       });
       setTopupMsg(t(locale, "topupSuccess"));
       setTopupAmount("");
+      setReceiptSent(false);
       await load();
+      if (bootstrap.chatUrl) {
+        await copyText(draftForAmount(amountLabel));
+        openStudioChat(bootstrap.chatUrl);
+      }
     } catch (err) {
-      setError(t(locale, rpcErrorKey(err)));
+      const key = rpcErrorKey(err);
+      setError(t(locale, key));
+      if (key === "topupPendingExists" && bootstrap.chatUrl) {
+        await openChatWithDraft(amountLabel);
+      }
     }
-  };
-
-  const openChat = () => {
-    const url = bootstrap.chatUrl;
-    if (!url) return;
-    window.Telegram?.WebApp?.openTelegramLink?.(url);
   };
 
   const saveProfile = async () => {
@@ -308,18 +346,53 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
             ) : null}
             {qrs.map((q) =>
               topupMethod === "qr" && q.id === topupQrId ? (
-                <img key={q.id} src={q.signed_url} alt="" className="mx-auto max-h-40 rounded-lg border border-slate-200" />
+                <StudioQrPreview
+                  key={q.id}
+                  locale={locale}
+                  asset={q}
+                  onSaved={() => setTopupMsg(t(locale, "topupQrSaved"))}
+                />
               ) : null
             )}
-            <button type="button" className={`w-full ${btnPrimaryCls}`} onClick={() => void submitTopup()}>
+            <p className="text-xs leading-relaxed text-slate-600">
+              {t(locale, topupMethod === "qr" ? "topupReceiptHint" : "topupCashHint")}
+            </p>
+            {bootstrap.chatUrl ? (
+              <>
+                <button
+                  type="button"
+                  className={`w-full ${btnPrimaryCls}`}
+                  onClick={() => {
+                    const amount = Number(topupAmount.replace(",", "."));
+                    const amountLabel = Number.isFinite(amount) && amount > 0
+                      ? formatMoney(amount, currency, locale)
+                      : topupAmount.trim() || t(locale, "topupAmount");
+                    void openChatWithDraft(amountLabel);
+                  }}
+                >
+                  {t(locale, "topupOpenChat")}
+                </button>
+                <label className="flex items-start gap-2 text-xs leading-relaxed text-slate-700">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={receiptSent}
+                    onChange={(e) => setReceiptSent(e.target.checked)}
+                  />
+                  <span>{t(locale, "topupReceiptCheck")}</span>
+                </label>
+              </>
+            ) : (
+              <p className="text-xs leading-relaxed text-amber-800">{t(locale, "topupNeedChat")}</p>
+            )}
+            <button
+              type="button"
+              className={`w-full ${btnSecondaryCls}`}
+              onClick={() => void submitTopup()}
+            >
               {t(locale, "topupSubmit")}
             </button>
             {topupMsg ? <p className="text-xs font-medium text-indigo-600">{topupMsg}</p> : null}
-            {bootstrap.chatUrl ? (
-              <button type="button" className={`w-full ${btnOpenCls}`} onClick={openChat}>
-                {t(locale, "topupOpenChat")}
-              </button>
-            ) : null}
           </>
         )}
       </section>
@@ -415,6 +488,37 @@ function RentalCard({
           </button>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+type StudioQrPreviewProps = {
+  locale: Locale;
+  asset: QrAsset;
+  onSaved: () => void;
+};
+
+function StudioQrPreview({ locale, asset, onSaved }: StudioQrPreviewProps) {
+  const src = asset.signed_url;
+  if (!src) {
+    return <p className="text-xs text-amber-800">{t(locale, "topupQrBroken")}</p>;
+  }
+
+  const saveQr = async () => {
+    const ok = await downloadQrToDevice(src, qrDownloadFilename(asset.label, asset.id));
+    if (ok) onSaved();
+  };
+
+  return (
+    <div className="space-y-2">
+      <img
+        src={src}
+        alt={asset.label ?? t(locale, "topupMethodQr")}
+        className="mx-auto max-h-48 w-auto rounded-lg border border-slate-200 bg-white p-2"
+      />
+      <button type="button" className={`w-full ${btnSecondaryCls}`} onClick={() => void saveQr()}>
+        {t(locale, "topupSaveQr")}
+      </button>
     </div>
   );
 }

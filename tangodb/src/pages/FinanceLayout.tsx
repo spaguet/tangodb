@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { Landmark, TrendingUp, AlertCircle, Wallet, Receipt, History, FileBarChart, Inbox, Banknote } from "lucide-react";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
+import { useRenterTopupInbox } from "../hooks/useRenterTopupInbox";
 import { isRentalInboxOnly } from "../lib/permissions";
 import { getFinanceNav, type FinanceNavSection } from "../lib/i18n";
 import type { I18nKey } from "../lib/i18n/keys";
@@ -30,6 +31,14 @@ export default function FinanceLayout() {
   const { can, role, options } = usePermissions();
   const teacherPayrollOnly = can("payroll.read.own") && !can("finance.read");
   const rentalInboxOnly = isRentalInboxOnly(role, options);
+  const showTopupNav = !teacherPayrollOnly && (rentalInboxOnly || can("rentals.payments.write"));
+  const pendingTopupQuery = useRenterTopupInbox({
+    status: "pending",
+    limit: 1,
+    offset: 0,
+    enabled: showTopupNav,
+  });
+  const pendingTopupCount = pendingTopupQuery.data?.total ?? 0;
 
   const financeNav = useMemo(() => {
     const items = getFinanceNav(t).map((item) => ({
@@ -93,6 +102,11 @@ export default function FinanceLayout() {
                   >
                     <Icon className="w-3.5 h-3.5 shrink-0" />
                     {item.label}
+                    {item.path === "/finance/renter-topup" && pendingTopupCount > 0 ? (
+                      <span className="inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white">
+                        {pendingTopupCount}
+                      </span>
+                    ) : null}
                   </NavLink>
                 </Fragment>
               );
