@@ -15,6 +15,7 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 import { personalLessonsQueryKey } from "./usePersonalLessons";
 import { financialDebtorsQueryKey } from "./useFinancialDebtors";
 import { personalLessonChargesQueryKey } from "./usePersonalLessonCharges";
+import { isVenuePaymentAckRequired } from "../lib/venueCostPaymentGate";
 import {
   checkVenueRuleBeforePayment,
   venueCostStatusQueryKey,
@@ -177,43 +178,68 @@ export function useRecordPersonalLessonPayment() {
       lessonDurationMinutes?: number | null;
       chargeId?: string | null;
     }) => {
-      const { data, error } = await supabase.rpc("record_personal_lesson_payment", {
-        p_lesson_id: input.lessonId,
-        p_amount: input.amount,
-        p_method: input.method,
-        p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
-        p_venue_rule_acknowledged: input.venueRuleAcknowledged ?? false,
-        p_client_id: input.clientId,
-        p_charge_id: input.chargeId ?? null,
-        p_price_id: input.priceId ?? null,
-        p_tariff_units: input.tariffUnits ?? null,
-        p_tariff_duration_minutes: input.tariffDurationMinutes ?? null,
-        p_tariff_price: input.tariffPrice ?? null,
-        p_tariff_label: input.tariffLabel ?? null,
-        p_lesson_duration_minutes: input.lessonDurationMinutes ?? null,
-      });
+      const idempotencyKey = input.idempotencyKey ?? crypto.randomUUID();
+      const invoke = async (venueRuleAcknowledged: boolean) => {
+        const { data, error } = await supabase.rpc("record_personal_lesson_payment", {
+          p_lesson_id: input.lessonId,
+          p_amount: input.amount,
+          p_method: input.method,
+          p_idempotency_key: idempotencyKey,
+          p_venue_rule_acknowledged: venueRuleAcknowledged,
+          p_client_id: input.clientId,
+          p_charge_id: input.chargeId ?? null,
+          p_price_id: input.priceId ?? null,
+          p_tariff_units: input.tariffUnits ?? null,
+          p_tariff_duration_minutes: input.tariffDurationMinutes ?? null,
+          p_tariff_price: input.tariffPrice ?? null,
+          p_tariff_label: input.tariffLabel ?? null,
+          p_lesson_duration_minutes: input.lessonDurationMinutes ?? null,
+        });
 
-      if (error) return { success: false as const, error: error.message };
-      const result = data as {
-        success?: boolean;
-        error?: string;
-        payment_id?: string;
-        operation_number?: number;
-        already_applied?: boolean;
-        error_code?: string;
-        venue_rule_status?: Record<string, unknown>;
-      } | null;
-      if (!result?.success) {
-        const ackFailure = venueRuleAckFailureFromRpc(result as Record<string, unknown> | null);
-        if (ackFailure) return ackFailure;
-        return { success: false as const, error: result?.error ?? "subscriptions.error.paymentFailed", errorCode: result?.error_code };
-      }
-      return {
-        success: true as const,
-        paymentId: result.payment_id,
-        operationNumber: result.operation_number,
-        alreadyApplied: result.already_applied ?? false,
+        if (error) return { success: false as const, error: error.message };
+        const result = data as {
+          success?: boolean;
+          error?: string;
+          payment_id?: string;
+          operation_number?: number;
+          already_applied?: boolean;
+          error_code?: string;
+          venue_rule_status?: Record<string, unknown>;
+        } | null;
+        if (!result?.success) {
+          const ackFailure = venueRuleAckFailureFromRpc(result as Record<string, unknown> | null);
+          if (ackFailure) return ackFailure;
+          return {
+            success: false as const,
+            error: result?.error ?? "subscriptions.error.paymentFailed",
+            errorCode: result?.error_code,
+          };
+        }
+        return {
+          success: true as const,
+          paymentId: result.payment_id,
+          operationNumber: result.operation_number,
+          alreadyApplied: result.already_applied ?? false,
+        };
       };
+
+      const acknowledged = input.venueRuleAcknowledged ?? false;
+      const first = await invoke(acknowledged);
+      if (
+        !acknowledged &&
+        !first.success &&
+        "errorCode" in first &&
+        first.errorCode === "venue_rule_ack_required" &&
+        "venueRuleStatus" in first &&
+        !isVenuePaymentAckRequired(
+          first.venueRuleStatus.acknowledgementRequired,
+          first.venueRuleStatus.latestValidTo,
+          input.lessonDate
+        )
+      ) {
+        return invoke(true);
+      }
+      return first;
     },
     onSuccess: (result, variables) => {
       if (!result.success) return;

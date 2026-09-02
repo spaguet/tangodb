@@ -70,6 +70,7 @@ import TimeSelect from "../ui/TimeSelect";
 import type { ScheduleCellPrefill } from "../schedule/AddLessonTypePopup";
 import VenueRulePaymentConfirmDialog from "../venue-costs/VenueRulePaymentConfirmDialog";
 import { fetchVenueCostRuleStatus, type VenueCostRuleStatus } from "../../hooks/useVenueCosts";
+import { isVenuePaymentAckRequired } from "../../lib/venueCostPaymentGate";
 import { useGoogleCalendarFreebusy } from "../../hooks/useGoogleCalendarFreebusy";
 import GoogleCalendarFreebusyWarning from "../integrations/GoogleCalendarFreebusyWarning";
 
@@ -651,7 +652,13 @@ export default function PersonalLessonSaleForm({
 
     if (immediatePaid && !venueRuleAcknowledged) {
       const currentStatus = await fetchVenueCostRuleStatus({ lessonDate: earliestLessonDate });
-      if (currentStatus.acknowledgementRequired) {
+      if (
+        isVenuePaymentAckRequired(
+          currentStatus.acknowledgementRequired,
+          currentStatus.latestValidTo,
+          earliestLessonDate
+        )
+      ) {
         pendingVenueBookingRef.current = { immediatePaid: true };
         setVenueConfirmStatus(currentStatus);
         return;

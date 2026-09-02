@@ -13,6 +13,7 @@ import {
   type VenueCostRules,
 } from "../lib/venueCostRules";
 import type { ExpenseCategory } from "../types/expense";
+import { isVenuePaymentAckRequired } from "../lib/venueCostPaymentGate";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const venueCostStatusQueryKey = ["venue-costs", "status"] as const;
@@ -157,9 +158,11 @@ export async function fetchVenueCostRuleStatus(options?: {
   asOf?: string | null;
   lessonDate?: string | null;
 }): Promise<VenueCostRuleStatus> {
+  const asOf = options && "asOf" in options ? options.asOf : undefined;
+  const lessonDate = options && "lessonDate" in options ? options.lessonDate : undefined;
   const { data, error } = await supabase.rpc("get_venue_cost_rule_status", {
-    p_at: options?.asOf ?? null,
-    p_lesson_date: options?.lessonDate ?? null,
+    p_at: asOf ?? null,
+    p_lesson_date: lessonDate ?? null,
   });
   if (error) throw error;
   const result = data as RpcObject | null;
@@ -184,7 +187,11 @@ export async function checkVenueRuleBeforePayment(
   if (acknowledged) return null;
   const lessonDate = options?.lessonDate ?? null;
   const status = await fetchVenueCostRuleStatus({ lessonDate });
-  return status.acknowledgementRequired
+  return isVenuePaymentAckRequired(
+    status.acknowledgementRequired,
+    status.latestValidTo,
+    lessonDate
+  )
     ? { success: false, error: "venue_rule_ack_required", errorCode: "venue_rule_ack_required", venueRuleStatus: status }
     : null;
 }
@@ -204,7 +211,7 @@ export function useVenueCostRuleStatus(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: withOrgId(venueCostStatusQueryKey),
     enabled: enabled && (options?.enabled ?? true),
-    queryFn: fetchVenueCostRuleStatus,
+    queryFn: () => fetchVenueCostRuleStatus(),
     staleTime: 30_000,
   });
 }
