@@ -16,6 +16,7 @@ import {
   rpcCancelOccurrence,
   rpcCancelPack,
   rpcDeleteHold,
+  rpcGetRentalQrAccessUrl,
   rpcGetWallet,
   rpcListActiveQr,
   rpcListMine,
@@ -58,6 +59,15 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
   const [phone, setPhone] = useState("");
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
 
+  const resolveQrAssetUrl = useCallback(
+    async (asset: QrAsset): Promise<string | null> => {
+      const viaFunction = await rpcGetRentalQrAccessUrl(supabase, asset.id);
+      if (viaFunction) return viaFunction;
+      return resolveOrgRentalQrUrl(supabase, asset);
+    },
+    [supabase]
+  );
+
   const load = useCallback(async () => {
     setError(null);
     const [w, b] = await Promise.all([
@@ -73,7 +83,7 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
         const resolved = await Promise.all(
           assets.map(async (asset) => ({
             ...asset,
-            signed_url: await resolveOrgRentalQrUrl(supabase, asset),
+            signed_url: await resolveQrAssetUrl(asset),
           }))
         );
         setQrs(resolved);
@@ -82,7 +92,7 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
         setQrs([]);
       }
     }
-  }, [supabase, bookingsOffset, bootstrap.addonActive]);
+  }, [supabase, bookingsOffset, bootstrap.addonActive, resolveQrAssetUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,6 +160,15 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
 
   const draftForAmount = (amountLabel: string) =>
     topupDraftMessage({ locale, amountLabel, method: topupMethod });
+
+  const refreshQrUrl = useCallback(
+    async (asset: QrAsset): Promise<string | null> => {
+      const next = await resolveQrAssetUrl(asset);
+      setQrs((prev) => prev.map((item) => (item.id === asset.id ? { ...item, signed_url: next } : item)));
+      return next;
+    },
+    [resolveQrAssetUrl]
+  );
 
   const openChatWithDraft = async (amountLabel: string) => {
     const url = bootstrap.chatUrl;
@@ -350,6 +369,7 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
                   key={q.id}
                   locale={locale}
                   asset={q}
+                  refreshUrl={refreshQrUrl}
                   onSaved={() => setTopupMsg(t(locale, "topupQrSaved"))}
                 />
               ) : null
@@ -495,27 +515,66 @@ function RentalCard({
 type StudioQrPreviewProps = {
   locale: Locale;
   asset: QrAsset;
+  refreshUrl: (asset: QrAsset) => Promise<string | null>;
   onSaved: () => void;
 };
 
-function StudioQrPreview({ locale, asset, onSaved }: StudioQrPreviewProps) {
-  const src = asset.signed_url;
-  if (!src) {
-    return <p className="text-xs text-amber-800">{t(locale, "topupQrBroken")}</p>;
-  }
+function StudioQrPreview({ locale, asset, refreshUrl, onSaved }: StudioQrPreviewProps) {
+  const [src, setSrc] = useState<string | null>(asset.signed_url);
+  const [loadingSrc, setLoadingSrc] = useState(false);
+  const [retryAfterError, setRetryAfterError] = useState(false);
+
+  useEffect(() => {
+    setSrc(asset.signed_url);
+    setRetryAfterError(false);
+  }, [asset.id, asset.signed_url]);
+
+  const ensureUrl = useCallback(async () => {
+    setLoadingSrc(true);
+    try {
+      const next = await refreshUrl(asset);
+      setSrc(next);
+      return next;
+    } finally {
+      setLoadingSrc(false);
+    }
+  }, [asset, refreshUrl]);
+
+  useEffect(() => {
+    if (src || loadingSrc) return;
+    void ensureUrl();
+  }, [src, loadingSrc, ensureUrl]);
 
   const saveQr = async () => {
-    const ok = await downloadQrToDevice(src, qrDownloadFilename(asset.label, asset.id));
+    const downloadUrl = src ?? (await ensureUrl());
+    if (!downloadUrl) return;
+    const ok = await downloadQrToDevice(downloadUrl, qrDownloadFilename(asset.label, asset.id));
     if (ok) onSaved();
+  };
+
+  const handleImageError = () => {
+    if (retryAfterError) {
+      setSrc(null);
+      return;
+    }
+    setRetryAfterError(true);
+    void ensureUrl();
   };
 
   return (
     <div className="space-y-2">
-      <img
-        src={src}
-        alt={asset.label ?? t(locale, "topupMethodQr")}
-        className="mx-auto max-h-48 w-auto rounded-lg border border-slate-200 bg-white p-2"
-      />
+      {src ? (
+        <img
+          src={src}
+          alt={asset.label ?? t(locale, "topupMethodQr")}
+          className="mx-auto max-h-48 w-auto rounded-lg border border-slate-200 bg-white p-2"
+          onError={handleImageError}
+        />
+      ) : loadingSrc ? (
+        <p className="text-xs text-slate-500">{t(locale, "loading")}</p>
+      ) : (
+        <p className="text-xs text-amber-800">{t(locale, "topupQrBroken")}</p>
+      )}
       <button type="button" className={`w-full ${btnSecondaryCls}`} onClick={() => void saveQr()}>
         {t(locale, "topupSaveQr")}
       </button>

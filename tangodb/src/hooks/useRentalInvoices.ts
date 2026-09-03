@@ -81,7 +81,6 @@ function mapAdvance(row: Record<string, unknown>): RentalAdvance {
     method: (row.method as PaymentMethod) ?? "cash",
     operationDate: String(row.operation_date).slice(0, 10),
     receivedAt: String(row.created_at ?? ""),
-    notes: row.notes != null ? String(row.notes) : null,
   };
 }
 
@@ -376,7 +375,6 @@ export function useRecordRentalAdvance() {
       method: PaymentMethod;
       idempotencyKey: string;
       operationDate?: string;
-      notes?: string;
     }) => {
       const { data, error } = await supabase.rpc("record_rental_advance", {
         p_payload: {
@@ -385,7 +383,6 @@ export function useRecordRentalAdvance() {
           method: input.method,
           idempotency_key: input.idempotencyKey,
           operation_date: input.operationDate ?? null,
-          notes: input.notes ?? null,
         },
       });
 

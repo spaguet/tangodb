@@ -186,6 +186,19 @@ export async function rpcListActiveQr(supabase: SupabaseClient): Promise<QrAsset
   }));
 }
 
+export async function rpcGetRentalQrAccessUrl(
+  supabase: SupabaseClient,
+  assetId: string
+): Promise<string | null> {
+  const { data, error } = await supabase.functions.invoke("renter-qr-upload", {
+    body: { action: "sign", id: assetId },
+  });
+  if (error) return null;
+  const result = data as { success?: boolean; signed_url?: string | null } | null;
+  if (!result?.success || !result.signed_url) return null;
+  return String(result.signed_url);
+}
+
 export async function rpcSubmitTopup(
   supabase: SupabaseClient,
   payload: { amount: number; method: "qr" | "cash"; qr_asset_id?: string }

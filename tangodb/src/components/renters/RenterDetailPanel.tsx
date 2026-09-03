@@ -49,6 +49,7 @@ import {
 } from "../../hooks/useRenterCrm";
 import { useRenterRentalFinance, useRenterRentalInvoices, useRenterRentalAdvances, useRenterRentalAdvanceAllocations } from "../../hooks/useRentalInvoices";
 import { useIssueRentalInvoiceDocument, useRentalBillingProfile } from "../../hooks/useRentalBillingProfile";
+import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import RentalInvoiceDocumentModal from "../rental-billing/RentalInvoiceDocumentModal";
 import { monthDateRange } from "../../lib/financeReports";
 import { currentYearMonth } from "../../lib/utils";
@@ -77,6 +78,22 @@ interface RenterDetailPanelProps {
 type DetailTab = "overview" | "rentals" | "finance" | "contracts" | "communications";
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
+const walletEntryLabelKey = {
+  topup: "renters.detail.walletEntry.topup",
+  prepay_charge: "renters.detail.walletEntry.prepayCharge",
+  remainder_charge: "renters.detail.walletEntry.remainderCharge",
+  refund: "renters.detail.walletEntry.refund",
+  debt_settle: "renters.detail.walletEntry.debtSettle",
+  surcharge_one_time_recalc: "renters.detail.walletEntry.surchargeOneTimeRecalc",
+} as const;
+
+function getWalletEntryLabel(
+  entryType: string,
+  t: (key: import("../../lib/i18n/keys").I18nKey, vars?: Record<string, string | number>) => string
+): string {
+  const key = walletEntryLabelKey[entryType as keyof typeof walletEntryLabelKey];
+  return key ? t(key) : entryType;
+}
 
 export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const { renterId = "" } = useParams();
@@ -955,7 +972,7 @@ function FinanceTab({
             {finance.walletEntries.map((entry) => (
               <li key={entry.id} className="flex justify-between border-b border-slate-50 py-1">
                 <span>
-                  {formatDateTime(entry.createdAt)} · {entry.entryType}
+                  {formatDateTime(entry.createdAt)} · {getWalletEntryLabel(entry.entryType, t)}
                 </span>
                 <span className="text-slate-700">{formatCurrency(entry.amount)}</span>
               </li>
@@ -1079,7 +1096,7 @@ function FinanceTab({
           <ul className="text-xs space-y-1">
             {advances.map((adv) => (
               <li key={adv.id} className="flex justify-between border-b border-slate-50 py-1">
-                <span>{formatDate(adv.operationDate)} · {adv.method}</span>
+                <span>{formatDate(adv.operationDate)} · {getPaymentMethodLabel(adv.method, t)}</span>
                 <span className="text-slate-700">
                   {formatCurrency(adv.amount)}
                   {adv.available > 0 ? (

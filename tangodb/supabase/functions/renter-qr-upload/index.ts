@@ -1,6 +1,6 @@
 /**
- * Upload studio Mini App QR: magic-bytes, size/side caps, then Storage + metadata RPC.
- * CRM JWT + can_manage_settings. No SVG/HTML.
+ * Upload studio Mini App QR, delete it, or mint a fresh signed URL.
+ * Upload/delete require can_manage_settings; sign also allows renter JWT via renter_list_active_qr.
  */
 
 import {
@@ -118,20 +118,71 @@ Deno.serve(async (req) => {
   if (userError || !userData.user) {
     return jsonResponse({ error: "Unauthorized" }, 401, req);
   }
-  const { data: canManage } = await userClient.rpc("can_manage_settings");
-  if (canManage !== true) {
-    return jsonResponse({ error: "Forbidden" }, 403, req);
-  }
-  const { data: orgId } = await userClient.rpc("auth_organization_id");
-  if (!orgId) {
-    return jsonResponse({ error: "Unauthorized" }, 401, req);
-  }
 
   let body: UploadBody;
   try {
     body = (await req.json()) as UploadBody;
   } catch {
     return jsonResponse({ error: "Invalid JSON" }, 400, req);
+  }
+
+  const { data: canManage } = await userClient.rpc("can_manage_settings");
+
+  if (body.action === "sign") {
+    const assetId = body.id ?? "";
+    if (!assetId) {
+      return jsonResponse({ error: "renter.qr.payloadInvalid" }, 400, req);
+    }
+
+    const admin = createServiceClient();
+    let storagePath = "";
+
+    if (canManage === true) {
+      const { data: orgId } = await userClient.rpc("auth_organization_id");
+      if (!orgId) {
+        return jsonResponse({ error: "Unauthorized" }, 401, req);
+      }
+      const { data: asset, error: assetError } = await admin
+        .from("organization_rental_qr_assets")
+        .select("storage_path")
+        .eq("organization_id", orgId)
+        .eq("id", assetId)
+        .maybeSingle();
+      if (assetError || !asset?.storage_path) {
+        return jsonResponse({ error: "renter.qr.notFound" }, 404, req);
+      }
+      storagePath = String(asset.storage_path);
+    } else {
+      const { data: listed, error: listError } = await userClient.rpc("renter_list_active_qr");
+      const result = listed as
+        | { success?: boolean; error?: string; assets?: Array<Record<string, unknown>> }
+        | null;
+      if (listError || !result?.success) {
+        return jsonResponse({ error: result?.error ?? "Forbidden" }, 403, req);
+      }
+      const asset = (result.assets ?? []).find((row) => String(row.id ?? "") === assetId);
+      if (!asset?.storage_path) {
+        return jsonResponse({ error: "renter.qr.notFound" }, 404, req);
+      }
+      storagePath = String(asset.storage_path);
+    }
+
+    const { data: signed, error: signError } = await admin
+      .storage
+      .from("org-rental-qr")
+      .createSignedUrl(storagePath, 3600);
+    if (signError || !signed?.signedUrl) {
+      return jsonResponse({ error: "renter.qr.saveFailed" }, 400, req);
+    }
+    return jsonResponse(
+      { success: true, id: assetId, signed_url: signed.signedUrl, expires_in: 3600 },
+      200,
+      req
+    );
+  }
+
+  if (canManage !== true) {
+    return jsonResponse({ error: "Forbidden" }, 403, req);
   }
 
   if (body.action === "delete") {

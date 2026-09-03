@@ -307,7 +307,6 @@ export interface RentalAdvance {
   method: PaymentMethod;
   operationDate: string;
   receivedAt: string;
-  notes: string | null;
 }
 
 export interface RentalAdvanceAllocation {

@@ -314,7 +314,6 @@ export function RecordRentalAdvanceModal({
 
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("transfer");
-  const [notes, setNotes] = useState("");
   const [operationDate, setOperationDate] = useState(orgToday);
   const [idempotencyKey, setIdempotencyKey] = useState("");
 
@@ -322,7 +321,6 @@ export function RecordRentalAdvanceModal({
     if (!open) return;
     setAmount("");
     setMethod("transfer");
-    setNotes("");
     setOperationDate(orgLocalDateString(orgTimezone));
     setIdempotencyKey(crypto.randomUUID());
   }, [open, orgTimezone]);
@@ -339,7 +337,6 @@ export function RecordRentalAdvanceModal({
       method,
       idempotencyKey,
       operationDate,
-      notes: notes.trim() || undefined,
     });
     if (!res.success) {
       toast(resolveMutationError(res.error, "rentalInvoices.error.advanceFailed", t), "error");
@@ -373,10 +370,6 @@ export function RecordRentalAdvanceModal({
         min={minOperationDate}
         max={orgToday}
       />
-      <div>
-        <label className={labelCls}>{t("rentalInvoices.advanceNotes")}</label>
-        <input className={fieldCls} value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </div>
       <div className="flex gap-2 pt-1">
         <button type="button" onClick={onClose} disabled={recordAdvance.isPending} className={btnCancelCls}>
           {t("common.cancel")}
