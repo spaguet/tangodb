@@ -115,7 +115,7 @@ function DebtorRow({
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 lg:gap-3 items-center px-3 py-3">
         <button type="button" onClick={onToggle} className="min-w-0 text-left cursor-pointer" aria-expanded={expanded}>
           <div className="flex items-start gap-2">
             <ChevronDown
@@ -132,18 +132,18 @@ function DebtorRow({
         <button
           type="button"
           onClick={onToggle}
-          className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
+          className="text-xs text-slate-500 font-sans hidden lg:block text-left cursor-pointer min-w-0 truncate"
         >
           {entry.contact}
         </button>
         <button
           type="button"
           onClick={onToggle}
-          className="text-xs text-slate-500 font-sans hidden sm:block text-left cursor-pointer"
+          className="text-xs text-slate-500 font-sans hidden lg:block text-left cursor-pointer min-w-0 truncate"
         >
           {formatDebtorDetail(entry, t, formatDate)}
         </button>
-        <div className="flex flex-col items-end gap-1.5 col-start-2 sm:contents">
+        <div className="flex flex-col items-end gap-1.5 col-start-2 lg:contents">
           <button
             type="button"
             onClick={onToggle}
@@ -151,7 +151,7 @@ function DebtorRow({
           >
             {amountLabel}
           </button>
-          <div className="flex flex-col items-end gap-1.5 sm:col-start-5">
+          <div className="flex flex-col items-end gap-1.5 lg:col-start-5">
             {canPayPersonal ? (
               <>
                 <button
@@ -497,7 +497,7 @@ export default function FinanceDebtorsPage() {
           </div>
         ) : (
           <>
-            <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
+            <div className="hidden lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
               <span>{t("common.client")}</span>
               <span>Telegram</span>
               <span>{t("common.details")}</span>

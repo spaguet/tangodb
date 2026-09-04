@@ -107,12 +107,12 @@ export default function FinanceRentalInboxPage() {
     <div className="panel-page-stack">
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <Inbox className="w-4 h-4 text-indigo-600 shrink-0" />
               <h2 className="font-sans text-sm font-semibold text-slate-800 truncate">{t("rentalInbox.title")}</h2>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
               <span className="text-xs text-slate-500 font-sans hidden sm:inline">
                 {t("rentalInbox.asOf", { date: formatDate(orgToday) })}
               </span>

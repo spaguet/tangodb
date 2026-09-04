@@ -103,7 +103,7 @@ function ExpenseRow({
   categoryLabel: (category: ExpenseCategory) => string;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 sm:gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0 group">
+    <div className="grid grid-cols-[1fr_auto] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-2 lg:gap-3 items-center px-3 py-3 border-b border-slate-100 last:border-b-0 group">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-slate-800 truncate">
           {expense.description || categoryLabel(expense.category)}
@@ -112,7 +112,7 @@ function ExpenseRow({
           {formatDate(expense.expenseDate, { day: "numeric", month: "short", year: "numeric" })}
         </p>
       </div>
-      <p className="text-xs text-slate-500 font-sans hidden sm:block truncate">{categoryLabel(expense.category)}</p>
+      <p className="text-xs text-slate-500 font-sans hidden lg:block truncate min-w-0">{categoryLabel(expense.category)}</p>
       <p className="text-sm font-sans font-semibold text-rose-700 text-right whitespace-nowrap">
         {formatCurrency(expense.amount)}
       </p>
@@ -385,7 +385,7 @@ export default function FinanceExpensesPage() {
           </div>
         ) : (
           <>
-            <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
+            <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
               <span>{t("finance.expenses.colDescription")}</span>
               <span>{t("finance.expenses.categoryLabel")}</span>
               <span className="text-right">{t("common.amount")}</span>

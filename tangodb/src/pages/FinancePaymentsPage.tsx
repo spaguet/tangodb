@@ -62,7 +62,7 @@ const PAYMENT_METHODS: PaymentMethod[] = ["cash", "transfer", "card", "other"];
 
 /** Each journal row is its own grid — last tracks must be fixed or «Источник» drifts. */
 const PAYMENT_JOURNAL_COLS =
-  "sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_8.5rem_2rem]";
+  "lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,6.5rem)_minmax(0,8.5rem)_2rem]";
 
 interface MonthRentalGroup {
   yearMonth: string;
@@ -279,7 +279,7 @@ function PaymentRow({
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
-      <div className={`grid grid-cols-[minmax(0,1fr)_auto] ${PAYMENT_JOURNAL_COLS} gap-2 sm:gap-3 items-center px-3 py-3`}>
+      <div className={`grid grid-cols-[minmax(0,1fr)_auto] ${PAYMENT_JOURNAL_COLS} gap-2 lg:gap-3 items-center px-3 py-3`}>
         <button
           type="button"
           onClick={onToggle}
@@ -310,18 +310,18 @@ function PaymentRow({
         <button
           type="button"
           onClick={onToggle}
-          className="text-xs text-slate-500 font-sans hidden sm:block min-w-0 w-full text-left truncate cursor-pointer"
+          className="text-xs text-slate-500 font-sans hidden lg:block min-w-0 w-full text-left truncate cursor-pointer"
         >
           {isRefund ? translate("finance.payments.refundBadge") : sourceLabel}
         </button>
         <button
           type="button"
           onClick={onToggle}
-          className="text-xs text-slate-500 font-sans hidden sm:block min-w-0 w-full text-left truncate cursor-pointer"
+          className="text-xs text-slate-500 font-sans hidden lg:block min-w-0 w-full text-left truncate cursor-pointer"
         >
           {methodLabel}
         </button>
-        <div className="flex items-center justify-end gap-2 col-start-2 sm:contents">
+        <div className="flex items-center justify-end gap-2 col-start-2 lg:contents">
           <button
             type="button"
             onClick={onToggle}
@@ -361,7 +361,7 @@ function PaymentRow({
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           ) : (
-            <span className="hidden sm:block w-8 h-8" aria-hidden />
+            <span className="hidden lg:block w-8 h-8" aria-hidden />
           )}
         </div>
       </div>
@@ -551,7 +551,7 @@ function RentalPaymentRow({
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
-      <div className={`grid grid-cols-[minmax(0,1fr)_auto] ${PAYMENT_JOURNAL_COLS} gap-2 sm:gap-3 items-center px-3 py-3`}>
+      <div className={`grid grid-cols-[minmax(0,1fr)_auto] ${PAYMENT_JOURNAL_COLS} gap-2 lg:gap-3 items-center px-3 py-3`}>
         <button type="button" onClick={onToggle} className="min-w-0 text-left cursor-pointer" aria-expanded={expanded}>
           <div className="flex items-start gap-2">
             <ChevronDown
@@ -574,13 +574,13 @@ function RentalPaymentRow({
             </div>
           </div>
         </button>
-        <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden sm:block min-w-0 w-full text-left truncate cursor-pointer">
+        <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden lg:block min-w-0 w-full text-left truncate cursor-pointer">
           {sourceLabel}
         </button>
-        <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden sm:block min-w-0 w-full text-left truncate cursor-pointer">
+        <button type="button" onClick={onToggle} className="text-xs text-slate-500 font-sans hidden lg:block min-w-0 w-full text-left truncate cursor-pointer">
           {methodLabel}
         </button>
-        <div className="flex items-center justify-end gap-2 col-start-2 sm:contents">
+        <div className="flex items-center justify-end gap-2 col-start-2 lg:contents">
           <button
             type="button"
             onClick={onToggle}
@@ -601,7 +601,7 @@ function RentalPaymentRow({
               <Pencil className="w-3.5 h-3.5" />
             </button>
           ) : (
-            <span className="hidden sm:block w-8" />
+            <span className="hidden lg:block w-8" />
           )}
         </div>
       </div>
@@ -985,7 +985,7 @@ export default function FinancePaymentsPage() {
 
                     {open ? (
                       <div className="border-t border-slate-100">
-                        <div className={`hidden sm:grid ${PAYMENT_JOURNAL_COLS} gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans`}>
+                        <div className={`hidden lg:grid ${PAYMENT_JOURNAL_COLS} gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans`}>
                           <span>{t("common.clientDate")}</span>
                           <span>{t("common.source")}</span>
                           <span>{t("common.method")}</span>
@@ -1066,7 +1066,7 @@ export default function FinancePaymentsPage() {
 
                       {open ? (
                         <div className="border-t border-slate-100">
-                          <div className={`hidden sm:grid ${PAYMENT_JOURNAL_COLS} gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans`}>
+                          <div className={`hidden lg:grid ${PAYMENT_JOURNAL_COLS} gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans`}>
                             <span>{t("schedule.rental.renterLabel")}</span>
                             <span>{t("common.source")}</span>
                             <span>{t("common.method")}</span>

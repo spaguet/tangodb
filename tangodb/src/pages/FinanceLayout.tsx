@@ -70,13 +70,13 @@ export default function FinanceLayout() {
   }, [t, teacherPayrollOnly, rentalInboxOnly, can]);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 min-w-0 max-w-full">
       {!teacherPayrollOnly && (
-        <nav className="shrink-0">
+        <nav className="shrink-0 min-w-0">
           <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold px-1 mb-2">
             {t("finance.nav.title")}
           </p>
-          <div className="flex gap-1 overflow-x-auto pb-1">
+          <div className="flex flex-wrap gap-1.5">
             {financeNav.map((item, index) => {
               const Icon = item.icon;
               const prev = financeNav[index - 1];
@@ -85,7 +85,7 @@ export default function FinanceLayout() {
                 <Fragment key={item.path}>
                   {showSectionDivider ? (
                     <div
-                      className="w-px h-6 bg-slate-200 shrink-0 self-center mx-0.5"
+                      className="hidden xl:block w-px h-6 bg-slate-200 shrink-0 self-center mx-0.5"
                       role="separator"
                       aria-label={t(FINANCE_SECTION_LABEL[item.section])}
                     />
@@ -93,7 +93,7 @@ export default function FinanceLayout() {
                   <NavLink
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                      `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                         isActive
                           ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
                           : "text-slate-600 hover:bg-slate-50 border border-transparent"

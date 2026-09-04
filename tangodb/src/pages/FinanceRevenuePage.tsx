@@ -213,16 +213,16 @@ export default function FinanceRevenuePage() {
               {t("finance.revenue.personalTariffs.title")}
             </h3>
           </div>
-          <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.4fr)_auto_auto] gap-3 px-4 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
+          <div className="hidden lg:grid lg:grid-cols-[minmax(0,1.4fr)_auto_auto] gap-3 px-4 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400 font-sans">
             <span>{t("finance.revenue.personalTariffs.tariffColumn")}</span>
             <span className="text-right">{t("finance.revenue.personalTariffs.countColumn")}</span>
-            <span className="text-right min-w-[6rem]">{t("finance.revenue.personalTariffs.sumColumn")}</span>
+            <span className="text-right min-w-0">{t("finance.revenue.personalTariffs.sumColumn")}</span>
           </div>
           <ul className="divide-y divide-slate-100">
             {personalTariffRows.map((row) => (
               <li
                 key={row.rowKey}
-                className="px-4 py-3 grid grid-cols-1 sm:grid-cols-[minmax(0,1.4fr)_auto_auto] gap-1 sm:gap-3 sm:items-center text-sm font-sans"
+                className="px-4 py-3 grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_auto_auto] gap-1 lg:gap-3 lg:items-center text-sm font-sans"
               >
                 <span className="font-semibold text-slate-800">
                   {formatPersonalTariffSalesRowLabel(row, t)}
@@ -233,7 +233,7 @@ export default function FinanceRevenuePage() {
                   </span>
                   {row.countPaymentsNet}
                 </span>
-                <span className="font-semibold text-slate-800 sm:text-right min-w-[6rem]">
+                <span className="font-semibold text-slate-800 lg:text-right min-w-0">
                   <span className="sm:hidden text-[10px] uppercase tracking-wider text-slate-400 font-semibold mr-2">
                     {t("finance.revenue.personalTariffs.sumColumn")}
                   </span>
