@@ -36,8 +36,20 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+function qrAssetTitle(
+  asset: { label: string | null; createdAt: string },
+  t: (key: string, vars?: Record<string, string>) => string,
+  formatDate: (iso: string) => string
+): string {
+  const label = asset.label?.trim();
+  if (label) return label;
+  const day = asset.createdAt.slice(0, 10);
+  if (day) return t("hallRent.miniapp.qrUntitled", { date: formatDate(day) });
+  return t("hallRent.miniapp.qrUntitledNoDate");
+}
+
 export default function MiniAppChannelSection() {
-  const { t } = useI18n();
+  const { t, formatDate } = useI18n();
   const toast = useToast();
   const channelQuery = useOrganizationRenterChannel();
   const qrQuery = useOrganizationRentalQrAssets();
@@ -263,6 +275,7 @@ export default function MiniAppChannelSection() {
               id="renter-qr-label"
               className={inputCls}
               value={qrLabel}
+              placeholder={t("hallRent.miniapp.qrLabelPlaceholder")}
               onChange={(e) => setQrLabel(e.target.value)}
             />
           </div>
@@ -309,14 +322,24 @@ export default function MiniAppChannelSection() {
                 {asset.signedUrl ? (
                   <img
                     src={asset.signedUrl}
-                    alt={asset.label ?? t("hallRent.miniapp.qrLibrary")}
+                    alt={qrAssetTitle(asset, t, formatDate)}
                     className="w-16 h-16 object-contain rounded border border-slate-100"
                   />
-                ) : null}
+                ) : (
+                  <div
+                    className="w-16 h-16 rounded border border-dashed border-slate-200 bg-slate-50 text-[9px] text-slate-400 flex items-center justify-center text-center px-1"
+                    aria-hidden
+                  >
+                    {t("hallRent.miniapp.qrPreviewMissing")}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1 space-y-1">
                   <p className="text-xs font-semibold text-slate-800">
-                    {asset.label || t("hallRent.miniapp.qrLabel")}
+                    {qrAssetTitle(asset, t, formatDate)}
                   </p>
+                  {!asset.isActive ? (
+                    <p className="text-[10px] text-amber-700 font-semibold">{t("hallRent.miniapp.qrInactive")}</p>
+                  ) : null}
                   <label className="inline-flex items-center gap-2 text-xs text-slate-600">
                     <input
                       type="checkbox"

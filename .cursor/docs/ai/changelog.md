@@ -1,3 +1,5 @@
+2026-09-04 — fix(hall-rent): микропатч **2.9.68** — CRM: пустая подпись QR больше не дублирует текст поля «Подпись (банк, кошелёк)» — показываем дату загрузки и статус «Не действует»; удаление QR снова работает при старых заявках пополнения (detach `qr_asset_id` на confirmed/rejected). Миграция `20261082000001`. i18n `renter.qr.deleteFailed`.
+
 2026-09-04 — fix(hall-rent): микропатч **2.9.67** — Mini App больше не показывает «сгенерированный» QR из SQL `_renter_qr_signed_url` / base64 Edge: только `storage_path` → `createSignedUrl` (как CRM) или Edge `signed_url`; RPC `signed_url` игнорируется; preview всегда перезапрашивает URL.
 
 2026-09-04 — fix(hall-rent): микропатч **2.9.66** — `/api/qr-file` self-contained Node handler (Edge + import из `src/` давали 500 и TXT ~96 B вместо PNG); превью QR сначала через Storage `createSignedUrl` как в CRM; «Сохранить QR» — HEAD-проверка прокси и success только из callback `downloadFile`.
