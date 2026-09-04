@@ -11,6 +11,13 @@
 
 ## Записи
 
+### 2026-09-04 — Mini App QR proxy 500 → Telegram сохранял TXT
+
+- **Дата:** 2026-09-04
+- **Ошибка:** `/api/qr-file` падал с `FUNCTION_INVOCATION_FAILED`; Telegram предлагал скачать `studio-qr-*.png` размером ~96 B как TXT; UI писал «QR сохранён».
+- **Причина:** Edge handler импортировал `../src/lib/qrProxy` — на Vercel это не бандлится и функция крашится; callback `downloadFile` со статусом `downloading` считался успехом; тело ответа Vercel error (~96 B) уходило в файл.
+- **Как избежать:** `api/*` — только self-contained код; перед `downloadFile` — HEAD на прокси (image/*, size ≥ 200); success UI только на `status === "success"`.
+
 ### 2026-09-04 — Mini App QR: не тот макет и «Сохранить» ничего не писало на диск
 
 - **Дата:** 2026-09-04

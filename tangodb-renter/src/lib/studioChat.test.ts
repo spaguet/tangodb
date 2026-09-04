@@ -61,14 +61,27 @@ describe("downloadQrToDevice", () => {
     vi.restoreAllMocks();
   });
 
-  it("uses Telegram downloadFile with a same-origin proxy URL", async () => {
+  it("uses Telegram downloadFile with a same-origin proxy URL after verification", async () => {
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { origin: "https://tangodb-renter.vercel.app" },
     });
+    const fetchSpy = vi.fn(async (_input: RequestInfo, init?: RequestInit) => {
+      if (init?.method === "HEAD") {
+        return new Response(null, {
+          status: 200,
+          headers: { "content-type": "image/png", "content-length": "2048" },
+        });
+      }
+      return new Response(new Uint8Array(2048), {
+        status: 200,
+        headers: { "content-type": "image/png" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchSpy);
     const downloadFile = vi.fn(
-      (_params: { url: string; file_name: string }, cb?: (status: "downloading") => void) => {
-        cb?.("downloading");
+      (_params: { url: string; file_name: string }, cb?: (status: "success") => void) => {
+        cb?.("success");
       }
     );
     window.Telegram = { WebApp: { downloadFile } } as never;
@@ -83,21 +96,46 @@ describe("downloadQrToDevice", () => {
     expect(parsed.searchParams.get("name")).toBe("qr.png");
   });
 
+  it("does not save when proxy verification fails", async () => {
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { origin: "https://tangodb-renter.vercel.app" },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 500, headers: { "content-type": "text/plain" } }))
+    );
+    const downloadFile = vi.fn();
+    window.Telegram = { WebApp: { downloadFile } } as never;
+
+    await expect(downloadQrToDevice(signed, "qr.png", signed)).resolves.toBe(false);
+    expect(downloadFile).not.toHaveBeenCalled();
+  });
+
   it("does not treat an in-Telegram cancel as a successful save", async () => {
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { origin: "https://tangodb-renter.vercel.app" },
     });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: RequestInfo, init?: RequestInit) => {
+        if (init?.method === "HEAD") {
+          return new Response(null, {
+            status: 200,
+            headers: { "content-type": "image/png", "content-length": "2048" },
+          });
+        }
+        return new Response(null, { status: 404 });
+      })
+    );
     const downloadFile = vi.fn(
       (_params: { url: string; file_name: string }, cb?: (status: "cancelled") => void) => {
         cb?.("cancelled");
       }
     );
     window.Telegram = { WebApp: { downloadFile } } as never;
-    const fetchSpy = vi.fn();
-    vi.stubGlobal("fetch", fetchSpy);
 
     await expect(downloadQrToDevice(signed, "qr.png", signed)).resolves.toBe(false);
-    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

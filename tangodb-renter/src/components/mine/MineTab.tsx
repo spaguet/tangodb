@@ -106,21 +106,7 @@ export default function MineTab({
         return /^https:\/\//i.test(raw) ? raw : null;
       };
 
-      let edgeDisplay: string | null = null;
-      let edgeDownload: string | null = null;
-      try {
-        const viaFunction = await rpcGetRentalQrAccessUrl(supabase, asset.id);
-        edgeDisplay = viaFunction?.displaySrc ?? null;
-        edgeDownload = viaFunction?.downloadUrl ?? null;
-      } catch {
-        /* fall through to Storage / RPC url */
-      }
-
-      const httpsFromEdge = asHttps(edgeDownload) ?? asHttps(edgeDisplay);
-      if (httpsFromEdge) {
-        return { signed_url: httpsFromEdge, download_url: httpsFromEdge };
-      }
-
+      // Same path as CRM: fresh Storage signed URL from storage_path.
       try {
         const signed = await resolveOrgRentalQrUrl(supabase, asset);
         const https = asHttps(signed);
@@ -128,6 +114,21 @@ export default function MineTab({
         if (signed) return { signed_url: signed, download_url: null };
       } catch {
         /* fall through */
+      }
+
+      let edgeDisplay: string | null = null;
+      let edgeDownload: string | null = null;
+      try {
+        const viaFunction = await rpcGetRentalQrAccessUrl(supabase, asset.id);
+        edgeDisplay = viaFunction?.displaySrc ?? null;
+        edgeDownload = viaFunction?.downloadUrl ?? null;
+      } catch {
+        /* fall through */
+      }
+
+      const httpsFromEdge = asHttps(edgeDownload) ?? asHttps(edgeDisplay);
+      if (httpsFromEdge) {
+        return { signed_url: httpsFromEdge, download_url: httpsFromEdge };
       }
 
       if (edgeDisplay) {

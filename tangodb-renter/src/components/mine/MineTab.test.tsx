@@ -304,7 +304,7 @@ describe("MineTab stage B surfaces", () => {
     expect(screen.queryByText("Загрузка…")).toBeNull();
   });
 
-  it("ignores Edge data URLs when Storage still has the studio file", async () => {
+  it("prefers Storage signed URL over Edge data URL", async () => {
     mockLoadedMine();
     const storageSigned = "https://example.supabase.co/storage/v1/object/sign/org-rental-qr/real.png";
     vi.mocked(rpc.rpcListActiveQr).mockResolvedValue([
@@ -328,5 +328,6 @@ describe("MineTab stage B surfaces", () => {
     await waitFor(() => {
       expect(screen.getByAltText("VietQR").getAttribute("src")).toBe(storageSigned);
     });
+    expect(rpc.rpcGetRentalQrAccessUrl).not.toHaveBeenCalled();
   });
 });

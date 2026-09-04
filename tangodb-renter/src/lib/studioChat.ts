@@ -71,7 +71,10 @@ async function blobFromSrc(src: string): Promise<Blob | null> {
     const res = await fetch(src);
     if (!res.ok) return null;
     const blob = await res.blob();
-    return blob.size > 0 ? blob : null;
+    if (blob.size < 200) return null;
+    const type = blob.type.toLowerCase();
+    if (!type.startsWith("image/")) return null;
+    return blob;
   } catch {
     return null;
   }
@@ -92,6 +95,20 @@ async function shareImageFile(blob: Blob, fileName: string): Promise<boolean> {
   }
 }
 
+async function verifyImageDownloadUrl(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { method: "HEAD" });
+    if (!res.ok) return false;
+    const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+    if (!contentType.startsWith("image/")) return false;
+    const len = res.headers.get("content-length");
+    if (len && Number(len) < 200) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 type TelegramDownloadResult = "ok" | "cancelled" | "unavailable" | "failed";
 
 async function telegramDownload(url: string, fileName: string): Promise<TelegramDownloadResult> {
@@ -105,27 +122,17 @@ async function telegramDownload(url: string, fileName: string): Promise<Telegram
         settled = true;
         resolve(result);
       };
-      const timeout = window.setTimeout(() => finish("failed"), 15_000);
+      const timeout = window.setTimeout(() => finish("failed"), 30_000);
       downloadFile({ url, file_name: fileName }, (status) => {
         window.clearTimeout(timeout);
-        if (status === "success" || status === "downloading") finish("ok");
+        if (status === "success") finish("ok");
         else if (status === "cancelled") finish("cancelled");
+        else if (status === "downloading") return;
         else finish("failed");
       });
     });
   } catch {
     return "failed";
-  }
-}
-
-function openTelegramLink(url: string): boolean {
-  const openLink = window.Telegram?.WebApp?.openLink;
-  if (typeof openLink !== "function") return false;
-  try {
-    openLink(url);
-    return true;
-  } catch {
-    return false;
   }
 }
 
@@ -144,23 +151,17 @@ export async function downloadQrToDevice(
   const canProxy = Boolean(httpsDownload && /^https:\/\//i.test(origin));
   const proxyUrl = canProxy && httpsDownload ? miniAppQrProxyUrl(origin, httpsDownload, fileName) : null;
 
-  let telegramResult: TelegramDownloadResult = "unavailable";
-  if (proxyUrl) {
-    telegramResult = await telegramDownload(proxyUrl, fileName);
+  if (proxyUrl && (await verifyImageDownloadUrl(proxyUrl))) {
+    const telegramResult = await telegramDownload(proxyUrl, fileName);
     if (telegramResult === "ok") return true;
     if (telegramResult === "cancelled") return false;
   }
 
-  const blobSrc = proxyUrl ?? displaySrc;
+  const blobSrc = httpsDownload ?? displaySrc;
   const blob = await blobFromSrc(blobSrc);
   if (blob && (await shareImageFile(blob, fileName))) return true;
 
-  const inTelegram = Boolean(window.Telegram?.WebApp);
-  if (proxyUrl && telegramResult === "failed" && openTelegramLink(proxyUrl)) {
-    return true;
-  }
-
-  if (!inTelegram) {
+  if (!window.Telegram?.WebApp) {
     if (blob) {
       const objectUrl = URL.createObjectURL(blob);
       try {

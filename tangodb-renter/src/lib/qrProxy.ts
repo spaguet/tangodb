@@ -40,25 +40,31 @@ export async function proxyStudioQrRequest(req: Request): Promise<Response> {
   }
 
   const name = sanitizeQrDownloadFilename(page.searchParams.get("name") ?? "studio-qr.png");
-  const upstream = await fetch(src, { redirect: "error" });
+  const upstream = await fetch(src, { redirect: "follow" });
   if (!upstream.ok) {
     return new Response("Not found", { status: 404 });
   }
 
-  const contentType = upstream.headers.get("content-type") ?? "";
-  if (!contentType.toLowerCase().startsWith("image/")) {
+  const contentType = (upstream.headers.get("content-type") ?? "").toLowerCase();
+  const bytes = new Uint8Array(await upstream.arrayBuffer());
+  if (bytes.length < 200) {
+    return new Response("Not found", { status: 404 });
+  }
+  if (!contentType.startsWith("image/")) {
     return new Response("Not found", { status: 404 });
   }
 
+  const resolvedType = contentType.split(";")[0] || "image/png";
   const headers = new Headers({
-    "Content-Type": contentType,
+    "Content-Type": resolvedType,
     "Content-Disposition": `attachment; filename="${name}"`,
     "Cache-Control": "private, max-age=60",
+    "Content-Length": String(bytes.length),
   });
 
   if (req.method === "HEAD") {
     return new Response(null, { status: 200, headers });
   }
 
-  return new Response(upstream.body, { status: 200, headers });
+  return new Response(bytes, { status: 200, headers });
 }
