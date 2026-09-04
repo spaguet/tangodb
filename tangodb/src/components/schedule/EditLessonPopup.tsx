@@ -36,6 +36,12 @@ import {
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { durationWarning, billedFromTariff, lessonDurationMinutes, translateDurationWarning } from "../../lib/personalTariffPricing";
 import { expandPersonalLessonWeeklySlots } from "../../lib/personalLessonDates";
+import {
+  filledBookingClientIds,
+  participantTypeFromClientCount,
+  syncBookingClientFieldsForTariff,
+  type BookingClientField,
+} from "../../lib/personalLessonClients";
 import { addDays, getWeekRange, isScheduleDateLockedForWrite, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, canShowPaidStatus, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { useVoidPersonalLessonPayment } from "../../hooks/usePayments";
@@ -91,18 +97,6 @@ const addClientRowBtnCls =
   "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
 
 const MAX_PERSONAL_CLIENTS = 4;
-
-interface BookingClientField {
-  query: string;
-  id: string;
-}
-
-function participantTypeFromCount(count: number): "solo" | "pair" | "trio" | "quad" {
-  if (count >= 4) return "quad";
-  if (count >= 3) return "trio";
-  if (count === 2) return "pair";
-  return "solo";
-}
 
 function validateBookingClients(
   clients: BookingClientField[],
@@ -687,12 +681,7 @@ export default function EditLessonPopup({
     const participant = tariffParticipantType(tariff);
     const neededFields =
       participant === "solo" ? 1 : participant === "pair" ? 2 : participant === "trio" ? 3 : 4;
-    setBookingClients((prev) => {
-      const next = [...prev];
-      while (next.length < neededFields) next.push({ query: "", id: "" });
-      while (next.length > neededFields) next.pop();
-      return next;
-    });
+    setBookingClients((prev) => syncBookingClientFieldsForTariff(prev, neededFields));
   };
 
   useEffect(() => {
@@ -1167,9 +1156,9 @@ export default function EditLessonPopup({
         toast(clientError, "error");
         return;
       }
-      const selectedIds = bookingClients.map((client) => client.id);
+      const selectedIds = filledBookingClientIds(bookingClients);
       clientPayload = {
-        type: participantTypeFromCount(selectedIds.length),
+        type: participantTypeFromClientCount(selectedIds.length),
         clientId1: selectedIds[0] ?? "",
         clientId2: selectedIds[1] ?? "",
         clientId3: selectedIds[2] ?? "",
@@ -1239,7 +1228,8 @@ export default function EditLessonPopup({
           ]
         : clientIdsFromLesson(lesson);
 
-      const repeatType = clientPayload?.type ?? participantTypeFromCount(repeatClientIds.filter(Boolean).length);
+      const repeatType =
+        clientPayload?.type ?? participantTypeFromClientCount(repeatClientIds.filter(Boolean).length);
       const repeatPayerId =
         clientPayload?.type === "solo"
           ? repeatClientIds[0] ?? ""
