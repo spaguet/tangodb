@@ -45,6 +45,12 @@ import {
   type DurationWarningCode,
 } from "../../lib/personalTariffPricing";
 import {
+  filledBookingClientIds,
+  participantTypeFromClientCount,
+  syncBookingClientFieldsForTariff,
+  type BookingClientField,
+} from "../../lib/personalLessonClients";
+import {
   bookingClientsMatchSubscription,
   jsDayToIsoDow,
   formatClientName,
@@ -76,11 +82,6 @@ import GoogleCalendarFreebusyWarning from "../integrations/GoogleCalendarFreebus
 
 export type PersonalLessonSaleFormMode = "schedule-cell" | "standalone";
 
-interface BookingClientField {
-  query: string;
-  id: string;
-}
-
 interface LessonDateEntry {
   date: string;
   timeStart: string;
@@ -108,13 +109,6 @@ const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-
 const addRowBtnCls =
   "w-full py-2 bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer";
 const MAX_CLIENTS = 4;
-
-function participantTypeFromCount(count: number): "solo" | "pair" | "trio" | "quad" {
-  if (count >= 4) return "quad";
-  if (count >= 3) return "trio";
-  if (count === 2) return "pair";
-  return "solo";
-}
 
 const WEEK_COUNT_OPTIONS = [2, 3, 4, 6, 8, 12] as const;
 
@@ -323,8 +317,6 @@ export default function PersonalLessonSaleForm({
     }));
   }, [conflictCheckDateRange, lessonsInRangeQuery.data, personalLessons]);
 
-  const pType = participantTypeFromCount(bookingClients.length);
-
   const lessonTariffs = useMemo(
     () =>
       filterPrivateLessonTariffsForSale(prices, {
@@ -465,12 +457,7 @@ export default function PersonalLessonSaleForm({
     const participant = tariffParticipantType(tariff);
     const neededFields =
       participant === "solo" ? 1 : participant === "pair" ? 2 : participant === "trio" ? 3 : 4;
-    setBookingClients((prev) => {
-      const next = [...prev];
-      while (next.length < neededFields) next.push({ query: "", id: "" });
-      while (next.length > neededFields) next.pop();
-      return next;
-    });
+    setBookingClients((prev) => syncBookingClientFieldsForTariff(prev, neededFields));
   };
 
   const applySubscriptionToBooking = (subId: string) => {
@@ -707,6 +694,9 @@ export default function PersonalLessonSaleForm({
       }
     }
 
+    const filledClientIds = filledBookingClientIds(bookingClients);
+    const pType = participantTypeFromClientCount(filledClientIds.length);
+
     if (linkedSubscriptionId) {
       const linkedSub = subscriptions.find((s) => s.id === linkedSubscriptionId);
       if (!linkedSub) {
@@ -715,10 +705,10 @@ export default function PersonalLessonSaleForm({
       }
       if (
         !bookingClientsMatchSubscription(linkedSub, {
-          clientId1: bookingClients[0].id,
-          clientId2: bookingClients.length >= 2 ? bookingClients[1].id : "",
-          clientId3: bookingClients.length >= 3 ? bookingClients[2].id : "",
-          clientId4: bookingClients.length >= 4 ? bookingClients[3].id : "",
+          clientId1: filledClientIds[0] ?? "",
+          clientId2: filledClientIds[1] ?? "",
+          clientId3: filledClientIds[2] ?? "",
+          clientId4: filledClientIds[3] ?? "",
         })
       ) {
         toast(t("personal.error.clientsMismatch"), "error");
@@ -796,10 +786,10 @@ export default function PersonalLessonSaleForm({
         const res = await addPersonalLessons.mutateAsync({
           requireScope: true,
           type: pType,
-          clientId1: bookingClients[0].id,
-          clientId2: bookingClients.length >= 2 ? bookingClients[1].id : "",
-          clientId3: bookingClients.length >= 3 ? bookingClients[2].id : "",
-          clientId4: bookingClients.length >= 4 ? bookingClients[3].id : "",
+          clientId1: filledClientIds[0] ?? "",
+          clientId2: filledClientIds[1] ?? "",
+          clientId3: filledClientIds[2] ?? "",
+          clientId4: filledClientIds[3] ?? "",
           dates: group.dates,
           timeStart: group.timeStart,
           timeEnd: group.timeEnd,
