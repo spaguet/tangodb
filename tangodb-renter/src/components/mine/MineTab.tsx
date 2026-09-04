@@ -30,7 +30,7 @@ import {
 } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
 import { formatTopupAmount } from "../../lib/quoteBalance";
-import { absolutizeSignedUrl, qrDownloadFilename, resolveOrgRentalQrUrl } from "../../lib/qrUrl";
+import { qrDownloadFilename, resolveOrgRentalQrUrl } from "../../lib/qrUrl";
 import { copyText, downloadQrToDevice, openStudioChat, topupDraftMessage } from "../../lib/studioChat";
 import type { PendingTopup, QrAsset, RentalItem, WalletData, WalletEntry } from "../../lib/types";
 import {
@@ -106,38 +106,23 @@ export default function MineTab({
         return /^https:\/\//i.test(raw) ? raw : null;
       };
 
-      // Same path as CRM: fresh Storage signed URL from storage_path.
       try {
         const signed = await resolveOrgRentalQrUrl(supabase, asset);
         const https = asHttps(signed);
         if (https) return { signed_url: https, download_url: https };
-        if (signed) return { signed_url: signed, download_url: null };
       } catch {
         /* fall through */
       }
 
-      let edgeDisplay: string | null = null;
-      let edgeDownload: string | null = null;
       try {
         const viaFunction = await rpcGetRentalQrAccessUrl(supabase, asset.id);
-        edgeDisplay = viaFunction?.displaySrc ?? null;
-        edgeDownload = viaFunction?.downloadUrl ?? null;
+        const https = asHttps(viaFunction?.downloadUrl ?? viaFunction?.displaySrc);
+        if (https) return { signed_url: https, download_url: https };
       } catch {
         /* fall through */
       }
 
-      const httpsFromEdge = asHttps(edgeDownload) ?? asHttps(edgeDisplay);
-      if (httpsFromEdge) {
-        return { signed_url: httpsFromEdge, download_url: httpsFromEdge };
-      }
-
-      if (edgeDisplay) {
-        return { signed_url: edgeDisplay, download_url: null };
-      }
-
-      const signed = absolutizeSignedUrl(asset.signed_url);
-      const https = asHttps(signed);
-      return { signed_url: signed, download_url: https };
+      return { signed_url: null, download_url: null };
     },
     [supabase]
   );
@@ -897,10 +882,8 @@ type StudioQrPreviewProps = {
 };
 
 function StudioQrPreview({ locale, asset, refreshUrl, onSaved, onSaveFailed }: StudioQrPreviewProps) {
-  const [src, setSrc] = useState<string | null>(asset.signed_url);
-  const [phase, setPhase] = useState<"loading" | "ready" | "failed">(
-    asset.signed_url ? "ready" : "loading"
-  );
+  const [src, setSrc] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"loading" | "ready" | "failed">("loading");
   const imageRetryUsedRef = useRef(false);
   const refreshUrlRef = useRef(refreshUrl);
   const assetRef = useRef(asset);
@@ -908,14 +891,6 @@ function StudioQrPreview({ locale, asset, refreshUrl, onSaved, onSaveFailed }: S
   assetRef.current = asset;
 
   useEffect(() => {
-    if (asset.signed_url) {
-      setSrc(asset.signed_url);
-      setPhase("ready");
-    }
-  }, [asset.id, asset.signed_url]);
-
-  useEffect(() => {
-    if (asset.signed_url) return;
     let cancelled = false;
     setPhase("loading");
     imageRetryUsedRef.current = false;
@@ -934,7 +909,7 @@ function StudioQrPreview({ locale, asset, refreshUrl, onSaved, onSaveFailed }: S
     return () => {
       cancelled = true;
     };
-  }, [asset.id, asset.signed_url]);
+  }, [asset.id, asset.signed_url, asset.storage_path]);
 
   const saveQr = async () => {
     const displaySrc =

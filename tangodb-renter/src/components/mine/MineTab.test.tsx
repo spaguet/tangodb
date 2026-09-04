@@ -23,8 +23,9 @@ vi.mock("../../lib/qrUrl", async () => {
   const actual = await vi.importActual<typeof import("../../lib/qrUrl")>("../../lib/qrUrl");
   return {
     ...actual,
-    resolveOrgRentalQrUrl: vi.fn(async (_supabase: unknown, asset: { signed_url: string | null }) => {
-      return asset.signed_url;
+    resolveOrgRentalQrUrl: vi.fn(async (_supabase: unknown, asset: { storage_path: string | null }) => {
+      if (!asset.storage_path) return null;
+      return `https://example.supabase.co/storage/v1/object/sign/org-rental-qr/${asset.storage_path}`;
     }),
   };
 });
@@ -245,7 +246,9 @@ describe("MineTab stage B surfaces", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByAltText("Старый QR").getAttribute("src")).toBe("https://qr.test/qr-old.png");
+      expect(screen.getByAltText("Старый QR").getAttribute("src")).toBe(
+        "https://example.supabase.co/storage/v1/object/sign/org-rental-qr/org/qr-old"
+      );
     });
 
     rerender(
@@ -253,13 +256,14 @@ describe("MineTab stage B surfaces", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByAltText("Новый QR").getAttribute("src")).toBe("https://qr.test/qr-new.png");
+      expect(screen.getByAltText("Новый QR").getAttribute("src")).toBe(
+        "https://example.supabase.co/storage/v1/object/sign/org-rental-qr/org/qr-new"
+      );
     });
   });
 
-  it("renders the studio Storage signed URL from the QR sign function", async () => {
+  it("renders the studio Storage signed URL from storage_path", async () => {
     mockLoadedMine();
-    const signed = "https://example.supabase.co/storage/v1/object/sign/org-rental-qr/x";
     vi.mocked(rpc.rpcListActiveQr).mockResolvedValue([
       {
         id: "qr-1",
@@ -268,18 +272,17 @@ describe("MineTab stage B surfaces", () => {
         storage_path: "org/qr-1",
       },
     ]);
-    vi.mocked(rpc.rpcGetRentalQrAccessUrl).mockResolvedValue({
-      displaySrc: signed,
-      downloadUrl: signed,
-    });
 
     render(
       <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
     );
 
     await waitFor(() => {
-      expect(screen.getByAltText("VietQR").getAttribute("src")).toBe(signed);
+      expect(screen.getByAltText("VietQR").getAttribute("src")).toBe(
+        "https://example.supabase.co/storage/v1/object/sign/org-rental-qr/org/qr-1"
+      );
     });
+    expect(rpc.rpcGetRentalQrAccessUrl).not.toHaveBeenCalled();
   });
 
   it("shows a broken QR message instead of spinning forever when sign fails", async () => {
@@ -293,6 +296,7 @@ describe("MineTab stage B surfaces", () => {
       },
     ]);
     vi.mocked(rpc.rpcGetRentalQrAccessUrl).mockResolvedValue(null);
+    vi.mocked(qrUrl.resolveOrgRentalQrUrl).mockResolvedValue(null);
 
     render(
       <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
@@ -302,6 +306,29 @@ describe("MineTab stage B surfaces", () => {
       expect(screen.getByText(/Не удалось показать QR/i)).toBeTruthy();
     });
     expect(screen.queryByText("Загрузка…")).toBeNull();
+  });
+
+  it("ignores SQL signed_url from RPC and uses storage_path only", async () => {
+    mockLoadedMine();
+    vi.mocked(rpc.rpcListActiveQr).mockResolvedValue([
+      {
+        id: "qr-1",
+        label: "VietQR",
+        signed_url: "https://bogus.example/generated-qr.png",
+        storage_path: "org/qr-1",
+      },
+    ]);
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByAltText("VietQR").getAttribute("src")).toBe(
+        "https://example.supabase.co/storage/v1/object/sign/org-rental-qr/org/qr-1"
+      );
+    });
+    expect(rpc.rpcGetRentalQrAccessUrl).not.toHaveBeenCalled();
   });
 
   it("prefers Storage signed URL over Edge data URL", async () => {
@@ -329,5 +356,31 @@ describe("MineTab stage B surfaces", () => {
       expect(screen.getByAltText("VietQR").getAttribute("src")).toBe(storageSigned);
     });
     expect(rpc.rpcGetRentalQrAccessUrl).not.toHaveBeenCalled();
+  });
+
+  it("falls back to Edge sign when Storage signing fails", async () => {
+    mockLoadedMine();
+    const edgeSigned = "https://example.supabase.co/storage/v1/object/sign/org-rental-qr/edge.png";
+    vi.mocked(rpc.rpcListActiveQr).mockResolvedValue([
+      {
+        id: "qr-1",
+        label: "VietQR",
+        signed_url: null,
+        storage_path: "org/qr-1",
+      },
+    ]);
+    vi.mocked(qrUrl.resolveOrgRentalQrUrl).mockResolvedValue(null);
+    vi.mocked(rpc.rpcGetRentalQrAccessUrl).mockResolvedValue({
+      displaySrc: edgeSigned,
+      downloadUrl: edgeSigned,
+    });
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByAltText("VietQR").getAttribute("src")).toBe(edgeSigned);
+    });
   });
 });

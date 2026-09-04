@@ -19,7 +19,7 @@ describe("absolutizeSignedUrl", () => {
 });
 
 describe("qrDisplaySrc", () => {
-  it("prefers the Storage signed URL so the preview matches the studio upload", () => {
+  it("returns only the Storage signed URL (never inline base64)", () => {
     expect(
       qrDisplaySrc({
         signed_url: "https://example.supabase.co/storage/v1/object/sign/x",
@@ -27,15 +27,13 @@ describe("qrDisplaySrc", () => {
         mime_type: "image/jpeg",
       })
     ).toBe("https://example.supabase.co/storage/v1/object/sign/x");
-  });
-
-  it("falls back to absolute signed URL", () => {
     expect(
       qrDisplaySrc({
-        signed_url: "https://example.supabase.co/storage/v1/object/sign/x",
-        content_base64: null,
+        signed_url: null,
+        content_base64: "abc123",
+        mime_type: "image/png",
       })
-    ).toBe("https://example.supabase.co/storage/v1/object/sign/x");
+    ).toBeNull();
   });
 });
 

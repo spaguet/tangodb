@@ -1,3 +1,5 @@
+2026-09-04 — fix(hall-rent): микропатч **2.9.67** — Mini App больше не показывает «сгенерированный» QR из SQL `_renter_qr_signed_url` / base64 Edge: только `storage_path` → `createSignedUrl` (как CRM) или Edge `signed_url`; RPC `signed_url` игнорируется; preview всегда перезапрашивает URL.
+
 2026-09-04 — fix(hall-rent): микропатч **2.9.66** — `/api/qr-file` self-contained Node handler (Edge + import из `src/` давали 500 и TXT ~96 B вместо PNG); превью QR сначала через Storage `createSignedUrl` как в CRM; «Сохранить QR» — HEAD-проверка прокси и success только из callback `downloadFile`.
 
 2026-09-04 — fix(hall-rent): микропатч **2.9.65** — Mini App показывает тот же Storage signed URL QR, что и CRM (не перекодированный base64); «Сохранить QR» качает через same-origin `/api/qr-file` + `Telegram.WebApp.downloadFile` (data: URL Telegram не сохраняет). Тесты `qrProxy` / `MineTab` / `qrUrl`.

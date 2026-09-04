@@ -20,14 +20,7 @@ export function qrDisplaySrc(input: {
   content_base64?: string | null;
   mime_type?: string | null;
 }): string | null {
-  const signed = absolutizeSignedUrl(input.signed_url);
-  if (signed) return signed;
-  const b64 = input.content_base64?.replace(/\s/g, "") ?? "";
-  if (b64) {
-    const mime = input.mime_type?.trim() || "image/png";
-    return `data:${mime};base64,${b64}`;
-  }
-  return null;
+  return qrHttpsDownloadUrl(input);
 }
 
 export function qrHttpsDownloadUrl(input: { signed_url?: string | null }): string | null {
@@ -37,14 +30,13 @@ export function qrHttpsDownloadUrl(input: { signed_url?: string | null }): strin
 
 export async function resolveOrgRentalQrUrl(
   supabase: SupabaseClient,
-  asset: Pick<QrAsset, "signed_url" | "storage_path">
+  asset: Pick<QrAsset, "storage_path">
 ): Promise<string | null> {
   const path = asset.storage_path?.trim();
-  if (path) {
-    const { data, error } = await supabase.storage.from("org-rental-qr").createSignedUrl(path, SIGN_TTL_SEC);
-    if (!error && data?.signedUrl) return data.signedUrl;
-  }
-  return absolutizeSignedUrl(asset.signed_url);
+  if (!path) return null;
+  const { data, error } = await supabase.storage.from("org-rental-qr").createSignedUrl(path, SIGN_TTL_SEC);
+  if (!error && data?.signedUrl) return data.signedUrl;
+  return null;
 }
 
 export function qrDownloadFilename(label: string | null | undefined, id: string): string {

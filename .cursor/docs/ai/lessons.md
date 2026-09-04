@@ -11,6 +11,13 @@
 
 ## Записи
 
+### 2026-09-04 — Mini App показывал «чужой» QR вместо загрузки студии
+
+- **Дата:** 2026-09-04
+- **Ошибка:** В кабинете арендатора отображался другой QR, не тот PNG, который владелец загрузил в CRM.
+- **Причина:** `renter_list_active_qr` отдавал `signed_url` из SQL `_renter_qr_signed_url` (часто невалидный JWT на hosted); при сбое `createSignedUrl` Mini App подставлял этот URL или base64 из Edge вместо файла в Storage.
+- **Как избежать:** для Mini App источник истины — только `storage_path` + клиентский `createSignedUrl` или Edge `signed_url`; RPC `signed_url` не использовать; `qrDisplaySrc` — только https signed URL, без base64.
+
 ### 2026-09-04 — Mini App QR proxy 500 → Telegram сохранял TXT
 
 - **Дата:** 2026-09-04

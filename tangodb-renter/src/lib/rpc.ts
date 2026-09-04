@@ -235,7 +235,7 @@ export async function rpcListActiveQr(supabase: SupabaseClient): Promise<QrAsset
   return (result.assets ?? []).map((row) => ({
     id: String(row.id),
     label: row.label != null ? String(row.label) : null,
-    signed_url: row.signed_url != null ? String(row.signed_url) : null,
+    signed_url: null,
     storage_path: row.storage_path != null ? String(row.storage_path) : null,
   }));
 }
