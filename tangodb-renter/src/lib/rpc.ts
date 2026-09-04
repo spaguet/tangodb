@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { qrDisplaySrc } from "./qrUrl";
 import type {
   LocationRow,
   OccupancyData,
@@ -17,6 +18,22 @@ function unwrap<T>(data: unknown, fallbackError = "rpcFailed"): T {
     throw new Error(String((row as { error?: string })?.error ?? fallbackError));
   }
   return row as T;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timeout")), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
 }
 
 export async function rpcListLocations(supabase: SupabaseClient): Promise<LocationRow[]> {
@@ -227,13 +244,23 @@ export async function rpcGetRentalQrAccessUrl(
   supabase: SupabaseClient,
   assetId: string
 ): Promise<string | null> {
-  const { data, error } = await supabase.functions.invoke("renter-qr-upload", {
-    body: { action: "sign", id: assetId },
-  });
-  if (error) return null;
-  const result = data as { success?: boolean; signed_url?: string | null } | null;
-  if (!result?.success || !result.signed_url) return null;
-  return String(result.signed_url);
+  try {
+    const invoked = supabase.functions.invoke("renter-qr-upload", {
+      body: { action: "sign", id: assetId },
+    });
+    const { data, error } = await withTimeout(invoked, 8_000);
+    if (error) return null;
+    const result = data as {
+      success?: boolean;
+      signed_url?: string | null;
+      content_base64?: string | null;
+      mime_type?: string | null;
+    } | null;
+    if (!result?.success) return null;
+    return qrDisplaySrc(result);
+  } catch {
+    return null;
+  }
 }
 
 export async function rpcSubmitTopup(

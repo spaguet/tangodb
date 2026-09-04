@@ -18,6 +18,16 @@ vi.mock("../../lib/rpc", () => ({
   rpcDeleteHold: vi.fn(),
 }));
 
+vi.mock("../../lib/qrUrl", async () => {
+  const actual = await vi.importActual<typeof import("../../lib/qrUrl")>("../../lib/qrUrl");
+  return {
+    ...actual,
+    resolveOrgRentalQrUrl: vi.fn(async (_supabase: unknown, asset: { signed_url: string | null }) => {
+      return asset.signed_url;
+    }),
+  };
+});
+
 const supabase = {} as never;
 
 function mockLoadedMine(overrides?: {
@@ -243,5 +253,49 @@ describe("MineTab stage B surfaces", () => {
     await waitFor(() => {
       expect(screen.getByAltText("Новый QR").getAttribute("src")).toBe("https://qr.test/qr-new.png");
     });
+  });
+
+  it("renders an inline data URL from the QR sign function", async () => {
+    mockLoadedMine();
+    const dataUrl = "data:image/png;base64,iVBORw0KGgo=";
+    vi.mocked(rpc.rpcListActiveQr).mockResolvedValue([
+      {
+        id: "qr-1",
+        label: "VietQR",
+        signed_url: null,
+        storage_path: "org/qr-1",
+      },
+    ]);
+    vi.mocked(rpc.rpcGetRentalQrAccessUrl).mockResolvedValue(dataUrl);
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByAltText("VietQR").getAttribute("src")).toBe(dataUrl);
+    });
+  });
+
+  it("shows a broken QR message instead of spinning forever when sign fails", async () => {
+    mockLoadedMine();
+    vi.mocked(rpc.rpcListActiveQr).mockResolvedValue([
+      {
+        id: "qr-1",
+        label: "QR студии",
+        signed_url: null,
+        storage_path: "org/qr-1",
+      },
+    ]);
+    vi.mocked(rpc.rpcGetRentalQrAccessUrl).mockResolvedValue(null);
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Не удалось показать QR/i)).toBeTruthy();
+    });
+    expect(screen.queryByText("Загрузка…")).toBeNull();
   });
 });

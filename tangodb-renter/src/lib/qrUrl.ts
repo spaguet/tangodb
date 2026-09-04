@@ -14,6 +14,19 @@ export function absolutizeSignedUrl(url: string | null | undefined): string | nu
   return `${origin}/${raw}`;
 }
 
+export function qrDisplaySrc(input: {
+  signed_url?: string | null;
+  content_base64?: string | null;
+  mime_type?: string | null;
+}): string | null {
+  const b64 = input.content_base64?.replace(/\s/g, "") ?? "";
+  if (b64) {
+    const mime = input.mime_type?.trim() || "image/png";
+    return `data:${mime};base64,${b64}`;
+  }
+  return absolutizeSignedUrl(input.signed_url);
+}
+
 export async function resolveOrgRentalQrUrl(
   supabase: SupabaseClient,
   asset: Pick<QrAsset, "signed_url" | "storage_path">

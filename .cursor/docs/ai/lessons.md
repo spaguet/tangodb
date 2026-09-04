@@ -11,6 +11,13 @@
 
 ## Записи
 
+### 2026-09-04 — Mini App QR застревал на «Загрузка…»
+
+- **Дата:** 2026-09-04
+- **Ошибка:** В форме пополнения Mini App выбран активный QR студии, но картинка не появлялась — бесконечный текст «Загрузка…».
+- **Причина:** `renter-qr-upload` отвечал CORS только из `ALLOWED_ORIGINS` (CRM), origin Mini App (`RENTER_MINIAPP_ORIGIN`) отклонялся; SQL `_renter_qr_signed_url` на hosted часто `null` без `jwt_secret` GUC; `StudioQrPreview` заново вызывал sign при каждом обновлении списка и не останавливался, если URL так и не появился.
+- **Как избежать:** функции, которые вызывает и CRM, и Mini App — union CORS (`ALLOWED_ORIGINS` ∪ `RENTER_MINIAPP_ORIGIN`) и полный allow-list заголовков `functions.invoke`; для Telegram WebView отдавать QR inline (`data:` / base64), не только Storage signed URL; preview — одна попытка, затем ошибка, не вечный loading.
+
 ### 2026-09-04 — Mini App QR preview пропадал после замены QR
 
 - **Дата:** 2026-09-04

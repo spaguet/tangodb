@@ -4,10 +4,10 @@
  */
 
 import {
+  corsHeadersFor,
   getClientIp,
-  handleOptions,
-  jsonResponse,
 } from "../_shared/http.ts";
+import { renterMiniappCorsHeaders } from "../_shared/renterMiniappHttp.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient, createUserClient } from "../_shared/supabase.ts";
 
@@ -99,6 +99,51 @@ function decodeBase64(input: string): Uint8Array | null {
   }
 }
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+/** CRM settings (ALLOWED_ORIGINS) and Mini App (RENTER_MINIAPP_ORIGIN) both call this function. */
+function qrUploadCors(req: Request): HeadersInit | null {
+  return corsHeadersFor(req) ?? renterMiniappCorsHeaders(req);
+}
+
+function jsonResponse(
+  body: Record<string, unknown>,
+  status: number,
+  req: Request
+): Response {
+  const cors = qrUploadCors(req);
+  if (!cors) {
+    return new Response(JSON.stringify({ ...body, error: body.error ?? "origin_not_allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+function handleOptions(req: Request): Response {
+  const cors = qrUploadCors(req);
+  if (!cors) {
+    return new Response(null, { status: 403 });
+  }
+  return new Response("ok", {
+    headers: {
+      ...cors,
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+    },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions(req);
   if (req.method !== "POST") {
@@ -175,8 +220,27 @@ Deno.serve(async (req) => {
     if (signError || !signed?.signedUrl) {
       return jsonResponse({ error: "renter.qr.saveFailed" }, 400, req);
     }
+
+    let contentBase64: string | null = null;
+    let mimeType: string | null = null;
+    const { data: file, error: downloadError } = await admin.storage
+      .from("org-rental-qr")
+      .download(storagePath);
+    if (!downloadError && file) {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      contentBase64 = bytesToBase64(bytes);
+      mimeType = file.type || sniffMime(bytes) || "image/png";
+    }
+
     return jsonResponse(
-      { success: true, id: assetId, signed_url: signed.signedUrl, expires_in: SIGN_TTL_SEC },
+      {
+        success: true,
+        id: assetId,
+        signed_url: signed.signedUrl,
+        content_base64: contentBase64,
+        mime_type: mimeType,
+        expires_in: SIGN_TTL_SEC,
+      },
       200,
       req
     );
@@ -184,6 +248,11 @@ Deno.serve(async (req) => {
 
   if (canManage !== true) {
     return jsonResponse({ error: "Forbidden" }, 403, req);
+  }
+
+  const { data: orgId } = await userClient.rpc("auth_organization_id");
+  if (!orgId) {
+    return jsonResponse({ error: "Unauthorized" }, 401, req);
   }
 
   if (body.action === "delete") {

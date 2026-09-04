@@ -30,7 +30,7 @@ import {
 } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
 import { formatTopupAmount } from "../../lib/quoteBalance";
-import { qrDownloadFilename, resolveOrgRentalQrUrl } from "../../lib/qrUrl";
+import { absolutizeSignedUrl, qrDownloadFilename, resolveOrgRentalQrUrl } from "../../lib/qrUrl";
 import { copyText, downloadQrToDevice, openStudioChat, topupDraftMessage } from "../../lib/studioChat";
 import type { PendingTopup, QrAsset, RentalItem, WalletData, WalletEntry } from "../../lib/types";
 import {
@@ -101,9 +101,17 @@ export default function MineTab({
 
   const resolveQrAssetUrl = useCallback(
     async (asset: QrAsset): Promise<string | null> => {
-      const viaFunction = await rpcGetRentalQrAccessUrl(supabase, asset.id);
-      if (viaFunction) return viaFunction;
-      return resolveOrgRentalQrUrl(supabase, asset);
+      try {
+        const viaFunction = await rpcGetRentalQrAccessUrl(supabase, asset.id);
+        if (viaFunction) return viaFunction;
+      } catch {
+        /* fall through to Storage / RPC url */
+      }
+      try {
+        return await resolveOrgRentalQrUrl(supabase, asset);
+      } catch {
+        return absolutizeSignedUrl(asset.signed_url);
+      }
     },
     [supabase]
   );
@@ -860,56 +868,87 @@ type StudioQrPreviewProps = {
 
 function StudioQrPreview({ locale, asset, refreshUrl, onSaved }: StudioQrPreviewProps) {
   const [src, setSrc] = useState<string | null>(asset.signed_url);
-  const [loadingSrc, setLoadingSrc] = useState(false);
-  const [retryAfterError, setRetryAfterError] = useState(false);
+  const [phase, setPhase] = useState<"loading" | "ready" | "failed">(
+    asset.signed_url ? "ready" : "loading"
+  );
+  const imageRetryUsedRef = useRef(false);
+  const refreshUrlRef = useRef(refreshUrl);
+  const assetRef = useRef(asset);
+  refreshUrlRef.current = refreshUrl;
+  assetRef.current = asset;
 
   useEffect(() => {
-    setSrc(asset.signed_url);
-    setRetryAfterError(false);
+    if (asset.signed_url) {
+      setSrc(asset.signed_url);
+      setPhase("ready");
+    }
   }, [asset.id, asset.signed_url]);
 
-  const ensureUrl = useCallback(async () => {
-    setLoadingSrc(true);
-    try {
-      const next = await refreshUrl(asset);
-      setSrc(next);
-      return next;
-    } finally {
-      setLoadingSrc(false);
-    }
-  }, [asset, refreshUrl]);
-
   useEffect(() => {
-    if (src || loadingSrc) return;
-    void ensureUrl();
-  }, [src, loadingSrc, ensureUrl]);
+    if (asset.signed_url) return;
+    let cancelled = false;
+    setPhase("loading");
+    imageRetryUsedRef.current = false;
+    void refreshUrlRef.current(assetRef.current).then(
+      (next) => {
+        if (cancelled) return;
+        setSrc(next);
+        setPhase(next ? "ready" : "failed");
+      },
+      () => {
+        if (cancelled) return;
+        setSrc(null);
+        setPhase("failed");
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [asset.id, asset.signed_url]);
 
   const saveQr = async () => {
-    const downloadUrl = src ?? (await ensureUrl());
+    const downloadUrl =
+      src ??
+      (await refreshUrlRef.current(assetRef.current).then((next) => {
+        setSrc(next);
+        setPhase(next ? "ready" : "failed");
+        return next;
+      }));
     if (!downloadUrl) return;
     const ok = await downloadQrToDevice(downloadUrl, qrDownloadFilename(asset.label, asset.id));
     if (ok) onSaved();
   };
 
   const handleImageError = () => {
-    if (retryAfterError) {
+    if (src?.startsWith("data:") || imageRetryUsedRef.current) {
       setSrc(null);
+      setPhase("failed");
       return;
     }
-    setRetryAfterError(true);
-    void ensureUrl();
+    imageRetryUsedRef.current = true;
+    setPhase("loading");
+    void refreshUrlRef.current(assetRef.current).then(
+      (next) => {
+        setSrc(next);
+        setPhase(next ? "ready" : "failed");
+      },
+      () => {
+        setSrc(null);
+        setPhase("failed");
+      }
+    );
   };
 
   return (
     <div className="space-y-2">
-      {src ? (
+      {src && phase !== "failed" ? (
         <img
           src={src}
           alt={asset.label ?? t(locale, "topupMethodQr")}
           className="mx-auto max-h-48 w-auto rounded-lg border border-slate-200 bg-white p-2"
           onError={handleImageError}
         />
-      ) : loadingSrc ? (
+      ) : phase === "loading" ? (
         <p className="text-xs text-slate-500">{t(locale, "loading")}</p>
       ) : (
         <p className="text-xs text-amber-800">{t(locale, "topupQrBroken")}</p>

@@ -50,17 +50,7 @@ export async function copyText(value: string): Promise<boolean> {
   }
 }
 
-export async function downloadQrToDevice(url: string, fileName: string): Promise<boolean> {
-  const downloadFile = window.Telegram?.WebApp?.downloadFile;
-  if (downloadFile) {
-    return new Promise((resolve) => {
-      downloadFile({ url, file_name: fileName }, (status) => {
-        if (status === "success" || status === "downloading") resolve(true);
-        else resolve(false);
-      });
-    });
-  }
-
+function triggerAnchorDownload(url: string, fileName: string): boolean {
   try {
     const link = document.createElement("a");
     link.href = url;
@@ -71,7 +61,29 @@ export async function downloadQrToDevice(url: string, fileName: string): Promise
     document.body.removeChild(link);
     return true;
   } catch {
+    return false;
+  }
+}
+
+export async function downloadQrToDevice(url: string, fileName: string): Promise<boolean> {
+  if (url.startsWith("data:") || url.startsWith("blob:")) {
+    if (triggerAnchorDownload(url, fileName)) return true;
     window.open(url, "_blank", "noopener,noreferrer");
     return false;
   }
+
+  const downloadFile = window.Telegram?.WebApp?.downloadFile;
+  if (downloadFile) {
+    const ok = await new Promise<boolean>((resolve) => {
+      downloadFile({ url, file_name: fileName }, (status) => {
+        if (status === "success" || status === "downloading") resolve(true);
+        else resolve(false);
+      });
+    });
+    if (ok) return true;
+  }
+
+  if (triggerAnchorDownload(url, fileName)) return true;
+  window.open(url, "_blank", "noopener,noreferrer");
+  return false;
 }

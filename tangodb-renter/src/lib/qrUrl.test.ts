@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { absolutizeSignedUrl, qrDownloadFilename } from "./qrUrl";
+import { absolutizeSignedUrl, qrDisplaySrc, qrDownloadFilename } from "./qrUrl";
 
 describe("absolutizeSignedUrl", () => {
   it("keeps absolute https URLs", () => {
@@ -11,6 +11,27 @@ describe("absolutizeSignedUrl", () => {
   it("returns null for empty", () => {
     expect(absolutizeSignedUrl(null)).toBeNull();
     expect(absolutizeSignedUrl("  ")).toBeNull();
+  });
+});
+
+describe("qrDisplaySrc", () => {
+  it("prefers inline base64 over signed URL so Telegram WebView can render the image", () => {
+    expect(
+      qrDisplaySrc({
+        signed_url: "https://example.supabase.co/storage/v1/object/sign/x",
+        content_base64: "abc123",
+        mime_type: "image/jpeg",
+      })
+    ).toBe("data:image/jpeg;base64,abc123");
+  });
+
+  it("falls back to absolute signed URL", () => {
+    expect(
+      qrDisplaySrc({
+        signed_url: "https://example.supabase.co/storage/v1/object/sign/x",
+        content_base64: null,
+      })
+    ).toBe("https://example.supabase.co/storage/v1/object/sign/x");
   });
 });
 
