@@ -70,7 +70,7 @@ import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "../ui/AppS
 import { btnAddCls } from "../ui/buttonStyles";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import LoadingState from "../ui/LoadingState";
-import PageTabs, { pageTabPanelCls } from "../ui/PageTabs";
+import SectionPillNav, { type SectionPillNavItem } from "../ui/SectionPillNav";
 import QueryErrorState from "../ui/QueryErrorState";
 
 interface RenterDetailPanelProps {
@@ -171,8 +171,8 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
     [locationsQuery.data]
   );
 
-  const tabs: import("../ui/PageTabs").PageTabItem[] = useMemo(() => {
-    const items: import("../ui/PageTabs").PageTabItem[] = [
+  const tabs: SectionPillNavItem[] = useMemo(() => {
+    const items: SectionPillNavItem[] = [
       { id: "overview", label: t("renters.detail.overview"), icon: LayoutGrid },
       { id: "rentals", label: t("renters.detail.rentals"), icon: Building2 },
     ];
@@ -252,9 +252,9 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
         </p>
       </div>
 
-      <PageTabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as DetailTab)} />
+      <SectionPillNav items={tabs} activeId={activeTab} onChange={(tab) => setActiveTab(tab as DetailTab)} />
 
-      <div className={`bg-white border border-slate-200 shadow-xs p-4 ${pageTabPanelCls(activeTab, tabs[0]?.id ?? "overview")}`}>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4">
         {activeTab === "overview" ? (
           <OverviewTab
             renter={renter}
