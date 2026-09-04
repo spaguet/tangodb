@@ -100,18 +100,43 @@ export default function MineTab({
   }, [bootstrap.displayName, bootstrap.contactPhone]);
 
   const resolveQrAssetUrl = useCallback(
-    async (asset: QrAsset): Promise<string | null> => {
+    async (asset: QrAsset): Promise<Pick<QrAsset, "signed_url" | "download_url">> => {
+      const asHttps = (url: string | null | undefined): string | null => {
+        const raw = url?.trim() ?? "";
+        return /^https:\/\//i.test(raw) ? raw : null;
+      };
+
+      let edgeDisplay: string | null = null;
+      let edgeDownload: string | null = null;
       try {
         const viaFunction = await rpcGetRentalQrAccessUrl(supabase, asset.id);
-        if (viaFunction) return viaFunction;
+        edgeDisplay = viaFunction?.displaySrc ?? null;
+        edgeDownload = viaFunction?.downloadUrl ?? null;
       } catch {
         /* fall through to Storage / RPC url */
       }
-      try {
-        return await resolveOrgRentalQrUrl(supabase, asset);
-      } catch {
-        return absolutizeSignedUrl(asset.signed_url);
+
+      const httpsFromEdge = asHttps(edgeDownload) ?? asHttps(edgeDisplay);
+      if (httpsFromEdge) {
+        return { signed_url: httpsFromEdge, download_url: httpsFromEdge };
       }
+
+      try {
+        const signed = await resolveOrgRentalQrUrl(supabase, asset);
+        const https = asHttps(signed);
+        if (https) return { signed_url: https, download_url: https };
+        if (signed) return { signed_url: signed, download_url: null };
+      } catch {
+        /* fall through */
+      }
+
+      if (edgeDisplay) {
+        return { signed_url: edgeDisplay, download_url: null };
+      }
+
+      const signed = absolutizeSignedUrl(asset.signed_url);
+      const https = asHttps(signed);
+      return { signed_url: signed, download_url: https };
     },
     [supabase]
   );
@@ -161,7 +186,7 @@ export default function MineTab({
           const resolved = await Promise.all(
             assets.map(async (asset) => ({
               ...asset,
-              signed_url: await resolveQrAssetUrl(asset),
+              ...(await resolveQrAssetUrl(asset)),
             }))
           );
           setQrs(resolved);
@@ -287,8 +312,10 @@ export default function MineTab({
   const refreshQrUrl = useCallback(
     async (asset: QrAsset): Promise<string | null> => {
       const next = await resolveQrAssetUrl(asset);
-      setQrs((prev) => prev.map((item) => (item.id === asset.id ? { ...item, signed_url: next } : item)));
-      return next;
+      setQrs((prev) =>
+        prev.map((item) => (item.id === asset.id ? { ...item, ...next } : item))
+      );
+      return next.signed_url;
     },
     [resolveQrAssetUrl]
   );
@@ -539,6 +566,7 @@ export default function MineTab({
                   asset={q}
                   refreshUrl={refreshQrUrl}
                   onSaved={() => setTopupMsg(t(locale, "topupQrSaved"))}
+                  onSaveFailed={() => setError(t(locale, "topupQrSaveFailed"))}
                 />
               ) : null
             )}
@@ -864,9 +892,10 @@ type StudioQrPreviewProps = {
   asset: QrAsset;
   refreshUrl: (asset: QrAsset) => Promise<string | null>;
   onSaved: () => void;
+  onSaveFailed: () => void;
 };
 
-function StudioQrPreview({ locale, asset, refreshUrl, onSaved }: StudioQrPreviewProps) {
+function StudioQrPreview({ locale, asset, refreshUrl, onSaved, onSaveFailed }: StudioQrPreviewProps) {
   const [src, setSrc] = useState<string | null>(asset.signed_url);
   const [phase, setPhase] = useState<"loading" | "ready" | "failed">(
     asset.signed_url ? "ready" : "loading"
@@ -907,16 +936,25 @@ function StudioQrPreview({ locale, asset, refreshUrl, onSaved }: StudioQrPreview
   }, [asset.id, asset.signed_url]);
 
   const saveQr = async () => {
-    const downloadUrl =
+    const displaySrc =
       src ??
       (await refreshUrlRef.current(assetRef.current).then((next) => {
         setSrc(next);
         setPhase(next ? "ready" : "failed");
         return next;
       }));
-    if (!downloadUrl) return;
-    const ok = await downloadQrToDevice(downloadUrl, qrDownloadFilename(asset.label, asset.id));
+    if (!displaySrc) {
+      onSaveFailed();
+      return;
+    }
+    const current = assetRef.current;
+    const ok = await downloadQrToDevice(
+      displaySrc,
+      qrDownloadFilename(current.label, current.id),
+      current.download_url
+    );
     if (ok) onSaved();
+    else onSaveFailed();
   };
 
   const handleImageError = () => {

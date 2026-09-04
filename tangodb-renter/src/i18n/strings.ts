@@ -83,6 +83,7 @@ const messages = {
     topupOpenChat: "Открыть чат и вставить текст",
     topupSaveQr: "Сохранить QR",
     topupQrSaved: "QR сохранён на устройство",
+    topupQrSaveFailed: "Не удалось сохранить QR. Разрешите загрузку файлов в Telegram и повторите.",
     topupQrBroken: "Не удалось показать QR. Сохраните макет в настройках студии или выберите другой.",
     topupReceiptHint:
       "Оплатите по QR, отправьте заявку — откроется чат с кодом заявки. Вставьте текст и приложите чек.",
@@ -248,6 +249,7 @@ const messages = {
     topupOpenChat: "Open chat and paste the text",
     topupSaveQr: "Save QR",
     topupQrSaved: "QR saved to the device",
+    topupQrSaveFailed: "Could not save the QR. Allow file downloads in Telegram and try again.",
     topupQrBroken: "Could not show the QR. Ask the studio to re-upload it, or pick another.",
     topupReceiptHint:
       "Pay via QR, submit the request — the chat opens with your request code. Paste the text and attach the receipt.",

@@ -11,6 +11,13 @@
 
 ## Записи
 
+### 2026-09-04 — Mini App QR: не тот макет и «Сохранить» ничего не писало на диск
+
+- **Дата:** 2026-09-04
+- **Ошибка:** В кабинете арендатора показывался не тот QR, что студия загрузила в CRM; кнопка «Сохранить QR» не сохраняла файл.
+- **Причина:** preview предпочитал Edge `content_base64` (перекодировка могла исказить картинку) вместо Storage signed URL, которым пользуется CRM; `Telegram.WebApp.downloadFile` принимает только HTTPS с домена Mini App, а `data:`/`supabase.co` + ложный success у `<a download>` в WebView ничего не сохраняли.
+- **Как избежать:** для превью брать тот же signed URL, что CRM; для Telegram download — same-origin proxy (`/api/qr-file`) с allowlist только `org-rental-qr` signed URL; success только из callback `downloadFile`, не из `click()` якоря.
+
 ### 2026-09-04 — Mini App QR застревал на «Загрузка…»
 
 - **Дата:** 2026-09-04

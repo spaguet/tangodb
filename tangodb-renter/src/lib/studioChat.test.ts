@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { topupDraftMessage } from "./studioChat";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { downloadQrToDevice, topupDraftMessage } from "./studioChat";
 
 describe("topupDraftMessage", () => {
   it("includes correlation code and QR wording in Russian", () => {
@@ -49,5 +49,55 @@ describe("topupDraftMessage", () => {
     });
     expect(text.toLowerCase()).toContain("receipt");
     expect(text).toContain("TDB-1A2B");
+  });
+});
+
+describe("downloadQrToDevice", () => {
+  const signed = "https://x.supabase.co/storage/v1/object/sign/org-rental-qr/a?token=1";
+
+  afterEach(() => {
+    delete window.Telegram;
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("uses Telegram downloadFile with a same-origin proxy URL", async () => {
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { origin: "https://tangodb-renter.vercel.app" },
+    });
+    const downloadFile = vi.fn(
+      (_params: { url: string; file_name: string }, cb?: (status: "downloading") => void) => {
+        cb?.("downloading");
+      }
+    );
+    window.Telegram = { WebApp: { downloadFile } } as never;
+
+    await expect(downloadQrToDevice("https://ignored.example/x.png", "qr.png", signed)).resolves.toBe(true);
+    expect(downloadFile).toHaveBeenCalledTimes(1);
+    const url = String(downloadFile.mock.calls[0]?.[0]?.url ?? "");
+    const parsed = new URL(url);
+    expect(parsed.origin).toBe("https://tangodb-renter.vercel.app");
+    expect(parsed.pathname).toBe("/api/qr-file");
+    expect(parsed.searchParams.get("u")).toBe(signed);
+    expect(parsed.searchParams.get("name")).toBe("qr.png");
+  });
+
+  it("does not treat an in-Telegram cancel as a successful save", async () => {
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { origin: "https://tangodb-renter.vercel.app" },
+    });
+    const downloadFile = vi.fn(
+      (_params: { url: string; file_name: string }, cb?: (status: "cancelled") => void) => {
+        cb?.("cancelled");
+      }
+    );
+    window.Telegram = { WebApp: { downloadFile } } as never;
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await expect(downloadQrToDevice(signed, "qr.png", signed)).resolves.toBe(false);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

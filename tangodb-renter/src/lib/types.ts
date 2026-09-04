@@ -114,4 +114,5 @@ export type QrAsset = {
   label: string | null;
   signed_url: string | null;
   storage_path: string | null;
+  download_url?: string | null;
 };

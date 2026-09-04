@@ -7,6 +7,7 @@ const SIGN_TTL_SEC = 300;
 export function absolutizeSignedUrl(url: string | null | undefined): string | null {
   const raw = url?.trim() ?? "";
   if (!raw) return null;
+  if (/^(data|blob):/i.test(raw)) return null;
   if (/^https?:\/\//i.test(raw)) return raw;
   const origin = getSupabaseConfig().url.replace(/\/$/, "");
   if (!origin) return null;
@@ -19,12 +20,19 @@ export function qrDisplaySrc(input: {
   content_base64?: string | null;
   mime_type?: string | null;
 }): string | null {
+  const signed = absolutizeSignedUrl(input.signed_url);
+  if (signed) return signed;
   const b64 = input.content_base64?.replace(/\s/g, "") ?? "";
   if (b64) {
     const mime = input.mime_type?.trim() || "image/png";
     return `data:${mime};base64,${b64}`;
   }
-  return absolutizeSignedUrl(input.signed_url);
+  return null;
+}
+
+export function qrHttpsDownloadUrl(input: { signed_url?: string | null }): string | null {
+  const signed = absolutizeSignedUrl(input.signed_url);
+  return signed && /^https:\/\//i.test(signed) ? signed : null;
 }
 
 export async function resolveOrgRentalQrUrl(

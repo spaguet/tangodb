@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { qrDisplaySrc } from "./qrUrl";
+import { qrDisplaySrc, qrHttpsDownloadUrl } from "./qrUrl";
 import type {
   LocationRow,
   OccupancyData,
@@ -240,10 +240,15 @@ export async function rpcListActiveQr(supabase: SupabaseClient): Promise<QrAsset
   }));
 }
 
+export type RentalQrAccess = {
+  displaySrc: string | null;
+  downloadUrl: string | null;
+};
+
 export async function rpcGetRentalQrAccessUrl(
   supabase: SupabaseClient,
   assetId: string
-): Promise<string | null> {
+): Promise<RentalQrAccess | null> {
   try {
     const invoked = supabase.functions.invoke("renter-qr-upload", {
       body: { action: "sign", id: assetId },
@@ -257,7 +262,10 @@ export async function rpcGetRentalQrAccessUrl(
       mime_type?: string | null;
     } | null;
     if (!result?.success) return null;
-    return qrDisplaySrc(result);
+    return {
+      displaySrc: qrDisplaySrc(result),
+      downloadUrl: qrHttpsDownloadUrl(result),
+    };
   } catch {
     return null;
   }

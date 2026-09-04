@@ -1,3 +1,5 @@
+2026-09-04 — fix(hall-rent): микропатч **2.9.65** — Mini App показывает тот же Storage signed URL QR, что и CRM (не перекодированный base64); «Сохранить QR» качает через same-origin `/api/qr-file` + `Telegram.WebApp.downloadFile` (data: URL Telegram не сохраняет). Тесты `qrProxy` / `MineTab` / `qrUrl`.
+
 2026-09-04 — fix(hall-rent): микропатч **2.9.64** — QR студии в Mini App: Edge `renter-qr-upload` CORS для origin кабинета (`RENTER_MINIAPP_ORIGIN`) плюс CRM; `action=sign` отдаёт `content_base64` для `<img data:>`; preview больше не крутит «Загрузка…» бесконечно. Тесты `MineTab` / `qrUrl` / Deno `renterMiniappHttp_test`.
 
 2026-09-04 — fix(hall-rent): Mini App top-up QR preview больше не пропадает после замены/переактивации QR в студии: выбранный `topupQrId` синхронизируется с текущим списком active QR, stale id сбрасывается на первый доступный asset. Unit-тест `MineTab` покрывает смену active QR.
