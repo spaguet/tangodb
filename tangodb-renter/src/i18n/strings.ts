@@ -80,15 +80,24 @@ const messages = {
     topupMethodQr: "QR студии",
     topupMethodCash: "Наличные",
     topupSubmit: "Отправить заявку в CRM",
-    topupOpenChat: "Открыть чат и вставить текст",
+    topupSubmitting: "Отправка…",
+    topupOpenChat: "Отправить чек / написать администратору",
+    topupSubmittedTitle: "Заявка отправлена",
+    topupSubmittedCode: "Код заявки: {code}",
+    topupSubmittedQrBody:
+      "Заявка принята в CRM. Оплатите по QR студии и отправьте чек администратору в Telegram. Если платите наличными — напишите об этом в чат.",
+    topupSubmittedCashBody:
+      "Заявка принята в CRM. Напишите администратору в Telegram об оплате наличными или отправьте чек, если уже перевели.",
+    topupSubmittedDone: "Готово",
+    topupAmountRequired: "Укажите сумму для пополнения баланса.",
     topupSaveQr: "Сохранить QR",
     topupQrSaved: "QR сохранён на устройство",
     topupQrSaveFailed: "Не удалось сохранить QR. Разрешите загрузку файлов в Telegram и повторите.",
     topupQrBroken: "Не удалось показать QR. Сохраните макет в настройках студии или выберите другой.",
     topupReceiptHint:
-      "Оплатите по QR, отправьте заявку — откроется чат с кодом заявки. Вставьте текст и приложите чек.",
+      "Оплатите по QR студии, укажите сумму и нажмите «Отправить заявку в CRM». Затем отправьте чек администратору в Telegram.",
     topupCashHint:
-      "Отправьте заявку — оплатите наличными в студии. После приёма денег студия зачислит баланс в CRM.",
+      "Укажите сумму и отправьте заявку. Затем сообщите администратору об оплате наличными в Telegram.",
     topupCopied: "Текст скопирован — вставьте его в чат и приложите чек.",
     topupSuccess:
       "Заявка создана. Код {code}. Откройте чат студии и отправьте текст с чеком, если ещё не отправили.",
@@ -246,15 +255,24 @@ const messages = {
     topupMethodQr: "Studio QR",
     topupMethodCash: "Cash",
     topupSubmit: "Submit CRM request",
-    topupOpenChat: "Open chat and paste the text",
+    topupSubmitting: "Submitting…",
+    topupOpenChat: "Send receipt / message admin",
+    topupSubmittedTitle: "Request submitted",
+    topupSubmittedCode: "Request code: {code}",
+    topupSubmittedQrBody:
+      "Your request is in CRM. Pay via the studio QR and send the receipt to the admin in Telegram. For cash, let them know in the chat.",
+    topupSubmittedCashBody:
+      "Your request is in CRM. Message the admin in Telegram about cash payment or attach a receipt if you already transferred.",
+    topupSubmittedDone: "Done",
+    topupAmountRequired: "Enter the amount you want to top up.",
     topupSaveQr: "Save QR",
     topupQrSaved: "QR saved to the device",
     topupQrSaveFailed: "Could not save the QR. Allow file downloads in Telegram and try again.",
     topupQrBroken: "Could not show the QR. Ask the studio to re-upload it, or pick another.",
     topupReceiptHint:
-      "Pay via QR, submit the request — the chat opens with your request code. Paste the text and attach the receipt.",
+      "Pay via the studio QR, enter the amount, and tap Submit CRM request. Then send the receipt to the admin in Telegram.",
     topupCashHint:
-      "Submit the request and pay cash at the studio. Staff will credit the wallet in CRM after receiving payment.",
+      "Enter the amount and submit the request. Then message the admin in Telegram about paying cash.",
     topupCopied: "Text copied — paste it in the chat and attach the receipt.",
     topupSuccess:
       "Request created. Code {code}. Open the studio chat and send the text with receipt if you have not yet.",

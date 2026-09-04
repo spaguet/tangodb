@@ -49,6 +49,12 @@ function mockLoadedMine(overrides?: {
 describe("MineTab stage B surfaces", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(qrUrl.resolveOrgRentalQrUrl).mockImplementation(
+      async (_supabase: unknown, asset: { storage_path: string | null }) => {
+        if (!asset.storage_path) return null;
+        return `https://example.supabase.co/storage/v1/object/sign/org-rental-qr/${asset.storage_path}`;
+      }
+    );
   });
 
   it("renders pending top-up request card", async () => {
@@ -381,6 +387,54 @@ describe("MineTab stage B surfaces", () => {
 
     await waitFor(() => {
       expect(screen.getByAltText("VietQR").getAttribute("src")).toBe(edgeSigned);
+    });
+  });
+
+  it("shows hint when submitting top-up without amount", async () => {
+    mockLoadedMine();
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Отправить заявку/i })).toBeTruthy();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /Отправить заявку/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Укажите сумму для пополнения баланса/i)).toBeTruthy();
+    });
+    expect(rpc.rpcSubmitTopup).not.toHaveBeenCalled();
+  });
+
+  it("shows popup after successful top-up submit", async () => {
+    mockLoadedMine();
+    vi.mocked(rpc.rpcSubmitTopup).mockResolvedValue({
+      id: "topup-1",
+      amount: 250000,
+      correlation_code: "TDB-ABC",
+    });
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Сумма/i)).toBeTruthy();
+    });
+
+    await userEvent.type(screen.getByPlaceholderText(/Сумма/i), "250000");
+    await userEvent.click(screen.getByRole("button", { name: /Отправить заявку/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Заявка отправлена")).toBeTruthy();
+    });
+    expect(screen.getByText(/TDB-ABC/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Отправить чек/i })).toBeTruthy();
+    expect(rpc.rpcSubmitTopup).toHaveBeenCalledWith(supabase, {
+      amount: 250000,
+      method: "cash",
     });
   });
 });

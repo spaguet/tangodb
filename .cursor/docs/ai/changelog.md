@@ -44,6 +44,8 @@
 
 2026-09-03 — feat(hall-rent): микропатч **2.9.49** — FC1 / P1-03 слой 1, P2-01/02/06/18/28, P3-02: correlation code `TDB-XXXX` при создании pending; код в тексте чата, inbox и поиске; убран QR preview из строк inbox; default метод QR при активном макете; cash без «чек во вложении»; убрана недоказуемая галочка «чек отправлен»; чат не открывается повторно с тем же текстом. Миграция `20261067000001`. Тест `renter_miniapp_fc1_correlation_code_test.sql` + unit `studioChat`.
 
+2026-09-04 — fix(hall-rent): Mini App — пополнение: подсказка при пустой сумме; после «Отправить заявку в CRM» popup с чатом администратора (вместо автооткрытия до отправки); QR — fallback на inline base64 при недоступном signed URL.
+
 2026-09-03 — test(hall-rent): FB8 / P2-12 — component/integration тесты UX этапа B в `tangodb-renter`: `QuoteSummary` (shortage/CTA), `BookingSheet` (result + top-up), `PackSheet` (weekday sync), `MineTab` (pending, prefill, profile, cancellation), `useVisibilityRefetch`. Vitest + happy-dom + Testing Library; 63 теста зелёные. Этап B закрыт.
 
 2026-09-03 — fix(hall-rent): микропатч **2.9.48** — FB7 / P2-05, P2-11, P2-13, P2-15…17, P2-19…21: Mini App — навигация недели только chips+заголовок; read-only баннер ban/debt на расписании с CTA погашения; клик своего слота → scroll/highlight карточки в «Мои записи»; прошлые и <1 ч слоты disabled на клиенте; `mine_debt` на сетке + легенда; empty state без залов; org header со `studioName`; dead code (`EntryScreen` ready, `parseTelegramLanguage`, `bookingSuccess`/`packSuccess`); `packScope` без мутации weekdays. `renter_bootstrap.booking_banned`. Миграция `20261066000001`. Unit-тесты `idempotency`, `orgTime`, `occupancyMerge`.

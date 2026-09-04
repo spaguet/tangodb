@@ -19,7 +19,7 @@ describe("absolutizeSignedUrl", () => {
 });
 
 describe("qrDisplaySrc", () => {
-  it("returns only the Storage signed URL (never inline base64)", () => {
+  it("prefers the Storage signed URL over inline base64", () => {
     expect(
       qrDisplaySrc({
         signed_url: "https://example.supabase.co/storage/v1/object/sign/x",
@@ -27,13 +27,16 @@ describe("qrDisplaySrc", () => {
         mime_type: "image/jpeg",
       })
     ).toBe("https://example.supabase.co/storage/v1/object/sign/x");
+  });
+
+  it("falls back to inline base64 when no signed URL", () => {
     expect(
       qrDisplaySrc({
         signed_url: null,
         content_base64: "abc123",
         mime_type: "image/png",
       })
-    ).toBeNull();
+    ).toBe("data:image/png;base64,abc123");
   });
 });
 

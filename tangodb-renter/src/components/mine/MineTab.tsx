@@ -31,6 +31,7 @@ import {
 import { rpcErrorKey } from "../../lib/rpcErrors";
 import { formatTopupAmount } from "../../lib/quoteBalance";
 import { qrDownloadFilename, resolveOrgRentalQrUrl } from "../../lib/qrUrl";
+import { isStudioQrSignedUrl } from "../../lib/qrProxy";
 import { copyText, downloadQrToDevice, openStudioChat, topupDraftMessage } from "../../lib/studioChat";
 import type { PendingTopup, QrAsset, RentalItem, WalletData, WalletEntry } from "../../lib/types";
 import {
@@ -76,6 +77,13 @@ export default function MineTab({
   const [topupMethod, setTopupMethod] = useState<"qr" | "cash">("cash");
   const [topupQrId, setTopupQrId] = useState("");
   const [topupMsg, setTopupMsg] = useState<string | null>(null);
+  const [topupMsgIsError, setTopupMsgIsError] = useState(false);
+  const [topupSubmitting, setTopupSubmitting] = useState(false);
+  const [topupSubmitted, setTopupSubmitted] = useState<{
+    correlationCode: string;
+    amountLabel: string;
+    method: "qr" | "cash";
+  } | null>(null);
   const lastOpenedChatMessageRef = useRef<string | null>(null);
 
   const [displayName, setDisplayName] = useState(bootstrap.displayName);
@@ -101,14 +109,27 @@ export default function MineTab({
 
   const resolveQrAssetUrl = useCallback(
     async (asset: QrAsset): Promise<Pick<QrAsset, "signed_url" | "download_url">> => {
-      const asHttps = (url: string | null | undefined): string | null => {
+      const asDisplayUrl = (url: string | null | undefined): string | null => {
         const raw = url?.trim() ?? "";
-        return /^https:\/\//i.test(raw) ? raw : null;
+        if (/^https:\/\//i.test(raw)) return raw;
+        if (/^data:image\//i.test(raw)) return raw;
+        return null;
       };
+
+      const isTrustedDisplayUrl = (url: string | null | undefined): string | null => {
+        const display = asDisplayUrl(url);
+        if (!display) return null;
+        if (/^data:image\//i.test(display)) return display;
+        return isStudioQrSignedUrl(display) ? display : null;
+      };
+
+      const cached =
+        isTrustedDisplayUrl(asset.signed_url) ?? isTrustedDisplayUrl(asset.download_url);
+      if (cached) return { signed_url: cached, download_url: cached };
 
       try {
         const signed = await resolveOrgRentalQrUrl(supabase, asset);
-        const https = asHttps(signed);
+        const https = asDisplayUrl(signed);
         if (https) return { signed_url: https, download_url: https };
       } catch {
         /* fall through */
@@ -116,8 +137,9 @@ export default function MineTab({
 
       try {
         const viaFunction = await rpcGetRentalQrAccessUrl(supabase, asset.id);
-        const https = asHttps(viaFunction?.downloadUrl ?? viaFunction?.displaySrc);
-        if (https) return { signed_url: https, download_url: https };
+        const display = asDisplayUrl(viaFunction?.displaySrc);
+        const download = asDisplayUrl(viaFunction?.downloadUrl) ?? display;
+        if (display) return { signed_url: display, download_url: download };
       } catch {
         /* fall through */
       }
@@ -306,41 +328,54 @@ export default function MineTab({
     [resolveQrAssetUrl]
   );
 
-  const openChatWithDraft = async (amountLabel: string) => {
-    await openChatWithMessage(draftForAmount(amountLabel));
-  };
-
   const submitTopup = async () => {
     setTopupMsg(null);
+    setTopupMsgIsError(false);
     setError(null);
     const amount = Number(topupAmount.replace(",", "."));
-    const amountLabel = Number.isFinite(amount)
-      ? formatMoney(amount, bootstrap.currencyCode, locale)
-      : topupAmount;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setTopupMsgIsError(true);
+      setTopupMsg(t(locale, "topupAmountRequired"));
+      return;
+    }
+    const amountLabel = formatMoney(amount, bootstrap.currencyCode, locale);
     if (topupMethod === "qr" && !bootstrap.chatUrl) {
       setError(t(locale, "topupNeedChat"));
       return;
     }
+    if (topupMethod === "qr" && !topupQrId) {
+      setTopupMsgIsError(true);
+      setTopupMsg(t(locale, "topupQrInvalid"));
+      return;
+    }
+    setTopupSubmitting(true);
     try {
       const result = await rpcSubmitTopup(supabase, {
         amount,
         method: topupMethod,
         ...(topupMethod === "qr" ? { qr_asset_id: topupQrId } : {}),
       });
-      setTopupMsg(tFill(locale, "topupSuccess", { code: result.correlation_code }));
       setTopupAmount("");
+      lastOpenedChatMessageRef.current = null;
+      setTopupSubmitted({
+        correlationCode: result.correlation_code,
+        amountLabel,
+        method: topupMethod,
+      });
       await load("refresh");
-      if (topupMethod === "qr" && bootstrap.chatUrl) {
-        const message = draftForAmount(amountLabel, result.correlation_code);
-        await openChatWithMessage(message);
-      }
     } catch (err) {
       const key = rpcErrorKey(err);
       setError(t(locale, key));
-      if (key === "topupPendingExists" && bootstrap.chatUrl && topupMethod === "qr") {
-        await openChatWithDraft(amountLabel);
-      }
+    } finally {
+      setTopupSubmitting(false);
     }
+  };
+
+  const openSubmittedTopupChat = async () => {
+    if (!topupSubmitted) return;
+    const message = draftForAmount(topupSubmitted.amountLabel, topupSubmitted.correlationCode);
+    const opened = await openChatWithMessage(message);
+    if (opened) setTopupSubmitted(null);
   };
 
   const manualRefresh = () => {
@@ -559,32 +594,23 @@ export default function MineTab({
             <p className="text-xs leading-relaxed text-slate-600">
               {t(locale, topupMethod === "qr" ? "topupReceiptHint" : "topupCashHint")}
             </p>
-            {bootstrap.chatUrl && topupMethod === "qr" ? (
-              <button
-                type="button"
-                className={`w-full ${btnPrimaryCls}`}
-                onClick={() => {
-                  const amount = Number(topupAmount.replace(",", "."));
-                  const amountLabel = Number.isFinite(amount) && amount > 0
-                    ? formatMoney(amount, currency, locale)
-                    : topupAmount.trim() || t(locale, "topupAmount");
-                  void openChatWithDraft(amountLabel);
-                }}
-              >
-                {t(locale, "topupOpenChat")}
-              </button>
-            ) : topupMethod === "qr" ? (
-              <p className="text-xs leading-relaxed text-amber-800">{t(locale, "topupNeedChat")}</p>
-            ) : null}
             <button
               type="button"
               className={`w-full ${btnSecondaryCls}`}
               onClick={() => void submitTopup()}
-              disabled={Boolean(pendingTopup)}
+              disabled={Boolean(pendingTopup) || topupSubmitting}
             >
-              {t(locale, "topupSubmit")}
+              {topupSubmitting ? t(locale, "topupSubmitting") : t(locale, "topupSubmit")}
             </button>
-            {topupMsg ? <p className="text-xs font-medium text-indigo-600">{topupMsg}</p> : null}
+            {topupMsg ? (
+              <p
+                className={`text-xs font-medium ${
+                  topupMsgIsError ? "text-amber-800" : "text-indigo-600"
+                }`}
+              >
+                {topupMsg}
+              </p>
+            ) : null}
           </>
         )}
       </section>
@@ -620,6 +646,64 @@ export default function MineTab({
           </div>
         </details>
       </section>
+
+      {topupSubmitted ? (
+        <TopupSubmittedSheet
+          locale={locale}
+          submitted={topupSubmitted}
+          chatUrl={bootstrap.chatUrl}
+          onOpenChat={() => void openSubmittedTopupChat()}
+          onClose={() => setTopupSubmitted(null)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+type TopupSubmittedSheetProps = {
+  locale: Locale;
+  submitted: { correlationCode: string; amountLabel: string; method: "qr" | "cash" };
+  chatUrl: string | null;
+  onOpenChat: () => void;
+  onClose: () => void;
+};
+
+function TopupSubmittedSheet({
+  locale,
+  submitted,
+  chatUrl,
+  onOpenChat,
+  onClose,
+}: TopupSubmittedSheetProps) {
+  const bodyKey = submitted.method === "qr" ? "topupSubmittedQrBody" : "topupSubmittedCashBody";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-semibold text-slate-900">{t(locale, "topupSubmittedTitle")}</h2>
+        <p className="text-sm font-semibold text-indigo-700">
+          {tFill(locale, "topupSubmittedCode", { code: submitted.correlationCode })}
+        </p>
+        <p className="text-sm leading-relaxed text-slate-600">{t(locale, bodyKey)}</p>
+        {chatUrl ? (
+          <button type="button" className={`w-full ${btnPrimaryCls}`} onClick={onOpenChat}>
+            {t(locale, "topupOpenChat")}
+          </button>
+        ) : (
+          <p className="text-xs leading-relaxed text-amber-800">{t(locale, "topupNeedChat")}</p>
+        )}
+        <button type="button" className={`w-full ${btnSecondaryCls}`} onClick={onClose}>
+          {t(locale, "topupSubmittedDone")}
+        </button>
+      </div>
     </div>
   );
 }
@@ -882,8 +966,16 @@ type StudioQrPreviewProps = {
 };
 
 function StudioQrPreview({ locale, asset, refreshUrl, onSaved, onSaveFailed }: StudioQrPreviewProps) {
-  const [src, setSrc] = useState<string | null>(null);
-  const [phase, setPhase] = useState<"loading" | "ready" | "failed">("loading");
+  const trustedInitialSrc = (() => {
+    const raw = asset.signed_url?.trim() ?? asset.download_url?.trim() ?? "";
+    if (/^data:image\//i.test(raw)) return raw;
+    if (/^https:\/\//i.test(raw) && isStudioQrSignedUrl(raw)) return raw;
+    return null;
+  })();
+  const [src, setSrc] = useState<string | null>(trustedInitialSrc);
+  const [phase, setPhase] = useState<"loading" | "ready" | "failed">(
+    trustedInitialSrc ? "ready" : "loading"
+  );
   const imageRetryUsedRef = useRef(false);
   const refreshUrlRef = useRef(refreshUrl);
   const assetRef = useRef(asset);
@@ -891,6 +983,18 @@ function StudioQrPreview({ locale, asset, refreshUrl, onSaved, onSaveFailed }: S
   assetRef.current = asset;
 
   useEffect(() => {
+    const raw = asset.signed_url?.trim() ?? asset.download_url?.trim() ?? "";
+    const cached =
+      /^data:image\//i.test(raw)
+        ? raw
+        : /^https:\/\//i.test(raw) && isStudioQrSignedUrl(raw)
+          ? raw
+          : null;
+    if (cached) {
+      setSrc(cached);
+      setPhase("ready");
+      return;
+    }
     let cancelled = false;
     setPhase("loading");
     imageRetryUsedRef.current = false;
@@ -909,7 +1013,7 @@ function StudioQrPreview({ locale, asset, refreshUrl, onSaved, onSaveFailed }: S
     return () => {
       cancelled = true;
     };
-  }, [asset.id, asset.signed_url, asset.storage_path]);
+  }, [asset.id, asset.signed_url, asset.storage_path, asset.download_url]);
 
   const saveQr = async () => {
     const displaySrc =
