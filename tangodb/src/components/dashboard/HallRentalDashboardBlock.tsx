@@ -27,6 +27,15 @@ export default function HallRentalDashboardBlock() {
     return `${Math.round(stats.topupConversionRate * 100)}%`;
   }, [stats]);
 
+  const conversionHint = useMemo(() => {
+    if (!stats || stats.topupSubmitted <= 0) return "";
+    return t("dashboard.hallRental.conversionHint", {
+      confirmed: stats.topupConfirmed,
+      rejected: stats.topupRejected,
+      submitted: stats.topupSubmitted,
+    });
+  }, [stats, t]);
+
   if (statsQuery.isError) {
     return (
       <QueryErrorState
@@ -139,11 +148,7 @@ export default function HallRentalDashboardBlock() {
           label={t("dashboard.hallRental.conversion")}
           loading={statsQuery.isLoading}
           value={conversionLabel}
-          hint={t("dashboard.hallRental.conversionHint", {
-            confirmed: stats?.topupConfirmed ?? 0,
-            rejected: stats?.topupRejected ?? 0,
-            submitted: stats?.topupSubmitted ?? 0,
-          })}
+          hint={conversionHint}
         />
       </div>
     </div>
@@ -160,7 +165,7 @@ function StatCard({
 }: {
   label: string;
   value: string;
-  hint: string;
+  hint?: string;
   loading: boolean;
   highlight?: boolean;
   badge?: React.ReactNode;
@@ -172,7 +177,7 @@ function StatCard({
         {value}
       </DashboardStatValue>
       {badge ? <div className="mt-0.5">{badge}</div> : null}
-      <p className="text-[10px] text-slate-500 mt-0.5">{hint}</p>
+      {hint ? <p className="text-[10px] text-slate-500 mt-0.5">{hint}</p> : null}
     </div>
   );
 }

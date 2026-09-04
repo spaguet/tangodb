@@ -550,11 +550,11 @@ export const EN: Record<I18nKey, string> = {
   "dashboard.hallRental.debtHint": "Current wallet debt (not cashier)",
   "dashboard.hallRental.pending": "Pending requests",
   "dashboard.hallRental.pendingHint": "Awaiting staff confirmation now",
-  "dashboard.hallRental.slaBreached": "SLA: {count}",
+  "dashboard.hallRental.slaBreached": "SLA: {{count}}",
   "dashboard.hallRental.expiringHolds": "Holds < 24h",
   "dashboard.hallRental.expiringHoldsHint": "Awaiting payment, expiring within a day",
   "dashboard.hallRental.conversion": "Request conversion",
-  "dashboard.hallRental.conversionHint": "This month: {confirmed} confirmed / {rejected} rejected of {submitted} submitted",
+  "dashboard.hallRental.conversionHint": "This month: {{confirmed}} confirmed / {{rejected}} rejected of {{submitted}} submitted",
   "dashboard.hallRental.openInbox": "Inbox →",
   "dashboard.hallRental.error.loadFailed": "Could not load Mini App dashboard metrics",
 

@@ -547,11 +547,11 @@ export const RU: Record<I18nKey, string> = {
   "dashboard.hallRental.debtHint": "Текущий долг по кошельку (не касса)",
   "dashboard.hallRental.pending": "Заявки pending",
   "dashboard.hallRental.pendingHint": "Ожидают подтверждения сейчас",
-  "dashboard.hallRental.slaBreached": "SLA: {count}",
+  "dashboard.hallRental.slaBreached": "SLA: {{count}}",
   "dashboard.hallRental.expiringHolds": "Холды < 24 ч",
   "dashboard.hallRental.expiringHoldsHint": "Ожидают оплаты, истекают в сутки",
   "dashboard.hallRental.conversion": "Конверсия заявок",
-  "dashboard.hallRental.conversionHint": "За месяц: {confirmed} подтв. / {rejected} откл. из {submitted} созданных",
+  "dashboard.hallRental.conversionHint": "За месяц: {{confirmed}} подтв. / {{rejected}} откл. из {{submitted}} созданных",
   "dashboard.hallRental.openInbox": "Inbox →",
   "dashboard.hallRental.error.loadFailed": "Не удалось загрузить показатели Mini App",
 
