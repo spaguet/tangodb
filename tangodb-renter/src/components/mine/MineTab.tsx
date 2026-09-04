@@ -157,12 +157,16 @@ export default function MineTab({
             }))
           );
           setQrs(resolved);
-          if (resolved[0]) {
-            setTopupQrId((prev) => prev || resolved[0].id);
+          const firstQrId = resolved[0]?.id ?? "";
+          setTopupQrId((prev) =>
+            resolved.some((asset) => asset.id === prev) ? prev : firstQrId
+          );
+          if (firstQrId) {
             setTopupMethod((prev) => (prev === "cash" ? "qr" : prev));
           }
         } catch {
           setQrs([]);
+          setTopupQrId("");
         }
       }
     },

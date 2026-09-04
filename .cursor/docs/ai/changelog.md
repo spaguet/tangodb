@@ -1,3 +1,5 @@
+2026-09-04 — fix(hall-rent): Mini App top-up QR preview больше не пропадает после замены/переактивации QR в студии: выбранный `topupQrId` синхронизируется с текущим списком active QR, stale id сбрасывается на первый доступный asset. Unit-тест `MineTab` покрывает смену active QR.
+
 2026-09-04 — fix(crm): микропатч **2.9.63** — раздел «Финансы»: навигация переносится на следующую строку (`flex-wrap`); журналы платежей/должников/расходов переключаются на табличный вид с `lg` (не `sm`), чтобы не раздувать страницу при боковой панели; `main`/`section` с `min-w-0` и `overflow-x-hidden`.
 
 2026-09-04 — feat(hall-rent): микропатч **2.9.62** — FZ (хвост аудита Mini App): сверка §9; исправлена регрессия FA1 в `_renter_early_close_pack` (FDB2 снова `debt_amount = delta`, не `+=`); убраны ambiguous overload `_renter_mark_terminal` (4-arg) и `_renter_credit_wallet_topup` (6-arg). Миграции `20261080000001`, `20261081000001`. Починены SQL-фикстуры FC1/FB3/FB6/FC5/FE5. Скрипт `scripts/fz-audit-check.mjs`. `db push` миграций FB–FE на linked DB.

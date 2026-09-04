@@ -11,6 +11,13 @@
 
 ## Записи
 
+### 2026-09-04 — Mini App QR preview пропадал после замены QR
+
+- **Дата:** 2026-09-04
+- **Ошибка:** В форме пополнения Mini App при активном QR студии картинка могла не отображаться, хотя `<select>` визуально показывал QR.
+- **Причина:** `topupQrId` сохранял старый id после замены/деактивации QR; React `<select value>` без matching option визуально падал на первый option, но preview искал `q.id === topupQrId` и не рендерил `<img>`.
+- **Как избежать:** После каждой загрузки динамического списка синхронизировать выбранный id с текущими options: сохранить только существующий id, иначе выбрать первый доступный или сбросить состояние; покрывать refresh/replace сценарий тестом.
+
 ### 2026-09-04 — FDB2 откатил FA1 debt assign; overload PG functions (FZ)
 
 - **Ошибка:** `renter_miniapp_p0_reproduction_test` падал (debt=1000 вместо 600); FA4/FDB cancel — `function _renter_mark_terminal is not unique`; FB3 confirm — `_renter_credit_wallet_topup is not unique`.

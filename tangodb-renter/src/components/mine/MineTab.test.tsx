@@ -204,4 +204,44 @@ describe("MineTab stage B surfaces", () => {
     const submit = screen.getByRole("button", { name: /Отправить заявку/i });
     expect(submit).toHaveProperty("disabled", true);
   });
+
+  it("keeps QR preview visible when the active QR asset changes", async () => {
+    mockLoadedMine();
+    vi.mocked(rpc.rpcListActiveQr)
+      .mockResolvedValueOnce([
+        {
+          id: "qr-old",
+          label: "Старый QR",
+          signed_url: null,
+          storage_path: "org/qr-old",
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: "qr-new",
+          label: "Новый QR",
+          signed_url: null,
+          storage_path: "org/qr-new",
+        },
+      ]);
+    vi.mocked(rpc.rpcGetRentalQrAccessUrl).mockImplementation(
+      async (_supabase, id) => `https://qr.test/${id}.png`
+    );
+
+    const { rerender } = render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByAltText("Старый QR").getAttribute("src")).toBe("https://qr.test/qr-old.png");
+    });
+
+    rerender(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={1} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByAltText("Новый QR").getAttribute("src")).toBe("https://qr.test/qr-new.png");
+    });
+  });
 });
