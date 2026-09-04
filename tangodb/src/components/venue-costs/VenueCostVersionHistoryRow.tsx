@@ -456,96 +456,96 @@ export default function VenueCostVersionHistoryRow({
   };
 
   return (
-    <div className="py-3">
-      <div className="flex items-start justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => setExpanded((value) => !value)}
-          className="min-w-0 flex-1 text-left cursor-pointer group"
-          aria-expanded={expanded}
-        >
-          <div className="flex items-start gap-2">
-            <ChevronDown
-              className={`w-4 h-4 mt-0.5 shrink-0 text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`}
-            />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-900 group-hover:text-indigo-700">
-                {t("venueCosts.version", { version: version.versionNumber })} · {modeLabel}
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                {formatDate(version.validFrom)} — {version.validTo ? formatDate(version.validTo) : "∞"} ·{" "}
-                {t(`venueCosts.status.${version.status}`)}
-              </p>
-              {version.status === "accepted" && version.acceptedAt && (
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {t("venueCosts.acceptedBy", {
-                    name: acceptedByLabel ?? t("venueCosts.unknownMember"),
-                    date: formatDateTime(version.acceptedAt),
-                  })}
-                </p>
-              )}
-            </div>
-          </div>
-        </button>
-
-        {canManage && (
-          <div className="flex gap-1 shrink-0">
-            {version.status === "draft" && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onEditDraft(draftFromVersion)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 cursor-pointer"
-                  aria-label={t("common.edit")}
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                {onDeleteDraft && (
-                  <button
-                    type="button"
-                    onClick={() => setDeleteDraftOpen(true)}
-                    disabled={deleteDraftPending}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-60"
-                    aria-label={t("venueCosts.deleteDraft")}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => void onAccept(version.id)}
-                  disabled={acceptPending}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold cursor-pointer disabled:opacity-60"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  {t("venueCosts.accept")}
-                </button>
-              </>
-            )}
-            {version.status === "accepted" && !hasOpenDraft && (
+    <div className="py-3 space-y-2">
+      {canManage ? (
+        <div className="flex flex-wrap gap-1.5">
+          {version.status === "draft" ? (
+            <>
               <button
                 type="button"
-                onClick={() => onCopyToDraft(draftFromVersion)}
+                onClick={() => onEditDraft(draftFromVersion)}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 cursor-pointer"
+                aria-label={t("common.edit")}
               >
-                <Copy className="w-3.5 h-3.5" />
-                {t("venueCosts.copyToDraft")}
+                <Edit className="w-3.5 h-3.5" />
+                {t("common.edit")}
               </button>
-            )}
-            {canEndEarly && (
+              {onDeleteDraft ? (
+                <button
+                  type="button"
+                  onClick={() => setDeleteDraftOpen(true)}
+                  disabled={deleteDraftPending}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-50 cursor-pointer disabled:opacity-60"
+                  aria-label={t("venueCosts.deleteDraft")}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {t("venueCosts.deleteDraft")}
+                </button>
+              ) : null}
               <button
                 type="button"
-                onClick={() => setEndEarlyOpen(true)}
-                disabled={endEarlyPending}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-200 text-amber-800 text-xs font-semibold hover:bg-amber-50 cursor-pointer disabled:opacity-60"
+                onClick={() => void onAccept(version.id)}
+                disabled={acceptPending}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs font-semibold cursor-pointer disabled:opacity-60"
               >
-                <StopCircle className="w-3.5 h-3.5" />
-                {t("venueCosts.endEarly")}
+                <Check className="w-3.5 h-3.5" />
+                {t("venueCosts.accept")}
               </button>
-            )}
+            </>
+          ) : null}
+          {version.status === "accepted" && !hasOpenDraft ? (
+            <button
+              type="button"
+              onClick={() => onCopyToDraft(draftFromVersion)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 cursor-pointer"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              {t("venueCosts.copyToDraft")}
+            </button>
+          ) : null}
+          {canEndEarly ? (
+            <button
+              type="button"
+              onClick={() => setEndEarlyOpen(true)}
+              disabled={endEarlyPending}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-200 text-amber-800 text-xs font-semibold hover:bg-amber-50 cursor-pointer disabled:opacity-60"
+            >
+              <StopCircle className="w-3.5 h-3.5" />
+              {t("venueCosts.endEarly")}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={() => setExpanded((value) => !value)}
+        className="w-full min-w-0 text-left cursor-pointer group"
+        aria-expanded={expanded}
+      >
+        <div className="flex items-start gap-2">
+          <ChevronDown
+            className={`w-4 h-4 mt-0.5 shrink-0 text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+          />
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm font-semibold text-slate-900 group-hover:text-indigo-700">
+              {t("venueCosts.version", { version: version.versionNumber })} · {modeLabel}
+            </p>
+            <p className="text-xs text-slate-500">
+              {formatDate(version.validFrom)} — {version.validTo ? formatDate(version.validTo) : "∞"} ·{" "}
+              {t(`venueCosts.status.${version.status}`)}
+            </p>
+            {version.status === "accepted" && version.acceptedAt ? (
+              <p className="text-xs text-slate-500">
+                {t("venueCosts.acceptedBy", {
+                  name: acceptedByLabel ?? t("venueCosts.unknownMember"),
+                  date: formatDateTime(version.acceptedAt),
+                })}
+              </p>
+            ) : null}
           </div>
-        )}
-      </div>
+        </div>
+      </button>
 
       <VersionSummary
         version={version}

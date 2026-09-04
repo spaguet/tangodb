@@ -27,7 +27,7 @@ import { formatCurrency } from "../../lib/utils";
 import AppSelect, { fieldCls as inputCls, searchFieldCls } from "../ui/AppSelect";
 import { btnAddCls } from "../ui/buttonStyles";
 import LoadingState from "../ui/LoadingState";
-import PageTabs, { pageTabPanelCls } from "../ui/PageTabs";
+import SectionPillNav from "../ui/SectionPillNav";
 import QueryErrorState from "../ui/QueryErrorState";
 import RequirePermission from "../RequirePermission";
 import RenterDuplicateDialog from "./RenterDuplicateDialog";
@@ -240,12 +240,10 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
         </div>
       </RequirePermission>
 
-      <div className="lg:col-span-8 flex flex-col">
-        <PageTabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as ListTab)} />
+      <div className="lg:col-span-8 flex flex-col gap-3">
+        <SectionPillNav items={tabs} activeId={activeTab} onChange={(tab) => setActiveTab(tab)} />
 
-        <div
-          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack space-y-3 ${pageTabPanelCls(activeTab, "active")}`}
-        >
+        <div className="bg-white p-4 border border-slate-200 shadow-xs panel-card-stack space-y-3 rounded-xl">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

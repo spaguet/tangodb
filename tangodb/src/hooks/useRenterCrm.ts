@@ -139,7 +139,7 @@ function mapFinance(row: Record<string, unknown> | null): RenterFinanceSummary |
     walletEntries: Array.isArray(row.wallet_entries)
       ? (row.wallet_entries as Record<string, unknown>[]).map((entry) => ({
           id: String(entry.id),
-          entryType: String(entry.entry_type ?? ""),
+          entryType: String(entry.entry_type ?? entry.entryType ?? ""),
           amount: Number(entry.amount) || 0,
           createdAt: String(entry.created_at ?? ""),
           externalReference:

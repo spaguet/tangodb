@@ -79,8 +79,8 @@ export default function DayColumn({
   return (
     <div className="flex-1 min-w-0 border-l border-slate-100 first:border-l-0">
       <div
-        className={`sticky top-0 z-[1] flex h-9 sm:h-11 flex-col items-center justify-center border-b border-slate-100 px-0.5 sm:px-1 backdrop-blur-[2px] shadow-[0_2px_4px_-2px_rgba(15,23,42,0.08)] ${
-          isToday ? "bg-slate-200/70" : "bg-slate-50/95"
+        className={`sticky top-0 z-30 flex h-9 sm:h-11 flex-col items-center justify-center border-b border-slate-100 px-0.5 sm:px-1 backdrop-blur-[2px] shadow-[0_2px_4px_-2px_rgba(15,23,42,0.08)] ${
+          isToday ? "bg-slate-200" : "bg-slate-50"
         }`}
       >
         <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 leading-none">

@@ -567,14 +567,21 @@ export default function MineTab({
                 {t(locale, "topupMethodQr")}
               </button>
             </div>
-            {topupMethod === "qr" && qrs.length > 0 ? (
-              <select className={fieldCls} value={topupQrId} onChange={(e) => setTopupQrId(e.target.value)}>
-                {qrs.map((q) => (
-                  <option key={q.id} value={q.id}>
-                    {q.label ?? q.id.slice(0, 8)}
-                  </option>
+            {topupMethod === "qr" && qrs.length > 1 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {qrs.map((q, index) => (
+                  <button
+                    key={q.id}
+                    type="button"
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                      topupQrId === q.id ? methodActiveCls : methodIdleCls
+                    }`}
+                    onClick={() => setTopupQrId(q.id)}
+                  >
+                    {q.label?.trim() || `${t(locale, "topupMethodQr")} ${index + 1}`}
+                  </button>
                 ))}
-              </select>
+              </div>
             ) : null}
             {topupMethod === "qr" && qrs.length === 0 ? (
               <p className="text-xs text-slate-500">{t(locale, "topupNoQr")}</p>

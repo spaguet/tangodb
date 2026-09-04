@@ -72,6 +72,7 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 import LoadingState from "../ui/LoadingState";
 import SectionPillNav, { type SectionPillNavItem } from "../ui/SectionPillNav";
 import QueryErrorState from "../ui/QueryErrorState";
+import { getWalletEntryLabel } from "../../lib/renterWalletEntryLabels";
 
 interface RenterDetailPanelProps {
   toast: (msg: string, type?: ToastType) => void;
@@ -84,23 +85,6 @@ type RenterDetailLocationState = {
 };
 
 const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold block";
-const walletEntryLabelKey = {
-  topup: "renters.detail.walletEntry.topup",
-  topup_reversal: "renters.detail.walletEntry.topupReversal",
-  prepay_charge: "renters.detail.walletEntry.prepayCharge",
-  remainder_charge: "renters.detail.walletEntry.remainderCharge",
-  refund: "renters.detail.walletEntry.refund",
-  debt_settle: "renters.detail.walletEntry.debtSettle",
-  surcharge_one_time_recalc: "renters.detail.walletEntry.surchargeOneTimeRecalc",
-} as const;
-
-function getWalletEntryLabel(
-  entryType: string,
-  t: (key: import("../../lib/i18n/keys").I18nKey, vars?: Record<string, string | number>) => string
-): string {
-  const key = walletEntryLabelKey[entryType as keyof typeof walletEntryLabelKey];
-  return key ? t(key) : entryType;
-}
 
 export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const { renterId = "" } = useParams();

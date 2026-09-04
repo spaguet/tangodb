@@ -139,7 +139,9 @@ export function useRentalsForWeek(weekStartISO: string, weekEndISO: string, enab
       if (error) throw error;
 
       const rows = (data as Record<string, unknown>[] | null) ?? [];
-      return rows.map(mapScheduleRow);
+      return rows
+        .map(mapScheduleRow)
+        .filter((row) => row.bookingStatus !== "cancelled");
     },
     staleTime: 60 * 1000,
   });

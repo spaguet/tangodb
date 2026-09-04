@@ -444,7 +444,7 @@ export default function SubscriptionsPanel({
           const snapshot = capacityByGroupId[groupId];
           const groupName = groupNameById[groupId] ?? t("common.groupLesson");
           if (!snapshot?.hasLimit || snapshot.maxCapacity == null) {
-            return { groupId, groupName, text: t("groupCapacity.unlimited") };
+            return null;
           }
           const { occupiedAfter } = forecastGroupOccupancy(snapshot, saleClientIds);
           return {
@@ -457,7 +457,7 @@ export default function SubscriptionsPanel({
             }),
           };
         })
-        .filter(Boolean),
+        .filter((line): line is NonNullable<typeof line> => line != null),
     [selectedGroupIds, capacityByGroupId, groupNameById, saleClientIds, t]
   );
 

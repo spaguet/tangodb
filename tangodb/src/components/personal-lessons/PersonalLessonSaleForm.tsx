@@ -1277,24 +1277,22 @@ export default function PersonalLessonSaleForm({
               <option value="single_payer">{t("personalTariff.billing.singlePayer")}</option>
               <option value="equal">{t("personalTariff.billing.equalSplit")}</option>
             </AppSelect>
-            <AppSelect
-              label={
-                billingSplitMode === "equal"
-                  ? t("personalTariff.billing.firstPayer")
-                  : t("personalTariff.payer.label")
-              }
-              value={payerClientId}
-              onChange={(e) => setPayerClientId(e.target.value)}
-              required
-            >
-              {bookingClients
-                .filter((client) => client.id)
-                .map((client, idx) => (
-                  <option key={client.id} value={client.id}>
-                    {client.query || t("common.clientN", { n: idx + 1 })}
-                  </option>
-                ))}
-            </AppSelect>
+            {billingSplitMode === "single_payer" ? (
+              <AppSelect
+                label={t("personalTariff.payer.label")}
+                value={payerClientId}
+                onChange={(e) => setPayerClientId(e.target.value)}
+                required
+              >
+                {bookingClients
+                  .filter((client) => client.id)
+                  .map((client, idx) => (
+                    <option key={client.id} value={client.id}>
+                      {client.query || t("common.clientN", { n: idx + 1 })}
+                    </option>
+                  ))}
+              </AppSelect>
+            ) : null}
           </>
         )}
 
