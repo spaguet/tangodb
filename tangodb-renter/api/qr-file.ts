@@ -1,6 +1,14 @@
-/** Self-contained Edge handler — do not import from src/ (Vercel bundles api/ only). */
+type QrFileRequest = {
+  method?: string;
+  query: Record<string, string | string[] | undefined>;
+};
 
-export const config = { runtime: "edge" };
+type QrFileResponse = {
+  status: (code: number) => QrFileResponse;
+  setHeader: (name: string, value: string) => void;
+  send: (body: string | Buffer) => void;
+  end: () => void;
+};
 
 function isStudioQrSignedUrl(raw: string): boolean {
   let url: URL;
@@ -41,44 +49,51 @@ function looksLikeImage(bytes: Uint8Array): boolean {
   return false;
 }
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: QrFileRequest, res: QrFileResponse): Promise<void> {
   try {
     if (req.method !== "GET" && req.method !== "HEAD") {
-      return new Response("Method not allowed", { status: 405 });
+      res.status(405).send("Method not allowed");
+      return;
     }
 
-    const page = new URL(req.url);
-    const src = page.searchParams.get("u") ?? "";
+    const rawU = req.query.u;
+    const src = (Array.isArray(rawU) ? rawU[0] : rawU) ?? "";
     if (!isStudioQrSignedUrl(src)) {
-      return new Response("Not found", { status: 404 });
+      res.status(404).send("Not found");
+      return;
     }
 
-    const name = sanitizeQrDownloadFilename(page.searchParams.get("name") ?? "studio-qr.png");
+    const rawName = req.query.name;
+    const name = sanitizeQrDownloadFilename(
+      (Array.isArray(rawName) ? rawName[0] : rawName) ?? "studio-qr.png"
+    );
+
     const upstream = await fetch(src, { redirect: "follow" });
     if (!upstream.ok) {
-      return new Response("Not found", { status: 404 });
+      res.status(404).send("Not found");
+      return;
     }
 
     const contentType = (upstream.headers.get("content-type") ?? "").toLowerCase();
     const bytes = new Uint8Array(await upstream.arrayBuffer());
     if (bytes.length < 200 || (!contentType.startsWith("image/") && !looksLikeImage(bytes))) {
-      return new Response("Not found", { status: 404 });
+      res.status(404).send("Not found");
+      return;
     }
 
     const resolvedType = contentType.startsWith("image/") ? contentType.split(";")[0] : "image/png";
-    const headers = new Headers({
-      "Content-Type": resolvedType,
-      "Content-Disposition": `attachment; filename="${name}"`,
-      "Cache-Control": "private, max-age=60",
-      "Content-Length": String(bytes.length),
-    });
+    res.setHeader("Content-Type", resolvedType);
+    res.setHeader("Content-Disposition", `attachment; filename="${name}"`);
+    res.setHeader("Cache-Control", "private, max-age=60");
+    res.setHeader("Content-Length", String(bytes.length));
 
     if (req.method === "HEAD") {
-      return new Response(null, { status: 200, headers });
+      res.status(200).end();
+      return;
     }
 
-    return new Response(bytes, { status: 200, headers });
+    res.status(200).send(Buffer.from(bytes));
   } catch {
-    return new Response("Internal error", { status: 500 });
+    res.status(500).send("Internal error");
   }
 }
