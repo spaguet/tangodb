@@ -41,6 +41,8 @@ export function occupancyCellClass(state: SlotState, isToday: boolean): string {
       return "bg-indigo-600 text-white ring-1 ring-inset ring-indigo-700";
     case "mine_hold":
       return "slot-hold text-white ring-1 ring-inset ring-slate-500";
+    case "mine_debt":
+      return "bg-rose-600 text-white ring-1 ring-inset ring-rose-800";
     default:
       return todayCol;
   }

@@ -54,9 +54,15 @@ export type BootstrapData = {
   currencyCode: string;
   locale: string;
   chatUrl: string | null;
+  botUrl: string | null;
   addonActive: boolean;
   botStarted: boolean;
   allowsWrite: boolean;
+  displayName: string;
+  contactPhone: string | null;
+  bookingBanned: boolean;
+  serverNow: string;
+  undeliveredNotifications: number;
 };
 
 export async function fetchBootstrap(
@@ -71,6 +77,12 @@ export async function fetchBootstrap(
   }
 
   const chatUrl = result.chat_url != null ? String(result.chat_url) : null;
+  const botUrl = result.bot_url != null ? String(result.bot_url) : null;
+
+  const contactPhone =
+    result.contact_phone != null && String(result.contact_phone).length > 0
+      ? String(result.contact_phone)
+      : null;
 
   return {
     studioName: String(result.studio_name ?? ""),
@@ -78,9 +90,15 @@ export async function fetchBootstrap(
     currencyCode: String(result.currency_code ?? "RUB"),
     locale: String(result.locale ?? "ru"),
     chatUrl: chatUrl && chatUrl.length > 0 ? chatUrl : null,
+    botUrl: botUrl && botUrl.length > 0 ? botUrl : null,
     addonActive: Boolean(result.addon_active),
     botStarted: Boolean(result.bot_started),
     allowsWrite: Boolean(result.allows_write),
+    displayName: String(result.display_name ?? ""),
+    contactPhone,
+    bookingBanned: Boolean(result.booking_banned),
+    serverNow: String(result.server_now ?? new Date().toISOString()),
+    undeliveredNotifications: Number(result.undelivered_notifications ?? 0),
   };
 }
 

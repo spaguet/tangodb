@@ -14,6 +14,9 @@ import { logEvent } from "./supabase.ts";
 const TELEGRAM_API = "https://api.telegram.org";
 const DEFAULT_BATCH_SIZE = 10;
 const GATE_WAIT_SECONDS = 300;
+/** Must stay below claim lease (120s) so a hung fetch cannot outlive the lock. */
+const LEASE_SECONDS = 120;
+const FETCH_TIMEOUT_MS = 90_000;
 
 export type OutboxRow = {
   id: string;
@@ -23,6 +26,7 @@ export type OutboxRow = {
   text: string;
   attempts: number;
   max_attempts: number;
+  claim_token: string | null;
 };
 
 type BotSendConfig = {
@@ -64,6 +68,7 @@ async function completeOutbox(
   admin: SupabaseClient,
   id: string,
   outcome: string,
+  claimToken: string | null,
   errorCode?: string | null,
   retrySeconds?: number | null
 ): Promise<void> {
@@ -72,6 +77,7 @@ async function completeOutbox(
     p_outcome: outcome,
     p_error_code: errorCode ?? null,
     p_retry_seconds: retrySeconds ?? null,
+    p_claim_token: claimToken,
   });
   if (error) {
     logEvent("renter_outbox_complete_error", { id, message: error.message });
@@ -110,11 +116,28 @@ async function sendTelegramMessage(
     };
   }
 
-  const res = await fetch(`${TELEGRAM_API}/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  let res: Response;
+  try {
+    res = await fetch(`${TELEGRAM_API}/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    const aborted = err instanceof Error && err.name === "AbortError";
+    return {
+      ok: false,
+      fatal: false,
+      code: aborted ? "fetch_timeout" : "send_failed",
+      retryAfter: 60,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (res.ok) {
     return { ok: true };
@@ -184,7 +207,7 @@ export async function drainRenterTelegramOutbox(
     const { data: rows, error: claimError } = await admin.rpc("claim_renter_telegram_outbox", {
       p_batch_size: batchSize,
       p_worker_id: options.workerId,
-      p_lease_seconds: 120,
+      p_lease_seconds: LEASE_SECONDS,
     });
 
     if (claimError) {
@@ -199,32 +222,45 @@ export async function drainRenterTelegramOutbox(
     result.claimed += batch.length;
 
     for (const row of batch) {
+      const claimToken = row.claim_token;
+
       if (Date.now() - started >= options.timeBudgetMs) {
-        await completeOutbox(admin, row.id, "gate_wait", "time_budget", GATE_WAIT_SECONDS);
+        await completeOutbox(admin, row.id, "gate_wait", claimToken, "time_budget", GATE_WAIT_SECONDS);
         result.waiting += 1;
         continue;
       }
 
-      const { data: gate, error: gateError } = await admin.rpc("renter_telegram_outbox_send_gate", {
-        p_org_id: row.organization_id,
-        p_telegram_id: row.telegram_id,
-      });
+      const { data: prepared, error: prepError } = await admin.rpc(
+        "renter_telegram_outbox_prepare_send",
+        { p_id: row.id }
+      );
 
-      if (gateError) {
-        await completeOutbox(admin, row.id, "retry", "gate_check_failed", 60);
+      if (prepError) {
+        await completeOutbox(admin, row.id, "retry", claimToken, "prepare_failed", 60);
         continue;
       }
 
-      const gateRow = gate as { can_send?: boolean; skip_reason?: string } | null;
-      if (!gateRow?.can_send) {
-        const reason = gateRow?.skip_reason ?? "gate";
-        if (reason === "addon_inactive") {
-          await completeOutbox(admin, row.id, "skipped", reason);
-          result.skipped += 1;
-        } else {
-          await completeOutbox(admin, row.id, "gate_wait", reason, GATE_WAIT_SECONDS);
-          result.waiting += 1;
-        }
+      const prep = prepared as {
+        action?: string;
+        reason?: string;
+        telegram_id?: number;
+        text?: string;
+      } | null;
+
+      if (prep?.action === "skip") {
+        await completeOutbox(admin, row.id, "skipped", claimToken, prep.reason ?? "skip");
+        result.skipped += 1;
+        continue;
+      }
+
+      if (prep?.action === "gate_wait") {
+        await completeOutbox(admin, row.id, "gate_wait", claimToken, prep.reason ?? "gate", GATE_WAIT_SECONDS);
+        result.waiting += 1;
+        continue;
+      }
+
+      if (prep?.action !== "send" || prep.telegram_id == null || !prep.text) {
+        await completeOutbox(admin, row.id, "retry", claimToken, "prepare_invalid", 60);
         continue;
       }
 
@@ -254,31 +290,31 @@ export async function drainRenterTelegramOutbox(
 
       const bot = botCache.get(row.organization_id);
       if (!bot) {
-        await completeOutbox(admin, row.id, "retry", "bot_not_configured", 300);
+        await completeOutbox(admin, row.id, "retry", claimToken, "bot_not_configured", 300);
         continue;
       }
 
       const sendResult = await sendTelegramMessage(
         bot.token,
-        row.telegram_id,
-        row.text,
+        prep.telegram_id,
+        prep.text,
         bot.miniappUrl
       );
 
       if (sendResult.ok) {
-        await completeOutbox(admin, row.id, "sent");
+        await completeOutbox(admin, row.id, "sent", claimToken);
         result.sent += 1;
         continue;
       }
 
       if (sendResult.fatal || FATAL_ERROR_CODES.has(sendResult.code)) {
-        await completeOutbox(admin, row.id, "dead", sendResult.code);
+        await completeOutbox(admin, row.id, "dead", claimToken, sendResult.code);
         result.dead += 1;
         continue;
       }
 
       if (row.attempts + 1 >= row.max_attempts) {
-        await completeOutbox(admin, row.id, "dead", sendResult.code);
+        await completeOutbox(admin, row.id, "dead", claimToken, sendResult.code);
         result.dead += 1;
         continue;
       }
@@ -287,6 +323,7 @@ export async function drainRenterTelegramOutbox(
         admin,
         row.id,
         "retry",
+        claimToken,
         sendResult.code,
         sendResult.retryAfter ?? 60
       );

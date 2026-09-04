@@ -3,22 +3,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
 import {
   btnOpenCls,
-  btnWeekNavCls,
   fieldCls,
   labelCls,
   panelCls,
   weekChipActiveCls,
   weekChipCls,
 } from "../../lib/crmUi";
+import { formatMoney } from "../../lib/format";
 import {
   formatWeekRangeLabel,
   occupancyDaysFromWindow,
   occupancyWeeksFromWindow,
 } from "../../lib/orgTime";
-import { rpcGetOccupancy, rpcListLocations } from "../../lib/rpc";
+import { rpcGetOccupancy, rpcGetWallet, rpcListLocations } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
-import type { LocationRow, OccupancyData } from "../../lib/types";
-import { useVisibilityRefetch } from "../../hooks/useVisibilityRefetch";
+import type { LocationRow, OccupancyData, WalletData } from "../../lib/types";
 import { t, tFill, type Locale } from "../../i18n/strings";
 import BookingSheet from "./BookingSheet";
 import PackSheet from "./PackSheet";
@@ -30,7 +29,9 @@ type ScheduleTabProps = {
   organizationId: string;
   supabase: SupabaseClient;
   onBooked: () => void;
-  onOpenMine: () => void;
+  onOpenMine: (rentalId?: string) => void;
+  onTopup: (amount: number) => void;
+  onRegisterRefresh: (fn: () => void) => void;
 };
 
 export default function ScheduleTab({
@@ -40,6 +41,8 @@ export default function ScheduleTab({
   supabase,
   onBooked,
   onOpenMine,
+  onTopup,
+  onRegisterRefresh,
 }: ScheduleTabProps) {
   const [locations, setLocations] = useState<LocationRow[]>([]);
   const [locationId, setLocationId] = useState<string>("");
@@ -49,6 +52,7 @@ export default function ScheduleTab({
   const [error, setError] = useState<string | null>(null);
   const [bookingSlot, setBookingSlot] = useState<{ date: string; start: string } | null>(null);
   const [packOpen, setPackOpen] = useState(false);
+  const [wallet, setWallet] = useState<WalletData | null>(null);
 
   const days = occupancy?.window ? occupancyDaysFromWindow(occupancy.window.from) : [];
   const weeks = occupancy?.window ? occupancyWeeksFromWindow(occupancy.window.from) : [];
@@ -72,10 +76,12 @@ export default function ScheduleTab({
   const refresh = useCallback(async () => {
     try {
       await loadOccupancy();
+      const w = await rpcGetWallet(supabase, 1, 0);
+      setWallet(w);
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
     }
-  }, [loadOccupancy, locale]);
+  }, [loadOccupancy, locale, supabase]);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,15 +118,45 @@ export default function ScheduleTab({
     };
   }, [locationId, loadOccupancy, locale]);
 
-  useVisibilityRefetch(refresh);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const w = await rpcGetWallet(supabase, 1, 0);
+        if (!cancelled) setWallet(w);
+      } catch {
+        if (!cancelled) setWallet(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    onRegisterRefresh(() => {
+      void refresh();
+    });
+  }, [onRegisterRefresh, refresh]);
 
   const localeTag = locale === "en" ? "en" : "ru";
+  const debtAmount = wallet?.debt_amount ?? 0;
+  const currency = bootstrap.currencyCode;
+  const contactSuffix = bootstrap.contactPhone
+    ? locale === "en"
+      ? ` (${bootstrap.contactPhone})`
+      : `: ${bootstrap.contactPhone}`
+    : bootstrap.chatUrl
+      ? locale === "en"
+        ? " via studio chat"
+        : " в чате студии"
+      : "";
   const weekLabel = useMemo(() => {
     if (weekDays.length < 2) return "";
     return formatWeekRangeLabel(weekDays[0], weekDays[weekDays.length - 1], localeTag);
   }, [weekDays, localeTag]);
 
-  if (loading && !occupancy) {
+  if (loading && !occupancy && locations.length === 0) {
     return (
       <div className="flex justify-center bg-slate-50 py-12">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
@@ -133,6 +169,32 @@ export default function ScheduleTab({
       <div className="flex shrink-0 flex-col gap-3 px-4">
         {!bootstrap.addonActive ? (
           <p className="text-xs leading-relaxed text-slate-500">{t(locale, "addonInactiveCreate")}</p>
+        ) : null}
+
+        {bootstrap.bookingBanned ? (
+          <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-900">
+            {t(locale, "bookingBanned")}
+          </p>
+        ) : debtAmount > 0 ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+            <p>{t(locale, "debtBlocked")}</p>
+            <button
+              type="button"
+              className="mt-2 font-semibold text-indigo-700 hover:underline"
+              onClick={() => onTopup(debtAmount)}
+            >
+              {t(locale, "repayDebtCta")} · {formatMoney(debtAmount, currency, locale)}
+            </button>
+          </div>
+        ) : null}
+
+        {!loading && locations.length === 0 ? (
+          <div className={`${panelCls} space-y-2 p-3 text-sm text-slate-600`}>
+            <p>{t(locale, "noHalls")}</p>
+            <p className="text-xs leading-relaxed">
+              {tFill(locale, "noHallsContact", { contact: contactSuffix })}
+            </p>
+          </div>
         ) : null}
 
         {locations.length > 1 ? (
@@ -160,42 +222,13 @@ export default function ScheduleTab({
 
         {weeks.length > 0 ? (
           <div className={`flex flex-col gap-2 ${panelCls} p-3`}>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label={t(locale, "prevWeek")}
-                disabled={safeWeekIndex === 0}
-                className={btnWeekNavCls}
-                onClick={() => setWeekIndex((n) => Math.max(0, n - 1))}
-              >
-                ‹
-              </button>
-              <div className="flex min-w-0 flex-1 flex-col items-center">
-                <span className="text-center text-sm font-semibold text-slate-800 leading-tight">
-                  {weekLabel}
-                </span>
-                <span className="text-[10px] text-slate-400">
-                  {tFill(locale, "weekOf", { n: safeWeekIndex + 1, total: weeks.length })}
-                </span>
-                {safeWeekIndex !== 0 ? (
-                  <button
-                    type="button"
-                    className="text-[10px] font-semibold text-indigo-600 hover:underline"
-                    onClick={() => setWeekIndex(0)}
-                  >
-                    {t(locale, "thisWeek")}
-                  </button>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                aria-label={t(locale, "nextWeek")}
-                disabled={safeWeekIndex >= weeks.length - 1}
-                className={btnWeekNavCls}
-                onClick={() => setWeekIndex((n) => Math.min(weeks.length - 1, n + 1))}
-              >
-                ›
-              </button>
+            <div className="flex min-w-0 flex-col items-center">
+              <span className="text-center text-sm font-semibold text-slate-800 leading-tight">
+                {weekLabel}
+              </span>
+              <span className="text-[10px] text-slate-400">
+                {tFill(locale, "weekOf", { n: safeWeekIndex + 1, total: weeks.length })}
+              </span>
             </div>
             <div className="flex gap-1">
               {weeks.map((week, i) => (
@@ -228,6 +261,10 @@ export default function ScheduleTab({
                 <span className="slot-hold h-2.5 w-2.5 rounded-sm border border-slate-700" />
                 {t(locale, "mineHold")}
               </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="h-2.5 w-2.5 rounded-sm bg-rose-600 ring-1 ring-inset ring-rose-800" />
+                {t(locale, "mineDebt")}
+              </span>
             </div>
           </div>
         ) : null}
@@ -238,11 +275,12 @@ export default function ScheduleTab({
           <WeeklyOccupancyGrid
             locale={locale}
             timezone={bootstrap.timezone}
+            serverNow={bootstrap.serverNow}
             weekDays={weekDays}
             occupancy={occupancy}
             addonActive={bootstrap.addonActive}
             onFreeCell={(date, start) => setBookingSlot({ date, start })}
-            onMineCell={() => onOpenMine()}
+            onMineCell={(rentalId) => onOpenMine(rentalId)}
           />
         </div>
       ) : null}
@@ -250,17 +288,20 @@ export default function ScheduleTab({
       {bookingSlot && locationId ? (
         <BookingSheet
           locale={locale}
+          timezone={bootstrap.timezone}
+          serverNow={bootstrap.serverNow}
           organizationId={organizationId}
           supabase={supabase}
           locationId={locationId}
           date={bookingSlot.date}
           defaultStart={bookingSlot.start}
           onClose={() => setBookingSlot(null)}
-          onSuccess={() => {
+          onDone={() => {
             setBookingSlot(null);
             void refresh();
             onBooked();
           }}
+          onTopup={onTopup}
         />
       ) : null}
 
@@ -278,6 +319,7 @@ export default function ScheduleTab({
             void refresh();
             onBooked();
           }}
+          onTopup={onTopup}
         />
       ) : null}
     </div>

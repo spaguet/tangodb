@@ -2,7 +2,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import { assertReceptionPermissions, assertPayrollPermissions } from "./lib/permissions.ts";
-import { redirectCrmTelegramToRenterMiniapp } from "./lib/renterMiniappHandoff.ts";
 import "./index.css";
 
 if (import.meta.env.DEV) {
@@ -45,6 +44,4 @@ function bootCrm() {
   }
 }
 
-if (!redirectCrmTelegramToRenterMiniapp()) {
-  bootCrm();
-}
+bootCrm();

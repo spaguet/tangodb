@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Layers, User, Building2, CalendarRange, Smartphone, X } from "lucide-react";
+import { Building2, User, Layers, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 
 export interface ScheduleCellPrefill {
@@ -17,12 +17,9 @@ interface AddLessonTypePopupProps {
   canOfferGroup: boolean;
   canOfferPersonal: boolean;
   canOfferRental?: boolean;
-  canOfferMiniApp?: boolean;
   onSelectGroup: () => void;
   onSelectPersonal: () => void;
   onSelectRental?: () => void;
-  onSelectRentalSeries?: () => void;
-  onSelectMiniApp?: () => void;
   onClose: () => void;
 }
 
@@ -31,12 +28,9 @@ export default function AddLessonTypePopup({
   canOfferGroup,
   canOfferPersonal,
   canOfferRental = false,
-  canOfferMiniApp = false,
   onSelectGroup,
   onSelectPersonal,
   onSelectRental,
-  onSelectRentalSeries,
-  onSelectMiniApp,
   onClose,
 }: AddLessonTypePopupProps) {
   const { t } = useI18n();
@@ -124,36 +118,8 @@ export default function AddLessonTypePopup({
                 >
                   <Building2 className="w-5 h-5 text-amber-600 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">{t("schedule.rental.action")}</p>
-                    <p className="text-xs text-slate-500">{t("schedule.popup.rentalOnce")}</p>
-                  </div>
-                </button>
-              )}
-
-              {canOfferRental && onSelectRentalSeries && (
-                <button
-                  type="button"
-                  onClick={onSelectRentalSeries}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 transition-colors cursor-pointer text-left"
-                >
-                  <CalendarRange className="w-5 h-5 text-amber-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">{t("rentalSeries.action")}</p>
-                    <p className="text-xs text-slate-500">{t("schedule.popup.rentalSeries")}</p>
-                  </div>
-                </button>
-              )}
-
-              {canOfferMiniApp && onSelectMiniApp && (
-                <button
-                  type="button"
-                  onClick={onSelectMiniApp}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-colors cursor-pointer text-left"
-                >
-                  <Smartphone className="w-5 h-5 text-slate-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">{t("schedule.miniapp.action")}</p>
-                    <p className="text-xs text-slate-500">{t("schedule.popup.miniapp")}</p>
+                    <p className="text-sm font-semibold text-slate-800">{t("schedule.rental.channelMasterAction")}</p>
+                    <p className="text-xs text-slate-500">{t("schedule.rental.channelMasterPopupHint")}</p>
                   </div>
                 </button>
               )}

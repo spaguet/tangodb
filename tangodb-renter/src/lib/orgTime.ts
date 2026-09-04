@@ -125,3 +125,32 @@ export function formatWeekRangeLabel(
 export function formatTimeRange(start: string, end: string): string {
   return `${start.slice(0, 5)}–${end.slice(0, 5)}`;
 }
+
+const ONE_HOUR_MINUTES = 60;
+
+/** Org-local clock minutes (0–1439) at a server-aligned instant. */
+export function orgLocalTimeMinutes(timezone: string, atMs: number): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(atMs));
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  return hour * 60 + minute;
+}
+
+/** Client-side mirror of server tooSoon: free cells within 1 h or in the past are not bookable. */
+export function isFreeSlotBookable(
+  timezone: string,
+  date: string,
+  slotStart: string,
+  serverNowMs: number
+): boolean {
+  const today = orgLocalDate(timezone, new Date(serverNowMs));
+  if (date < today) return false;
+  if (date > today) return true;
+  const slotMin = Number(slotStart.slice(0, 2)) * 60 + Number(slotStart.slice(3, 5));
+  return slotMin >= orgLocalTimeMinutes(timezone, serverNowMs) + ONE_HOUR_MINUTES;
+}

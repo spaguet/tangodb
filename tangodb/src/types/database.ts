@@ -4206,6 +4206,7 @@ export type Database = {
           idempotency_key: string | null
           location_id: string
           organization_id: string
+          payload_fingerprint: string | null
           purpose: string | null
           renter_id: string
           status: string
@@ -4223,6 +4224,7 @@ export type Database = {
           idempotency_key?: string | null
           location_id: string
           organization_id: string
+          payload_fingerprint?: string | null
           purpose?: string | null
           renter_id: string
           status?: string
@@ -4240,6 +4242,7 @@ export type Database = {
           idempotency_key?: string | null
           location_id?: string
           organization_id?: string
+          payload_fingerprint?: string | null
           purpose?: string | null
           renter_id?: string
           status?: string
@@ -8407,6 +8410,7 @@ export type Database = {
       }
       _renter_inherited_hold_expires_at: {
         Args: {
+          p_date: string
           p_location_id: string
           p_org_id: string
           p_renter_id: string
@@ -8848,7 +8852,6 @@ export type Database = {
           p_fingerprint: string
           p_key: string
           p_org_id: string
-          p_result: Json
           p_scope: string
         }
         Returns: Json
@@ -9315,6 +9318,10 @@ export type Database = {
         Args: { p_document_id: string }
         Returns: Json
       }
+      get_renter_miniapp_dashboard_stats: {
+        Args: { p_year_month?: string }
+        Returns: Json
+      }
       get_renter_rental_finance: {
         Args: { p_renter_id: string }
         Returns: Json
@@ -9437,12 +9444,12 @@ export type Database = {
       }
       list_renter_rentals: { Args: { p_renter_id: string }; Returns: Json }
       list_renter_topup_inbox: {
-        Args: { p_limit?: number; p_offset?: number; p_status?: string }
+        Args: { p_limit?: number; p_offset?: number; p_search?: string; p_status?: string }
         Returns: Json
       }
       list_renters: {
         Args: {
-          p_has_debt?: boolean
+          p_debt_filter?: string
           p_search?: string
           p_status?: string
           p_type?: string
@@ -10031,7 +10038,7 @@ export type Database = {
       }
       request_organization_calendar_reconcile: { Args: never; Returns: Json }
       request_organization_rentals_calendar_reconcile: { Args: never; Returns: Json }
-      reset_renter_reliability: { Args: { p_renter_id: string }; Returns: Json }
+      reset_renter_reliability: { Args: { p_renter_id: string; p_reason?: string }; Returns: Json }
       resolve_renter_topup: { Args: { p_payload: Json }; Returns: Json }
       resolve_subscription_freeze_policy: {
         Args: { p_sub: Database["public"]["Tables"]["subscriptions"]["Row"] }
@@ -10171,6 +10178,8 @@ export type Database = {
         Returns: number[]
       }
       staff_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
+      preview_staff_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
+      reverse_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
       store_operation_idempotency: {
         Args: {
           p_fingerprint: string

@@ -45,11 +45,24 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Maintenance job failed" }, 500, req);
     }
 
-    const row = data as { ok?: boolean; processed?: number } | null;
+    const row = data as {
+      ok?: boolean;
+      processed?: number;
+      failed?: number;
+      failures?: unknown[];
+    } | null;
     const n = Number(row?.processed ?? 0);
+    const failed = Number(row?.failed ?? 0);
     batches += 1;
     processed += n;
-    if (n === 0) break;
+    if (failed > 0) {
+      logEvent("renter_booking_worker_partial_failure", {
+        failed,
+        failures: row?.failures,
+        batches,
+      });
+    }
+    if (n + failed === 0) break;
   }
 
   const drainStarted = Date.now();

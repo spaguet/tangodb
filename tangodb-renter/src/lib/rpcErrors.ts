@@ -21,9 +21,11 @@ const ERROR_MAP: Record<string, MessageKey> = {
   "renter.topup.amountTooLarge": "topupAmountTooLarge",
   "renter.topup.methodInvalid": "topupMethodInvalid",
   "renter.topup.qrInvalid": "topupQrInvalid",
+  "renter.topup.chatRequired": "topupChatRequired",
   "renter.rateLimited": "rateLimited",
   "renter.profile.displayNameInvalid": "profileNameInvalid",
   "renter.forbidden": "actionForbidden",
+  "renter.cancel.packNotCancellable": "cancelPackNotCancellable",
 };
 
 export function rpcErrorKey(err: unknown): MessageKey {

@@ -29,7 +29,7 @@ export function useRenters(options?: { enabled?: boolean; activeOnly?: boolean }
         p_search: null,
         p_type: null,
         p_status: activeOnly ? "active" : null,
-        p_has_debt: null,
+        p_debt_filter: null,
         p_upcoming: null,
       });
 

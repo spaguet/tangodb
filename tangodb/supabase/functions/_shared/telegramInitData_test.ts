@@ -4,6 +4,8 @@ import {
 import {
   buildDataCheckString,
   computeTelegramWebAppHash,
+  extractVerifiedInitData,
+  getNonPrivateLaunchError,
   validateAuthDate,
   validateStartParam,
   verifyTelegramWebAppHash,
@@ -37,4 +39,25 @@ Deno.test("HMAC includes signature when present (Bot API 8.0+)", async () => {
 Deno.test("verifyTelegramWebAppHash constant-time length gate", () => {
   assertEquals(verifyTelegramWebAppHash("abcd", "abcde"), false);
   assertEquals(verifyTelegramWebAppHash("abcd", "abce"), false);
+});
+
+Deno.test("extractVerifiedInitData ignores chat/receiver after HMAC", () => {
+  const org = "a0900000-0000-4000-8000-000000000001";
+  const nowSec = Math.floor(Date.now() / 1000);
+  const params = new URLSearchParams(
+    `auth_date=${nowSec}&chat=%7B%22id%22%3A-100%2C%22type%22%3A%22private%22%7D&receiver=%7B%22id%22%3A99%7D&start_param=${org}&user=%7B%22id%22%3A42%7D`
+  );
+  const parsed = extractVerifiedInitData(params, "deadbeef");
+  assertEquals(parsed?.user.id, 42);
+  assertEquals(parsed?.organizationId, org);
+});
+
+Deno.test("getNonPrivateLaunchError rejects group chat launch", () => {
+  const params = new URLSearchParams(
+    'chat={"id":-100,"type":"supergroup"}'
+  );
+  assertEquals(getNonPrivateLaunchError(params), "renter.auth.groupLaunchForbidden");
+  params.set("chat", '{"id":1,"type":"private"}');
+  assertEquals(getNonPrivateLaunchError(params), null);
+  assertEquals(getNonPrivateLaunchError(new URLSearchParams()), null);
 });

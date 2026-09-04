@@ -118,6 +118,9 @@ function mapScheduleRow(row: Record<string, unknown>): RentalDisplayLesson {
     currency: row.currency != null ? String(row.currency) : "RUB",
     channel,
     lifecycle: row.lifecycle != null ? String(row.lifecycle) : null,
+    canDeleteHold: row.can_delete_hold === true,
+    canCancelOccurrence: row.can_cancel_occurrence === true,
+    canCancelPack: row.can_cancel_pack === true,
   };
 }
 

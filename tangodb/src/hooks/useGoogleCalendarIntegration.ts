@@ -35,15 +35,18 @@ export function useGoogleCalendarIntegration() {
     memberId ? googleCalendarQueryKeys.binding(memberId) : (["google-calendar", "binding"] as const)
   );
 
-  const accountsQuery = useQuery({
-    queryKey: googleCalendarQueryKeys.accounts,
-    queryFn: fetchMyGoogleAccounts,
-  });
-
   const bindingQuery = useQuery({
     queryKey: scopedBindingKey,
     queryFn: () => fetchMemberGoogleBinding(memberId!),
     enabled: orgEnabled && Boolean(memberId),
+  });
+
+  const bindingEnabled = Boolean(bindingQuery.data?.enabled);
+
+  const accountsQuery = useQuery({
+    queryKey: googleCalendarQueryKeys.accounts,
+    queryFn: fetchMyGoogleAccounts,
+    refetchInterval: bindingEnabled ? 60_000 : false,
   });
 
   const invalidateAll = async () => {

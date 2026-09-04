@@ -11,6 +11,83 @@
 
 ## Записи
 
+### 2026-09-04 — FDB2 откатил FA1 debt assign; overload PG functions (FZ)
+
+- **Ошибка:** `renter_miniapp_p0_reproduction_test` падал (debt=1000 вместо 600); FA4/FDB cancel — `function _renter_mark_terminal is not unique`; FB3 confirm — `_renter_credit_wallet_topup is not unique`.
+- **Причина:** FDB2 скопировал `_renter_early_close_pack` с `debt_amount += delta` вместо FA1 `debt_amount = delta`; FDB3/FA6 добавили 5/7-аргументные версии с `DEFAULT`, не сделав `DROP` старых overload.
+- **Как избежать:** при `CREATE OR REPLACE` с новым optional-аргументом — явный `DROP FUNCTION` старой сигнатуры; при правке early-close — прогонять `test:db:renter-miniapp-p0` и stage-a gate; хвост FZ до деплоя миграций на prod.
+
+### 2026-09-04 — initData chat/receiver и webhook secret order (FE5)
+
+- **Дата:** 2026-09-04
+- **Ошибка:** подписанный launch с полями `chat`/`receiver` отклонялся целиком; webhook парсил JSON до проверки secret; group `my_chat_member` мог проставить `bot_started`; replay initData обходил suspension; bind race оставлял orphan auth user; QR topup проходил без allowlisted chat; CRM client redirect после HTML с `frame-ancestors 'self'`.
+- **Причина:** жёсткий deny-list полей initData; порядок обработки webhook; отсутствие private-only classifier; idempotent ветка mint без повторной проверки `organization_allows_writes`; неполная очистка проигравшего createUser; server gate topup не дублировал UI; handoff только на клиенте.
+- **Как избежать:** identity только из `user.id` после HMAC; group launch — отдельный код ошибки; secret header до `req.json()`; `classifyTelegramWebhookUpdate` только private; replay mint перепроверяет suspension; bind возвращает `existing_auth_user_id` и Edge удаляет orphan; `renter.topup.chatRequired` для QR; Vercel 302 + Vite dev middleware вместо client redirect.
+
+### 2026-09-04 — Storage SELECT обходил active-only QR (P1-24)
+
+- **Дата:** 2026-09-04
+- **Ошибка:** `_org_rental_qr_storage_readable` разрешал renter читать любой объект `org-rental-qr` своей организации, включая деактивированные и заменённые QR; signed URL жил ~1 ч.
+- **Причина:** политика проверяла только org-префикс пути; TTL 3600 с в Storage fallback и Edge sign.
+- **Как избежать:** для `actor=renter` требовать `organization_rental_qr_assets.is_active` + совпадение `storage_path`; TTL signed URL = 300 с; SQL-тест `renter_miniapp_fe2_qr_storage_active_test.sql`.
+
+### 2026-09-04 — outbox шлёт на снимок telegram_id после rebind (P1-22)
+
+- **Дата:** 2026-09-04
+- **Ошибка:** `renter_telegram_outbox` хранил `telegram_id` при enqueue; drain отправлял на старый адрес после перепривязки арендатора.
+- **Причина:** recipient не пересчитывался между enqueue и send; gate проверял только снимок в строке outbox.
+- **Как избежать:** перед send вызывать `renter_telegram_outbox_prepare_send` (текущий `renters.telegram_id`); SQL-тест rebind enqueue→drain (`renter_miniapp_fe1_outbox_rebind_test.sql`).
+
+### 2026-09-03 — hold cooldown переносился между датами (P1-06)
+
+- **Дата:** 2026-09-03
+- **Ошибка:** удалённый холд понедельника укорачивал таймер новой брони в пятницу в том же зале — `_renter_inherited_hold_expires_at` не фильтровал `rental_date`.
+- **Причина:** наследование сравнивало org, renter, location и часы, но не календарную дату.
+- **Как избежать:** в inherited expiry всегда передавать `p_date`; SQL-тесты same date / different date (`renter_miniapp_fb4_hold_date_cancel_test.sql`).
+
+### 2026-09-03 — FA6 снова вставил `rental_advances.notes`
+
+- **Дата:** 2026-09-03
+- **Ошибка:** `staff_renter_wallet_topup` и `reverse_renter_wallet_topup` после FA6 падали на `column notes does not exist`; stage A (FA7) не проходил.
+- **Причина:** в таблице `rental_advances` нет `notes` (уже ловили в `20261042000003` / `20261053000001`); FA6 миграция скопировала INSERT/UPDATE с `notes`.
+- **Как избежать:** при любом touch wallet topup/reversal сверять схему `rental_advances`; external ref — только в `renter_wallet_ledger`; regression — `npm run test:db:renter-miniapp-stage-a`.
+
+### 2026-09-03 — staff-topup без review и без компенсации (FA6 / P0-01 operational)
+
+- **Ошибка:** direct staff-topup в карточке арендатора зачислял кошелёк одним кликом; ошибочное зачисление нельзя было компенсировать видимой audit-операцией.
+- **Причина:** не было read-only preview RPC и append-only `topup_reversal`; UI вызывал `staff_renter_wallet_topup` сразу.
+- **Как избежать:** `preview_staff_renter_wallet_topup` + confirm-диалог с эффектом; `reverse_renter_wallet_topup` создаёт `topup_reversal` (не DELETE ledger), с причиной и `member_can_record_rental_payment`; CRM не обходит review.
+
+### 2026-09-03 — pack idempotency без сверки payload (FA5 / P1-17)
+
+- **Ошибка:** повтор `renter_create_recurring_pack` с тем же `idempotency_key`, но другими weekdays/time, возвращал старую серию как успех; `unique_violation` handler тоже не сравнивал payload.
+- **Причина:** идемпотентность сверяла только `location_id`, `valid_from/to`, `renter_id`, но не pattern (weekdays, time); concurrent path возвращал `already_applied` без fingerprint.
+- **Как избежать:** хранить `rental_series.payload_fingerprint` (canonical md5: location, dates, sorted weekdays, normalized time, renter); при hit и в `unique_violation` сравнивать fingerprint → `idempotencyMismatch`; legacy rows без колонки — reconstruct из `rental_series_patterns`.
+
+### 2026-09-03 — debt lifecycle при нулевом долге и FIFO внутри cancel-pack (FA4 / P1-16, P1-18)
+
+- **Ошибка:** после полного `debt_settle` remainder-долг оставался `lifecycle=debt` при `debt_amount=0`; `renter_cancel_pack` / ban откатывались, когда mid-loop FIFO активировал следующий `awaiting_payment` и `delete_hold` падал с `renter.cancel.notHold`.
+- **Причина:** `_renter_debt_settle` менял lifecycle на `settled` только при `remainder_charged_at IS NOT NULL`; каждый slot cancel вызывал `_renter_apply_wallet` → FIFO внутри snapshot-цикла.
+- **Как избежать:** при `debt_amount=0` всегда `lifecycle=settled` (+ `remainder_charged_at` при remainder-долге); CHECK `debt ∧ amount=0`; batch cancel/ban с `p_defer_wallet` и один `_renter_apply_wallet` после всех terminal transitions; тесты mixed active+awaiting.
+
+### 2026-09-03 — create gates только до lock (FA3 / P1-15)
+
+- **Ошибка:** `renter_create_booking` / `renter_create_recurring_pack` проверяли debt/ban/status до `_renter_acquire_miniapp_locks`; при ожидании lock конкурентный долг/бан/disable не блокировали create.
+- **Причина:** mutable gates читались один раз до критической секции; после получения lock состояние арендатора не перечитывалось.
+- **Как избежать:** после location-date + wallet lock повторить `_renter_create_gates`; конкурентные тесты create ↔ debt/ban/disable; не менять порядок lock (sorted location dates, затем wallet).
+
+### 2026-09-03 — staff-topup SELECT-then-credit и UUID в mutateFn (FA2 / P0-01)
+
+- **Ошибка:** прямое пополнение кошелька сотрудником задваивалось при lost-response retry (новый UUID) и при двух конкурентных вызовах с одним ключом (оба проходили `check_operation_idempotency` до lock, второй `store` — `ON CONFLICT DO NOTHING`).
+- **Причина:** `check_operation_idempotency` — STABLE SELECT до `_renter_acquire_miniapp_locks`; `crypto.randomUUID()` внутри `useStaffRenterWalletTopup.mutateFn` на каждый вызов.
+- **Как избежать:** claim (INSERT pending) **после** wallet lock, **до** credit; `store` завершает pending; клиент создаёт operation key при открытии формы и шлёт тот же ключ при retry; не путать с `disabled={isPending}` на один in-flight.
+
+### 2026-09-03 — early-close `debt_amount +=` и reuse фазы `debt_settle` (FA1 / P0-02, P0-03)
+
+- **Ошибка:** раннее закрытие пакета при remainder-долге удваивало долг (`400 + 600 = 1000` вместо `600`); повторный settle после нового долга обнулял `debt_amount` без debit, тихо reusing ledger-строку `phase = debt_settle`.
+- **Причина:** `v_already` не включал существующий remainder-долг, но `debt_amount` прибавлялся к `v_delta`; уникальный индекс `(rental_id, phase)` + `_renter_wallet_insert_entry` при `unique_violation` возвращал id старой строки без проверки суммы.
+- **Как избежать:** для surcharge присваивать `debt_amount = v_delta - v_take`, не `+=`; каждое возникновение долга — отдельная фаза (`debt_charge_seq` + `debt_settle:<seq>`); при phase-conflict проверять совпадение суммы, иначе ошибка.
+
 ### 2026-09-03 — QR Mini App нельзя держать на одноразовом URL, а `rental_advances.notes` надо проверять во всех RPC
 
 - **Ошибка:** арендатор не видел QR и не мог скачать его на устройство; CRM «Принять аванс» снова падала на `column "notes" of relation "rental_advances" does not exist`.

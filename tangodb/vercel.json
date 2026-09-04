@@ -2,6 +2,14 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "query", "key": "tgWebAppStartParam" }],
+      "destination": "https://tangodb-renter.vercel.app/:path*?tgWebAppStartParam=:tgWebAppStartParam",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

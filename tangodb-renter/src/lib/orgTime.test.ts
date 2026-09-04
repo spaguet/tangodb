@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addCalendarDays,
   formatWeekRangeLabel,
+  isFreeSlotBookable,
   occupancyDaysFromWindow,
   occupancyWeeksFromWindow,
 } from "./orgTime";
@@ -30,5 +31,24 @@ describe("occupancy weeks", () => {
     const label = formatWeekRangeLabel("2026-08-31", "2026-09-06", "ru");
     expect(label).toMatch(/31/);
     expect(label).toMatch(/6/);
+  });
+});
+
+describe("isFreeSlotBookable", () => {
+  const tz = "Europe/Moscow";
+
+  it("rejects past calendar dates", () => {
+    const serverNowMs = Date.parse("2026-09-03T12:00:00.000Z");
+    expect(isFreeSlotBookable(tz, "2026-09-02", "18:00", serverNowMs)).toBe(false);
+  });
+
+  it("rejects same-day slots within one hour", () => {
+    const serverNowMs = Date.parse("2026-09-03T09:30:00.000Z");
+    expect(isFreeSlotBookable(tz, "2026-09-03", "12:00", serverNowMs)).toBe(false);
+  });
+
+  it("allows future dates regardless of hour", () => {
+    const serverNowMs = Date.parse("2026-09-03T09:30:00.000Z");
+    expect(isFreeSlotBookable(tz, "2026-09-05", "08:00", serverNowMs)).toBe(true);
   });
 });

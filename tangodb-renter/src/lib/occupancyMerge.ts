@@ -1,7 +1,7 @@
 import { rangesOverlap, SLOT_MINUTES, timeToMinutes } from "./grid";
 import type { BusySlot, MineSlot } from "./types";
 
-export type SlotState = "free" | "busy" | "mine" | "mine_hold";
+export type SlotState = "free" | "busy" | "mine" | "mine_hold" | "mine_debt";
 
 export function classifyInterval(
   date: string,
@@ -18,7 +18,9 @@ export function classifyInterval(
     const s2 = timeToMinutes(m.time_start);
     const e2 = timeToMinutes(m.time_end);
     if (rangesOverlap(s1, e1, s2, e2)) {
-      return m.lifecycle === "awaiting_payment" ? "mine_hold" : "mine";
+      if (m.lifecycle === "awaiting_payment") return "mine_hold";
+      if (m.lifecycle === "debt") return "mine_debt";
+      return "mine";
     }
   }
 

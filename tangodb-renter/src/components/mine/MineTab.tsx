@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
 import {
@@ -10,9 +10,14 @@ import {
   panelCls,
   sectionTitleCls,
 } from "../../lib/crmUi";
-import { formatMoney, holdCountdown } from "../../lib/format";
+import { formatMoney } from "../../lib/format";
+import { formatRequestAge } from "../../lib/cabinetRefresh";
+import { useHoldCountdown } from "../../hooks/useServerClock";
+import { miniAppLifecycleKey, isAwaitingPaymentHold } from "../../lib/lifecycle";
+import { groupMineBookings, isPackOnHold, packHoldExpiresAt } from "../../lib/packSeriesTimeline";
 import { formatShortDate, formatTimeRange } from "../../lib/orgTime";
 import {
+  rpcAckOutboxSkipped,
   rpcCancelOccurrence,
   rpcCancelPack,
   rpcDeleteHold,
@@ -24,10 +29,16 @@ import {
   rpcUpdateProfile,
 } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
+import { formatTopupAmount } from "../../lib/quoteBalance";
 import { qrDownloadFilename, resolveOrgRentalQrUrl } from "../../lib/qrUrl";
 import { copyText, downloadQrToDevice, openStudioChat, topupDraftMessage } from "../../lib/studioChat";
-import type { QrAsset, RentalItem, WalletData } from "../../lib/types";
-import { t, type Locale } from "../../i18n/strings";
+import type { PendingTopup, QrAsset, RentalItem, WalletData, WalletEntry } from "../../lib/types";
+import {
+  walletEntryAmountClass,
+  walletEntryAmountPrefix,
+  walletEntryLabelKey,
+} from "../../lib/walletDisplay";
+import { t, tFill, type Locale } from "../../i18n/strings";
 
 const PAGE = 20;
 
@@ -36,9 +47,22 @@ type MineTabProps = {
   bootstrap: BootstrapData;
   supabase: SupabaseClient;
   refreshKey: number;
+  focusRentalId?: string | null;
+  topupPrefillAmount?: number | null;
+  onTopupPrefillConsumed?: () => void;
+  onRefreshAll?: () => void;
 };
 
-export default function MineTab({ locale, bootstrap, supabase, refreshKey }: MineTabProps) {
+export default function MineTab({
+  locale,
+  bootstrap,
+  supabase,
+  refreshKey,
+  focusRentalId,
+  topupPrefillAmount,
+  onTopupPrefillConsumed,
+  onRefreshAll,
+}: MineTabProps) {
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [bookings, setBookings] = useState<RentalItem[]>([]);
   const [bookingsTotal, setBookingsTotal] = useState(0);
@@ -52,12 +76,28 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
   const [topupMethod, setTopupMethod] = useState<"qr" | "cash">("cash");
   const [topupQrId, setTopupQrId] = useState("");
   const [topupMsg, setTopupMsg] = useState<string | null>(null);
-  const [receiptSent, setReceiptSent] = useState(false);
-  const [chatOpened, setChatOpened] = useState(false);
+  const lastOpenedChatMessageRef = useRef<string | null>(null);
 
-  const [displayName, setDisplayName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [displayName, setDisplayName] = useState(bootstrap.displayName);
+  const [phone, setPhone] = useState(bootstrap.contactPhone ?? "");
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
+  const loadedBookingsCountRef = useRef(PAGE);
+  const focusHandledRef = useRef<string | null>(null);
+  const undeliveredAckRef = useRef(false);
+
+  useEffect(() => {
+    const count = bootstrap.undeliveredNotifications;
+    if (count <= 0 || undeliveredAckRef.current) return;
+    undeliveredAckRef.current = true;
+    void rpcAckOutboxSkipped(supabase).catch(() => {
+      undeliveredAckRef.current = false;
+    });
+  }, [bootstrap.undeliveredNotifications, supabase]);
+
+  useEffect(() => {
+    setDisplayName(bootstrap.displayName);
+    setPhone(bootstrap.contactPhone ?? "");
+  }, [bootstrap.displayName, bootstrap.contactPhone]);
 
   const resolveQrAssetUrl = useCallback(
     async (asset: QrAsset): Promise<string | null> => {
@@ -68,31 +108,83 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
     [supabase]
   );
 
-  const load = useCallback(async () => {
-    setError(null);
-    const [w, b] = await Promise.all([
-      rpcGetWallet(supabase, PAGE, 0),
-      rpcListMine(supabase, PAGE, bookingsOffset),
-    ]);
-    setWallet(w);
-    setBookings(b.items);
-    setBookingsTotal(b.total);
-    if (bootstrap.addonActive) {
-      try {
-        const assets = await rpcListActiveQr(supabase);
-        const resolved = await Promise.all(
-          assets.map(async (asset) => ({
-            ...asset,
-            signed_url: await resolveQrAssetUrl(asset),
-          }))
-        );
-        setQrs(resolved);
-        if (resolved[0]) setTopupQrId((prev) => prev || resolved[0].id);
-      } catch {
-        setQrs([]);
+  const loadBookings = useCallback(
+    async (mode: "initial" | "refresh" | "more") => {
+      if (mode === "more") {
+        const next = bookingsOffset + PAGE;
+        const b = await rpcListMine(supabase, PAGE, next);
+        setBookings((prev) => {
+          const merged = [...prev, ...b.items];
+          loadedBookingsCountRef.current = merged.length;
+          return merged;
+        });
+        setBookingsOffset(next);
+        setBookingsTotal(b.total);
+        return;
       }
-    }
-  }, [supabase, bookingsOffset, bootstrap.addonActive, resolveQrAssetUrl]);
+
+      const limit =
+        mode === "refresh" ? Math.max(PAGE, loadedBookingsCountRef.current) : PAGE;
+      const b = await rpcListMine(supabase, limit, 0);
+      setBookings(b.items);
+      setBookingsTotal(b.total);
+      if (mode === "initial") {
+        setBookingsOffset(0);
+        loadedBookingsCountRef.current = b.items.length;
+      } else {
+        setBookingsOffset(Math.max(0, b.items.length - PAGE));
+        loadedBookingsCountRef.current = b.items.length;
+      }
+    },
+    [supabase, bookingsOffset]
+  );
+
+  const load = useCallback(
+    async (bookingsMode?: "initial" | "refresh") => {
+      setError(null);
+      const w = await rpcGetWallet(supabase, PAGE, 0);
+      setWallet(w);
+      const mode =
+        bookingsMode ?? (loadedBookingsCountRef.current > PAGE ? "refresh" : "initial");
+      await loadBookings(mode);
+      if (bootstrap.addonActive) {
+        try {
+          const assets = await rpcListActiveQr(supabase);
+          const resolved = await Promise.all(
+            assets.map(async (asset) => ({
+              ...asset,
+              signed_url: await resolveQrAssetUrl(asset),
+            }))
+          );
+          setQrs(resolved);
+          if (resolved[0]) {
+            setTopupQrId((prev) => prev || resolved[0].id);
+            setTopupMethod((prev) => (prev === "cash" ? "qr" : prev));
+          }
+        } catch {
+          setQrs([]);
+        }
+      }
+    },
+    [supabase, bootstrap.addonActive, resolveQrAssetUrl, loadBookings]
+  );
+
+  useEffect(() => {
+    setBookingsOffset(0);
+    loadedBookingsCountRef.current = PAGE;
+  }, [refreshKey]);
+
+  useEffect(() => {
+    if (!focusRentalId || loading || focusHandledRef.current === focusRentalId) return;
+    const target = document.getElementById(`rental-${focusRentalId}`);
+    if (!target) return;
+    focusHandledRef.current = focusRentalId;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusRentalId, loading, bookings]);
+
+  useEffect(() => {
+    focusHandledRef.current = null;
+  }, [focusRentalId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,12 +203,15 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
     };
   }, [load, locale, refreshKey]);
 
+  useEffect(() => {
+    if (topupPrefillAmount == null || topupPrefillAmount <= 0) return;
+    setTopupAmount(formatTopupAmount(topupPrefillAmount));
+    onTopupPrefillConsumed?.();
+  }, [topupPrefillAmount, onTopupPrefillConsumed]);
+
   const loadMoreBookings = async () => {
-    const next = bookingsOffset + PAGE;
     try {
-      const b = await rpcListMine(supabase, PAGE, next);
-      setBookings((prev) => [...prev, ...b.items]);
-      setBookingsOffset(next);
+      await loadBookings("more");
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
     }
@@ -126,7 +221,7 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
     setActionId(id);
     try {
       await rpcDeleteHold(supabase, id);
-      await load();
+      await load("refresh");
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
     } finally {
@@ -138,7 +233,7 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
     setActionId(id);
     try {
       await rpcCancelOccurrence(supabase, id);
-      await load();
+      await load("refresh");
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
     } finally {
@@ -150,7 +245,7 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
     setActionId(seriesId);
     try {
       await rpcCancelPack(supabase, seriesId);
-      await load();
+      await load("refresh");
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
     } finally {
@@ -158,8 +253,24 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
     }
   };
 
-  const draftForAmount = (amountLabel: string) =>
-    topupDraftMessage({ locale, amountLabel, method: topupMethod });
+  const draftForAmount = (amountLabel: string, correlationCode?: string) =>
+    topupDraftMessage({ locale, amountLabel, method: topupMethod, correlationCode });
+
+  const openChatWithMessage = async (message: string) => {
+    const url = bootstrap.chatUrl;
+    if (!url) {
+      setError(t(locale, "topupNeedChat"));
+      return false;
+    }
+    if (lastOpenedChatMessageRef.current === message) {
+      return true;
+    }
+    const copied = await copyText(message);
+    openStudioChat(url);
+    lastOpenedChatMessageRef.current = message;
+    setTopupMsg(copied ? t(locale, "topupCopied") : null);
+    return true;
+  };
 
   const refreshQrUrl = useCallback(
     async (asset: QrAsset): Promise<string | null> => {
@@ -171,15 +282,7 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
   );
 
   const openChatWithDraft = async (amountLabel: string) => {
-    const url = bootstrap.chatUrl;
-    if (!url) {
-      setError(t(locale, "topupNeedChat"));
-      return;
-    }
-    const copied = await copyText(draftForAmount(amountLabel));
-    openStudioChat(url);
-    setChatOpened(true);
-    setTopupMsg(copied ? t(locale, "topupCopied") : t(locale, "topupReceiptHint"));
+    await openChatWithMessage(draftForAmount(amountLabel));
   };
 
   const submitTopup = async () => {
@@ -193,31 +296,30 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
       setError(t(locale, "topupNeedChat"));
       return;
     }
-    if (bootstrap.chatUrl && (!receiptSent || !chatOpened)) {
-      setError(t(locale, "topupNeedReceipt"));
-      return;
-    }
     try {
-      await rpcSubmitTopup(supabase, {
+      const result = await rpcSubmitTopup(supabase, {
         amount,
         method: topupMethod,
         ...(topupMethod === "qr" ? { qr_asset_id: topupQrId } : {}),
       });
-      setTopupMsg(t(locale, "topupSuccess"));
+      setTopupMsg(tFill(locale, "topupSuccess", { code: result.correlation_code }));
       setTopupAmount("");
-      setReceiptSent(false);
-      await load();
-      if (bootstrap.chatUrl) {
-        await copyText(draftForAmount(amountLabel));
-        openStudioChat(bootstrap.chatUrl);
+      await load("refresh");
+      if (topupMethod === "qr" && bootstrap.chatUrl) {
+        const message = draftForAmount(amountLabel, result.correlation_code);
+        await openChatWithMessage(message);
       }
     } catch (err) {
       const key = rpcErrorKey(err);
       setError(t(locale, key));
-      if (key === "topupPendingExists" && bootstrap.chatUrl) {
+      if (key === "topupPendingExists" && bootstrap.chatUrl && topupMethod === "qr") {
         await openChatWithDraft(amountLabel);
       }
     }
+  };
+
+  const manualRefresh = () => {
+    onRefreshAll?.();
   };
 
   const saveProfile = async () => {
@@ -241,7 +343,7 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
 
   const currency = bootstrap.currencyCode;
   const debt = wallet?.debt_amount ?? 0;
-  const seenSeries = new Set<string>();
+  const pendingTopup = wallet?.pending_topup ?? null;
 
   const methodActiveCls = "bg-indigo-600 text-white border border-indigo-600";
   const methodIdleCls = "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50";
@@ -249,6 +351,18 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
   return (
     <div className="flex flex-col gap-4 bg-slate-50 px-4 pb-8 pt-3 text-slate-800">
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+
+      {bootstrap.undeliveredNotifications > 0 ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {tFill(locale, "undeliveredNotifications", {
+            count: bootstrap.undeliveredNotifications,
+          })}
+        </p>
+      ) : null}
+
+      {pendingTopup ? (
+        <PendingTopupCard locale={locale} pending={pendingTopup} currency={currency} />
+      ) : null}
 
       {wallet ? (
         <section className={`${panelCls} space-y-2 p-3 text-sm`}>
@@ -281,30 +395,67 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
               {t(locale, "debtWarning")}
             </p>
           ) : null}
+          {wallet.entries.length > 0 ? (
+            <WalletHistory
+              locale={locale}
+              currency={currency}
+              entries={wallet.entries}
+            />
+          ) : null}
         </section>
       ) : null}
 
       <section className="space-y-2">
-        <h2 className={sectionTitleCls}>{t(locale, "tabMine")}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className={sectionTitleCls}>{t(locale, "tabMine")}</h2>
+          <button
+            type="button"
+            className={`shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60`}
+            disabled={loading}
+            onClick={manualRefresh}
+          >
+            {loading ? t(locale, "refreshing") : t(locale, "refresh")}
+          </button>
+        </div>
         {bookings.length === 0 ? (
           <p className="text-sm text-slate-500">{t(locale, "noBookings")}</p>
         ) : (
-          bookings.map((r) => {
+          groupMineBookings(bookings).map((row) => {
+            if (row.kind === "pack") {
+              return (
+                <PackSeriesCard
+                  key={row.seriesId}
+                  locale={locale}
+                  rentals={row.rentals}
+                  head={row.head}
+                  currency={currency}
+                  serverNow={bootstrap.serverNow}
+                  highlighted={row.rentals.some((r) => focusRentalId === r.id)}
+                  busy={actionId === row.seriesId || row.rentals.some((r) => actionId === r.id)}
+                  onCancelPack={
+                    row.head.can_cancel_pack ? () => void onCancelPack(row.seriesId) : undefined
+                  }
+                  onHoldExpired={() => void load("refresh")}
+                />
+              );
+            }
+            const r = row.rental;
             const seriesId = r.rental_series_id;
-            const showPackCancel =
-              seriesId && !seenSeries.has(seriesId) ? (seenSeries.add(seriesId), true) : false;
             return (
               <RentalCard
                 key={r.id}
                 locale={locale}
                 rental={r}
                 currency={currency}
+                serverNow={bootstrap.serverNow}
+                highlighted={focusRentalId === r.id}
                 busy={actionId === r.id || actionId === (r.rental_series_id ?? "")}
                 onDeleteHold={() => void onDeleteHold(r.id)}
                 onCancel={() => void onCancel(r.id)}
                 onCancelPack={
-                  showPackCancel && seriesId ? () => void onCancelPack(seriesId) : undefined
+                  r.can_cancel_pack && seriesId ? () => void onCancelPack(seriesId) : undefined
                 }
+                onHoldExpired={() => void load("refresh")}
               />
             );
           })
@@ -318,6 +469,11 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
 
       <section className={`${panelCls} space-y-3 p-3`}>
         <h2 className={sectionTitleCls}>{t(locale, "topup")}</h2>
+        {pendingTopup ? (
+          <p className="rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1.5 text-xs leading-relaxed text-indigo-900">
+            {t(locale, "topupPendingBlocked")}
+          </p>
+        ) : null}
         {!bootstrap.addonActive ? (
           <p className="text-xs text-slate-500">{t(locale, "addonInactiveTopup")}</p>
         ) : (
@@ -377,38 +533,28 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
             <p className="text-xs leading-relaxed text-slate-600">
               {t(locale, topupMethod === "qr" ? "topupReceiptHint" : "topupCashHint")}
             </p>
-            {bootstrap.chatUrl ? (
-              <>
-                <button
-                  type="button"
-                  className={`w-full ${btnPrimaryCls}`}
-                  onClick={() => {
-                    const amount = Number(topupAmount.replace(",", "."));
-                    const amountLabel = Number.isFinite(amount) && amount > 0
-                      ? formatMoney(amount, currency, locale)
-                      : topupAmount.trim() || t(locale, "topupAmount");
-                    void openChatWithDraft(amountLabel);
-                  }}
-                >
-                  {t(locale, "topupOpenChat")}
-                </button>
-                <label className="flex items-start gap-2 text-xs leading-relaxed text-slate-700">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={receiptSent}
-                    onChange={(e) => setReceiptSent(e.target.checked)}
-                  />
-                  <span>{t(locale, "topupReceiptCheck")}</span>
-                </label>
-              </>
-            ) : (
+            {bootstrap.chatUrl && topupMethod === "qr" ? (
+              <button
+                type="button"
+                className={`w-full ${btnPrimaryCls}`}
+                onClick={() => {
+                  const amount = Number(topupAmount.replace(",", "."));
+                  const amountLabel = Number.isFinite(amount) && amount > 0
+                    ? formatMoney(amount, currency, locale)
+                    : topupAmount.trim() || t(locale, "topupAmount");
+                  void openChatWithDraft(amountLabel);
+                }}
+              >
+                {t(locale, "topupOpenChat")}
+              </button>
+            ) : topupMethod === "qr" ? (
               <p className="text-xs leading-relaxed text-amber-800">{t(locale, "topupNeedChat")}</p>
-            )}
+            ) : null}
             <button
               type="button"
               className={`w-full ${btnSecondaryCls}`}
               onClick={() => void submitTopup()}
+              disabled={Boolean(pendingTopup)}
             >
               {t(locale, "topupSubmit")}
             </button>
@@ -417,26 +563,201 @@ export default function MineTab({ locale, bootstrap, supabase, refreshKey }: Min
         )}
       </section>
 
-      <section className={`${panelCls} space-y-3 p-3`}>
-        <h2 className={sectionTitleCls}>{t(locale, "profile")}</h2>
-        <label className="flex flex-col gap-1">
-          <span className={labelCls}>{t(locale, "displayName")}</span>
-          <input className={fieldCls} value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={80} />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className={labelCls}>{t(locale, "phone")}</span>
-          <input
-            className={fieldCls}
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            inputMode="tel"
-          />
-        </label>
-        <button type="button" className={`w-full ${btnSecondaryCls}`} onClick={() => void saveProfile()}>
-          {t(locale, "saveProfile")}
-        </button>
-        {profileMsg ? <p className="text-xs font-medium text-indigo-600">{profileMsg}</p> : null}
+      <section className={`${panelCls} p-3`}>
+        <details className="group">
+          <summary className={`${sectionTitleCls} cursor-pointer list-none marker:content-none [&::-webkit-details-marker]:hidden`}>
+            {t(locale, "profile")}
+          </summary>
+          <div className="mt-3 space-y-3">
+            <label className="flex flex-col gap-1">
+              <span className={labelCls}>{t(locale, "displayName")}</span>
+              <input
+                className={fieldCls}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                maxLength={80}
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className={labelCls}>{t(locale, "phone")}</span>
+              <input
+                className={fieldCls}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                inputMode="tel"
+              />
+            </label>
+            <button type="button" className={`w-full ${btnSecondaryCls}`} onClick={() => void saveProfile()}>
+              {t(locale, "saveProfile")}
+            </button>
+            {profileMsg ? <p className="text-xs font-medium text-indigo-600">{profileMsg}</p> : null}
+          </div>
+        </details>
       </section>
+    </div>
+  );
+}
+
+type WalletHistoryProps = {
+  locale: Locale;
+  currency: string;
+  entries: WalletEntry[];
+};
+
+function WalletHistory({ locale, currency, entries }: WalletHistoryProps) {
+  const localeTag = locale === "en" ? "en-US" : "ru-RU";
+
+  return (
+    <div className="border-t border-slate-100 pt-2">
+      <p className={`${labelCls} mb-1`}>{t(locale, "walletHistory")}</p>
+      <ul className="space-y-1.5">
+        {entries.map((entry) => {
+          const labelKey = walletEntryLabelKey(entry.entry_type);
+          const label = labelKey ? t(locale, labelKey) : entry.entry_type;
+          const when = new Intl.DateTimeFormat(localeTag, {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          }).format(new Date(entry.created_at));
+
+          return (
+            <li
+              key={entry.id}
+              className="flex items-start justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/80 px-2 py-1.5 text-xs"
+            >
+              <span className="min-w-0 text-slate-600">
+                <span className="block font-medium text-slate-800">{label}</span>
+                <span className="text-slate-500">{when}</span>
+                {entry.balance_after != null ? (
+                  <span className="block text-slate-400">
+                    {tFill(locale, "walletEntryBalanceAfter", {
+                      amount: formatMoney(entry.balance_after, currency, locale),
+                    })}
+                  </span>
+                ) : null}
+              </span>
+              <span className={`shrink-0 font-semibold tabular-nums ${walletEntryAmountClass(entry)}`}>
+                {walletEntryAmountPrefix(entry)}
+                {formatMoney(entry.amount, currency, locale)}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+type PendingTopupCardProps = {
+  locale: Locale;
+  pending: PendingTopup;
+  currency: string;
+};
+
+function PendingTopupCard({ locale, pending, currency }: PendingTopupCardProps) {
+  const localeTag = locale === "en" ? "en" : "ru";
+  const methodLabel =
+    pending.method === "qr" ? t(locale, "topupMethodQr") : t(locale, "topupMethodCash");
+
+  return (
+    <section className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-sm shadow-xs">
+      <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
+        {t(locale, "topupPendingStatus")}
+      </p>
+      <p className="mt-1 font-semibold text-slate-800">
+        {formatMoney(pending.amount, currency, locale)}
+      </p>
+      <p className="mt-1 text-xs text-slate-600">
+        {tFill(locale, "topupPendingMeta", {
+          method: methodLabel,
+          age: formatRequestAge(pending.created_at, localeTag),
+        })}
+      </p>
+      <p className="mt-1 text-xs font-semibold text-indigo-800">
+        {tFill(locale, "topupPendingCode", { code: pending.correlation_code })}
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-indigo-900">{t(locale, "topupPendingHint")}</p>
+    </section>
+  );
+}
+
+type PackSeriesCardProps = {
+  locale: Locale;
+  rentals: RentalItem[];
+  head: RentalItem;
+  currency: string;
+  serverNow: string;
+  highlighted?: boolean;
+  busy: boolean;
+  onCancelPack?: () => void;
+  onHoldExpired?: () => void;
+};
+
+function PackSeriesCard({
+  locale,
+  rentals,
+  head,
+  currency,
+  serverNow,
+  highlighted = false,
+  busy,
+  onCancelPack,
+  onHoldExpired,
+}: PackSeriesCardProps) {
+  const localeTag = locale === "en" ? "en" : "ru";
+  const packHold = isPackOnHold(head);
+  const countdown = useHoldCountdown(
+    packHoldExpiresAt(head),
+    packHold,
+    serverNow,
+    onHoldExpired
+  );
+  const sessionCount = head.series_occurrence_count ?? rentals.length;
+  const packCost = rentals.reduce((sum, r) => sum + (r.fixed_amount ?? 0), 0);
+
+  return (
+    <div
+      className={`rounded-xl border p-3 text-sm space-y-2 shadow-xs ${
+        highlighted ? "ring-2 ring-indigo-400 ring-offset-2" : ""
+      } ${
+        packHold
+          ? "slot-hold border-slate-300 text-slate-800"
+          : "border-slate-200 bg-white border-l-4 border-l-indigo-600"
+      }`}
+    >
+      <div className="flex justify-between gap-2">
+        <span className="font-semibold text-slate-900">
+          {tFill(locale, "packSeriesTitle", { count: String(sessionCount) })}
+        </span>
+        <span className="text-slate-600">{formatTimeRange(head.time_start, head.time_end)}</span>
+      </div>
+      <p className="text-xs font-medium text-indigo-700">
+        {packHold ? t(locale, "packSeriesHold") : t(locale, miniAppLifecycleKey(head.lifecycle))}
+      </p>
+      {packCost > 0 ? (
+        <p className="text-xs font-medium text-slate-700">
+          {formatMoney(packCost, head.currency ?? currency, locale)}
+        </p>
+      ) : null}
+      {countdown ? (
+        <p className="text-xs font-medium text-amber-800">
+          {t(locale, "holdExpires")}: {countdown}
+        </p>
+      ) : null}
+      <ul className="max-h-32 space-y-0.5 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+        {rentals.map((r) => (
+          <li key={r.id} id={`rental-${r.id}`}>
+            {formatShortDate(r.rental_date, localeTag)} · {formatTimeRange(r.time_start, r.time_end)}
+            <span className="ml-1 text-slate-500">({t(locale, miniAppLifecycleKey(r.lifecycle))})</span>
+          </li>
+        ))}
+      </ul>
+      {onCancelPack ? (
+        <button type="button" disabled={busy} className={btnDestructiveOpenCls} onClick={onCancelPack}>
+          {t(locale, "cancelPack")}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -445,30 +766,44 @@ type RentalCardProps = {
   locale: Locale;
   rental: RentalItem;
   currency: string;
+  serverNow: string;
+  highlighted?: boolean;
   busy: boolean;
   onDeleteHold: () => void;
   onCancel: () => void;
   onCancelPack?: () => void;
+  onHoldExpired?: () => void;
 };
 
 function RentalCard({
   locale,
   rental,
   currency,
+  serverNow,
+  highlighted = false,
   busy,
   onDeleteHold,
   onCancel,
   onCancelPack,
+  onHoldExpired,
 }: RentalCardProps) {
-  const isHold = rental.lifecycle === "awaiting_payment";
-  const canDeleteHold = isHold;
-  const canCancel = !isHold && ["active", "prepaid_charged"].includes(rental.lifecycle);
-  const countdown = isHold ? holdCountdown(rental.hold_expires_at) : null;
-  const isPack = Boolean(rental.rental_series_id);
+  const isHold = isAwaitingPaymentHold(rental.lifecycle);
+  const canDeleteHold = rental.can_delete_hold === true;
+  const canCancel = rental.can_cancel_occurrence === true;
+  const countdown = useHoldCountdown(
+    rental.hold_expires_at,
+    isHold,
+    serverNow,
+    onHoldExpired
+  );
+  const lifecycleKey = miniAppLifecycleKey(rental.lifecycle);
 
   return (
     <div
+      id={`rental-${rental.id}`}
       className={`rounded-xl border p-3 text-sm space-y-2 shadow-xs ${
+        highlighted ? "ring-2 ring-indigo-400 ring-offset-2" : ""
+      } ${
         isHold
           ? "slot-hold border-slate-300 text-slate-800"
           : "border-slate-200 bg-white border-l-4 border-l-indigo-600"
@@ -480,7 +815,7 @@ function RentalCard({
         </span>
         <span className="text-slate-600">{formatTimeRange(rental.time_start, rental.time_end)}</span>
       </div>
-      <p className="text-xs text-slate-500">{rental.lifecycle}</p>
+      <p className="text-xs font-medium text-indigo-700">{t(locale, lifecycleKey)}</p>
       {rental.fixed_amount != null ? (
         <p className="text-xs font-medium text-slate-700">
           {formatMoney(rental.fixed_amount, rental.currency ?? currency, locale)}
@@ -502,7 +837,7 @@ function RentalCard({
             {t(locale, "cancelBooking")}
           </button>
         ) : null}
-        {isPack && onCancelPack ? (
+        {onCancelPack ? (
           <button type="button" disabled={busy} className={btnDestructiveOpenCls} onClick={onCancelPack}>
             {t(locale, "cancelPack")}
           </button>

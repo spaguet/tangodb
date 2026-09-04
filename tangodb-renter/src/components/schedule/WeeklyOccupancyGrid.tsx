@@ -1,27 +1,31 @@
 import { Fragment, useMemo } from "react";
 import { occupancyCellClass } from "../../lib/crmUi";
 import { slotStartOptions } from "../../lib/grid";
-import { calendarDayNumber, orgLocalDate } from "../../lib/orgTime";
+import { calendarDayNumber, isFreeSlotBookable, orgLocalDate } from "../../lib/orgTime";
 import {
   daySlotStates,
   findOverlappingMine,
   type SlotState,
 } from "../../lib/occupancyMerge";
+import { serverNowMs, computeServerOffsetMs } from "../../lib/serverTime";
 import type { OccupancyData } from "../../lib/types";
 import { t, WEEKDAY_LABELS, type Locale, type MessageKey } from "../../i18n/strings";
 
 type WeeklyOccupancyGridProps = {
   locale: Locale;
   timezone: string;
+  serverNow: string;
   weekDays: string[];
   occupancy: OccupancyData;
   addonActive: boolean;
   onFreeCell: (date: string, start: string) => void;
-  onMineCell: (date: string, start: string) => void;
+  onMineCell: (rentalId: string) => void;
 };
 
 function stateKey(state: SlotState): MessageKey {
-  return state === "mine_hold" ? "mineHold" : state;
+  if (state === "mine_hold") return "mineHold";
+  if (state === "mine_debt") return "mineDebt";
+  return state;
 }
 
 function weekdayKey(columnIndex: number): MessageKey {
@@ -31,6 +35,7 @@ function weekdayKey(columnIndex: number): MessageKey {
 export default function WeeklyOccupancyGrid({
   locale,
   timezone,
+  serverNow,
   weekDays,
   occupancy,
   addonActive,
@@ -39,6 +44,7 @@ export default function WeeklyOccupancyGrid({
 }: WeeklyOccupancyGridProps) {
   const slotStarts = useMemo(() => slotStartOptions(), []);
   const todayIso = orgLocalDate(timezone);
+  const nowMs = serverNowMs(computeServerOffsetMs(serverNow));
 
   const statesByDate = useMemo(() => {
     const map = new Map<string, Map<string, SlotState>>();
@@ -49,11 +55,14 @@ export default function WeeklyOccupancyGrid({
   }, [weekDays, slotStarts, occupancy.busy, occupancy.mine]);
 
   const onCell = (date: string, start: string, state: SlotState) => {
-    if (state === "mine" || state === "mine_hold") {
-      if (findOverlappingMine(date, start, occupancy.mine)) onMineCell(date, start);
+    if (state === "mine" || state === "mine_hold" || state === "mine_debt") {
+      const rental = findOverlappingMine(date, start, occupancy.mine);
+      if (rental) onMineCell(rental.id);
       return;
     }
-    if (state === "free" && addonActive) onFreeCell(date, start);
+    if (state === "free" && addonActive && isFreeSlotBookable(timezone, date, start, nowMs)) {
+      onFreeCell(date, start);
+    }
   };
 
   return (
@@ -102,15 +111,20 @@ export default function WeeklyOccupancyGrid({
                 const state = statesByDate.get(date)?.get(start) ?? "free";
                 const isToday = date === todayIso;
                 const label = `${t(locale, weekdayKey(columnIndex))} ${calendarDayNumber(date)}, ${start}, ${t(locale, stateKey(state))}`;
-                const interactive =
-                  (state === "free" && addonActive) || state === "mine" || state === "mine_hold";
+                const ownSlot =
+                  state === "mine" || state === "mine_hold" || state === "mine_debt";
+                const bookableFree =
+                  state === "free" &&
+                  addonActive &&
+                  isFreeSlotBookable(timezone, date, start, nowMs);
+                const interactive = ownSlot || bookableFree;
                 const borderCls = isHour ? "border-b-slate-100" : "border-b-slate-50";
                 const className = `h-7 w-full border-b border-r border-slate-100 ${borderCls} ${occupancyCellClass(state, isToday)}`;
                 if (!interactive) {
                   return (
                     <div
                       key={`${date}-${start}`}
-                      className={`${className} opacity-80`}
+                      className={`${className} opacity-50`}
                       aria-label={label}
                     />
                   );

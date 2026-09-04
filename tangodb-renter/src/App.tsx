@@ -141,7 +141,9 @@ export default function App() {
     );
   }
 
-  return (
-    <EntryScreen locale={locale} phase={phase} bootstrap={bootstrap} errorKey={errorKey} />
-  );
+  if (phase === "ready") {
+    return null;
+  }
+
+  return <EntryScreen locale={locale} phase={phase} errorKey={errorKey} />;
 }

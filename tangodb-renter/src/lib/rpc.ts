@@ -4,6 +4,7 @@ import type {
   OccupancyData,
   QrAsset,
   QuoteOneTime,
+  PackCreateResult,
   QuotePackOccurrence,
   RentalItem,
   RpcResult,
@@ -64,7 +65,18 @@ export async function rpcQuotePack(
     time_end: string;
     weekdays: number[];
   }
-): Promise<{ kind: string; valid_from: string; valid_to: string; occurrences: QuotePackOccurrence[] }> {
+): Promise<{
+  kind: string;
+  valid_from: string;
+  valid_to: string;
+  occurrences: QuotePackOccurrence[];
+  can_create?: boolean;
+  reasons?: string[];
+  cost?: number;
+  prepay?: number;
+  remainder?: number;
+  currency?: string;
+}> {
   const { data, error } = await supabase.rpc("renter_quote_booking", { p_payload: payload });
   if (error) throw new Error(error.message);
   return unwrap<{
@@ -72,6 +84,12 @@ export async function rpcQuotePack(
     valid_from: string;
     valid_to: string;
     occurrences: QuotePackOccurrence[];
+    can_create?: boolean;
+    reasons?: string[];
+    cost?: number;
+    prepay?: number;
+    remainder?: number;
+    currency?: string;
   }>(data);
 }
 
@@ -101,12 +119,12 @@ export async function rpcCreatePack(
     weekdays: number[];
     idempotency_key: string;
   }
-): Promise<{ series_id: string; rentals: RentalItem[] }> {
+): Promise<PackCreateResult> {
   const { data, error } = await supabase.rpc("renter_create_recurring_pack", {
     p_payload: payload,
   });
   if (error) throw new Error(error.message);
-  return unwrap<{ series_id: string; rentals: RentalItem[] }>(data);
+  return unwrap<PackCreateResult>(data);
 }
 
 export async function rpcListMine(
@@ -132,7 +150,26 @@ export async function rpcGetWallet(
     p_offset: offset,
   });
   if (error) throw new Error(error.message);
-  return unwrap<WalletData>(data);
+  const row = unwrap<
+    WalletData & {
+      pending_topup?: WalletData["pending_topup"];
+      has_awaiting_payment?: boolean;
+    }
+  >(data);
+  return {
+    ...row,
+    pending_topup: row.pending_topup ?? null,
+    has_awaiting_payment: row.has_awaiting_payment ?? false,
+    entries: (row.entries ?? []).map((entry) => ({
+      ...entry,
+      direction:
+        entry.direction === "credit" || entry.direction === "debit" ? entry.direction : null,
+      balance_after:
+        entry.balance_after != null && Number.isFinite(Number(entry.balance_after))
+          ? Number(entry.balance_after)
+          : null,
+    })),
+  };
 }
 
 export async function rpcCancelOccurrence(
@@ -202,12 +239,21 @@ export async function rpcGetRentalQrAccessUrl(
 export async function rpcSubmitTopup(
   supabase: SupabaseClient,
   payload: { amount: number; method: "qr" | "cash"; qr_asset_id?: string }
-): Promise<{ id: string; amount: number }> {
+): Promise<{ id: string; amount: number; correlation_code: string }> {
   const { data, error } = await supabase.rpc("renter_submit_topup", { p_payload: payload });
   if (error) throw new Error(error.message);
-  const row = data as RpcResult<{ id: string; amount: number }>;
+  const row = data as RpcResult<{ id: string; amount: number; correlation_code: string }>;
   if (!row?.success) {
     throw new Error(String((row as { error?: string })?.error ?? "rpcFailed"));
   }
-  return row as { id: string; amount: number };
+  return row as { id: string; amount: number; correlation_code: string };
+}
+
+export async function rpcAckOutboxSkipped(supabase: SupabaseClient): Promise<void> {
+  const { data, error } = await supabase.rpc("renter_ack_outbox_skipped");
+  if (error) throw new Error(error.message);
+  const row = data as RpcResult<unknown>;
+  if (!row?.success) {
+    throw new Error(String((row as { error?: string })?.error ?? "rpcFailed"));
+  }
 }

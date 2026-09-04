@@ -48,11 +48,9 @@ export default function MiniAppRentalInfoPopup({
   const locationName = locations.find((l) => l.id === lesson.locationId)?.name;
   const canManage = !isReadOnly && canManageMiniAppRentals(role, options);
   const lifecycle = lesson.lifecycle ?? null;
-  const isHold = lifecycle === "awaiting_payment";
-  const canCancelSlot =
-    canManage &&
-    lesson.bookingStatus === "confirmed" &&
-    (lifecycle === "active" || lifecycle === "prepaid_charged");
+  const canDeleteHold = canManage && lesson.canDeleteHold === true;
+  const canCancelSlot = canManage && lesson.canCancelOccurrence === true;
+  const canCancelPack = canManage && lesson.canCancelPack === true;
   const pending = deleteHold.isPending || cancelOccurrence.isPending || cancelPack.isPending;
 
   const runAction = async () => {
@@ -130,7 +128,7 @@ export default function MiniAppRentalInfoPopup({
             </div>
 
             <div className="flex flex-wrap gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
-              {canManage && isHold ? (
+              {canDeleteHold ? (
                 <button
                   type="button"
                   onClick={() => setConfirm("hold")}
@@ -148,7 +146,7 @@ export default function MiniAppRentalInfoPopup({
                   {t("schedule.miniapp.cancelOccurrence")}
                 </button>
               ) : null}
-              {canManage && lesson.rentalSeriesId && lesson.bookingStatus === "confirmed" ? (
+              {canCancelPack ? (
                 <button
                   type="button"
                   onClick={() => setConfirm("pack")}

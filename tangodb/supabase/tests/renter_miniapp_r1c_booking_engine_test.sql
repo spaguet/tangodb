@@ -751,32 +751,6 @@ BEGIN
   DELETE FROM rentals
   WHERE organization_id = v_org AND renter_id = v_renter_notg AND rental_date = v_tail AND channel = 'cashier';
 
-  -- Pack ROLLBACK if a date stays awaiting (drain wallet of renter? use a fresh broke renter with tiny topup)
-  INSERT INTO renters (id, organization_id, display_name, telegram_id, status)
-  VALUES ('a1c00000-0000-4000-8000-000000000046', v_org, 'R1c Pack Poor', 91005, 'active');
-  INSERT INTO renter_wallet_ledger (organization_id, renter_id, entry_type, amount)
-  VALUES (v_org, 'a1c00000-0000-4000-8000-000000000046', 'topup', 400);
-  v_result := renter_create_recurring_pack(jsonb_build_object(
-    'renter_id', 'a1c00000-0000-4000-8000-000000000046',
-    'location_id', v_loc_a,
-    'valid_from', v_pack_from,
-    'valid_to', v_pack_to,
-    'weekdays', jsonb_build_array(1, 3, 5),
-    'time_start', '15:00',
-    'time_end', '16:00',
-    'idempotency_key', 'r1c-pack-rollback'
-  ));
-  PERFORM _test_assert(
-    (v_result ->> 'success') IS DISTINCT FROM 'true' AND v_result ->> 'error' = 'renter.booking.packIncomplete',
-    'pack rolls back if a date stays awaiting: ' || COALESCE(v_result ->> 'error', v_result::text)
-  );
-  PERFORM _test_assert(
-    NOT EXISTS (
-      SELECT 1 FROM rental_series WHERE organization_id = v_org AND idempotency_key = 'r1c-pack-rollback'
-    ),
-    'failed pack series is rolled back'
-  );
-
   -- Successful pack (15:00 — avoid 08:00 occupied by far one-time / remainder fixture)
   v_result := renter_create_recurring_pack(jsonb_build_object(
     'renter_id', v_renter,
@@ -1064,9 +1038,21 @@ BEGIN
     'spendable and reserved are separate fields'
   );
 
-  -- cancel still works with add-on off (future active far slot)
+  -- cancel still works with add-on off (dedicated future active slot — v_id may be terminal after pack grid)
   PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
-  v_result := renter_cancel_occurrence(v_id);
+  INSERT INTO rentals (
+    id, organization_id, renter_id, location_id, rental_date, time_start, time_end,
+    booking_status, channel, lifecycle, hold_expires_at,
+    prepay_amount, remainder_amount, debt_amount, fixed_amount, currency
+  )
+  VALUES (
+    'a1c00000-0000-4000-8000-00000000008b',
+    v_org, v_renter, v_loc_b, v_far, '07:00', '08:00',
+    'confirmed', 'miniapp', 'active',
+    _renter_slot_ts(v_org, v_far, '08:00'),
+    500, 500, 0, 1000, 'RUB'
+  );
+  v_result := renter_cancel_occurrence('a1c00000-0000-4000-8000-00000000008b');
   PERFORM _test_assert(
     (v_result ->> 'success')::boolean,
     'cancel works with add-on off: ' || COALESCE(v_result ->> 'error', 'ok')

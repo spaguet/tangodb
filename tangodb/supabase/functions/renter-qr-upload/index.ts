@@ -15,6 +15,7 @@ const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 15 * 60_000;
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_SIDE = 2048;
+const SIGN_TTL_SEC = 300;
 
 type UploadBody = {
   action?: string;
@@ -170,12 +171,12 @@ Deno.serve(async (req) => {
     const { data: signed, error: signError } = await admin
       .storage
       .from("org-rental-qr")
-      .createSignedUrl(storagePath, 3600);
+      .createSignedUrl(storagePath, SIGN_TTL_SEC);
     if (signError || !signed?.signedUrl) {
       return jsonResponse({ error: "renter.qr.saveFailed" }, 400, req);
     }
     return jsonResponse(
-      { success: true, id: assetId, signed_url: signed.signedUrl, expires_in: 3600 },
+      { success: true, id: assetId, signed_url: signed.signedUrl, expires_in: SIGN_TTL_SEC },
       200,
       req
     );

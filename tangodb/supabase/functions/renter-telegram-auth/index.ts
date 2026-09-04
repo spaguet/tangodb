@@ -18,6 +18,7 @@ import {
 } from "../_shared/telegramToken.ts";
 import {
   extractVerifiedInitData,
+  getNonPrivateLaunchError,
   runDummyHmac,
   verifyInitDataWithBotToken,
   buildDisplayName,
@@ -25,6 +26,7 @@ import {
 } from "../_shared/telegramInitData.ts";
 
 const GENERIC_ERROR = "renter.auth.forbidden";
+const GROUP_LAUNCH_ERROR = "renter.auth.groupLaunchForbidden";
 const MAX_BODY_BYTES = 48_000;
 const IP_RATE_LIMIT = 60;
 const IP_RATE_WINDOW_MS = 60_000;
@@ -155,6 +157,11 @@ Deno.serve(async (req) => {
     return renterMiniappJsonResponse({ error: GENERIC_ERROR }, 401, req);
   }
 
+  const groupLaunchError = getNonPrivateLaunchError(verified.params);
+  if (groupLaunchError) {
+    return renterMiniappJsonResponse({ error: GROUP_LAUNCH_ERROR }, 403, req);
+  }
+
   const parsed = extractVerifiedInitData(verified.params, verified.hash);
   if (!parsed || parsed.organizationId !== orgIdCandidate) {
     await runDummyHmac();
@@ -236,21 +243,31 @@ Deno.serve(async (req) => {
     });
 
     if (!bindData?.bound) {
-      // Lost race — orphan cleanup
-      const { data: existing } = await admin
-        .from("renters")
-        .select("auth_user_id")
-        .eq("organization_id", orgId)
-        .eq("telegram_id", telegramId)
-        .maybeSingle();
+      const existingWinner = bindData?.existing_auth_user_id
+        ? String(bindData.existing_auth_user_id)
+        : null;
 
-      const winnerId = existing?.auth_user_id as string | null;
-      if (winnerId) {
+      if (existingWinner) {
         await admin.auth.admin.deleteUser(created.user.id);
-        authUserId = winnerId;
+        authUserId = existingWinner;
         oneTimePassword = undefined;
       } else {
-        return renterMiniappJsonResponse({ error: GENERIC_ERROR }, 401, req);
+        const { data: existing } = await admin
+          .from("renters")
+          .select("auth_user_id")
+          .eq("organization_id", orgId)
+          .eq("telegram_id", telegramId)
+          .maybeSingle();
+
+        const winnerId = existing?.auth_user_id as string | null;
+        if (winnerId) {
+          await admin.auth.admin.deleteUser(created.user.id);
+          authUserId = winnerId;
+          oneTimePassword = undefined;
+        } else {
+          await admin.auth.admin.deleteUser(created.user.id);
+          return renterMiniappJsonResponse({ error: GENERIC_ERROR }, 401, req);
+        }
       }
     }
   } else if (authUserId) {

@@ -11,12 +11,14 @@ interface GroupLessonRepeatFieldsProps {
   config: GroupRepeatConfig;
   onChange: (patch: Partial<GroupRepeatConfig>) => void;
   minEndDate: string;
+  hint?: string;
 }
 
 export default function GroupLessonRepeatFields({
   config,
   onChange,
   minEndDate,
+  hint,
 }: GroupLessonRepeatFieldsProps) {
   const { t, plural } = useI18n();
 
@@ -86,6 +88,7 @@ export default function GroupLessonRepeatFields({
               max={maxRepeatEndDate(minEndDate)}
             />
           )}
+          {hint ? <p className="text-[11px] text-slate-500 leading-snug">{hint}</p> : null}
         </div>
       )}
     </>

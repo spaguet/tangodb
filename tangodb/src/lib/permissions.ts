@@ -541,11 +541,10 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
     case "rentals.payments.write":
       // Finance roles keep rental cash via finance.read (no payments.write).
       if (FINANCIAL_READ_ROLES.includes(role)) return true;
-      // Full operational admin: manage rentals ∧ payment-accept. Never bare payments.write
-      // (restricted_admin already has payments.write).
+      // Full operational admin: payment-accept only (FC4 — not schedule.write / occupancy).
       if (isRestrictedReceptionAdmin(role, options)) return false;
-      if (isFullOperationalAdmin(role, options)) {
-        return adminHasScheduleWriteAccess(role, options) && adminHasPaymentAccess(role, options);
+      if (role === "admin" && isFullOperationalAdmin(role, options)) {
+        return adminHasPaymentAccess(role, options);
       }
       return false;
 
@@ -893,11 +892,23 @@ export function assertReceptionPermissions(): void {
   if (can("admin", "rentals.payments.write", { ...adminOpts, adminCanAcceptPayments: false })) {
     throw new Error("full admin without payment accept must not record rental payments");
   }
-  if (can("admin", "rentals.payments.write", { ...adminOpts, adminCanEditSchedule: false })) {
-    throw new Error("full admin without schedule write must not record rental payments");
+  if (!can("admin", "rentals.payments.write", { ...adminOpts, adminCanEditSchedule: false })) {
+    throw new Error("full admin without schedule write must still record rental payments (FC4)");
+  }
+  if (can("admin", "renters.finance.read", adminOpts)) {
+    throw new Error("full admin must not have renters.finance.read (FC4 inbox+preview path)");
+  }
+  if (can("admin", "renters.contacts.read", { ...adminOpts, adminCanEditSchedule: false })) {
+    throw new Error("full admin must not read renter contacts without schedule.write (FC4)");
   }
   if (!can("accountant", "rentals.payments.write", adminOpts)) {
     throw new Error("accountant must retain rental payment via finance path");
+  }
+  if (!can("accountant", "renters.finance.read", adminOpts)) {
+    throw new Error("accountant must read renter finance (FC3)");
+  }
+  if (can("accountant", "renters.contacts.read", adminOpts)) {
+    throw new Error("accountant must not read renter contacts via schedule.write (FC3)");
   }
   if (!can("owner", "rentals.payments.write", adminOpts)) {
     throw new Error("owner must record rental payments");

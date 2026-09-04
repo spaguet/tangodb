@@ -195,6 +195,9 @@ export interface RentalDisplayLesson {
   currency?: string;
   channel?: RentalChannel;
   lifecycle?: string | null;
+  canDeleteHold?: boolean;
+  canCancelOccurrence?: boolean;
+  canCancelPack?: boolean;
 }
 
 export type RentalTariffType = "hourly" | "fixed";
@@ -613,6 +616,8 @@ export interface Renter {
   telegramId?: string | null;
 }
 
+export type RenterDebtFilter = "cashier" | "miniapp" | "any";
+
 export interface RenterListItem {
   id: string;
   displayName: string;
@@ -622,7 +627,8 @@ export interface RenterListItem {
   contactEmail: string | null;
   primaryContactName: string | null;
   nextRentalDate: string | null;
-  debtAmount: number | null;
+  cashierDebt: number | null;
+  miniappDebt: number | null;
   hasExpiringDocument: boolean;
   hasOverdueDebt: boolean;
   hasNextActionDue: boolean;
@@ -709,6 +715,10 @@ export interface RenterWalletLedgerEntry {
   entryType: string;
   amount: number;
   createdAt: string;
+  externalReference?: string | null;
+  correctionReason?: string | null;
+  correctsLedgerId?: string | null;
+  canReverse?: boolean;
 }
 
 export interface RenterMiniAppDebtRow {

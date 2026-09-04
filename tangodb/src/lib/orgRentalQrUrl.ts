@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const SIGN_TTL_SEC = 3600;
+const SIGN_TTL_SEC = 300;
 
 export function absolutizeSignedUrl(
   url: string | null | undefined,

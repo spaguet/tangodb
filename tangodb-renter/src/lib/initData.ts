@@ -30,18 +30,6 @@ export function parseStartParamFromInitData(initData: string): string | null {
   return value;
 }
 
-export function parseTelegramLanguage(initData: string): string | null {
-  if (!initData) return null;
-  const rawUser = new URLSearchParams(initData).get("user");
-  if (!rawUser) return null;
-  try {
-    const user = JSON.parse(rawUser) as { language_code?: string };
-    return user.language_code ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export function renterAuthStorageKey(organizationId: string): string {
   return `tangodb-renter-auth-${organizationId}`;
 }

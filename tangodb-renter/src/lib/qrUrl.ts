@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseConfig } from "./supabase";
 import type { QrAsset } from "./types";
 
-const SIGN_TTL_SEC = 3600;
+const SIGN_TTL_SEC = 300;
 
 export function absolutizeSignedUrl(url: string | null | undefined): string | null {
   const raw = url?.trim() ?? "";

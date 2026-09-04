@@ -187,6 +187,7 @@ export default function PersonalLessonsPageContainer({
         timeStart: lesson.timeStart,
         timeEnd: lesson.timeEnd,
         locationId: lesson.locationId,
+        clientDisplay: lesson.clientDisplay,
       })),
     [editPersonalQuery.data]
   );

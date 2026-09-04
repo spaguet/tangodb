@@ -22,6 +22,13 @@ describe("classifyInterval", () => {
       time_end: "20:00",
       lifecycle: "awaiting_payment",
     },
+    {
+      id: "c",
+      date: "2026-09-02",
+      time_start: "10:00",
+      time_end: "12:00",
+      lifecycle: "debt",
+    },
   ];
 
   it("marks overlapping foreign slot as busy", () => {
@@ -31,7 +38,7 @@ describe("classifyInterval", () => {
 
   it("marks non-overlapping slot as free", () => {
     expect(classifyInterval("2026-09-01", "12:00", "12:30", busy, mine)).toBe("free");
-    expect(classifyInterval("2026-09-02", "10:00", "10:30", busy, mine)).toBe("free");
+    expect(classifyInterval("2026-09-03", "10:00", "10:30", busy, mine)).toBe("free");
   });
 
   it("prefers mine over busy for own active rental", () => {
@@ -40,6 +47,10 @@ describe("classifyInterval", () => {
 
   it("classifies own hold with diagonal state", () => {
     expect(classifyInterval("2026-09-01", "18:00", "18:30", busy, mine)).toBe("mine_hold");
+  });
+
+  it("classifies own debt lifecycle separately", () => {
+    expect(classifyInterval("2026-09-02", "10:00", "10:30", busy, mine)).toBe("mine_debt");
   });
 
   it("does not treat adjacent slots as overlap", () => {

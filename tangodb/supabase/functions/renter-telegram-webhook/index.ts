@@ -1,27 +1,9 @@
-/**
- * Telegram Bot webhook. verify_jwt=false.
- * Auth: X-Telegram-Bot-Api-Secret-Token (constant-time) + unguessable webhook_token query.
- * No Mini App CORS. Do not log token/secret/message body.
- */
-
 import { constantTimeEqual } from "../_shared/constantTime.ts";
 import { createServiceClient, logEvent } from "../_shared/supabase.ts";
-
-type TelegramUser = { id?: number };
-type TelegramMessage = {
-  from?: TelegramUser;
-  text?: string;
-  chat?: { type?: string };
-};
-type TelegramChatMemberUpdated = {
-  from?: TelegramUser;
-  new_chat_member?: { status?: string; user?: TelegramUser };
-};
-type TelegramUpdate = {
-  update_id?: number;
-  message?: TelegramMessage;
-  my_chat_member?: TelegramChatMemberUpdated;
-};
+import {
+  classifyTelegramWebhookUpdate,
+  type TelegramUpdate,
+} from "../_shared/renterTelegramWebhook.ts";
 
 function dummyCompare(provided: string): boolean {
   return constantTimeEqual(provided, "0".repeat(Math.max(provided.length, 32)));
@@ -39,13 +21,6 @@ Deno.serve(async (req) => {
   if (!webhookToken) {
     dummyCompare(secretHeader);
     return new Response(null, { status: 403 });
-  }
-
-  let body: TelegramUpdate;
-  try {
-    body = (await req.json()) as TelegramUpdate;
-  } catch {
-    return new Response(null, { status: 400 });
   }
 
   const admin = createServiceClient();
@@ -76,39 +51,32 @@ Deno.serve(async (req) => {
     return new Response(null, { status: 403 });
   }
 
+  let body: TelegramUpdate;
+  try {
+    body = (await req.json()) as TelegramUpdate;
+  } catch {
+    return new Response(null, { status: 400 });
+  }
+
   const updateId = body.update_id;
   if (updateId == null || !Number.isFinite(updateId)) {
     return new Response("ok", { status: 200 });
   }
 
-  const message = body.message;
-  const member = body.my_chat_member;
-  const isPrivateStart =
-    message?.chat?.type === "private" &&
-    typeof message.text === "string" &&
-    /^\/start(?:\s|$)/.test(message.text);
-  const memberStatus = member?.new_chat_member?.status ?? "";
-  const isMemberJoin = memberStatus === "member" || memberStatus === "restricted";
-  const isBlocked = memberStatus === "kicked" || memberStatus === "left";
-
-  if (!message && !member) {
-    return new Response("ok", { status: 200 });
-  }
-
-  const telegramId = message?.from?.id ?? member?.from?.id ?? member?.new_chat_member?.user?.id;
-  if (telegramId == null || telegramId <= 0) {
+  const flags = classifyTelegramWebhookUpdate(body);
+  if (flags.telegramId == null) {
     return new Response("ok", { status: 200 });
   }
 
   const { error: ingestError } = await admin.rpc("renter_telegram_webhook_ingest", {
     p_payload: {
       organization_id: row.organization_id,
-      telegram_id: String(telegramId),
+      telegram_id: String(flags.telegramId),
       telegram_bot_id: String(row.telegram_bot_id ?? ""),
       update_id: String(updateId),
-      is_start: isPrivateStart || isMemberJoin,
-      blocked: isBlocked,
-      allows_write: isBlocked ? false : isMemberJoin || isPrivateStart ? true : null,
+      is_start: flags.isStart,
+      blocked: flags.blocked,
+      allows_write: flags.allowsWrite,
     },
   });
 

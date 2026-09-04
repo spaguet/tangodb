@@ -7,6 +7,7 @@ import type {
   RenterContract,
   RenterContractStatus,
   RenterCounterpartyType,
+  RenterDebtFilter,
   RenterDetail,
   RenterDocument,
   RenterDuplicateMatch,
@@ -30,7 +31,7 @@ export interface RentersListFilters {
   search?: string;
   type?: RenterCounterpartyType | null;
   status?: RenterStatus | null;
-  hasDebt?: boolean | null;
+  debtFilter?: RenterDebtFilter | null;
   upcoming?: boolean | null;
 }
 
@@ -56,7 +57,8 @@ function mapListItem(row: Record<string, unknown>): RenterListItem {
     contactEmail: row.contact_email != null ? String(row.contact_email) : null,
     primaryContactName: row.primary_contact_name != null ? String(row.primary_contact_name) : null,
     nextRentalDate: row.next_rental_date != null ? String(row.next_rental_date).slice(0, 10) : null,
-    debtAmount: row.debt_amount != null ? Number(row.debt_amount) : null,
+    cashierDebt: row.cashier_debt != null ? Number(row.cashier_debt) : null,
+    miniappDebt: row.miniapp_debt != null ? Number(row.miniapp_debt) : null,
     hasExpiringDocument: Boolean(row.has_expiring_document),
     hasOverdueDebt: Boolean(row.has_overdue_debt),
     hasNextActionDue: Boolean(row.has_next_action_due),
@@ -140,6 +142,13 @@ function mapFinance(row: Record<string, unknown> | null): RenterFinanceSummary |
           entryType: String(entry.entry_type ?? ""),
           amount: Number(entry.amount) || 0,
           createdAt: String(entry.created_at ?? ""),
+          externalReference:
+            entry.external_reference != null ? String(entry.external_reference) : null,
+          correctionReason:
+            entry.correction_reason != null ? String(entry.correction_reason) : null,
+          correctsLedgerId:
+            entry.corrects_ledger_id != null ? String(entry.corrects_ledger_id) : null,
+          canReverse: Boolean(entry.can_reverse),
         }))
       : [],
     miniappDebts: Array.isArray(row.miniapp_debts)
@@ -258,7 +267,7 @@ export function useRentersList(filters: RentersListFilters = {}, options?: { ena
         p_search: filters.search ?? null,
         p_type: filters.type ?? null,
         p_status: filters.status ?? null,
-        p_has_debt: filters.hasDebt ?? null,
+        p_debt_filter: filters.debtFilter ?? null,
         p_upcoming: filters.upcoming ?? null,
       });
 
@@ -882,9 +891,10 @@ export function useResetRenterReliability() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (renterId: string) => {
+    mutationFn: async (input: { renterId: string; reason: string }) => {
       const { data, error } = await supabase.rpc("reset_renter_reliability", {
-        p_renter_id: renterId,
+        p_renter_id: input.renterId,
+        p_reason: input.reason.trim(),
       });
 
       if (error) return { success: false as const, error: error.message };
@@ -899,9 +909,9 @@ export function useResetRenterReliability() {
 
       return { success: true as const };
     },
-    onSuccess: (result, renterId) => {
+    onSuccess: (result, input) => {
       if (result.success) {
-        invalidateRenterCaches(queryClient, renterId);
+        invalidateRenterCaches(queryClient, input.renterId);
       }
     },
   });

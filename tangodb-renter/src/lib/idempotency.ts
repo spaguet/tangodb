@@ -32,5 +32,5 @@ export function packScope(
   timeEnd: string,
   weekdays: number[]
 ): string {
-  return `${organizationId}:${locationId}:${validFrom}:${validTo}:${timeStart}:${timeEnd}:${weekdays.sort().join(",")}`;
+  return `${organizationId}:${locationId}:${validFrom}:${validTo}:${timeStart}:${timeEnd}:${[...weekdays].sort((a, b) => a - b).join(",")}`;
 }

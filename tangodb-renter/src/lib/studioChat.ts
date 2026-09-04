@@ -4,13 +4,26 @@ export function topupDraftMessage(input: {
   locale: Locale;
   amountLabel: string;
   method: "qr" | "cash";
+  correlationCode?: string;
 }): string {
+  const codePart =
+    input.correlationCode != null && input.correlationCode !== ""
+      ? input.locale === "en"
+        ? ` Request code: ${input.correlationCode}.`
+        : ` Код заявки: ${input.correlationCode}.`
+      : "";
+
   if (input.locale === "en") {
-    const method = input.method === "qr" ? "studio QR" : "cash";
-    return `Wallet top-up: ${input.amountLabel}. Method: ${method}. Receipt attached.`;
+    if (input.method === "qr") {
+      return `Wallet top-up: ${input.amountLabel}. Method: studio QR transfer.${codePart} Receipt attached.`;
+    }
+    return `Wallet top-up: ${input.amountLabel}. I will pay cash at the studio.${codePart}`;
   }
-  const method = input.method === "qr" ? "QR студии" : "наличные";
-  return `Пополнение баланса: ${input.amountLabel}. Способ: ${method}. Чек во вложении.`;
+
+  if (input.method === "qr") {
+    return `Пополнение баланса: ${input.amountLabel}. Способ: перевод по QR студии.${codePart} Чек во вложении.`;
+  }
+  return `Пополнение баланса: ${input.amountLabel}. Оплачу наличными в студии.${codePart}`;
 }
 
 export function openStudioChat(url: string): void {

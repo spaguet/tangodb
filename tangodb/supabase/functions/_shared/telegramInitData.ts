@@ -127,6 +127,21 @@ export function validateAuthDate(
   return true;
 }
 
+/** After HMAC: identity only from user.id; chat/receiver ignored. Group launch → explicit error. */
+export function getNonPrivateLaunchError(params: URLSearchParams): string | null {
+  const chatRaw = params.get("chat");
+  if (!chatRaw) return null;
+  try {
+    const chat = JSON.parse(chatRaw) as { type?: string };
+    if (typeof chat.type === "string" && chat.type !== "private") {
+      return "renter.auth.groupLaunchForbidden";
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export function extractVerifiedInitData(
   params: URLSearchParams,
   hash: string
@@ -139,10 +154,6 @@ export function extractVerifiedInitData(
 
   const authDate = Number(params.get("auth_date"));
   if (!validateAuthDate(authDate)) return null;
-
-  if (params.has("chat") || params.has("receiver")) {
-    return null;
-  }
 
   return {
     organizationId: startParam,

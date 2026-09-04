@@ -11,7 +11,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import type { ToastType } from "../../App";
-import type { RenterCounterpartyType, RenterDuplicateMatch, RenterStatus } from "../../types";
+import type { RenterCounterpartyType, RenterDebtFilter, RenterDuplicateMatch, RenterStatus } from "../../types";
 import { parseTelegramIdInput } from "../../lib/renterNormalize";
 import { useI18n } from "../../hooks/useI18n";
 import { useCan } from "../../hooks/usePermissions";
@@ -44,8 +44,10 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
   const { t, formatDate } = useI18n();
   const navigate = useNavigate();
   const { connectionState } = useOnlineStatus();
-  const canOpenDetail = useCan("renters.contacts.read");
+  const canOpenContacts = useCan("renters.contacts.read");
   const canSeeFinance = useCan("renters.finance.read");
+  const canNavigateToDetail = canOpenContacts || canSeeFinance;
+  const financeOnlyList = canSeeFinance && !canOpenContacts;
 
   const renterTypeLabel = (type: RenterCounterpartyType) => {
     if (type === "sole_proprietor") return t("renters.type.soleProprietor");
@@ -56,7 +58,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
   const [activeTab, setActiveTab] = useState<ListTab>("active");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<RenterCounterpartyType | "">("");
-  const [hasDebtFilter, setHasDebtFilter] = useState<"" | "yes" | "no">("");
+  const [debtFilter, setDebtFilter] = useState<"" | RenterDebtFilter>("");
   const [upcomingFilter, setUpcomingFilter] = useState<"" | "yes" | "no">("");
 
   const [displayName, setDisplayName] = useState("");
@@ -77,7 +79,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
     search: search.trim() || undefined,
     type: typeFilter || null,
     status: statusFilter,
-    hasDebt: hasDebtFilter === "" ? null : hasDebtFilter === "yes",
+    debtFilter: debtFilter || null,
     upcoming: upcomingFilter === "" ? null : upcomingFilter === "yes",
   });
 
@@ -261,10 +263,15 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
               <option value="company">{t("renters.type.company")}</option>
             </AppSelect>
             {canSeeFinance ? (
-              <AppSelect label={t("renters.filter.hasDebt")} value={hasDebtFilter} onChange={(e) => setHasDebtFilter(e.target.value as "" | "yes" | "no")}>
+              <AppSelect
+                label={t("renters.filter.debt")}
+                value={debtFilter}
+                onChange={(e) => setDebtFilter(e.target.value as "" | RenterDebtFilter)}
+              >
                 <option value="">{t("renters.filter.all")}</option>
-                <option value="yes">{t("renters.filter.yes")}</option>
-                <option value="no">{t("renters.filter.no")}</option>
+                <option value="cashier">{t("renters.filter.debtCashier")}</option>
+                <option value="miniapp">{t("renters.filter.debtMiniapp")}</option>
+                <option value="any">{t("renters.filter.debtAny")}</option>
               </AppSelect>
             ) : null}
             <AppSelect label={t("renters.filter.upcoming")} value={upcomingFilter} onChange={(e) => setUpcomingFilter(e.target.value as "" | "yes" | "no")}>
@@ -282,8 +289,13 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
                 <li key={row.id}>
                   <button
                     type="button"
-                    onClick={() => canOpenDetail && navigate(`/renters/${row.id}`)}
-                    disabled={!canOpenDetail}
+                    onClick={() => {
+                      if (!canNavigateToDetail) return;
+                      navigate(`/renters/${row.id}`, {
+                        state: financeOnlyList ? { initialTab: "finance" as const } : undefined,
+                      });
+                    }}
+                    disabled={!canNavigateToDetail}
                     className="w-full flex items-center gap-3 py-3 px-1 text-left hover:bg-slate-50 rounded-lg cursor-pointer disabled:cursor-default"
                   >
                     <div className="min-w-0 flex-1">
@@ -303,30 +315,46 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
                             {t("renters.reminder.overdueDebt")}
                           </span>
                         ) : null}
+                        {canSeeFinance && (row.miniappDebt ?? 0) > 0 ? (
+                          <span className="text-[10px] font-semibold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded">
+                            {t("renters.reminder.miniappDebt")}
+                          </span>
+                        ) : null}
                         {row.hasNextActionDue ? (
                           <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
                             {t("renters.reminder.nextAction")}
                           </span>
                         ) : null}
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {[row.primaryContactName, row.contactPhone, row.contactEmail].filter(Boolean).join(" · ")}
-                      </p>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                      {!financeOnlyList ? (
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {[row.primaryContactName, row.contactPhone, row.contactEmail]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      ) : null}
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-400 flex-wrap">
                         {row.nextRentalDate ? (
                           <span className="inline-flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {formatDate(row.nextRentalDate)}
                           </span>
                         ) : null}
-                        {canSeeFinance && row.debtAmount != null && row.debtAmount > 0 ? (
+                        {canSeeFinance && (row.cashierDebt ?? 0) > 0 ? (
                           <span className="text-rose-600 font-semibold">
-                            {formatCurrency(row.debtAmount)}
+                            {t("renters.list.cashierDebt")}: {formatCurrency(row.cashierDebt ?? 0)}
+                          </span>
+                        ) : null}
+                        {canSeeFinance && (row.miniappDebt ?? 0) > 0 ? (
+                          <span className="text-violet-700 font-semibold">
+                            {t("renters.list.miniappDebt")}: {formatCurrency(row.miniappDebt ?? 0)}
                           </span>
                         ) : null}
                       </div>
                     </div>
-                    {canOpenDetail ? <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" /> : null}
+                    {canNavigateToDetail ? (
+                      <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                    ) : null}
                   </button>
                 </li>
               ))}

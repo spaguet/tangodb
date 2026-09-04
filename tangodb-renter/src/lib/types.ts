@@ -38,6 +38,40 @@ export type RentalItem = {
   currency: string | null;
   prepay_charged_at: string | null;
   remainder_charged_at: string | null;
+  can_delete_hold?: boolean;
+  can_cancel_occurrence?: boolean;
+  can_cancel_pack?: boolean;
+  series_status?: string | null;
+  series_hold_expires_at?: string | null;
+  series_occurrence_count?: number | null;
+  series_occurrence_index?: number | null;
+};
+
+export type PackCreateResult = {
+  series_id: string;
+  series_status?: string;
+  hold_expires_at?: string | null;
+  occurrence_count?: number;
+  already_applied?: boolean;
+};
+
+export type PendingTopup = {
+  id: string;
+  amount: number;
+  method: "qr" | "cash";
+  created_at: string;
+  correlation_code: string;
+};
+
+export type WalletEntry = {
+  id: string;
+  entry_type: string;
+  amount: number;
+  direction?: "credit" | "debit" | null;
+  balance_after?: number | null;
+  rental_id: string | null;
+  phase: string | null;
+  created_at: string;
 };
 
 export type WalletData = {
@@ -45,14 +79,9 @@ export type WalletData = {
   spendable: number;
   reserved_prepay: number;
   debt_amount: number;
-  entries: Array<{
-    id: string;
-    entry_type: string;
-    amount: number;
-    rental_id: string | null;
-    phase: string | null;
-    created_at: string;
-  }>;
+  pending_topup: PendingTopup | null;
+  has_awaiting_payment: boolean;
+  entries: WalletEntry[];
   total: number;
   limit: number;
   offset: number;
@@ -67,6 +96,11 @@ export type QuoteOneTime = {
   remainder: number;
   currency: string;
   busy: boolean;
+  can_create?: boolean;
+  reasons?: string[];
+  balance?: number | null;
+  shortage?: number | null;
+  fingerprint?: string;
 };
 
 export type QuotePackOccurrence = QuoteOneTime & {

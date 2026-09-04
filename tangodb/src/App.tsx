@@ -60,6 +60,7 @@ import FinancePage from "./pages/FinancePage";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import OfflineBanner from "./components/ui/OfflineBanner";
 import ReadOnlyBanner from "./components/ui/ReadOnlyBanner";
+import GoogleCalendarSyncStoppedNotifier from "./components/integrations/GoogleCalendarSyncStoppedNotifier";
 import ClaimsMismatchBanner from "./components/ui/ClaimsMismatchBanner";
 import OfflineReconciliationDialog from "./components/offline/OfflineReconciliationDialog";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
@@ -81,7 +82,14 @@ import {
   type NavItem,
   type MobileTabItem,
 } from "./lib/i18n";
-import { panelIdFromPath, canAccessSettingsSection, permissionOptionsFromSettings, canAccessFinanceNav } from "./lib/permissions";
+import {
+  panelIdFromPath,
+  canAccessSettingsSection,
+  permissionOptionsFromSettings,
+  canAccessFinanceNav,
+} from "./lib/permissions";
+import { showRenterTopupNav } from "./lib/showRenterTopupNav";
+import { useRenterTopupInbox } from "./hooks/useRenterTopupInbox";
 import { useOrganization } from "./organization/OrganizationProvider";
 import { normalizeOrgModules } from "./lib/orgModules";
 import DemoBrandBadge from "./components/demo/DemoBrandBadge";
@@ -180,7 +188,7 @@ function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
-  const { canAccessPanel, role, scope, isReadOnly, membership } = usePermissions();
+  const { canAccessPanel, role, scope, isReadOnly, membership, can } = usePermissions();
   const subscriptionsTab = useUIStore((s) => s.subscriptionsTab);
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
   const personalTab = useUIStore((s) => s.personalTab);
@@ -210,6 +218,16 @@ function AppLayout() {
     setToast({ msg, type });
     toastTimer.current = setTimeout(() => setToast(null), 3500);
   }, []);
+
+  const teacherPayrollOnly = can("payroll.read.own") && !can("finance.read");
+  const showTopupNav = showRenterTopupNav(role, permissionOptions, teacherPayrollOnly);
+  const pendingTopupQuery = useRenterTopupInbox({
+    status: "pending",
+    limit: 1,
+    offset: 0,
+    enabled: showTopupNav,
+  });
+  const pendingTopupCount = pendingTopupQuery.data?.total ?? 0;
 
   const navSections = getNavSections(t);
   const mobileTabs = getMobileTabs(t);
@@ -323,7 +341,15 @@ function AppLayout() {
                 }`}
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
-                <span className="min-w-0 leading-snug">{item.label}</span>
+                <span className="min-w-0 leading-snug flex-1">{item.label}</span>
+                {item.path === "/finance" && pendingTopupCount > 0 ? (
+                  <span
+                    className="inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white shrink-0"
+                    title={t("nav.topupBadge", { count: pendingTopupCount })}
+                  >
+                    {pendingTopupCount}
+                  </span>
+                ) : null}
               </button>
             );
           })}
@@ -432,6 +458,7 @@ function AppLayout() {
             onOpenReconciliation={openReconciliation}
           />
           <ReadOnlyBanner />
+          <GoogleCalendarSyncStoppedNotifier />
           <ClaimsMismatchBanner />
 
           <OfflineReconciliationDialog

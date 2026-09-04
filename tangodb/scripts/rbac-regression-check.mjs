@@ -178,6 +178,15 @@ assert(
   !can("admin", "rentals.payments.write", { ...optsFor("admin"), adminCanAcceptPayments: false }),
   "admin no rental cash when payments flag off"
 );
+assert(
+  can("admin", "rentals.payments.write", { ...optsFor("admin"), adminCanEditSchedule: false }),
+  "admin rental cash without schedule write (FC4)"
+);
+assert(
+  !can("admin", "schedule.write", { ...optsFor("admin"), adminCanEditSchedule: false }),
+  "admin no schedule.write when flag off (FC4)"
+);
+assert(!can("admin", "renters.finance.read", optsFor("admin")), "admin no renters.finance.read (FC4)");
 assert(!can("teacher", "rentals.payments.write", optsFor("teacher")), "teacher no rental cash");
 assert(canAccessRentalInboxRoute("admin", defaultModules, optsFor("admin")), "admin rental inbox route");
 assert(canAccessRentalInboxRoute("accountant", defaultModules, optsFor("accountant")), "accountant rental inbox route");

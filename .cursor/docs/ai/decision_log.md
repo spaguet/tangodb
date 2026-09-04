@@ -12,6 +12,30 @@
 
 ## Записи
 
+### HALL-RENT-SELF-5 — FDB1 series hold timer rule (2026-09-04)
+
+- **Дата:** 2026-09-04
+- **Решение:** FDB1: `rental_series.hold_expires_at = min(series.created_at + 24h, earliest occurrence time_start)`; все occurrence синхронизируют тот же timestamp; `rental_series.status = awaiting_payment` пока серия ждёт topup; FIFO не активирует слоты серии on hold (атомарная активация — FDB2); worker expiry серии — одна операция + один `untimely` (полный series reliability — FDB3).
+- **Контекст:** FDB1 этапа D, variant B §1.5; замена `packIncomplete` ROLLBACK.
+- **Альтернативы:** (1) per-occurrence timers как раньше; (2) partial FIFO activation при create.
+- **Почему так:** §1.5 variant B и DoD FDB1; partial activation запрещена до FDB2; 12× untimely ломает порог 75% ban.
+
+### HALL-RENT-SELF-4 — FC4 payment scope + Telegram pre-onboarding (2026-09-04)
+
+- **Дата:** 2026-09-04
+- **Решение:** Путь **inbox + preview** для full admin с `rentals.payments.write`: сверка заявок Mini App и кассовых платежей без `renters.finance.read` и без `schedule.write`. `member_can_record_rental_payment()` и frontend `rentals.payments.write` зависят только от `admin_can_accept_payments` (full admin), не от `admin_can_edit_schedule` / `member_can_manage_rentals()`. Occupancy, контакты и настройки канала остаются на `schedule.write` / `member_can_manage_rentals()`. P3-01: Telegram ID арендатора — **не** расширять ручное поле для accountant; pre-onboarding через подтверждённый first-login / invite flow.
+- **Контекст:** FC4 аудита Mini App 2026-09-03 (P1-21, P3-01, §3 независимые scope).
+- **Альтернативы:** (1) узкий `renters.wallet.read` на карточке арендатора; (2) оставить связку payments ∧ schedule.write.
+- **Почему так:** FC2 уже дал preview эффекта в `/finance/renter-topup`; продуктовая модель §2 — full admin работает через inbox, не Finance-вкладку карточки; минимальный diff без нового permission key; RLS не ослабляется.
+
+### HALL-RENT-SELF-3 — lifecycle пакета B + независимые scope (2026-09-03)
+
+- **Дата:** 2026-09-03
+- **Решение:** Вариант **B** для lifecycle пакета 4 недель (§1.1 аудита): series-level hold с единым `hold_expires_at`, атомарная активация серии после topup, один reliability на серию, expiry всей серии одной операцией. Реализация — этап D (`FDB1`–`FDB4`). До FDB — переходное ROLLBACK текущего RPC; UI не обещает 24-часовой холд пакета. Независимые scope: `rental occupancy` ≠ `rental payments` ≠ `renter finance read` (код разрезов — FC4). Topup handoff: QR/transfer — correlation code в текущем `pending` (FC1); cash — отдельная ветка без фиктивного чека; `draft` — отдельно (FC6 / смена §1.9).
+- **Контекст:** F0b этапа 0 аудита Mini App 2026-09-03; предшественник F0a (SQL-воспроизведение P0).
+- **Альтернативы:** (1) вариант A — пакет не создаётся без полного spendable, повторный create после topup (FDA); (2) оставить per-occurrence hold и обещать 24 ч в UI (противоречит §5 и P1-01).
+- **Почему так:** единый checkout (§5 «Рекомендуемый путь»), сценарий «забронировать пакет → пополнить → активировать», correlation code и CRM preview; владелец делегировал выбор по соответствию концепции и узлам FB/FC/D.
+
 ### HALL-RENT-TOPUP-1 — чек в чате студии, не бот владельцу (2026-09-02)
 
 - **Дата:** 2026-09-02
