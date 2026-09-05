@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
-import { btnPrimaryCls, btnSecondaryCls, fieldCls, labelCls, weekChipActiveCls, weekChipCls } from "../../lib/crmUi";
+import { btnPrimaryCls, btnSecondaryCls, fieldCls, labelCls, successBannerCls, weekChipActiveCls, weekChipCls } from "../../lib/crmUi";
 import { formatHoldDeadline, formatMoney } from "../../lib/format";
 import { useHoldCountdown } from "../../hooks/useServerClock";
 import { slotEndOptions, slotStartOptions, snapTime } from "../../lib/grid";
@@ -320,7 +320,7 @@ export default function BookingSheet({
               ) : null}
             </div>
           ) : isActive ? (
-            <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-900">
+            <p className={successBannerCls}>
               {t(locale, "bookingActive")}
             </p>
           ) : (
@@ -392,7 +392,7 @@ export default function BookingSheet({
               ) : null}
             </div>
           ) : active ? (
-            <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-900">
+            <p className={successBannerCls}>
               {tFill(locale, "packActive", { count: String(sessionCount) })}
             </p>
           ) : (

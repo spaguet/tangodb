@@ -1,5 +1,33 @@
 @import "tailwindcss";
 
+@theme {
+  /* Studio Controller — aligned with tangodb/src/index.css (crm_color_migration.md) */
+  --color-indigo-50: #f5f7ff;
+  --color-indigo-100: #e8ecff;
+  --color-indigo-200: #d7deff;
+  --color-indigo-500: #6b76dc;
+  --color-indigo-600: #5663d6;
+  --color-indigo-700: #4652b8;
+  --color-indigo-800: #39449a;
+  --color-indigo-900: #2f3778;
+
+  --color-rose-50: #fff5f6;
+  --color-rose-100: #fde8ea;
+  --color-rose-300: #f3a0aa;
+  --color-rose-500: #e45b68;
+  --color-rose-600: #d64554;
+  --color-rose-700: #b93645;
+
+  --color-amber-500: #d89a24;
+  --color-amber-600: #b7791f;
+
+  --color-green-50: #ecf7f1;
+  --color-green-100: #d9efe3;
+  --color-green-500: #3f8f6b;
+  --color-green-600: #2e7d56;
+  --color-green-700: #266b49;
+}
+
 body {
   margin: 0;
   min-height: 100dvh;
@@ -7,9 +35,9 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Mini App hold — same diagonal pattern as CRM LessonBlock rental hold (slate, not rose). */
+/* Mini App hold — diagonal pattern as CRM LessonBlock rental hold (slate-600). */
 .slot-hold {
-  background-color: rgb(71 85 105);
+  background-color: #475569;
   background-image: repeating-linear-gradient(
     -45deg,
     transparent,

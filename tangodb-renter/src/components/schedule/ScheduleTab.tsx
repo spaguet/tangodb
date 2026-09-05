@@ -274,7 +274,7 @@ export default function ScheduleTab({
                 {t(locale, "busy")}
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-indigo-600" />
+                <span className="h-2.5 w-2.5 rounded-sm bg-slate-600" />
                 {t(locale, "mine")}
               </span>
               <span className="inline-flex items-center gap-1">
@@ -282,7 +282,7 @@ export default function ScheduleTab({
                 {t(locale, "mineHold")}
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-rose-600 ring-1 ring-inset ring-rose-800" />
+                <span className="h-2.5 w-2.5 rounded-sm bg-rose-600 ring-1 ring-inset ring-rose-700" />
                 {t(locale, "mineDebt")}
               </span>
             </div>

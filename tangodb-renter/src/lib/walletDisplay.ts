@@ -30,7 +30,7 @@ export function walletEntryIsCredit(entry: Pick<WalletEntry, "direction" | "entr
 }
 
 export function walletEntryAmountClass(entry: Pick<WalletEntry, "direction" | "entry_type">): string {
-  return walletEntryIsCredit(entry) ? "text-emerald-700" : "text-rose-600";
+  return walletEntryIsCredit(entry) ? "text-green-700" : "text-rose-600";
 }
 
 export function walletEntryAmountPrefix(entry: Pick<WalletEntry, "direction" | "entry_type">): string {

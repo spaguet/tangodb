@@ -18,7 +18,7 @@ export default function EntryScreen({ locale, phase, errorKey }: EntryScreenProp
       <div className="w-full max-w-sm text-center space-y-4">
         {phase === "loading" || phase === "signingIn" ? (
           <div
-            className="mx-auto h-9 w-9 rounded-full border-2 border-[var(--tg-theme-button-color,#38bdf8)] border-t-transparent animate-spin"
+            className="mx-auto h-9 w-9 rounded-full border-2 border-[var(--tg-theme-button-color,#5663d6)] border-t-transparent animate-spin"
             aria-hidden
           />
         ) : null}

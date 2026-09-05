@@ -1,6 +1,6 @@
 import type { SlotState } from "./occupancyMerge";
 
-/** CRM-aligned Tailwind classes (tangodb design_system.md). */
+/** CRM-aligned Tailwind classes — Studio Controller palette (`.cursor/docs/ai/crm_color_migration.md`). */
 
 export const fieldCls =
   "w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 outline-none";
@@ -30,6 +30,9 @@ export const sectionTitleCls = "text-base font-semibold text-slate-800 tracking-
 export const btnDestructiveOpenCls =
   "inline-flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-60";
 
+export const successBannerCls =
+  "rounded-lg border border-green-100 bg-green-50 p-3 text-sm font-medium text-green-700";
+
 export function occupancyCellClass(state: SlotState, isToday: boolean): string {
   const todayCol = isToday ? "bg-slate-100/80" : "bg-white";
   switch (state) {
@@ -38,11 +41,11 @@ export function occupancyCellClass(state: SlotState, isToday: boolean): string {
     case "busy":
       return "bg-slate-400/90 ring-1 ring-inset ring-slate-500";
     case "mine":
-      return "bg-indigo-600 text-white ring-1 ring-inset ring-indigo-700";
+      return "bg-slate-600 text-white ring-1 ring-inset ring-slate-700";
     case "mine_hold":
       return "slot-hold text-white ring-1 ring-inset ring-slate-500";
     case "mine_debt":
-      return "bg-rose-600 text-white ring-1 ring-inset ring-rose-800";
+      return "bg-rose-600 text-white ring-1 ring-inset ring-rose-700";
     default:
       return todayCol;
   }
