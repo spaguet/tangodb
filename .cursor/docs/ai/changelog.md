@@ -1,3 +1,4 @@
+2026-09-05 — fix(crm): микропатч **2.9.83** — экспорт PNG расписания в Telegram Mini App (Android): нативное сохранение через `WebApp.downloadFile` вместо share sheet без «Сохранить в галерею».
 2026-09-05 — fix(hall-rent): Mini App **0.1.2** — сетка «Моя бронь» снова `indigo-600` (брендовый синий Studio Controller).
 2026-09-05 — feat(hall-rent): Mini App **0.1.1** — палитра Studio Controller: `@theme` в `index.css`, `crmUi.ts`; success `green-*`, кредит кошелька `green-700` (вместо emerald); Entry spinner fallback `#5663D6`.
 2026-09-05 — docs(crm): `crm_color_migration.md` переписан — актуальные цветовые правила Studio Controller вместо плана миграции; структура выручки в `design_system.md`.

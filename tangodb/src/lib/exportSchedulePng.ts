@@ -1,4 +1,10 @@
 import { isMobileExportContext } from "./exportCsv";
+import { supabase } from "./supabase";
+import {
+  downloadFileViaTelegram,
+  hasTelegramDownloadFile,
+  isInsideTelegramClient,
+} from "./telegram";
 import { computeDisplayRange, isPastDate, toISODateLocal } from "./scheduleWeek";
 import {
   gridHeightPx,
@@ -55,6 +61,35 @@ function downloadBlob(blob: Blob, filename: string): void {
   }, 250);
 }
 
+function sanitizeStorageFilename(filename: string): string {
+  return filename.replace(/[^\w.\-]/g, "_").replace(/_+/g, "_") || "schedule.png";
+}
+
+async function uploadPngSignedUrl(blob: Blob, filename: string): Promise<string | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const safeName = sanitizeStorageFilename(filename);
+  const path = `${user.id}/${Date.now()}_${safeName}`;
+
+  const { error: uploadError } = await supabase.storage.from("exports").upload(path, blob, {
+    contentType: "image/png",
+    upsert: true,
+  });
+  if (uploadError) return null;
+
+  const { data, error: signError } = await supabase.storage.from("exports").createSignedUrl(path, 300);
+  if (signError || !data?.signedUrl) return null;
+
+  window.setTimeout(() => {
+    void supabase.storage.from("exports").remove([path]);
+  }, 120_000);
+
+  return data.signedUrl;
+}
+
 async function trySharePngFile(file: File): Promise<"shared" | "failed" | "cancelled"> {
   if (typeof navigator.share !== "function") return "failed";
   try {
@@ -65,6 +100,27 @@ async function trySharePngFile(file: File): Promise<"shared" | "failed" | "cance
     if (error instanceof DOMException && error.name === "AbortError") return "cancelled";
     return "failed";
   }
+}
+
+async function saveSchedulePngBlob(blob: Blob, filename: string): Promise<SchedulePngExportResult> {
+  if (isInsideTelegramClient() && hasTelegramDownloadFile()) {
+    const signedUrl = await uploadPngSignedUrl(blob, filename);
+    if (signedUrl) {
+      const started = await downloadFileViaTelegram(signedUrl, filename);
+      if (started) return "telegram";
+    }
+  }
+
+  const file = new File([blob], filename, { type: "image/png" });
+
+  if (isMobileExportContext() && !isInsideTelegramClient()) {
+    const shared = await trySharePngFile(file);
+    if (shared === "shared") return "shared";
+    if (shared === "cancelled") return "cancelled";
+  }
+
+  downloadBlob(blob, filename);
+  return "downloaded";
 }
 
 function ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
@@ -130,7 +186,7 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
   });
 }
 
-export type SchedulePngExportResult = "downloaded" | "shared" | "cancelled" | "failed";
+export type SchedulePngExportResult = "downloaded" | "shared" | "telegram" | "cancelled" | "failed";
 
 export interface SchedulePngExportInput {
   filename: string;
@@ -292,16 +348,7 @@ export async function exportSchedulePng(input: SchedulePngExportInput): Promise<
   const blob = await canvasToBlob(canvas);
   if (!blob) return "failed";
 
-  const file = new File([blob], input.filename, { type: "image/png" });
-
-  if (isMobileExportContext()) {
-    const shared = await trySharePngFile(file);
-    if (shared === "shared") return "shared";
-    if (shared === "cancelled") return "cancelled";
-  }
-
-  downloadBlob(blob, input.filename);
-  return "downloaded";
+  return saveSchedulePngBlob(blob, input.filename);
 }
 
 function sanitizeLocationFilenamePart(value: string): string {

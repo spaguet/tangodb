@@ -524,6 +524,8 @@ export default function SchedulePageContainer() {
           toast(t("schedule.export.pngFailed"), "error");
         } else if (result === "cancelled") {
           return;
+        } else if (result === "telegram") {
+          toast(t("export.status.telegramDownload"), "success");
         } else {
           toast(t("schedule.export.pngSuccess"), "success");
         }
