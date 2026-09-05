@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { CalendarDays } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useScheduleForWeek, useSchedule } from "../../hooks/useSchedule";
@@ -17,7 +18,12 @@ import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { canAddPersonalFromGrid, canClickEmptyCell, canOfferGroupLessonAdd } from "../../lib/scheduleLessonAccess";
 import { canManageMiniAppRentals } from "../../lib/permissions";
 import { isMiniAppRentalChannel } from "../../lib/rentalMiniAppDisplay";
-import { getWeekRange, isPastDate, toISODateLocal } from "../../lib/scheduleWeek";
+import {
+  buildSchedulePngFilename,
+  exportSchedulePng,
+  waitForDomPaint,
+} from "../../lib/exportSchedulePng";
+import { getWeekRange, isPastDate, toISODateLocal, formatWeekRangeLabel } from "../../lib/scheduleWeek";
 import { parseScheduleFocusParams, weekStartFromFocusDate } from "../../lib/scheduleFocus";
 import type { DisplayLesson, EventDisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, RentalDisplayLesson } from "../../types";
 import LoadingState from "../ui/LoadingState";
@@ -56,7 +62,7 @@ type AddFlow =
   | null;
 
 export default function SchedulePageContainer() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { role, can, isReadOnly, canEditPastSchedule, options } = usePermissions();
@@ -81,6 +87,8 @@ export default function SchedulePageContainer() {
   const [focusLessonId, setFocusLessonId] = useState<string | null>(urlFocus.lesson);
   const [focusRentalId, setFocusRentalId] = useState<string | null>(urlFocus.rental);
   const appliedFocusKeyRef = useRef<string | null>(null);
+  const scheduleExportRef = useRef<HTMLDivElement>(null);
+  const [exportingPng, setExportingPng] = useState(false);
 
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
 
@@ -482,6 +490,41 @@ export default function SchedulePageContainer() {
     void scheduleQuery.refetch();
   }, [scheduleQuery]);
 
+  const handleExportPng = useCallback(async () => {
+    const root = scheduleExportRef.current;
+    if (!root || exportingPng) return;
+
+    const { weekStart, weekEnd } = getWeekRange(selectedWeekStart);
+    const weekStartISO = toISODateLocal(weekStart);
+    const weekEndISO = toISODateLocal(weekEnd);
+    const filename = buildSchedulePngFilename(weekStartISO, weekEndISO);
+
+    flushSync(() => {
+      setExportingPng(true);
+    });
+
+    try {
+      await waitForDomPaint();
+      const result = await exportSchedulePng(root, filename);
+      if (result === "failed") {
+        toast(t("schedule.export.pngFailed"), "error");
+      } else if (result === "cancelled") {
+        return;
+      } else {
+        toast(t("schedule.export.pngSuccess"), "success");
+      }
+    } catch {
+      toast(t("schedule.export.pngFailed"), "error");
+    } finally {
+      setExportingPng(false);
+    }
+  }, [exportingPng, selectedWeekStart, toast, t]);
+
+  const weekRangeLabel = useMemo(() => {
+    const { weekStart, weekEnd } = getWeekRange(selectedWeekStart);
+    return formatWeekRangeLabel(weekStart, weekEnd, locale);
+  }, [selectedWeekStart, locale]);
+
   const handleEmptyCellClick = useCallback(
     (locationId: string, locationName: string, dateISO: string, dayOfWeek: number, timeStart: string) => {
       if (!canClickEmptyCell(role, can, scheduleGridAddOptions, { locationId })) return;
@@ -591,6 +634,9 @@ export default function SchedulePageContainer() {
           onCreateEventClick={() => setCreateEventOpen(true)}
           canManageRentals={canManageRentals}
           onCreateRentalClick={() => openRentalChannel(null)}
+          onExportPngClick={() => void handleExportPng()}
+          exportingPng={exportingPng}
+          exportPngDisabled={!hasLocations && noLocationLessons.length === 0}
         />
       </div>
 
@@ -601,7 +647,14 @@ export default function SchedulePageContainer() {
           <AddLocationsInSettingsHint />
         </div>
       ) : (
-        <div className="space-y-4">
+        <div ref={scheduleExportRef} className="space-y-4">
+          {exportingPng ? (
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xs">
+              <p className="text-sm font-semibold text-slate-800">{t("schedule.title")}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{weekRangeLabel}</p>
+            </div>
+          ) : null}
+
           {locationsQuery.locations.map((location) => (
             <LocationScheduleSection
               key={location.id}
@@ -613,7 +666,8 @@ export default function SchedulePageContainer() {
               getLessonSubtitle={getLessonSubtitle}
               onLessonClick={handleLessonClick}
               canClickEmpty={canClickEmpty}
-              forceExpanded={focusLocationId === location.id}
+              forceExpanded={exportingPng || focusLocationId === location.id}
+              forExport={exportingPng}
               highlightedLesson={highlightedLesson}
               onEmptyCellClick={(dateISO, dayOfWeek, timeStart) =>
                 handleEmptyCellClick(location.id, location.name, dateISO, dayOfWeek, timeStart)
@@ -629,12 +683,22 @@ export default function SchedulePageContainer() {
               getLessonTitle={getLessonTitle}
               getLessonSubtitle={getLessonSubtitle}
               onLessonClick={handleLessonClick}
-              forceExpanded={focusLocationId === NO_LOCATION_KEY}
+              forceExpanded={exportingPng || focusLocationId === NO_LOCATION_KEY}
+              forExport={exportingPng}
               highlightedLesson={highlightedLesson}
             />
           )}
         </div>
       )}
+
+      {exportingPng ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-white/75 backdrop-blur-[1px]"
+          aria-live="polite"
+        >
+          <p className="text-sm font-medium text-slate-700">{t("schedule.export.pngInProgress")}</p>
+        </div>
+      ) : null}
 
       <ScheduleUpcomingCancellationsBlock
         disciplineMap={disciplineMap}

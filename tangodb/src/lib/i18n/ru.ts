@@ -1611,6 +1611,10 @@ export const RU: Record<I18nKey, string> = {
   "personal.edit.repeatWeeklyHint":
     "Новые даты создаются только на свободные слоты. Если на это время занятие уже есть, оно не дублируется.",
   "schedule.title": "Расписание",
+  "schedule.export.png": "Скачать PNG",
+  "schedule.export.pngInProgress": "Формирование PNG…",
+  "schedule.export.pngSuccess": "Расписание сохранено в PNG",
+  "schedule.export.pngFailed": "Не удалось сохранить PNG",
   "schedule.empty": "Расписание пусто",
   "schedule.error.loadFailed": "Не удалось загрузить расписание",
   "schedule.error.pastAdd": "Нельзя добавить занятие в прошлом",

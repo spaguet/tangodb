@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, CalendarPlus, Building2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, CalendarPlus, Building2, ImageDown } from "lucide-react";
 import { getWeekRange, formatWeekRangeLabel, toISODateLocal } from "../../lib/scheduleWeek";
 import { useI18n } from "../../hooks/useI18n";
 import { btnOpenCls } from "../ui/buttonStyles";
@@ -23,6 +23,9 @@ interface ScheduleToolbarProps {
   onCreateEventClick?: () => void;
   canManageRentals?: boolean;
   onCreateRentalClick?: () => void;
+  onExportPngClick?: () => void;
+  exportingPng?: boolean;
+  exportPngDisabled?: boolean;
 }
 
 export default function ScheduleToolbar({
@@ -37,6 +40,9 @@ export default function ScheduleToolbar({
   onCreateEventClick,
   canManageRentals = false,
   onCreateRentalClick,
+  onExportPngClick,
+  exportingPng = false,
+  exportPngDisabled = false,
 }: ScheduleToolbarProps) {
   const { t, locale } = useI18n();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -140,6 +146,18 @@ export default function ScheduleToolbar({
           ))}
         </AppSelect>
       )}
+
+      {onExportPngClick ? (
+        <button
+          type="button"
+          onClick={onExportPngClick}
+          disabled={exportingPng || exportPngDisabled}
+          className={btnOpenCls}
+        >
+          <ImageDown className={`w-4 h-4 ${exportingPng ? "animate-pulse" : ""}`} />
+          {t("schedule.export.png")}
+        </button>
+      ) : null}
 
       {canManageCalendarEvents && onCreateEventClick ? (
         <button

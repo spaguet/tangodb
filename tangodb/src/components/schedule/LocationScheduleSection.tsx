@@ -16,6 +16,7 @@ interface LocationScheduleSectionProps {
   canClickEmpty?: boolean;
   forceExpanded?: boolean;
   highlightedLesson?: DisplayLesson | null;
+  forExport?: boolean;
 }
 
 export default function LocationScheduleSection({
@@ -30,6 +31,7 @@ export default function LocationScheduleSection({
   canClickEmpty = false,
   forceExpanded = false,
   highlightedLesson = null,
+  forExport = false,
 }: LocationScheduleSectionProps) {
   const { t } = useI18n();
   const sectionRef = useRef<HTMLElement>(null);
@@ -38,12 +40,13 @@ export default function LocationScheduleSection({
   useEffect(() => {
     if (!forceExpanded) return;
     setIsExpanded(true);
+    if (forExport) return;
     const node = sectionRef.current;
     if (!node) return;
     window.requestAnimationFrame(() => {
       node.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-  }, [forceExpanded]);
+  }, [forceExpanded, forExport]);
 
   const showGrid = lessons.length > 0 || (canClickEmpty && locationId);
 
@@ -83,6 +86,7 @@ export default function LocationScheduleSection({
             onEmptyCellClick={onEmptyCellClick}
             canClickEmpty={canClickEmpty && !!locationId}
             highlightedLesson={highlightedLesson}
+            forExport={forExport}
           />
         ))}
     </section>

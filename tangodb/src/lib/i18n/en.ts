@@ -1613,6 +1613,10 @@ export const EN: Record<I18nKey, string> = {
   "personal.edit.repeatWeeklyHint":
     "New dates are created only when the slot is free. Existing lessons at this time are not duplicated.",
   "schedule.title": "Schedule",
+  "schedule.export.png": "Download PNG",
+  "schedule.export.pngInProgress": "Generating PNG…",
+  "schedule.export.pngSuccess": "Schedule saved as PNG",
+  "schedule.export.pngFailed": "Failed to save PNG",
   "schedule.empty": "Schedule is empty",
   "schedule.error.loadFailed": "Failed to load schedule",
   "schedule.error.pastAdd": "Cannot add class in the past",
