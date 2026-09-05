@@ -16,6 +16,7 @@ import {
 } from "./inviteUrlToken";
 import {
   AuthButton,
+  AuthDeveloperContact,
   AuthError,
   AuthField,
   AuthLayout,
@@ -298,6 +299,7 @@ export default function AcceptInvitePage() {
           <p className="text-sm text-slate-500 text-center">
             <AuthLink to="/auth/forgot-password">{t("auth.login.forgotPasswordLink")}</AuthLink>
           </p>
+          <AuthDeveloperContact />
         </AuthLayout>
       );
     }
@@ -346,6 +348,7 @@ export default function AcceptInvitePage() {
           />
           <AuthButton loading={submitting}>{t("auth.acceptInviteSubmit")}</AuthButton>
         </form>
+        <AuthDeveloperContact />
       </AuthLayout>
     );
   }
@@ -413,6 +416,7 @@ export default function AcceptInvitePage() {
         <AuthButton type="button" loading={submitting} onClick={() => void handleSignOutToContinue()}>
           {t("auth.acceptInvite.signOutToContinue")}
         </AuthButton>
+        <AuthDeveloperContact />
       </AuthLayout>
     );
   }

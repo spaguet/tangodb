@@ -3,10 +3,11 @@ import { useAuth } from "./AuthProvider";
 import { useGuestI18n } from "../hooks/useI18n";
 import { isRenterActorFromSession } from "../lib/authClaims";
 import { RenterActorDenied } from "./ProtectedRoute";
-import { isCaptchaAuthError, parseAuthError } from "./authErrors";
+import { isCaptchaAuthError, parseAuthError, resolveForgotPasswordError } from "./authErrors";
 import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import {
   AuthButton,
+  AuthDeveloperContact,
   AuthError,
   AuthField,
   AuthLayout,
@@ -35,23 +36,37 @@ export default function ForgotPasswordPage() {
     return <RenterActorDenied />;
   }
 
+  const showResetSuccess = (trimmedEmail: string) => {
+    setSuccess(t("auth.forgotPasswordSuccess"));
+    setError(null);
+    if (import.meta.env.DEV) {
+      console.info("[TangoDB] Password reset link requested", { email: trimmedEmail });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(null);
+    const trimmedEmail = email.trim();
     try {
       if (isTurnstileConfigured() && !turnstileToken) {
         setError(t("auth.register.captchaRequired"));
         return;
       }
-      await resetPasswordForEmail(email.trim(), turnstileToken);
-      setSuccess(t("auth.forgotPasswordSuccess"));
+      await resetPasswordForEmail(trimmedEmail, turnstileToken);
+      showResetSuccess(trimmedEmail);
     } catch (err) {
       if (isCaptchaAuthError(err)) {
         setError(parseAuthError(err, locale));
       } else {
-        setSuccess(t("auth.forgotPasswordSuccess"));
+        const resolved = resolveForgotPasswordError(err, locale);
+        if (resolved.kind === "neutralSuccess") {
+          showResetSuccess(trimmedEmail);
+        } else {
+          setError(resolved.message);
+        }
       }
       setTurnstileResetKey((k) => k + 1);
       setTurnstileToken(null);
@@ -60,11 +75,23 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  if (success) {
+    return (
+      <AuthLayout title="TangoDB" subtitle={t("auth.forgotPassword.subtitle")}>
+        <AuthSuccess message={success} />
+        <p className="text-sm text-slate-600">{t("auth.forgotPassword.successHint")}</p>
+        <p className="text-sm text-slate-500 text-center">
+          <AuthLink to="/login">{t("auth.forgotPassword.backToLogin")}</AuthLink>
+        </p>
+        <AuthDeveloperContact />
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout title="TangoDB" subtitle={t("auth.forgotPassword.subtitle")}>
       <p className="text-sm text-slate-500">{t("auth.forgotPassword.hint")}</p>
       <AuthError message={error} />
-      <AuthSuccess message={success} />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthField
@@ -86,6 +113,7 @@ export default function ForgotPasswordPage() {
       <p className="text-sm text-slate-500 text-center">
         <AuthLink to="/login">{t("auth.forgotPassword.backToLogin")}</AuthLink>
       </p>
+      <AuthDeveloperContact />
     </AuthLayout>
   );
 }

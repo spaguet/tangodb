@@ -6,15 +6,17 @@ import { isRenterActorFromSession } from "../lib/authClaims";
 import { RenterActorDenied } from "./ProtectedRoute";
 import {
   AuthButton,
+  AuthDeveloperContact,
   AuthError,
   AuthField,
   AuthLayout,
   AuthLink,
   AuthSuccess,
 } from "./AuthLayout";
+import { parseAuthError } from "./authErrors";
 
 export default function ResetPasswordPage() {
-  const { t } = useGuestI18n();
+  const { t, locale } = useGuestI18n();
   const { passwordRecovery, loading: authLoading, updatePassword, signOut, session } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
@@ -56,10 +58,13 @@ export default function ResetPasswordPage() {
     try {
       await updatePassword(password);
       setSuccess(t("auth.resetPassword.success"));
+      if (import.meta.env.DEV) {
+        console.info("[TangoDB] Password updated via recovery flow");
+      }
       await signOut();
       setTimeout(() => navigate("/login", { replace: true }), 1200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("auth.resetPassword.error"));
+      setError(parseAuthError(err, locale));
     } finally {
       setLoading(false);
     }
@@ -69,14 +74,7 @@ export default function ResetPasswordPage() {
     return (
       <AuthLayout title="TangoDB" subtitle={t("auth.resetPassword.subtitle")}>
         <AuthSuccess message={success} />
-      </AuthLayout>
-    );
-  }
-
-  if (authLoading) {
-    return (
-      <AuthLayout title="TangoDB" subtitle={t("auth.resetPassword.subtitle")}>
-        <p className="text-sm text-slate-500">{t("auth.loading.checkingSession")}</p>
+        <AuthDeveloperContact />
       </AuthLayout>
     );
   }
@@ -88,6 +86,7 @@ export default function ResetPasswordPage() {
           {t("auth.resetPassword.noSessionHint")}{" "}
           <AuthLink to="/auth/forgot-password">{t("auth.resetPassword.requestNewLink")}</AuthLink>.
         </p>
+        <AuthDeveloperContact />
       </AuthLayout>
     );
   }
@@ -116,6 +115,7 @@ export default function ResetPasswordPage() {
         />
         <AuthButton loading={loading}>{t("auth.resetPassword.submit")}</AuthButton>
       </form>
+      <AuthDeveloperContact />
     </AuthLayout>
   );
 }

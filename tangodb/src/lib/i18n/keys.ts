@@ -98,6 +98,8 @@ export type I18nKey =
   | "auth.forgotPassword.submit"
   | "auth.forgotPassword.backToLogin"
   | "auth.forgotPasswordSuccess"
+  | "auth.forgotPassword.successHint"
+  | "auth.forgotPassword.rateLimit"
   | "auth.resetPassword.subtitle"
   | "auth.resetPassword.noSessionHint"
   | "auth.resetPassword.requestNewLink"

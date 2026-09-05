@@ -55,6 +55,35 @@ export function isCaptchaAuthError(err: unknown): boolean {
   );
 }
 
+/** True when forgot-password must show neutral success (no email enumeration). */
+export function shouldMaskForgotPasswordError(err: unknown): boolean {
+  if (isCaptchaAuthError(err)) return false;
+  const message = errorMessage(err).toLowerCase();
+  if (message.includes("vite_site_url") || message.includes("not configured")) return false;
+  if (message.includes("failed to fetch") || message.includes("networkerror")) return false;
+  if (message.includes("rate limit") || message.includes("security purposes")) return false;
+  if (message.includes("invalid email")) return false;
+  return true;
+}
+
+export function resolveForgotPasswordError(
+  err: unknown,
+  locale?: string
+): { kind: "neutralSuccess" } | { kind: "error"; message: string } {
+  if (shouldMaskForgotPasswordError(err)) {
+    return { kind: "neutralSuccess" };
+  }
+  const loc = locale ?? getGuestLocale();
+  const message = errorMessage(err).toLowerCase();
+  if (message.includes("rate limit") || message.includes("security purposes")) {
+    return { kind: "error", message: t(loc, "auth.forgotPassword.rateLimit") };
+  }
+  if (message.includes("vite_site_url") || message.includes("not configured")) {
+    return { kind: "error", message: t(loc, "common.serverUnavailable") };
+  }
+  return { kind: "error", message: parseAuthError(err, loc) };
+}
+
 export function parseAuthError(err: unknown, locale?: string): string {
   const loc = locale ?? getGuestLocale();
   const message = errorMessage(err);

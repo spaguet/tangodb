@@ -158,7 +158,11 @@ export function AuthError({ message }: { message: string | null }) {
 export function AuthSuccess({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
+    <div
+      role="status"
+      aria-live="polite"
+      className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2.5 font-medium"
+    >
       {message}
     </div>
   );

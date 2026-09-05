@@ -101,6 +101,9 @@ export const EN: Record<I18nKey, string> = {
   "auth.forgotPassword.submit": "Send reset link",
   "auth.forgotPassword.backToLogin": "Back to sign in",
   "auth.forgotPasswordSuccess": "If an account exists, we sent a password reset link.",
+  "auth.forgotPassword.successHint":
+    "Check your inbox and spam folder. If you were invited as a team member but have not opened the invite link yet, accept the invitation first — password recovery works only after your account is created.",
+  "auth.forgotPassword.rateLimit": "Too many requests. Please wait a minute and try again.",
   "auth.resetPassword.subtitle": "New password",
   "auth.resetPassword.noSessionHint":
     "Open the link from the password recovery email or request a new one.",

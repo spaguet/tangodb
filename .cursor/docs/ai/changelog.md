@@ -1,3 +1,4 @@
+2026-09-05 — fix(crm): микропатч **2.9.91** — восстановление пароля: явный success-экран (зелёный баннер + подсказка про инвайт), технические ошибки (сеть, rate limit, SITE_URL) не маскируются; `AuthDeveloperContact` на forgot/reset/accept-invite; dev `console.info` при запросе сброса.
 2026-09-05 — fix(crm): микропатч **2.9.90** — accept-invite: URL `#token=` важнее `__TDB_INVITE_TOKEN__` (старый stash не блокирует новую ссылку); hashchange сбрасывает preview.
 2026-09-05 — fix(crm): микропатч **2.9.89** — приём инвайта преподавателя: токен с `#token=` сохраняется до `telegram-web-app.js`, hash парсится через `URLSearchParams`, `preview-invite` без embed `organizations()`, mismatch email не маскируется под «истекло».
 2026-09-05 — fix(hall-rent): микропатч **2.9.88** — список арендаторов: наименование и тип контрагента на двух строках (тип — мельче).

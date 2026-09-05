@@ -101,6 +101,9 @@ export const RU: Record<I18nKey, string> = {
   "auth.forgotPassword.submit": "Отправить ссылку",
   "auth.forgotPassword.backToLogin": "Вернуться ко входу",
   "auth.forgotPasswordSuccess": "Если аккаунт существует, мы отправили ссылку для сброса пароля.",
+  "auth.forgotPassword.successHint":
+    "Проверьте входящие и папку «Спам». Если вас пригласили в команду, но вы ещё не открыли ссылку из письма-приглашения — сначала примите приглашение: восстановление пароля работает только после создания аккаунта.",
+  "auth.forgotPassword.rateLimit": "Слишком много запросов. Подождите минуту и попробуйте снова.",
   "auth.resetPassword.subtitle": "Новый пароль",
   "auth.resetPassword.noSessionHint":
     "Откройте ссылку из письма для восстановления пароля или запросите новую.",
