@@ -48,7 +48,8 @@ export default function LocationScheduleSection({
     });
   }, [forceExpanded, forExport]);
 
-  const showGrid = lessons.length > 0 || (canClickEmpty && locationId);
+  const showGrid = forExport || lessons.length > 0 || (canClickEmpty && locationId);
+  const showContent = forExport || isExpanded;
 
   const header = (
     <>
@@ -87,7 +88,7 @@ export default function LocationScheduleSection({
         </button>
       )}
 
-      {isExpanded &&
+      {showContent &&
         (!showGrid ? (
           <div className="text-center py-12 text-slate-400 text-sm">{t("common.noLessonsWeek")}</div>
         ) : (

@@ -728,8 +728,7 @@ export default function SchedulePageContainer() {
       {exportingPng && pngExportLocationKey ? (
         <div
           ref={scheduleExportRef}
-          className="fixed top-0 left-0 w-max max-w-none pointer-events-none opacity-0"
-          style={{ zIndex: -1 }}
+          className="fixed top-0 -left-[10000px] w-max max-w-none pointer-events-none"
           aria-hidden="true"
         >
           <div className="space-y-3 p-1 bg-white">

@@ -36,10 +36,18 @@ export async function exportSchedulePng(
   element: HTMLElement,
   filename: string
 ): Promise<SchedulePngExportResult> {
+  if (document.fonts?.ready) {
+    await document.fonts.ready;
+  }
+
   const blob = await toBlob(element, {
     pixelRatio: 2,
     cacheBust: true,
     backgroundColor: "#ffffff",
+    style: {
+      opacity: "1",
+      visibility: "visible",
+    },
   });
 
   if (!blob) return "failed";
@@ -75,7 +83,7 @@ export function waitForDomPaint(): Promise<void> {
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        window.setTimeout(resolve, 80);
+        window.setTimeout(resolve, 150);
       });
     });
   });
