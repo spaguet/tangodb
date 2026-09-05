@@ -507,7 +507,7 @@ BEGIN
   PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
   v_result := renter_cancel_occurrence(v_id2);
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'staff cancel near: ' || COALESCE(v_result ->> 'error', 'ok'));
-  PERFORM _test_assert(v_result ->> 'reason' = 'miniapp_cancel_retain', 'cancel inside 24h retains 50%');
+  PERFORM _test_assert(v_result ->> 'reason' = 'miniapp_staff_cancel_refund', 'staff cancel inside 24h refunds prepay');
   PERFORM _test_assert(
     (SELECT lifecycle FROM rentals WHERE id = v_id2) = 'cancelled',
     'retain cancel → cancelled'
@@ -544,7 +544,7 @@ BEGIN
   PERFORM _hall_rent_test_set_jwt(v_user, v_org, v_member, 'owner');
   v_result := renter_cancel_occurrence('a1c00000-0000-4000-8000-000000000086');
   PERFORM _test_assert((v_result ->> 'success')::boolean, 'staff occupancy during slot: ' || COALESCE(v_result ->> 'error', 'ok'));
-  PERFORM _test_assert(v_result ->> 'reason' = 'miniapp_cancel_retain', 'staff in-window retain 50%');
+  PERFORM _test_assert(v_result ->> 'reason' = 'miniapp_staff_cancel_refund', 'staff in-window refunds prepay');
   PERFORM _test_assert(
     (SELECT remainder_charged_at IS NULL FROM rentals WHERE id = 'a1c00000-0000-4000-8000-000000000086'),
     'staff occupancy does not charge remainder'

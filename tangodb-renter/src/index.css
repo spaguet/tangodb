@@ -18,3 +18,15 @@ body {
     rgba(255, 255, 255, 0.22) 9px
   );
 }
+
+/* Profile cards: lighter stripes so dark text stays readable. */
+.slot-hold-soft {
+  background-color: rgb(248 250 252);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 5px,
+    rgba(148, 163, 184, 0.28) 5px,
+    rgba(148, 163, 184, 0.28) 9px
+  );
+}

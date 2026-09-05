@@ -861,7 +861,7 @@ function PackSeriesCard({
         highlighted ? "ring-2 ring-indigo-400 ring-offset-2" : ""
       } ${
         packHold
-          ? "slot-hold border-slate-300 text-slate-800"
+          ? "slot-hold-soft border-slate-200 text-slate-800"
           : "border-slate-200 bg-white border-l-4 border-l-indigo-600"
       }`}
     >
@@ -944,7 +944,7 @@ function RentalCard({
         highlighted ? "ring-2 ring-indigo-400 ring-offset-2" : ""
       } ${
         isHold
-          ? "slot-hold border-slate-300 text-slate-800"
+          ? "slot-hold-soft border-slate-200 text-slate-800"
           : "border-slate-200 bg-white border-l-4 border-l-indigo-600"
       }`}
     >

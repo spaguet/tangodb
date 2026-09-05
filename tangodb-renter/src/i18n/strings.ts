@@ -15,7 +15,7 @@ const messages = {
     bootstrapFailed: "Не удалось загрузить данные студии.",
 
     tabSchedule: "Расписание",
-    tabMine: "Мои записи",
+    tabMine: "Мой профиль",
     selectHall: "Зал",
     hallRatesIncomplete: "Зал пока недоступен для брони — студия настраивает тарифы. Обратитесь в студию.",
     free: "Свободно",
@@ -193,7 +193,7 @@ const messages = {
     bootstrapFailed: "Could not load studio data.",
 
     tabSchedule: "Schedule",
-    tabMine: "My bookings",
+    tabMine: "My profile",
     selectHall: "Hall",
     hallRatesIncomplete: "This hall is not bookable yet — the studio is finishing rate setup. Please contact the studio.",
     free: "Free",
