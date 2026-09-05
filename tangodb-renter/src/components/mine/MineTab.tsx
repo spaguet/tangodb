@@ -29,6 +29,7 @@ import {
   rpcUpdateProfile,
 } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
+import { resolveTopupAmountMax } from "../../lib/topupLimits";
 import { formatTopupAmount } from "../../lib/quoteBalance";
 import { qrDownloadFilename, resolveOrgRentalQrUrl } from "../../lib/qrUrl";
 import { isStudioQrSignedUrl } from "../../lib/qrProxy";
@@ -374,6 +375,15 @@ export default function MineTab({
       return;
     }
     const amountLabel = formatMoney(amount, bootstrap.currencyCode, locale);
+    const topupMax = resolveTopupAmountMax(bootstrap.currencyCode, bootstrap.topupMaxAmount);
+    if (amount > topupMax) {
+      showTopupValidation(
+        tFill(locale, "topupAmountTooLarge", {
+          max: formatMoney(topupMax, bootstrap.currencyCode, locale),
+        })
+      );
+      return;
+    }
     const activeQrId = resolveActiveQrId();
     if (topupMethod === "qr" && !bootstrap.chatUrl) {
       showTopupValidation(t(locale, "topupNeedChat"));
@@ -409,9 +419,20 @@ export default function MineTab({
         key === "topupQrInvalid" ||
         key === "topupNeedChat" ||
         key === "topupChatRequired" ||
-        key === "topupPendingExists"
+        key === "topupPendingExists" ||
+        key === "topupAmountTooLarge"
       ) {
-        showTopupValidation(message);
+        showTopupValidation(
+          key === "topupAmountTooLarge"
+            ? tFill(locale, "topupAmountTooLarge", {
+                max: formatMoney(
+                  resolveTopupAmountMax(bootstrap.currencyCode, bootstrap.topupMaxAmount),
+                  bootstrap.currencyCode,
+                  locale
+                ),
+              })
+            : message
+        );
       } else {
         setError(message);
       }

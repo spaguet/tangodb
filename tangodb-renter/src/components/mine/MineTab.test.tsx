@@ -512,4 +512,49 @@ describe("MineTab stage B surfaces", () => {
       });
     });
   });
+
+  it("submits VND top-up above legacy 1M cap when bootstrap allows it", async () => {
+    mockLoadedMine();
+    vi.mocked(rpc.rpcListActiveQr).mockResolvedValue([
+      {
+        id: "qr-1",
+        label: "VietQR",
+        signed_url: null,
+        storage_path: "org/qr-1",
+      },
+    ]);
+    vi.mocked(rpc.rpcSubmitTopup).mockResolvedValue({
+      id: "topup-vnd",
+      amount: 2_400_000,
+      correlation_code: "TDB-VND",
+    });
+
+    render(
+      <MineTab
+        locale="ru"
+        bootstrap={{
+          ...mockBootstrap,
+          currencyCode: "VND",
+          topupMaxAmount: 100_000_000,
+        }}
+        supabase={supabase}
+        refreshKey={0}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByAltText("VietQR")).toBeTruthy();
+    });
+
+    await userEvent.type(screen.getByPlaceholderText(/Сумма/i), "2400000");
+    await userEvent.click(screen.getByRole("button", { name: /Отправить заявку/i }));
+
+    await waitFor(() => {
+      expect(rpc.rpcSubmitTopup).toHaveBeenCalledWith(supabase, {
+        amount: 2_400_000,
+        method: "qr",
+        qr_asset_id: "qr-1",
+      });
+    });
+  });
 });

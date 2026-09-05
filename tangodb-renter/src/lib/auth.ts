@@ -1,6 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { parseTelegramUserIdFromInitData } from "./initData";
 import { getSupabaseConfig } from "./supabase";
+import { resolveTopupAmountMax } from "./topupLimits";
 
 export type MintResponse = {
   access_token: string;
@@ -80,6 +81,7 @@ export type BootstrapData = {
   bookingBanned: boolean;
   serverNow: string;
   undeliveredNotifications: number;
+  topupMaxAmount: number;
 };
 
 export async function fetchBootstrap(
@@ -116,6 +118,10 @@ export async function fetchBootstrap(
     bookingBanned: Boolean(result.booking_banned),
     serverNow: String(result.server_now ?? new Date().toISOString()),
     undeliveredNotifications: Number(result.undelivered_notifications ?? 0),
+    topupMaxAmount: resolveTopupAmountMax(
+      String(result.currency_code ?? "RUB"),
+      result.topup_max_amount != null ? Number(result.topup_max_amount) : null
+    ),
   };
 }
 
