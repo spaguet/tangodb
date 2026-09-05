@@ -148,6 +148,7 @@ function mapFinance(row: Record<string, unknown> | null): RenterFinanceSummary |
             entry.correction_reason != null ? String(entry.correction_reason) : null,
           correctsLedgerId:
             entry.corrects_ledger_id != null ? String(entry.corrects_ledger_id) : null,
+          payoutMethod: entry.payout_method != null ? String(entry.payout_method) : null,
           canReverse: Boolean(entry.can_reverse),
         }))
       : [],

@@ -29,6 +29,7 @@ import { canManageMiniAppRentals, canWriteRentals } from "../../lib/permissions"
 import { useI18n } from "../../hooks/useI18n";
 import { useCan, usePermissions } from "../../hooks/usePermissions";
 import { useStaffRenterWalletTopup, useStaffTopupPreview, useReverseRenterWalletTopup } from "../../hooks/useRenterTopupInbox";
+import { usePreviewRenterWalletPayout } from "../../hooks/useRenterWalletPayout";
 import CreateRentalDialog from "../schedule/CreateRentalDialog";
 import CreateMiniAppBookingDialog from "../schedule/CreateMiniAppBookingDialog";
 import CreateRentalChannelDialog, { type RentalChannelChoice } from "../schedule/CreateRentalChannelDialog";
@@ -61,13 +62,14 @@ import {
   PayRentalInvoiceModal,
   RecordRentalAdvanceModal,
   RentalAdvanceAllocationHistory,
+  RenterWalletPayoutModal,
 } from "./RenterFinanceModals";
 import type { RentalInvoice } from "../../types";
 import { translateMutationBlockedMessage } from "../../hooks/useOnlineStatus";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
 import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "../ui/AppSelect";
-import { btnAddCls } from "../ui/buttonStyles";
+import { btnAddCls, btnDestructiveOpenCls } from "../ui/buttonStyles";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import LoadingState from "../ui/LoadingState";
 import SectionPillNav, { type SectionPillNavItem } from "../ui/SectionPillNav";
@@ -283,6 +285,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
             locationMap={locationMap}
             canWrite={canWriteRentalFinance}
             canWritePayments={canWritePayments}
+            canWriteDocuments={canWriteDocuments}
             canManageSettings={canManageSettings}
             toast={toast}
             t={t}
@@ -778,6 +781,7 @@ function FinanceTab({
   locationMap,
   canWrite,
   canWritePayments,
+  canWriteDocuments,
   canManageSettings,
   toast,
   t,
@@ -791,6 +795,7 @@ function FinanceTab({
   locationMap: Map<string, string>;
   canWrite: boolean;
   canWritePayments: boolean;
+  canWriteDocuments: boolean;
   canManageSettings: boolean;
   toast: RenterDetailPanelProps["toast"];
   t: (key: import("../../lib/i18n/keys").I18nKey, vars?: Record<string, string | number>) => string;
@@ -807,6 +812,8 @@ function FinanceTab({
   const staffTopup = useStaffRenterWalletTopup();
   const reverseTopup = useReverseRenterWalletTopup();
   const resetReliability = useResetRenterReliability();
+  const payoutPreviewQuery = usePreviewRenterWalletPayout({ renterId }, canWritePayments);
+  const [payoutOpen, setPayoutOpen] = useState(false);
   const [staffAmount, setStaffAmount] = useState("");
   const [staffMethod, setStaffMethod] = useState<"cash" | "qr">("cash");
   const [staffReference, setStaffReference] = useState("");
@@ -858,6 +865,7 @@ function FinanceTab({
     void invoicesQuery.refetch();
     void advancesQuery.refetch();
     void allocationsQuery.refetch();
+    void payoutPreviewQuery.refetch();
   };
 
   const onTime = renter.onTimeCount ?? 0;
@@ -1003,6 +1011,32 @@ function FinanceTab({
         />
       </div>
 
+      {canWritePayments ? (
+        <div className="rounded-lg border border-slate-100 p-3 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h4 className="text-sm font-semibold text-slate-800">{t("renters.detail.payoutTitle")}</h4>
+              <p className="text-xs text-slate-500 mt-0.5">{t("renters.detail.payoutHint")}</p>
+            </div>
+            <button
+              type="button"
+              className={btnDestructiveOpenCls}
+              onClick={() => setPayoutOpen(true)}
+            >
+              {t("renters.detail.payoutAction")}
+            </button>
+          </div>
+          {payoutPreviewQuery.data ? (
+            <p className="text-xs text-slate-600">
+              {t("renters.detail.payoutRefundable")}:{" "}
+              <span className="font-semibold">
+                {formatCurrency(payoutPreviewQuery.data.quote.refundable)}
+              </span>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="rounded-lg border border-slate-100 p-3 space-y-2">
         <h4 className="text-sm font-semibold text-slate-800">{t("renters.detail.reliability")}</h4>
         <p className="text-xs text-slate-600">
@@ -1092,13 +1126,25 @@ function FinanceTab({
                       {t("renters.detail.staffTopupReference")}: {entry.externalReference}
                     </span>
                   ) : null}
+                  {entry.payoutMethod ? (
+                    <span className="block text-slate-400">
+                      {t("renters.detail.payoutMethod")}:{" "}
+                      {getPaymentMethodLabel(entry.payoutMethod as "cash" | "card" | "transfer", t)}
+                    </span>
+                  ) : null}
                   {entry.correctionReason ? (
                     <span className="block text-slate-400">{entry.correctionReason}</span>
                   ) : null}
                 </span>
                 <span className="flex items-center gap-2 shrink-0">
-                  <span className={entry.entryType === "topup_reversal" ? "text-rose-600" : "text-slate-700"}>
-                    {entry.entryType === "topup_reversal" ? "−" : ""}
+                  <span
+                    className={
+                      entry.entryType === "topup_reversal" || entry.entryType === "wallet_payout"
+                        ? "text-rose-600"
+                        : "text-slate-700"
+                    }
+                  >
+                    {entry.entryType === "topup_reversal" || entry.entryType === "wallet_payout" ? "−" : ""}
                     {formatCurrency(entry.amount)}
                   </span>
                   {canWritePayments && entry.canReverse ? (
@@ -1310,6 +1356,16 @@ function FinanceTab({
         advances={advances}
         invoices={invoices}
         onClose={() => setAllocateOpen(false)}
+        onSuccess={refreshFinance}
+        toast={toast}
+      />
+
+      <RenterWalletPayoutModal
+        open={payoutOpen}
+        renterId={renterId}
+        renterName={renter.displayName}
+        canWriteDocuments={canWriteDocuments}
+        onClose={() => setPayoutOpen(false)}
         onSuccess={refreshFinance}
         toast={toast}
       />

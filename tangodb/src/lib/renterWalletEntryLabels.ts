@@ -8,6 +8,7 @@ const walletEntryLabelKey: Record<string, I18nKey> = {
   refund: "renters.detail.walletEntry.refund",
   debt_settle: "renters.detail.walletEntry.debtSettle",
   surcharge_one_time_recalc: "renters.detail.walletEntry.surchargeOneTimeRecalc",
+  wallet_payout: "renters.detail.walletEntry.walletPayout",
 };
 
 export function getWalletEntryLabel(

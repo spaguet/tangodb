@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-    "version": "2.9.85",
+    "version": "2.9.86",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -80,6 +80,7 @@
     "test:db:renter-miniapp-fe4": "node scripts/fe4-maintenance-isolation-check.mjs",
     "test:db:renter-miniapp-fe5": "deno test supabase/functions/_shared/telegramInitData_test.ts supabase/functions/_shared/renterTelegramWebhook_test.ts && psql \"%DATABASE_URL%\" -v ON_ERROR_STOP=1 -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fe5_auth_webhook_test.sql",
     "test:db:renter-miniapp-fa6": "psql \"%DATABASE_URL%\" -v ON_ERROR_STOP=1 -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fa6_topup_review_reversal_test.sql",
+    "test:db:renter-miniapp-wallet-payout": "psql \"%DATABASE_URL%\" -v ON_ERROR_STOP=1 -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_wallet_payout_test.sql",
     "test:db:renter-miniapp-fa7": "psql \"%DATABASE_URL%\" -v ON_ERROR_STOP=1 -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fa7_concurrent_topup_test.sql && node scripts/fa2-concurrent-topup.mjs",
     "test:renter-miniapp-fz": "node scripts/fz-audit-check.mjs",
     "test:db:renter-miniapp-fb2": "psql \"%DATABASE_URL%\" -v ON_ERROR_STOP=1 -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fb2_quote_validator_test.sql",

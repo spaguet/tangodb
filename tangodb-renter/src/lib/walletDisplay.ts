@@ -7,7 +7,8 @@ export type WalletEntryMessageKey =
   | "walletEntryRemainderCharge"
   | "walletEntryRefund"
   | "walletEntryDebtSettle"
-  | "walletEntrySurcharge";
+  | "walletEntrySurcharge"
+  | "walletEntryWalletPayout";
 
 const entryLabelKey: Record<string, WalletEntryMessageKey> = {
   topup: "walletEntryTopup",
@@ -17,6 +18,7 @@ const entryLabelKey: Record<string, WalletEntryMessageKey> = {
   refund: "walletEntryRefund",
   debt_settle: "walletEntryDebtSettle",
   surcharge_one_time_recalc: "walletEntrySurcharge",
+  wallet_payout: "walletEntryWalletPayout",
 };
 
 export function walletEntryLabelKey(entryType: string): WalletEntryMessageKey | null {

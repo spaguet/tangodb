@@ -10180,6 +10180,8 @@ export type Database = {
       staff_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
       preview_staff_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
       reverse_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
+      preview_renter_wallet_payout: { Args: { p_payload: Json }; Returns: Json }
+      staff_renter_wallet_payout: { Args: { p_payload: Json }; Returns: Json }
       store_operation_idempotency: {
         Args: {
           p_fingerprint: string

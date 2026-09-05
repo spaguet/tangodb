@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Coins, FileText, Wallet, X } from "lucide-react";
+import { Banknote, Coins, FileText, Wallet, X } from "lucide-react";
 import type { ToastType } from "../../App";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { useI18n } from "../../hooks/useI18n";
@@ -12,6 +12,12 @@ import {
   useRecordRentalInvoicePayment,
 } from "../../hooks/useRentalInvoices";
 import { useRentalBillingProfile } from "../../hooks/useRentalBillingProfile";
+import { useUploadRenterDocument } from "../../hooks/useRenterCrm";
+import {
+  usePreviewRenterWalletPayout,
+  useStaffRenterWalletPayout,
+  type RenterWalletPayoutMethod,
+} from "../../hooks/useRenterWalletPayout";
 import { minOpenOperationDate, orgLocalDateString } from "../../lib/orgFinanceDate";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
@@ -38,6 +44,7 @@ function ModalShell({
   pending,
   children,
   t,
+  maxWidthClass = "max-w-md",
 }: {
   open: boolean;
   title: string;
@@ -46,6 +53,7 @@ function ModalShell({
   pending: boolean;
   children: React.ReactNode;
   t: (key: import("../../lib/i18n/keys").I18nKey, vars?: Record<string, string | number>) => string;
+  maxWidthClass?: string;
 }) {
   return (
     <AnimatePresence>
@@ -62,7 +70,7 @@ function ModalShell({
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            className="relative w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-xl"
+            className={`relative w-full ${maxWidthClass} bg-white rounded-xl border border-slate-200 shadow-xl`}
           >
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
               <div className="flex items-center gap-2 min-w-0">
@@ -550,5 +558,257 @@ export function RentalAdvanceAllocationHistory({
         ))}
       </ul>
     </div>
+  );
+}
+
+export function RenterWalletPayoutModal({
+  open,
+  renterId,
+  renterName,
+  canWriteDocuments,
+  onClose,
+  onSuccess,
+  toast,
+}: {
+  open: boolean;
+  renterId: string;
+  renterName: string;
+  canWriteDocuments: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  toast: ToastFn;
+}) {
+  const { t } = useI18n();
+  const billingProfileQuery = useRentalBillingProfile();
+  const previewQuery = usePreviewRenterWalletPayout({ renterId }, open);
+  const payout = useStaffRenterWalletPayout();
+  const uploadDocument = useUploadRenterDocument();
+  const fiscalEnabled = billingProfileQuery.data?.fiscal_tracking_enabled ?? false;
+
+  const quote = previewQuery.data?.quote;
+  const refundable = quote?.refundable ?? 0;
+
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<RenterWalletPayoutMethod>("cash");
+  const [reason, setReason] = useState("");
+  const [ack, setAck] = useState(false);
+  const [reference, setReference] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState("");
+
+  const [amountTouched, setAmountTouched] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setMethod("cash");
+    setReason("");
+    setAck(false);
+    setReference("");
+    setDocFile(null);
+    setAmountTouched(false);
+    setIdempotencyKey(crypto.randomUUID());
+  }, [open, renterId]);
+
+  useEffect(() => {
+    if (!open || amountTouched || !quote) return;
+    setAmount(refundable > 0 ? String(refundable) : "");
+  }, [open, quote, refundable, amountTouched]);
+
+  const pending = payout.isPending || uploadDocument.isPending;
+  const parsedAmount = Number(String(amount).replace(",", "."));
+
+  const handleSubmit = async () => {
+    if (!ack) {
+      toast(t("renter.payout.ackRequired"), "error");
+      return;
+    }
+    if (!reason.trim() || reason.trim().length < 3) {
+      toast(t("renter.payout.reasonRequired"), "error");
+      return;
+    }
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      toast(t("renter.topup.amountInvalid"), "error");
+      return;
+    }
+    if (parsedAmount > refundable) {
+      toast(t("renter.payout.exceedsRefundable", { amount: formatCurrency(refundable) }), "error");
+      return;
+    }
+
+    let documentId: string | null = null;
+    if (docFile) {
+      const uploaded = await uploadDocument.mutateAsync({
+        renterId,
+        file: docFile,
+        displayName: t("renters.detail.payoutDocumentName", { name: renterName }),
+        category: "wallet_payout",
+        notes: reason.trim(),
+      });
+      if (!uploaded.success) {
+        toast(resolveMutationError(uploaded.error, "renters.error.documentUploadFailed", t), "error");
+        return;
+      }
+      documentId = uploaded.documentId;
+    }
+
+    const res = await payout.mutateAsync({
+      renterId,
+      amount: parsedAmount,
+      method,
+      reason: reason.trim(),
+      applicationAck: ack,
+      idempotencyKey,
+      documentId,
+      externalReference: reference,
+    });
+    if (!res.success) {
+      if (res.error === "idempotency_conflict") {
+        setIdempotencyKey(crypto.randomUUID());
+      }
+      toast(resolveMutationError(res.error, "renter.payout.failed", t), "error");
+      return;
+    }
+    toast(
+      t("renters.detail.payoutSuccess", { amount: formatCurrency(res.amount) }),
+      res.alreadyApplied ? "info" : "success"
+    );
+    onSuccess();
+    onClose();
+  };
+
+  return (
+    <ModalShell
+      open={open}
+      title={t("renters.detail.payoutTitle")}
+      icon={Banknote}
+      onClose={onClose}
+      pending={pending}
+      t={t}
+      maxWidthClass="max-w-lg"
+    >
+      <p className="text-xs text-slate-500">{t("renters.detail.payoutHint")}</p>
+      {previewQuery.isLoading ? (
+        <p className="text-xs text-slate-400">{t("common.loading.default")}</p>
+      ) : previewQuery.isError ? (
+        <p className="text-xs text-rose-600">
+          {resolveMutationError(
+            previewQuery.error instanceof Error ? previewQuery.error.message : null,
+            "renter.payout.previewFailed",
+            t
+          )}
+        </p>
+      ) : quote ? (
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-1 text-xs text-slate-700">
+          <p>
+            {t("renters.detail.payoutRefundable")}:{" "}
+            <span className="font-semibold">{formatCurrency(refundable)}</span>
+          </p>
+          <p>
+            {t("renters.detail.staffTopupReviewSpendable")}: {formatCurrency(quote.spendable)}
+          </p>
+          {quote.debtToKeep > 0 ? (
+            <p>
+              {t("renters.detail.payoutKeepDebt")}: {formatCurrency(quote.debtToKeep)}
+            </p>
+          ) : null}
+          {quote.holdsFullCost > 0 ? (
+            <p>
+              {t("renters.detail.payoutKeepHolds")}: {formatCurrency(quote.holdsFullCost)}
+              {quote.holdsCount > 0 ? ` · ${quote.holdsCount}` : ""}
+            </p>
+          ) : null}
+          {quote.remaindersToKeep > 0 ? (
+            <p>
+              {t("renters.detail.payoutKeepRemainders")}: {formatCurrency(quote.remaindersToKeep)}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div>
+        <label className={labelCls}>{t("renters.detail.payoutAmount")}</label>
+        <input
+          className={fieldCls}
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => {
+            setAmountTouched(true);
+            setAmount(e.target.value);
+          }}
+          disabled={pending || refundable <= 0}
+        />
+      </div>
+      <AppSelect
+        label={t("renters.detail.payoutMethod")}
+        value={method}
+        onChange={(e) => setMethod(e.target.value as RenterWalletPayoutMethod)}
+        disabled={pending}
+      >
+        {(["cash", "card", "transfer"] as const).map((m) => (
+          <option key={m} value={m}>
+            {getPaymentMethodLabel(m, t)}
+          </option>
+        ))}
+      </AppSelect>
+      <div>
+        <label className={labelCls}>{t("renters.detail.payoutReason")}</label>
+        <textarea
+          className={`${fieldCls} h-20 py-2`}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          disabled={pending}
+          placeholder={t("renters.detail.payoutReasonPlaceholder")}
+        />
+      </div>
+      <div>
+        <label className={labelCls}>{t("renters.detail.payoutReference")}</label>
+        <input
+          className={fieldCls}
+          value={reference}
+          onChange={(e) => setReference(e.target.value)}
+          disabled={pending}
+          placeholder={
+            fiscalEnabled
+              ? t("renters.detail.payoutReferenceFiscalPlaceholder")
+              : t("renters.detail.payoutReferencePlaceholder")
+          }
+        />
+      </div>
+      {canWriteDocuments ? (
+        <div>
+          <label className={labelCls}>{t("renters.detail.payoutDocument")}</label>
+          <input
+            type="file"
+            className="text-xs text-slate-600"
+            onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+            disabled={pending}
+          />
+          <p className="text-[11px] text-slate-400 mt-1">{t("renters.detail.payoutDocumentHint")}</p>
+        </div>
+      ) : null}
+      <label className="flex items-start gap-2 text-xs text-slate-700">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          checked={ack}
+          onChange={(e) => setAck(e.target.checked)}
+          disabled={pending}
+        />
+        <span>{t("renters.detail.payoutAck")}</span>
+      </label>
+      <div className="flex gap-2 pt-1">
+        <button type="button" onClick={onClose} disabled={pending} className={btnCancelCls}>
+          {t("common.cancel")}
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleSubmit()}
+          disabled={pending || refundable <= 0}
+          className={btnAddCls}
+        >
+          {t("renters.detail.payoutConfirm")}
+        </button>
+      </div>
+    </ModalShell>
   );
 }
