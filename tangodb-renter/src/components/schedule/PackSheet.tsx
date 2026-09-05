@@ -25,6 +25,9 @@ type PackSheetProps = {
   supabase: SupabaseClient;
   locationId: string;
   days: string[];
+  defaultValidFrom?: string;
+  defaultTimeStart?: string;
+  defaultTimeEnd?: string;
   onClose: () => void;
   onSuccess: () => void;
   onTopup: (amount: number) => void;
@@ -40,14 +43,19 @@ export default function PackSheet({
   supabase,
   locationId,
   days,
+  defaultValidFrom,
+  defaultTimeStart,
+  defaultTimeEnd,
   onClose,
   onSuccess,
   onTopup,
 }: PackSheetProps) {
-  const [validFrom, setValidFrom] = useState(days[0] ?? "");
-  const [weekdays, setWeekdays] = useState<number[]>([orgIsoWeekday(bootstrap.timezone, validFrom)]);
-  const [timeStart, setTimeStart] = useState("18:00");
-  const [timeEnd, setTimeEnd] = useState("20:00");
+  const initialValidFrom = defaultValidFrom ?? days[0] ?? "";
+  const initialStart = defaultTimeStart ?? "18:00";
+  const [validFrom, setValidFrom] = useState(initialValidFrom);
+  const [weekdays, setWeekdays] = useState<number[]>([orgIsoWeekday(bootstrap.timezone, initialValidFrom)]);
+  const [timeStart, setTimeStart] = useState(initialStart);
+  const [timeEnd, setTimeEnd] = useState(defaultTimeEnd ?? "");
   const [occurrences, setOccurrences] = useState<QuotePackOccurrence[] | null>(null);
   const [packCanCreate, setPackCanCreate] = useState(true);
   const [wallet, setWallet] = useState<WalletData | null>(null);
@@ -75,6 +83,12 @@ export default function PackSheet({
       prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b)
     );
   };
+
+  useEffect(() => {
+    if (!timeEnd && endOptions.length > 0) {
+      setTimeEnd(endOptions[0]);
+    }
+  }, [endOptions, timeEnd]);
 
   useEffect(() => {
     let cancelled = false;

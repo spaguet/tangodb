@@ -173,8 +173,8 @@ export default function ScheduleTab({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 bg-slate-50 text-slate-800">
-      <div className="flex shrink-0 flex-col gap-3 px-4 pt-4">
+    <div className="flex flex-col gap-3 bg-slate-50 pb-4 text-slate-800">
+      <div className="flex flex-col gap-3 px-4 pt-4">
         {!bootstrap.addonActive ? (
           <p className="text-xs leading-relaxed text-slate-500">{t(locale, "addonInactiveCreate")}</p>
         ) : null}
@@ -291,7 +291,7 @@ export default function ScheduleTab({
       </div>
 
       {occupancy && weekDays.length > 0 ? (
-        <div className="min-h-0 flex-1 border-t border-slate-200">
+        <div className="border-t border-slate-200">
           <WeeklyOccupancyGrid
             locale={locale}
             timezone={bootstrap.timezone}
@@ -308,13 +308,14 @@ export default function ScheduleTab({
       {bookingSlot && locationId ? (
         <BookingSheet
           locale={locale}
-          timezone={bootstrap.timezone}
+          bootstrap={bootstrap}
           serverNow={bootstrap.serverNow}
           organizationId={organizationId}
           supabase={supabase}
           locationId={locationId}
           date={bookingSlot.date}
           defaultStart={bookingSlot.start}
+          packDays={days}
           onClose={() => setBookingSlot(null)}
           onDone={() => {
             setBookingSlot(null);

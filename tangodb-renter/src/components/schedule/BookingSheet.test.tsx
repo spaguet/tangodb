@@ -2,16 +2,19 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as rpc from "../../lib/rpc";
-import { makeWallet } from "../../test/fixtures";
+import { mockBootstrap, makeWallet } from "../../test/fixtures";
 import BookingSheet from "./BookingSheet";
 
 vi.mock("../../lib/rpc", () => ({
   rpcGetWallet: vi.fn(),
   rpcQuoteOneTime: vi.fn(),
+  rpcQuotePack: vi.fn(),
   rpcCreateBooking: vi.fn(),
+  rpcCreatePack: vi.fn(),
 }));
 
 const supabase = {} as never;
+const packDays = ["2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10"];
 
 const baseQuote = {
   kind: "one_time",
@@ -62,13 +65,14 @@ describe("BookingSheet booking result", () => {
     render(
       <BookingSheet
         locale="ru"
-        timezone="Europe/Moscow"
+        bootstrap={mockBootstrap}
         serverNow="2026-09-03T12:00:00.000Z"
         organizationId="org-1"
         supabase={supabase}
         locationId="loc-1"
         date="2026-09-10"
         defaultStart="18:00"
+        packDays={packDays}
         onClose={onClose}
         onDone={onDone}
         onTopup={onTopup}
@@ -117,13 +121,14 @@ describe("BookingSheet booking result", () => {
     render(
       <BookingSheet
         locale="ru"
-        timezone="Europe/Moscow"
+        bootstrap={mockBootstrap}
         serverNow="2026-09-03T12:00:00.000Z"
         organizationId="org-1"
         supabase={supabase}
         locationId="loc-1"
         date="2026-09-10"
         defaultStart="18:00"
+        packDays={packDays}
         onClose={onClose}
         onDone={onDone}
         onTopup={onTopup}
@@ -140,5 +145,53 @@ describe("BookingSheet booking result", () => {
       expect(screen.getByText(/Бронь активна/i)).toBeTruthy();
     });
     expect(screen.queryByRole("button", { name: /Пополнить/i })).toBeNull();
+  });
+
+  it("shows recurring pack quote when recurring mode is selected", async () => {
+    const packOccurrence = {
+      kind: "pack_occurrence",
+      date: "2026-09-10",
+      time_start: "18:00",
+      time_end: "20:00",
+      hours: 2,
+      rate: 400,
+      cost: 800,
+      prepay: 400,
+      remainder: 400,
+      currency: "RUB",
+      busy: false,
+      can_create: true,
+    };
+    vi.mocked(rpc.rpcQuotePack).mockResolvedValue({
+      kind: "pack",
+      valid_from: "2026-09-10",
+      valid_to: "2026-10-07",
+      occurrences: [packOccurrence],
+      can_create: true,
+    });
+
+    render(
+      <BookingSheet
+        locale="ru"
+        bootstrap={mockBootstrap}
+        serverNow="2026-09-03T12:00:00.000Z"
+        organizationId="org-1"
+        supabase={supabase}
+        locationId="loc-1"
+        date="2026-09-10"
+        defaultStart="18:00"
+        packDays={packDays}
+        onClose={onClose}
+        onDone={onDone}
+        onTopup={onTopup}
+      />
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /Постоянная/i }));
+
+    await waitFor(() => {
+      expect(rpc.rpcQuotePack).toHaveBeenCalled();
+      expect(screen.getByText(/Даты пакета/i)).toBeTruthy();
+    });
   });
 });

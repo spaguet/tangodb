@@ -98,16 +98,18 @@ export default function CabinetScreen({
         />
 
         {tab === "schedule" ? (
-          <ScheduleTab
-            locale={locale}
-            bootstrap={bootstrap}
-            organizationId={organizationId}
-            supabase={supabase}
-            refreshKey={scheduleRefresh}
-            onBooked={refreshCabinet}
-            onOpenMine={openMine}
-            onTopup={openTopup}
-          />
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
+            <ScheduleTab
+              locale={locale}
+              bootstrap={bootstrap}
+              organizationId={organizationId}
+              supabase={supabase}
+              refreshKey={scheduleRefresh}
+              onBooked={refreshCabinet}
+              onOpenMine={openMine}
+              onTopup={openTopup}
+            />
+          </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto">
             <MineTab
