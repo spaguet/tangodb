@@ -85,6 +85,7 @@ export default function MineTab({
     method: "qr" | "cash";
   } | null>(null);
   const lastOpenedChatMessageRef = useRef<string | null>(null);
+  const topupFormRef = useRef<HTMLDivElement | null>(null);
 
   const [displayName, setDisplayName] = useState(bootstrap.displayName);
   const [phone, setPhone] = useState(bootstrap.contactPhone ?? "");
@@ -180,6 +181,38 @@ export default function MineTab({
     [supabase, bookingsOffset]
   );
 
+  const loadActiveQrAssets = useCallback(
+    async (mode: "initial" | "refresh") => {
+      if (!bootstrap.addonActive) return;
+      try {
+        const assets = await rpcListActiveQr(supabase);
+        const resolved = await Promise.all(
+          assets.map(async (asset) => ({
+            ...asset,
+            ...(await resolveQrAssetUrl(asset)),
+          }))
+        );
+        setQrs(resolved);
+        const firstQrId = resolved[0]?.id ?? "";
+        setTopupQrId((prev) =>
+          resolved.some((asset) => asset.id === prev) ? prev : firstQrId
+        );
+        if (firstQrId) {
+          setTopupMethod((prev) => (prev === "cash" ? "qr" : prev));
+        } else {
+          setTopupMethod((prev) => (prev === "qr" ? "cash" : prev));
+        }
+      } catch {
+        if (mode === "initial") {
+          setQrs([]);
+          setTopupQrId("");
+          setTopupMethod("cash");
+        }
+      }
+    },
+    [supabase, bootstrap.addonActive, resolveQrAssetUrl]
+  );
+
   const load = useCallback(
     async (bookingsMode?: "initial" | "refresh") => {
       setError(null);
@@ -188,30 +221,9 @@ export default function MineTab({
       const mode =
         bookingsMode ?? (loadedBookingsCountRef.current > PAGE ? "refresh" : "initial");
       await loadBookings(mode);
-      if (bootstrap.addonActive) {
-        try {
-          const assets = await rpcListActiveQr(supabase);
-          const resolved = await Promise.all(
-            assets.map(async (asset) => ({
-              ...asset,
-              ...(await resolveQrAssetUrl(asset)),
-            }))
-          );
-          setQrs(resolved);
-          const firstQrId = resolved[0]?.id ?? "";
-          setTopupQrId((prev) =>
-            resolved.some((asset) => asset.id === prev) ? prev : firstQrId
-          );
-          if (firstQrId) {
-            setTopupMethod((prev) => (prev === "cash" ? "qr" : prev));
-          }
-        } catch {
-          setQrs([]);
-          setTopupQrId("");
-        }
-      }
+      await loadActiveQrAssets(mode);
     },
-    [supabase, bootstrap.addonActive, resolveQrAssetUrl, loadBookings]
+    [supabase, loadBookings, loadActiveQrAssets]
   );
 
   useEffect(() => {
@@ -304,6 +316,27 @@ export default function MineTab({
   const draftForAmount = (amountLabel: string, correlationCode?: string) =>
     topupDraftMessage({ locale, amountLabel, method: topupMethod, correlationCode });
 
+  const resolveActiveQrId = useCallback(
+    () => topupQrId || qrs[0]?.id || "",
+    [topupQrId, qrs]
+  );
+
+  const showTopupValidation = (message: string) => {
+    setTopupMsgIsError(true);
+    setTopupMsg(message);
+    topupFormRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+
+  const selectTopupMethod = (method: "qr" | "cash") => {
+    setTopupMsg(null);
+    setTopupMsgIsError(false);
+    if (method === "qr") {
+      const nextQrId = resolveActiveQrId();
+      if (nextQrId) setTopupQrId(nextQrId);
+    }
+    setTopupMethod(method);
+  };
+
   const openChatWithMessage = async (message: string) => {
     const url = bootstrap.chatUrl;
     if (!url) {
@@ -337,26 +370,28 @@ export default function MineTab({
     setError(null);
     const amount = Number(topupAmount.replace(",", "."));
     if (!Number.isFinite(amount) || amount <= 0) {
-      setTopupMsgIsError(true);
-      setTopupMsg(t(locale, "topupAmountRequired"));
+      showTopupValidation(t(locale, "topupAmountRequired"));
       return;
     }
     const amountLabel = formatMoney(amount, bootstrap.currencyCode, locale);
+    const activeQrId = resolveActiveQrId();
     if (topupMethod === "qr" && !bootstrap.chatUrl) {
-      setError(t(locale, "topupNeedChat"));
+      showTopupValidation(t(locale, "topupNeedChat"));
       return;
     }
-    if (topupMethod === "qr" && !topupQrId) {
-      setTopupMsgIsError(true);
-      setTopupMsg(t(locale, "topupQrInvalid"));
+    if (topupMethod === "qr" && !activeQrId) {
+      showTopupValidation(t(locale, "topupQrInvalid"));
       return;
+    }
+    if (topupMethod === "qr" && activeQrId !== topupQrId) {
+      setTopupQrId(activeQrId);
     }
     setTopupSubmitting(true);
     try {
       const result = await rpcSubmitTopup(supabase, {
         amount,
         method: topupMethod,
-        ...(topupMethod === "qr" ? { qr_asset_id: topupQrId } : {}),
+        ...(topupMethod === "qr" ? { qr_asset_id: activeQrId } : {}),
       });
       setTopupAmount("");
       lastOpenedChatMessageRef.current = null;
@@ -368,7 +403,18 @@ export default function MineTab({
       await load("refresh");
     } catch (err) {
       const key = rpcErrorKey(err);
-      setError(t(locale, key));
+      const message = t(locale, key);
+      if (
+        key === "topupAmountRequired" ||
+        key === "topupQrInvalid" ||
+        key === "topupNeedChat" ||
+        key === "topupChatRequired" ||
+        key === "topupPendingExists"
+      ) {
+        showTopupValidation(message);
+      } else {
+        setError(message);
+      }
     } finally {
       setTopupSubmitting(false);
     }
@@ -536,7 +582,7 @@ export default function MineTab({
         ) : null}
       </section>
 
-      <section className={`${panelCls} space-y-3 p-3`}>
+      <section ref={topupFormRef} className={`${panelCls} space-y-3 p-3`}>
         <h2 className={sectionTitleCls}>{t(locale, "topup")}</h2>
         {pendingTopup ? (
           <p className="rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1.5 text-xs leading-relaxed text-indigo-900">
@@ -561,7 +607,7 @@ export default function MineTab({
                 className={`flex-1 rounded-lg py-2 text-xs font-semibold ${
                   topupMethod === "cash" ? methodActiveCls : methodIdleCls
                 }`}
-                onClick={() => setTopupMethod("cash")}
+                onClick={() => selectTopupMethod("cash")}
               >
                 {t(locale, "topupMethodCash")}
               </button>
@@ -570,7 +616,7 @@ export default function MineTab({
                 className={`flex-1 rounded-lg py-2 text-xs font-semibold ${
                   topupMethod === "qr" ? methodActiveCls : methodIdleCls
                 }`}
-                onClick={() => setTopupMethod("qr")}
+                onClick={() => selectTopupMethod("qr")}
                 disabled={qrs.length === 0}
               >
                 {t(locale, "topupMethodQr")}

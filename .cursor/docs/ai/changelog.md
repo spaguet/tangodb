@@ -70,6 +70,8 @@
 
 2026-09-03 — feat(hall-rent): микропатч **2.9.49** — FC1 / P1-03 слой 1, P2-01/02/06/18/28, P3-02: correlation code `TDB-XXXX` при создании pending; код в тексте чата, inbox и поиске; убран QR preview из строк inbox; default метод QR при активном макете; cash без «чек во вложении»; убрана недоказуемая галочка «чек отправлен»; чат не открывается повторно с тем же текстом. Миграция `20261067000001`. Тест `renter_miniapp_fc1_correlation_code_test.sql` + unit `studioChat`.
 
+2026-09-05 — fix(hall-rent): Mini App — QR-пополнение: не сбрасывать выбранный QR при фоновом refresh; автовыбор QR при переключении метода; ошибки валидации у кнопки «Отправить заявку в CRM».
+
 2026-09-04 — fix(hall-rent): Mini App — пополнение: подсказка при пустой сумме; после «Отправить заявку в CRM» popup с чатом администратора (вместо автооткрытия до отправки); QR — fallback на inline base64 при недоступном signed URL.
 
 2026-09-03 — test(hall-rent): FB8 / P2-12 — component/integration тесты UX этапа B в `tangodb-renter`: `QuoteSummary` (shortage/CTA), `BookingSheet` (result + top-up), `PackSheet` (weekday sync), `MineTab` (pending, prefill, profile, cancellation), `useVisibilityRefetch`. Vitest + happy-dom + Testing Library; 63 теста зелёные. Этап B закрыт.

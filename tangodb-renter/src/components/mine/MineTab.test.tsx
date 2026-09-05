@@ -437,4 +437,79 @@ describe("MineTab stage B surfaces", () => {
       method: "cash",
     });
   });
+
+  it("submits QR top-up with qr_asset_id when QR is auto-selected", async () => {
+    mockLoadedMine();
+    vi.mocked(rpc.rpcListActiveQr).mockResolvedValue([
+      {
+        id: "qr-1",
+        label: "VietQR",
+        signed_url: null,
+        storage_path: "org/qr-1",
+      },
+    ]);
+    vi.mocked(rpc.rpcSubmitTopup).mockResolvedValue({
+      id: "topup-qr",
+      amount: 1000,
+      correlation_code: "TDB-QR1",
+    });
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByAltText("VietQR")).toBeTruthy();
+    });
+
+    await userEvent.type(screen.getByPlaceholderText(/Сумма/i), "1000");
+    await userEvent.click(screen.getByRole("button", { name: /Отправить заявку/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Заявка отправлена")).toBeTruthy();
+    });
+    expect(rpc.rpcSubmitTopup).toHaveBeenCalledWith(supabase, {
+      amount: 1000,
+      method: "qr",
+      qr_asset_id: "qr-1",
+    });
+  });
+
+  it("submits QR top-up after switching cash → QR студии", async () => {
+    mockLoadedMine();
+    vi.mocked(rpc.rpcListActiveQr).mockResolvedValue([
+      {
+        id: "qr-1",
+        label: "VietQR",
+        signed_url: null,
+        storage_path: "org/qr-1",
+      },
+    ]);
+    vi.mocked(rpc.rpcSubmitTopup).mockResolvedValue({
+      id: "topup-qr",
+      amount: 500,
+      correlation_code: "TDB-QR2",
+    });
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByAltText("VietQR")).toBeTruthy();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /Наличные/i }));
+    await userEvent.click(screen.getByRole("button", { name: /QR студии/i }));
+    await userEvent.type(screen.getByPlaceholderText(/Сумма/i), "500");
+    await userEvent.click(screen.getByRole("button", { name: /Отправить заявку/i }));
+
+    await waitFor(() => {
+      expect(rpc.rpcSubmitTopup).toHaveBeenCalledWith(supabase, {
+        amount: 500,
+        method: "qr",
+        qr_asset_id: "qr-1",
+      });
+    });
+  });
 });
