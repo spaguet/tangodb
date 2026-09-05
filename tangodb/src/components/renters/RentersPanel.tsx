@@ -297,11 +297,11 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
                     className="w-full flex items-center gap-3 py-3 px-1 text-left hover:bg-slate-50 rounded-lg cursor-pointer disabled:cursor-default"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-slate-800">{row.displayName}</span>
-                        <span className="text-[10px] uppercase font-semibold text-slate-400">
-                          {renterTypeLabel(row.counterpartyType)}
-                        </span>
+                      <p className="font-semibold text-slate-800">{row.displayName}</p>
+                      <p className="text-[9px] uppercase font-semibold text-slate-400 mt-0.5">
+                        {renterTypeLabel(row.counterpartyType)}
+                      </p>
+                      <div className="flex items-center gap-2 flex-wrap mt-1">
                         {row.hasExpiringDocument ? (
                           <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
                             <FileWarning className="w-3 h-3" />
