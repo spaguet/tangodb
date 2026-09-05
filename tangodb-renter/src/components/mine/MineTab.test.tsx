@@ -179,8 +179,29 @@ describe("MineTab stage B surfaces", () => {
         makeRental({
           id: "pack-1",
           rental_series_id: "series-1",
+          rental_date: "2026-09-08",
+          series_occurrence_count: 3,
           lifecycle: "active",
+          can_cancel_occurrence: true,
           can_cancel_pack: true,
+        }),
+        makeRental({
+          id: "pack-2",
+          rental_series_id: "series-1",
+          rental_date: "2026-09-10",
+          series_occurrence_count: 3,
+          lifecycle: "active",
+          can_cancel_occurrence: true,
+          can_cancel_pack: false,
+        }),
+        makeRental({
+          id: "pack-3",
+          rental_series_id: "series-1",
+          rental_date: "2026-09-12",
+          series_occurrence_count: 3,
+          lifecycle: "active",
+          can_cancel_occurrence: false,
+          can_cancel_pack: false,
         }),
       ],
     });
@@ -192,8 +213,49 @@ describe("MineTab stage B surfaces", () => {
     await waitFor(() => {
       expect(screen.getByText("Удалить холд")).toBeTruthy();
     });
-    expect(screen.getByText("Отменить бронь")).toBeTruthy();
+    expect(screen.getAllByText("Отменить бронь")).toHaveLength(3);
     expect(screen.getByText("Отменить пакет")).toBeTruthy();
+    expect(
+      screen.getByText(/Можно отменить отдельное занятие/i)
+    ).toBeTruthy();
+  });
+
+  it("calls renter_cancel_occurrence for a single pack session", async () => {
+    const user = userEvent.setup();
+    mockLoadedMine({
+      bookings: [
+        makeRental({
+          id: "pack-a",
+          rental_series_id: "series-pack",
+          rental_date: "2026-09-08",
+          series_occurrence_count: 2,
+          lifecycle: "active",
+          can_cancel_occurrence: true,
+        }),
+        makeRental({
+          id: "pack-b",
+          rental_series_id: "series-pack",
+          rental_date: "2026-09-15",
+          series_occurrence_count: 2,
+          lifecycle: "active",
+          can_cancel_occurrence: true,
+        }),
+      ],
+    });
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Отменить бронь")).toHaveLength(2);
+    });
+
+    await user.click(screen.getAllByText("Отменить бронь")[0]!);
+
+    await waitFor(() => {
+      expect(rpc.rpcCancelOccurrence).toHaveBeenCalledWith(supabase, "pack-a");
+    });
   });
 
   it("blocks top-up submit while pending request exists", async () => {

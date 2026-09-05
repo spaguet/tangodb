@@ -69,6 +69,8 @@ const messages = {
     cancel: "Отмена",
     deleteHold: "Удалить холд",
     cancelBooking: "Отменить бронь",
+    cancelOccurrenceHint:
+      "Можно отменить отдельное занятие. Если до начала больше 24 часов — предоплата вернётся на баланс.",
     cancelPack: "Отменить пакет",
     cancelPackNotCancellable: "Пакет нельзя отменить — нет будущих занятий или серия уже завершена.",
     holdExpires: "До автоудаления",
@@ -247,6 +249,8 @@ const messages = {
     cancel: "Cancel",
     deleteHold: "Delete hold",
     cancelBooking: "Cancel booking",
+    cancelOccurrenceHint:
+      "You can cancel a single session. If more than 24 hours remain before start, prepayment returns to your balance.",
     cancelPack: "Cancel pack",
     cancelPackNotCancellable: "This pack cannot be cancelled — no future sessions or the series is already finished.",
     holdExpires: "Auto-delete in",

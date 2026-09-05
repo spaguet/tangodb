@@ -562,6 +562,7 @@ export default function MineTab({
                   serverNow={bootstrap.serverNow}
                   highlighted={row.rentals.some((r) => focusRentalId === r.id)}
                   busy={actionId === row.seriesId || row.rentals.some((r) => actionId === r.id)}
+                  onCancel={(id) => void onCancel(id)}
                   onCancelPack={
                     row.head.can_cancel_pack ? () => void onCancelPack(row.seriesId) : undefined
                   }
@@ -896,6 +897,7 @@ type PackSeriesCardProps = {
   serverNow: string;
   highlighted?: boolean;
   busy: boolean;
+  onCancel: (rentalId: string) => void;
   onCancelPack?: () => void;
   onHoldExpired?: () => void;
 };
@@ -908,6 +910,7 @@ function PackSeriesCard({
   serverNow,
   highlighted = false,
   busy,
+  onCancel,
   onCancelPack,
   onHoldExpired,
 }: PackSeriesCardProps) {
@@ -921,6 +924,7 @@ function PackSeriesCard({
   );
   const sessionCount = head.series_occurrence_count ?? rentals.length;
   const packCost = rentals.reduce((sum, r) => sum + (r.fixed_amount ?? 0), 0);
+  const hasCancellableOccurrence = rentals.some((r) => r.can_cancel_occurrence === true);
 
   return (
     <div
@@ -951,14 +955,38 @@ function PackSeriesCard({
           {t(locale, "holdExpires")}: {countdown}
         </p>
       ) : null}
-      <ul className="max-h-32 space-y-0.5 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
-        {rentals.map((r) => (
-          <li key={r.id} id={`rental-${r.id}`}>
-            {formatShortDate(r.rental_date, localeTag)} · {formatTimeRange(r.time_start, r.time_end)}
-            <span className="ml-1 text-slate-500">({t(locale, miniAppLifecycleKey(r.lifecycle))})</span>
-          </li>
-        ))}
+      <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+        {rentals.map((r) => {
+          const canCancelOccurrence = r.can_cancel_occurrence === true;
+          return (
+            <li
+              key={r.id}
+              id={`rental-${r.id}`}
+              className="flex items-start justify-between gap-2 rounded-md px-1 py-0.5"
+            >
+              <span className="min-w-0">
+                {formatShortDate(r.rental_date, localeTag)} · {formatTimeRange(r.time_start, r.time_end)}
+                <span className="ml-1 text-slate-500">
+                  ({t(locale, miniAppLifecycleKey(r.lifecycle))})
+                </span>
+              </span>
+              {canCancelOccurrence ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="shrink-0 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-60"
+                  onClick={() => onCancel(r.id)}
+                >
+                  {t(locale, "cancelBooking")}
+                </button>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
+      {hasCancellableOccurrence ? (
+        <p className="text-[11px] leading-relaxed text-slate-500">{t(locale, "cancelOccurrenceHint")}</p>
+      ) : null}
       {onCancelPack ? (
         <button type="button" disabled={busy} className={btnDestructiveOpenCls} onClick={onCancelPack}>
           {t(locale, "cancelPack")}
