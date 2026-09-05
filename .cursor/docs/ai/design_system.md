@@ -44,10 +44,10 @@ Sidebar и desktop-layout — от `md:`. Сетки форм/дашборда �
 | `z-20` | 20 | Sticky header |
 | `z-30` | 30 | Desktop sidebar |
 | `z-40` | 40 | Mobile bottom nav; backdrop dropdown (`OrgSwitcher`) |
-| `z-50` | 50 | Модали (контейнер + backdrop внутри), mobile drawer, меню dropdown |
-| `z-[60]` | 60 | Toast-уведомления |
+| `z-50`–`z-[200]` | 50–200 | Модали и вложенные диалоги (`ConfirmDialog` — `z-[200]`) |
+| `z-[250]` | 250 | Toast-уведомления (`createPortal` → `document.body`) |
 
-**Правила:** toast всегда выше модалей. Backdrop модали — внутри того же `z-50` контейнера, не отдельным слоем.
+**Правила:** toast всегда выше модалей (`z-[250]`). Backdrop модали — внутри контейнера модали, не отдельным корневым слоем.
 
 ---
 
@@ -369,7 +369,7 @@ w-8 h-8 bg-indigo-600 rounded text-white font-semibold text-[11px] shadow-xs
 | error | `text-rose-600` |
 | info | `text-indigo-500` |
 
-Контейнер: `bg-white border border-slate-200 rounded-xl shadow-lg text-xs z-[60]`.
+Контейнер: `bg-white border border-slate-200 rounded-xl shadow-lg text-xs z-[250]` (portal в `document.body`).
 
 ### Badges / статусы
 

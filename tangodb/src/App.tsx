@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -525,28 +526,31 @@ function AppLayout() {
           )}
         </AnimatePresence>
 
-        <AnimatePresence>
-          {toast && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.18 }}
-              className="fixed bottom-[3.75rem] md:bottom-8 right-4 left-4 md:left-auto max-w-sm md:w-96 bg-white border border-slate-200 text-slate-800 text-xs font-normal rounded-xl px-4 py-3 shadow-lg z-[60] flex items-center gap-3"
-              role="status"
-            >
-              <ToastIcon className={`w-4.5 h-4.5 shrink-0 ${TOAST_STYLES[toast.type].accent}`} />
-              <span className="flex-1 leading-snug">{toast.msg}</span>
-              <button
-                onClick={() => setToast(null)}
-                aria-label={t("nav.aria.closeToast")}
-                className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
+        {createPortal(
+          <AnimatePresence>
+            {toast && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.18 }}
+                className="fixed bottom-[3.75rem] md:bottom-8 right-4 left-4 md:left-auto max-w-sm md:w-96 bg-white border border-slate-200 text-slate-800 text-xs font-normal rounded-xl px-4 py-3 shadow-lg z-[250] flex items-center gap-3"
+                role="status"
               >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <ToastIcon className={`w-4.5 h-4.5 shrink-0 ${TOAST_STYLES[toast.type].accent}`} />
+                <span className="flex-1 leading-snug">{toast.msg}</span>
+                <button
+                  onClick={() => setToast(null)}
+                  aria-label={t("nav.aria.closeToast")}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
       </div>
     </ToastContext.Provider>
   );
