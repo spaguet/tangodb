@@ -1239,7 +1239,7 @@ function FinanceTab({
                 <span className="text-slate-700">
                   {formatCurrency(adv.amount)}
                   {adv.available > 0 ? (
-                    <span className="text-emerald-600 ml-1">({formatCurrency(adv.available)})</span>
+                    <span className="text-green-600 ml-1">({formatCurrency(adv.available)})</span>
                   ) : null}
                 </span>
               </li>

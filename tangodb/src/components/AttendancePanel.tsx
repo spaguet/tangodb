@@ -1588,10 +1588,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   </span>
                   <div className="flex items-center gap-0.5 min-h-[6px]">
                     {cell.hasGroup && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" title={t("common.groupLesson")} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-500" title={t("common.groupLesson")} />
                     )}
                     {cell.hasPersonal && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-700" title={t("common.personalLesson")} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" title={t("common.personalLesson")} />
                     )}
                   </div>
                 </button>
@@ -1601,11 +1601,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
           <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center gap-4 text-[10px] text-slate-500 font-sans">
             <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-indigo-500" /> {t("common.groupShort")}
+              <span className="w-2 h-2 rounded-full bg-slate-500" /> {t("common.groupShort")}
             </span>
             {personalLessonsEnabled && !isOfflineMode ? (
               <span className="inline-flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-indigo-700" /> {t("common.personalShort")}
+                <span className="w-2 h-2 rounded-full bg-indigo-600" /> {t("common.personalShort")}
               </span>
             ) : null}
           </div>

@@ -22,7 +22,7 @@ const toneByStatus: Record<
   { wrap: string; icon: typeof CheckCircle2 }
 > = {
   synced: {
-    wrap: "text-emerald-700 bg-emerald-50 border-emerald-100",
+    wrap: "text-green-700 bg-green-50 border-green-100",
     icon: CheckCircle2,
   },
   pending: {

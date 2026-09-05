@@ -758,7 +758,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
                       key={slot.id ?? `${slot.dayOfWeek}-${slot.time}`}
                       className="flex items-center gap-2.5 py-1.5 px-2.5 bg-white border border-slate-200/60 rounded-lg text-sm"
                     >
-                      <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-slate-500 shrink-0" />
                       <span className="font-semibold text-sm tracking-tight text-slate-800 shrink-0">
                         {dowFull(slot.dayOfWeek)}
                       </span>

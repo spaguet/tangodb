@@ -3,7 +3,56 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Studio Controller — brand indigo */
+  --color-indigo-50: #f5f7ff;
+  --color-indigo-100: #e8ecff;
+  --color-indigo-200: #d7deff;
+  --color-indigo-500: #6b76dc;
+  --color-indigo-600: #5663d6;
+  --color-indigo-700: #4652b8;
+  --color-indigo-800: #39449a;
+  --color-indigo-900: #2f3778;
+
+  /* Semantic — error / debt */
+  --color-rose-50: #fff5f6;
+  --color-rose-100: #fde8ea;
+  --color-rose-300: #f3a0aa;
+  --color-rose-500: #e45b68;
+  --color-rose-600: #d64554;
+  --color-rose-700: #b93645;
+
+  /* Semantic — warning (badges) */
+  --color-amber-500: #d89a24;
+  --color-amber-600: #b7791f;
+
+  /* Semantic — success / confirmed */
+  --color-green-50: #ecf7f1;
+  --color-green-100: #d9efe3;
+  --color-green-500: #3f8f6b;
+  --color-green-600: #2e7d56;
+  --color-green-700: #266b49;
+
+  /* Schedule — lesson block types (custom hex, not Tailwind violet/sky) */
+  --color-lesson-group-bg: #f5f7fa;
+  --color-lesson-group-border: #e2e8f0;
+  --color-lesson-group-text: #334155;
+  --color-lesson-group-accent: #64748b;
+
+  --color-lesson-personal-bg: #eef0ff;
+  --color-lesson-personal-border: #d7deff;
+  --color-lesson-personal-text: #39449a;
+  --color-lesson-personal-accent: #5663d6;
+
+  --color-lesson-event-bg: #f5f0ff;
+  --color-lesson-event-border: #e5dbff;
+  --color-lesson-event-text: #6336a8;
+  --color-lesson-event-accent: #7c4dcc;
+
+  --color-lesson-conflict-bg: #fffff5;
+  --color-lesson-conflict-border: #f3a0aa;
+  --color-lesson-conflict-text: #b93645;
+  --color-lesson-conflict-accent: #d64554;
 
   --animate-fade-in: fade-in 0.2s ease-out;
 
@@ -29,7 +78,7 @@
 
   /* Visible keyboard focus without relying on per-element classes */
   :focus-visible {
-    outline: 2px solid #6366f1; /* indigo-500 */
+    outline: 2px solid #6b76dc; /* indigo-500 */
     outline-offset: 2px;
     border-radius: 4px;
   }

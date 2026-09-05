@@ -111,7 +111,7 @@ export function useToast() {
 }
 
 const TOAST_STYLES: Record<ToastType, { icon: typeof Info; accent: string }> = {
-  success: { icon: CheckCircle2, accent: "text-indigo-600" },
+  success: { icon: CheckCircle2, accent: "text-green-600" },
   error: { icon: AlertTriangle, accent: "text-rose-600" },
   info: { icon: Info, accent: "text-indigo-500" },
 };

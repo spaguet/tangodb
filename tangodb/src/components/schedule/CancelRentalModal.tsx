@@ -269,7 +269,7 @@ export default function CancelRentalModal({
                 </p>
               ) : null}
               {preview.creditAfter > 0 ? (
-                <p className="text-emerald-700 font-medium">
+                <p className="text-green-700 font-medium">
                   {t("rental.cancel.previewCredit", {
                     amount: formatCurrency(preview.creditAfter),
                     currency,

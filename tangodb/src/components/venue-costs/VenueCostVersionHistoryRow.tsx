@@ -450,7 +450,7 @@ export default function VenueCostVersionHistoryRow({
       : [];
 
   const diffKindClass = (kind: VenueCostDiffEntry["kind"]) => {
-    if (kind === "added") return "text-emerald-700 bg-emerald-50";
+    if (kind === "added") return "text-green-700 bg-green-50";
     if (kind === "removed") return "text-rose-700 bg-rose-50";
     return "text-amber-700 bg-amber-50";
   };

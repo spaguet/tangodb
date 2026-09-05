@@ -60,7 +60,7 @@ function PaymentBadge({
   }
   if (!personalLessonHasScheduleDebt(lesson)) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-green-50 text-green-600 border border-green-500/30">
         {t("personal.row.paid")}
       </span>
     );
@@ -84,7 +84,7 @@ function AttendanceBadge({ lesson, t }: { lesson: PersonalLesson; t: ReturnType<
   }
   if (lesson.attendanceStatus === "present") {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-green-50 text-green-600 border border-green-500/30">
         {lesson.subscriptionId ? t("common.charged") : t("personal.row.presentCharged")}
       </span>
     );

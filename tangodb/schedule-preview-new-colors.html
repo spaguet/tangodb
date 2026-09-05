@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TangoDB — Расписание (новая палитра)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Нейтральные (Graphite) */
+      --white: #ffffff;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+
+      /* Бренд (Indigo) */
+      --indigo-50: #f5f7ff;
+      --indigo-100: #e8ecff;
+      --indigo-200: #d7deff;
+      --indigo-500: #6b76dc;
+      --indigo-600: #5663d6;
+      --indigo-700: #4652b8;
+      --indigo-800: #39449a;
+
+      /* Семантика */
+      --green-50: #ecf7f1;
+      --green-500: #3f8f6b;
+      --green-600: #2e7d56;
+      --rose-50: #fff5f6;
+      --rose-100: #fde8ea;
+      --rose-300: #f3a0aa;
+      --rose-500: #e45b68;
+      --rose-600: #d64554;
+      --amber-50: #fffbeb;
+      --amber-100: #fef3c7;
+      --amber-500: #d89a24;
+      --amber-600: #b7791f;
+
+      /* Расписание — типы занятий */
+      --lesson-personal-bg: #eef0ff;
+      --lesson-personal-border: #d7deff;
+      --lesson-personal-text: #39449a;
+      --lesson-personal-accent: #5663d6;
+
+      --lesson-group-bg: #f5f7fa;
+      --lesson-group-border: #e2e8f0;
+      --lesson-group-text: #334155;
+      --lesson-group-accent: #64748b;
+
+      --lesson-event-bg: #f5f0ff;
+      --lesson-event-border: #e5dbff;
+      --lesson-event-text: #6336a8;
+      --lesson-event-accent: #7c4dcc;
+
+      --lesson-conflict-bg: #fffff5;
+      --lesson-conflict-border: #f3a0aa;
+      --lesson-conflict-text: #b93645;
+      --lesson-conflict-accent: #d64554;
+
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+      font-size: 14px;
+      color: var(--slate-800);
+      background: var(--slate-50);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--white);
+      border-right: 1px solid var(--slate-200);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 12px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 8px 20px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--indigo-600);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .logo-text {
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .logo-text strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--slate-800);
+    }
+
+    .logo-text span { color: var(--slate-400); }
+
+    .nav-section {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--slate-400);
+      padding: 12px 8px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--slate-600);
+      cursor: default;
+    }
+
+    .nav-item svg { width: 16px; height: 16px; opacity: 0.7; }
+
+    .nav-item.active {
+      background: var(--indigo-50);
+      color: var(--indigo-700);
+    }
+
+    .nav-item.active svg { opacity: 1; color: var(--indigo-600); }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .header {
+      height: 52px;
+      background: var(--white);
+      border-bottom: 1px solid var(--slate-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      flex-shrink: 0;
+    }
+
+    .header-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--slate-800);
+      letter-spacing: -0.01em;
+    }
+
+    .header-badge {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--indigo-600);
+      background: var(--indigo-50);
+      border: 1px solid var(--indigo-200);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+
+    .content {
+      flex: 1;
+      padding: 16px 20px 24px;
+      overflow: auto;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 12px 16px;
+      margin-bottom: 16px;
+    }
+
+    .week-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-md);
+      color: var(--slate-500);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn:hover { background: var(--slate-100); }
+
+    .week-label {
+      text-align: center;
+      min-width: 160px;
+    }
+
+    .week-label strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--slate-800);
+    }
+
+    .week-label a {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--indigo-600);
+      text-decoration: none;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .btn svg { width: 14px; height: 14px; }
+
+    .btn-primary {
+      background: var(--indigo-600);
+      color: white;
+    }
+
+    .btn-primary:hover { background: var(--indigo-700); }
+
+    .btn-secondary {
+      background: var(--white);
+      color: var(--indigo-700);
+      border-color: var(--indigo-200);
+    }
+
+    .btn-secondary:hover { background: var(--indigo-50); }
+
+    .btn-ghost {
+      background: var(--white);
+      color: var(--slate-600);
+      border-color: var(--slate-200);
+    }
+
+    .btn-ghost:hover { background: var(--slate-50); }
+
+    .select-wrap label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--slate-400);
+      margin-bottom: 4px;
+    }
+
+    .select-wrap select {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 28px 7px 10px;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-md);
+      background: var(--white);
+      color: var(--slate-700);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+    }
+
+    /* ── Debtors block ── */
+    .debtors {
+      background: var(--white);
+      border: 1px solid color-mix(in srgb, var(--rose-300) 60%, var(--slate-200));
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .debtors-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: color-mix(in srgb, var(--rose-50) 80%, white);
+      cursor: pointer;
+    }
+
+    .debtors-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--slate-800);
+    }
+
+    .debtors-header p {
+      font-size: 11px;
+      color: var(--slate-500);
+      margin-top: 2px;
+    }
+
+    .debtors-count {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--rose-600);
+    }
+
+    .debtors-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--rose-600);
+      flex-shrink: 0;
+    }
+
+    /* ── Location card ── */
+    .location-card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-xs);
+      margin-bottom: 16px;
+    }
+
+    .location-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--slate-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .location-header h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--slate-800);
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--slate-100);
+      background: var(--slate-50);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--slate-500);
+    }
+
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1px solid;
+    }
+
+    /* ── Schedule grid ── */
+    .grid-wrap {
+      overflow: auto;
+      max-height: 520px;
+    }
+
+    .grid {
+      display: flex;
+      min-width: 720px;
+    }
+
+    .time-col {
+      width: 44px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--slate-100);
+      background: var(--white);
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      box-shadow: 2px 0 4px -2px rgba(15, 23, 42, 0.08);
+    }
+
+    .time-col-header {
+      height: 40px;
+      border-bottom: 1px solid var(--slate-100);
+      background: color-mix(in srgb, var(--slate-50) 95%, white);
+    }
+
+    .time-slot {
+      height: 16px;
+      position: relative;
+      border-bottom: 1px solid var(--slate-50);
+    }
+
+    .time-label {
+      position: absolute;
+      right: 4px;
+      top: 0;
+      transform: translateY(-50%);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--slate-400);
+      background: var(--white);
+      padding-left: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .day-col {
+      flex: 1;
+      min-width: 0;
+      border-right: 1px solid var(--slate-100);
+    }
+
+    .day-col:last-child { border-right: none; }
+
+    .day-header {
+      height: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid var(--slate-100);
+      background: color-mix(in srgb, var(--slate-50) 95%, white);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .day-header.today {
+      background: var(--indigo-50);
+    }
+
+    .day-name {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--slate-400);
+    }
+
+    .day-header.today .day-name { color: var(--indigo-600); }
+
+    .day-num {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--slate-700);
+      line-height: 1.2;
+    }
+
+    .day-header.today .day-num { color: var(--indigo-700); }
+
+    .day-body {
+      position: relative;
+      height: 512px; /* 32 slots × 16px */
+    }
+
+    .grid-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 16px;
+      border-bottom: 1px solid var(--slate-50);
+    }
+
+    /* ── Lesson blocks ── */
+    .lesson {
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      border-radius: 6px;
+      border: 1px solid;
+      padding: 2px 4px;
+      font-size: 10px;
+      line-height: 1.25;
+      font-weight: 600;
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: var(--shadow-xs);
+      transition: filter 0.15s;
+    }
+
+    .lesson:hover { filter: brightness(0.97); }
+
+    .lesson .time {
+      display: block;
+      font-variant-numeric: tabular-nums;
+      opacity: 0.85;
+      font-size: 9px;
+    }
+
+    .lesson .title { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lesson .sub { display: block; font-weight: 400; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .lesson.personal {
+      background: var(--lesson-personal-bg);
+      border-color: var(--lesson-personal-border);
+      color: var(--lesson-personal-text);
+    }
+
+    .lesson.personal::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--lesson-personal-accent);
+      border-radius: 6px 0 0 6px;
+    }
+
+    .lesson.group {
+      background: var(--lesson-group-bg);
+      border-color: var(--lesson-group-border);
+      color: var(--lesson-group-text);
+    }
+
+    .lesson.group::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--lesson-group-accent);
+      border-radius: 6px 0 0 6px;
+    }
+
+    .lesson.event {
+      background: var(--lesson-event-bg);
+      border-color: var(--lesson-event-border);
+      color: var(--lesson-event-text);
+    }
+
+    .lesson.event::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--lesson-event-accent);
+      border-radius: 6px 0 0 6px;
+    }
+
+    .lesson.conflict {
+      background: var(--lesson-conflict-bg);
+      border-color: var(--lesson-conflict-border);
+      color: var(--lesson-conflict-text);
+      box-shadow: inset 0 0 0 1px var(--lesson-conflict-accent);
+    }
+
+    .lesson.conflict::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--lesson-conflict-accent);
+      border-radius: 6px 0 0 6px;
+    }
+
+    .lesson.past { opacity: 0.5; filter: grayscale(0.3); }
+
+    /* ── Status badges ── */
+    .badges-demo {
+      padding: 16px;
+      border-top: 1px solid var(--slate-100);
+    }
+
+    .badges-demo h3 {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--slate-400);
+      margin-bottom: 10px;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid;
+    }
+
+    .badge-active { background: var(--indigo-50); color: var(--indigo-700); border-color: var(--indigo-200); }
+    .badge-confirmed { background: var(--green-50); color: var(--green-600); border-color: color-mix(in srgb, var(--green-500) 30%, white); }
+    .badge-waiting { background: var(--amber-50); color: var(--amber-600); border-color: var(--amber-100); }
+    .badge-cancelled { background: var(--rose-50); color: var(--rose-600); border-color: var(--rose-100); }
+    .badge-draft { background: var(--slate-100); color: var(--slate-600); border-color: var(--slate-200); }
+
+    /* ── Preview note ── */
+    .preview-note {
+      margin-top: 8px;
+      padding: 12px 16px;
+      background: var(--indigo-50);
+      border: 1px dashed var(--indigo-200);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      color: var(--indigo-800);
+      line-height: 1.5;
+    }
+
+    .preview-note strong { color: var(--indigo-700); }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .content { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon">T</div>
+        <div class="logo-text">
+          <strong>TangoDB</strong>
+          <span>Studio Controller</span>
+        </div>
+      </div>
+
+      <div class="nav-section">Основное</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Дашборд
+      </div>
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Расписание
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Клиенты
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Финансы
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="header">
+        <span class="header-title">Расписание</span>
+        <span class="header-badge">Новая палитра · preview</span>
+      </header>
+
+      <div class="content">
+        <div class="toolbar">
+          <div class="week-nav">
+            <button class="icon-btn" type="button" aria-label="Предыдущая неделя">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <div class="week-label">
+              <strong>1 – 7 сентября 2026</strong>
+              <a href="#">Текущая неделя</a>
+            </div>
+            <button class="icon-btn" type="button" aria-label="Следующая неделя">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <button class="icon-btn" type="button" aria-label="Выбрать неделю">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </button>
+          </div>
+
+          <div class="select-wrap">
+            <label>Преподаватель</label>
+            <select>
+              <option>Все преподаватели</option>
+              <option>Иванова М.</option>
+              <option>Петров А.</option>
+            </select>
+          </div>
+
+          <div class="toolbar-actions">
+            <button class="btn btn-ghost" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              PNG
+            </button>
+            <button class="btn btn-secondary" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4"/></svg>
+              Мероприятие
+            </button>
+            <button class="btn btn-primary" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Добавить
+            </button>
+          </div>
+        </div>
+
+        <section class="debtors">
+          <div class="debtors-header">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <svg class="debtors-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+              <div>
+                <h3>Неоплаченные персональные</h3>
+                <p>Уроки с долгом за текущую и прошлые недели</p>
+              </div>
+            </div>
+            <span class="debtors-count">2 урока · 4 500 ₽</span>
+          </div>
+        </section>
+
+        <section class="location-card">
+          <div class="location-header">
+            <h2>Зал «Милонга»</h2>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <span class="legend-swatch" style="background:#eef0ff;border-color:#d7deff;"></span>
+              Персональное
+            </div>
+            <div class="legend-item">
+              <span class="legend-swatch" style="background:#f5f7fa;border-color:#e2e8f0;"></span>
+              Групповое
+            </div>
+            <div class="legend-item">
+              <span class="legend-swatch" style="background:#f5f0ff;border-color:#e5dbff;"></span>
+              Мероприятие
+            </div>
+            <div class="legend-item">
+              <span class="legend-swatch" style="background:#fffff5;border-color:#f3a0aa;"></span>
+              Конфликт / долг
+            </div>
+          </div>
+
+          <div class="grid-wrap">
+            <div class="grid" id="schedule-grid">
+              <div class="time-col" id="time-col"></div>
+              <div class="day-col" data-day="Пн" data-num="1"></div>
+              <div class="day-col" data-day="Вт" data-num="2"></div>
+              <div class="day-col today" data-day="Ср" data-num="3"></div>
+              <div class="day-col" data-day="Чт" data-num="4"></div>
+              <div class="day-col" data-day="Пт" data-num="5"></div>
+              <div class="day-col" data-day="Сб" data-num="6"></div>
+              <div class="day-col" data-day="Вс" data-num="7"></div>
+            </div>
+          </div>
+
+          <div class="badges-demo">
+            <h3>Статусы (новые семантические цвета)</h3>
+            <div class="badges">
+              <span class="badge badge-active">Активный</span>
+              <span class="badge badge-confirmed">Подтверждён</span>
+              <span class="badge badge-waiting">Ожидает</span>
+              <span class="badge badge-cancelled">Отменён</span>
+              <span class="badge badge-draft">Черновик</span>
+            </div>
+          </div>
+        </section>
+
+        <p class="preview-note">
+          <strong>Демо-страница.</strong> Статичный макет раздела «Расписание» с новой палитрой TangoDB Studio Controller:
+          бренд <code>#5663D6</code>, мягкие карточки занятий вместо сплошных заливок, зелёный <code>#3F8F6B</code> для успеха,
+          rose <code>#D64554</code> для ошибок, amber <code>#D89A24</code> для ожидания.
+          Файл не подключён к приложению — можно удалить без последствий.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SLOT = 16;
+    const START = 9 * 60;
+    const END = 21 * 60;
+
+    function topFor(time) {
+      const [h, m] = time.split(":").map(Number);
+      return ((h * 60 + m - START) / 15) * SLOT;
+    }
+
+    function heightFor(start, end) {
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const mins = (eh * 60 + em) - (sh * 60 + sm);
+      return Math.max((mins / 15) * SLOT, SLOT);
+    }
+
+    function lessonEl(cls, start, end, title, sub, extra = "") {
+      const el = document.createElement("div");
+      el.className = `lesson ${cls} ${extra}`.trim();
+      el.style.top = topFor(start) + "px";
+      el.style.height = heightFor(start, end) + "px";
+      el.innerHTML = `<span class="time">${start}–${end}</span><span class="title">${title}</span>${sub ? `<span class="sub">${sub}</span>` : ""}`;
+      return el;
+    }
+
+    // Time column
+    const timeCol = document.getElementById("time-col");
+    timeCol.innerHTML = '<div class="time-col-header"></div>';
+    const timeBody = document.createElement("div");
+    timeBody.style.position = "relative";
+    timeBody.style.height = ((END - START) / 15) * SLOT + "px";
+
+    for (let min = START; min < END; min += 15) {
+      const slot = document.createElement("div");
+      slot.className = "time-slot";
+      if (min % 60 === 0) {
+        const label = document.createElement("span");
+        label.className = "time-label";
+        label.textContent = String(Math.floor(min / 60)).padStart(2, "0") + ":00";
+        slot.appendChild(label);
+      }
+      timeBody.appendChild(slot);
+    }
+    timeCol.appendChild(timeBody);
+
+    // Day columns
+    const days = document.querySelectorAll(".day-col");
+    const lessons = [
+      { day: 0, cls: "group", start: "10:00", end: "11:30", title: "Начинающие", sub: "Танго · 8 чел." },
+      { day: 0, cls: "personal", start: "12:00", end: "12:45", title: "Вероника & Анна", sub: "Персональное" },
+      { day: 1, cls: "group", start: "18:00", end: "19:30", title: "Продвинутые", sub: "Танго · 12 чел." },
+      { day: 1, cls: "personal conflict", start: "19:45", end: "20:30", title: "Смирнов И.", sub: "Не оплачено" },
+      { day: 2, cls: "personal", start: "09:00", end: "09:45", title: "Вероника & Анна", sub: "Персональное" },
+      { day: 2, cls: "group", start: "11:00", end: "12:30", title: "Средний уровень", sub: "Танго · 10 чел." },
+      { day: 2, cls: "event", start: "14:00", end: "16:00", title: "Milonga Veronika", sub: "Мероприятие" },
+      { day: 2, cls: "personal", start: "17:00", end: "17:45", title: "Козлов П.", sub: "Вальс" },
+      { day: 3, cls: "group", start: "10:00", end: "11:30", title: "Леди стайл", sub: "12 чел." },
+      { day: 4, cls: "personal past", start: "10:00", end: "10:45", title: "Прошлый урок", sub: "Персональное" },
+      { day: 4, cls: "group", start: "19:00", end: "20:30", title: "Пятничная практика", sub: "Открытая" },
+      { day: 5, cls: "event", start: "15:00", end: "18:00", title: "Workshop", sub: "Гостевой преподаватель" },
+      { day: 6, cls: "group", start: "12:00", end: "13:30", title: "Воскресный класс", sub: "6 чел." },
+    ];
+
+    days.forEach((col, idx) => {
+      const header = document.createElement("div");
+      header.className = "day-header" + (col.classList.contains("today") ? " today" : "");
+      header.innerHTML = `<span class="day-name">${col.dataset.day}</span><span class="day-num">${col.dataset.num}</span>`;
+      col.appendChild(header);
+
+      const body = document.createElement("div");
+      body.className = "day-body";
+
+      for (let min = START; min < END; min += 15) {
+        const line = document.createElement("div");
+        line.className = "grid-line";
+        line.style.top = ((min - START) / 15) * SLOT + "px";
+        body.appendChild(line);
+      }
+
+      lessons.filter((l) => l.day === idx).forEach((l) => {
+        const parts = l.cls.split(" ");
+        body.appendChild(lessonEl(parts[0], l.start, l.end, l.title, l.sub, parts.slice(1).join(" ")));
+      });
+
+      col.appendChild(body);
+    });
+  </script>
+</body>
+</html>

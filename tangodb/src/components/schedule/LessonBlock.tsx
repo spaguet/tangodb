@@ -1,6 +1,12 @@
 import type { KeyboardEvent } from "react";
 import type { DisplayLesson } from "../../types";
-import { GROUP_LESSON_COLOR, PERSONAL_LESSON_COLOR, EVENT_LESSON_COLOR, RENTAL_LESSON_COLOR } from "../../lib/scheduleColors";
+import {
+  GROUP_LESSON_COLOR,
+  PERSONAL_LESSON_COLOR,
+  EVENT_LESSON_COLOR,
+  RENTAL_LESSON_COLOR,
+  SCHEDULE_DEBT_COLOR,
+} from "../../lib/scheduleColors";
 import { isPastDate } from "../../lib/scheduleWeek";
 import { rentalLessonIsHold, rentalLessonShowsDebtRing } from "../../lib/rentalMiniAppDisplay";
 import { personalLessonHasScheduleDebt } from "../../lib/personalLessonPayment";
@@ -28,7 +34,7 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
   const rentalHold = lesson.kind === "rental" && rentalLessonIsHold(lesson);
   const hasDebt = personalDebt || rentalDebt;
 
-  const colors =
+  const baseColors =
     lesson.kind === "rental"
       ? RENTAL_LESSON_COLOR
       : lesson.kind === "event"
@@ -36,6 +42,8 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
         : lesson.kind === "personal"
           ? PERSONAL_LESSON_COLOR
           : GROUP_LESSON_COLOR;
+
+  const colors = hasDebt ? SCHEDULE_DEBT_COLOR : baseColors;
 
   const topPx = lessonTopPx(lesson.timeStart, rangeStartMin);
   const heightPx = lessonHeightPx(lesson.timeStart, lesson.timeEnd);
@@ -52,6 +60,12 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
     }
   };
 
+  const borderClass = highlighted
+    ? "ring-2 ring-indigo-600 ring-offset-1"
+    : hasDebt
+      ? SCHEDULE_DEBT_COLOR.ring
+      : colors.border;
+
   return (
     <div
       role={onClick ? "button" : undefined}
@@ -60,13 +74,7 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
       onKeyDown={onClick ? handleKeyDown : undefined}
       className={`absolute overflow-hidden rounded-md border px-1 py-0.5 text-[10px] leading-tight font-semibold shadow-xs transition-opacity ${
         onClick ? "cursor-pointer hover:brightness-95" : ""
-      } ${isPast ? "opacity-50 grayscale" : ""} ${colors.bg} ${colors.text} ${
-        highlighted
-          ? "ring-2 ring-indigo-600 ring-offset-1"
-          : hasDebt
-            ? "ring-2 ring-rose-500 ring-inset"
-            : colors.border
-      }`}
+      } ${isPast ? "opacity-50 grayscale" : ""} ${colors.bg} ${colors.text} ${colors.accent} ${borderClass}`}
       style={{
         top: topPx,
         height: heightPx,

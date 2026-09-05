@@ -15,7 +15,7 @@
 | Переиспользуемые UI-компоненты | `tangodb/src/components/ui/` |
 | Иконки | `lucide-react` |
 
-**Не использовать:** `violet-*`, `emerald-*`, `purple-*`, `green-*` — акцент только через `indigo-*`.
+**Не использовать:** `violet-*`, `emerald-*`, `purple-*` в общем UI — акцент через `indigo-*`. `green-*` — только семантика успеха/подтверждения (не CTA). `violet-*` в сетке расписания — только через кастомные hex в `scheduleColors.ts`.
 
 ---
 
@@ -72,35 +72,37 @@ Sidebar и desktop-layout — от `md:`. Сетки форм/дашборда �
 
 ### Акцент (indigo) — основной цвет бренда
 
-| Токен | Hex (примерно) | Назначение |
-|-------|----------------|------------|
-| `indigo-50` | `#eef2ff` | Фон активного пункта меню, highlight-карточки, статус «оплачено» |
-| `indigo-100` | `#e0e7ff` | Focus ring полей (`ring-indigo-100`), границы accent-блоков |
-| `indigo-200` | `#c7d2fe` | Hover border, spinner track |
-| `indigo-300` | `#a5b4fc` | Hover border карточек расписания |
-| `indigo-400` | `#818cf8` | Focus border полей, scrollbar hover |
-| `indigo-500` | `#6366f1` | Иконки секций, loader, focus outline (`index.css`) |
-| `indigo-600` | `#4f46e5` | **Primary CTA**, логотип, активные кнопки, ссылки |
-| `indigo-700` | `#4338ca` | Активный текст nav, значения статистики, персональные уроки |
-| `indigo-800` | `#3730a3` | Hover ссылок |
+| Токен | Hex | Назначение |
+|-------|-----|------------|
+| `indigo-50` | `#f5f7ff` | Фон активного пункта меню, highlight-карточки |
+| `indigo-100` | `#e8ecff` | Focus ring полей (`ring-indigo-100`), границы accent-блоков |
+| `indigo-200` | `#d7deff` | Hover border, spinner track; border персональных в расписании |
+| `indigo-300` | `#a5b4fc` | Hover border карточек расписания (без замены в гайде) |
+| `indigo-400` | `#818cf8` | Focus border полей, scrollbar hover (без замены в гайде) |
+| `indigo-500` | `#6b76dc` | Иконки секций, loader, focus outline (`index.css`) |
+| `indigo-600` | `#5663d6` | **Primary CTA**, логотип, активные кнопки, ссылки |
+| `indigo-700` | `#4652b8` | Активный текст nav, персональные маркеры в списках |
+| `indigo-800` | `#39449a` | Hover ссылок; текст персональных блоков в расписании |
+| `indigo-900` | `#2f3778` | Тёмный акцент шкалы |
 
-> **Примечание о семантике:** indigo намеренно используется и для интерактивных состояний (CTA), и для позитивных статусов («оплачено», «присутствие»). Это осознанный выбор в пользу минималистичной палитры. Чтобы различать: интерактивные элементы имеют hover/cursor-pointer, статусные — нет.
+> **Семантика:** indigo — интерактив (CTA, nav, ссылки). Позитивные статусы («оплачено», «подтверждён», присутствие) — `green-*`. Ошибки и долги — `rose-*`.
 
 ### Семантические
 
 | Роль | Tailwind | Когда |
 |------|----------|-------|
 | Ошибка / долг / destructive | `rose-50`, `rose-100`, `rose-600`, `rose-700` | Ошибки, неоплаченные уроки, низкий баланс |
-| `amber-50`, `amber-100`, `amber-800` | Demo retention, осторожные статусы — **только пассивные баннеры**, не кнопки |
-| Информация / успех | `indigo-500`, `indigo-600`, `indigo-50` | Toast info/success, оплаченные уроки, присутствие |
+| Предупреждение | `amber-50`, `amber-100`, `amber-600` | Пассивные баннеры, бейдж «ожидает» — **не кнопки** |
+| Успех / подтверждение | `green-50`, `green-500`, `green-600` | Toast success, «оплачено», «подтверждён», присутствие |
+| Информация | `indigo-500`, `indigo-600` | Toast info, интерактив |
 | Telegram | `#229ED9` / `#1C82B4` | Только для кнопок Telegram (исключение из палитры) |
 
-### Различие типов занятий (оба — indigo)
+### Различие типов занятий (списки вне сетки)
 
 | Тип | Маркер | Фон строки |
 |-----|--------|------------|
-| Групповой | точка `bg-indigo-500` | `bg-slate-50` |
-| Персональный | точка `bg-indigo-700` | `bg-indigo-50/60`, border `indigo-100` |
+| Групповой | точка `bg-slate-500` | `bg-slate-50` |
+| Персональный | точка `bg-indigo-600` | `bg-indigo-50/60`, border `indigo-200` |
 
 ---
 
@@ -231,7 +233,7 @@ Focus outline (глобально в `index.css`):
 
 ```css
 :focus-visible {
-  outline: 2px solid #6366f1; /* indigo-500 */
+  outline: 2px solid #6b76dc; /* indigo-500 */
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -363,7 +365,7 @@ w-8 h-8 bg-indigo-600 rounded text-white font-semibold text-[11px] shadow-xs
 
 | Тип | Accent |
 |-----|--------|
-| success | `text-indigo-600` |
+| success | `text-green-600` |
 | error | `text-rose-600` |
 | info | `text-indigo-500` |
 
@@ -480,7 +482,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 ## Правила для агента
 
-1. **Акцентный цвет — только indigo.** Не добавлять violet/emerald/green/purple для UI-кнопок (violet — только блоки мероприятий в сетке).
+1. **Акцентный CTA — indigo.** `green-*` — только успех/подтверждение (не кнопки). Не добавлять `violet-*`/`emerald-*`/`purple-*` в общий UI (violet в сетке — кастомные hex в `scheduleColors.ts`).
 2. **Ошибки и долги — rose.** Не заменять rose на indigo.
 3. **Кнопки — через `buttonStyles.ts`.** Add / open popup — sentence case; destructive/warning — rose + uppercase; refresh/cancel — slate + uppercase.
 4. **Не использовать amber для кнопок и акцентов.** Amber — только пассивные warning-баннеры.
@@ -517,13 +519,17 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 ## Расписание — цвета блоков (`scheduleColors.ts`)
 
-| Тип | Tailwind | Назначение |
-|-----|----------|------------|
-| Групповой урок | `indigo-600` / `indigo-700` | Регулярные и разовые групповые занятия |
-| Персональный | `sky-400` / `sky-500` | Персональные уроки |
-| Мероприятие | `violet-600` / `violet-700` | Мастер-класс / открытый урок (`calendar_events`); **исключение** из общего запрета violet для отличия от уроков |
-| Аренда зала | `slate-600` / `slate-700` | Сдача зала арендаторам |
-| Аренда Mini App, холд (`awaiting_payment`) | тот же slate + диагональные полосы (`repeating-linear-gradient`), **без** `ring-rose-500` | Неоплаченный холд канала; долг Mini App (`lifecycle=debt`) — rose как касса |
+Мягкий стиль: pastel-фон + цветной текст + акцентная полоска слева (3px).
+
+| Тип | Фон | Граница | Текст | Акцент |
+|-----|-----|---------|-------|--------|
+| Групповой | `#F5F7FA` | `#E2E8F0` | `#334155` | `#64748B` |
+| Персональный | `#EEF0FF` | `#D7DEFF` | `#39449A` | `#5663D6` |
+| Мероприятие | `#F5F0FF` | `#E5DBFF` | `#6336A8` | `#7C4DCC` |
+| Аренда зала | `slate-600` / `slate-700` | белый текст | без полоски |
+| Долг (ring) | `#FFFFF5` | `#F3A0AA` | `#B93645` | `#D64554` |
+| Аренда Mini App, холд | slate + диагональные полосы, без rose ring | | | |
+| Выделение (focus) | ring `#5663D6` (`indigo-600`) | | | |
 
 ---
 
@@ -531,7 +537,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 | Дата | Изменение |
 |------|-----------|
-| 2026-08-30 | Расписание: холд Mini App — slate с диагональной штриховкой, без rose; `lifecycle=debt` — `ring-rose-500`. |
+| 2026-09-05 | Миграция палитры Studio Controller: тёплый indigo, rose/amber, green для успеха, мягкие блоки расписания. Токены в `index.css` `@theme`. |
 | 2026-08-01 | Компактные контролы h-8 (32px): поля, select, кнопки — эталон Telegram в header; add/save/open без uppercase по всему CRM. |
 | 2026-08-01 | `btnOpenCls` — sentence case (как add), без uppercase: Мероприятие / Аренда / Отпуск преподавателя. |
 | 2026-06-20 | RBAC R5: FinanceLayout (sub-nav как Settings), split Operational/Financial dashboard. |
