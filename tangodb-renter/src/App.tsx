@@ -4,6 +4,7 @@ import {
   fetchBootstrap,
   mintRenterSession,
   prepareTelegramWebApp,
+  sessionMatchesInitData,
   type BootstrapData,
 } from "./lib/auth";
 import {
@@ -82,14 +83,18 @@ export default function App() {
 
         const { data: existing } = await supabase.auth.getSession();
         if (existing.session) {
-          try {
-            assertRenterSession(existing.session, orgId);
-            const data = await fetchBootstrap(supabase);
-            if (cancelled) return;
-            setBootstrap(data);
-            setPhase("ready");
-            return;
-          } catch {
+          if (sessionMatchesInitData(existing.session, initData)) {
+            try {
+              assertRenterSession(existing.session, orgId);
+              const data = await fetchBootstrap(supabase);
+              if (cancelled) return;
+              setBootstrap(data);
+              setPhase("ready");
+              return;
+            } catch {
+              await supabase.auth.signOut();
+            }
+          } else {
             await supabase.auth.signOut();
           }
         }

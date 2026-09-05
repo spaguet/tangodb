@@ -1,4 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
+import { parseTelegramUserIdFromInitData } from "./initData";
 import { getSupabaseConfig } from "./supabase";
 
 export type MintResponse = {
@@ -32,6 +33,22 @@ export async function mintRenterSession(initData: string): Promise<MintResponse>
   }
 
   return payload;
+}
+
+export function sessionTelegramId(session: Session): string | null {
+  const raw = session.user.app_metadata?.telegram_id;
+  if (raw == null) return null;
+  const id = String(raw).trim();
+  return id.length > 0 ? id : null;
+}
+
+/** Persisted GoTrue session is valid only for the Telegram user in current initData. */
+export function sessionMatchesInitData(session: Session, initData: string): boolean {
+  const initTelegramId = parseTelegramUserIdFromInitData(initData);
+  if (initTelegramId == null) return false;
+  const sessionId = sessionTelegramId(session);
+  if (sessionId == null) return false;
+  return sessionId === String(initTelegramId);
 }
 
 export function assertRenterSession(

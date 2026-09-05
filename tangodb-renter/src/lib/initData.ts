@@ -30,6 +30,21 @@ export function parseStartParamFromInitData(initData: string): string | null {
   return value;
 }
 
+/** Telegram user id from initData `user` JSON — must match session before reuse. */
+export function parseTelegramUserIdFromInitData(initData: string): number | null {
+  if (!initData) return null;
+  const userRaw = new URLSearchParams(initData).get("user");
+  if (!userRaw) return null;
+  try {
+    const parsed = JSON.parse(userRaw) as { id?: unknown };
+    const id = parsed.id;
+    if (typeof id !== "number" || !Number.isInteger(id) || id <= 0) return null;
+    return id;
+  } catch {
+    return null;
+  }
+}
+
 export function renterAuthStorageKey(organizationId: string): string {
   return `tangodb-renter-auth-${organizationId}`;
 }
