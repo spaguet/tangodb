@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
 import {
   btnOpenCls,
-  fieldCls,
   labelCls,
   panelCls,
   weekChipActiveCls,
@@ -19,6 +18,7 @@ import { rpcGetOccupancy, rpcGetWallet, rpcListLocations } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
 import type { LocationRow, OccupancyData, WalletData } from "../../lib/types";
 import { t, tFill, type Locale } from "../../i18n/strings";
+import { useVisibilityRefetch } from "../../hooks/useVisibilityRefetch";
 import BookingSheet from "./BookingSheet";
 import PackSheet from "./PackSheet";
 import WeeklyOccupancyGrid from "./WeeklyOccupancyGrid";
@@ -28,10 +28,10 @@ type ScheduleTabProps = {
   bootstrap: BootstrapData;
   organizationId: string;
   supabase: SupabaseClient;
+  refreshKey: number;
   onBooked: () => void;
   onOpenMine: (rentalId?: string) => void;
   onTopup: (amount: number) => void;
-  onRegisterRefresh: (fn: () => void) => void;
 };
 
 export default function ScheduleTab({
@@ -39,10 +39,10 @@ export default function ScheduleTab({
   bootstrap,
   organizationId,
   supabase,
+  refreshKey,
   onBooked,
   onOpenMine,
   onTopup,
-  onRegisterRefresh,
 }: ScheduleTabProps) {
   const [locations, setLocations] = useState<LocationRow[]>([]);
   const [locationId, setLocationId] = useState<string>("");
@@ -62,9 +62,12 @@ export default function ScheduleTab({
   const loadLocations = useCallback(async () => {
     const rows = await rpcListLocations(supabase);
     setLocations(rows);
-    if (rows.length === 1) setLocationId(rows[0].id);
-    else if (rows.length > 0 && !locationId) setLocationId(rows[0].id);
-  }, [supabase, locationId]);
+    setLocationId((prev) => {
+      if (rows.length === 0) return "";
+      if (rows.some((row) => row.id === prev)) return prev;
+      return rows[0].id;
+    });
+  }, [supabase]);
 
   const loadOccupancy = useCallback(async () => {
     if (!locationId) return;
@@ -75,13 +78,18 @@ export default function ScheduleTab({
 
   const refresh = useCallback(async () => {
     try {
+      await loadLocations();
       await loadOccupancy();
       const w = await rpcGetWallet(supabase, 1, 0);
       setWallet(w);
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
     }
-  }, [loadOccupancy, locale, supabase]);
+  }, [loadLocations, loadOccupancy, locale, supabase]);
+
+  useVisibilityRefetch(() => {
+    void refresh();
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -134,14 +142,14 @@ export default function ScheduleTab({
   }, [supabase]);
 
   useEffect(() => {
-    onRegisterRefresh(() => {
-      void refresh();
-    });
-  }, [onRegisterRefresh, refresh]);
+    if (refreshKey === 0) return;
+    void refresh();
+  }, [refreshKey, refresh]);
 
   const localeTag = locale === "en" ? "en" : "ru";
   const debtAmount = wallet?.debt_amount ?? 0;
   const currency = bootstrap.currencyCode;
+  const selectedLocation = locations.find((loc) => loc.id === locationId);
   const contactSuffix = bootstrap.contactPhone
     ? locale === "en"
       ? ` (${bootstrap.contactPhone})`
@@ -166,7 +174,7 @@ export default function ScheduleTab({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 bg-slate-50 text-slate-800">
-      <div className="flex shrink-0 flex-col gap-3 px-4">
+      <div className="flex shrink-0 flex-col gap-3 px-4 pt-4">
         {!bootstrap.addonActive ? (
           <p className="text-xs leading-relaxed text-slate-500">{t(locale, "addonInactiveCreate")}</p>
         ) : null}
@@ -197,19 +205,31 @@ export default function ScheduleTab({
           </div>
         ) : null}
 
-        {locations.length > 1 ? (
-          <label className="flex flex-col gap-1 text-sm">
+        {locations.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
             <span className={labelCls}>{t(locale, "selectHall")}</span>
-            <select className={fieldCls} value={locationId} onChange={(e) => setLocationId(e.target.value)}>
-              {locations.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : locations[0] ? (
-          <p className="text-sm font-medium text-slate-700">{locations[0].name}</p>
+            {locations.length > 1 ? (
+              <div className="flex flex-wrap gap-2" role="group" aria-label={t(locale, "selectHall")}>
+                {locations.map((loc) => (
+                  <button
+                    key={loc.id}
+                    type="button"
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      locationId === loc.id ? weekChipActiveCls : weekChipCls
+                    }`}
+                    onClick={() => setLocationId(loc.id)}
+                  >
+                    {loc.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm font-medium text-slate-700">{locations[0].name}</p>
+            )}
+            {selectedLocation?.bookable === false ? (
+              <p className="text-xs leading-relaxed text-amber-800">{t(locale, "hallRatesIncomplete")}</p>
+            ) : null}
+          </div>
         ) : null}
 
         {bootstrap.addonActive ? (

@@ -1,6 +1,6 @@
 export type RpcResult<T> = { success: true } & T | { success: false; error: string };
 
-export type LocationRow = { id: string; name: string };
+export type LocationRow = { id: string; name: string; bookable?: boolean };
 
 export type BusySlot = { date: string; time_start: string; time_end: string };
 

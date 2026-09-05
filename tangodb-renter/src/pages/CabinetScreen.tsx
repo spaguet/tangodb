@@ -25,17 +25,25 @@ export default function CabinetScreen({
 }: CabinetScreenProps) {
   const [tab, setTab] = useState<CabinetTab>("schedule");
   const [mineRefresh, setMineRefresh] = useState(0);
+  const [scheduleRefresh, setScheduleRefresh] = useState(0);
   const [topupPrefillAmount, setTopupPrefillAmount] = useState<number | null>(null);
   const [focusRentalId, setFocusRentalId] = useState<string | null>(null);
   const [pollActive, setPollActive] = useState(false);
-  const scheduleRefreshRef = useRef<() => void>(() => {});
+  const prevTabRef = useRef<CabinetTab>(tab);
 
   const refreshCabinet = useCallback(() => {
     setMineRefresh((n) => n + 1);
-    scheduleRefreshRef.current();
+    setScheduleRefresh((n) => n + 1);
   }, []);
 
   useCabinetLiveRefresh(refreshCabinet, pollActive);
+
+  useEffect(() => {
+    if (tab === "schedule" && prevTabRef.current !== "schedule") {
+      setScheduleRefresh((n) => n + 1);
+    }
+    prevTabRef.current = tab;
+  }, [tab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,12 +103,10 @@ export default function CabinetScreen({
             bootstrap={bootstrap}
             organizationId={organizationId}
             supabase={supabase}
+            refreshKey={scheduleRefresh}
             onBooked={refreshCabinet}
             onOpenMine={openMine}
             onTopup={openTopup}
-            onRegisterRefresh={(fn) => {
-              scheduleRefreshRef.current = fn;
-            }}
           />
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto">

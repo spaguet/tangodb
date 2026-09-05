@@ -267,6 +267,7 @@ export default function MineTab({
     try {
       await rpcDeleteHold(supabase, id);
       await load("refresh");
+      onRefreshAll?.();
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
     } finally {
@@ -279,6 +280,7 @@ export default function MineTab({
     try {
       await rpcCancelOccurrence(supabase, id);
       await load("refresh");
+      onRefreshAll?.();
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
     } finally {
@@ -291,6 +293,7 @@ export default function MineTab({
     try {
       await rpcCancelPack(supabase, seriesId);
       await load("refresh");
+      onRefreshAll?.();
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
     } finally {
@@ -495,7 +498,10 @@ export default function MineTab({
                   onCancelPack={
                     row.head.can_cancel_pack ? () => void onCancelPack(row.seriesId) : undefined
                   }
-                  onHoldExpired={() => void load("refresh")}
+                  onHoldExpired={() => {
+                    void load("refresh");
+                    onRefreshAll?.();
+                  }}
                 />
               );
             }
@@ -515,7 +521,10 @@ export default function MineTab({
                 onCancelPack={
                   r.can_cancel_pack && seriesId ? () => void onCancelPack(seriesId) : undefined
                 }
-                onHoldExpired={() => void load("refresh")}
+                onHoldExpired={() => {
+                  void load("refresh");
+                  onRefreshAll?.();
+                }}
               />
             );
           })
@@ -722,46 +731,59 @@ type WalletHistoryProps = {
 };
 
 function WalletHistory({ locale, currency, entries }: WalletHistoryProps) {
+  const [expanded, setExpanded] = useState(false);
   const localeTag = locale === "en" ? "en-US" : "ru-RU";
 
   return (
     <div className="border-t border-slate-100 pt-2">
-      <p className={`${labelCls} mb-1`}>{t(locale, "walletHistory")}</p>
-      <ul className="space-y-1.5">
-        {entries.map((entry) => {
-          const labelKey = walletEntryLabelKey(entry.entry_type);
-          const label = labelKey ? t(locale, labelKey) : entry.entry_type;
-          const when = new Intl.DateTimeFormat(localeTag, {
-            day: "2-digit",
-            month: "short",
-            hour: "2-digit",
-            minute: "2-digit",
-          }).format(new Date(entry.created_at));
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-2 text-left"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((open) => !open)}
+      >
+        <span className={labelCls}>{t(locale, "walletHistory")}</span>
+        <span className="text-xs text-slate-400" aria-hidden="true">
+          {expanded ? "▲" : "▼"}
+        </span>
+      </button>
+      {expanded ? (
+        <ul className="mt-1 space-y-1.5">
+          {entries.map((entry) => {
+            const labelKey = walletEntryLabelKey(entry.entry_type);
+            const label = labelKey ? t(locale, labelKey) : entry.entry_type;
+            const when = new Intl.DateTimeFormat(localeTag, {
+              day: "2-digit",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            }).format(new Date(entry.created_at));
 
-          return (
-            <li
-              key={entry.id}
-              className="flex items-start justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/80 px-2 py-1.5 text-xs"
-            >
-              <span className="min-w-0 text-slate-600">
-                <span className="block font-medium text-slate-800">{label}</span>
-                <span className="text-slate-500">{when}</span>
-                {entry.balance_after != null ? (
-                  <span className="block text-slate-400">
-                    {tFill(locale, "walletEntryBalanceAfter", {
-                      amount: formatMoney(entry.balance_after, currency, locale),
-                    })}
-                  </span>
-                ) : null}
-              </span>
-              <span className={`shrink-0 font-semibold tabular-nums ${walletEntryAmountClass(entry)}`}>
-                {walletEntryAmountPrefix(entry)}
-                {formatMoney(entry.amount, currency, locale)}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+            return (
+              <li
+                key={entry.id}
+                className="flex items-start justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/80 px-2 py-1.5 text-xs"
+              >
+                <span className="min-w-0 text-slate-600">
+                  <span className="block font-medium text-slate-800">{label}</span>
+                  <span className="text-slate-500">{when}</span>
+                  {entry.balance_after != null ? (
+                    <span className="block text-slate-400">
+                      {tFill(locale, "walletEntryBalanceAfter", {
+                        amount: formatMoney(entry.balance_after, currency, locale),
+                      })}
+                    </span>
+                  ) : null}
+                </span>
+                <span className={`shrink-0 font-semibold tabular-nums ${walletEntryAmountClass(entry)}`}>
+                  {walletEntryAmountPrefix(entry)}
+                  {formatMoney(entry.amount, currency, locale)}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
     </div>
   );
 }
