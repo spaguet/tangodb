@@ -84,7 +84,7 @@ const SPLIT_COLORS: Record<RevenueSplitKey, string> = {
   personal: "bg-indigo-700",
   single_visit: "bg-indigo-400",
   other: "bg-slate-400",
-  rental: "bg-violet-500",
+  rental: "bg-slate-600",
 };
 
 function formatShortMonth(yearMonth: string, locale: string | null): string {
