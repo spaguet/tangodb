@@ -224,12 +224,12 @@
 
 ## Telegram Mini App (`tangodb-renter/`)
 
-Версия **0.1.1**. Те же токены `@theme` в `tangodb-renter/src/index.css`, общие классы в `crmUi.ts`.
+Версия **0.1.2**. Те же токены `@theme` в `tangodb-renter/src/index.css`, общие классы в `crmUi.ts`.
 
 | Область | Правило |
 |---------|---------|
 | CTA / nav / chips | `indigo-600` / `indigo-700` |
-| Своя бронь в сетке (`mine`) | `bg-slate-600`, ring `slate-700` — как аренда в CRM |
+| Своя бронь в сетке (`mine`) | `bg-indigo-600`, ring `indigo-700` — брендовый синий |
 | Холд (`mine_hold`) | `slot-hold` (slate-600 + штриховка) |
 | Долг (`mine_debt`) | `bg-rose-600`, ring `rose-700` |
 | Успех (бронь создана) | `successBannerCls` → `green-50` / `green-700` |
@@ -259,7 +259,8 @@
 
 | Дата | Изменение |
 |------|-----------|
-| 2026-09-05 | Mini App (0.1.1): `@theme`, `crmUi`, slate для своих слотов, green вместо emerald |
+| 2026-09-05 | Mini App (0.1.2): «Моя бронь» — `indigo-600` (брендовый синий), не slate |
+| 2026-09-05 | Mini App (0.1.1): `@theme`, `crmUi`, green вместо emerald |
 | 2026-09-05 | Документ переписан: актуальные правила вместо плана миграции; структура выручки (`slate-600` для rental, 2.9.82) |
 | 2026-09-05 | Внедрено в CRM (2.9.81): `@theme`, `scheduleColors.ts`, `LessonBlock`, design_system |
 | 2026-09-05 | Первая версия по preview `schedule-preview-new-colors.html` |

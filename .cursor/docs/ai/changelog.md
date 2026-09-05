@@ -1,4 +1,5 @@
-2026-09-05 — feat(hall-rent): Mini App **0.1.1** — палитра Studio Controller: `@theme` в `index.css`, `crmUi.ts`; свои слоты `slate-600`, success `green-*`, кредит кошелька `green-700` (вместо emerald); Entry spinner fallback `#5663D6`.
+2026-09-05 — fix(hall-rent): Mini App **0.1.2** — сетка «Моя бронь» снова `indigo-600` (брендовый синий Studio Controller).
+2026-09-05 — feat(hall-rent): Mini App **0.1.1** — палитра Studio Controller: `@theme` в `index.css`, `crmUi.ts`; success `green-*`, кредит кошелька `green-700` (вместо emerald); Entry spinner fallback `#5663D6`.
 2026-09-05 — docs(crm): `crm_color_migration.md` переписан — актуальные цветовые правила Studio Controller вместо плана миграции; структура выручки в `design_system.md`.
 2026-09-05 — fix(crm): микропатч **2.9.82** — финансовый обзор «Структура выручки»: цвет «Сдача зала (доход)» `violet-500` → `slate-600` (палитра Studio Controller).
 2026-09-05 — feat(crm): микропатч **2.9.81** — миграция палитры Studio Controller: тёплый indigo/rose/amber в `@theme` (`index.css`), green для успеха/подтверждения, мягкие блоки расписания с акцентной полоской (`scheduleColors.ts`, `LessonBlock`), обновлены `design_system.md`, PNG-палитра, toast success → green.
