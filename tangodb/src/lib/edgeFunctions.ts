@@ -16,6 +16,7 @@ export async function invokeEdgeFunction<T>(
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
+      apikey: supabaseAnonKey,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body ?? {}),
@@ -79,6 +80,7 @@ export async function invokePublicEdgeFunction<T>(
     method: "POST",
     headers: {
       Authorization: `Bearer ${supabaseAnonKey}`,
+      apikey: supabaseAnonKey,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body ?? {}),

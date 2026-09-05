@@ -132,6 +132,9 @@ export const EN: Record<I18nKey, string> = {
   "auth.acceptInviteSuccess": "You joined the organization",
   "auth.acceptInviteError": "Invite is invalid or expired",
   "auth.acceptInvite.goHome": "Go home",
+  "auth.acceptInviteWrongAccount":
+    "You are signed in with a different account. Sign out and use the email from the invitation.",
+  "auth.acceptInvite.signOutToContinue": "Sign out and continue",
   "auth.loginRequired": "Sign in to accept the invitation",
   "auth.password": "Password",
   "auth.confirmPassword": "Confirm password",

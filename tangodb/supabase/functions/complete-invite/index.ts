@@ -1,5 +1,5 @@
 import { findAuthUserByEmail } from "../_shared/authUsers.ts";
-import { hashInviteToken, isInviteTokenFormat } from "../_shared/inviteToken.ts";
+import { hashInviteToken, normalizeInviteToken } from "../_shared/inviteToken.ts";
 import {
   getClientIp,
   handleOptions,
@@ -53,8 +53,8 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Invalid JSON" }, 400, req);
   }
 
-  const plaintextToken = (body.token ?? "").trim();
-  if (!plaintextToken || !isInviteTokenFormat(plaintextToken)) {
+  const plaintextToken = normalizeInviteToken(body.token ?? "");
+  if (!plaintextToken) {
     return jsonResponse({ error: "Invalid invite" }, 400, req);
   }
 
@@ -75,7 +75,14 @@ Deno.serve(async (req) => {
   }
 
   const email = (invite.email as string).trim().toLowerCase();
-  const existingUser = await findAuthUserByEmail(email);
+  let existingUser = null;
+  try {
+    existingUser = await findAuthUserByEmail(email);
+  } catch (err) {
+    logEvent("complete_invite_account_lookup_error", {
+      message: err instanceof Error ? err.message : "unknown",
+    });
+  }
 
   if (existingUser) {
     logEvent("invite_needs_login", { organization_id: null });
@@ -97,6 +104,10 @@ Deno.serve(async (req) => {
     email_confirm: true,
   });
   if (error || !data.user) {
+    const createMsg = (error?.message ?? "").toLowerCase();
+    if (createMsg.includes("already") || createMsg.includes("registered")) {
+      return jsonResponse({ ok: true, needs_login: true }, 200, req);
+    }
     logEvent("complete_invite_create_user_error", {
       message: error?.message ?? "unknown",
     });

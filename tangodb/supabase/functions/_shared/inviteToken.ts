@@ -1,5 +1,6 @@
 const INVITE_TOKEN_PREFIX = "TDB-INV-";
 const INVITE_TOKEN_BYTES = 16;
+const INVITE_TOKEN_RE = /^TDB-INV-([0-9a-fA-F]{32})$/;
 
 export function generateInviteToken(): string {
   const bytes = new Uint8Array(INVITE_TOKEN_BYTES);
@@ -8,8 +9,16 @@ export function generateInviteToken(): string {
   return `${INVITE_TOKEN_PREFIX}${hex}`;
 }
 
+/** Strip copy/paste junk; canonical form is TDB-INV- + lowercase hex. */
+export function normalizeInviteToken(token: string): string | null {
+  const cleaned = token.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+  const match = INVITE_TOKEN_RE.exec(cleaned);
+  if (!match) return null;
+  return `${INVITE_TOKEN_PREFIX}${match[1].toLowerCase()}`;
+}
+
 export function isInviteTokenFormat(token: string): boolean {
-  return /^TDB-INV-[0-9a-f]{32}$/.test(token);
+  return normalizeInviteToken(token) != null;
 }
 
 export async function hashInviteToken(plaintext: string, pepper: string): Promise<string> {

@@ -123,6 +123,8 @@ export type I18nKey =
   | "auth.acceptInviteSuccess"
   | "auth.acceptInviteError"
   | "auth.acceptInvite.goHome"
+  | "auth.acceptInviteWrongAccount"
+  | "auth.acceptInvite.signOutToContinue"
   | "auth.loginRequired"
   | "auth.password"
   | "auth.confirmPassword"

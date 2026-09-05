@@ -1,4 +1,4 @@
-import { hashInviteToken, isInviteTokenFormat } from "../_shared/inviteToken.ts";
+import { hashInviteToken, normalizeInviteToken } from "../_shared/inviteToken.ts";
 import {
   getClientIp,
   handleOptions,
@@ -39,8 +39,8 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Invalid JSON" }, 400, req);
   }
 
-  const plaintextToken = (body.token ?? "").trim();
-  if (!plaintextToken || !isInviteTokenFormat(plaintextToken)) {
+  const plaintextToken = normalizeInviteToken(body.token ?? "");
+  if (!plaintextToken) {
     return jsonResponse({ error: "Invalid invite" }, 400, req);
   }
 
@@ -61,11 +61,10 @@ Deno.serve(async (req) => {
 
   if (error) {
     const msg = error.message ?? "Accept failed";
-    if (
-      msg.includes("invalid") ||
-      msg.includes("expired") ||
-      msg.includes("mismatch")
-    ) {
+    if (msg.includes("mismatch")) {
+      return jsonResponse({ error: "invite_email_mismatch" }, 403, req);
+    }
+    if (msg.includes("invalid") || msg.includes("expired")) {
       return jsonResponse({ error: "Invalid or expired invite" }, 400, req);
     }
     if (msg.includes("already a member")) {

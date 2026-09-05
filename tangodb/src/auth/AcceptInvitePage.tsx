@@ -12,6 +12,7 @@ import { membershipsQueryKey } from "../organization/OrganizationProvider";
 import {
   extractInviteTokenFromUrl,
   scrubInviteTokenFromUrl,
+  clearStashedInviteToken,
 } from "./inviteUrlToken";
 import {
   AuthButton,
@@ -24,7 +25,7 @@ import {
 export default function AcceptInvitePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { session, loading: authLoading, signInWithEmail } = useAuth();
+  const { session, loading: authLoading, signInWithEmail, signOut } = useAuth();
   const { t, locale } = useI18n();
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -39,10 +40,12 @@ export default function AcceptInvitePage() {
   const [activeToken, setActiveToken] = useState(() => extractInviteTokenFromUrl());
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [wrongAccount, setWrongAccount] = useState(false);
   const acceptStartedRef = useRef(false);
   const inviteAcceptedViaCompleteRef = useRef(false);
 
   const finishInviteSuccess = async () => {
+    clearStashedInviteToken();
     await supabase.auth.refreshSession();
     await queryClient.invalidateQueries({ queryKey: membershipsQueryKey });
     setStatus("success");
@@ -58,7 +61,7 @@ export default function AcceptInvitePage() {
   }, []);
 
   useEffect(() => {
-    if (authLoading || session || !activeToken) return;
+    if (authLoading || !activeToken || previewReady || status === "error") return;
 
     let cancelled = false;
 
@@ -78,13 +81,21 @@ export default function AcceptInvitePage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, session, activeToken, t]);
+  }, [authLoading, activeToken, previewReady, status, t]);
 
   useEffect(() => {
-    if (authLoading || !session || acceptStartedRef.current) return;
+    if (authLoading || !session || !previewReady || acceptStartedRef.current || wrongAccount) {
+      return;
+    }
+
+    if (inviteAcceptedViaCompleteRef.current) {
+      acceptStartedRef.current = true;
+      void finishInviteSuccess();
+      return;
+    }
 
     const token = activeToken;
-    if (!token && !inviteAcceptedViaCompleteRef.current) return;
+    if (!token) return;
 
     acceptStartedRef.current = true;
     let cancelled = false;
@@ -92,23 +103,31 @@ export default function AcceptInvitePage() {
 
     (async () => {
       try {
-        if (!inviteAcceptedViaCompleteRef.current) {
-          if (!token) throw new Error(t("auth.acceptInviteError"));
-          await acceptInvite(token);
-        }
+        await acceptInvite(token);
         if (cancelled) return;
         await finishInviteSuccess();
       } catch (err) {
         if (cancelled) return;
+        const msg = err instanceof Error ? err.message : "";
+        if (msg === "invite_email_mismatch" || msg === "Forbidden") {
+          setWrongAccount(true);
+          setStatus("idle");
+          acceptStartedRef.current = false;
+          return;
+        }
         setStatus("error");
-        setMessage(parseAuthError(err, locale));
+        setMessage(
+          msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("expired")
+            ? t("auth.acceptInviteError")
+            : parseAuthError(err, locale)
+        );
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [authLoading, session, activeToken, navigate, t]);
+  }, [authLoading, session, previewReady, activeToken, wrongAccount, navigate, t, locale]);
 
   const handleExistingLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,6 +191,18 @@ export default function AcceptInvitePage() {
       setFormError(parseAuthError(err, locale));
       setTurnstileResetKey((k) => k + 1);
       setTurnstileToken(null);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSignOutToContinue = async () => {
+    setSubmitting(true);
+    try {
+      await signOut();
+      setWrongAccount(false);
+      setStatus("idle");
+      acceptStartedRef.current = false;
     } finally {
       setSubmitting(false);
     }
@@ -309,33 +340,80 @@ export default function AcceptInvitePage() {
     );
   }
 
+  if (status === "error") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-3 text-center">
+          <h1 className="text-lg font-semibold text-slate-900">{t("auth.acceptInvite")}</h1>
+          <p className="text-sm text-rose-600">{message || t("auth.acceptInviteError")}</p>
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="mt-2 text-sm text-indigo-600 font-semibold hover:underline cursor-pointer"
+          >
+            {t("auth.acceptInvite.goHome")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-3 text-center">
+          <h1 className="text-lg font-semibold text-slate-900">{t("auth.acceptInvite")}</h1>
+          <p className="text-sm text-slate-500">{t("auth.acceptInviteError")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!previewReady || (status === "loading" && !wrongAccount)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-3 text-center">
+          <h1 className="text-lg font-semibold text-slate-900">{t("auth.acceptInvite")}</h1>
+          <div className="flex justify-center py-4">
+            <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "success") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-3 text-center">
+          <h1 className="text-lg font-semibold text-slate-900">{t("auth.acceptInvite")}</h1>
+          <p className="text-sm text-indigo-600 font-medium">{message}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (wrongAccount) {
+    return (
+      <AuthLayout
+        title={t("auth.acceptInvite")}
+        subtitle={orgName ? `«${orgName}»` : "TangoDB CRM"}
+      >
+        <p className="text-sm text-slate-600">{t("auth.acceptInviteWrongAccount")}</p>
+        <AuthButton type="button" loading={submitting} onClick={() => void handleSignOutToContinue()}>
+          {t("auth.acceptInvite.signOutToContinue")}
+        </AuthButton>
+      </AuthLayout>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <div className="max-w-md w-full bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-3 text-center">
         <h1 className="text-lg font-semibold text-slate-900">{t("auth.acceptInvite")}</h1>
-        {status === "loading" && (
-          <div className="flex justify-center py-4">
-            <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
-          </div>
-        )}
-        {status === "success" && (
-          <p className="text-sm text-indigo-600 font-medium">{message}</p>
-        )}
-        {status === "error" && (
-          <>
-            <p className="text-sm text-rose-600">{message || t("auth.acceptInviteError")}</p>
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="mt-2 text-sm text-indigo-600 font-semibold hover:underline cursor-pointer"
-            >
-              {t("auth.acceptInvite.goHome")}
-            </button>
-          </>
-        )}
-        {status === "idle" && !activeToken && (
-          <p className="text-sm text-slate-500">{t("auth.acceptInviteError")}</p>
-        )}
+        <div className="flex justify-center py-4">
+          <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
+        </div>
       </div>
     </div>
   );

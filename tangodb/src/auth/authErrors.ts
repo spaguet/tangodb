@@ -87,6 +87,16 @@ export function parseAuthError(err: unknown, locale?: string): string {
   if (message === "Service unavailable") {
     return t(loc, "common.serverUnavailable");
   }
+  if (
+    message === "Invalid or expired invite" ||
+    message === "Invalid invite" ||
+    lower.includes("invalid or expired invite")
+  ) {
+    return t(loc, "auth.acceptInviteError");
+  }
+  if (message === "invite_email_mismatch") {
+    return t(loc, "auth.acceptInviteWrongAccount");
+  }
   if (message === "Could not create demo organization") {
     return t(loc, "auth.error.generic");
   }

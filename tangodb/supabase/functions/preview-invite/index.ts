@@ -1,12 +1,12 @@
 import { findAuthUserByEmail } from "../_shared/authUsers.ts";
-import { hashInviteToken, isInviteTokenFormat } from "../_shared/inviteToken.ts";
+import { hashInviteToken, normalizeInviteToken } from "../_shared/inviteToken.ts";
 import {
   getClientIp,
   handleOptions,
   jsonResponse,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
-import { createServiceClient } from "../_shared/supabase.ts";
+import { createServiceClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 15 * 60_000;
@@ -34,8 +34,8 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Invalid JSON" }, 400, req);
   }
 
-  const plaintextToken = (body.token ?? "").trim();
-  if (!plaintextToken || !isInviteTokenFormat(plaintextToken)) {
+  const plaintextToken = normalizeInviteToken(body.token ?? "");
+  if (!plaintextToken) {
     return jsonResponse({ error: "Invalid invite" }, 400, req);
   }
 
@@ -44,26 +44,46 @@ Deno.serve(async (req) => {
 
   const { data: invite, error } = await admin
     .from("organization_invites")
-    .select("email, expires_at, organizations(name)")
+    .select("email, expires_at, organization_id")
     .eq("token_hash", tokenHash)
     .is("accepted_at", null)
     .is("revoked_at", null)
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
 
-  if (error || !invite) {
+  if (error) {
+    logEvent("preview_invite_lookup_error", { code: error.code ?? "unknown" });
+    return jsonResponse({ error: "Invalid or expired invite" }, 400, req);
+  }
+  if (!invite) {
     return jsonResponse({ error: "Invalid or expired invite" }, 400, req);
   }
 
-  const orgName =
-    (invite.organizations as { name?: string } | null)?.name ?? null;
+  let orgName: string | null = null;
+  const orgId = invite.organization_id as string | undefined;
+  if (orgId) {
+    const { data: org } = await admin
+      .from("organizations")
+      .select("name")
+      .eq("id", orgId)
+      .maybeSingle();
+    orgName = typeof org?.name === "string" ? org.name : null;
+  }
+
   const inviteEmail = (invite.email as string).trim().toLowerCase();
-  const existing = await findAuthUserByEmail(inviteEmail);
+  let accountExists = false;
+  try {
+    accountExists = (await findAuthUserByEmail(inviteEmail)) != null;
+  } catch (err) {
+    logEvent("preview_invite_account_lookup_error", {
+      message: err instanceof Error ? err.message : "unknown",
+    });
+  }
 
   return jsonResponse(
     {
       ok: true,
-      account_exists: existing != null,
+      account_exists: accountExists,
       organization_name: orgName,
       expires_at: invite.expires_at as string,
     },

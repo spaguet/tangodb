@@ -132,6 +132,9 @@ export const RU: Record<I18nKey, string> = {
   "auth.acceptInviteSuccess": "Вы присоединились к организации",
   "auth.acceptInviteError": "Приглашение недействительно или истекло",
   "auth.acceptInvite.goHome": "На главную",
+  "auth.acceptInviteWrongAccount":
+    "Вы вошли другим аккаунтом. Выйдите и войдите с email из приглашения.",
+  "auth.acceptInvite.signOutToContinue": "Выйти и продолжить",
   "auth.loginRequired": "Войдите, чтобы принять приглашение",
   "auth.password": "Пароль",
   "auth.confirmPassword": "Подтверждение пароля",
