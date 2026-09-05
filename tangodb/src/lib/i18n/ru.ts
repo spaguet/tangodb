@@ -538,6 +538,8 @@ export const RU: Record<I18nKey, string> = {
     "Доступ к CRM не настроен. Попросите владельца или директора открыть «Настройки → Команда» и задать область доступа преподавателя.",
   "dashboard.loading": "Загрузка обзора...",
   "dashboard.hallRental.title": "Аренда зала (Mini App)",
+  "dashboard.hallRental.titleMain": "Аренда зала",
+  "dashboard.hallRental.titleSuffix": "(Mini App)",
   "dashboard.hallRental.subtitle": "Показатели канала Mini App. Кассовые долги и оплаты аренды не смешиваются с этим блоком.",
   "dashboard.hallRental.revenue": "Доход Mini App",
   "dashboard.hallRental.revenueHint": "Подтверждённые пополнения кошелька за месяц",
@@ -552,7 +554,7 @@ export const RU: Record<I18nKey, string> = {
   "dashboard.hallRental.expiringHoldsHint": "Ожидают оплаты, истекают в сутки",
   "dashboard.hallRental.conversion": "Конверсия заявок",
   "dashboard.hallRental.conversionHint": "За месяц: {{confirmed}} подтв. / {{rejected}} откл. из {{submitted}} созданных",
-  "dashboard.hallRental.openInbox": "Inbox →",
+  "dashboard.hallRental.openInbox": "Входящие →",
   "dashboard.hallRental.error.loadFailed": "Не удалось загрузить показатели Mini App",
 
   // finance

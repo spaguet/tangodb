@@ -496,6 +496,8 @@ export type I18nKey =
   | "dashboard.noAccessTeacher"
   | "dashboard.loading"
   | "dashboard.hallRental.title"
+  | "dashboard.hallRental.titleMain"
+  | "dashboard.hallRental.titleSuffix"
   | "dashboard.hallRental.subtitle"
   | "dashboard.hallRental.revenue"
   | "dashboard.hallRental.revenueHint"

@@ -251,12 +251,12 @@ export default function TeacherVacationDialog({
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2">
+            <div className="panel-form-divider flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={vacationMutation.isPending}
-                className={`flex-1 ${btnCancelCls}`}
+                className={`w-full sm:flex-1 ${btnCancelCls}`}
               >
                 {t("common.cancel")}
               </button>
@@ -270,7 +270,7 @@ export default function TeacherVacationDialog({
                   previewDates.length === 0 ||
                   previewOverCap
                 }
-                className={`flex-1 ${btnAddCls}`}
+                className={`w-full sm:flex-1 ${btnAddCls}`}
               >
                 <CalendarOff className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-center leading-snug">

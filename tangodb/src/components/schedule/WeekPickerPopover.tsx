@@ -72,7 +72,7 @@ export default function WeekPickerPopover({
   };
 
   return (
-    <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1 z-50 w-72 rounded-xl border border-slate-200 bg-white shadow-lg p-3">
+    <div className="absolute right-0 top-full mt-1 z-50 w-[min(18rem,calc(100vw-1.5rem))] max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 bg-white shadow-lg p-3">
       <div className="flex items-center justify-between mb-3">
         <button
           type="button"

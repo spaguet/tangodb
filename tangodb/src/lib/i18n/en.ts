@@ -541,6 +541,8 @@ export const EN: Record<I18nKey, string> = {
     "CRM access is not configured yet. Ask the owner or director to open Settings → Team and set the teacher scope.",
   "dashboard.loading": "Loading dashboard...",
   "dashboard.hallRental.title": "Hall rental (Mini App)",
+  "dashboard.hallRental.titleMain": "Hall rental",
+  "dashboard.hallRental.titleSuffix": "(Mini App)",
   "dashboard.hallRental.subtitle": "Mini App channel metrics only. Cashier rental debts and payments are not mixed into this block.",
   "dashboard.hallRental.revenue": "Mini App revenue",
   "dashboard.hallRental.revenueHint": "Confirmed wallet top-ups this month",

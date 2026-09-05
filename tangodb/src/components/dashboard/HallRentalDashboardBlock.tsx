@@ -52,9 +52,15 @@ export default function HallRentalDashboardBlock() {
   return (
     <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-3">
       <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-        <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-indigo-500" />
-          {t("dashboard.hallRental.title")}
+        <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2 min-w-0">
+          <Building2 className="w-4 h-4 text-indigo-500 shrink-0" />
+          <span className="min-w-0 leading-tight">
+            <span className="sm:hidden flex flex-col">
+              <span>{t("dashboard.hallRental.titleMain")}</span>
+              <span className="text-xs font-medium text-slate-500">{t("dashboard.hallRental.titleSuffix")}</span>
+            </span>
+            <span className="hidden sm:inline">{t("dashboard.hallRental.title")}</span>
+          </span>
         </h2>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">

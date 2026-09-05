@@ -554,24 +554,18 @@ export default function FinanceExpensesPage() {
         ) : null}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs px-4 py-3 flex justify-between items-center">
-        <span className="text-xs text-slate-500 font-sans">{t("finance.expenses.title")}</span>
-        <div className="text-right">
-          <p className="text-sm font-sans font-semibold text-slate-800">
-            {t("finance.expenses.total", { amount: formatCurrency(combinedTotal) })}
-          </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">
-            {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualTotal)} ·{" "}
-            {t("venueCosts.finance.venueTotal")}: {financeCostsUnavailable ? "—" : formatCurrency(venueTotal)}
-            {teacherExpenseTotal > 0 || financeCostsUnavailable ? (
-              <>
-                {" "}
-                · {t("venueCosts.finance.teacherExpenseTotal")}:{" "}
-                {financeCostsUnavailable ? "—" : formatCurrency(teacherExpenseTotal)}
-              </>
-            ) : null}
-          </p>
-        </div>
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs px-4 py-3 space-y-0.5">
+        <p className="text-xs text-slate-500 font-sans font-semibold">{t("finance.expenses.title")}</p>
+        <p className="text-[10px] text-slate-500 font-sans">
+          {t("venueCosts.finance.manualTotal")}: {formatCurrency(manualTotal)}
+        </p>
+        <p className="text-[10px] text-slate-500 font-sans">
+          {t("venueCosts.finance.venueTotal")}:{" "}
+          {financeCostsUnavailable ? "—" : formatCurrency(venueTotal)}
+        </p>
+        <p className="text-sm font-sans font-semibold text-slate-800 pt-0.5">
+          {t("finance.expenses.total", { amount: formatCurrency(combinedTotal) })}
+        </p>
       </div>
 
       <AnimatePresence>
