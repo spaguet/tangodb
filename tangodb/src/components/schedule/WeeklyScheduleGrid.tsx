@@ -17,7 +17,6 @@ interface WeeklyScheduleGridProps {
   onEmptyCellClick?: (dateISO: string, dayOfWeek: number, timeStart: string) => void;
   canClickEmpty?: boolean;
   highlightedLesson?: DisplayLesson | null;
-  forExport?: boolean;
 }
 
 export default function WeeklyScheduleGrid({
@@ -29,7 +28,6 @@ export default function WeeklyScheduleGrid({
   onEmptyCellClick,
   canClickEmpty = false,
   highlightedLesson = null,
-  forExport = false,
 }: WeeklyScheduleGridProps) {
   const { start: rangeStartMin, end: rangeEndMin } = useMemo(
     () => computeDisplayRange(lessons),
@@ -53,23 +51,11 @@ export default function WeeklyScheduleGrid({
   }, [rangeStartMin, rangeEndMin]);
 
   return (
-    <div
-      className={
-        forExport
-          ? "isolate overflow-visible"
-          : "isolate overflow-auto max-h-[70dvh] sm:max-h-none sm:overflow-x-auto sm:overflow-y-auto [-webkit-overflow-scrolling:touch]"
-      }
-    >
+    <div className="isolate overflow-auto max-h-[70dvh] sm:max-h-none sm:overflow-x-auto sm:overflow-y-auto [-webkit-overflow-scrolling:touch]">
       <div className="flex min-w-[640px]">
-        <div
-          className={`w-10 sm:w-12 shrink-0 border-r border-slate-100 bg-white ${
-            forExport ? "" : "sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(15,23,42,0.08)]"
-          }`}
-        >
+        <div className="sticky left-0 z-20 w-10 sm:w-12 shrink-0 border-r border-slate-100 bg-white shadow-[2px_0_4px_-2px_rgba(15,23,42,0.08)]">
           <div
-            className={`h-9 sm:h-11 border-b border-slate-100 bg-slate-50/95 ${
-              forExport ? "" : "sticky top-0 z-30 backdrop-blur-[2px]"
-            }`}
+            className="sticky top-0 z-30 h-9 sm:h-11 border-b border-slate-100 bg-slate-50/95 backdrop-blur-[2px]"
             aria-hidden
           />
           <div className="relative" style={{ height: gridHeight }}>
@@ -109,7 +95,6 @@ export default function WeeklyScheduleGrid({
               onEmptyCellClick={onEmptyCellClick}
               canClickEmpty={canClickEmpty}
               highlightedLesson={highlightedLesson}
-              forExport={forExport}
             />
           ))}
         </div>
