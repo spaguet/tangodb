@@ -56,8 +56,19 @@ export async function exportSchedulePng(
   return "downloaded";
 }
 
-export function buildSchedulePngFilename(weekStartISO: string, weekEndISO: string): string {
-  return `schedule_${weekStartISO}_${weekEndISO}.png`;
+function sanitizeLocationFilenamePart(value: string): string {
+  const trimmed = value.trim().replace(/[/\\?%*:|"<>]/g, "-");
+  const safe = trimmed.replace(/\s+/g, "_").slice(0, 48);
+  return safe || "location";
+}
+
+export function buildSchedulePngFilename(
+  weekStartISO: string,
+  weekEndISO: string,
+  locationLabel: string
+): string {
+  const slug = sanitizeLocationFilenamePart(locationLabel);
+  return `schedule_${slug}_${weekStartISO}_${weekEndISO}.png`;
 }
 
 export function waitForDomPaint(): Promise<void> {

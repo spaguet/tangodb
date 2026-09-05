@@ -1539,6 +1539,8 @@ export type I18nKey =
   | "personal.edit.repeatWeeklyHint"
   | "schedule.title"
   | "schedule.export.png"
+  | "schedule.export.pngPickLocationTitle"
+  | "schedule.export.pngPickLocationHint"
   | "schedule.export.pngInProgress"
   | "schedule.export.pngSuccess"
   | "schedule.export.pngFailed"

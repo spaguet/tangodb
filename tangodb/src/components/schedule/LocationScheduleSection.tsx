@@ -50,17 +50,12 @@ export default function LocationScheduleSection({
 
   const showGrid = lessons.length > 0 || (canClickEmpty && locationId);
 
-  return (
-    <section ref={sectionRef} className="bg-white rounded-xl border border-slate-200/90 shadow-xs">
-      <button
-        type="button"
-        onClick={() => setIsExpanded((prev) => !prev)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 bg-slate-50/60 text-left cursor-pointer hover:bg-slate-50 transition-colors rounded-t-xl"
-        aria-expanded={isExpanded}
-      >
-        <h3 className="text-sm font-semibold text-slate-800 tracking-tight min-w-0 truncate">
-          {locationName}
-        </h3>
+  const header = (
+    <>
+      <h3 className="text-sm font-semibold text-slate-800 tracking-tight min-w-0 truncate">
+        {locationName}
+      </h3>
+      {!forExport ? (
         <div className="flex items-center gap-2 shrink-0">
           {lessons.length > 0 ? (
             <span className="text-xs text-slate-500 tabular-nums">{lessons.length}</span>
@@ -71,7 +66,26 @@ export default function LocationScheduleSection({
             }`}
           />
         </div>
-      </button>
+      ) : null}
+    </>
+  );
+
+  return (
+    <section ref={sectionRef} className="bg-white rounded-xl border border-slate-200/90 shadow-xs">
+      {forExport ? (
+        <div className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 bg-slate-50/60 rounded-t-xl">
+          {header}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsExpanded((prev) => !prev)}
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 bg-slate-50/60 text-left cursor-pointer hover:bg-slate-50 transition-colors rounded-t-xl"
+          aria-expanded={isExpanded}
+        >
+          {header}
+        </button>
+      )}
 
       {isExpanded &&
         (!showGrid ? (

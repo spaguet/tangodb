@@ -1612,6 +1612,8 @@ export const RU: Record<I18nKey, string> = {
     "Новые даты создаются только на свободные слоты. Если на это время занятие уже есть, оно не дублируется.",
   "schedule.title": "Расписание",
   "schedule.export.png": "Скачать PNG",
+  "schedule.export.pngPickLocationTitle": "Выберите локацию",
+  "schedule.export.pngPickLocationHint": "В PNG попадёт расписание только выбранного зала за текущую неделю.",
   "schedule.export.pngInProgress": "Формирование PNG…",
   "schedule.export.pngSuccess": "Расписание сохранено в PNG",
   "schedule.export.pngFailed": "Не удалось сохранить PNG",

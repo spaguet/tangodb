@@ -48,6 +48,7 @@ import CreateRentalChannelDialog, { type RentalChannelChoice } from "./CreateRen
 import EventInfoPopup from "./EventInfoPopup";
 import RentalInfoPopup from "./RentalInfoPopup";
 import MiniAppRentalInfoPopup from "./MiniAppRentalInfoPopup";
+import SchedulePngExportDialog from "./SchedulePngExportDialog";
 import SellPackageModal from "../ui/SellPackageModal";
 
 const NO_LOCATION_KEY = "__no_location__";
@@ -89,6 +90,8 @@ export default function SchedulePageContainer() {
   const appliedFocusKeyRef = useRef<string | null>(null);
   const scheduleExportRef = useRef<HTMLDivElement>(null);
   const [exportingPng, setExportingPng] = useState(false);
+  const [pngExportPickerOpen, setPngExportPickerOpen] = useState(false);
+  const [pngExportLocationKey, setPngExportLocationKey] = useState<string | null>(null);
 
   const { weekEnd } = useMemo(() => getWeekRange(selectedWeekStart), [selectedWeekStart]);
 
@@ -490,40 +493,80 @@ export default function SchedulePageContainer() {
     void scheduleQuery.refetch();
   }, [scheduleQuery]);
 
-  const handleExportPng = useCallback(async () => {
-    const root = scheduleExportRef.current;
-    if (!root || exportingPng) return;
+  const handleExportPng = useCallback(
+    async (locationKey: string) => {
+      if (exportingPng) return;
 
-    const { weekStart, weekEnd } = getWeekRange(selectedWeekStart);
-    const weekStartISO = toISODateLocal(weekStart);
-    const weekEndISO = toISODateLocal(weekEnd);
-    const filename = buildSchedulePngFilename(weekStartISO, weekEndISO);
+      const locationLabel =
+        locationKey === NO_LOCATION_KEY
+          ? t("utils.noLocation")
+          : locationsQuery.locations.find((loc) => loc.id === locationKey)?.name ?? locationKey;
 
-    flushSync(() => {
-      setExportingPng(true);
-    });
+      const { weekStart, weekEnd } = getWeekRange(selectedWeekStart);
+      const weekStartISO = toISODateLocal(weekStart);
+      const weekEndISO = toISODateLocal(weekEnd);
+      const filename = buildSchedulePngFilename(weekStartISO, weekEndISO, locationLabel);
 
-    try {
-      await waitForDomPaint();
-      const result = await exportSchedulePng(root, filename);
-      if (result === "failed") {
+      setPngExportPickerOpen(false);
+
+      flushSync(() => {
+        setPngExportLocationKey(locationKey);
+        setExportingPng(true);
+      });
+
+      try {
+        await waitForDomPaint();
+        const root = scheduleExportRef.current;
+        if (!root) {
+          toast(t("schedule.export.pngFailed"), "error");
+          return;
+        }
+
+        const result = await exportSchedulePng(root, filename);
+        if (result === "failed") {
+          toast(t("schedule.export.pngFailed"), "error");
+        } else if (result === "cancelled") {
+          return;
+        } else {
+          toast(t("schedule.export.pngSuccess"), "success");
+        }
+      } catch {
         toast(t("schedule.export.pngFailed"), "error");
-      } else if (result === "cancelled") {
-        return;
-      } else {
-        toast(t("schedule.export.pngSuccess"), "success");
+      } finally {
+        setExportingPng(false);
+        setPngExportLocationKey(null);
       }
-    } catch {
-      toast(t("schedule.export.pngFailed"), "error");
-    } finally {
-      setExportingPng(false);
-    }
-  }, [exportingPng, selectedWeekStart, toast, t]);
+    },
+    [exportingPng, selectedWeekStart, locationsQuery.locations, toast, t]
+  );
 
   const weekRangeLabel = useMemo(() => {
     const { weekStart, weekEnd } = getWeekRange(selectedWeekStart);
     return formatWeekRangeLabel(weekStart, weekEnd, locale);
   }, [selectedWeekStart, locale]);
+
+  const pngExportLocationOptions = useMemo(() => {
+    const options: { id: string; label: string }[] = locationsQuery.locations.map((loc) => ({
+      id: loc.id,
+      label: loc.name,
+    }));
+    const noLocationLessons = lessonsByLocation.get(NO_LOCATION_KEY) ?? [];
+    if (noLocationLessons.length > 0) {
+      options.push({ id: NO_LOCATION_KEY, label: t("utils.noLocation") });
+    }
+    return options;
+  }, [locationsQuery.locations, lessonsByLocation, t]);
+
+  const pngExportLocationLabel = useMemo(() => {
+    if (!pngExportLocationKey) return "";
+    if (pngExportLocationKey === NO_LOCATION_KEY) return t("utils.noLocation");
+    return locationsQuery.locations.find((loc) => loc.id === pngExportLocationKey)?.name ?? "";
+  }, [pngExportLocationKey, locationsQuery.locations, t]);
+
+  const pngExportLessons = useMemo(() => {
+    if (!pngExportLocationKey) return [];
+    return lessonsByLocation.get(pngExportLocationKey) ?? [];
+  }, [pngExportLocationKey, lessonsByLocation]);
 
   const handleEmptyCellClick = useCallback(
     (locationId: string, locationName: string, dateISO: string, dayOfWeek: number, timeStart: string) => {
@@ -634,9 +677,9 @@ export default function SchedulePageContainer() {
           onCreateEventClick={() => setCreateEventOpen(true)}
           canManageRentals={canManageRentals}
           onCreateRentalClick={() => openRentalChannel(null)}
-          onExportPngClick={() => void handleExportPng()}
+          onExportPngClick={() => setPngExportPickerOpen(true)}
           exportingPng={exportingPng}
-          exportPngDisabled={!hasLocations && noLocationLessons.length === 0}
+          exportPngDisabled={pngExportLocationOptions.length === 0}
         />
       </div>
 
@@ -647,14 +690,7 @@ export default function SchedulePageContainer() {
           <AddLocationsInSettingsHint />
         </div>
       ) : (
-        <div ref={scheduleExportRef} className="space-y-4">
-          {exportingPng ? (
-            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xs">
-              <p className="text-sm font-semibold text-slate-800">{t("schedule.title")}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{weekRangeLabel}</p>
-            </div>
-          ) : null}
-
+        <div className="space-y-4">
           {locationsQuery.locations.map((location) => (
             <LocationScheduleSection
               key={location.id}
@@ -666,8 +702,7 @@ export default function SchedulePageContainer() {
               getLessonSubtitle={getLessonSubtitle}
               onLessonClick={handleLessonClick}
               canClickEmpty={canClickEmpty}
-              forceExpanded={exportingPng || focusLocationId === location.id}
-              forExport={exportingPng}
+              forceExpanded={focusLocationId === location.id}
               highlightedLesson={highlightedLesson}
               onEmptyCellClick={(dateISO, dayOfWeek, timeStart) =>
                 handleEmptyCellClick(location.id, location.name, dateISO, dayOfWeek, timeStart)
@@ -683,13 +718,39 @@ export default function SchedulePageContainer() {
               getLessonTitle={getLessonTitle}
               getLessonSubtitle={getLessonSubtitle}
               onLessonClick={handleLessonClick}
-              forceExpanded={exportingPng || focusLocationId === NO_LOCATION_KEY}
-              forExport={exportingPng}
+              forceExpanded={focusLocationId === NO_LOCATION_KEY}
               highlightedLesson={highlightedLesson}
             />
           )}
         </div>
       )}
+
+      {exportingPng && pngExportLocationKey ? (
+        <div
+          ref={scheduleExportRef}
+          className="fixed top-0 left-0 w-max max-w-none pointer-events-none opacity-0"
+          style={{ zIndex: -1 }}
+          aria-hidden="true"
+        >
+          <div className="space-y-3 p-1 bg-white">
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xs">
+              <p className="text-sm font-semibold text-slate-800">{t("schedule.title")}</p>
+              <p className="text-xs font-medium text-slate-700 mt-0.5">{pngExportLocationLabel}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{weekRangeLabel}</p>
+            </div>
+            <LocationScheduleSection
+              locationId={pngExportLocationKey === NO_LOCATION_KEY ? null : pngExportLocationKey}
+              locationName={pngExportLocationLabel}
+              weekStart={selectedWeekStart}
+              lessons={pngExportLessons}
+              getLessonTitle={getLessonTitle}
+              getLessonSubtitle={getLessonSubtitle}
+              forceExpanded
+              forExport
+            />
+          </div>
+        </div>
+      ) : null}
 
       {exportingPng ? (
         <div
@@ -898,6 +959,14 @@ export default function SchedulePageContainer() {
         toast={toast}
         onClose={() => setTeacherVacationOpen(false)}
         onSuccess={handleScheduleRefresh}
+      />
+
+      <SchedulePngExportDialog
+        open={pngExportPickerOpen}
+        options={pngExportLocationOptions}
+        initialLocationId={focusLocationId}
+        onClose={() => setPngExportPickerOpen(false)}
+        onExport={(locationId) => void handleExportPng(locationId)}
       />
 
       <SellPackageModal

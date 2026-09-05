@@ -1614,6 +1614,8 @@ export const EN: Record<I18nKey, string> = {
     "New dates are created only when the slot is free. Existing lessons at this time are not duplicated.",
   "schedule.title": "Schedule",
   "schedule.export.png": "Download PNG",
+  "schedule.export.pngPickLocationTitle": "Choose location",
+  "schedule.export.pngPickLocationHint": "The PNG will include only the selected hall schedule for the current week.",
   "schedule.export.pngInProgress": "Generating PNG…",
   "schedule.export.pngSuccess": "Schedule saved as PNG",
   "schedule.export.pngFailed": "Failed to save PNG",
