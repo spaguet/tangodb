@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-09-05 — CRM PNG: Telegram-ошибка в обычном Chrome
+
+- **Ошибка:** В мобильном Chrome «Скачать PNG» показывало «Разрешите загрузку файлов в Telegram».
+- **Причина:** `telegram-web-app.js` грузится всегда, поэтому `Telegram.WebApp.downloadFile` существует и вне Mini App; путь шёл в native Telegram API без `initData`.
+- **Как избежать:** Telegram download только при непустом `WebApp.initData`; в браузере — same-origin HTTP download (`Content-Disposition: attachment`), не share sheet и не `downloadFile`.
+
 ### 2026-09-05 — CRM PNG в Mini App: share sheet вместо сохранения
 
 - **Ошибка:** На Android «Скачать PNG» в CRM Mini App открывал системный share, хотя QR в Mini App арендатора сохранялся на устройство.

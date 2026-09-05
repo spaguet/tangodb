@@ -21,7 +21,7 @@ import {
   buildSchedulePngFilename,
   exportSchedulePng,
 } from "../../lib/exportSchedulePng";
-import { hasTelegramDownloadFile } from "../../lib/telegram";
+import { canUseTelegramFileDownload } from "../../lib/telegram";
 import { getWeekRange, isPastDate, toISODateLocal, formatWeekRangeLabel } from "../../lib/scheduleWeek";
 import { parseScheduleFocusParams, weekStartFromFocusDate } from "../../lib/scheduleFocus";
 import type { DisplayLesson, EventDisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, RentalDisplayLesson } from "../../types";
@@ -523,7 +523,7 @@ export default function SchedulePageContainer() {
         });
         if (result === "failed") {
           toast(
-            t(hasTelegramDownloadFile() ? "schedule.export.pngTelegramFailed" : "schedule.export.pngFailed"),
+            t(canUseTelegramFileDownload() ? "schedule.export.pngTelegramFailed" : "schedule.export.pngFailed"),
             "error"
           );
         } else if (result === "cancelled") {
@@ -535,7 +535,7 @@ export default function SchedulePageContainer() {
         }
       } catch {
         toast(
-          t(hasTelegramDownloadFile() ? "schedule.export.pngTelegramFailed" : "schedule.export.pngFailed"),
+          t(canUseTelegramFileDownload() ? "schedule.export.pngTelegramFailed" : "schedule.export.pngFailed"),
           "error"
         );
       } finally {

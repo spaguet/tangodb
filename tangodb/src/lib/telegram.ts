@@ -76,15 +76,20 @@ export function isSyntheticTelegramEmail(email: string | undefined | null): bool
   return /^tg_\d+@tangodb\.auth$/i.test(email.trim());
 }
 
-/** True when opened inside the Telegram client (Mini App). */
+/** True when opened inside the Telegram client (Mini App), not a regular browser. */
 export function isInsideTelegramClient(): boolean {
   if (typeof window === "undefined") return false;
   const webApp = window.Telegram?.WebApp;
-  return Boolean(webApp && webApp.platform !== "unknown");
+  if (!webApp) return false;
+  return typeof webApp.initData === "string" && webApp.initData.length > 0;
 }
 
 export function hasTelegramDownloadFile(): boolean {
   return typeof window.Telegram?.WebApp?.downloadFile === "function";
+}
+
+export function canUseTelegramFileDownload(): boolean {
+  return isInsideTelegramClient() && hasTelegramDownloadFile();
 }
 
 /** Native file download inside Telegram (Bot API 8.0+, HTTPS URL required). */

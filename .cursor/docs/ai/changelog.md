@@ -1,3 +1,4 @@
+2026-09-05 — fix(crm): микропатч **2.9.85** — «Скачать PNG» в обычном браузере больше не идёт в Telegram `downloadFile` (скрипт WebApp есть и в Chrome); HTTP-скачивание через `/api/export-file`. Mini App — по-прежнему native download.
 2026-09-05 — fix(crm): микропатч **2.9.84** — PNG расписания в Telegram Mini App: same-origin `/api/export-file` (как QR), `image/png` в bucket `exports` (`20261088000001`); success только на `downloadFile` `success`.
 2026-09-05 — fix(crm): микропатч **2.9.83** — экспорт PNG расписания в Telegram Mini App (Android): нативное сохранение через `WebApp.downloadFile` вместо share sheet без «Сохранить в галерею».
 2026-09-05 — fix(hall-rent): Mini App **0.1.2** — сетка «Моя бронь» снова `indigo-600` (брендовый синий Studio Controller).

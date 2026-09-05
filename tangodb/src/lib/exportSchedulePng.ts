@@ -1,11 +1,10 @@
-import { isMobileExportContext } from "./exportCsv";
 import {
   crmExportProxyUrl,
   sanitizeExportFilename,
   verifyImageDownloadUrl,
 } from "./exportFileProxy";
 import { supabase } from "./supabase";
-import { downloadFileViaTelegramNative, hasTelegramDownloadFile } from "./telegram";
+import { canUseTelegramFileDownload, downloadFileViaTelegramNative } from "./telegram";
 import { computeDisplayRange, isPastDate, toISODateLocal } from "./scheduleWeek";
 import {
   gridHeightPx,
@@ -91,16 +90,33 @@ async function uploadPngSignedUrl(blob: Blob, filename: string): Promise<string 
   return data.signedUrl;
 }
 
-async function trySharePngFile(file: File): Promise<"shared" | "failed" | "cancelled"> {
-  if (typeof navigator.share !== "function") return "failed";
-  try {
-    if (navigator.canShare && !navigator.canShare({ files: [file] })) return "failed";
-    await navigator.share({ files: [file], title: file.name });
-    return "shared";
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") return "cancelled";
-    return "failed";
+function downloadHttpsFile(url: string, filename: string): void {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.rel = "noopener";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+async function saveSchedulePngInBrowser(blob: Blob, filename: string): Promise<SchedulePngExportResult> {
+  const origin = window.location.origin;
+  if (/^https:\/\//i.test(origin)) {
+    const signedUrl = await uploadPngSignedUrl(blob, filename);
+    if (signedUrl) {
+      const safeName = sanitizeExportFilename(filename);
+      const proxyUrl = crmExportProxyUrl(origin, signedUrl, safeName);
+      if (await verifyImageDownloadUrl(proxyUrl)) {
+        downloadHttpsFile(proxyUrl, safeName);
+        return "downloaded";
+      }
+    }
   }
+
+  downloadBlob(blob, filename);
+  return "downloaded";
 }
 
 async function saveSchedulePngViaTelegram(blob: Blob, filename: string): Promise<SchedulePngExportResult> {
@@ -121,20 +137,11 @@ async function saveSchedulePngViaTelegram(blob: Blob, filename: string): Promise
 }
 
 async function saveSchedulePngBlob(blob: Blob, filename: string): Promise<SchedulePngExportResult> {
-  if (hasTelegramDownloadFile()) {
+  if (canUseTelegramFileDownload()) {
     return saveSchedulePngViaTelegram(blob, filename);
   }
 
-  const file = new File([blob], filename, { type: "image/png" });
-
-  if (isMobileExportContext()) {
-    const shared = await trySharePngFile(file);
-    if (shared === "shared") return "shared";
-    if (shared === "cancelled") return "cancelled";
-  }
-
-  downloadBlob(blob, filename);
-  return "downloaded";
+  return saveSchedulePngInBrowser(blob, filename);
 }
 
 function ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
