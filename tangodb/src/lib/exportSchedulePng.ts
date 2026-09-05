@@ -1,10 +1,11 @@
 import { isMobileExportContext } from "./exportCsv";
-import { supabase } from "./supabase";
 import {
-  downloadFileViaTelegram,
-  hasTelegramDownloadFile,
-  isInsideTelegramClient,
-} from "./telegram";
+  crmExportProxyUrl,
+  sanitizeExportFilename,
+  verifyImageDownloadUrl,
+} from "./exportFileProxy";
+import { supabase } from "./supabase";
+import { downloadFileViaTelegramNative, hasTelegramDownloadFile } from "./telegram";
 import { computeDisplayRange, isPastDate, toISODateLocal } from "./scheduleWeek";
 import {
   gridHeightPx,
@@ -62,7 +63,7 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 function sanitizeStorageFilename(filename: string): string {
-  return filename.replace(/[^\w.\-]/g, "_").replace(/_+/g, "_") || "schedule.png";
+  return sanitizeExportFilename(filename);
 }
 
 async function uploadPngSignedUrl(blob: Blob, filename: string): Promise<string | null> {
@@ -102,18 +103,31 @@ async function trySharePngFile(file: File): Promise<"shared" | "failed" | "cance
   }
 }
 
+async function saveSchedulePngViaTelegram(blob: Blob, filename: string): Promise<SchedulePngExportResult> {
+  const signedUrl = await uploadPngSignedUrl(blob, filename);
+  if (!signedUrl) return "failed";
+
+  const origin = window.location.origin;
+  if (!/^https:\/\//i.test(origin)) return "failed";
+
+  const safeName = sanitizeExportFilename(filename);
+  const proxyUrl = crmExportProxyUrl(origin, signedUrl, safeName);
+  if (!(await verifyImageDownloadUrl(proxyUrl))) return "failed";
+
+  const telegramResult = await downloadFileViaTelegramNative(proxyUrl, safeName);
+  if (telegramResult === "ok") return "telegram";
+  if (telegramResult === "cancelled") return "cancelled";
+  return "failed";
+}
+
 async function saveSchedulePngBlob(blob: Blob, filename: string): Promise<SchedulePngExportResult> {
-  if (isInsideTelegramClient() && hasTelegramDownloadFile()) {
-    const signedUrl = await uploadPngSignedUrl(blob, filename);
-    if (signedUrl) {
-      const started = await downloadFileViaTelegram(signedUrl, filename);
-      if (started) return "telegram";
-    }
+  if (hasTelegramDownloadFile()) {
+    return saveSchedulePngViaTelegram(blob, filename);
   }
 
   const file = new File([blob], filename, { type: "image/png" });
 
-  if (isMobileExportContext() && !isInsideTelegramClient()) {
+  if (isMobileExportContext()) {
     const shared = await trySharePngFile(file);
     if (shared === "shared") return "shared";
     if (shared === "cancelled") return "cancelled";

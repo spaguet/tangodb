@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-09-05 — CRM PNG в Mini App: share sheet вместо сохранения
+
+- **Ошибка:** На Android «Скачать PNG» в CRM Mini App открывал системный share, хотя QR в Mini App арендатора сохранялся на устройство.
+- **Причина:** `Telegram.WebApp.downloadFile` принимает только HTTPS с домена Mini App; в CRM передавался signed URL `supabase.co`. Bucket `exports` не разрешал `image/png`, upload тихо падал. Callback `downloading` считался успехом, затем `<a download>` / share sheet.
+- **Как избежать:** как QR — same-origin proxy `/api/export-file` с allowlist `exports` signed URL, self-contained `api/*`; HEAD (image/*, ≥200 B) до `downloadFile`; UI success только на `status === "success"`; MIME PNG в bucket.
+
 ### 2026-09-05 — PNG расписания: белый файл
 
 - **Ошибка:** «Скачать PNG» сохранял пустую белую картинку.

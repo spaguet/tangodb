@@ -1619,6 +1619,7 @@ export const EN: Record<I18nKey, string> = {
   "schedule.export.pngInProgress": "Generating PNG…",
   "schedule.export.pngSuccess": "Schedule saved as PNG",
   "schedule.export.pngFailed": "Failed to save PNG",
+  "schedule.export.pngTelegramFailed": "Could not save the PNG. Allow file downloads in Telegram and try again.",
   "schedule.empty": "Schedule is empty",
   "schedule.error.loadFailed": "Failed to load schedule",
   "schedule.error.pastAdd": "Cannot add class in the past",

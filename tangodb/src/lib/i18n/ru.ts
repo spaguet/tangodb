@@ -1617,6 +1617,7 @@ export const RU: Record<I18nKey, string> = {
   "schedule.export.pngInProgress": "Формирование PNG…",
   "schedule.export.pngSuccess": "Расписание сохранено в PNG",
   "schedule.export.pngFailed": "Не удалось сохранить PNG",
+  "schedule.export.pngTelegramFailed": "Не удалось сохранить PNG. Разрешите загрузку файлов в Telegram и повторите.",
   "schedule.empty": "Расписание пусто",
   "schedule.error.loadFailed": "Не удалось загрузить расписание",
   "schedule.error.pastAdd": "Нельзя добавить занятие в прошлом",

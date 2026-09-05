@@ -1544,6 +1544,7 @@ export type I18nKey =
   | "schedule.export.pngInProgress"
   | "schedule.export.pngSuccess"
   | "schedule.export.pngFailed"
+  | "schedule.export.pngTelegramFailed"
   | "schedule.empty"
   | "schedule.error.loadFailed"
   | "schedule.error.pastAdd"

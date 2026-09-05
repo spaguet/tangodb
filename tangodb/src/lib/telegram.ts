@@ -102,3 +102,37 @@ export function downloadFileViaTelegram(url: string, fileName: string): Promise<
     });
   });
 }
+
+export type TelegramNativeDownloadResult = "ok" | "cancelled" | "unavailable" | "failed";
+
+/** Same-origin HTTPS only; success UI only on callback `success` (not `downloading`). */
+export function downloadFileViaTelegramNative(
+  url: string,
+  fileName: string
+): Promise<TelegramNativeDownloadResult> {
+  const downloadFile = window.Telegram?.WebApp?.downloadFile;
+  if (typeof downloadFile !== "function") return Promise.resolve("unavailable");
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result: TelegramNativeDownloadResult) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+
+    const timeout = window.setTimeout(() => finish("failed"), 30_000);
+    try {
+      downloadFile({ url, file_name: fileName }, (status) => {
+        window.clearTimeout(timeout);
+        if (status === "success") finish("ok");
+        else if (status === "cancelled") finish("cancelled");
+        else if (status === "downloading") return;
+        else finish("failed");
+      });
+    } catch {
+      window.clearTimeout(timeout);
+      finish("failed");
+    }
+  });
+}
