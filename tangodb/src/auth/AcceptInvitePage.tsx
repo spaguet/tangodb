@@ -54,10 +54,20 @@ export default function AcceptInvitePage() {
   };
 
   useEffect(() => {
-    const token = extractInviteTokenFromUrl();
-    if (!token) return;
-    scrubInviteTokenFromUrl();
-    setActiveToken(token);
+    const syncTokenFromUrl = () => {
+      const token = extractInviteTokenFromUrl();
+      if (!token) return;
+      scrubInviteTokenFromUrl();
+      setActiveToken((prev) => (prev === token ? prev : token));
+      setPreviewReady(false);
+      setStatus("idle");
+      setWrongAccount(false);
+      acceptStartedRef.current = false;
+    };
+
+    syncTokenFromUrl();
+    window.addEventListener("hashchange", syncTokenFromUrl);
+    return () => window.removeEventListener("hashchange", syncTokenFromUrl);
   }, []);
 
   useEffect(() => {

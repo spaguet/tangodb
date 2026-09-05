@@ -19,11 +19,7 @@ export function normalizeInviteToken(raw: string): string {
   return `TDB-INV-${match[1].toLowerCase()}`;
 }
 
-/** Parse token from search/hash; hash may include Telegram params after the token. */
-export function parseInviteTokenFromLocation(search: string, hash: string, stashed = ""): string {
-  const fromStash = normalizeInviteToken(stashed);
-  if (fromStash) return fromStash;
-
+function readTokenFromSearchAndHash(search: string, hash: string): string {
   const fromQuery = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search).get(
     "token"
   );
@@ -43,14 +39,29 @@ export function parseInviteTokenFromLocation(search: string, hash: string, stash
   return "";
 }
 
-/** Read invite token once; boot script stash beats Telegram hash rewrite. */
+/** URL token wins; stash is only for when Telegram wiped the hash after boot. */
+export function parseInviteTokenFromLocation(search: string, hash: string, stashed = ""): string {
+  const fromUrl = readTokenFromSearchAndHash(search, hash);
+  if (fromUrl) return fromUrl;
+
+  return normalizeInviteToken(stashed);
+}
+
+function syncStashedInviteToken(token: string): void {
+  if (typeof window === "undefined" || !token) return;
+  window.__TDB_INVITE_TOKEN__ = token;
+}
+
+/** Read invite token from the current URL (hash/query first, boot stash as fallback). */
 export function extractInviteTokenFromUrl(): string {
   if (typeof window === "undefined") return "";
-  return parseInviteTokenFromLocation(
+  const token = parseInviteTokenFromLocation(
     window.location.search,
     window.location.hash,
     window.__TDB_INVITE_TOKEN__ ?? ""
   );
+  if (token) syncStashedInviteToken(token);
+  return token;
 }
 
 export function clearStashedInviteToken(): void {
