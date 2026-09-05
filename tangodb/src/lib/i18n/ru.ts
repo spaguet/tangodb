@@ -1686,6 +1686,7 @@ export const RU: Record<I18nKey, string> = {
   "schedule.miniapp.packStart": "Дата первой недели",
   "schedule.miniapp.selectRenter": "Выберите арендатора",
   "schedule.miniapp.needTelegram": "Нужен Telegram ID на карточке",
+  "schedule.miniapp.telegramRequired": "Укажите Telegram ID арендатора (только цифры).",
   "schedule.miniapp.weekdays": "Дни недели",
   "schedule.miniapp.packHint": "Конец пакета = дата начала + 27 дней. Первая дата должна попадать в выбранные дни.",
   "schedule.miniapp.packStartWeekdayMismatch": "Дата первой недели должна попадать в выбранные дни недели.",

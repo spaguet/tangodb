@@ -1688,6 +1688,7 @@ export const EN: Record<I18nKey, string> = {
   "schedule.miniapp.packStart": "First week date",
   "schedule.miniapp.selectRenter": "Select a renter",
   "schedule.miniapp.needTelegram": "The renter card needs a Telegram ID",
+  "schedule.miniapp.telegramRequired": "Enter the renter's Telegram ID (digits only).",
   "schedule.miniapp.weekdays": "Weekdays",
   "schedule.miniapp.packHint": "Pack end = start date + 27 days. The first date must be one of the selected weekdays.",
   "schedule.miniapp.packStartWeekdayMismatch": "The first date must be one of the selected weekdays.",

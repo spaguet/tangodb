@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Smartphone, X } from "lucide-react";
+import { Plus, Smartphone, X } from "lucide-react";
 import { resolveMutationError } from "../../lib/resolveMutationError";
+import { parseTelegramIdInput } from "../../lib/renterNormalize";
 import {
   addCalendarDaysIso,
   isMiniAppDurationValid,
@@ -13,6 +14,7 @@ import {
 import { validFromInWeekdays, weekdaysIncludingDate } from "../../lib/packWeekdays";
 import { formatCurrency } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
+import { useUpsertRenter } from "../../hooks/useRenterCrm";
 import { useRenters } from "../../hooks/useRenters";
 import { useLocationRentalHourRates } from "../../hooks/useLocationRentalHourRates";
 import {
@@ -21,7 +23,7 @@ import {
   useRenterQuoteBooking,
 } from "../../hooks/useRenterMiniAppStaff";
 import type { I18nKey } from "../../lib/i18n/keys";
-import AppSelect from "../ui/AppSelect";
+import AppSelect, { fieldCls } from "../ui/AppSelect";
 import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
 import DatePickerField from "../ui/DatePickerField";
 import type { ScheduleCellPrefill } from "./AddLessonTypePopup";
@@ -97,6 +99,7 @@ export default function CreateMiniAppBookingDialog({
   const { t } = useI18n();
   const ratesQuery = useLocationRentalHourRates(open);
   const rentersQuery = useRenters({ enabled: open, activeOnly: true });
+  const upsertRenterMutation = useUpsertRenter();
   const quoteMutation = useRenterQuoteBooking();
   const createMutation = useRenterCreateBooking();
   const packMutation = useRenterCreateRecurringPack();
@@ -109,6 +112,9 @@ export default function CreateMiniAppBookingDialog({
   const [timeEnd, setTimeEnd] = useState("13:00");
   const [locationId, setLocationId] = useState("");
   const [renterId, setRenterId] = useState("");
+  const [showNewRenter, setShowNewRenter] = useState(false);
+  const [newRenterName, setNewRenterName] = useState("");
+  const [newRenterTelegramId, setNewRenterTelegramId] = useState("");
   const [weekdays, setWeekdays] = useState<number[]>([1]);
   const [quote, setQuote] = useState<StaffQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
@@ -140,6 +146,33 @@ export default function CreateMiniAppBookingDialog({
     isMiniAppDurationValid(timeStart, timeEnd) &&
     (mode === "one_time" || (weekdays.length > 0 && packWeekdaysValid));
 
+  const handleCreateRenter = async () => {
+    const name = newRenterName.trim();
+    if (!name) {
+      toast(t("schedule.rental.renterNameRequired"), "error");
+      return;
+    }
+    const parsedTg = parseTelegramIdInput(newRenterTelegramId);
+    if (!parsedTg.ok || !parsedTg.value) {
+      toast(t("schedule.miniapp.telegramRequired"), "error");
+      return;
+    }
+    const res = await upsertRenterMutation.mutateAsync({
+      displayName: name,
+      counterpartyType: "individual",
+      telegramId: parsedTg.value,
+    });
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "schedule.rental.renterCreateFailed", t), "error");
+      return;
+    }
+    setRenterId(res.renterId);
+    setShowNewRenter(false);
+    setNewRenterName("");
+    setNewRenterTelegramId("");
+    toast(t("schedule.rental.renterCreated"), "success");
+  };
+
   const handleRentalDateChange = (next: string) => {
     setRentalDate(next);
     if (mode === "pack" && next) {
@@ -160,6 +193,9 @@ export default function CreateMiniAppBookingDialog({
     setRentalDate(prefill?.date ?? "");
     setLocationId(prefill?.locationId ?? channelLocations[0]?.id ?? "");
     setRenterId(preselectedRenterId ?? "");
+    setShowNewRenter(false);
+    setNewRenterName("");
+    setNewRenterTelegramId("");
     setMode("one_time");
     setQuote(null);
     idempotencyKeyRef.current = crypto.randomUUID();
@@ -391,15 +427,62 @@ export default function CreateMiniAppBookingDialog({
                   ))}
                 </AppSelect>
               ) : null}
-              <AppSelect label={t("schedule.rental.renterLabel")} value={renterId} onChange={(e) => setRenterId(e.target.value)}>
-                <option value="">{t("schedule.miniapp.selectRenter")}</option>
-                {rentersWithTelegram.map((renter) => (
-                  <option key={renter.id} value={renter.id}>{renter.displayName}</option>
-                ))}
-              </AppSelect>
-              {rentersWithTelegram.length === 0 ? (
-                <p className="text-xs text-slate-500">{t("schedule.miniapp.needTelegram")}</p>
-              ) : null}
+              {!showNewRenter ? (
+                <div className="space-y-2">
+                  <AppSelect label={t("schedule.rental.renterLabel")} value={renterId} onChange={(e) => setRenterId(e.target.value)}>
+                    <option value="">{t("schedule.miniapp.selectRenter")}</option>
+                    {rentersWithTelegram.map((renter) => (
+                      <option key={renter.id} value={renter.id}>{renter.displayName}</option>
+                    ))}
+                  </AppSelect>
+                  {rentersWithTelegram.length === 0 ? (
+                    <p className="text-xs text-slate-500">{t("schedule.miniapp.needTelegram")}</p>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setShowNewRenter(true)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {t("schedule.rental.addRenter")}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2 rounded-lg border border-amber-100 bg-amber-50/50 p-3">
+                  <div>
+                    <span className={labelCls}>{t("schedule.rental.newRenterName")}</span>
+                    <input className={fieldCls} value={newRenterName} onChange={(e) => setNewRenterName(e.target.value)} />
+                  </div>
+                  <div>
+                    <span className={labelCls}>{t("renters.form.telegramId")}</span>
+                    <input
+                      className={fieldCls}
+                      value={newRenterTelegramId}
+                      onChange={(e) => setNewRenterTelegramId(e.target.value)}
+                      placeholder={t("renters.form.telegramIdPlaceholder")}
+                      inputMode="numeric"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">{t("schedule.miniapp.needTelegram")}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleCreateRenter()}
+                      disabled={upsertRenterMutation.isPending}
+                      className={btnAddCls}
+                    >
+                      {t("common.save")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewRenter(false)}
+                      className="px-3 py-1.5 text-xs font-semibold text-slate-600 cursor-pointer"
+                    >
+                      {t("common.cancel")}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {mode === "pack" ? (
                 <div>
