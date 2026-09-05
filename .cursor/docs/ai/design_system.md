@@ -533,10 +533,27 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 ---
 
+## Финансовый обзор — структура выручки (`FinancialDashboard.tsx`)
+
+Константа `SPLIT_COLORS` — stacked bar и легенда:
+
+| Сегмент | Класс |
+|---------|-------|
+| Абонементы | `bg-indigo-500` |
+| Персональные | `bg-indigo-700` |
+| Разовые | `bg-indigo-400` |
+| Прочее | `bg-slate-400` |
+| Сдача зала (доход) | `bg-slate-600` |
+
+Полная таблица hex — `.cursor/docs/ai/crm_color_migration.md`.
+
+---
+
 ## Changelog
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-09-05 | Структура выручки: rental `slate-600` (не violet); ссылка на `crm_color_migration.md`. |
 | 2026-09-05 | Миграция палитры Studio Controller: тёплый indigo, rose/amber, green для успеха, мягкие блоки расписания. Токены в `index.css` `@theme`. |
 | 2026-08-01 | Компактные контролы h-8 (32px): поля, select, кнопки — эталон Telegram в header; add/save/open без uppercase по всему CRM. |
 | 2026-08-01 | `btnOpenCls` — sentence case (как add), без uppercase: Мероприятие / Аренда / Отпуск преподавателя. |
