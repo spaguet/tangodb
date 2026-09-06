@@ -37,6 +37,12 @@ export function hasScheduleGroupAccess(scope: TeacherScope, groupId?: string | n
   return scope.schedule_group_ids.includes(groupId);
 }
 
+export function hasLocationAccess(scope: TeacherScope, locationId?: string | null): boolean {
+  if (!locationId) return false;
+  if (scope.all_locations) return true;
+  return scope.location_ids.includes(locationId);
+}
+
 export function isTeacherScopeConfigured(scope: TeacherScope): boolean {
   return teacherHasAnyScopeAccess(scope);
 }

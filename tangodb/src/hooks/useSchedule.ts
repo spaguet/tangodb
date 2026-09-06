@@ -17,6 +17,8 @@ import { useRentalsForWeek, rentalsQueryKey } from "./useRentals";
 import { scheduleGroupsQueryKey } from "./useScheduleGroups";
 import { groupCapacityQueryKey } from "./useGroupCapacity";
 import { kickCalendarSyncInBackground } from "../lib/googleCalendarApi";
+import { applySubstitutesToGroupDisplay, applySubstitutesToPersonalDisplay } from "../lib/lessonSubstitute";
+import { useLessonSubstitutes } from "./useLessonSubstitutes";
 
 export const scheduleQueryKey = ["schedule"] as const;
 
@@ -103,6 +105,8 @@ export function useScheduleForWeek(
     excludeCancelled: true,
   });
 
+  const substitutesQuery = useLessonSubstitutes({ enabled: queryEnabled });
+
   const eventsQuery = useCalendarEventsForWeek(weekStartISO, weekEndISO, queryEnabled);
   const rentalsQuery = useRentalsForWeek(weekStartISO, weekEndISO, queryEnabled);
 
@@ -128,8 +132,12 @@ export function useScheduleForWeek(
     if (!scheduleQuery.data) return undefined;
 
     const slots = scheduleQuery.data;
-    const groupLessons = expandSlotsToWeek(slots, weekStart, weekEnd);
-    const personalLessons: PersonalDisplayLesson[] = (personalQuery.data ?? []).map((lesson) => ({
+    const groupLessons = applySubstitutesToGroupDisplay(
+      expandSlotsToWeek(slots, weekStart, weekEnd),
+      substitutesQuery.data ?? []
+    );
+    const personalLessons: PersonalDisplayLesson[] = applySubstitutesToPersonalDisplay(
+      (personalQuery.data ?? []).map((lesson) => ({
       kind: "personal" as const,
       lessonId: lesson.id,
       date: lesson.date,
@@ -149,7 +157,9 @@ export function useScheduleForWeek(
       subscriptionId: lesson.subscriptionId ?? null,
       price: lesson.price,
       paidAmount: lesson.paidAmount,
-    }));
+    })),
+      substitutesQuery.data ?? []
+    );
 
     const eventLessons = eventsQuery.data ?? [];
     const rentalLessons = rentalsQuery.data ?? [];
@@ -162,7 +172,7 @@ export function useScheduleForWeek(
       rentalLessons,
       lessons: [...groupLessons, ...personalLessons, ...eventLessons, ...rentalLessons],
     };
-  }, [scheduleQuery.data, personalQuery.data, eventsQuery.data, rentalsQuery.data, weekStart, weekEnd]);
+  }, [scheduleQuery.data, personalQuery.data, eventsQuery.data, rentalsQuery.data, substitutesQuery.data, weekStart, weekEnd]);
 
   const refetch = async () => {
     const [scheduleResult] = await Promise.all([
@@ -170,6 +180,7 @@ export function useScheduleForWeek(
       personalLessonsEnabled ? personalQuery.refetch() : Promise.resolve(null),
       eventsQuery.refetch(),
       rentalsQuery.refetch(),
+      substitutesQuery.refetch(),
     ]);
     return scheduleResult;
   };
@@ -182,9 +193,10 @@ export function useScheduleForWeek(
       scheduleQuery.isLoading ||
       (personalLessonsEnabled && personalQuery.isLoading) ||
       eventsQuery.isLoading ||
-      rentalsQuery.isLoading,
-    isError: scheduleQuery.isError || personalQuery.isError || eventsQuery.isError || rentalsQuery.isError,
-    error: scheduleQuery.error ?? personalQuery.error ?? eventsQuery.error ?? rentalsQuery.error,
+      rentalsQuery.isLoading ||
+      substitutesQuery.isLoading,
+    isError: scheduleQuery.isError || personalQuery.isError || eventsQuery.isError || rentalsQuery.isError || substitutesQuery.isError,
+    error: scheduleQuery.error ?? personalQuery.error ?? eventsQuery.error ?? rentalsQuery.error ?? substitutesQuery.error,
   };
 }
 
@@ -196,6 +208,7 @@ function invalidateScheduleQueries(
   void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: calendarEventsQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: ["scheduleCancellations"], refetchType: "active" });
+  void queryClient.invalidateQueries({ queryKey: ["lessonOccurrenceSubstitutes"], refetchType: "active" });
   kickCalendarSyncInBackground(organizationId);
 }
 

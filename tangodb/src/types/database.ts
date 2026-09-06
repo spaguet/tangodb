@@ -1685,6 +1685,116 @@ export type Database = {
           },
         ]
       }
+      lesson_occurrence_substitutes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          occurrence_date: string
+          occurrence_kind: string
+          organization_id: string
+          original_teacher_member_id: string
+          personal_lesson_id: string | null
+          schedule_slot_id: string | null
+          substitute_teacher_member_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          occurrence_date: string
+          occurrence_kind: string
+          organization_id: string
+          original_teacher_member_id: string
+          personal_lesson_id?: string | null
+          schedule_slot_id?: string | null
+          substitute_teacher_member_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          occurrence_date?: string
+          occurrence_kind?: string
+          organization_id?: string
+          original_teacher_member_id?: string
+          personal_lesson_id?: string | null
+          schedule_slot_id?: string | null
+          substitute_teacher_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_occurrence_substitutes_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "lesson_occurrence_substitutes_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "lesson_occurrence_substitutes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_occurrence_substitutes_organization_id_original_tea_fkey"
+            columns: ["organization_id", "original_teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "lesson_occurrence_substitutes_organization_id_original_tea_fkey"
+            columns: ["organization_id", "original_teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "lesson_occurrence_substitutes_organization_id_personal_les_fkey"
+            columns: ["organization_id", "personal_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "personal_lessons"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "lesson_occurrence_substitutes_organization_id_personal_les_fkey"
+            columns: ["organization_id", "personal_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "personal_lessons_teacher_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "lesson_occurrence_substitutes_organization_id_schedule_slo_fkey"
+            columns: ["organization_id", "schedule_slot_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_slots"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "lesson_occurrence_substitutes_organization_id_substitute_t_fkey"
+            columns: ["organization_id", "substitute_teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "lesson_occurrence_substitutes_organization_id_substitute_t_fkey"
+            columns: ["organization_id", "substitute_teacher_member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
       location_rental_hour_rates: {
         Row: {
           created_at: string
@@ -2250,6 +2360,117 @@ export type Database = {
           },
         ]
       }
+      organization_rental_qr_assets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          file_size: number
+          height: number | null
+          id: string
+          is_active: boolean
+          label: string | null
+          mime_type: string
+          organization_id: string
+          storage_path: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          file_size: number
+          height?: number | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          mime_type: string
+          organization_id: string
+          storage_path: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          file_size?: number
+          height?: number | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          mime_type?: string
+          organization_id?: string
+          storage_path?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_rental_qr_assets_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "organization_rental_qr_assets_organization_id_created_by_fkey"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "organization_rental_qr_assets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_renter_channel: {
+        Row: {
+          app_short_name: string | null
+          bot_token_last4: string | null
+          bot_username: string | null
+          encrypted_bot_token: string | null
+          organization_id: string
+          telegram_bot_id: number | null
+          telegram_chat_url: string | null
+          updated_at: string
+          webhook_secret: string | null
+          webhook_token: string | null
+        }
+        Insert: {
+          app_short_name?: string | null
+          bot_token_last4?: string | null
+          bot_username?: string | null
+          encrypted_bot_token?: string | null
+          organization_id: string
+          telegram_bot_id?: number | null
+          telegram_chat_url?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+          webhook_token?: string | null
+        }
+        Update: {
+          app_short_name?: string | null
+          bot_token_last4?: string | null
+          bot_username?: string | null
+          encrypted_bot_token?: string | null
+          organization_id?: string
+          telegram_bot_id?: number | null
+          telegram_chat_url?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+          webhook_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_renter_channel_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_settings: {
         Row: {
           admin_can_accept_payments: boolean
@@ -2273,16 +2494,16 @@ export type Database = {
           organization_id: string
           pair_cycle_enabled: boolean
           rental_billing_profile: Json
-          teachers_can_edit_clients: boolean
+          teachers_can_accept_payments: boolean
           teachers_can_add_clients: boolean
+          teachers_can_add_group_lessons: boolean
+          teachers_can_edit_clients: boolean
           teachers_can_export: boolean
           teachers_can_manage_disciplines: boolean
           teachers_can_record_single_visits: boolean
           teachers_can_sell_personal_lessons: boolean
           teachers_can_sell_subscriptions: boolean
           teachers_can_view_full_schedule: boolean
-          teachers_can_accept_payments: boolean
-          teachers_can_add_group_lessons: boolean
           terminology: Json
           timezone: string
           updated_at: string
@@ -2310,16 +2531,16 @@ export type Database = {
           organization_id: string
           pair_cycle_enabled?: boolean
           rental_billing_profile?: Json
-          teachers_can_edit_clients?: boolean
+          teachers_can_accept_payments?: boolean
           teachers_can_add_clients?: boolean
+          teachers_can_add_group_lessons?: boolean
+          teachers_can_edit_clients?: boolean
           teachers_can_export?: boolean
           teachers_can_manage_disciplines?: boolean
           teachers_can_record_single_visits?: boolean
           teachers_can_sell_personal_lessons?: boolean
           teachers_can_sell_subscriptions?: boolean
           teachers_can_view_full_schedule?: boolean
-          teachers_can_accept_payments?: boolean
-          teachers_can_add_group_lessons?: boolean
           terminology?: Json
           timezone?: string
           updated_at?: string
@@ -2347,16 +2568,16 @@ export type Database = {
           organization_id?: string
           pair_cycle_enabled?: boolean
           rental_billing_profile?: Json
-          teachers_can_edit_clients?: boolean
+          teachers_can_accept_payments?: boolean
           teachers_can_add_clients?: boolean
+          teachers_can_add_group_lessons?: boolean
+          teachers_can_edit_clients?: boolean
           teachers_can_export?: boolean
           teachers_can_manage_disciplines?: boolean
           teachers_can_record_single_visits?: boolean
           teachers_can_sell_personal_lessons?: boolean
           teachers_can_sell_subscriptions?: boolean
           teachers_can_view_full_schedule?: boolean
-          teachers_can_accept_payments?: boolean
-          teachers_can_add_group_lessons?: boolean
           terminology?: Json
           timezone?: string
           updated_at?: string
@@ -4211,6 +4432,7 @@ export type Database = {
           contract_id: string | null
           created_at: string
           created_by: string | null
+          hold_expires_at: string | null
           id: string
           idempotency_key: string | null
           location_id: string
@@ -4229,6 +4451,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           created_by?: string | null
+          hold_expires_at?: string | null
           id?: string
           idempotency_key?: string | null
           location_id: string
@@ -4247,6 +4470,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           created_by?: string | null
+          hold_expires_at?: string | null
           id?: string
           idempotency_key?: string | null
           location_id?: string
@@ -4563,6 +4787,7 @@ export type Database = {
           created_by: string | null
           currency: string
           debt_amount: number
+          debt_charge_seq: number
           final_amount: number | null
           fixed_amount: number
           hold_expires_at: string | null
@@ -4602,6 +4827,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           debt_amount?: number
+          debt_charge_seq?: number
           final_amount?: number | null
           fixed_amount?: number
           hold_expires_at?: string | null
@@ -4641,6 +4867,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           debt_amount?: number
+          debt_charge_seq?: number
           final_amount?: number | null
           fixed_amount?: number
           hold_expires_at?: string | null
@@ -4729,6 +4956,64 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rental_tariffs"
             referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      renter_booking_maintenance_failures: {
+        Row: {
+          error_message: string
+          fail_count: number
+          first_failed_at: string
+          id: string
+          last_failed_at: string
+          organization_id: string
+          rental_series_id: string | null
+          renter_id: string
+          sqlstate: string | null
+        }
+        Insert: {
+          error_message: string
+          fail_count?: number
+          first_failed_at?: string
+          id?: string
+          last_failed_at?: string
+          organization_id: string
+          rental_series_id?: string | null
+          renter_id: string
+          sqlstate?: string | null
+        }
+        Update: {
+          error_message?: string
+          fail_count?: number
+          first_failed_at?: string
+          id?: string
+          last_failed_at?: string
+          organization_id?: string
+          rental_series_id?: string | null
+          renter_id?: string
+          sqlstate?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renter_booking_maintenance_failures_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renter_booking_maintenance_failures_rental_series_id_fkey"
+            columns: ["rental_series_id"]
+            isOneToOne: false
+            referencedRelation: "rental_series"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renter_booking_maintenance_failures_renter_id_fkey"
+            columns: ["renter_id"]
+            isOneToOne: false
+            referencedRelation: "renters"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -5146,14 +5431,372 @@ export type Database = {
           },
         ]
       }
+      renter_init_data_hashes: {
+        Row: {
+          auth_user_id: string | null
+          created_at: string
+          init_data_hash: string
+          organization_id: string
+          renter_id: string
+          telegram_id: number
+        }
+        Insert: {
+          auth_user_id?: string | null
+          created_at?: string
+          init_data_hash: string
+          organization_id: string
+          renter_id: string
+          telegram_id: number
+        }
+        Update: {
+          auth_user_id?: string | null
+          created_at?: string
+          init_data_hash?: string
+          organization_id?: string
+          renter_id?: string
+          telegram_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renter_init_data_hashes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      renter_reliability_events: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          phase: string
+          rental_id: string
+          renter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          phase: string
+          rental_id: string
+          renter_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          phase?: string
+          rental_id?: string
+          renter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renter_reliability_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renter_reliability_events_organization_id_rental_id_fkey"
+            columns: ["organization_id", "rental_id"]
+            isOneToOne: false
+            referencedRelation: "rentals"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_reliability_events_organization_id_renter_id_fkey"
+            columns: ["organization_id", "renter_id"]
+            isOneToOne: false
+            referencedRelation: "renters"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      renter_reliability_reset_audit: {
+        Row: {
+          actor_user_id: string
+          booking_banned_before: string | null
+          created_at: string
+          id: string
+          on_time_before: number
+          organization_id: string
+          penalty_tariff_before: string | null
+          reason: string
+          renter_id: string
+          untimely_before: number
+        }
+        Insert: {
+          actor_user_id: string
+          booking_banned_before?: string | null
+          created_at?: string
+          id?: string
+          on_time_before?: number
+          organization_id: string
+          penalty_tariff_before?: string | null
+          reason: string
+          renter_id: string
+          untimely_before?: number
+        }
+        Update: {
+          actor_user_id?: string
+          booking_banned_before?: string | null
+          created_at?: string
+          id?: string
+          on_time_before?: number
+          organization_id?: string
+          penalty_tariff_before?: string | null
+          reason?: string
+          renter_id?: string
+          untimely_before?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renter_reliability_reset_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renter_reliability_reset_audit_organization_id_renter_id_fkey"
+            columns: ["organization_id", "renter_id"]
+            isOneToOne: false
+            referencedRelation: "renters"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      renter_telegram_dialog: {
+        Row: {
+          allows_write_to_pm: boolean
+          bot_started_at: string | null
+          bot_started_bot_id: number | null
+          organization_id: string
+          telegram_id: number
+          updated_at: string
+        }
+        Insert: {
+          allows_write_to_pm?: boolean
+          bot_started_at?: string | null
+          bot_started_bot_id?: number | null
+          organization_id: string
+          telegram_id: number
+          updated_at?: string
+        }
+        Update: {
+          allows_write_to_pm?: boolean
+          bot_started_at?: string | null
+          bot_started_bot_id?: number | null
+          organization_id?: string
+          telegram_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renter_telegram_dialog_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      renter_telegram_outbox: {
+        Row: {
+          attempts: number
+          available_at: string
+          claim_token: string | null
+          created_at: string
+          dedupe_key: string | null
+          event_type: string
+          gate_wait_count: number
+          id: string
+          last_error_code: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          organization_id: string
+          rental_id: string | null
+          renter_id: string | null
+          sent_at: string | null
+          skipped_acknowledged_at: string | null
+          status: string
+          telegram_id: number
+          text: string
+          topup_request_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          claim_token?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          event_type: string
+          gate_wait_count?: number
+          id?: string
+          last_error_code?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          organization_id: string
+          rental_id?: string | null
+          renter_id?: string | null
+          sent_at?: string | null
+          skipped_acknowledged_at?: string | null
+          status?: string
+          telegram_id: number
+          text: string
+          topup_request_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          claim_token?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          event_type?: string
+          gate_wait_count?: number
+          id?: string
+          last_error_code?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          organization_id?: string
+          rental_id?: string | null
+          renter_id?: string | null
+          sent_at?: string | null
+          skipped_acknowledged_at?: string | null
+          status?: string
+          telegram_id?: number
+          text?: string
+          topup_request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renter_telegram_outbox_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      renter_telegram_webhook_updates: {
+        Row: {
+          received_at: string
+          telegram_bot_id: number
+          update_id: number
+        }
+        Insert: {
+          received_at?: string
+          telegram_bot_id: number
+          update_id: number
+        }
+        Update: {
+          received_at?: string
+          telegram_bot_id?: number
+          update_id?: number
+        }
+        Relationships: []
+      }
+      renter_topup_requests: {
+        Row: {
+          amount: number
+          amount_fact: number | null
+          correlation_code: string
+          created_at: string
+          id: string
+          method: string
+          organization_id: string
+          qr_asset_id: string | null
+          renter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          amount_fact?: number | null
+          correlation_code: string
+          created_at?: string
+          id?: string
+          method: string
+          organization_id: string
+          qr_asset_id?: string | null
+          renter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          amount_fact?: number | null
+          correlation_code?: string
+          created_at?: string
+          id?: string
+          method?: string
+          organization_id?: string
+          qr_asset_id?: string | null
+          renter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renter_topup_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renter_topup_requests_organization_id_qr_asset_id_fkey"
+            columns: ["organization_id", "qr_asset_id"]
+            isOneToOne: false
+            referencedRelation: "organization_rental_qr_assets"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_topup_requests_organization_id_renter_id_fkey"
+            columns: ["organization_id", "renter_id"]
+            isOneToOne: false
+            referencedRelation: "renters"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_topup_requests_organization_id_resolved_by_fkey"
+            columns: ["organization_id", "resolved_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_topup_requests_organization_id_resolved_by_fkey"
+            columns: ["organization_id", "resolved_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
       renter_wallet_ledger: {
         Row: {
           advance_id: string | null
           amount: number
+          correction_reason: string | null
+          corrects_ledger_id: string | null
           created_at: string
+          created_by: string | null
           entry_type: string
+          external_reference: string | null
           id: string
           organization_id: string
+          payout_document_id: string | null
+          payout_method: string | null
           phase: string | null
           rental_id: string | null
           renter_id: string
@@ -5162,10 +5805,16 @@ export type Database = {
         Insert: {
           advance_id?: string | null
           amount: number
+          correction_reason?: string | null
+          corrects_ledger_id?: string | null
           created_at?: string
+          created_by?: string | null
           entry_type: string
+          external_reference?: string | null
           id?: string
           organization_id: string
+          payout_document_id?: string | null
+          payout_method?: string | null
           phase?: string | null
           rental_id?: string | null
           renter_id: string
@@ -5174,16 +5823,43 @@ export type Database = {
         Update: {
           advance_id?: string | null
           amount?: number
+          correction_reason?: string | null
+          corrects_ledger_id?: string | null
           created_at?: string
+          created_by?: string | null
           entry_type?: string
+          external_reference?: string | null
           id?: string
           organization_id?: string
+          payout_document_id?: string | null
+          payout_method?: string | null
           phase?: string | null
           rental_id?: string | null
           renter_id?: string
           topup_request_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "renter_wallet_ledger_corrects_ledger_fk"
+            columns: ["organization_id", "corrects_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "renter_wallet_ledger"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_wallet_ledger_created_by_fk"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_wallet_ledger_created_by_fk"
+            columns: ["organization_id", "created_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["organization_id", "id"]
+          },
           {
             foreignKeyName: "renter_wallet_ledger_organization_id_advance_id_fkey"
             columns: ["organization_id", "advance_id"]
@@ -5210,6 +5886,20 @@ export type Database = {
             columns: ["organization_id", "renter_id"]
             isOneToOne: false
             referencedRelation: "renters"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_wallet_ledger_payout_document_fk"
+            columns: ["organization_id", "payout_document_id"]
+            isOneToOne: false
+            referencedRelation: "renter_documents"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "renter_wallet_ledger_topup_request_fk"
+            columns: ["organization_id", "topup_request_id"]
+            isOneToOne: false
+            referencedRelation: "renter_topup_requests"
             referencedColumns: ["organization_id", "id"]
           },
         ]
@@ -5244,7 +5934,7 @@ export type Database = {
           registration_number: string | null
           status: string
           tax_id: string | null
-          telegram_id: string | null
+          telegram_id: number | null
           untimely_count: number
           updated_at: string
         }
@@ -5277,7 +5967,7 @@ export type Database = {
           registration_number?: string | null
           status?: string
           tax_id?: string | null
-          telegram_id?: string | null
+          telegram_id?: number | null
           untimely_count?: number
           updated_at?: string
         }
@@ -5310,7 +6000,7 @@ export type Database = {
           registration_number?: string | null
           status?: string
           tax_id?: string | null
-          telegram_id?: string | null
+          telegram_id?: number | null
           untimely_count?: number
           updated_at?: string
         }
@@ -7546,104 +8236,48 @@ export type Database = {
           type: string | null
         }
         Insert: {
-          attendance_status?: string | null
+          attendance_status?: never
           cancelled_at?: string | null
-          client_id1?: string | null
-          client_id2?: string | null
-          client_id3?: string | null
-          client_id4?: string | null
+          client_id1?: never
+          client_id2?: never
+          client_id3?: never
+          client_id4?: never
           created_at?: string | null
           date?: string | null
           discipline_id?: string | null
           id?: string | null
           location_id?: string | null
           organization_id?: string | null
-          paid?: string | null
-          price_id?: string | null
-          subscription_id?: string | null
+          paid?: never
+          price_id?: never
+          subscription_id?: never
           teacher_member_id?: string | null
           time_end?: string | null
           time_start?: string | null
           type?: string | null
         }
         Update: {
-          attendance_status?: string | null
+          attendance_status?: never
           cancelled_at?: string | null
-          client_id1?: string | null
-          client_id2?: string | null
-          client_id3?: string | null
-          client_id4?: string | null
+          client_id1?: never
+          client_id2?: never
+          client_id3?: never
+          client_id4?: never
           created_at?: string | null
           date?: string | null
           discipline_id?: string | null
           id?: string | null
           location_id?: string | null
           organization_id?: string | null
-          paid?: string | null
-          price_id?: string | null
-          subscription_id?: string | null
+          paid?: never
+          price_id?: never
+          subscription_id?: never
           teacher_member_id?: string | null
           time_end?: string | null
           time_start?: string | null
           type?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "personal_lessons_organization_id_client_id1_fkey"
-            columns: ["organization_id", "client_id1"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "personal_lessons_organization_id_client_id1_fkey"
-            columns: ["organization_id", "client_id1"]
-            isOneToOne: false
-            referencedRelation: "clients_teacher_v"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "personal_lessons_organization_id_client_id2_fkey"
-            columns: ["organization_id", "client_id2"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "personal_lessons_organization_id_client_id2_fkey"
-            columns: ["organization_id", "client_id2"]
-            isOneToOne: false
-            referencedRelation: "clients_teacher_v"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "personal_lessons_organization_id_client_id3_fkey"
-            columns: ["organization_id", "client_id3"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "personal_lessons_organization_id_client_id3_fkey"
-            columns: ["organization_id", "client_id3"]
-            isOneToOne: false
-            referencedRelation: "clients_teacher_v"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "personal_lessons_organization_id_client_id4_fkey"
-            columns: ["organization_id", "client_id4"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "personal_lessons_organization_id_client_id4_fkey"
-            columns: ["organization_id", "client_id4"]
-            isOneToOne: false
-            referencedRelation: "clients_teacher_v"
-            referencedColumns: ["organization_id", "id"]
-          },
           {
             foreignKeyName: "personal_lessons_organization_id_discipline_id_fkey"
             columns: ["organization_id", "discipline_id"]
@@ -7663,27 +8297,6 @@ export type Database = {
             columns: ["organization_id", "location_id"]
             isOneToOne: false
             referencedRelation: "locations"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "personal_lessons_organization_id_price_id_fkey"
-            columns: ["organization_id", "price_id"]
-            isOneToOne: false
-            referencedRelation: "prices"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "personal_lessons_organization_id_subscription_id_fkey"
-            columns: ["organization_id", "subscription_id"]
-            isOneToOne: false
-            referencedRelation: "subscriptions"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "personal_lessons_organization_id_subscription_id_fkey"
-            columns: ["organization_id", "subscription_id"]
-            isOneToOne: false
-            referencedRelation: "subscriptions_teacher_v"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -8016,6 +8629,7 @@ export type Database = {
         }
         Returns: Json
       }
+      _auth_is_renter_actor: { Args: never; Returns: boolean }
       _calculate_rental_pricing: {
         Args: {
           p_org_id: string
@@ -8099,6 +8713,23 @@ export type Database = {
         }
         Returns: string[]
       }
+      _fdb4_find_pack_monday: {
+        Args: { p_org: string }
+        Returns: {
+          pack_from: string
+          pack_to: string
+          slot_te: string
+          slot_ts: string
+        }[]
+      }
+      _fdb4_pack_slot: {
+        Args: { p_ahead: string; p_org: string }
+        Returns: {
+          d: string
+          te: string
+          ts: string
+        }[]
+      }
       _finance_period_closed_until: {
         Args: { p_org_id: string }
         Returns: string
@@ -8166,6 +8797,10 @@ export type Database = {
         Args: { p_org_id: string; p_ts?: string }
         Returns: string
       }
+      _org_rental_qr_storage_readable: {
+        Args: { p_object_name: string }
+        Returns: boolean
+      }
       _org_timezone: { Args: { p_org_id: string }; Returns: string }
       _payment_operation_date: {
         Args: {
@@ -8230,6 +8865,7 @@ export type Database = {
         }
         Returns: Json
       }
+      _reject_renter_staff_jwt: { Args: never; Returns: undefined }
       _rental_acquire_location_date_locks: {
         Args: { p_org_id: string; p_pairs: Json }
         Returns: number[]
@@ -8315,6 +8951,10 @@ export type Database = {
         Args: { p_extra_pairs?: Json; p_org_id: string; p_renter_id: string }
         Returns: number[]
       }
+      _renter_activate_series_holds: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
       _renter_actor_ctx: {
         Args: never
         Returns: {
@@ -8329,9 +8969,21 @@ export type Database = {
         Args: { p_series_id: string }
         Returns: undefined
       }
+      _renter_allocate_topup_correlation_code: {
+        Args: { p_org_id: string }
+        Returns: string
+      }
       _renter_allowed_document_mimes: { Args: never; Returns: string[] }
+      _renter_apply_booking_ban: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
       _renter_apply_reliability: {
         Args: { p_allowed: boolean; p_phase: string; p_rental_id: string }
+        Returns: undefined
+      }
+      _renter_apply_series_reliability: {
+        Args: { p_allowed: boolean; p_phase: string; p_series_id: string }
         Returns: undefined
       }
       _renter_apply_wallet: {
@@ -8353,8 +9005,47 @@ export type Database = {
         }
         Returns: undefined
       }
+      _renter_b64url: { Args: { p_data: string }; Returns: string }
+      _renter_booking_gate_reasons: {
+        Args: { p_need_addon: boolean; p_org_id: string; p_renter_id: string }
+        Returns: string[]
+      }
+      _renter_bounce_penalty_snapshots: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
+      _renter_can_cancel_occurrence_row: {
+        Args: {
+          p_is_renter: boolean
+          p_r: Database["public"]["Tables"]["rentals"]["Row"]
+        }
+        Returns: boolean
+      }
+      _renter_can_cancel_pack_row: {
+        Args: {
+          p_is_renter: boolean
+          p_r: Database["public"]["Tables"]["rentals"]["Row"]
+        }
+        Returns: boolean
+      }
+      _renter_can_delete_hold_row: {
+        Args: {
+          p_is_renter: boolean
+          p_r: Database["public"]["Tables"]["rentals"]["Row"]
+        }
+        Returns: boolean
+      }
+      _renter_cancel_future_miniapp_for_ban: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
       _renter_cancel_one_slot: {
-        Args: { p_is_renter: boolean; p_member_id: string; p_rental_id: string }
+        Args: {
+          p_defer_wallet?: boolean
+          p_is_renter: boolean
+          p_member_id: string
+          p_rental_id: string
+        }
         Returns: string
       }
       _renter_charge_prepay: { Args: { p_rental_id: string }; Returns: boolean }
@@ -8366,13 +9057,34 @@ export type Database = {
         Args: { p_org_id: string; p_telegram_id: number }
         Returns: boolean
       }
+      _renter_clear_maintenance_failure: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
       _renter_compute_hold_expires_at: {
         Args: { p_created_at: string; p_time_start_ts: string }
+        Returns: string
+      }
+      _renter_compute_series_hold_expires_at: {
+        Args: { p_org_id: string; p_series_id: string }
         Returns: string
       }
       _renter_create_gates: {
         Args: { p_need_addon: boolean; p_org_id: string; p_renter_id: string }
         Returns: undefined
+      }
+      _renter_credit_wallet_topup: {
+        Args: {
+          p_amount: number
+          p_external_reference?: string
+          p_member_id: string
+          p_method: string
+          p_notes: string
+          p_org_id: string
+          p_renter_id: string
+          p_topup_request_id: string
+        }
+        Returns: string
       }
       _renter_currency_minor: { Args: { p_currency: string }; Returns: number }
       _renter_debt_settle: {
@@ -8384,10 +9096,15 @@ export type Database = {
         Returns: number
       }
       _renter_delete_hold_slot: {
-        Args: { p_member_id: string; p_rental_id: string }
+        Args: {
+          p_defer_wallet?: boolean
+          p_member_id: string
+          p_rental_id: string
+        }
         Returns: undefined
       }
       _renter_document_max_bytes: { Args: never; Returns: number }
+      _renter_drain_telegram_outbox: { Args: never; Returns: undefined }
       _renter_early_close_pack: {
         Args: { p_series_id: string }
         Returns: undefined
@@ -8395,6 +9112,115 @@ export type Database = {
       _renter_effective_kind: {
         Args: { p_base_kind: string; p_org_id: string; p_renter_id: string }
         Returns: string
+      }
+      _renter_enqueue_auto_deleted: {
+        Args: { p_rental_id: string }
+        Returns: string
+      }
+      _renter_enqueue_ban_lifted: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: string
+      }
+      _renter_enqueue_booking_activated: {
+        Args: { p_rental_id: string }
+        Returns: string
+      }
+      _renter_enqueue_booking_banned: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: string
+      }
+      _renter_enqueue_debt_accrued: {
+        Args: { p_amount: number; p_rental_id: string }
+        Returns: string
+      }
+      _renter_enqueue_debt_settled: {
+        Args: { p_amount: number; p_rental_id: string }
+        Returns: string
+      }
+      _renter_enqueue_hold_awaiting: {
+        Args: { p_rental_id: string }
+        Returns: string
+      }
+      _renter_enqueue_penalty_prepay_bounce: {
+        Args: { p_rental_id: string }
+        Returns: string
+      }
+      _renter_enqueue_penalty_tariff: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: string
+      }
+      _renter_enqueue_prepay_failed_t24: {
+        Args: { p_rental_id: string }
+        Returns: string
+      }
+      _renter_enqueue_series_activated: {
+        Args: { p_series_id: string }
+        Returns: string
+      }
+      _renter_enqueue_series_auto_deleted: {
+        Args: { p_series_id: string }
+        Returns: string
+      }
+      _renter_enqueue_series_hold_awaiting: {
+        Args: { p_series_id: string }
+        Returns: string
+      }
+      _renter_enqueue_staff_cancelled: {
+        Args: { p_rental_id: string }
+        Returns: string
+      }
+      _renter_enqueue_telegram: {
+        Args: {
+          p_dedupe_key?: string
+          p_event_type: string
+          p_org_id: string
+          p_rental_id?: string
+          p_renter_id: string
+          p_text: string
+          p_topup_request_id?: string
+        }
+        Returns: string
+      }
+      _renter_enqueue_topup_confirmed: {
+        Args: {
+          p_amount: number
+          p_org_id: string
+          p_renter_id: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      _renter_enqueue_topup_created: {
+        Args: {
+          p_amount: number
+          p_org_id: string
+          p_renter_id: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      _renter_enqueue_topup_rejected: {
+        Args: {
+          p_amount: number
+          p_org_id: string
+          p_renter_id: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      _renter_enqueue_wallet_payout: {
+        Args: {
+          p_amount: number
+          p_org_id: string
+          p_payout_id: string
+          p_renter_id: string
+          p_spendable: number
+        }
+        Returns: string
+      }
+      _renter_evaluate_reliability_thresholds: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
       }
       _renter_expire_and_catchup: {
         Args: { p_org_id: string; p_renter_id: string }
@@ -8480,8 +9306,21 @@ export type Database = {
           p_lifecycle: string
           p_reason: string
           p_rental_id: string
+          p_suppress_outbox?: boolean
         }
         Returns: undefined
+      }
+      _renter_maybe_enqueue_series_activated: {
+        Args: { p_series_id: string }
+        Returns: undefined
+      }
+      _renter_miniapp_direct_link: {
+        Args: { p_org_id: string }
+        Returns: string
+      }
+      _renter_mint_lock_key: {
+        Args: { p_org: string; p_telegram_id: number }
+        Returns: number
       }
       _renter_next_rental_date: {
         Args: { p_org_id: string; p_renter_id: string }
@@ -8494,8 +9333,57 @@ export type Database = {
           window_start: string
         }[]
       }
+      _renter_one_time_quote_fingerprint: {
+        Args: {
+          p_location_id: string
+          p_rental_date: string
+          p_renter_id: string
+          p_time_end: string
+          p_time_start: string
+        }
+        Returns: string
+      }
       _renter_org_currency: { Args: { p_org_id: string }; Returns: string }
+      _renter_org_penalty_rate_gap: {
+        Args: { p_org_id: string }
+        Returns: boolean
+      }
+      _renter_outbox_gate_retention_interval: { Args: never; Returns: string }
+      _renter_outbox_gate_wait_max_count: { Args: never; Returns: number }
+      _renter_outbox_unacknowledged_skipped_count: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: number
+      }
+      _renter_pack_payload_fingerprint: {
+        Args: {
+          p_location_id: string
+          p_renter_id: string
+          p_time_end: string
+          p_time_start: string
+          p_valid_from: string
+          p_valid_to: string
+          p_weekdays: number[]
+        }
+        Returns: string
+      }
+      _renter_pack_series_fingerprint: {
+        Args: { p_series_id: string }
+        Returns: string
+      }
+      _renter_place_series_on_hold: {
+        Args: { p_org_id: string; p_series_id: string }
+        Returns: string
+      }
+      _renter_preview_staff_topup_effect: {
+        Args: { p_amount: number; p_org_id: string; p_renter_id: string }
+        Returns: Json
+      }
+      _renter_prune_init_data_hashes: { Args: never; Returns: undefined }
       _renter_public_rental_json: { Args: { p_id: string }; Returns: Json }
+      _renter_qr_signed_url: {
+        Args: { p_expires_in?: number; p_storage_path: string }
+        Returns: string
+      }
       _renter_quote_slot_amounts: {
         Args: {
           p_date: string
@@ -8507,8 +9395,42 @@ export type Database = {
         }
         Returns: Json
       }
+      _renter_quote_wallet_summary: {
+        Args: {
+          p_org_id: string
+          p_renter_id: string
+          p_required_prepay: number
+        }
+        Returns: Json
+      }
       _renter_raise: { Args: { p_code: string }; Returns: undefined }
+      _renter_raise_first_reason: {
+        Args: { p_reasons: string[] }
+        Returns: undefined
+      }
+      _renter_record_maintenance_failure: {
+        Args: {
+          p_message: string
+          p_org_id: string
+          p_renter_id: string
+          p_series_id: string
+          p_sqlstate: string
+        }
+        Returns: undefined
+      }
+      _renter_reduce_wallet_advances: {
+        Args: { p_amount: number; p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
       _renter_refund_prepay: { Args: { p_rental_id: string }; Returns: boolean }
+      _renter_reliability_tick_allowed: {
+        Args: { p_org_id: string }
+        Returns: boolean
+      }
+      _renter_renter_penalty_rates_ok: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: boolean
+      }
       _renter_require_renter_ctx: {
         Args: never
         Returns: {
@@ -8522,11 +9444,69 @@ export type Database = {
         Returns: number
       }
       _renter_rpc_caught: { Args: never; Returns: Json }
+      _renter_series_anchor_rental: {
+        Args: { p_series_id: string }
+        Returns: string
+      }
+      _renter_series_has_cancellable_pack_slots: {
+        Args: { p_is_renter: boolean; p_series_id: string }
+        Returns: boolean
+      }
+      _renter_series_occurrence_count: {
+        Args: { p_series_id: string }
+        Returns: number
+      }
+      _renter_slot_block_reasons: {
+        Args: {
+          p_check_too_soon?: boolean
+          p_date: string
+          p_location_id: string
+          p_org_id: string
+          p_time_end: string
+          p_time_start: string
+          p_window_end: string
+          p_window_start: string
+        }
+        Returns: string[]
+      }
       _renter_slot_ts: {
         Args: { p_date: string; p_org_id: string; p_time: string }
         Returns: string
       }
       _renter_staff_create_renter_ok: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: undefined
+      }
+      _renter_telegram_bot_open_url: {
+        Args: { p_org_id: string }
+        Returns: string
+      }
+      _renter_telegram_chat_url_ok: {
+        Args: { p_url: string }
+        Returns: boolean
+      }
+      _renter_telegram_fmt_hold_timer: {
+        Args: { p_hold_expires_at: string }
+        Returns: string
+      }
+      _renter_telegram_fmt_money: {
+        Args: { p_amount: number; p_currency: string }
+        Returns: string
+      }
+      _renter_telegram_fmt_series_summary: {
+        Args: { p_series_id: string }
+        Returns: string
+      }
+      _renter_telegram_fmt_slot_line: {
+        Args: { p_rental_id: string }
+        Returns: string
+      }
+      _renter_telegram_plain: { Args: { p_text: string }; Returns: string }
+      _renter_topup_amount_max: {
+        Args: { p_currency: string }
+        Returns: number
+      }
+      _renter_try_apply_penalty_tariff: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: undefined
       }
@@ -8540,6 +9520,33 @@ export type Database = {
           awaiting_n: number
           unfinished_n: number
         }[]
+      }
+      _renter_validate_one_time_booking: {
+        Args: {
+          p_date: string
+          p_include_gates?: boolean
+          p_kind?: string
+          p_location_id: string
+          p_org_id: string
+          p_renter_id: string
+          p_time_end: string
+          p_time_start: string
+        }
+        Returns: Json
+      }
+      _renter_validate_pack_booking: {
+        Args: {
+          p_include_gates?: boolean
+          p_location_id: string
+          p_org_id: string
+          p_renter_id: string
+          p_time_end: string
+          p_time_start: string
+          p_valid_from: string
+          p_valid_to: string
+          p_weekdays: number[]
+        }
+        Returns: Json
       }
       _renter_validate_slot_grid: {
         Args: { p_time_end: string; p_time_start: string }
@@ -8561,6 +9568,18 @@ export type Database = {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: number
       }
+      _renter_wallet_entries_detail_json: {
+        Args: { p_limit?: number; p_org_id: string; p_renter_id: string }
+        Returns: Json
+      }
+      _renter_wallet_entry_direction: {
+        Args: { p_entry_type: string }
+        Returns: string
+      }
+      _renter_wallet_entry_signed_amount: {
+        Args: { p_amount: number; p_entry_type: string }
+        Returns: number
+      }
       _renter_wallet_insert_entry: {
         Args: {
           p_amount: number
@@ -8572,9 +9591,36 @@ export type Database = {
         }
         Returns: string
       }
+      _renter_wallet_insert_topup:
+        | {
+            Args: {
+              p_advance_id: string
+              p_amount: number
+              p_org_id: string
+              p_renter_id: string
+              p_topup_request_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_advance_id: string
+              p_amount: number
+              p_created_by?: string
+              p_external_reference?: string
+              p_org_id: string
+              p_renter_id: string
+              p_topup_request_id: string
+            }
+            Returns: string
+          }
       _renter_wallet_lock_key: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: number
+      }
+      _renter_wallet_payout_quote: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: Json
       }
       _renter_wallet_reserved_prepay: {
         Args: { p_org_id: string; p_renter_id: string }
@@ -8594,6 +9640,10 @@ export type Database = {
           p_reason_comment: string
         }
         Returns: Json
+      }
+      _retire_schedule_slot_locked: {
+        Args: { p_slot_id: string }
+        Returns: undefined
       }
       _round_rental_minutes: {
         Args: {
@@ -8655,6 +9705,38 @@ export type Database = {
         }
         Returns: boolean
       }
+      _test_assert: {
+        Args: { p_condition: boolean; p_message: string }
+        Returns: undefined
+      }
+      _test_fa3_hold_wallet_mutate: {
+        Args: {
+          p_debt: number
+          p_org: string
+          p_renter: string
+          p_sleep_seconds?: number
+          p_slot: string
+        }
+        Returns: undefined
+      }
+      _test_fa7_parallel_topup_sql: { Args: { p_key: string }; Returns: Json }
+      _test_fdb4_cancel_race: { Args: never; Returns: Json }
+      _test_fdb4_expire_race_hold: {
+        Args: { p_sleep_seconds?: number }
+        Returns: undefined
+      }
+      _test_fdb4_parallel_pack_create: {
+        Args: { p_key: string; p_renter_suffix: string }
+        Returns: Json
+      }
+      _test_fdb4_topup_race: {
+        Args: { p_amount: number; p_key: string }
+        Returns: Json
+      }
+      _test_fdb4_topup_race_cancel: {
+        Args: { p_amount: number; p_key: string }
+        Returns: Json
+      }
       _validate_tariff_rules_no_ambiguous_overlap: {
         Args: { p_org_id: string; p_tariff_id: string }
         Returns: string
@@ -8710,6 +9792,17 @@ export type Database = {
       }
       archive_renter: {
         Args: { p_force?: boolean; p_reason?: string; p_renter_id: string }
+        Returns: Json
+      }
+      assign_lesson_substitute: {
+        Args: {
+          p_idempotency_key?: string
+          p_occurrence_date: string
+          p_occurrence_kind: string
+          p_personal_lesson_id: string
+          p_schedule_slot_id: string
+          p_substitute_member_id: string
+        }
         Returns: Json
       }
       auth_is_member_of: { Args: { p_org_id: string }; Returns: boolean }
@@ -8817,13 +9910,6 @@ export type Database = {
         Returns: Json
       }
       check_renter_duplicates: { Args: { p_payload: Json }; Returns: Json }
-      claim_renter_booking_maintenance: {
-        Args: { p_batch_size?: number }
-        Returns: {
-          organization_id: string
-          renter_id: string
-        }[]
-      }
       claim_calendar_sync_jobs: {
         Args: {
           p_batch_size: number
@@ -8856,12 +9942,76 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      claim_operation_idempotency: {
+      claim_operation_idempotency:
+        | {
+            Args: {
+              p_fingerprint: string
+              p_key: string
+              p_org_id: string
+              p_scope: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_fingerprint: string
+              p_key: string
+              p_org_id: string
+              p_result: Json
+              p_scope: string
+            }
+            Returns: Json
+          }
+      claim_renter_booking_maintenance: {
+        Args: { p_batch_size?: number }
+        Returns: {
+          organization_id: string
+          renter_id: string
+        }[]
+      }
+      claim_renter_telegram_outbox: {
         Args: {
-          p_fingerprint: string
-          p_key: string
-          p_org_id: string
-          p_scope: string
+          p_batch_size?: number
+          p_lease_seconds?: number
+          p_worker_id?: string
+        }
+        Returns: {
+          attempts: number
+          available_at: string
+          claim_token: string | null
+          created_at: string
+          dedupe_key: string | null
+          event_type: string
+          gate_wait_count: number
+          id: string
+          last_error_code: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          organization_id: string
+          rental_id: string | null
+          renter_id: string | null
+          sent_at: string | null
+          skipped_acknowledged_at: string | null
+          status: string
+          telegram_id: number
+          text: string
+          topup_request_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "renter_telegram_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      clear_lesson_substitute: {
+        Args: {
+          p_idempotency_key?: string
+          p_occurrence_date: string
+          p_occurrence_kind: string
+          p_personal_lesson_id: string
+          p_schedule_slot_id: string
         }
         Returns: Json
       }
@@ -8878,7 +10028,10 @@ export type Database = {
         Args: { p_idempotency_key?: string; p_personal_lesson_id: string }
         Returns: Json
       }
-      commit_organization_renter_bot: { Args: { p_payload: Json }; Returns: Json }
+      commit_organization_renter_bot: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       complete_organization_invite_for_user: {
         Args: { p_token_hash: string; p_user_id: string }
         Returns: Json
@@ -8894,6 +10047,16 @@ export type Database = {
           p_pair_cycle_enabled?: boolean
         }
         Returns: Json
+      }
+      complete_renter_telegram_outbox: {
+        Args: {
+          p_claim_token?: string
+          p_error_code?: string
+          p_id: string
+          p_outcome: string
+          p_retry_seconds?: number
+        }
+        Returns: undefined
       }
       complete_subscription_refund: {
         Args: { p_operation_date?: string; p_refund_id: string }
@@ -8990,7 +10153,10 @@ export type Database = {
         }
         Returns: Json
       }
-      create_organization_rental_qr_asset: { Args: { p_payload: Json }; Returns: Json }
+      create_organization_rental_qr_asset: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       create_rental: { Args: { p_payload: Json }; Returns: Json }
       create_rental_invoice: { Args: { p_payload: Json }; Returns: Json }
       create_rental_series: { Args: { p_payload: Json }; Returns: Json }
@@ -9040,7 +10206,10 @@ export type Database = {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       debug_auth_context: { Args: never; Returns: Json }
       default_teacher_scope: { Args: never; Returns: Json }
-      delete_organization_rental_qr_asset: { Args: { p_id: string }; Returns: Json }
+      delete_organization_rental_qr_asset: {
+        Args: { p_id: string }
+        Returns: Json
+      }
       delete_personal_lesson: { Args: { p_lesson_id: string }; Returns: Json }
       delete_personal_lesson_series_from_date: {
         Args: { p_lesson_id: string }
@@ -9282,6 +10451,11 @@ export type Database = {
           retry_count: number
         }[]
       }
+      get_organization_renter_bot_internal: {
+        Args: { p_org: string }
+        Returns: Json
+      }
+      get_organization_renter_channel: { Args: never; Returns: Json }
       get_personal_lesson_charge_balances: {
         Args: { p_lesson_ids: string[] }
         Returns: Json
@@ -9309,8 +10483,6 @@ export type Database = {
         }
         Returns: Json
       }
-      get_organization_renter_bot_internal: { Args: { p_org: string }; Returns: Json }
-      get_organization_renter_channel: { Args: never; Returns: Json }
       get_rental_billing_profile: { Args: never; Returns: Json }
       get_rental_detail: { Args: { p_rental_id: string }; Returns: Json }
       get_rental_invoice_document: {
@@ -9333,6 +10505,10 @@ export type Database = {
       }
       get_renter_rental_finance: {
         Args: { p_renter_id: string }
+        Returns: Json
+      }
+      get_renter_telegram_bot_send_config: {
+        Args: { p_org_id: string }
         Returns: Json
       }
       get_schedule_calendar_sync_labels: {
@@ -9363,8 +10539,8 @@ export type Database = {
         }[]
       }
       get_venue_cost_rule_status: {
-        Args: { p_at?: string; p_lesson_date?: string };
-        Returns: Json;
+        Args: { p_at?: string; p_lesson_date?: string }
+        Returns: Json
       }
       group_occurrence_revenue: {
         Args: {
@@ -9403,6 +10579,7 @@ export type Database = {
       }
       jsonb_uuid_text_array: { Args: { p_value: Json }; Returns: Json }
       list_archived_prices: { Args: never; Returns: Json }
+      list_location_rental_hour_rates: { Args: never; Returns: Json }
       list_my_google_accounts: {
         Args: never
         Returns: {
@@ -9434,7 +10611,6 @@ export type Database = {
         }
         Returns: Json
       }
-      list_location_rental_hour_rates: { Args: never; Returns: Json }
       list_rental_tariffs: {
         Args: { p_location_id?: string; p_status?: string }
         Returns: Json
@@ -9452,10 +10628,20 @@ export type Database = {
         Returns: Json
       }
       list_renter_rentals: { Args: { p_renter_id: string }; Returns: Json }
-      list_renter_topup_inbox: {
-        Args: { p_limit?: number; p_offset?: number; p_search?: string; p_status?: string }
-        Returns: Json
-      }
+      list_renter_topup_inbox:
+        | {
+            Args: { p_limit?: number; p_offset?: number; p_status?: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_limit?: number
+              p_offset?: number
+              p_search?: string
+              p_status?: string
+            }
+            Returns: Json
+          }
       list_renters: {
         Args: {
           p_debt_filter?: string
@@ -9489,6 +10675,10 @@ export type Database = {
       member_can_accept_payments: { Args: never; Returns: boolean }
       member_can_access_attendance_journal: { Args: never; Returns: boolean }
       member_can_adjust_rental_amount: { Args: never; Returns: boolean }
+      member_can_assign_lesson_substitute: {
+        Args: { p_original_teacher_id: string }
+        Returns: boolean
+      }
       member_can_cancel_personal_lesson: {
         Args: { p_lesson_id: string }
         Returns: boolean
@@ -9524,6 +10714,10 @@ export type Database = {
       member_can_read_renter_finance: { Args: never; Returns: boolean }
       member_can_read_renter_profile: { Args: never; Returns: boolean }
       member_can_record_rental_payment: { Args: never; Returns: boolean }
+      member_can_record_single_visit: {
+        Args: { p_slot: Database["public"]["Tables"]["schedule_slots"]["Row"] }
+        Returns: boolean
+      }
       member_can_replace_subscription_partner: {
         Args: { p_sub_id: string }
         Returns: boolean
@@ -9596,11 +10790,31 @@ export type Database = {
         Args: { p_subscription_id: string }
         Returns: undefined
       }
+      occurrence_conducting_teacher_id: {
+        Args: {
+          p_fallback: string
+          p_occurrence_date: string
+          p_occurrence_kind: string
+          p_org_id: string
+          p_personal_lesson_id: string
+          p_schedule_slot_id: string
+        }
+        Returns: string
+      }
       occurrence_revenue_for_closure: {
         Args: {
           p_closure: Database["public"]["Tables"]["lesson_occurrence_closures"]["Row"]
         }
         Returns: number
+      }
+      occurrence_times_overlap: {
+        Args: {
+          p_end_a: string
+          p_end_b: string
+          p_start_a: string
+          p_start_b: string
+        }
+        Returns: boolean
       }
       organization_allows_reads: {
         Args: { p_org_id: string }
@@ -9803,6 +11017,11 @@ export type Database = {
       }
       preview_rental_pricing: { Args: { p_payload: Json }; Returns: Json }
       preview_rental_series: { Args: { p_payload: Json }; Returns: Json }
+      preview_renter_wallet_payout: { Args: { p_payload: Json }; Returns: Json }
+      preview_staff_renter_wallet_topup: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       preview_subscription_refund:
         | { Args: { p_sub_id: string }; Returns: Json }
         | {
@@ -9994,6 +11213,7 @@ export type Database = {
         Args: { p_org_id: string; p_payment_id: string }
         Returns: number
       }
+      renter_ack_outbox_skipped: { Args: never; Returns: Json }
       renter_bootstrap: { Args: never; Returns: Json }
       renter_cancel_occurrence: { Args: { p_rental_id: string }; Returns: Json }
       renter_cancel_pack: { Args: { p_series_id: string }; Returns: Json }
@@ -10020,7 +11240,27 @@ export type Database = {
       }
       renter_quote_booking: { Args: { p_payload: Json }; Returns: Json }
       renter_submit_topup: { Args: { p_payload: Json }; Returns: Json }
-      renter_telegram_webhook_ingest: { Args: { p_payload: Json }; Returns: Json }
+      renter_telegram_mint_bind_auth: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
+      renter_telegram_mint_channel: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      renter_telegram_mint_prepare: { Args: { p_payload: Json }; Returns: Json }
+      renter_telegram_outbox_prepare_send: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      renter_telegram_outbox_send_gate: {
+        Args: { p_org_id: string; p_telegram_id: number }
+        Returns: Json
+      }
+      renter_telegram_webhook_ingest: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       renter_update_profile: { Args: { p_payload: Json }; Returns: Json }
       reopen_lesson_occurrence_closure: {
         Args: {
@@ -10046,8 +11286,13 @@ export type Database = {
         Returns: Json
       }
       request_organization_calendar_reconcile: { Args: never; Returns: Json }
-      request_organization_rentals_calendar_reconcile: { Args: never; Returns: Json }
-      reset_renter_reliability: { Args: { p_renter_id: string; p_reason?: string }; Returns: Json }
+      request_organization_rentals_calendar_reconcile: {
+        Args: never
+        Returns: Json
+      }
+      reset_renter_reliability:
+        | { Args: { p_renter_id: string }; Returns: Json }
+        | { Args: { p_reason?: string; p_renter_id: string }; Returns: Json }
       resolve_renter_topup: { Args: { p_payload: Json }; Returns: Json }
       resolve_subscription_freeze_policy: {
         Args: { p_sub: Database["public"]["Tables"]["subscriptions"]["Row"] }
@@ -10103,7 +11348,10 @@ export type Database = {
         }
         Returns: Json
       }
-      restore_organization_renter_bot: { Args: { p_payload: Json }; Returns: Json }
+      restore_organization_renter_bot: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       retry_calendar_sync_dead_job: {
         Args: { p_job_id: string }
         Returns: Json
@@ -10112,6 +11360,7 @@ export type Database = {
         Args: { p_error_codes?: string[] }
         Returns: Json
       }
+      reverse_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
       revoke_auth_sessions_for_user: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -10121,13 +11370,13 @@ export type Database = {
         Returns: undefined
       }
       run_demo_lifecycle: { Args: never; Returns: Json }
-      run_renter_booking_maintenance: {
-        Args: { p_batch_size?: number }
-        Returns: Json
-      }
       run_group_occurrence_horizon_extension: { Args: never; Returns: Json }
       run_personal_lessons_calendar_reconciliation: {
         Args: never
+        Returns: Json
+      }
+      run_renter_booking_maintenance: {
+        Args: { p_batch_size?: number }
         Returns: Json
       }
       run_version_migration_v2_to_v3: {
@@ -10186,11 +11435,8 @@ export type Database = {
         Args: { p_count: number; p_total: number }
         Returns: number[]
       }
-      staff_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
-      preview_staff_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
-      reverse_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
-      preview_renter_wallet_payout: { Args: { p_payload: Json }; Returns: Json }
       staff_renter_wallet_payout: { Args: { p_payload: Json }; Returns: Json }
+      staff_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
       store_operation_idempotency: {
         Args: {
           p_fingerprint: string
@@ -10425,6 +11671,17 @@ export type Database = {
         Args: { p_lesson_id: string; p_org_id: string }
         Returns: undefined
       }
+      sync_substitute_conducting_records: {
+        Args: {
+          p_date: string
+          p_kind: string
+          p_org_id: string
+          p_personal_id: string
+          p_slot_id: string
+          p_teacher_id: string
+        }
+        Returns: undefined
+      }
       tariff_units_snapshot: {
         Args: { p_lesson_minutes: number; p_tariff_duration_minutes: number }
         Returns: number
@@ -10449,7 +11706,12 @@ export type Database = {
         Args: { p_subscription_id: string }
         Returns: boolean
       }
+      teacher_can_add_clients: { Args: never; Returns: boolean }
       teacher_can_create_discipline: { Args: never; Returns: boolean }
+      teacher_can_insert_schedule_slot: {
+        Args: { p_discipline_id: string; p_location_id: string }
+        Returns: boolean
+      }
       teacher_can_manage_discipline_row: {
         Args: { p_discipline_id: string }
         Returns: boolean
@@ -10457,6 +11719,10 @@ export type Database = {
       teacher_can_manage_disciplines_setting: { Args: never; Returns: boolean }
       teacher_can_mark_group_attendance: {
         Args: { p_date: string; p_schedule_group_id: string }
+        Returns: boolean
+      }
+      teacher_can_mark_personal_lesson: {
+        Args: { p_lesson_id: string }
         Returns: boolean
       }
       teacher_can_view_attendance_row: {
@@ -10472,6 +11738,18 @@ export type Database = {
       teacher_can_write_subscriptions: { Args: never; Returns: boolean }
       teacher_has_any_scope: { Args: never; Returns: boolean }
       teacher_has_client_write_scope: { Args: never; Returns: boolean }
+      teacher_has_conducting_overlap: {
+        Args: {
+          p_date: string
+          p_exclude_personal_id: string
+          p_exclude_slot_id: string
+          p_member_id: string
+          p_org_id: string
+          p_time_end: string
+          p_time_start: string
+        }
+        Returns: boolean
+      }
       teacher_has_discipline_access: {
         Args: { p_discipline_id: string }
         Returns: boolean
@@ -10482,6 +11760,18 @@ export type Database = {
       }
       teacher_has_schedule_group_access: {
         Args: { p_schedule_group_id: string }
+        Returns: boolean
+      }
+      teacher_is_group_occurrence_substitute: {
+        Args: { p_date: string; p_schedule_group_id: string }
+        Returns: boolean
+      }
+      teacher_is_personal_occurrence_substitute: {
+        Args: { p_lesson_id: string }
+        Returns: boolean
+      }
+      teacher_is_slot_occurrence_substitute: {
+        Args: { p_occurrence_date: string; p_schedule_slot_id: string }
         Returns: boolean
       }
       teacher_member_has_future_lessons: {
@@ -10529,6 +11819,9 @@ export type Database = {
         Returns: number
       }
       teacher_scope_has_access: { Args: { p_scope: Json }; Returns: boolean }
+      teachers_can_accept_payments_setting: { Args: never; Returns: boolean }
+      teachers_can_add_clients_setting: { Args: never; Returns: boolean }
+      teachers_can_add_group_lessons_setting: { Args: never; Returns: boolean }
       teachers_can_view_full_schedule_setting: { Args: never; Returns: boolean }
       telegram_id_hash: { Args: { p_telegram_id: string }; Returns: string }
       undo_attendance_correction: {
@@ -10549,6 +11842,14 @@ export type Database = {
       }
       update_group_waitlist_status: {
         Args: { p_comment?: string; p_entry_id: string; p_new_status: string }
+        Returns: Json
+      }
+      update_organization_rental_qr_asset: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
+      update_organization_renter_channel: {
+        Args: { p_payload: Json }
         Returns: Json
       }
       update_payment_in_place: {
@@ -10572,8 +11873,6 @@ export type Database = {
         }
         Returns: Json
       }
-      update_organization_rental_qr_asset: { Args: { p_payload: Json }; Returns: Json }
-      update_organization_renter_channel: { Args: { p_payload: Json }; Returns: Json }
       update_personal_lesson: {
         Args: { p_lesson_id: string; p_payload: Json }
         Returns: Json
@@ -10625,7 +11924,10 @@ export type Database = {
         }
         Returns: undefined
       }
-      upsert_location_rental_hour_rate: { Args: { p_payload: Json }; Returns: Json }
+      upsert_location_rental_hour_rate: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       upsert_rental_tariff: { Args: { p_payload: Json }; Returns: Json }
       upsert_renter: { Args: { p_payload: Json }; Returns: Json }
       upsert_renter_contact: { Args: { p_payload: Json }; Returns: Json }
@@ -10668,6 +11970,10 @@ export type Database = {
       }
       venue_cost_gap_is_acknowledged: {
         Args: { p_at: string; p_expired_rule_id: string; p_org_id: string }
+        Returns: boolean
+      }
+      venue_cost_payment_ack_required: {
+        Args: { p_lesson_date?: string; p_org_id: string }
         Returns: boolean
       }
       venue_cost_per_lesson_rules_conflict: {
@@ -10752,6 +12058,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      venue_rule_covers_lesson_date: {
+        Args: { p_lesson_date: string; p_org_id: string }
+        Returns: boolean
+      }
       void_personal_lesson_payment: {
         Args: {
           p_idempotency_key?: string
@@ -10788,12 +12098,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10817,11 +12127,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10842,11 +12152,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10867,11 +12177,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10884,11 +12194,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

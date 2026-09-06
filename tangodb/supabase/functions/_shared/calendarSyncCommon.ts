@@ -1044,3 +1044,35 @@ export async function handleSyncJobError(
     await markJobRetry(admin, job, code, message);
   }
 }
+
+export async function loadOccurrenceConductingTeacherId(
+  admin: SupabaseClient,
+  organizationId: string,
+  kind: "group" | "personal",
+  scheduleSlotId: string | null,
+  personalLessonId: string | null,
+  occurrenceDate: string,
+  fallback: string | null
+): Promise<string | null> {
+  let query = admin
+    .from("lesson_occurrence_substitutes")
+    .select("substitute_teacher_member_id")
+    .eq("organization_id", organizationId)
+    .eq("occurrence_kind", kind)
+    .eq("occurrence_date", occurrenceDate)
+    .limit(1);
+
+  if (kind === "group") {
+    if (!scheduleSlotId) return fallback;
+    query = query.eq("schedule_slot_id", scheduleSlotId);
+  } else {
+    if (!personalLessonId) return fallback;
+    query = query.eq("personal_lesson_id", personalLessonId);
+  }
+
+  const { data } = await query.maybeSingle();
+  const substituteId = (data as { substitute_teacher_member_id?: string | null } | null)
+    ?.substitute_teacher_member_id;
+  return substituteId ?? fallback;
+}
+

@@ -12,6 +12,7 @@ export function canViewGroupAttendanceLesson(
   lesson: {
     scheduleGroupId?: string | null;
     teacherMemberId?: string | null;
+    substituteTeacherMemberId?: string | null;
   },
   options?: AttendanceLessonAccessOptions
 ): boolean {
@@ -20,6 +21,7 @@ export function canViewGroupAttendanceLesson(
   if (role === "director") return options?.directorsCanMarkAttendance ?? true;
   if (role === "admin") return true;
   if (role !== "teacher" || !memberId) return false;
+  if (lesson.substituteTeacherMemberId === memberId) return true;
   if (!lesson.scheduleGroupId) return false;
   return hasScheduleGroupAccess(scope, lesson.scheduleGroupId);
 }
@@ -27,7 +29,7 @@ export function canViewGroupAttendanceLesson(
 export function canViewPersonalAttendanceLesson(
   role: MemberRole | null,
   memberId: string | null,
-  lesson: { teacherMemberId?: string | null },
+  lesson: { teacherMemberId?: string | null; substituteTeacherMemberId?: string | null },
   options?: AttendanceLessonAccessOptions
 ): boolean {
   if (!role) return false;
@@ -35,5 +37,5 @@ export function canViewPersonalAttendanceLesson(
   if (role === "director") return options?.directorsCanMarkAttendance ?? true;
   if (role === "admin") return true;
   if (role !== "teacher" || !memberId) return false;
-  return lesson.teacherMemberId === memberId;
+  return lesson.teacherMemberId === memberId || lesson.substituteTeacherMemberId === memberId;
 }

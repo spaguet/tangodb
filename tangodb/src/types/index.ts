@@ -124,6 +124,7 @@ export interface GroupDisplayLesson {
   scheduleGroupId: string | null;
   locationId: string | null;
   teacherMemberId: string | null;
+  substituteTeacherMemberId?: string | null;
   movedFromSlotId?: string | null;
   movedFromDate?: string | null;
   movedFromTime?: string | null;
@@ -140,6 +141,7 @@ export interface PersonalDisplayLesson {
   disciplineId: string | null;
   locationId: string | null;
   teacherMemberId: string | null;
+  substituteTeacherMemberId?: string | null;
   clientId1?: string;
   clientId2?: string;
   clientId3?: string;
@@ -500,6 +502,7 @@ export interface PersonalLesson {
   subscriptionId?: string | null;
   locationId?: string | null;
   teacherMemberId?: string | null;
+  substituteTeacherMemberId?: string | null;
   attendanceStatus?: "present" | "absent" | "excused" | null;
   priceId?: string | null;
   payerClientId?: string | null;

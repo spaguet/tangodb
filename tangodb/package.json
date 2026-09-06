@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.9.96",
+  "version": "2.10.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -42,6 +42,7 @@
     "test:db:rental-amount-adjustment": "psql \"%DATABASE_URL%\" -f supabase/tests/rental_amount_adjustment_test.sql",
     "test:db:venue-cost": "psql \"%DATABASE_URL%\" -f supabase/tests/venue_cost_rules_test.sql",
     "test:db:teacher-pay-audit": "psql \"%DATABASE_URL%\" -f supabase/tests/teacher_pay_audit_test.sql",
+    "test:db:lesson-substitute": "psql \"%DATABASE_URL%\" -f supabase/tests/lesson_occurrence_substitutes_test.sql",
     "test:venue-cost-preview": "node scripts/venue-cost-rules-check.mjs",
     "test:rental-effective-amount": "node scripts/rental-effective-amount-check.mjs",
     "test:finance-rental-aggregates": "node scripts/finance-rental-aggregates-check.mjs",

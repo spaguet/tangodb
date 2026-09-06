@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, X, XCircle, ArrowRightLeft, CheckCircle2 } from "lucide-react";
+import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, UserPlus, X, XCircle, ArrowRightLeft, CheckCircle2 } from "lucide-react";
 import { useClientDirectory } from "../../hooks/useClients";
 import { useDeleteScheduleSlot } from "../../hooks/useSchedule";
 import { useDeletePersonalLesson, useDeletePersonalLessonSeriesFromDate, usePersonalLessons } from "../../hooks/usePersonalLessons";
@@ -18,6 +18,7 @@ import {
   canWritePersonalLesson,
   maskClientDisplay,
 } from "../../lib/scheduleLessonAccess";
+import { canAssignLessonSubstitute, isSubstituteOnlyTeacher } from "../../lib/lessonSubstitute";
 import { useI18n } from "../../hooks/useI18n";
 import { isRecurringGroupSlot } from "../../lib/groupLessonRepeat";
 import { personalLessonsInSeriesFromDate } from "../../lib/personalLessonSeries";
@@ -41,6 +42,7 @@ import AdjustDebtorAmountDialog from "../finance/AdjustDebtorAmountDialog";
 import type { DebtorEntry } from "../../lib/financeReports";
 import MoveGroupLessonDialog from "./MoveGroupLessonDialog";
 import CancelGroupLessonDialog from "./CancelGroupLessonDialog";
+import SubstituteLessonDialog from "./SubstituteLessonDialog";
 import GoogleCalendarSyncStatusBadge from "../integrations/GoogleCalendarSyncStatusBadge";
 import { useGoogleCalendarSyncStatus } from "../../hooks/useGoogleCalendarSyncStatus";
 import { googleCalendarSyncTargetFromLesson } from "../../lib/googleCalendarApi";
@@ -51,6 +53,7 @@ interface LessonInfoPopupProps {
   locationName?: string;
   disciplineName?: string;
   teacherName?: string;
+  substituteTeacherName?: string;
   scheduleSlots?: ScheduleSlotRef[];
   personalLessons?: PersonalLessonRef[];
   onClose: () => void;
@@ -84,6 +87,7 @@ export default function LessonInfoPopup({
   locationName,
   disciplineName,
   teacherName,
+  substituteTeacherName,
   scheduleSlots = [],
   personalLessons = [],
   onClose,
@@ -94,7 +98,7 @@ export default function LessonInfoPopup({
   const { t, formatDate } = useI18n();
   const toast = useToast();
   const { memberId } = useOrganization();
-  const { role, can, isReadOnly, canEditPastSchedule } = usePermissions();
+  const { role, can, isReadOnly, canEditPastSchedule, options } = usePermissions();
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const deletePersonalLesson = useDeletePersonalLesson();
   const deletePersonalLessonSeries = useDeletePersonalLessonSeriesFromDate();
@@ -103,6 +107,7 @@ export default function LessonInfoPopup({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [cancelOneConfirmOpen, setCancelOneConfirmOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [substituteDialogOpen, setSubstituteDialogOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
   const [adjustDebtEntry, setAdjustDebtEntry] = useState<DebtorEntry | null>(null);
   const [profileClient, setProfileClient] = useState<Client | null>(null);
@@ -171,6 +176,7 @@ export default function LessonInfoPopup({
 
   const canEdit =
     lesson &&
+    !isSubstituteOnlyTeacher(role, memberId, lesson) &&
     (lesson.kind === "group"
       ? canManageGroupLesson(
           role,
@@ -189,6 +195,16 @@ export default function LessonInfoPopup({
     isRecurringGroupSlot(lesson.validFrom, lesson.validTo);
 
   const canMoveOneOccurrence = canCancelOneOccurrence;
+
+  const canAssignSubstitute =
+    Boolean(lesson) &&
+    canAssignLessonSubstitute({
+      role,
+      memberId,
+      originalTeacherMemberId: lesson?.teacherMemberId ?? null,
+      isReadOnly,
+      restrictedAdmin: options.restrictedAdmin,
+    });
 
   const movedFromLabel =
     lesson?.kind === "group" && lesson.movedFromDate
@@ -478,6 +494,14 @@ export default function LessonInfoPopup({
                   </div>
                 )}
 
+                {(lesson.substituteTeacherMemberId || substituteTeacherName) && (
+                  <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-indigo-800">
+                    {t("schedule.substitute.badge", {
+                      name: substituteTeacherName ?? t("schedule.form.teacher"),
+                    })}
+                  </div>
+                )}
+
                 {movedFromLabel && (
                   <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-indigo-800">
                     {movedFromLabel}
@@ -644,6 +668,19 @@ export default function LessonInfoPopup({
                 </RequirePermission>
               ) : null}
 
+              {canAssignSubstitute ? (
+                <button
+                  type="button"
+                  onClick={() => setSubstituteDialogOpen(true)}
+                  className={`w-full ${btnOpenCls}`}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  {lesson.substituteTeacherMemberId
+                    ? t("schedule.substitute.change")
+                    : t("schedule.substitute.assign")}
+                </button>
+              ) : null}
+
               <div className="flex items-center gap-2 pt-1">
                 {canEdit && (
                   <RequirePermission action={lesson.kind === "group" ? "schedule.write" : "personal_lessons.write"} context={permissionContext}>
@@ -783,6 +820,18 @@ export default function LessonInfoPopup({
           setMoveDialogOpen(false);
           onSuccess?.();
           onClose();
+        }}
+      />
+
+      <SubstituteLessonDialog
+        lesson={substituteDialogOpen ? lesson : null}
+        teacherName={teacherName}
+        substituteTeacherName={substituteTeacherName}
+        toast={toast}
+        onClose={() => setSubstituteDialogOpen(false)}
+        onSuccess={() => {
+          setSubstituteDialogOpen(false);
+          onSuccess?.();
         }}
       />
 

@@ -28,6 +28,7 @@ import {
   syncEventToGoogle,
   cleanupStaleManagedEvents,
   handleSyncJobError,
+  loadOccurrenceConductingTeacherId,
 } from "./calendarSyncCommon.ts";
 import { GoogleCalendarApiError } from "./googleCalendarClient.ts";
 import type { GoogleOAuthConfig } from "./googleOAuth.ts";
@@ -245,7 +246,17 @@ export async function upsertGroupOccurrence(
     }
   }
 
-  if (!slot.teacher_member_id) {
+  const conductingTeacherId = await loadOccurrenceConductingTeacherId(
+    admin,
+    job.organization_id,
+    "group",
+    slot.id,
+    null,
+    occurrenceDate,
+    slot.teacher_member_id
+  );
+
+  if (!conductingTeacherId) {
     await markJobDone(admin, job.id);
     return;
   }
@@ -253,7 +264,7 @@ export async function upsertGroupOccurrence(
   const teacherActive = await isTeacherActive(
     admin,
     job.organization_id,
-    slot.teacher_member_id
+    conductingTeacherId
   );
   if (!teacherActive) {
     await markJobDone(admin, job.id);
@@ -263,7 +274,7 @@ export async function upsertGroupOccurrence(
   const binding = await loadActiveBinding(
     admin,
     job.organization_id,
-    slot.teacher_member_id,
+    conductingTeacherId,
     "sync_group"
   );
   if (!binding) {

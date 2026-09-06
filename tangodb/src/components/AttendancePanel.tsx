@@ -32,6 +32,11 @@ import { ATTENDANCE_UNDO_WINDOW_MS } from "../lib/paymentCorrection";
 import { usePaymentFormIdempotency } from "../hooks/usePaymentFormIdempotency";
 import { useSubscriptionGroups } from "../hooks/useSubscriptionGroups";
 import { usePersonalLessons, useMarkPersonalLessonAttendance, personalLessonsQueryKey } from "../hooks/usePersonalLessons";
+import { useLessonSubstitutes } from "../hooks/useLessonSubstitutes";
+import {
+  applySubstitutesToGroupLessons,
+  applySubstitutesToPersonalRecords,
+} from "../lib/lessonSubstitute";
 import { useClientDirectory } from "../hooks/useClients";
 import { singleVisitsQueryKey, useRecordSingleVisit, useSingleVisits } from "../hooks/useSingleVisits";
 import { useFinancePeriodGate } from "../hooks/useFinancePeriodGate";
@@ -179,6 +184,7 @@ type DayLessonEntry =
       locationId?: string | null;
       scheduleGroupId?: string | null;
       teacherMemberId?: string | null;
+      substituteTeacherMemberId?: string | null;
     }
   | { kind: "personal"; key: string; start: string; lesson: PersonalLesson; label: string };
 
@@ -256,8 +262,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       groupName: e.label,
     }));
   }, [monthScheduleDates, isOfflineMode, snapshot, selectedLocationId, selectedMonth]);
+  const { data: substituteRows = [] } = useLessonSubstitutes();
+  const monthDatesWithSubstitutes = useMemo(
+    () => applySubstitutesToGroupLessons(effectiveMonthScheduleDates, substituteRows),
+    [effectiveMonthScheduleDates, substituteRows]
+  );
   const {
-    data: personalLessons = [],
+    data: personalLessonsRaw = [],
     isLoading: personalLoading,
     isError: personalError,
     error: personalErr,
@@ -265,6 +276,10 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     yearMonth: selectedLocationId ? selectedMonth : undefined,
     enabled: selectedLocationId != null && personalLessonsEnabled,
   });
+  const personalLessons = useMemo(
+    () => applySubstitutesToPersonalRecords(personalLessonsRaw, substituteRows),
+    [personalLessonsRaw, substituteRows]
+  );
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = usePrices();
   const { groupsBySubId } = useSubscriptionGroups();
   const clientsQuery = useClientDirectory();
@@ -331,8 +346,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   }, [selectedLesson]);
 
   const groupLessonsForDay = useMemo(
-    () => effectiveMonthScheduleDates.filter((item) => item.date === selectedDate),
-    [effectiveMonthScheduleDates, selectedDate]
+    () => monthDatesWithSubstitutes.filter((item) => item.date === selectedDate),
+    [monthDatesWithSubstitutes, selectedDate]
   );
 
   const locationPersonalLessons = useMemo(
@@ -364,7 +379,11 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           role,
           memberId,
           scope,
-          { scheduleGroupId: slot.scheduleGroupId, teacherMemberId: slot.teacherMemberId },
+          {
+            scheduleGroupId: slot.scheduleGroupId,
+            teacherMemberId: slot.teacherMemberId,
+            substituteTeacherMemberId: slot.substituteTeacherMemberId,
+          },
           attendanceAccessOptions
         )
       ),
@@ -381,16 +400,20 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const accessibleMonthGroupDates = useMemo(
     () =>
-      effectiveMonthScheduleDates.filter((slot) =>
+      monthDatesWithSubstitutes.filter((slot) =>
         canViewGroupAttendanceLesson(
           role,
           memberId,
           scope,
-          { scheduleGroupId: slot.scheduleGroupId, teacherMemberId: slot.teacherMemberId },
+          {
+            scheduleGroupId: slot.scheduleGroupId,
+            teacherMemberId: slot.teacherMemberId,
+            substituteTeacherMemberId: slot.substituteTeacherMemberId,
+          },
           attendanceAccessOptions
         )
       ),
-    [effectiveMonthScheduleDates, role, memberId, scope, attendanceAccessOptions]
+    [monthDatesWithSubstitutes, role, memberId, scope, attendanceAccessOptions]
   );
 
   const accessibleLocationPersonalLessons = useMemo(
@@ -416,6 +439,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         locationId: slot.locationId ?? null,
         scheduleGroupId: slot.scheduleGroupId ?? null,
         teacherMemberId: slot.teacherMemberId ?? null,
+        substituteTeacherMemberId: slot.substituteTeacherMemberId ?? null,
         label: slot.groupName
           ? `${slot.groupName} · ${slot.time} – ${slot.timeEnd}`
           : t("attendance.groupLessonTime", { time: slot.time, timeEnd: slot.timeEnd }),
@@ -527,6 +551,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         {
           scheduleGroupId: selectedLesson.scheduleGroupId,
           teacherMemberId: selectedLesson.teacherMemberId,
+          substituteTeacherMemberId: selectedLesson.substituteTeacherMemberId,
         },
         attendanceAccessOptions
       );

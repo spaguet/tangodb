@@ -15,6 +15,7 @@ import { useI18n } from "../../hooks/useI18n";
 import { formatCurrency } from "../../lib/utils";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { canAddPersonalFromGrid, canClickEmptyCell, canOfferGroupLessonAdd, isLessonInTeacherScope } from "../../lib/scheduleLessonAccess";
+import { hasLocationAccess } from "../../lib/teacherScope";
 import { canManageMiniAppRentals } from "../../lib/permissions";
 import { isMiniAppRentalChannel } from "../../lib/rentalMiniAppDisplay";
 import {
@@ -297,16 +298,26 @@ export default function SchedulePageContainer() {
         l.scheduleRestricted ||
         l.kind === "event" ||
         l.kind === "rental" ||
-        l.teacherMemberId === teacherFilter
+        l.teacherMemberId === teacherFilter ||
+        ("substituteTeacherMemberId" in l && l.substituteTeacherMemberId === teacherFilter)
     );
   }, [scheduleQuery.data?.lessons, teacherFilter]);
 
   const displayLessons = useMemo(() => {
     if (role !== "teacher") return filteredLessons;
-    return filteredLessons.map((lesson) => {
-      if (isLessonInTeacherScope(role, memberId, lesson, scope)) return lesson;
-      return { ...lesson, scheduleRestricted: true };
-    });
+    const visible: DisplayLesson[] = [];
+    for (const lesson of filteredLessons) {
+      if (isLessonInTeacherScope(role, memberId, lesson, scope)) {
+        visible.push(lesson);
+        continue;
+      }
+      const locationVisible =
+        !lesson.locationId || hasLocationAccess(scope, lesson.locationId);
+      if (locationVisible) {
+        visible.push({ ...lesson, scheduleRestricted: true });
+      }
+    }
+    return visible;
   }, [filteredLessons, role, memberId, scope]);
 
   const highlightedLesson = useMemo(() => {
@@ -420,6 +431,13 @@ export default function SchedulePageContainer() {
       if (lesson.kind !== "event" && lesson.kind !== "rental" && lesson.teacherMemberId) {
         const teacher = teamMap.get(lesson.teacherMemberId);
         if (teacher) parts.push(teacher);
+      }
+      if (
+        (lesson.kind === "group" || lesson.kind === "personal") &&
+        lesson.substituteTeacherMemberId
+      ) {
+        const substitute = teamMap.get(lesson.substituteTeacherMemberId);
+        if (substitute) parts.push(t("schedule.substitute.short", { name: substitute }));
       }
 
       return parts.length > 0 ? parts.join(" · ") : undefined;
@@ -633,6 +651,9 @@ export default function SchedulePageContainer() {
         : undefined,
       teacherName: selectedLesson.teacherMemberId
         ? teamMap.get(selectedLesson.teacherMemberId)
+        : undefined,
+      substituteTeacherName: selectedLesson.substituteTeacherMemberId
+        ? teamMap.get(selectedLesson.substituteTeacherMemberId)
         : undefined,
     };
   }, [selectedLesson, resolveLocationName, disciplineMap, teamMap]);
@@ -868,6 +889,7 @@ export default function SchedulePageContainer() {
         locationName={selectedLessonMeta?.locationName}
         disciplineName={selectedLessonMeta?.disciplineName}
         teacherName={selectedLessonMeta?.teacherName}
+        substituteTeacherName={selectedLessonMeta?.substituteTeacherName}
         scheduleSlots={scheduleSlots}
         personalLessons={personalLessonRefs}
         onClose={() => setSelectedLesson(null)}

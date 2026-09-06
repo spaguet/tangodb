@@ -53,6 +53,7 @@ export type ScheduleDateEntry = {
   disciplineId?: string | null;
   locationId?: string | null;
   teacherMemberId?: string | null;
+  substituteTeacherMemberId?: string | null;
 };
 
 export function filterScheduleByLocation(

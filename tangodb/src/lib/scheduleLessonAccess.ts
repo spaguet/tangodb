@@ -111,6 +111,7 @@ export function isLessonInTeacherScope(
 
   if (lesson.kind === "personal" || lesson.kind === "group") {
     if (memberId && lesson.teacherMemberId === memberId) return true;
+    if (memberId && lesson.substituteTeacherMemberId === memberId) return true;
     return teacherMatchesContext(scope, lessonContext(lesson));
   }
 

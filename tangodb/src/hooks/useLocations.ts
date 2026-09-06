@@ -4,6 +4,9 @@ import { supabase } from "../lib/supabase";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { usePermissions } from "./usePermissions";
 import { useScheduleGroups } from "./useScheduleGroups";
+import { useLessonSubstitutes } from "./useLessonSubstitutes";
+import { substituteLocationIds } from "../lib/lessonSubstitute";
+import { useOrganization } from "../organization/OrganizationProvider";
 import type { MemberRole, TeacherScope } from "../types/organization";
 
 export interface Location {
@@ -65,16 +68,27 @@ export function useLocations() {
 export function useAccessibleLocations() {
   const query = useLocations();
   const scheduleGroupsQuery = useScheduleGroups();
+  const substitutesQuery = useLessonSubstitutes();
   const { role, scope } = usePermissions();
+  const { memberId } = useOrganization();
 
   const groupScopeLocationIds = useMemo(
     () => locationIdsFromScheduleGroupScope(scope, scheduleGroupsQuery.data ?? []),
     [scope, scheduleGroupsQuery.data]
   );
 
+  const substituteLocIds = useMemo(
+    () => substituteLocationIds(substitutesQuery.data ?? [], memberId),
+    [substitutesQuery.data, memberId]
+  );
+
   const locations = useMemo(
-    () => filterAccessibleLocations(query.data ?? [], role, scope, groupScopeLocationIds),
-    [query.data, role, scope, groupScopeLocationIds]
+    () =>
+      filterAccessibleLocations(query.data ?? [], role, scope, [
+        ...groupScopeLocationIds,
+        ...substituteLocIds,
+      ]),
+    [query.data, role, scope, groupScopeLocationIds, substituteLocIds]
   );
 
   return { ...query, locations };

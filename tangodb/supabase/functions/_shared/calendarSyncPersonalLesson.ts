@@ -31,6 +31,7 @@ import {
   cleanupStaleManagedEvents,
   purgeAllManagedEventsOnCalendar,
   handleSyncJobError,
+  loadOccurrenceConductingTeacherId,
 } from "./calendarSyncCommon.ts";
 import {
   GoogleCalendarApiError,
@@ -244,7 +245,17 @@ export async function upsertPersonalLesson(
     }
   }
 
-  if (!lesson.teacher_member_id) {
+  const conductingTeacherId = await loadOccurrenceConductingTeacherId(
+    admin,
+    job.organization_id,
+    "personal",
+    null,
+    lesson.id,
+    occurrenceDate,
+    lesson.teacher_member_id
+  );
+
+  if (!conductingTeacherId) {
     await markJobDone(admin, job.id);
     return;
   }
@@ -252,7 +263,7 @@ export async function upsertPersonalLesson(
   const teacherActive = await isTeacherActive(
     admin,
     job.organization_id,
-    lesson.teacher_member_id
+    conductingTeacherId
   );
   if (!teacherActive) {
     await markJobDone(admin, job.id);
@@ -262,7 +273,7 @@ export async function upsertPersonalLesson(
   const binding = await loadActiveBinding(
     admin,
     job.organization_id,
-    lesson.teacher_member_id,
+    conductingTeacherId,
     "sync_personal"
   );
   if (!binding) {
