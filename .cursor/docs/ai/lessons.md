@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-09-06 — Occupancy view + unpaid filter = вечная загрузка
+
+- **Ошибка:** У преподавателя в расписании бесконечно «Загрузка неоплаченных уроков...».
+- **Причина:** `personal_lessons_teacher_v` после occupancy отдаёт чужие уроки зала с `paid = 'no'`. `useScheduleDebtors` грузил все `paid=no` без `teacherMemberId` и пагинировал всю историю (RLS/view таймаут, TanStack Query так и остаётся в `isLoading`).
+- **Как избежать:** списки долгов преподавателя фильтровать на PostgREST (`teacherMemberId`, `excludeCancelled`); не сканировать occupancy-view без даты/педагога. Полноэкранный `LoadingState` не ставить под сеткой — компактный баннер.
+
 ### 2026-09-06 — PostgREST embed составного FK
 
 - **Ошибка:** Расписание не грузилось: `Could not find a relationship between 'lesson_occurrence_substitutes' and 'schedule_slots' in the schema cache`.

@@ -33,7 +33,7 @@
   - **Сетка:** `WeeklyScheduleGrid`, `LocationScheduleSection`, `DayColumn`, `LessonBlock`, `TimeGutter`
   - **Toolbar:** `ScheduleToolbar`, `WeekPickerPopover`
   - **CRUD UI:** `LessonInfoPopup`, `AddLessonTypePopup`, `AddGroupLessonForm`, `AddPersonalLessonForm` (обёртка над `PersonalLessonSaleForm`), `EditLessonPopup`
-  - **Долги:** `ScheduleDebtorsBlock` — операционный контур (`paid=no`), без `financial_debtors_v`
+  - **Долги:** `ScheduleDebtorsBlock` — операционный контур (`paid=no`), без `financial_debtors_v`. Для `teacher` запрос scoped по `teacherMemberId` (occupancy-view иначе помечает чужие уроки как unpaid и запрос не заканчивается)
   - **Данные:** только через хуки (`useScheduleForWeek`, `usePersonalLessons`, `useScheduleDebtors`, mutations в `useSchedule.ts` / `usePersonalLessons.ts`); прямых Supabase-вызовов в компонентах нет
   - **Утилиты:** `lib/scheduleWeek.ts`, `lib/scheduleConflicts.ts`, `lib/scheduleTime.ts`, `lib/scheduleLessonAccess.ts`, `lib/lessonSubstitute.ts`
   - **Замена преподавателя (2.10 / SUBSTITUTE-1):** `lesson_occurrence_substitutes` + RPC `assign_lesson_substitute` / `clear_lesson_substitute`. Постоянный педагог слота/урока не меняется. Заменяющий видит занятие и журнал только на эту дату, закрытие и payroll идут на conducting teacher (ставки заменяющего). Хуки `useLessonSubstitutes`; UI — `SubstituteLessonDialog` из карточки урока. Список подмен — плоский `select` без PostgREST-embed в `schedule_slots` (составной tenant FK не в schema cache); `location_id` для extra-залов стыкуется на клиенте из `useSchedule`.

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { AlertCircle, ChevronDown, Clock, Coins } from "lucide-react";
+import { AlertCircle, ChevronDown, Clock, Coins, Loader2 } from "lucide-react";
 import { useScheduleDebtors } from "../../hooks/useScheduleDebtors";
 import { usePermissions } from "../../hooks/usePermissions";
 import { usePersonalLessonsModuleEnabled } from "../../hooks/useOrgModules";
@@ -17,7 +17,6 @@ import {
 import { formatCurrency } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import type { ScheduleDebtorEntry } from "../../hooks/useScheduleDebtors";
-import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
 import { btnAddCls } from "../ui/buttonStyles";
@@ -175,7 +174,7 @@ export default function ScheduleDebtorsBlock({
   const { role, can, isReadOnly } = usePermissions();
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const debtorsQuery = useScheduleDebtors({ enabled: personalLessonsEnabled });
-  const { data: debtors = [], showAmount, isLoading, isError, error } = debtorsQuery;
+  const { data: debtors = [], showAmount, isLoading, isError, error, refetch } = debtorsQuery;
   const [payTarget, setPayTarget] = useState<PayPersonalLessonTarget | null>(null);
   const [expanded, setExpanded] = useState(false);
 
@@ -226,12 +225,21 @@ export default function ScheduleDebtorsBlock({
   }
 
   if (isLoading) {
-    return <LoadingState label={t("schedule.debtors.loading")} />;
+    return (
+      <div className="flex items-center gap-2 px-4 py-3 bg-white rounded-xl border border-rose-200/80 text-slate-500 text-xs">
+        <Loader2 className="w-4 h-4 animate-spin text-rose-500 shrink-0" />
+        {t("schedule.debtors.loading")}
+      </div>
+    );
   }
 
   if (isError) {
     return (
-      <QueryErrorState message={t("schedule.debtors.loadFailed")} error={error} />
+      <QueryErrorState
+        message={t("schedule.debtors.loadFailed")}
+        error={error}
+        onRetry={() => void refetch()}
+      />
     );
   }
 

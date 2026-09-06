@@ -43,10 +43,19 @@ export function useScheduleDebtors(options?: { enabled?: boolean }) {
   const includeAmount = canShowScheduleDebtAmount(role);
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const { data: clientMap = {} } = useClientDirectory();
+  const teacherDebtorList = role === "teacher";
+  const enabled =
+    personalLessonsEnabled &&
+    (options?.enabled ?? true) &&
+    (!teacherDebtorList || Boolean(memberId));
 
   const lessonsQuery = usePersonalLessons({
     paidFilter: "no",
-    enabled: personalLessonsEnabled && (options?.enabled ?? true),
+    excludeCancelled: true,
+    // Occupancy view marks foreign lessons as paid='no'; without this filter a teacher
+    // paginates every location lesson and the debtors block never finishes loading.
+    teacherMemberId: teacherDebtorList ? memberId ?? undefined : undefined,
+    enabled,
   });
 
   const filteredLessons = useMemo(() => {
@@ -57,7 +66,6 @@ export function useScheduleDebtors(options?: { enabled?: boolean }) {
   }, [lessonsQuery.data, role, memberId]);
 
   const lessonIds = useMemo(() => filteredLessons.map((l) => l.id), [filteredLessons]);
-  const teacherDebtorList = role === "teacher";
 
   const chargesQuery = usePersonalLessonChargeBalances(lessonIds, {
     enabled:
