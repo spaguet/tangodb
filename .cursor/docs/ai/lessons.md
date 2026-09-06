@@ -837,6 +837,12 @@
 - **Причина:** `teacher_settlements` имел CHECK `amount_paid <= amount_accrued`, а `RecordPaymentModal` запрещал сумму больше остатка.
 - **Как избежать:** Для payroll с авансами хранить выплаты как ledger/payment rows и разрешать `amount_paid > amount_accrued`; в UI показывать отрицательный остаток как аванс.
 
+### 2026-09-05 — Supabase Auth site_url уводил recovery в localhost
+
+- **Ошибка:** Письмо восстановления пароля открывало `http://127.0.0.1:3000/#error=access_denied&error_code=otp_expired...` вместо production CRM.
+- **Причина:** Hosted Supabase Auth `site_url` был `http://127.0.0.1:3000`; при невалидной/просроченной OTP-ссылке GoTrue падал на базовый `site_url`.
+- **Как избежать:** Production Auth `site_url` и `uri_allow_list` держать на `https://tangodb.vercel.app`; в `supabase/config.toml` не хранить localhost как базовый Auth URL, чтобы config push не откатывал hosted settings.
+
 ### 2026-09-05 — Восстановление пароля у приглашённого преподавателя без аккаунта
 
 - **Ошибка:** Преподаватель на `/auth/forgot-password` видел нейтральное «Если аккаунт существует…», но письмо не приходило; в Dev Console — тишина.

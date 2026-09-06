@@ -160,13 +160,16 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+site_url = "https://tangodb.vercel.app"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 # Production origin only (exact URL, no *.vercel.app wildcards). Local dev URLs for `supabase start`.
 additional_redirect_urls = [
   "https://tangodb.vercel.app",
+  "https://tangodb.vercel.app/auth/reset-password",
+  "https://tangodb.vercel.app/auth/verify-email",
+  "https://tangodb.vercel.app/accept-invite",
   "http://127.0.0.1:3000",
   "https://127.0.0.1:3000",
 ]
