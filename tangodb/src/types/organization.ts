@@ -103,8 +103,11 @@ export interface OrganizationSettings {
   teachers_can_sell_personal_lessons: boolean;
   directors_can_mark_attendance: boolean;
   teachers_can_edit_clients: boolean;
+  teachers_can_add_clients: boolean;
   teachers_can_export: boolean;
   teachers_can_view_full_schedule: boolean;
+  teachers_can_accept_payments: boolean;
+  teachers_can_add_group_lessons: boolean;
   admin_can_export: boolean;
   admin_can_manage_team: boolean;
   admin_can_accept_payments: boolean;

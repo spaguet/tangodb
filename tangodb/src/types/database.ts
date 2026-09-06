@@ -2274,12 +2274,15 @@ export type Database = {
           pair_cycle_enabled: boolean
           rental_billing_profile: Json
           teachers_can_edit_clients: boolean
+          teachers_can_add_clients: boolean
           teachers_can_export: boolean
           teachers_can_manage_disciplines: boolean
           teachers_can_record_single_visits: boolean
           teachers_can_sell_personal_lessons: boolean
           teachers_can_sell_subscriptions: boolean
           teachers_can_view_full_schedule: boolean
+          teachers_can_accept_payments: boolean
+          teachers_can_add_group_lessons: boolean
           terminology: Json
           timezone: string
           updated_at: string
@@ -2308,12 +2311,15 @@ export type Database = {
           pair_cycle_enabled?: boolean
           rental_billing_profile?: Json
           teachers_can_edit_clients?: boolean
+          teachers_can_add_clients?: boolean
           teachers_can_export?: boolean
           teachers_can_manage_disciplines?: boolean
           teachers_can_record_single_visits?: boolean
           teachers_can_sell_personal_lessons?: boolean
           teachers_can_sell_subscriptions?: boolean
           teachers_can_view_full_schedule?: boolean
+          teachers_can_accept_payments?: boolean
+          teachers_can_add_group_lessons?: boolean
           terminology?: Json
           timezone?: string
           updated_at?: string
@@ -2342,12 +2348,15 @@ export type Database = {
           pair_cycle_enabled?: boolean
           rental_billing_profile?: Json
           teachers_can_edit_clients?: boolean
+          teachers_can_add_clients?: boolean
           teachers_can_export?: boolean
           teachers_can_manage_disciplines?: boolean
           teachers_can_record_single_visits?: boolean
           teachers_can_sell_personal_lessons?: boolean
           teachers_can_sell_subscriptions?: boolean
           teachers_can_view_full_schedule?: boolean
+          teachers_can_accept_payments?: boolean
+          teachers_can_add_group_lessons?: boolean
           terminology?: Json
           timezone?: string
           updated_at?: string

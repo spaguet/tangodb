@@ -230,6 +230,7 @@ export default function EditLessonPopup({
   );
 
   const isTeacher = role === "teacher";
+  const canAddClients = can("clients.create");
   const todayISO = toISODateLocal(new Date());
 
   const [groupName, setGroupName] = useState("");
@@ -1580,7 +1581,7 @@ export default function EditLessonPopup({
                                   clients={activeClients}
                                   query={client.query}
                                   selectedId={client.id}
-                                  showAddClientButton
+                                  showAddClientButton={canAddClients}
                                   addClientLinkLabel={t("common.newClient")}
                                   toast={toast}
                                   onQueryChange={(query) => {
@@ -1615,7 +1616,7 @@ export default function EditLessonPopup({
                               )}
                             </div>
                           ))}
-                          {bookingClients.length < MAX_PERSONAL_CLIENTS && (
+                          {canAddClients && bookingClients.length < MAX_PERSONAL_CLIENTS && (
                             <button
                               type="button"
                               onClick={() => setBookingClients((prev) => [...prev, { query: "", id: "" }])}

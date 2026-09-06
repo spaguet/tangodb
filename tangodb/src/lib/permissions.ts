@@ -45,6 +45,7 @@ export type SettingsSectionId =
 
 export type PermissionAction =
   | "clients.read"
+  | "clients.create"
   | "clients.write"
   | "client_notes.read"
   | "client_notes.write"
@@ -118,6 +119,9 @@ export interface PermissionOptions {
   adminCanAcceptPayments?: boolean;
   adminCanEditSchedule?: boolean;
   teachersCanRecordSingleVisits?: boolean;
+  teachersCanAcceptPayments?: boolean;
+  teachersCanAddGroupLessons?: boolean;
+  teachersCanAddClients?: boolean;
   adminCanRecordSingleVisits?: boolean;
   restrictedAdmin?: boolean;
   isReadOnly?: boolean;
@@ -129,6 +133,7 @@ const OPERATIONAL_READ_ROLES: MemberRole[] = ["owner", "director", "admin"];
 const FINANCIAL_READ_ROLES: MemberRole[] = ["owner", "director", "accountant"];
 
 const WRITE_ACTIONS = new Set<PermissionAction>([
+  "clients.create",
   "clients.write",
   "client_notes.write",
   "subscriptions.write",
@@ -209,7 +214,7 @@ export function teacherHasAnyScopeAccess(scope: TeacherScope): boolean {
   );
 }
 
-function teacherMatchesContext(scope: TeacherScope, context?: PermissionContext): boolean {
+export function teacherMatchesContext(scope: TeacherScope, context?: PermissionContext): boolean {
   if (!context?.disciplineId && !context?.locationId) {
     return teacherHasAnyScopeAccess(scope);
   }
@@ -312,6 +317,9 @@ export function permissionOptionsFromSettings(
     admin_can_accept_payments?: boolean;
     admin_can_edit_schedule?: boolean;
     teachers_can_record_single_visits?: boolean;
+    teachers_can_accept_payments?: boolean;
+    teachers_can_add_group_lessons?: boolean;
+    teachers_can_add_clients?: boolean;
     admin_can_record_single_visits?: boolean;
   } | null,
   scope: TeacherScope,
@@ -331,6 +339,9 @@ export function permissionOptionsFromSettings(
     adminCanAcceptPayments: settings?.admin_can_accept_payments ?? true,
     adminCanEditSchedule: settings?.admin_can_edit_schedule ?? true,
     teachersCanRecordSingleVisits: settings?.teachers_can_record_single_visits ?? false,
+    teachersCanAcceptPayments: settings?.teachers_can_accept_payments ?? false,
+    teachersCanAddGroupLessons: settings?.teachers_can_add_group_lessons ?? false,
+    teachersCanAddClients: settings?.teachers_can_add_clients ?? false,
     adminCanRecordSingleVisits: settings?.admin_can_record_single_visits ?? true,
     restrictedAdmin: extras?.restrictedAdmin ?? false,
     isReadOnly: extras?.isReadOnly ?? false,
@@ -405,6 +416,12 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       if (isFullOperationalAdmin(role, options)) {
         return adminHasPaymentAccess(role, options);
       }
+      if (role === "teacher") {
+        return (
+          (options?.teachersCanAcceptPayments ?? false) &&
+          teacherMatchesContext(scope, context)
+        );
+      }
       return false;
 
     case "single_visits.record":
@@ -422,6 +439,11 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
 
     case "clients.read":
       return canReadScopedCrm(role, scope, context, options);
+
+    case "clients.create":
+      if (isFullOperationalAdmin(role, options)) return true;
+      if (role !== "teacher") return false;
+      return (options?.teachersCanAddClients ?? false) && teacherHasAnyScopeAccess(scope);
 
     case "clients.write":
       return canTeacherWriteClients(role, scope, context, options);
@@ -582,6 +604,7 @@ export function canAccessPanel(
     case "clients":
       return can(role, "clients.read", options);
     case "renters":
+      if (role === "teacher") return false;
       return can(role, "renters.read", options);
     case "subscriptions":
       return can(role, "subscriptions.read", options);
@@ -599,12 +622,12 @@ export function canAccessPanel(
       if (role === "accountant" || role === "teacher") return false;
       return can(role, "prices.read", options);
     case "settings":
+      if (role === "teacher") return false;
       if (can(role, "settings.manage", options)) return true;
       if (can(role, "finance.export", options) || can(role, "dashboard.export", options)) {
         return true;
       }
       if (can(role, "license.view", options)) return true;
-      if (role === "teacher" && can(role, "disciplines.read", options)) return true;
       if (canReadRentalTariffs(role, options)) return true;
       return false;
     default:

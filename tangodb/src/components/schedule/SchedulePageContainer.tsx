@@ -14,7 +14,7 @@ import { useToast } from "../../App";
 import { useI18n } from "../../hooks/useI18n";
 import { formatCurrency } from "../../lib/utils";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
-import { canAddPersonalFromGrid, canClickEmptyCell, canOfferGroupLessonAdd } from "../../lib/scheduleLessonAccess";
+import { canAddPersonalFromGrid, canClickEmptyCell, canOfferGroupLessonAdd, isLessonInTeacherScope } from "../../lib/scheduleLessonAccess";
 import { canManageMiniAppRentals } from "../../lib/permissions";
 import { isMiniAppRentalChannel } from "../../lib/rentalMiniAppDisplay";
 import {
@@ -65,7 +65,7 @@ export default function SchedulePageContainer() {
   const { t, locale } = useI18n();
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { role, can, isReadOnly, canEditPastSchedule, options } = usePermissions();
+  const { role, can, isReadOnly, canEditPastSchedule, options, scope } = usePermissions();
   const { settings, memberId } = useOrganization();
   const urlFocus = parseScheduleFocusParams(searchParams);
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => weekStartFromFocusDate(urlFocus.date));
@@ -104,9 +104,9 @@ export default function SchedulePageContainer() {
     () => ({
       isReadOnly,
       modules: normalizeOrgModules(settings?.modules),
-      teachersCanSellSubscriptions: settings?.teachers_can_sell_subscriptions ?? false,
+      teachersCanAddGroupLessons: settings?.teachers_can_add_group_lessons ?? false,
     }),
-    [isReadOnly, settings?.modules, settings?.teachers_can_sell_subscriptions]
+    [isReadOnly, settings?.modules, settings?.teachers_can_add_group_lessons]
   );
 
   const canManageTeacherVacation = can("schedule.write");
@@ -293,19 +293,31 @@ export default function SchedulePageContainer() {
     const lessons = scheduleQuery.data?.lessons ?? [];
     if (!teacherFilter) return lessons;
     return lessons.filter(
-      (l) => l.kind === "event" || l.kind === "rental" || l.teacherMemberId === teacherFilter
+      (l) =>
+        l.scheduleRestricted ||
+        l.kind === "event" ||
+        l.kind === "rental" ||
+        l.teacherMemberId === teacherFilter
     );
   }, [scheduleQuery.data?.lessons, teacherFilter]);
 
+  const displayLessons = useMemo(() => {
+    if (role !== "teacher") return filteredLessons;
+    return filteredLessons.map((lesson) => {
+      if (isLessonInTeacherScope(role, memberId, lesson, scope)) return lesson;
+      return { ...lesson, scheduleRestricted: true };
+    });
+  }, [filteredLessons, role, memberId, scope]);
+
   const highlightedLesson = useMemo(() => {
     if (focusLessonId) {
-      return filteredLessons.find((item) => item.kind === "personal" && item.lessonId === focusLessonId) ?? null;
+      return displayLessons.find((item) => item.kind === "personal" && item.lessonId === focusLessonId) ?? null;
     }
     if (focusRentalId) {
-      return filteredLessons.find((item) => item.kind === "rental" && item.rentalId === focusRentalId) ?? null;
+      return displayLessons.find((item) => item.kind === "rental" && item.rentalId === focusRentalId) ?? null;
     }
     return null;
-  }, [filteredLessons, focusLessonId, focusRentalId]);
+  }, [displayLessons, focusLessonId, focusRentalId]);
 
   const lessonsByLocation = useMemo(() => {
     const grouped = new Map<string, DisplayLesson[]>();
@@ -314,7 +326,7 @@ export default function SchedulePageContainer() {
     }
     grouped.set(NO_LOCATION_KEY, []);
 
-    for (const lesson of filteredLessons) {
+    for (const lesson of displayLessons) {
       const key = lesson.locationId ?? NO_LOCATION_KEY;
       if (!grouped.has(key)) {
         grouped.set(key, []);
@@ -323,7 +335,7 @@ export default function SchedulePageContainer() {
     }
 
     return grouped;
-  }, [filteredLessons, locationsQuery.locations]);
+  }, [displayLessons, locationsQuery.locations]);
 
   const scheduleSlots = scheduleQuery.data?.slots ?? [];
   const personalLessonRefs = useMemo(
@@ -340,11 +352,13 @@ export default function SchedulePageContainer() {
   );
 
   const getLessonTitle = useCallback((lesson: DisplayLesson): string => {
+    if (lesson.scheduleRestricted) return t("schedule.occupied");
     return `${lesson.timeStart}–${lesson.timeEnd}`;
-  }, []);
+  }, [t]);
 
   const getLessonSubtitle = useCallback(
     (lesson: DisplayLesson): string | undefined => {
+      if (lesson.scheduleRestricted) return undefined;
       const parts: string[] = [];
 
       if (lesson.kind === "group") {
@@ -414,6 +428,7 @@ export default function SchedulePageContainer() {
   );
 
   const handleLessonClick = useCallback((lesson: DisplayLesson) => {
+    if (lesson.scheduleRestricted) return;
     if (lesson.kind === "event") {
       setSelectedEvent(lesson);
       setSelectedLesson(null);

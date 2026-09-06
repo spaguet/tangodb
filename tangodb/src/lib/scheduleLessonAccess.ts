@@ -1,10 +1,11 @@
-import type { MemberRole, OrgModules } from "../types/organization";
+import type { MemberRole, OrgModules, TeacherScope } from "../types/organization";
 import type { DisplayLesson, PersonalDisplayLesson } from "../types";
 import { personalLessonHasScheduleDebt } from "./personalLessonPayment";
 import { t } from "./i18n";
 import { isModuleEnabled } from "./orgModules";
 import { isPersonalLessonLockedForWrite, isScheduleDateLockedForWrite } from "./scheduleWeek";
 import type { PermissionAction } from "./permissions";
+import { teacherMatchesContext } from "./permissions";
 
 type CanFn = (action: PermissionAction, context?: { disciplineId?: string | null; locationId?: string | null }) => boolean;
 
@@ -93,7 +94,37 @@ export function canShowPaidStatus(role: MemberRole | null): boolean {
 export interface ScheduleGridAddOptions {
   isReadOnly: boolean;
   modules: OrgModules;
-  teachersCanSellSubscriptions?: boolean;
+  teachersCanAddGroupLessons?: boolean;
+}
+
+export function isLessonInTeacherScope(
+  role: MemberRole | null,
+  memberId: string | null,
+  lesson: DisplayLesson,
+  scope: TeacherScope
+): boolean {
+  if (role !== "teacher") return true;
+  if (lesson.scheduleRestricted) return false;
+
+  if (lesson.kind === "personal" || lesson.kind === "group") {
+    if (memberId && lesson.teacherMemberId === memberId) return true;
+    return teacherMatchesContext(scope, lessonContext(lesson));
+  }
+
+  if (lesson.kind === "event" || lesson.kind === "rental") {
+    return teacherMatchesContext(scope, { locationId: lesson.locationId });
+  }
+
+  return true;
+}
+
+export function canViewLessonDetails(
+  role: MemberRole | null,
+  memberId: string | null,
+  lesson: DisplayLesson,
+  scope: TeacherScope
+): boolean {
+  return isLessonInTeacherScope(role, memberId, lesson, scope);
 }
 
 export function canOfferGroupLessonAdd(
@@ -109,7 +140,7 @@ export function canOfferGroupLessonAdd(
   if (role === "owner" || role === "director") return true;
 
   if (role === "teacher") {
-    return options.teachersCanSellSubscriptions ?? false;
+    return options.teachersCanAddGroupLessons ?? false;
   }
 
   return false;

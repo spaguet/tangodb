@@ -43,8 +43,11 @@ const ROLE_OVERRIDE_KEYS: {
     | "teachers_can_sell_personal_lessons"
     | "directors_can_mark_attendance"
     | "teachers_can_edit_clients"
+    | "teachers_can_add_clients"
     | "teachers_can_export"
     | "teachers_can_view_full_schedule"
+    | "teachers_can_accept_payments"
+    | "teachers_can_add_group_lessons"
     | "admin_can_export"
     | "admin_can_manage_team"
     | "admin_can_accept_payments"
@@ -54,6 +57,9 @@ const ROLE_OVERRIDE_KEYS: {
   labelKey: I18nKey;
   hintKey?: I18nKey;
 }[] = [
+  { key: "teachers_can_accept_payments", labelKey: "settings.org.role.teachersAcceptPayments" },
+  { key: "teachers_can_add_group_lessons", labelKey: "settings.org.role.teachersAddGroupLessons" },
+  { key: "teachers_can_add_clients", labelKey: "settings.org.role.teachersAddClients" },
   { key: "teachers_can_sell_subscriptions", labelKey: "settings.org.role.teachersSellSubs" },
   { key: "teachers_can_sell_personal_lessons", labelKey: "settings.org.role.teachersSellPersonal" },
   { key: "directors_can_mark_attendance", labelKey: "settings.org.role.directorsMarkAttendance", hintKey: "common.defaultOn" },
@@ -110,8 +116,11 @@ export default function OrganizationSettingsPage() {
   const [teachersCanSellPersonalLessons, setTeachersCanSellPersonalLessons] = useState(false);
   const [directorsCanMarkAttendance, setDirectorsCanMarkAttendance] = useState(true);
   const [teachersCanEditClients, setTeachersCanEditClients] = useState(false);
+  const [teachersCanAddClients, setTeachersCanAddClients] = useState(false);
   const [teachersCanExport, setTeachersCanExport] = useState(false);
   const [teachersCanViewFullSchedule, setTeachersCanViewFullSchedule] = useState(true);
+  const [teachersCanAcceptPayments, setTeachersCanAcceptPayments] = useState(false);
+  const [teachersCanAddGroupLessons, setTeachersCanAddGroupLessons] = useState(false);
   const [adminCanExport, setAdminCanExport] = useState(false);
   const [adminCanManageTeam, setAdminCanManageTeam] = useState(false);
   const [adminCanAcceptPayments, setAdminCanAcceptPayments] = useState(true);
@@ -130,8 +139,11 @@ export default function OrganizationSettingsPage() {
     setTeachersCanSellPersonalLessons(settings.teachers_can_sell_personal_lessons);
     setDirectorsCanMarkAttendance(settings.directors_can_mark_attendance);
     setTeachersCanEditClients(settings.teachers_can_edit_clients);
+    setTeachersCanAddClients(settings.teachers_can_add_clients);
     setTeachersCanExport(settings.teachers_can_export);
     setTeachersCanViewFullSchedule(settings.teachers_can_view_full_schedule);
+    setTeachersCanAcceptPayments(settings.teachers_can_accept_payments);
+    setTeachersCanAddGroupLessons(settings.teachers_can_add_group_lessons);
     setAdminCanExport(settings.admin_can_export);
     setAdminCanManageTeam(settings.admin_can_manage_team);
     setAdminCanAcceptPayments(settings.admin_can_accept_payments);
@@ -168,8 +180,11 @@ export default function OrganizationSettingsPage() {
       teachers_can_sell_personal_lessons: teachersCanSellPersonalLessons,
       directors_can_mark_attendance: directorsCanMarkAttendance,
       teachers_can_edit_clients: teachersCanEditClients,
+      teachers_can_add_clients: teachersCanAddClients,
       teachers_can_export: teachersCanExport,
       teachers_can_view_full_schedule: teachersCanViewFullSchedule,
+      teachers_can_accept_payments: teachersCanAcceptPayments,
+      teachers_can_add_group_lessons: teachersCanAddGroupLessons,
       admin_can_export: adminCanExport,
       admin_can_manage_team: adminCanManageTeam,
       admin_can_accept_payments: adminCanAcceptPayments,
@@ -262,8 +277,11 @@ export default function OrganizationSettingsPage() {
                 teachers_can_sell_personal_lessons: teachersCanSellPersonalLessons,
                 directors_can_mark_attendance: directorsCanMarkAttendance,
                 teachers_can_edit_clients: teachersCanEditClients,
+                teachers_can_add_clients: teachersCanAddClients,
                 teachers_can_export: teachersCanExport,
                 teachers_can_view_full_schedule: teachersCanViewFullSchedule,
+                teachers_can_accept_payments: teachersCanAcceptPayments,
+                teachers_can_add_group_lessons: teachersCanAddGroupLessons,
                 admin_can_export: adminCanExport,
                 admin_can_manage_team: adminCanManageTeam,
                 admin_can_accept_payments: adminCanAcceptPayments,
@@ -276,8 +294,11 @@ export default function OrganizationSettingsPage() {
                 teachers_can_sell_personal_lessons: setTeachersCanSellPersonalLessons,
                 directors_can_mark_attendance: setDirectorsCanMarkAttendance,
                 teachers_can_edit_clients: setTeachersCanEditClients,
+                teachers_can_add_clients: setTeachersCanAddClients,
                 teachers_can_export: setTeachersCanExport,
                 teachers_can_view_full_schedule: setTeachersCanViewFullSchedule,
+                teachers_can_accept_payments: setTeachersCanAcceptPayments,
+                teachers_can_add_group_lessons: setTeachersCanAddGroupLessons,
                 admin_can_export: setAdminCanExport,
                 admin_can_manage_team: setAdminCanManageTeam,
                 admin_can_accept_payments: setAdminCanAcceptPayments,

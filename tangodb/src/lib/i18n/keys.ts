@@ -1147,6 +1147,7 @@ export type I18nKey =
   | "groupWaitlist.action.cancelled"
   // schedule
   | "schedule.loading"
+  | "schedule.occupied"
   | "schedule.error.groupName"
   | "schedule.error.discipline"
   | "schedule.error.location"
@@ -2726,6 +2727,9 @@ export type I18nKey =
   | "settings.org.module.trioLessons"
   | "settings.org.module.multiDiscipline"
   | "settings.org.module.locations"
+  | "settings.org.role.teachersAcceptPayments"
+  | "settings.org.role.teachersAddGroupLessons"
+  | "settings.org.role.teachersAddClients"
   | "settings.org.role.teachersSellSubs"
   | "settings.org.role.teachersSellPersonal"
   | "settings.org.role.directorsMarkAttendance"

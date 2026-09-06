@@ -61,7 +61,7 @@ const OrganizationContext = createContext<OrganizationContextValue | null>(null)
 
 /** Explicit member SELECT — never `"*"` (L18: extra columns like rental_billing_profile). */
 const ORGANIZATION_SETTINGS_MEMBER_COLUMNS =
-  "organization_id, locale, currency_code, currency_display, timezone, week_starts_on, org_preset, terminology, modules, freeze_max_count, freeze_min_lessons, freeze_enabled, low_balance_threshold, teachers_can_manage_disciplines, teachers_can_sell_subscriptions, teachers_can_sell_personal_lessons, directors_can_mark_attendance, teachers_can_edit_clients, teachers_can_export, teachers_can_view_full_schedule, admin_can_export, admin_can_manage_team, admin_can_accept_payments, admin_can_edit_schedule, teachers_can_record_single_visits, admin_can_record_single_visits, pair_cycle_enabled, branding_name, branding_logo_url, finance_period_closed_until, updated_at";
+  "organization_id, locale, currency_code, currency_display, timezone, week_starts_on, org_preset, terminology, modules, freeze_max_count, freeze_min_lessons, freeze_enabled, low_balance_threshold, teachers_can_manage_disciplines, teachers_can_sell_subscriptions, teachers_can_sell_personal_lessons, directors_can_mark_attendance, teachers_can_edit_clients, teachers_can_add_clients, teachers_can_export, teachers_can_view_full_schedule, teachers_can_accept_payments, teachers_can_add_group_lessons, admin_can_export, admin_can_manage_team, admin_can_accept_payments, admin_can_edit_schedule, teachers_can_record_single_visits, admin_can_record_single_visits, pair_cycle_enabled, branding_name, branding_logo_url, finance_period_closed_until, updated_at";
 
 function mapMemberMeta(raw: unknown): MemberMeta {
   if (!raw || typeof raw !== "object") return {};
@@ -121,8 +121,11 @@ function mapSettings(row: Record<string, unknown>): OrganizationSettings {
     teachers_can_sell_personal_lessons: (row.teachers_can_sell_personal_lessons as boolean) ?? false,
     directors_can_mark_attendance: (row.directors_can_mark_attendance as boolean) ?? true,
     teachers_can_edit_clients: (row.teachers_can_edit_clients as boolean) ?? false,
+    teachers_can_add_clients: (row.teachers_can_add_clients as boolean) ?? false,
     teachers_can_export: (row.teachers_can_export as boolean) ?? false,
     teachers_can_view_full_schedule: (row.teachers_can_view_full_schedule as boolean) ?? true,
+    teachers_can_accept_payments: (row.teachers_can_accept_payments as boolean) ?? false,
+    teachers_can_add_group_lessons: (row.teachers_can_add_group_lessons as boolean) ?? false,
     admin_can_export: (row.admin_can_export as boolean) ?? false,
     admin_can_manage_team: (row.admin_can_manage_team as boolean) ?? false,
     admin_can_accept_payments: (row.admin_can_accept_payments as boolean) ?? true,

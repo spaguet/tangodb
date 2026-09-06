@@ -33,9 +33,11 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
   const rentalDebt = lesson.kind === "rental" && rentalLessonShowsDebtRing(lesson);
   const rentalHold = lesson.kind === "rental" && rentalLessonIsHold(lesson);
   const hasDebt = personalDebt || rentalDebt;
+  const restricted = lesson.scheduleRestricted === true;
 
-  const baseColors =
-    lesson.kind === "rental"
+  const baseColors = restricted
+    ? { bg: "bg-slate-200", text: "text-slate-600", accent: "", border: "border-slate-300", ring: "" }
+    : lesson.kind === "rental"
       ? RENTAL_LESSON_COLOR
       : lesson.kind === "event"
         ? EVENT_LESSON_COLOR
@@ -43,24 +45,31 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
           ? PERSONAL_LESSON_COLOR
           : GROUP_LESSON_COLOR;
 
-  const colors = hasDebt ? SCHEDULE_DEBT_COLOR : baseColors;
+  const colors = restricted ? baseColors : hasDebt ? SCHEDULE_DEBT_COLOR : baseColors;
 
   const topPx = lessonTopPx(lesson.timeStart, rangeStartMin);
   const heightPx = lessonHeightPx(lesson.timeStart, lesson.timeEnd);
   const widthPct = 100 / columnCount;
   const leftPct = column * widthPct;
 
-  const showSubtitle = heightPx >= ROW_HEIGHT_PX * 2 && subtitle;
+  const showSubtitle = !restricted && heightPx >= ROW_HEIGHT_PX * 2 && subtitle;
 
-  const handleClick = () => onClick?.(lesson);
+  const clickable = onClick && !restricted;
+  const handleClick = () => {
+    if (!clickable) return;
+    onClick?.(lesson);
+  };
   const handleKeyDown = (e: KeyboardEvent) => {
+    if (!clickable) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       handleClick();
     }
   };
 
-  const borderClass = highlighted
+  const borderClass = restricted
+    ? "border-slate-300"
+    : highlighted
     ? "ring-2 ring-indigo-600 ring-offset-1"
     : hasDebt
       ? SCHEDULE_DEBT_COLOR.ring
@@ -68,13 +77,13 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
 
   return (
     <div
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onClick={onClick ? handleClick : undefined}
-      onKeyDown={onClick ? handleKeyDown : undefined}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={clickable ? handleClick : undefined}
+      onKeyDown={clickable ? handleKeyDown : undefined}
       className={`absolute overflow-hidden rounded-md border px-1 py-0.5 text-[10px] leading-tight font-semibold shadow-xs transition-opacity ${
-        onClick ? "cursor-pointer hover:brightness-95" : ""
-      } ${isPast ? "opacity-50 grayscale" : ""} ${colors.bg} ${colors.text} ${colors.accent} ${borderClass}`}
+        clickable ? "cursor-pointer hover:brightness-95" : restricted ? "cursor-default" : ""
+      } ${restricted ? "" : isPast ? "opacity-50 grayscale" : ""} ${colors.bg} ${colors.text} ${colors.accent} ${borderClass}`}
       style={{
         top: topPx,
         height: heightPx,

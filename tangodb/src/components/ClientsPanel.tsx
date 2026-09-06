@@ -332,7 +332,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
     <div id="panel-newClient" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
       {/* Sidebar form: Add Guest */}
       <RequirePermission
-        action="clients.write"
+        action="clients.create"
         fallback={
           <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
             {t("clients.readOnlyHint")}
