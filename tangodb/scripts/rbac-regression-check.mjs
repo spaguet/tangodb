@@ -306,12 +306,18 @@ const sportSectionModules = normalizeOrgModules({
   finance_basic: true,
 });
 const gridOpts = { isReadOnly: false, modules: sportSectionModules };
-const teacherSellOpts = {
+const teacherGroupAddOpts = {
   ...gridOpts,
-  teachersCanSellSubscriptions: true,
+  teachersCanAddGroupLessons: true,
 };
 const teacherGridCan = (action, context) =>
   can("teacher", action, { ...optsFor("teacher"), context });
+const teacherGridCanWithGroupAdd = (action, context) =>
+  can("teacher", action, {
+    ...optsFor("teacher"),
+    teachersCanAddGroupLessons: true,
+    context,
+  });
 assert(
   !canAddPersonalFromGrid("teacher", teacherGridCan, gridOpts),
   "teacher no personal add when personal_lessons module off"
@@ -321,12 +327,20 @@ assert(
   "teacher no personal sell when personal_lessons module off"
 );
 assert(
-  canOfferGroupLessonAdd("teacher", teacherGridCan, teacherSellOpts),
-  "teacher group add when group module on and teachers_can_sell_subscriptions"
+  canOfferGroupLessonAdd("teacher", teacherGridCanWithGroupAdd, teacherGroupAddOpts),
+  "teacher group add when group module on and teachers_can_add_group_lessons"
 );
 assert(
   !canOfferGroupLessonAdd("teacher", teacherGridCan, gridOpts),
-  "teacher no group add without teachers_can_sell_subscriptions"
+  "teacher no group add without teachers_can_add_group_lessons"
+);
+assert(
+  !can("teacher", "schedule.write", optsFor("teacher")),
+  "teacher no schedule.write without teachers_can_add_group_lessons"
+);
+assert(
+  can("teacher", "schedule.write", { ...optsFor("teacher"), teachersCanAddGroupLessons: true }),
+  "teacher schedule.write with teachers_can_add_group_lessons and scope"
 );
 assert(
   canOfferGroupLessonAdd("owner", (action, context) => can("owner", action, { ...optsFor("owner"), context }), gridOpts),

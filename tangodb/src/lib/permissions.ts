@@ -486,7 +486,10 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
         return adminHasScheduleWriteAccess(role, options);
       }
       if (role === "teacher") {
-        return teacherMatchesContext(scope, context);
+        return (
+          (options?.teachersCanAddGroupLessons ?? false) &&
+          teacherMatchesContext(scope, context)
+        );
       }
       return false;
     case "personal_lessons.write":

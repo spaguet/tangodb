@@ -20,11 +20,14 @@ export function canManageGroupLesson(
   role: MemberRole | null,
   lessonDate: string,
   isReadOnly: boolean,
-  canEditPastSchedule = false
+  canEditPastSchedule = false,
+  canWriteSchedule = false
 ): boolean {
   if (isReadOnly) return false;
   if (isScheduleDateLockedForWrite(lessonDate, canEditPastSchedule)) return false;
-  return role === "owner" || role === "director";
+  if (role === "owner" || role === "director") return true;
+  if (role === "teacher" && canWriteSchedule) return true;
+  return false;
 }
 
 export function canPayPersonalLesson(

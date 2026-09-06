@@ -172,7 +172,13 @@ export default function LessonInfoPopup({
   const canEdit =
     lesson &&
     (lesson.kind === "group"
-      ? canManageGroupLesson(role, lesson.date, isReadOnly, canEditPastSchedule)
+      ? canManageGroupLesson(
+          role,
+          lesson.date,
+          isReadOnly,
+          canEditPastSchedule,
+          can("schedule.write", permissionContext)
+        )
       : canWritePersonalLesson(role, memberId, lesson, can, isReadOnly, canEditPastSchedule));
 
   const canDelete = canEdit;

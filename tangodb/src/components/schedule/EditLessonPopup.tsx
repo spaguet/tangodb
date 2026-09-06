@@ -1454,6 +1454,7 @@ export default function EditLessonPopup({
                       value={teacherMemberId}
                       onChange={(e) => setTeacherMemberId(e.target.value)}
                       required
+                      disabled={isTeacher}
                     >
                       <option value="">{t("schedule.vacation.selectTeacher")}</option>
                       {teacherOptions.length === 0 ? (

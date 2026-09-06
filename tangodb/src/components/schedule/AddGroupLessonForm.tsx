@@ -4,6 +4,7 @@ import { MapPin, Trash2, X } from "lucide-react";
 import { useAddGroupSchedule } from "../../hooks/useSchedule";
 import { useLocations } from "../../hooks/useLocations";
 import { useOrganization } from "../../organization/OrganizationProvider";
+import { usePermissions } from "../../hooks/usePermissions";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { memberDisplayName, memberListLabel, type TeamMemberRosterRow } from "../../hooks/useTeamMembers";
 import { findScheduleConflict } from "../../lib/scheduleConflicts";
@@ -93,7 +94,9 @@ export default function AddGroupLessonForm({
   onSuccess,
 }: AddGroupLessonFormProps) {
   const { t, locale } = useI18n();
-  const { settings } = useOrganization();
+  const { settings, memberId } = useOrganization();
+  const { role } = usePermissions();
+  const isTeacher = role === "teacher";
   const { data: locations = [] } = useLocations();
   const orgModules = normalizeOrgModules(settings?.modules);
   const showLocationInForm = shouldShowLocationPicker(orgModules, locations.length);
@@ -115,8 +118,12 @@ export default function AddGroupLessonForm({
       makeGroupSlotRow(prefill.dayOfWeek, prefill.timeStart, computeAutoTimeEnd(prefill.timeStart, [])),
     ]);
     if (disciplines.length > 0) setDisciplineId(disciplines[0].id);
-    if (teacherOptions.length > 0) setTeacherMemberId(teacherOptions[0].id);
-  }, [prefill, disciplines, teacherOptions]);
+    if (isTeacher && memberId) {
+      setTeacherMemberId(memberId);
+    } else if (teacherOptions.length > 0) {
+      setTeacherMemberId(teacherOptions[0].id);
+    }
+  }, [prefill, disciplines, teacherOptions, isTeacher, memberId]);
 
   useEffect(() => {
     if (!prefill) return;
@@ -369,6 +376,7 @@ export default function AddGroupLessonForm({
                 value={teacherMemberId}
                 onChange={(e) => setTeacherMemberId(e.target.value)}
                 required
+                disabled={isTeacher}
               >
                 {teacherOptions.length === 0 ? (
                   <option value="">{t("common.noTeachers")}</option>
