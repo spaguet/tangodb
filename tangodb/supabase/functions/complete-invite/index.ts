@@ -30,6 +30,32 @@ async function setActiveOrganization(
   if (error) throw error;
 }
 
+async function acceptInviteForUser(
+  admin: ReturnType<typeof createServiceClient>,
+  tokenHash: string,
+  userId: string
+): Promise<{ organization_id?: string; member_id?: string } | null> {
+  const { data: acceptData, error: acceptError } = await admin.rpc(
+    "complete_organization_invite_for_user",
+    { p_token_hash: tokenHash, p_user_id: userId }
+  );
+
+  if (acceptError) {
+    const msg = acceptError.message ?? "Accept failed";
+    if (
+      msg.includes("invalid") ||
+      msg.includes("expired") ||
+      msg.includes("mismatch")
+    ) {
+      return null;
+    }
+    logEvent("complete_invite_accept_error", { message: msg });
+    throw acceptError;
+  }
+
+  return acceptData as { organization_id?: string; member_id?: string } | null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions(req);
   if (req.method !== "POST") {
@@ -75,6 +101,15 @@ Deno.serve(async (req) => {
   }
 
   const email = (invite.email as string).trim().toLowerCase();
+  const password = body.password ?? "";
+  const providedEmail = (body.email ?? "").trim().toLowerCase();
+  if (!providedEmail || providedEmail !== email) {
+    return jsonResponse({ error: "Invalid invite" }, 400, req);
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return jsonResponse({ error: "Password must be at least 8 characters" }, 400, req);
+  }
+
   let existingUser = null;
   try {
     existingUser = await findAuthUserByEmail(email);
@@ -85,17 +120,39 @@ Deno.serve(async (req) => {
   }
 
   if (existingUser) {
-    logEvent("invite_needs_login", { organization_id: null });
-    return jsonResponse({ ok: true, needs_login: true }, 200, req);
-  }
+    const { error: pwError } = await admin.auth.admin.updateUserById(existingUser.id, {
+      password,
+    });
+    if (pwError) {
+      const pwMsg = (pwError.message ?? "").toLowerCase();
+      if (pwMsg.includes("password") && pwMsg.includes("character")) {
+        return jsonResponse(
+          { error: "Password must contain letters and digits" },
+          400,
+          req
+        );
+      }
+      logEvent("complete_invite_password_update_error", {
+        message: pwError.message ?? "unknown",
+      });
+      return jsonResponse({ error: "Failed to update password" }, 400, req);
+    }
 
-  const password = body.password ?? "";
-  const providedEmail = (body.email ?? "").trim().toLowerCase();
-  if (!providedEmail || providedEmail !== email) {
-    return jsonResponse({ error: "Invalid invite" }, 400, req);
-  }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return jsonResponse({ error: "Password must be at least 8 characters" }, 400, req);
+    try {
+      const acceptData = await acceptInviteForUser(admin, tokenHash, existingUser.id);
+      if (acceptData === null) {
+        return jsonResponse({ error: "Invalid or expired invite" }, 400, req);
+      }
+      const orgId = acceptData.organization_id;
+      const memberId = acceptData.member_id;
+      if (orgId && memberId) {
+        await setActiveOrganization(admin, existingUser.id, orgId, memberId);
+      }
+      logEvent("invite_completed_existing_user", { organization_id: orgId ?? null });
+      return jsonResponse({ ok: true, password_updated: true }, 200, req);
+    } catch {
+      return jsonResponse({ error: "Failed to accept invite" }, 400, req);
+    }
   }
 
   const { data, error } = await admin.auth.admin.createUser({
@@ -115,31 +172,19 @@ Deno.serve(async (req) => {
   }
   const user = data.user;
 
-  const { data: acceptData, error: acceptError } = await admin.rpc(
-    "complete_organization_invite_for_user",
-    { p_token_hash: tokenHash, p_user_id: user.id }
-  );
-
-  if (acceptError) {
-    const msg = acceptError.message ?? "Accept failed";
-    if (
-      msg.includes("invalid") ||
-      msg.includes("expired") ||
-      msg.includes("mismatch")
-    ) {
+  try {
+    const acceptData = await acceptInviteForUser(admin, tokenHash, user.id);
+    if (acceptData === null) {
       return jsonResponse({ error: "Invalid or expired invite" }, 400, req);
     }
-    logEvent("complete_invite_accept_error", { message: msg });
+    const orgId = acceptData.organization_id;
+    const memberId = acceptData.member_id;
+    if (orgId && memberId) {
+      await setActiveOrganization(admin, user.id, orgId, memberId);
+    }
+    logEvent("invite_completed", { organization_id: orgId ?? null });
+    return jsonResponse({ ok: true, account_created: true }, 200, req);
+  } catch {
     return jsonResponse({ error: "Failed to accept invite" }, 400, req);
   }
-
-  const orgId = acceptData?.organization_id as string | undefined;
-  const memberId = acceptData?.member_id as string | undefined;
-  if (orgId && memberId) {
-    await setActiveOrganization(admin, user.id, orgId, memberId);
-  }
-
-  logEvent("invite_completed", { organization_id: orgId ?? null });
-
-  return jsonResponse({ ok: true, account_created: true }, 200, req);
 });

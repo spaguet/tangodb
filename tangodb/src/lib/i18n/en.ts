@@ -138,10 +138,13 @@ export const EN: Record<I18nKey, string> = {
   "auth.acceptInviteWrongAccount":
     "You are signed in with a different account. Sign out and use the email from the invitation.",
   "auth.acceptInvite.signOutToContinue": "Sign out and continue",
+  "auth.acceptInvite.existingAccountNeedsLogin":
+    "This email already has an account. Sign in with your current password or use password recovery.",
   "auth.loginRequired": "Sign in to accept the invitation",
   "auth.password": "Password",
   "auth.confirmPassword": "Confirm password",
   "auth.passwordMinLength": "Password must be at least 8 characters",
+  "auth.passwordLettersDigits": "Password must contain both letters and numbers",
   "auth.passwordMismatch": "Passwords do not match",
   "auth.activateKey.subtitle": "Activate access key",
   "auth.activateKey.intro":

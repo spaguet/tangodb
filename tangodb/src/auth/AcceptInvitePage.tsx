@@ -14,6 +14,7 @@ import {
   scrubInviteTokenFromUrl,
   clearStashedInviteToken,
 } from "./inviteUrlToken";
+import { authPasswordErrorKey, validateAuthPassword } from "./authPassword";
 import {
   AuthButton,
   AuthDeveloperContact,
@@ -171,6 +172,11 @@ export default function AcceptInvitePage() {
       setFormError(t("auth.passwordMinLength"));
       return;
     }
+    const passwordIssue = validateAuthPassword(password);
+    if (passwordIssue) {
+      setFormError(t(authPasswordErrorKey(passwordIssue)));
+      return;
+    }
     if (password !== confirmPassword) {
       setFormError(t("auth.passwordMismatch"));
       return;
@@ -185,13 +191,14 @@ export default function AcceptInvitePage() {
       const result = await completeInvite(activeToken, password, email.trim());
       if (result.needs_login) {
         setAccountExists(true);
+        setFormError(t("auth.acceptInvite.existingAccountNeedsLogin"));
         setPassword("");
         setConfirmPassword("");
         setTurnstileResetKey((k) => k + 1);
         setTurnstileToken(null);
         return;
       }
-      if (!result.ok || result.account_created !== true) {
+      if (!result.ok || (!result.account_created && !result.password_updated)) {
         throw new Error(t("auth.acceptInviteError"));
       }
       inviteAcceptedViaCompleteRef.current = true;

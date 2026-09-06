@@ -13,6 +13,7 @@ import {
   AuthLink,
   AuthSuccess,
 } from "./AuthLayout";
+import { authPasswordErrorKey, validateAuthPassword } from "./authPassword";
 
 export default function RegisterPage() {
   const { t, locale } = useGuestI18n();
@@ -40,6 +41,11 @@ export default function RegisterPage() {
     }
     if (password.length < 8) {
       setError(t("auth.passwordMinLength"));
+      return;
+    }
+    const passwordIssue = validateAuthPassword(password);
+    if (passwordIssue) {
+      setError(t(authPasswordErrorKey(passwordIssue)));
       return;
     }
     if (password !== confirmPassword) {

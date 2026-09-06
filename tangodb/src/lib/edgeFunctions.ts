@@ -70,6 +70,7 @@ export interface CompleteInviteResponse {
   ok: boolean;
   needs_login?: boolean;
   account_created?: boolean;
+  password_updated?: boolean;
 }
 
 export async function invokePublicEdgeFunction<T>(

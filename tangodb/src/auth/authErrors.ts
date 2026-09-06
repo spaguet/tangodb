@@ -126,8 +126,11 @@ export function parseAuthError(err: unknown, locale?: string): string {
   if (message === "invite_email_mismatch") {
     return t(loc, "auth.acceptInviteWrongAccount");
   }
-  if (message === "Could not create demo organization") {
-    return t(loc, "auth.error.generic");
+  if (message === "Password must contain letters and digits") {
+    return t(loc, "auth.passwordLettersDigits");
+  }
+  if (message === "Password must be at least 8 characters") {
+    return t(loc, "auth.passwordMinLength");
   }
 
   reportClientError(err, {

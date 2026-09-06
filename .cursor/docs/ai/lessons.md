@@ -837,6 +837,12 @@
 - **Причина:** `teacher_settlements` имел CHECK `amount_paid <= amount_accrued`, а `RecordPaymentModal` запрещал сумму больше остатка.
 - **Как избежать:** Для payroll с авансами хранить выплаты как ledger/payment rows и разрешать `amount_paid > amount_accrued`; в UI показывать отрицательный остаток как аванс.
 
+### 2026-09-06 — «Задайте пароль» на инвайте не менял пароль существующего аккаунта
+
+- **Ошибка:** Преподаватель вводил пароль на accept-invite, но вход на `/login` давал «Неверный email или пароль».
+- **Причина:** `omowdance@gmail.com` уже был в auth с июня; `preview-invite` из‑за падения `listUsers` показывал форму «новый пароль», а `complete-invite` при существующем аккаунте возвращал `needs_login` без `updateUser`.
+- **Как избежать:** lookup email через `dev_console_user_id_by_email_exact`; в `complete-invite` для existing user — `updateUserById` + accept invite; явное сообщение, если пароль не был сохранён.
+
 ### 2026-09-05 — Supabase Auth site_url уводил recovery в localhost
 
 - **Ошибка:** Письмо восстановления пароля открывало `http://127.0.0.1:3000/#error=access_denied&error_code=otp_expired...` вместо production CRM.

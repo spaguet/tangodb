@@ -138,10 +138,13 @@ export const RU: Record<I18nKey, string> = {
   "auth.acceptInviteWrongAccount":
     "Вы вошли другим аккаунтом. Выйдите и войдите с email из приглашения.",
   "auth.acceptInvite.signOutToContinue": "Выйти и продолжить",
+  "auth.acceptInvite.existingAccountNeedsLogin":
+    "На этот email уже есть аккаунт. Войдите со старым паролем или восстановите пароль.",
   "auth.loginRequired": "Войдите, чтобы принять приглашение",
   "auth.password": "Пароль",
   "auth.confirmPassword": "Подтверждение пароля",
   "auth.passwordMinLength": "Пароль должен содержать минимум 8 символов",
+  "auth.passwordLettersDigits": "Пароль должен содержать буквы и цифры",
   "auth.passwordMismatch": "Пароли не совпадают",
   "auth.activateKey.subtitle": "Активация ключа",
   "auth.activateKey.intro":

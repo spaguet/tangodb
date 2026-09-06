@@ -14,6 +14,7 @@ import {
   AuthSuccess,
 } from "./AuthLayout";
 import { parseAuthError } from "./authErrors";
+import { authPasswordErrorKey, validateAuthPassword } from "./authPassword";
 
 export default function ResetPasswordPage() {
   const { t, locale } = useGuestI18n();
@@ -47,6 +48,11 @@ export default function ResetPasswordPage() {
     }
     if (password.length < 8) {
       setError(t("auth.passwordMinLength"));
+      return;
+    }
+    const passwordIssue = validateAuthPassword(password);
+    if (passwordIssue) {
+      setError(t(authPasswordErrorKey(passwordIssue)));
       return;
     }
     if (password !== confirmPassword) {
