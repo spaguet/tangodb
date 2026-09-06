@@ -23,6 +23,7 @@ import { normalizeOrgModules } from "../src/lib/orgModules.ts";
 import {
   canAddPersonalFromGrid,
   canOfferGroupLessonAdd,
+  canViewScheduleMissingTeachersBlock,
 } from "../src/lib/scheduleLessonAccess.ts";
 import { canViewGroupAttendanceLesson } from "../src/lib/teacherAttendanceAccess.ts";
 import {
@@ -341,6 +342,17 @@ assert(
 assert(
   can("teacher", "schedule.write", { ...optsFor("teacher"), teachersCanAddGroupLessons: true }),
   "teacher schedule.write with teachers_can_add_group_lessons and scope"
+);
+assert(
+  !canViewScheduleMissingTeachersBlock(
+    "teacher",
+    (action) => can("teacher", action, { ...optsFor("teacher"), teachersCanAddGroupLessons: true })
+  ),
+  "teacher must not see missing-teachers block even with schedule.write"
+);
+assert(
+  canViewScheduleMissingTeachersBlock("owner", (action) => can("owner", action, optsFor("owner"))),
+  "owner sees missing-teachers block"
 );
 assert(
   canOfferGroupLessonAdd("owner", (action, context) => can("owner", action, { ...optsFor("owner"), context }), gridOpts),

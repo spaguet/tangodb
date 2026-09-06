@@ -130,6 +130,14 @@ export function canViewLessonDetails(
   return isLessonInTeacherScope(role, memberId, lesson, scope);
 }
 
+export function canViewScheduleMissingTeachersBlock(
+  role: MemberRole | null,
+  can: CanFn
+): boolean {
+  if (!role || role === "teacher" || role === "accountant") return false;
+  return can("schedule.write");
+}
+
 export function canOfferGroupLessonAdd(
   role: MemberRole | null,
   can: CanFn,

@@ -15,7 +15,7 @@ import {
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useUpdateGroupScheduleMetadata } from "../../hooks/useSchedule";
 import { resolveMutationError, isI18nKey } from "../../lib/resolveMutationError";
-import { dowShort } from "../../lib/utils";
+import { canViewScheduleMissingTeachersBlock } from "../../lib/scheduleLessonAccess";
 
 interface ScheduleMissingTeachersBlockProps {
   disciplineMap: Map<string, string>;
@@ -36,11 +36,12 @@ export default function ScheduleMissingTeachersBlock({
 }: ScheduleMissingTeachersBlockProps) {
   const { t, plural, formatDate, locale } = useI18n();
   const toast = useToast();
-  const { can } = usePermissions();
-  const canAssign = can("schedule.write");
+  const { can, role } = usePermissions();
+  const canViewBlock = canViewScheduleMissingTeachersBlock(role, can);
+  const canAssign = canViewBlock;
 
   const missingQuery = useScheduleMissingTeachers({
-    enabled: can("schedule.read"),
+    enabled: canViewBlock,
   });
   const updatePersonalLesson = useUpdatePersonalLesson();
   const updateGroupMetadata = useUpdateGroupScheduleMetadata();
@@ -95,7 +96,7 @@ export default function ScheduleMissingTeachersBlock({
     });
   }, [missingQuery.data, disciplineMap, locationMap, canAssign, t, formatDate, locale]);
 
-  if (!can("schedule.read") || !missingQuery.personalLessonsEnabled) {
+  if (!canViewBlock || !missingQuery.personalLessonsEnabled) {
     return null;
   }
 
