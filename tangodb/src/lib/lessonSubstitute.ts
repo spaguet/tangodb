@@ -52,16 +52,7 @@ function asRpcResult(data: unknown, fallback: string): RpcResult {
   return { success: true, alreadyApplied: row.already_applied ?? false };
 }
 
-function nestedLocationId(value: unknown): string | null {
-  const row = Array.isArray(value) ? value[0] : value;
-  if (!row || typeof row !== "object") return null;
-  const locationId = (row as { location_id?: unknown }).location_id;
-  return locationId != null ? String(locationId) : null;
-}
-
 export function mapLessonSubstituteRow(row: Record<string, unknown>): LessonSubstituteRow {
-  const slot = row.schedule_slots;
-  const personal = row.personal_lessons;
   return {
     id: String(row.id),
     occurrenceKind: row.occurrence_kind === "personal" ? "personal" : "group",
@@ -70,15 +61,14 @@ export function mapLessonSubstituteRow(row: Record<string, unknown>): LessonSubs
     personalLessonId: row.personal_lesson_id != null ? String(row.personal_lesson_id) : null,
     originalTeacherMemberId: String(row.original_teacher_member_id),
     substituteTeacherMemberId: String(row.substitute_teacher_member_id),
-    locationId: nestedLocationId(slot) ?? nestedLocationId(personal),
   };
 }
 
 export async function fetchLessonSubstitutes(): Promise<LessonSubstituteRow[]> {
   const { data, error } = await supabase
-    .from("lesson_occurrence_substitutes" as never)
+    .from("lesson_occurrence_substitutes")
     .select(
-      "id, occurrence_kind, occurrence_date, schedule_slot_id, personal_lesson_id, original_teacher_member_id, substitute_teacher_member_id, schedule_slots!lesson_occurrence_substitutes_organization_id_schedule_slot_id_fkey(location_id), personal_lessons!lesson_occurrence_substitutes_organization_id_personal_lesson_id_fkey(location_id)"
+      "id, occurrence_kind, occurrence_date, schedule_slot_id, personal_lesson_id, original_teacher_member_id, substitute_teacher_member_id"
     )
     .order("occurrence_date", { ascending: true });
 
@@ -146,13 +136,18 @@ export function isSubstituteOnlyTeacher(
 
 export function substituteLocationIds(
   rows: LessonSubstituteRow[],
-  memberId: string | null
+  memberId: string | null,
+  slotLocationById?: Map<string, string | null>
 ): string[] {
   if (!memberId) return [];
   const ids = new Set<string>();
   for (const row of rows) {
     if (row.substituteTeacherMemberId !== memberId) continue;
     if (row.locationId) ids.add(row.locationId);
+    if (row.scheduleSlotId) {
+      const fromSlot = slotLocationById?.get(row.scheduleSlotId);
+      if (fromSlot) ids.add(fromSlot);
+    }
   }
   return [...ids];
 }

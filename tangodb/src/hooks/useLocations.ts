@@ -7,6 +7,7 @@ import { useScheduleGroups } from "./useScheduleGroups";
 import { useLessonSubstitutes } from "./useLessonSubstitutes";
 import { substituteLocationIds } from "../lib/lessonSubstitute";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { useSchedule } from "./useSchedule";
 import type { MemberRole, TeacherScope } from "../types/organization";
 
 export interface Location {
@@ -69,6 +70,9 @@ export function useAccessibleLocations() {
   const query = useLocations();
   const scheduleGroupsQuery = useScheduleGroups();
   const substitutesQuery = useLessonSubstitutes();
+  const scheduleQuery = useSchedule({
+    enabled: (substitutesQuery.data?.length ?? 0) > 0,
+  });
   const { role, scope } = usePermissions();
   const { memberId } = useOrganization();
 
@@ -77,10 +81,13 @@ export function useAccessibleLocations() {
     [scope, scheduleGroupsQuery.data]
   );
 
-  const substituteLocIds = useMemo(
-    () => substituteLocationIds(substitutesQuery.data ?? [], memberId),
-    [substitutesQuery.data, memberId]
-  );
+  const substituteLocIds = useMemo(() => {
+    const slotLocationById = new Map<string, string | null>();
+    for (const slot of scheduleQuery.data ?? []) {
+      if (slot.id) slotLocationById.set(slot.id, slot.locationId ?? null);
+    }
+    return substituteLocationIds(substitutesQuery.data ?? [], memberId, slotLocationById);
+  }, [substitutesQuery.data, memberId, scheduleQuery.data]);
 
   const locations = useMemo(
     () =>

@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-09-06 — PostgREST embed составного FK
+
+- **Ошибка:** Расписание не грузилось: `Could not find a relationship between 'lesson_occurrence_substitutes' and 'schedule_slots' in the schema cache`.
+- **Причина:** `select` с вложенным `schedule_slots!…fkey(location_id)` по составному FK `(organization_id, schedule_slot_id)`. PostgREST schema cache такое resource embedding не отдаёт (имя FK ещё и обрезается).
+- **Как избежать:** не эмбедить через составные tenant FK; читать плоские колонки и стыковать `location_id` на клиенте из уже загруженных `schedule_slots`.
+
 ### 2026-09-05 — Инвайт: stale `__TDB_INVITE_TOKEN__` блокирует новую ссылку
 
 - **Ошибка:** Актуальная ссылка из «Команда» всё равно давала «Приглашение недействительно или истекло», хотя `preview-invite` по новому токену отвечал 200.
