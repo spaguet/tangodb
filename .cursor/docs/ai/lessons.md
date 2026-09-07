@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-09-07 — invalid_issuer_signature при выдаче lifetime key
+
+- **Ошибка:** Dev Console → Keys → `invalid_issuer_signature`, хотя секрет `DEV_CONSOLE_ISSUER_SIGNATURE` задан в Supabase.
+- **Причина:** Значение секрета нельзя прочитать обратно; введённая «подпись выдающего» не совпадает с тем, что было задано при включении фичи (июль 2026). Старая валидация всегда перехешировала expected — формат «HMAC в секрете» не поддерживался.
+- **Как избежать:** Хранить passphrase в менеджере паролей; при потере — `npx supabase secrets set DEV_CONSOLE_ISSUER_SIGNATURE="…"` и то же значение в поле Dev Console. Для проверки: `node scripts/hash-issuer-signature.mjs "…"`.
+
 ### 2026-09-06 — Concurrent SQL-тесты оставили Lifetime в production
 
 - **Ошибка:** В Dev Console /Tenants пять тестовых организаций (`FA3 Concurrent Org`, `FA7 Parallel Topup Org`, `FDB4 Concurrent/Expire/Cancel Race Org`) числились с бейджем Lifetime, хотя лицензию никто не покупал. Рядом остались `auth.users` `*@test.local` с паролем `testpass123` и helper-RPC (`_hall_rent_test_set_jwt`, `_test_fa3_hold_wallet_mutate`, …) с EXECUTE у `anon`/`authenticated`.
@@ -765,11 +771,17 @@
 - **Причина:** в `mark_attendance` переменная `v_sub` была объявлена как `RECORD`, но передавалась в `resolve_subscription_freeze_policy(p_sub subscriptions)`, который требует тип строки таблицы `subscriptions`.
 - **Как избежать:** для RPC/функций с аргументом `table_name%ROWTYPE` или `table_name` всегда объявлять переменную как `subscriptions%ROWTYPE`, не `RECORD`.
 
+### 2026-09-07 — Purge org падает на calendar_sync_outbox FK
+
+- **Ошибка:** `purge_single_organization` / Dev Console «Purge failed» для org с Google Calendar sync (например «Test studio 2»).
+- **Причина:** CASCADE DELETE по `personal_lessons` / `schedule_slots` / `rentals` вызывает `%calendar_sync%` триггеры, которые INSERT в `calendar_sync_outbox` с `organization_id` уже удалённой org → FK `calendar_sync_outbox_organization_id_fkey`.
+- **Как избежать:** В `_purge_demo_organization_core` отключать `%calendar_sync%` триггеры вместе с `audit_%` (migration `20261107000001`).
+
 ### 2026-06-30 — Dev Console «Purge failed» при удалении demo org
 
 - **Ошибка:** Dev Console показывал «Purge failed» при удалении demo org (например «Test studio»).
 - **Причина:** S5 purge делает `DELETE FROM organizations` (CASCADE). Audit-триггеры на дочерних таблицах пытались `INSERT INTO audit_log` с `organization_id`, пока строка org уже удалялась → нарушение FK `audit_log_organization_id_fkey`.
-- **Как избежать:** Перед org DELETE отключать `audit_%` триггеры (как в `reset_for_test_run.sql`), затем включать обратно. Альтернатива — не логировать DELETE в audit при отсутствующей org, но отключение триггеров проще и предсказуемее для полного purge.
+- **Как избежать:** Перед org DELETE отключать `audit_%` триггеры (как в `reset_for_test_run.sql`), затем включать обратно. Альтернатива — не логировать DELETE in audit при отсутствующей org, но отключение триггеров проще и предсказуемее для полного purge.
 
 ### 2026-06-30 — Повторное сохранение группового урока и schedule_slot_overlap
 
