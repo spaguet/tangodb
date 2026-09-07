@@ -1,4 +1,7 @@
 -- FDB4 / §9 variant B: load, expiry- and concurrent SQL tests for pack series.
+-- Concurrent blocks COMMIT licensed/lifetime orgs (parallel connections cannot ROLLBACK).
+-- The node runner must call _cleanup_miniapp_concurrent_fixtures.sql afterwards.
+-- Never run against hosted/production unless ALLOW_PROD_DB_TESTS=1.
 -- Run: npm run test:db:renter-miniapp-fdb4
 
 CREATE OR REPLACE FUNCTION _test_assert(p_condition boolean, p_message text)
@@ -211,6 +214,15 @@ BEGIN
   RETURN renter_cancel_pack(v_series);
 END;
 $$;
+
+REVOKE ALL ON FUNCTION _test_assert(boolean, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _fdb4_pack_slot(uuid, interval) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _fdb4_find_pack_monday(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _test_fdb4_parallel_pack_create(text, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _test_fdb4_expire_race_hold(double precision) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _test_fdb4_topup_race(numeric, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _test_fdb4_topup_race_cancel(numeric, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _test_fdb4_cancel_race() FROM PUBLIC, anon, authenticated;
 
 -- Committed fixtures for fdb4-concurrent-pack.mjs
 DO $$

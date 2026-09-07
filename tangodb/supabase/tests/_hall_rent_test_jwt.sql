@@ -27,3 +27,6 @@ BEGIN
   PERFORM set_active_organization(p_org);
 END;
 $$;
+
+REVOKE ALL ON FUNCTION _hall_rent_test_set_jwt(uuid, uuid, uuid, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION _hall_rent_test_set_jwt(uuid, uuid, uuid, text) FROM anon, authenticated;

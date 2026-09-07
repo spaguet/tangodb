@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-09-06 — Concurrent SQL-тесты оставили Lifetime в production
+
+- **Ошибка:** В Dev Console /Tenants пять тестовых организаций (`FA3 Concurrent Org`, `FA7 Parallel Topup Org`, `FDB4 Concurrent/Expire/Cancel Race Org`) числились с бейджем Lifetime, хотя лицензию никто не покупал. Рядом остались `auth.users` `*@test.local` с паролем `testpass123` и helper-RPC (`_hall_rent_test_set_jwt`, `_test_fa3_hold_wallet_mutate`, …) с EXECUTE у `anon`/`authenticated`.
+- **Причина:** FZ/FA3/FA7/FDB4 concurrent-тесты нельзя обернуть в `BEGIN/ROLLBACK` — параллельные `psql` должны видеть закоммиченные строки. Фикстуры специально ставят `organizations.status = licensed` и `organization_licenses.license_type = lifetime`, потому что гейт Mini App требует купленный CRM. Скрипты гоняли по `DATABASE_URL` linked production (changelog FZ: `db push` + тесты на linked DB) и не делали teardown.
+- **Как избежать:** SQL-тесты только через `npm run test:db:*` / `psql-local-test.mjs` на local `supabase start`. Не класть production pooler в `DATABASE_URL` для тестов. `db:reset-test` и `hall-rent-integration-check` не ходят в `--linked`. Concurrent-раннеры в `finally` чистят фикстуры. Override только `ALLOW_PROD_DB_TESTS=1` / `ALLOW_PROD_DB_RESET=1`.
+
 ### 2026-09-06 — Occupancy view + unpaid filter = вечная загрузка
 
 - **Ошибка:** У преподавателя в расписании бесконечно «Загрузка неоплаченных уроков...».

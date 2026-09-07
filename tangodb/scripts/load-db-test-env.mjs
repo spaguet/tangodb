@@ -1,5 +1,6 @@
 /**
- * Load DATABASE_URL for SQL regression scripts from .env.local / linked pooler URL.
+ * Load DATABASE_URL for SQL regression scripts from .env.local / .env.
+ * Never auto-fills the linked production pooler URL.
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -8,7 +9,25 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 
-export function loadDbTestEnv() {
+export function isHostedSupabaseUrl(url = process.env.DATABASE_URL ?? '') {
+  if (!url) return false;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host.includes('supabase.co') || host.includes('supabase.com');
+  } catch {
+    return /supabase\.(co|com)/i.test(url);
+  }
+}
+
+export function assertNotHostedSupabase(url = process.env.DATABASE_URL ?? '') {
+  if (process.env.ALLOW_PROD_DB_TESTS === '1') return;
+  if (!isHostedSupabaseUrl(url)) return;
+  throw new Error(
+    'Refusing SQL tests against hosted Supabase. Use local `supabase start` and a local DATABASE_URL (postgresql://postgres:postgres@127.0.0.1:54322/postgres). To override: ALLOW_PROD_DB_TESTS=1, then npm run test:db:cleanup-miniapp-fixtures.',
+  );
+}
+
+export function loadDbTestEnv({ refuseHosted = true } = {}) {
   for (const name of ['.env.migrate', '.env.local', '.env']) {
     const path = resolve(root, name);
     if (!existsSync(path)) continue;
@@ -23,20 +42,6 @@ export function loadDbTestEnv() {
     }
   }
 
-  if (process.env.DATABASE_URL) return root;
-
-  const password = process.env.SUPABASE_DB_PASSWORD;
-  const poolerPath = resolve(root, 'supabase/.temp/pooler-url');
-  if (!password || !existsSync(poolerPath)) return root;
-
-  const pooler = readFileSync(poolerPath, 'utf8').trim();
-  try {
-    const url = new URL(pooler);
-    url.password = password;
-    process.env.DATABASE_URL = url.toString();
-  } catch {
-    // leave DATABASE_URL unset
-  }
-
+  if (refuseHosted) assertNotHostedSupabase();
   return root;
 }

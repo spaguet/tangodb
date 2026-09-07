@@ -6,6 +6,7 @@ import { spawn } from 'child_process';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { loadDbTestEnv } from './load-db-test-env.mjs';
+import { cleanupMiniappConcurrentFixtures } from './cleanup-miniapp-concurrent-fixtures.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = loadDbTestEnv();
@@ -100,7 +101,14 @@ async function main() {
   console.log('fa3-concurrent-race: OK');
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() =>
+    cleanupMiniappConcurrentFixtures().catch((e) => {
+      console.error(e);
+      process.exitCode = 1;
+    }),
+  );

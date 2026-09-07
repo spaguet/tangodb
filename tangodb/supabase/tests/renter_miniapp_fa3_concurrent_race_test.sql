@@ -1,4 +1,7 @@
--- FA3 concurrent race setup (committed fixtures for fa3-concurrent-race.mjs).
+-- FA3 concurrent race setup (COMMITTED fixtures for fa3-concurrent-race.mjs).
+-- Parallel connections cannot use ROLLBACK, so this writes real licensed/lifetime orgs.
+-- The node runner must call _cleanup_miniapp_concurrent_fixtures.sql afterwards.
+-- Never run against hosted/production unless ALLOW_PROD_DB_TESTS=1.
 -- Run via: node scripts/fa3-concurrent-race.mjs
 
 CREATE OR REPLACE FUNCTION _test_fa3_hold_wallet_mutate(
@@ -28,6 +31,9 @@ BEGIN
   PERFORM pg_advisory_unlock(v_key);
 END;
 $$;
+
+REVOKE ALL ON FUNCTION _test_fa3_hold_wallet_mutate(uuid, uuid, uuid, numeric, double precision) FROM PUBLIC;
+REVOKE ALL ON FUNCTION _test_fa3_hold_wallet_mutate(uuid, uuid, uuid, numeric, double precision) FROM anon, authenticated;
 
 DO $$
 DECLARE

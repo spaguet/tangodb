@@ -1,5 +1,6 @@
 /**
- * FZ tail verification: run Mini App SQL/script gates with DATABASE_URL from .env.local.
+ * FZ tail verification: run Mini App SQL/script gates against a local DATABASE_URL.
+ * Hosted/production Supabase is refused unless ALLOW_PROD_DB_TESTS=1.
  */
 import { spawnSync } from 'node:child_process';
 import { loadDbTestEnv } from './load-db-test-env.mjs';

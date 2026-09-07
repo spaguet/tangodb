@@ -1,4 +1,7 @@
--- FA7 / §9: committed fixtures for parallel same-key staff-topup race.
+-- FA7 / §9: COMMITTED fixtures for parallel same-key staff-topup race.
+-- Parallel connections cannot use ROLLBACK, so this writes a real licensed/lifetime org.
+-- The node runner must call _cleanup_miniapp_concurrent_fixtures.sql afterwards.
+-- Never run against hosted/production unless ALLOW_PROD_DB_TESTS=1.
 -- Run via: node scripts/fa2-concurrent-topup.mjs (after JWT helper).
 
 CREATE OR REPLACE FUNCTION _test_fa7_parallel_topup_sql(p_key uuid)
@@ -27,6 +30,9 @@ BEGIN
   RETURN v_result;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION _test_fa7_parallel_topup_sql(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION _test_fa7_parallel_topup_sql(uuid) FROM anon, authenticated;
 
 DO $$
 DECLARE

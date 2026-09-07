@@ -1,39 +1,30 @@
 /**
- * Reset Supabase data for a fresh test run.
+ * Reset a *local* database for a fresh test run.
  * Keeps platform developer admin (email + auth profile); removes tenants, keys, registrations.
  *
- * Env (.env.local): SUPABASE_ACCESS_TOKEN, SUPABASE_SERVICE_KEY, VITE_SUPABASE_URL
+ * Env (.env.local): DATABASE_URL pointing at local `supabase start`.
  * Optional: ADMIN_KEEP_EMAIL (default albertkoall@gmail.com)
+ *
+ * Production / linked hosted wipe is forbidden unless ALLOW_PROD_DB_RESET=1.
  *
  * Usage: node scripts/reset-for-test-run.mjs [--dry-run]
  */
 import { createClient } from "@supabase/supabase-js";
-import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { spawnSync } from "child_process";
+import { assertNotHostedSupabase, isHostedSupabaseUrl, loadDbTestEnv } from "./load-db-test-env.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 const dryRun = process.argv.includes("--dry-run");
 
-function loadEnv() {
-  for (const name of [".env.local", ".env"]) {
-    const path = resolve(root, name);
-    if (!existsSync(path)) continue;
-    for (const line of readFileSync(path, "utf8").split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eq = trimmed.indexOf("=");
-      if (eq === -1) continue;
-      const key = trimmed.slice(0, eq).trim();
-      const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
-      if (!process.env[key]) process.env[key] = val;
-    }
-  }
-}
+loadDbTestEnv({ refuseHosted: false });
 
-loadEnv();
+const allowProdReset = process.env.ALLOW_PROD_DB_RESET === "1";
+if (!allowProdReset) {
+  assertNotHostedSupabase();
+}
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -41,6 +32,12 @@ const keepEmail = (process.env.ADMIN_KEEP_EMAIL || "albertkoall@gmail.com").toLo
 
 async function clearStorageExports() {
   if (!supabaseUrl || !serviceKey) return;
+  if (!allowProdReset && isHostedSupabaseUrl(supabaseUrl)) {
+    console.warn(
+      "skipping storage/exports wipe: hosted SUPABASE_URL (set ALLOW_PROD_DB_RESET=1 to wipe production storage)",
+    );
+    return;
+  }
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -62,30 +59,31 @@ async function clearStorageExports() {
 
 function runSqlReset() {
   const sqlPath = resolve(root, "supabase/scripts/reset_for_test_run.sql");
-  const accessToken = process.env.SUPABASE_ACCESS_TOKEN;
+  const dbUrl = process.env.DATABASE_URL;
 
   if (dryRun) {
-    console.log("[dry-run] would run SQL reset via supabase db query --linked");
+    console.log("[dry-run] would run SQL reset via psql DATABASE_URL");
     console.log(`  admin keep email: ${keepEmail}`);
     return;
   }
 
-  if (!accessToken) {
-    console.error("Missing SUPABASE_ACCESS_TOKEN in .env.local (for supabase db query --linked)");
+  if (!dbUrl) {
+    console.error(
+      "DATABASE_URL is not set. Point it at local `supabase start` (postgresql://postgres:postgres@127.0.0.1:54322/postgres).",
+    );
     process.exit(1);
   }
 
-  const result = spawnSync("npx supabase db query --linked -f \"" + sqlPath.replace(/\\/g, "/") + "\"", {
+  const result = spawnSync("psql", [dbUrl, "-v", "ON_ERROR_STOP=1", "-f", sqlPath], {
     encoding: "utf8",
     cwd: root,
-    shell: true,
-    env: { ...process.env, SUPABASE_ACCESS_TOKEN: accessToken },
+    shell: false,
   });
 
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
   if (result.status !== 0) {
-    throw new Error(`supabase db query exited with code ${result.status}`);
+    throw new Error(`psql reset exited with code ${result.status}`);
   }
 }
 
