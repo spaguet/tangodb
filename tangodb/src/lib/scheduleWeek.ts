@@ -82,7 +82,8 @@ function slotValidForWeek(
 export function expandSlotsToWeek(
   slots: ScheduleSlot[],
   weekStart: Date,
-  weekEnd: Date
+  weekEnd: Date,
+  cancelledKeys?: ReadonlySet<string>
 ): GroupDisplayLesson[] {
   const weekStartISO = toISODateLocal(weekStart);
   const weekEndISO = toISODateLocal(weekEnd);
@@ -103,6 +104,7 @@ export function expandSlotsToWeek(
       const dateISO = toISODateLocal(date);
       if (dateISO < slot.validFrom) continue;
       if (slot.validTo != null && dateISO > slot.validTo) continue;
+      if (slot.id && cancelledKeys?.has(`${slot.id}:${dateISO}`)) continue;
 
       result.push({
         kind: "group",
@@ -134,7 +136,8 @@ export function expandSlotsToWeek(
 export function expandSlotsToDateRange(
   slots: ScheduleSlot[],
   rangeStartISO: string,
-  rangeEndISO: string
+  rangeEndISO: string,
+  cancelledKeys?: ReadonlySet<string>
 ): GroupDisplayLesson[] {
   if (!isIsoDateString(rangeStartISO) || !isIsoDateString(rangeEndISO)) return [];
   if (rangeStartISO > rangeEndISO) return [];
@@ -149,7 +152,7 @@ export function expandSlotsToDateRange(
 
     const cursorDate = new Date(`${cursorISO}T12:00:00`);
     const { weekStart, weekEnd } = getWeekRange(cursorDate);
-    const lessons = expandSlotsToWeek(slots, weekStart, weekEnd);
+    const lessons = expandSlotsToWeek(slots, weekStart, weekEnd, cancelledKeys);
 
     for (const lesson of lessons) {
       if (lesson.date < rangeStartISO || lesson.date > rangeEndISO) continue;

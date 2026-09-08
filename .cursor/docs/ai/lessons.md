@@ -7,6 +7,12 @@
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
 
+### 2026-09-08 — Удаление группового: toast без исчезновения из сетки
+
+- **Ошибка:** после «удалено» занятие оставалось в расписании.
+- **Причина:** primary delete для повторяющихся групп вызывал `cancel_group_lesson_occurrences` (отмена), а `expandSlotsToWeek` не фильтровал `schedule_occurrence_cancellations`; при «удалить с даты» иногда не проверялось, что `update` затронул строку.
+- **Как избежать:** удаление группы — `closeScheduleSlotByDate`; отмена — отдельная кнопка; в expand учитывать cancellations; после update — `.select("id")` и ошибка, если 0 строк.
+
 ### 2026-09-08 — Удаление группового слота с первой даты серии
 
 - **Ошибка:** `closeScheduleSlotByDate` при `closingDate === valid_from` ставил `valid_to = valid_from - 1`, что нарушало CHECK `valid_to >= valid_from` (`schedule_slots_check`).

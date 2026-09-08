@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, UserPlus, X, XCircle, ArrowRightLeft, CheckCircle2 } from "lucide-react";
 import { useClientDirectory } from "../../hooks/useClients";
-import { useDeleteScheduleSlot, useDeleteGroupSchedule, useCancelGroupLessonOccurrences } from "../../hooks/useSchedule";
+import { useDeleteScheduleSlot, useDeleteGroupSchedule } from "../../hooks/useSchedule";
 import { useDeletePersonalLesson, useDeletePersonalLessonSeriesFromDate, usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { usePersonalLessonPayments } from "../../hooks/usePayments";
 import { canShowScheduleDebtAmount } from "../../hooks/useScheduleDebtors";
@@ -25,7 +25,6 @@ import { isRecurringGroupSlot } from "../../lib/groupLessonRepeat";
 import {
   canDeleteEntireGroupScheduleFromDate,
   activeRelatedGroupSlots,
-  groupSlotOccurrencesFromDate,
 } from "../../lib/groupLessonSeries";
 import { maxRepeatEndDate } from "../../lib/dateRecurrenceLimits";
 import { personalLessonsInSeriesFromDate } from "../../lib/personalLessonSeries";
@@ -108,7 +107,6 @@ export default function LessonInfoPopup({
   const { role, can, isReadOnly, canEditPastSchedule, options } = usePermissions();
   const deleteScheduleSlot = useDeleteScheduleSlot();
   const deleteGroupSchedule = useDeleteGroupSchedule();
-  const cancelGroupOccurrences = useCancelGroupLessonOccurrences();
   const deletePersonalLesson = useDeletePersonalLesson();
   const deletePersonalLessonSeries = useDeletePersonalLessonSeriesFromDate();
   const closePersonalLesson = useClosePersonalLessonOccurrence();
@@ -270,14 +268,6 @@ export default function LessonInfoPopup({
 
   const canDeletePersonalSeries = personalSeriesFromDate.length >= 2;
 
-  const groupFutureOccurrences = useMemo(() => {
-    if (!lesson || lesson.kind !== "group") return [];
-    if (!isRecurringGroupSlot(lesson.validFrom, lesson.validTo)) return [];
-    return groupSlotOccurrencesFromDate(lesson);
-  }, [lesson]);
-
-  const canDeleteGroupFromDate = groupFutureOccurrences.length >= 2;
-
   const canDeleteGroupAllDays =
     lesson?.kind === "group" && canDeleteEntireGroupScheduleFromDate(lesson, scheduleSlots);
 
@@ -354,24 +344,12 @@ export default function LessonInfoPopup({
     if (!lesson) return;
 
     if (lesson.kind === "group") {
-      if (canDeleteGroupFromDate) {
-        const res = await cancelGroupOccurrences.mutateAsync({
-          slotId: lesson.slotId,
-          cancelDates: [lesson.date],
-        });
-        if (!res.success) {
-          toast(resolveMutationError(res.error, "schedule.error.deleteClassFailed", t), "error");
-          return;
-        }
-        toast(t("schedule.success.oneLessonCancelled"), "success");
-      } else {
-        const res = await deleteScheduleSlot.mutateAsync({ id: lesson.slotId, editDate: lesson.date });
-        if (!res.success) {
-          toast(res.error ?? t("schedule.error.deleteClassFailed"), "error");
-          return;
-        }
-        toast(t("schedule.success.groupDeleted"), "success");
+      const res = await deleteScheduleSlot.mutateAsync({ id: lesson.slotId, editDate: lesson.date });
+      if (!res.success) {
+        toast(resolveMutationError(res.error, "schedule.error.deleteClassFailed", t), "error");
+        return;
       }
+      toast(t("schedule.success.groupDeleted"), "success");
     } else {
       const res = await deletePersonalLesson.mutateAsync({ id: lesson.lessonId, lessonDate: lesson.date });
       if (!res.success) {
@@ -407,21 +385,6 @@ export default function LessonInfoPopup({
     onClose();
   };
 
-  const handleDeleteGroupFromDate = async () => {
-    if (!lesson || lesson.kind !== "group") return;
-
-    const res = await deleteScheduleSlot.mutateAsync({ id: lesson.slotId, editDate: lesson.date });
-    if (!res.success) {
-      toast(res.error ?? t("schedule.error.deleteClassFailed"), "error");
-      return;
-    }
-
-    toast(t("schedule.success.groupDeleted"), "success");
-    setDeleteConfirmOpen(false);
-    onSuccess?.();
-    onClose();
-  };
-
   const handleDeleteGroupAllDays = async () => {
     if (!lesson || lesson.kind !== "group" || lesson.disciplineId == null) return;
 
@@ -446,8 +409,7 @@ export default function LessonInfoPopup({
     deleteScheduleSlot.isPending ||
     deletePersonalLesson.isPending ||
     deletePersonalLessonSeries.isPending ||
-    deleteGroupSchedule.isPending ||
-    cancelGroupOccurrences.isPending;
+    deleteGroupSchedule.isPending;
 
   return (
     <>
@@ -807,31 +769,18 @@ export default function LessonInfoPopup({
           lesson ? (
             lesson.kind === "group" ? (
               <>
-                {canDeleteGroupFromDate
-                  ? t("schedule.lessonInfo.deleteGroupOneBody", {
-                      label: lessonTitle(
-                        lesson,
-                        disciplineName,
-                        clientLabel,
-                        t,
-                        t("schedule.lessonInfo.clientNotSpecified")
-                      ),
-                      date: formatDate(lesson.date),
-                      timeStart: lesson.timeStart,
-                      timeEnd: lesson.timeEnd,
-                    })
-                  : t("schedule.lessonInfo.deleteGroupBody", {
-                      label: lessonTitle(
-                        lesson,
-                        disciplineName,
-                        clientLabel,
-                        t,
-                        t("schedule.lessonInfo.clientNotSpecified")
-                      ),
-                      date: formatDate(lesson.date),
-                      timeStart: lesson.timeStart,
-                      timeEnd: lesson.timeEnd,
-                    })}
+                {t("schedule.lessonInfo.deleteGroupBody", {
+                  label: lessonTitle(
+                    lesson,
+                    disciplineName,
+                    clientLabel,
+                    t,
+                    t("schedule.lessonInfo.clientNotSpecified")
+                  ),
+                  date: formatDate(lesson.date),
+                  timeStart: lesson.timeStart,
+                  timeEnd: lesson.timeEnd,
+                })}
               </>
             ) : (
               <>
@@ -858,25 +807,15 @@ export default function LessonInfoPopup({
               ? t("schedule.lessonInfo.deleteGroupAllDaysConfirm", {
                   count: relatedGroupSlotCount,
                 })
-              : lesson?.kind === "group" && canDeleteGroupFromDate
-                ? t("schedule.lessonInfo.deletePersonalSeriesConfirm", {
-                    count: groupFutureOccurrences.length,
-                  })
-                : undefined
+              : undefined
         }
-        alternatePending={
-          deletePersonalLessonSeries.isPending ||
-          deleteGroupSchedule.isPending ||
-          deleteScheduleSlot.isPending
-        }
+        alternatePending={deletePersonalLessonSeries.isPending || deleteGroupSchedule.isPending}
         onAlternateConfirm={
           lesson?.kind === "personal" && canDeletePersonalSeries
             ? handleDeletePersonalSeries
             : lesson?.kind === "group" && canDeleteGroupAllDays
               ? handleDeleteGroupAllDays
-              : lesson?.kind === "group" && canDeleteGroupFromDate
-                ? handleDeleteGroupFromDate
-                : undefined
+              : undefined
         }
       />
 

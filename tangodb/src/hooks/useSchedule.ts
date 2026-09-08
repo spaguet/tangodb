@@ -108,6 +108,27 @@ export function useScheduleForWeek(
 
   const substitutesQuery = useLessonSubstitutes({ enabled: queryEnabled });
 
+  const cancellationsQuery = useQuery({
+    queryKey: withOrgId(["scheduleCancellations", "week", weekStartISO, weekEndISO]),
+    enabled: queryEnabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("schedule_occurrence_cancellations")
+        .select("slot_id, occurrence_date")
+        .gte("occurrence_date", weekStartISO)
+        .lte("occurrence_date", weekEndISO);
+      if (error) throw error;
+      return new Set(
+        (data ?? []).map((row) => {
+          const slotId = row.slot_id != null ? String(row.slot_id) : "";
+          const date = String(row.occurrence_date).slice(0, 10);
+          return `${slotId}:${date}`;
+        })
+      );
+    },
+    staleTime: 60 * 1000,
+  });
+
   const eventsQuery = useCalendarEventsForWeek(weekStartISO, weekEndISO, queryEnabled);
   const rentalsQuery = useRentalsForWeek(weekStartISO, weekEndISO, queryEnabled);
 
@@ -133,8 +154,9 @@ export function useScheduleForWeek(
     if (!scheduleQuery.data) return undefined;
 
     const slots = scheduleQuery.data;
+    const cancelledKeys = cancellationsQuery.data ?? new Set<string>();
     const groupLessons = applySubstitutesToGroupDisplay(
-      expandSlotsToWeek(slots, weekStart, weekEnd),
+      expandSlotsToWeek(slots, weekStart, weekEnd, cancelledKeys),
       substitutesQuery.data ?? []
     );
     const personalLessons: PersonalDisplayLesson[] = applySubstitutesToPersonalDisplay(
@@ -173,7 +195,7 @@ export function useScheduleForWeek(
       rentalLessons,
       lessons: [...groupLessons, ...personalLessons, ...eventLessons, ...rentalLessons],
     };
-  }, [scheduleQuery.data, personalQuery.data, eventsQuery.data, rentalsQuery.data, substitutesQuery.data, weekStart, weekEnd]);
+  }, [scheduleQuery.data, cancellationsQuery.data, personalQuery.data, eventsQuery.data, rentalsQuery.data, substitutesQuery.data, weekStart, weekEnd]);
 
   const refetch = async () => {
     const [scheduleResult] = await Promise.all([
@@ -182,6 +204,7 @@ export function useScheduleForWeek(
       eventsQuery.refetch(),
       rentalsQuery.refetch(),
       substitutesQuery.refetch(),
+      cancellationsQuery.refetch(),
     ]);
     return scheduleResult;
   };
@@ -195,9 +218,10 @@ export function useScheduleForWeek(
       (personalLessonsEnabled && personalQuery.isLoading) ||
       eventsQuery.isLoading ||
       rentalsQuery.isLoading ||
-      substitutesQuery.isLoading,
-    isError: scheduleQuery.isError || personalQuery.isError || eventsQuery.isError || rentalsQuery.isError || substitutesQuery.isError,
-    error: scheduleQuery.error ?? personalQuery.error ?? eventsQuery.error ?? rentalsQuery.error ?? substitutesQuery.error,
+      substitutesQuery.isLoading ||
+      cancellationsQuery.isLoading,
+    isError: scheduleQuery.isError || personalQuery.isError || eventsQuery.isError || rentalsQuery.isError || substitutesQuery.isError || cancellationsQuery.isError,
+    error: scheduleQuery.error ?? personalQuery.error ?? eventsQuery.error ?? rentalsQuery.error ?? substitutesQuery.error ?? cancellationsQuery.error,
   };
 }
 
@@ -230,8 +254,14 @@ async function closeScheduleSlotByDate(
   const validFrom = String(slot.valid_from ?? "2000-01-01").slice(0, 10);
   const closedTo = computeScheduleSlotClosingValidTo(validFrom, closingDate);
 
-  const { error } = await supabase.from(scheduleTable).update({ valid_to: closedTo }).eq("id", id);
+  const { data: updated, error } = await supabase
+    .from(scheduleTable)
+    .update({ valid_to: closedTo })
+    .eq("id", id)
+    .select("id");
+
   if (error) return { success: false as const, error: error.message };
+  if (!updated?.length) return { success: false as const, error: "schedule.error.slotNotFound" };
   return { success: true as const };
 }
 
@@ -894,7 +924,7 @@ export function useDeleteGroupSchedule() {
         .from(scheduleTable)
         .select("id, valid_from")
         .eq("discipline_id", disciplineId)
-        .is("valid_to", null);
+        .or(`valid_to.is.null,valid_to.gte.${editDate}`);
 
       if (locationId) {
         selectQuery = selectQuery.eq("location_id", locationId);
@@ -915,11 +945,13 @@ export function useDeleteGroupSchedule() {
       for (const slot of slots) {
         const validFrom = String(slot.valid_from ?? "2000-01-01").slice(0, 10);
         const closedTo = computeScheduleSlotClosingValidTo(validFrom, editDate);
-        const { error } = await supabase
+        const { data: updated, error } = await supabase
           .from(scheduleTable)
           .update({ valid_to: closedTo })
-          .eq("id", slot.id);
+          .eq("id", slot.id)
+          .select("id");
         if (error) return { success: false as const, error: error.message };
+        if (!updated?.length) return { success: false as const, error: "schedule.error.slotNotFound" };
       }
 
       return { success: true as const };
