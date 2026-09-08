@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { queryErrorFromState } from "../lib/queryError";
 import { useNavigate } from "react-router-dom";
 import { BarChart3, TrendingUp } from "lucide-react";
 import OperationalDashboard from "../components/OperationalDashboard";
@@ -66,14 +67,17 @@ export default function DashboardPage() {
   const subscriptionsQuery = useSubscriptions({ enabled: operationalEnabled });
   const personalLessonsQuery = usePersonalLessons({
     enabled: operationalEnabled && personalLessonsEnabled,
+    paidFilter: "no",
   });
   const showOperationalPayments = operationalEnabled && can("payments.read.operational");
   const todayPaymentsQuery = usePayments(
     showOperationalPayments ? { todayOnly: true } : { enabled: false }
   );
 
+  const scopedUpcomingFrom = useMemo(() => localIsoDate(), []);
   const scopedLessonsQuery = usePersonalLessons({
     enabled: scopedOnly && personalLessonsEnabled,
+    dateRange: { start: scopedUpcomingFrom, end: "2099-12-31" },
   });
   const scopedScheduleQuery = useSchedule({ enabled: scopedOnly });
   const disciplinesQuery = useDisciplines({ enabled: scopedOnly });
@@ -312,6 +316,13 @@ function OperationalDashboardView({
 }
 
 function queryError(query: { error: unknown | null; isError: boolean }): Error | null {
-  if (!query.isError || query.error == null) return null;
-  return query.error instanceof Error ? query.error : new Error(String(query.error));
+  return queryErrorFromState(query);
+}
+
+function localIsoDate(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
