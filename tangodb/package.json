@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.10.16",
+  "version": "2.10.17",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -25,6 +25,7 @@
     "test:db:subscription": "node scripts/psql-local-test.mjs -f supabase/tests/v2_subscription_test.sql",
     "test:db:schedule-overlap": "node scripts/psql-local-test.mjs -f supabase/tests/schedule_overlap_test.sql",
     "test:db:schedule-location-conflict": "node scripts/psql-local-test.mjs -f supabase/tests/schedule_location_has_conflict_retired_test.sql",
+    "test:db:renter-miniapp-occupancy-cancel": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_occupancy_hide_cancelled_test.sql",
     "test:db:move-lesson": "node scripts/psql-local-test.mjs -f supabase/tests/move_group_lesson_occurrence_test.sql",
     "test:db:cancel-batch": "node scripts/psql-local-test.mjs -f supabase/tests/cancel_group_lesson_occurrences_test.sql",
     "test:db:calendar-events": "node scripts/psql-local-test.mjs -f supabase/tests/calendar_events_test.sql",

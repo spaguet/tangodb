@@ -7,6 +7,12 @@
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
 
+### 2026-09-08 — Mini App: отменённая бронь остаётся в сетке
+
+- **Ошибка:** после отмены слот в Mini App всё ещё был «своим» (indigo), новую бронь поставить нельзя; «Мои записи» показывали «Отменена».
+- **Причина:** `renter_get_occupancy.mine` и `renter_list_mine` не фильтровали `booking_status = cancelled`; `classifyInterval` считал любой overlap в `mine` занятым. `renter_get_occupancy.busy` не использовал `_schedule_slot_active_on_date` (retired/отменённые группы).
+- **Как избежать:** occupancy Mini App синхронизировать с `_renter_location_slot_busy` / `_schedule_slot_active_on_date`; `mine` и list_mine — только `confirmed`; клиент — `occupiesMiniAppGrid`.
+
 ### 2026-09-08 — Серия аренд: preview OK, save `schedule.rental.conflict`
 
 - **Ошибка:** preview серии писал «конфликтов нет», но `create_rental_series` возвращал `schedule.rental.conflict`.

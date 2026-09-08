@@ -1,4 +1,5 @@
 import { rangesOverlap, SLOT_MINUTES, timeToMinutes } from "./grid";
+import { occupiesMiniAppGrid } from "./lifecycle";
 import type { BusySlot, MineSlot } from "./types";
 
 export type SlotState = "free" | "busy" | "mine" | "mine_hold" | "mine_debt";
@@ -15,6 +16,7 @@ export function classifyInterval(
 
   for (const m of mine) {
     if (m.date !== date) continue;
+    if (!occupiesMiniAppGrid(m.lifecycle)) continue;
     const s2 = timeToMinutes(m.time_start);
     const e2 = timeToMinutes(m.time_end);
     if (rangesOverlap(s1, e1, s2, e2)) {
@@ -62,6 +64,7 @@ export function findOverlappingMine(
   const e1 = s1 + SLOT_MINUTES;
   return mine.find((m) => {
     if (m.date !== date) return false;
+    if (!occupiesMiniAppGrid(m.lifecycle)) return false;
     return rangesOverlap(s1, e1, timeToMinutes(m.time_start), timeToMinutes(m.time_end));
   });
 }

@@ -13,7 +13,7 @@ import {
 import { formatMoney } from "../../lib/format";
 import { formatRequestAge } from "../../lib/cabinetRefresh";
 import { useHoldCountdown } from "../../hooks/useServerClock";
-import { miniAppLifecycleKey, isAwaitingPaymentHold } from "../../lib/lifecycle";
+import { miniAppLifecycleKey, isAwaitingPaymentHold, occupiesMiniAppGrid } from "../../lib/lifecycle";
 import { groupMineBookings, isPackOnHold, packHoldExpiresAt } from "../../lib/packSeriesTimeline";
 import { formatShortDate, formatTimeRange } from "../../lib/orgTime";
 import {
@@ -157,7 +157,7 @@ export default function MineTab({
         const next = bookingsOffset + PAGE;
         const b = await rpcListMine(supabase, PAGE, next);
         setBookings((prev) => {
-          const merged = [...prev, ...b.items];
+          const merged = [...prev, ...b.items.filter((item) => occupiesMiniAppGrid(item.lifecycle))];
           loadedBookingsCountRef.current = merged.length;
           return merged;
         });
@@ -169,14 +169,15 @@ export default function MineTab({
       const limit =
         mode === "refresh" ? Math.max(PAGE, loadedBookingsCountRef.current) : PAGE;
       const b = await rpcListMine(supabase, limit, 0);
-      setBookings(b.items);
+      const items = b.items.filter((item) => occupiesMiniAppGrid(item.lifecycle));
+      setBookings(items);
       setBookingsTotal(b.total);
       if (mode === "initial") {
         setBookingsOffset(0);
-        loadedBookingsCountRef.current = b.items.length;
+        loadedBookingsCountRef.current = items.length;
       } else {
-        setBookingsOffset(Math.max(0, b.items.length - PAGE));
-        loadedBookingsCountRef.current = b.items.length;
+        setBookingsOffset(Math.max(0, items.length - PAGE));
+        loadedBookingsCountRef.current = items.length;
       }
     },
     [supabase, bookingsOffset]
@@ -550,7 +551,7 @@ export default function MineTab({
         {bookings.length === 0 ? (
           <p className="text-sm text-slate-500">{t(locale, "noBookings")}</p>
         ) : (
-          groupMineBookings(bookings).map((row) => {
+          groupMineBookings(bookings.filter((r) => occupiesMiniAppGrid(r.lifecycle))).map((row) => {
             if (row.kind === "pack") {
               return (
                 <PackSeriesCard

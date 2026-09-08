@@ -220,6 +220,38 @@ describe("MineTab stage B surfaces", () => {
     ).toBeTruthy();
   });
 
+  it("hides cancelled bookings from Мои записи", async () => {
+    mockLoadedMine({
+      bookings: [
+        makeRental({
+          id: "live-1",
+          rental_date: "2026-09-12",
+          time_start: "11:00",
+          time_end: "12:00",
+          lifecycle: "active",
+        }),
+        makeRental({
+          id: "gone-1",
+          rental_date: "2026-09-13",
+          time_start: "15:30",
+          time_end: "16:30",
+          lifecycle: "cancelled",
+          booking_status: "cancelled",
+        }),
+      ],
+    });
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/11:00/)).toBeTruthy();
+    });
+    expect(screen.queryByText(/15:30/)).toBeNull();
+    expect(screen.queryByText("Отменена")).toBeNull();
+  });
+
   it("calls renter_cancel_occurrence for a single pack session", async () => {
     const user = userEvent.setup();
     mockLoadedMine({

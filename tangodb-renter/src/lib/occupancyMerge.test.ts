@@ -63,4 +63,18 @@ describe("classifyInterval", () => {
     expect(findOverlappingMine("2026-09-01", "15:30", mine)?.id).toBe("a");
     expect(findOverlappingMine("2026-09-01", "16:00", mine)).toBeUndefined();
   });
+
+  it("ignores cancelled own bookings so the cell is free", () => {
+    const cancelledMine: MineSlot[] = [
+      {
+        id: "gone",
+        date: "2026-09-01",
+        time_start: "12:00",
+        time_end: "13:00",
+        lifecycle: "cancelled",
+      },
+    ];
+    expect(classifyInterval("2026-09-01", "12:00", "12:30", [], cancelledMine)).toBe("free");
+    expect(findOverlappingMine("2026-09-01", "12:00", cancelledMine)).toBeUndefined();
+  });
 });

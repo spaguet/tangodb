@@ -9,6 +9,13 @@ export type LifecycleMessageKey =
   | "lifecycleAutoDeleted"
   | "lifecycleUnknown";
 
+const TERMINAL_MINIAPP_LIFECYCLES = new Set(["cancelled", "hold_deleted", "auto_deleted"]);
+
+export function occupiesMiniAppGrid(lifecycle: string | null | undefined): boolean {
+  if (!lifecycle) return false;
+  return !TERMINAL_MINIAPP_LIFECYCLES.has(lifecycle);
+}
+
 export function miniAppLifecycleKey(lifecycle: string | null | undefined): LifecycleMessageKey {
   switch (lifecycle) {
     case "awaiting_payment":
