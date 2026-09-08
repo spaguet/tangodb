@@ -21,6 +21,7 @@ import {
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { memberListLabel, useTeamMembers } from "../hooks/useTeamMembers";
+import { isActiveLessonConductingMember } from "../lib/lessonTeacherRoles";
 import {
   filterGroupTariffsByModules,
   filterPrivatePackageTariffsByModules,
@@ -227,14 +228,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const teacherOptions = useMemo(
     () =>
       teamMembers
-        .filter(
-          (member) =>
-            member.is_active &&
-            (member.role === "teacher" ||
-              member.role === "owner" ||
-              member.role === "director" ||
-              member.role === "admin")
-        )
+        .filter(isActiveLessonConductingMember)
         .map((member) => ({
           id: member.id,
           label: memberListLabel(member),

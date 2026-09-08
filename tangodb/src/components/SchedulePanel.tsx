@@ -22,6 +22,7 @@ import {
 import { useDisciplines } from "../hooks/useDisciplines";
 import { useLocations } from "../hooks/useLocations";
 import { useTeamMembers, memberRoleLabel, memberDisplayName } from "../hooks/useTeamMembers";
+import { isActiveLessonConductingMember } from "../lib/lessonTeacherRoles";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { dowFull, dowFullEntries, jsDayToIsoDow, timesOverlap } from "../lib/utils";
 import ConfirmDialog from "./ui/ConfirmDialog";
@@ -177,15 +178,7 @@ export default function SchedulePanel({ toast }: SchedulePanelProps) {
   }, [locations, locationId]);
 
   const teacherOptions = useMemo(
-    () =>
-      teamMembers.filter(
-        (member) =>
-          member.is_active &&
-          (member.role === "teacher" ||
-            member.role === "owner" ||
-            member.role === "director" ||
-            member.role === "admin")
-      ),
+    () => teamMembers.filter(isActiveLessonConductingMember),
     [teamMembers]
   );
 

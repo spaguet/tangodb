@@ -5,6 +5,7 @@ import { resolveMutationError } from "../../lib/resolveMutationError";
 import { canAssignLessonSubstitute } from "../../lib/lessonSubstitute";
 import { useAssignLessonSubstitute, useClearLessonSubstitute } from "../../hooks/useLessonSubstitutes";
 import { useTeamMembers, memberListLabel } from "../../hooks/useTeamMembers";
+import { isActiveLessonConductingMember } from "../../lib/lessonTeacherRoles";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useI18n } from "../../hooks/useI18n";
@@ -67,10 +68,7 @@ export default function SubstituteLessonDialog({
   const teacherOptions = useMemo(
     () =>
       (teamQuery.data ?? []).filter(
-        (member) =>
-          member.role === "teacher" &&
-          member.is_active &&
-          member.id !== originalTeacherId
+        (member) => isActiveLessonConductingMember(member) && member.id !== originalTeacherId
       ),
     [teamQuery.data, originalTeacherId]
   );

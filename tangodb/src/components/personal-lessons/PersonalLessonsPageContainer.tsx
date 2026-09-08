@@ -22,6 +22,7 @@ import {
 } from "../../hooks/useOnlineStatus";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
+import { isActiveLessonConductingMember } from "../../lib/lessonTeacherRoles";
 import type { PersonalDisplayLesson, PersonalLesson } from "../../types";
 import LoadingState from "../ui/LoadingState";
 import QueryErrorState from "../ui/QueryErrorState";
@@ -151,15 +152,7 @@ export default function PersonalLessonsPageContainer({
   );
 
   const teacherOptions = useMemo(
-    () =>
-      (teamQuery.data ?? []).filter(
-        (member) =>
-          member.is_active &&
-          (member.role === "teacher" ||
-            member.role === "owner" ||
-            member.role === "director" ||
-            member.role === "admin")
-      ),
+    () => (teamQuery.data ?? []).filter(isActiveLessonConductingMember),
     [teamQuery.data]
   );
 

@@ -17,6 +17,7 @@ import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { canAddPersonalFromGrid, canClickEmptyCell, canOfferGroupLessonAdd, isLessonInTeacherScope } from "../../lib/scheduleLessonAccess";
 import { hasLocationAccess } from "../../lib/teacherScope";
 import { canManageMiniAppRentals } from "../../lib/permissions";
+import { isActiveLessonConductingMember } from "../../lib/lessonTeacherRoles";
 import { isMiniAppRentalChannel } from "../../lib/rentalMiniAppDisplay";
 import {
   buildSchedulePngFilename,
@@ -150,15 +151,7 @@ export default function SchedulePageContainer() {
   const selfMemberId = memberId;
 
   const teacherOptions = useMemo(
-    () =>
-      (teamQuery.data ?? []).filter(
-        (member) =>
-          member.is_active &&
-          (member.role === "teacher" ||
-            member.role === "owner" ||
-            member.role === "director" ||
-            member.role === "admin")
-      ),
+    () => (teamQuery.data ?? []).filter(isActiveLessonConductingMember),
     [teamQuery.data]
   );
 

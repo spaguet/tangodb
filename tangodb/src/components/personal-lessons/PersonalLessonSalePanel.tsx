@@ -5,6 +5,7 @@ import { usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { useTeamMembers } from "../../hooks/useTeamMembers";
 import { useI18n } from "../../hooks/useI18n";
 import { useAccessibleLocations } from "../../hooks/useLocations";
+import { isActiveLessonConductingMember } from "../../lib/lessonTeacherRoles";
 import PersonalLessonSaleForm from "./PersonalLessonSaleForm";
 import AddLocationsInSettingsHint from "../ui/AddLocationsInSettingsHint";
 
@@ -20,15 +21,7 @@ export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePan
   const { locations } = useAccessibleLocations();
 
   const teacherOptions = useMemo(
-    () =>
-      (teamQuery.data ?? []).filter(
-        (member) =>
-          member.is_active &&
-          (member.role === "teacher" ||
-            member.role === "owner" ||
-            member.role === "director" ||
-            member.role === "admin")
-      ),
+    () => (teamQuery.data ?? []).filter(isActiveLessonConductingMember),
     [teamQuery.data]
   );
 

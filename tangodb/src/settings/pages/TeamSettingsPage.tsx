@@ -17,6 +17,7 @@ import {
 import { useTeamInvites, useTeamMutations } from "../../hooks/useTeamInvites";
 import { useI18n } from "../../hooks/useI18n";
 import { getTeamRolePresets } from "../../lib/i18n";
+import { isActiveLessonConductingMember } from "../../lib/lessonTeacherRoles";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useSchedule } from "../../hooks/useSchedule";
 import { useDisciplines } from "../../hooks/useDisciplines";
@@ -105,13 +106,7 @@ export default function TeamSettingsPage() {
   const teacherVacationOptions = useMemo(
     () =>
       activeMembers
-        .filter(
-          (member) =>
-            member.role === "teacher" ||
-            member.role === "owner" ||
-            member.role === "director" ||
-            member.role === "admin"
-        )
+        .filter(isActiveLessonConductingMember)
         .map((member) => ({
           id: member.id,
           label: memberListLabel(member, locale),
@@ -496,11 +491,7 @@ export default function TeamSettingsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                {canManageTeacherVacation &&
-                (member.role === "teacher" ||
-                  member.role === "owner" ||
-                  member.role === "director" ||
-                  member.role === "admin") ? (
+                {canManageTeacherVacation && isActiveLessonConductingMember(member) ? (
                   <button
                     type="button"
                     onClick={() => {

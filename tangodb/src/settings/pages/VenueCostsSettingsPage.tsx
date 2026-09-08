@@ -6,6 +6,7 @@ import { useDisciplines } from "../../hooks/useDisciplines";
 import { useLocations } from "../../hooks/useLocations";
 import { usePermissions } from "../../hooks/usePermissions";
 import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
+import { isActiveLessonConductingMember } from "../../lib/lessonTeacherRoles";
 import {
   useAcceptVenueCostRuleVersion,
   useDeleteVenueCostRuleDraft,
@@ -137,14 +138,7 @@ export default function VenueCostsSettingsPage({
   const teachers = useMemo(
     () =>
       (teamQuery.data ?? [])
-        .filter(
-          (member) =>
-            member.is_active &&
-            (member.role === "teacher" ||
-              member.role === "owner" ||
-              member.role === "director" ||
-              member.role === "admin")
-        )
+        .filter(isActiveLessonConductingMember)
         .map((member) => ({ id: member.id, label: memberListLabel(member) })),
     [teamQuery.data]
   );
