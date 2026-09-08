@@ -1,10 +1,12 @@
+import { useMemo } from "react";
 import { CalendarDays, ClipboardCheck, Clock, Sparkles, Wallet } from "lucide-react";
-import { jsDayToIsoDow } from "../lib/utils";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
 import { normalizeOrgModules } from "../lib/orgModules";
+import { expandSlotsToDateRange } from "../lib/scheduleWeek";
+import { isLessonInTeacherScope, maskClientDisplay } from "../lib/scheduleLessonAccess";
 import type { PersonalLesson, ScheduleSlot } from "../types";
 
 interface TeacherScopedDashboardProps {
@@ -27,12 +29,14 @@ export default function TeacherScopedDashboard({
   onNavigate,
 }: TeacherScopedDashboardProps) {
   const { t, formatDate } = useI18n();
-  const { can } = usePermissions();
+  const { can, role, scope, membership } = usePermissions();
   const { settings } = useOrganization();
   const modules = normalizeOrgModules(settings?.modules);
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
   const showPayrollLink =
     modules.finance_basic && can("payroll.read.own") && !can("finance.read");
+  const memberId = membership?.id ?? null;
+  const canReadClients = can("clients.read");
 
   const quickLinks = [
     ...QUICK_LINKS.filter((link) => link.id !== "personalView" || personalLessonsEnabled),
@@ -40,12 +44,26 @@ export default function TeacherScopedDashboard({
       ? [{ id: "payroll" as const, labelKey: "dashboard.teacher.quickPayroll" as const, icon: Wallet }]
       : []),
   ];
-  const todayIso = jsDayToIsoDow(new Date().getDay());
   const todayDate = localIsoDate();
-  const todaySlots = scheduleSlots
-    .filter((slot) => slot.dayOfWeek === todayIso)
-    .sort((a, b) => a.time.localeCompare(b.time));
-  const upcomingLessons = pickUpcomingLessons(personalLessons, todayDate, 5);
+  const todayGroupLessons = useMemo(() => {
+    const lessons = expandSlotsToDateRange(scheduleSlots, todayDate, todayDate);
+    const scoped =
+      role === "teacher"
+        ? lessons.filter((lesson) => isLessonInTeacherScope(role, memberId, lesson, scope))
+        : lessons;
+    return scoped.sort((a, b) => a.timeStart.localeCompare(b.timeStart));
+  }, [scheduleSlots, todayDate, role, memberId, scope]);
+  const upcomingLessons = useMemo(() => {
+    const scoped =
+      role === "teacher" && memberId
+        ? personalLessons.filter(
+            (lesson) =>
+              lesson.teacherMemberId === memberId ||
+              lesson.substituteTeacherMemberId === memberId
+          )
+        : personalLessons;
+    return pickUpcomingLessons(scoped, todayDate, 5);
+  }, [personalLessons, todayDate, role, memberId]);
 
   return (
     <div id="panel-dashboard" className="panel-page-stack">
@@ -68,24 +86,24 @@ export default function TeacherScopedDashboard({
           <CalendarDays className="w-4 h-4 text-indigo-500" />
           {t("dashboard.teacher.todaySchedule")}
         </h2>
-        {todaySlots.length === 0 ? (
+        {todayGroupLessons.length === 0 ? (
           <p className="text-slate-400 text-xs font-sans py-3 text-center">{t("dashboard.teacher.noClassesToday")}</p>
         ) : (
           <ul className="space-y-1.5">
-            {todaySlots.map((slot) => (
+            {todayGroupLessons.map((lesson) => (
               <li
-                key={slot.id ?? `${slot.dayOfWeek}-${slot.time}`}
+                key={`${lesson.slotId}-${lesson.date}`}
                 className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs font-sans"
               >
                 <span className="font-semibold text-slate-800">
-                  {slot.groupName || t("common.group")}
-                  {slot.disciplineId && disciplineNames[slot.disciplineId]
-                    ? ` · ${disciplineNames[slot.disciplineId]}`
+                  {lesson.groupName || t("common.group")}
+                  {lesson.disciplineId && disciplineNames[lesson.disciplineId]
+                    ? ` · ${disciplineNames[lesson.disciplineId]}`
                     : ""}
                 </span>
                 <span className="text-slate-500 flex items-center gap-1 shrink-0">
                   <Clock className="w-3.5 h-3.5" />
-                  {slot.time}–{slot.timeEnd}
+                  {lesson.timeStart}–{lesson.timeEnd}
                 </span>
               </li>
             ))}
@@ -108,7 +126,9 @@ export default function TeacherScopedDashboard({
                   key={lesson.id}
                   className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs font-sans"
                 >
-                  <span className="font-semibold text-slate-800 truncate">{lesson.clientDisplay}</span>
+                  <span className="font-semibold text-slate-800 truncate">
+                    {maskClientDisplay(lesson.clientDisplay, canReadClients)}
+                  </span>
                   <span className="text-slate-500 shrink-0 ml-2">
                     {formatDate(lesson.date, { day: "numeric", month: "long", year: "numeric" })} · {lesson.timeStart}
                   </span>
