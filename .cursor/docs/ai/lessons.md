@@ -6,6 +6,12 @@
 
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
+
+### 2026-09-08 — Удаление группового слота с первой даты серии
+
+- **Ошибка:** `closeScheduleSlotByDate` при `closingDate === valid_from` ставил `valid_to = valid_from - 1`, что нарушало CHECK `valid_to >= valid_from` (`schedule_slots_check`).
+- **Причина:** retire-слоты пытались уйти «до» valid_from; `_retire_schedule_slot_locked` в БД делал то же.
+- **Как избежать:** retire = `valid_to = valid_from`; в UI `expandSlotsToWeek` пропускает `valid_to <= valid_from`; не использовать hard DELETE слотов с FK на `single_visits`.
 - **Причина:** почему это произошло
 - **Как избежать:** что делать иначе
 

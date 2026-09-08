@@ -1,5 +1,12 @@
 import { addDays } from "./scheduleWeek";
 import type { GroupDisplayLesson, ScheduleSlot } from "../types";
+import type { ScheduleSlotRef } from "./scheduleConflicts";
+
+export type GroupScheduleSlotRef = ScheduleSlotRef & {
+  scheduleGroupId?: string | null;
+  groupName?: string;
+  disciplineId?: string | null;
+};
 
 export interface GroupSlotEditRow {
   key: string;
@@ -47,7 +54,10 @@ export function pickBestSlotForDay(
   return daySlots.find((slot) => slotCoversDate(slot, editDate));
 }
 
-function relatedGroupSlots(lesson: GroupDisplayLesson, scheduleSlots: ScheduleSlot[]): ScheduleSlot[] {
+export function relatedGroupSlots(
+  lesson: GroupDisplayLesson,
+  scheduleSlots: GroupScheduleSlotRef[]
+): GroupScheduleSlotRef[] {
   const scheduleGroupId = lesson.scheduleGroupId;
   if (scheduleGroupId) {
     return scheduleSlots.filter(
@@ -77,10 +87,11 @@ export function pickGroupSlotsForEdit(
     dayOfWeeks.add(slot.dayOfWeek);
   }
 
+  const relatedAsSlots = related as ScheduleSlot[];
   const rows: GroupSlotEditRow[] = [];
   for (const dayOfWeek of dayOfWeeks) {
     const slot =
-      pickBestSlotForDay(related, dayOfWeek, editDate) ??
+      pickBestSlotForDay(relatedAsSlots, dayOfWeek, editDate) ??
       (dayOfWeek === lesson.dayOfWeek
         ? scheduleSlots.find((item) => item.id === lesson.slotId)
         : undefined);

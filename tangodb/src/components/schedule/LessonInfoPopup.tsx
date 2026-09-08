@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Clock, Coins, Edit, Layers, MapPin, Trash2, User, UserPlus, X, XCircle, ArrowRightLeft, CheckCircle2 } from "lucide-react";
 import { useClientDirectory } from "../../hooks/useClients";
-import { useDeleteScheduleSlot } from "../../hooks/useSchedule";
+import { useDeleteScheduleSlot, useDeleteGroupSchedule, useCancelGroupLessonOccurrences } from "../../hooks/useSchedule";
 import { useDeletePersonalLesson, useDeletePersonalLessonSeriesFromDate, usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { usePersonalLessonPayments } from "../../hooks/usePayments";
 import { canShowScheduleDebtAmount } from "../../hooks/useScheduleDebtors";
@@ -10,6 +10,7 @@ import { useClosePersonalLessonOccurrence, useActivePersonalLessonClosure, useRe
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import {
   canManageGroupLesson,
   canPayPersonalLesson,
@@ -21,6 +22,12 @@ import {
 import { canAssignLessonSubstitute, isSubstituteOnlyTeacher } from "../../lib/lessonSubstitute";
 import { useI18n } from "../../hooks/useI18n";
 import { isRecurringGroupSlot } from "../../lib/groupLessonRepeat";
+import {
+  canDeleteEntireGroupScheduleFromDate,
+  activeRelatedGroupSlots,
+  groupSlotOccurrencesFromDate,
+} from "../../lib/groupLessonSeries";
+import { maxRepeatEndDate } from "../../lib/dateRecurrenceLimits";
 import { personalLessonsInSeriesFromDate } from "../../lib/personalLessonSeries";
 import { toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
@@ -100,6 +107,8 @@ export default function LessonInfoPopup({
   const { memberId } = useOrganization();
   const { role, can, isReadOnly, canEditPastSchedule, options } = usePermissions();
   const deleteScheduleSlot = useDeleteScheduleSlot();
+  const deleteGroupSchedule = useDeleteGroupSchedule();
+  const cancelGroupOccurrences = useCancelGroupLessonOccurrences();
   const deletePersonalLesson = useDeletePersonalLesson();
   const deletePersonalLessonSeries = useDeletePersonalLessonSeriesFromDate();
   const closePersonalLesson = useClosePersonalLessonOccurrence();
@@ -117,7 +126,10 @@ export default function LessonInfoPopup({
   });
   const personalLessonsQuery = usePersonalLessons({
     enabled: lesson?.kind === "personal",
-    yearMonth: lesson?.kind === "personal" ? lesson.date.slice(0, 7) : undefined,
+    dateRange:
+      lesson?.kind === "personal"
+        ? { start: lesson.date, end: maxRepeatEndDate(lesson.date) }
+        : undefined,
   });
   const personalClosureQuery = useActivePersonalLessonClosure(
     lesson?.kind === "personal" ? lesson.lessonId : null,
@@ -258,6 +270,20 @@ export default function LessonInfoPopup({
 
   const canDeletePersonalSeries = personalSeriesFromDate.length >= 2;
 
+  const groupFutureOccurrences = useMemo(() => {
+    if (!lesson || lesson.kind !== "group") return [];
+    if (!isRecurringGroupSlot(lesson.validFrom, lesson.validTo)) return [];
+    return groupSlotOccurrencesFromDate(lesson);
+  }, [lesson]);
+
+  const canDeleteGroupFromDate = groupFutureOccurrences.length >= 2;
+
+  const canDeleteGroupAllDays =
+    lesson?.kind === "group" && canDeleteEntireGroupScheduleFromDate(lesson, scheduleSlots);
+
+  const relatedGroupSlotCount =
+    lesson?.kind === "group" ? activeRelatedGroupSlots(lesson, scheduleSlots).length : 0;
+
   const handleOpenPay = () => {
     if (lesson?.kind !== "personal") return;
     const fullLesson = personalLessonsQuery.data?.find((row) => row.id === lesson.lessonId);
@@ -328,12 +354,24 @@ export default function LessonInfoPopup({
     if (!lesson) return;
 
     if (lesson.kind === "group") {
-      const res = await deleteScheduleSlot.mutateAsync({ id: lesson.slotId, editDate: lesson.date });
-      if (!res.success) {
-        toast(res.error ?? t("schedule.error.deleteClassFailed"), "error");
-        return;
+      if (canDeleteGroupFromDate) {
+        const res = await cancelGroupOccurrences.mutateAsync({
+          slotId: lesson.slotId,
+          cancelDates: [lesson.date],
+        });
+        if (!res.success) {
+          toast(resolveMutationError(res.error, "schedule.error.deleteClassFailed", t), "error");
+          return;
+        }
+        toast(t("schedule.success.oneLessonCancelled"), "success");
+      } else {
+        const res = await deleteScheduleSlot.mutateAsync({ id: lesson.slotId, editDate: lesson.date });
+        if (!res.success) {
+          toast(res.error ?? t("schedule.error.deleteClassFailed"), "error");
+          return;
+        }
+        toast(t("schedule.success.groupDeleted"), "success");
       }
-      toast(t("schedule.success.groupDeleted"), "success");
     } else {
       const res = await deletePersonalLesson.mutateAsync({ id: lesson.lessonId, lessonDate: lesson.date });
       if (!res.success) {
@@ -369,10 +407,47 @@ export default function LessonInfoPopup({
     onClose();
   };
 
+  const handleDeleteGroupFromDate = async () => {
+    if (!lesson || lesson.kind !== "group") return;
+
+    const res = await deleteScheduleSlot.mutateAsync({ id: lesson.slotId, editDate: lesson.date });
+    if (!res.success) {
+      toast(res.error ?? t("schedule.error.deleteClassFailed"), "error");
+      return;
+    }
+
+    toast(t("schedule.success.groupDeleted"), "success");
+    setDeleteConfirmOpen(false);
+    onSuccess?.();
+    onClose();
+  };
+
+  const handleDeleteGroupAllDays = async () => {
+    if (!lesson || lesson.kind !== "group" || lesson.disciplineId == null) return;
+
+    const res = await deleteGroupSchedule.mutateAsync({
+      groupName: lesson.groupName ?? "",
+      disciplineId: lesson.disciplineId,
+      locationId: lesson.locationId,
+      editDate: lesson.date,
+    });
+    if (!res.success) {
+      toast(res.error ?? t("schedule.error.deleteGroupFailed"), "error");
+      return;
+    }
+
+    toast(t("schedule.success.groupScheduleDeletedFromDate"), "success");
+    setDeleteConfirmOpen(false);
+    onSuccess?.();
+    onClose();
+  };
+
   const deletePending =
     deleteScheduleSlot.isPending ||
     deletePersonalLesson.isPending ||
-    deletePersonalLessonSeries.isPending;
+    deletePersonalLessonSeries.isPending ||
+    deleteGroupSchedule.isPending ||
+    cancelGroupOccurrences.isPending;
 
   return (
     <>
@@ -732,18 +807,31 @@ export default function LessonInfoPopup({
           lesson ? (
             lesson.kind === "group" ? (
               <>
-                {t("schedule.lessonInfo.deleteGroupBody", {
-                  label: lessonTitle(
-                    lesson,
-                    disciplineName,
-                    clientLabel,
-                    t,
-                    t("schedule.lessonInfo.clientNotSpecified")
-                  ),
-                  date: formatDate(lesson.date),
-                  timeStart: lesson.timeStart,
-                  timeEnd: lesson.timeEnd,
-                })}
+                {canDeleteGroupFromDate
+                  ? t("schedule.lessonInfo.deleteGroupOneBody", {
+                      label: lessonTitle(
+                        lesson,
+                        disciplineName,
+                        clientLabel,
+                        t,
+                        t("schedule.lessonInfo.clientNotSpecified")
+                      ),
+                      date: formatDate(lesson.date),
+                      timeStart: lesson.timeStart,
+                      timeEnd: lesson.timeEnd,
+                    })
+                  : t("schedule.lessonInfo.deleteGroupBody", {
+                      label: lessonTitle(
+                        lesson,
+                        disciplineName,
+                        clientLabel,
+                        t,
+                        t("schedule.lessonInfo.clientNotSpecified")
+                      ),
+                      date: formatDate(lesson.date),
+                      timeStart: lesson.timeStart,
+                      timeEnd: lesson.timeEnd,
+                    })}
               </>
             ) : (
               <>
@@ -766,11 +854,29 @@ export default function LessonInfoPopup({
             ? t("schedule.lessonInfo.deletePersonalSeriesConfirm", {
                 count: personalSeriesFromDate.length,
               })
-            : undefined
+            : lesson?.kind === "group" && canDeleteGroupAllDays
+              ? t("schedule.lessonInfo.deleteGroupAllDaysConfirm", {
+                  count: relatedGroupSlotCount,
+                })
+              : lesson?.kind === "group" && canDeleteGroupFromDate
+                ? t("schedule.lessonInfo.deletePersonalSeriesConfirm", {
+                    count: groupFutureOccurrences.length,
+                  })
+                : undefined
         }
-        alternatePending={deletePersonalLessonSeries.isPending}
+        alternatePending={
+          deletePersonalLessonSeries.isPending ||
+          deleteGroupSchedule.isPending ||
+          deleteScheduleSlot.isPending
+        }
         onAlternateConfirm={
-          lesson?.kind === "personal" && canDeletePersonalSeries ? handleDeletePersonalSeries : undefined
+          lesson?.kind === "personal" && canDeletePersonalSeries
+            ? handleDeletePersonalSeries
+            : lesson?.kind === "group" && canDeleteGroupAllDays
+              ? handleDeleteGroupAllDays
+              : lesson?.kind === "group" && canDeleteGroupFromDate
+                ? handleDeleteGroupFromDate
+                : undefined
         }
       />
 

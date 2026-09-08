@@ -3,6 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { supabase } from "../lib/supabase";
 import {
   addDays,
+  computeScheduleSlotClosingValidTo,
   expandSlotsToWeek,
   nextOccurrenceOnOrAfter,
   normalizeTime,
@@ -227,8 +228,7 @@ async function closeScheduleSlotByDate(
   if (!slot) return { success: false as const, error: "schedule.error.slotNotFound" };
 
   const validFrom = String(slot.valid_from ?? "2000-01-01").slice(0, 10);
-  const validTo = addDays(closingDate, -1);
-  const closedTo = validTo < validFrom ? addDays(validFrom, -1) : validTo;
+  const closedTo = computeScheduleSlotClosingValidTo(validFrom, closingDate);
 
   const { error } = await supabase.from(scheduleTable).update({ valid_to: closedTo }).eq("id", id);
   if (error) return { success: false as const, error: error.message };
@@ -889,7 +889,6 @@ export function useDeleteGroupSchedule() {
       editDate?: string;
     }) => {
       const trimmed = groupName.trim();
-      const closingValidTo = addDays(editDate, -1);
 
       let selectQuery = supabase
         .from(scheduleTable)
@@ -915,16 +914,12 @@ export function useDeleteGroupSchedule() {
 
       for (const slot of slots) {
         const validFrom = String(slot.valid_from ?? "2000-01-01").slice(0, 10);
-        if (closingValidTo < validFrom) {
-          const { error } = await supabase.from(scheduleTable).delete().eq("id", slot.id);
-          if (error) return { success: false as const, error: error.message };
-        } else {
-          const { error } = await supabase
-            .from(scheduleTable)
-            .update({ valid_to: closingValidTo })
-            .eq("id", slot.id);
-          if (error) return { success: false as const, error: error.message };
-        }
+        const closedTo = computeScheduleSlotClosingValidTo(validFrom, editDate);
+        const { error } = await supabase
+          .from(scheduleTable)
+          .update({ valid_to: closedTo })
+          .eq("id", slot.id);
+        if (error) return { success: false as const, error: error.message };
       }
 
       return { success: true as const };

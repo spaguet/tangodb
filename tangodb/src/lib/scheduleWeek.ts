@@ -29,6 +29,17 @@ export function addDays(isoDate: string, days: number): string {
   return toISODateLocal(d);
 }
 
+/** Retired slots use valid_to = valid_from (never valid_to < valid_from). */
+export function isRetiredScheduleSlot(validFrom: string, validTo: string | null | undefined): boolean {
+  return validTo != null && validTo <= validFrom;
+}
+
+/** Close slot before closingDate; returns valid_to satisfying valid_to >= valid_from. */
+export function computeScheduleSlotClosingValidTo(validFrom: string, closingDate: string): string {
+  const closingValidTo = addDays(closingDate, -1);
+  return closingValidTo < validFrom ? validFrom : closingValidTo;
+}
+
 /** First calendar date >= fromDate when this ISO day-of-week occurs (school local TZ). */
 export function nextOccurrenceOnOrAfter(fromDate: string, dayOfWeek: number): string {
   const fromDow = jsDayToIsoDow(new Date(`${fromDate}T12:00:00`).getDay());
@@ -78,7 +89,8 @@ export function expandSlotsToWeek(
   const result: GroupDisplayLesson[] = [];
 
   for (const slot of slots) {
-    if (!slot.id || !slotValidForWeek(slot, weekStartISO, weekEndISO)) continue;
+    if (!slot.id || isRetiredScheduleSlot(slot.validFrom, slot.validTo)) continue;
+    if (!slotValidForWeek(slot, weekStartISO, weekEndISO)) continue;
 
     for (let offset = 0; offset < 7; offset += 1) {
       const date = new Date(weekStart);
