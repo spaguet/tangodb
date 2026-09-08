@@ -11,7 +11,11 @@
 
 ## Записи
 
-### 2026-09-08 — CRM login открывал чужой active tenant
+### 2026-09-08 — Dev Console developer_access_required при верном app_metadata
+
+- **Ошибка:** `albertkoall@gmail.com` с `platform_role: developer` в `auth.users` получал `developer_access_required` в Dev Console.
+- **Причина:** Edge Functions проверяли только `user.app_metadata` из `auth.getUser()` (может отставать) и `DEV_CONSOLE_ALLOWLIST`; часто пользователь был залогинен под другим email без developer-роли.
+- **Как избежать:** `isDeveloperVerified` с fallback на `is_platform_developer` RPC; в Dev Console показывать signed-in email на экране отказа; CRM owner/admin ≠ platform developer.
 
 - **Ошибка:** пользователь с несколькими membership попадал в последнюю/чужую CRM без выбора; при `rememberMe=false` клиент мог поднять старую Supabase-сессию из `localStorage` через fallback.
 - **Причина:** `LoginPage` доверял `organization_id` из JWT, который строится от серверной `user_active_organizations`, а `authStorage.getItem()` для session mode читал `sessionStorage ?? localStorage`.

@@ -12,7 +12,7 @@ import { ownerEmailHash } from "../_shared/emailHash.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { isRenterActor, renterActorForbidden } from "../_shared/staffAuth.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
-import { isDeveloper } from "../_shared/devAuth.ts";
+import { isDeveloperVerified } from "../_shared/devAuth.ts";
 
 async function sendRecoveryCodeEmail(to: string, code: string): Promise<boolean> {
   const subject = "TangoDB — emergency recovery code";
@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
 
   logEvent("self_service_demo_created", {
     email_domain: email.includes("@") ? email.split("@")[1] : null,
-    platform_developer: isDeveloper(user, authHeader),
+    platform_developer: await isDeveloperVerified(user),
     recovery_code_emailed: recoveryCodeEmailed,
   });
 

@@ -15,6 +15,7 @@ import BillingPage from "./pages/BillingPage";
 import ErrorsPage from "./pages/ErrorsPage";
 import PurchaseInboxPage from "./pages/PurchaseInboxPage";
 import Layout from "./components/Layout";
+import DeveloperAccessGate from "./components/DeveloperAccessGate";
 import type { Session } from "@supabase/supabase-js";
 
 function App() {
@@ -48,24 +49,30 @@ function App() {
     );
   }
 
+  const signOut = () => {
+    void supabase.auth.signOut();
+  };
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout onSignOut={() => supabase.auth.signOut()} />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="landing" element={<LandingAnalyticsPage />} />
-          <Route path="inbox" element={<PurchaseInboxPage />} />
-          <Route path="keys" element={<KeysPage />} />
-          <Route path="payment-methods" element={<PaymentMethodsPage />} />
-          <Route path="orgs" element={<OrgsPage />} />
-          <Route path="users" element={<UsersPage />} />
-          <Route path="billing" element={<BillingPage />} />
-          <Route path="migrations" element={<MigrationsPage />} />
-          <Route path="errors" element={<ErrorsPage />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <DeveloperAccessGate onSignOut={signOut}>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout onSignOut={signOut} />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="landing" element={<LandingAnalyticsPage />} />
+            <Route path="inbox" element={<PurchaseInboxPage />} />
+            <Route path="keys" element={<KeysPage />} />
+            <Route path="payment-methods" element={<PaymentMethodsPage />} />
+            <Route path="orgs" element={<OrgsPage />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="billing" element={<BillingPage />} />
+            <Route path="migrations" element={<MigrationsPage />} />
+            <Route path="errors" element={<ErrorsPage />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </DeveloperAccessGate>
   );
 }
 

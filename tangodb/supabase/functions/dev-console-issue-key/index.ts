@@ -3,7 +3,7 @@ import {
   hashAccessKey,
 } from "../_shared/accessKey.ts";
 import { validateIssuerSignature } from "../_shared/issuerSignature.ts";
-import { isDeveloper } from "../_shared/devAuth.ts";
+import { isDeveloperVerified } from "../_shared/devAuth.ts";
 import {
   getClientIp,
   handleOptions,
@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
   const userClient = createUserClient(authHeader);
   const { data: userData, error: userError } = await userClient.auth.getUser();
-  if (userError || !userData.user || !isDeveloper(userData.user, authHeader)) {
+  if (userError || !userData.user || !(await isDeveloperVerified(userData.user))) {
     return jsonResponse({ error: "developer_access_required" }, 403, req);
   }
 
