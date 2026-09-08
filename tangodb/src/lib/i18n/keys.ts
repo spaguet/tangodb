@@ -1740,6 +1740,7 @@ export type I18nKey =
   | "schedule.rental.checkConflicts"
   | "schedule.rental.previewTitle"
   | "schedule.rental.noConflicts"
+  | "schedule.rental.conflict"
   | "schedule.rental.conflictBlocked"
   | "schedule.rental.confirmCreate"
   | "schedule.rental.createSuccess"

@@ -2430,6 +2430,7 @@ export const EN: Record<I18nKey, string> = {
   "schedule.rental.checkConflicts": "Check conflicts",
   "schedule.rental.previewTitle": "Rental not created",
   "schedule.rental.noConflicts": "The time is free. Creating the rental in the schedule…",
+  "schedule.rental.conflict": "The hall is occupied at this time. Go back and choose another time or hall.",
   "schedule.rental.conflictBlocked": "The hall is occupied at this time. Go back and choose another time or hall.",
   "schedule.rental.confirmCreate": "Create rental",
   "schedule.rental.createSuccess": "Rental saved.",

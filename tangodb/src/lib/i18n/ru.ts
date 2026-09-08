@@ -2428,6 +2428,7 @@ export const RU: Record<I18nKey, string> = {
   "schedule.rental.checkConflicts": "Проверить конфликты",
   "schedule.rental.previewTitle": "Аренда не создана",
   "schedule.rental.noConflicts": "Время свободно. Создаём аренду в расписании…",
+  "schedule.rental.conflict": "В это время зал уже занят. Вернитесь и выберите другое время или зал.",
   "schedule.rental.conflictBlocked": "В это время зал уже занят. Вернитесь и выберите другое время или зал.",
   "schedule.rental.confirmCreate": "Создать аренду",
   "schedule.rental.createSuccess": "Аренда сохранена.",

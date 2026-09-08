@@ -7,6 +7,12 @@
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
 
+### 2026-09-08 — Серия аренд: preview OK, save `schedule.rental.conflict`
+
+- **Ошибка:** preview серии писал «конфликтов нет», но `create_rental_series` возвращал `schedule.rental.conflict`.
+- **Причина:** в 2.10.14 обновили только `preview_rental_conflicts`; `create_rental_series` при insert повторно проверяет через `schedule_location_has_conflict` со старой логикой групповых слотов.
+- **Как избежать:** любые occupancy-предикаты (`preview_*`, `_renter_location_slot_busy`, `schedule_location_has_conflict`) менять синхронно; после правки preview — grep по `schedule_location_has_conflict` и `valid_from <= p_date`.
+
 ### 2026-09-08 — Ложный конфликт серии аренд после удаления группового слота
 
 - **Ошибка:** серия аренд с 14.09 блокировалась на первом слоте, хотя в расписании занятий не было.
