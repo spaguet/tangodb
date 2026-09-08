@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
-import { btnPrimaryCls, btnSecondaryCls, fieldCls, labelCls, successBannerCls } from "../../lib/crmUi";
+import { btnPrimaryCls, btnSecondaryCls, fieldCls, labelCls, successBannerCls, weekChipActiveCls, weekChipCls } from "../../lib/crmUi";
 import { formatHoldDeadline, formatMoney } from "../../lib/format";
 import { useHoldCountdown } from "../../hooks/useServerClock";
 import { slotEndOptions, slotStartOptions } from "../../lib/grid";
@@ -10,8 +10,14 @@ import {
   getOrCreateIdempotencyKey,
   packScope,
 } from "../../lib/idempotency";
-import { addCalendarDays, formatShortDate, formatTimeRange, orgIsoWeekday } from "../../lib/orgTime";
+import { formatShortDate, formatTimeRange, orgIsoWeekday } from "../../lib/orgTime";
 import { validFromInWeekdays, weekdaysIncludingDate } from "../../lib/packWeekdays";
+import {
+  DEFAULT_RECURRING_PACK_WEEKS,
+  packValidToFromWeekCount,
+  RECURRING_PACK_WEEK_OPTIONS,
+  type RecurringPackWeekCount,
+} from "../../lib/recurringPackWeeks";
 import { rpcCreatePack, rpcGetWallet, rpcQuotePack } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
 import type { PackCreateResult, QuotePackOccurrence, WalletData } from "../../lib/types";
@@ -64,8 +70,12 @@ export default function PackSheet({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<PackCreateResult | null>(null);
+  const [packWeekCount, setPackWeekCount] = useState<RecurringPackWeekCount>(DEFAULT_RECURRING_PACK_WEEKS);
 
-  const validTo = useMemo(() => addCalendarDays(validFrom, 27), [validFrom]);
+  const validTo = useMemo(
+    () => packValidToFromWeekCount(validFrom, packWeekCount),
+    [validFrom, packWeekCount]
+  );
   const endOptions = useMemo(() => slotEndOptions(timeStart), [timeStart]);
   const starts = useMemo(() => slotStartOptions(), []);
   const localeTag = locale === "en" ? "en" : "ru";
@@ -290,6 +300,24 @@ export default function PackSheet({
         <h2 className="text-lg font-semibold text-slate-900">{t(locale, "recurringPack")}</h2>
         <p className="text-xs text-slate-500">{t(locale, "packActivateNote")}</p>
         <p className="text-xs text-slate-500">{t(locale, "packInsufficientHint")}</p>
+
+        <div>
+          <span className={labelCls}>{t(locale, "packWeekCount")}</span>
+          <div className="mt-1 flex gap-1">
+            {RECURRING_PACK_WEEK_OPTIONS.map((weeks) => (
+              <button
+                key={weeks}
+                type="button"
+                className={`flex-1 rounded-md px-2 py-2 text-xs font-semibold ${
+                  packWeekCount === weeks ? weekChipActiveCls : weekChipCls
+                }`}
+                onClick={() => setPackWeekCount(weeks)}
+              >
+                {tFill(locale, "packWeeksOption", { count: String(weeks) })}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <label className="flex flex-col gap-1">
           <span className={labelCls}>{t(locale, "packStart")}</span>

@@ -5,13 +5,18 @@ import { Plus, Smartphone, X } from "lucide-react";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { parseTelegramIdInput } from "../../lib/renterNormalize";
 import {
-  addCalendarDaysIso,
   isMiniAppDurationValid,
   miniAppEndOptions,
   miniAppTimeOptions,
   snapMiniAppTime,
 } from "../../lib/miniAppBookingGrid";
 import { validFromInWeekdays, weekdaysIncludingDate } from "../../lib/packWeekdays";
+import {
+  DEFAULT_RECURRING_PACK_WEEKS,
+  packValidToFromWeekCount,
+  RECURRING_PACK_WEEK_OPTIONS,
+  type RecurringPackWeekCount,
+} from "../../lib/recurringPackWeeks";
 import { formatCurrency } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import { useUpsertRenter } from "../../hooks/useRenterCrm";
@@ -116,6 +121,7 @@ export default function CreateMiniAppBookingDialog({
   const [newRenterName, setNewRenterName] = useState("");
   const [newRenterTelegramId, setNewRenterTelegramId] = useState("");
   const [weekdays, setWeekdays] = useState<number[]>([1]);
+  const [packWeekCount, setPackWeekCount] = useState<RecurringPackWeekCount>(DEFAULT_RECURRING_PACK_WEEKS);
   const [quote, setQuote] = useState<StaffQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
 
@@ -197,6 +203,7 @@ export default function CreateMiniAppBookingDialog({
     setNewRenterName("");
     setNewRenterTelegramId("");
     setMode("one_time");
+    setPackWeekCount(DEFAULT_RECURRING_PACK_WEEKS);
     setQuote(null);
     idempotencyKeyRef.current = crypto.randomUUID();
     if (prefill?.date) {
@@ -224,7 +231,7 @@ export default function CreateMiniAppBookingDialog({
                   time_start: timeStart,
                   time_end: timeEnd,
                   valid_from: rentalDate,
-                  valid_to: addCalendarDaysIso(rentalDate, 27),
+                  valid_to: packValidToFromWeekCount(rentalDate, packWeekCount),
                   weekdays: [...weekdays].sort((a, b) => a - b).map(String),
                 }
               : {
@@ -253,7 +260,7 @@ export default function CreateMiniAppBookingDialog({
       window.clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- quoteMutation stable; re-quote on form fields only
-  }, [open, mode, renterId, locationId, rentalDate, timeStart, timeEnd, weekdays, quoteReady, toast, t]);
+  }, [open, mode, renterId, locationId, rentalDate, timeStart, timeEnd, weekdays, packWeekCount, quoteReady, toast, t]);
 
   const addonActive = ratesQuery.data?.addonActive ?? false;
   const pending = createMutation.isPending || packMutation.isPending;
@@ -316,7 +323,7 @@ export default function CreateMiniAppBookingDialog({
         time_start: timeStart,
         time_end: timeEnd,
         valid_from: rentalDate,
-        valid_to: addCalendarDaysIso(rentalDate, 27),
+        valid_to: packValidToFromWeekCount(rentalDate, packWeekCount),
         weekdays: [...weekdays].sort((a, b) => a - b).map(String),
         idempotency_key: idempotencyKey,
       });
@@ -483,6 +490,28 @@ export default function CreateMiniAppBookingDialog({
                   </div>
                 </div>
               )}
+
+              {mode === "pack" ? (
+                <div>
+                  <span className={labelCls}>{t("schedule.miniapp.packWeekCount")}</span>
+                  <div className="mt-1 flex gap-1">
+                    {RECURRING_PACK_WEEK_OPTIONS.map((weeks) => (
+                      <button
+                        key={weeks}
+                        type="button"
+                        onClick={() => setPackWeekCount(weeks)}
+                        className={`flex-1 px-2 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer ${
+                          packWeekCount === weeks
+                            ? "border-indigo-300 bg-indigo-50 text-indigo-800"
+                            : "border-slate-200 text-slate-600"
+                        }`}
+                      >
+                        {t(`schedule.miniapp.packWeeks.${weeks}` as import("../../lib/i18n/keys").I18nKey)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               {mode === "pack" ? (
                 <div>

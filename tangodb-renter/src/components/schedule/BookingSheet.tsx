@@ -12,12 +12,17 @@ import {
   packScope,
 } from "../../lib/idempotency";
 import {
-  addCalendarDays,
   formatShortDate,
   formatTimeRange,
   orgIsoWeekday,
 } from "../../lib/orgTime";
 import { validFromInWeekdays, weekdaysIncludingDate } from "../../lib/packWeekdays";
+import {
+  DEFAULT_RECURRING_PACK_WEEKS,
+  packValidToFromWeekCount,
+  RECURRING_PACK_WEEK_OPTIONS,
+  type RecurringPackWeekCount,
+} from "../../lib/recurringPackWeeks";
 import {
   rpcCreateBooking,
   rpcCreatePack,
@@ -87,8 +92,12 @@ export default function BookingSheet({
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<RentalItem | null>(null);
   const [createdPack, setCreatedPack] = useState<PackCreateResult | null>(null);
+  const [packWeekCount, setPackWeekCount] = useState<RecurringPackWeekCount>(DEFAULT_RECURRING_PACK_WEEKS);
 
-  const validTo = useMemo(() => addCalendarDays(validFrom, 27), [validFrom]);
+  const validTo = useMemo(
+    () => packValidToFromWeekCount(validFrom, packWeekCount),
+    [validFrom, packWeekCount]
+  );
   const countdown = useHoldCountdown(
     created?.hold_expires_at ?? createdPack?.hold_expires_at ?? null,
     created?.lifecycle === "awaiting_payment" || createdPack?.series_status === "awaiting_payment",
@@ -177,7 +186,7 @@ export default function BookingSheet({
     return () => {
       cancelled = true;
     };
-  }, [supabase, locationId, validFrom, validTo, timeStart, timeEnd, weekdays, locale, mode]);
+  }, [supabase, locationId, validFrom, validTo, timeStart, timeEnd, weekdays, locale, mode, packWeekCount]);
 
   const packTotals = useMemo(() => {
     if (!occurrences?.length) {
@@ -472,6 +481,26 @@ export default function BookingSheet({
             <p className="text-xs text-slate-500">{t(locale, "packInsufficientHint")}</p>
           </>
         )}
+
+        {mode === "recurring" ? (
+          <div>
+            <span className={labelCls}>{t(locale, "packWeekCount")}</span>
+            <div className="mt-1 flex gap-1">
+              {RECURRING_PACK_WEEK_OPTIONS.map((weeks) => (
+                <button
+                  key={weeks}
+                  type="button"
+                  className={`flex-1 rounded-md px-2 py-2 text-xs font-semibold ${
+                    packWeekCount === weeks ? weekChipActiveCls : weekChipCls
+                  }`}
+                  onClick={() => setPackWeekCount(weeks)}
+                >
+                  {tFill(locale, "packWeeksOption", { count: String(weeks) })}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {mode === "recurring" ? (
           <label className="flex flex-col gap-1">
