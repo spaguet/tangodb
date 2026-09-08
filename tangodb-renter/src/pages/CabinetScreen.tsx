@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../lib/auth";
 import BotBanner from "../components/BotBanner";
+import RentalRulesSheet from "../components/RentalRulesSheet";
 import TabBar, { type CabinetTab } from "../components/TabBar";
 import MineTab from "../components/mine/MineTab";
 import ScheduleTab from "../components/schedule/ScheduleTab";
@@ -29,6 +30,7 @@ export default function CabinetScreen({
   const [topupPrefillAmount, setTopupPrefillAmount] = useState<number | null>(null);
   const [focusRentalId, setFocusRentalId] = useState<string | null>(null);
   const [pollActive, setPollActive] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const prevTabRef = useRef<CabinetTab>(tab);
 
   const refreshCabinet = useCallback(() => {
@@ -80,11 +82,20 @@ export default function CabinetScreen({
 
   return (
     <div className="flex h-[100dvh] flex-col bg-slate-50 text-slate-800">
-      <header className="shrink-0 border-b border-slate-200 bg-white px-4 py-2 shadow-xs">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-          {t(locale, "studioSubtitle")}
-        </p>
-        <h1 className="truncate text-base font-semibold text-slate-900">{bootstrap.studioName}</h1>
+      <header className="flex shrink-0 items-start justify-between gap-2 border-b border-slate-200 bg-white px-4 py-2 shadow-xs">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            {t(locale, "studioSubtitle")}
+          </p>
+          <h1 className="truncate text-base font-semibold text-slate-900">{bootstrap.studioName}</h1>
+        </div>
+        <button
+          type="button"
+          className="mt-1 shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          onClick={() => setRulesOpen(true)}
+        >
+          {t(locale, "rules")}
+        </button>
       </header>
 
       <TabBar locale={locale} active={tab} onChange={setTab} />
@@ -125,6 +136,8 @@ export default function CabinetScreen({
           </div>
         )}
       </main>
+
+      {rulesOpen ? <RentalRulesSheet locale={locale} onClose={() => setRulesOpen(false)} /> : null}
     </div>
   );
 }

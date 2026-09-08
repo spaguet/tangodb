@@ -16,6 +16,9 @@ const messages = {
 
     tabSchedule: "Расписание",
     tabMine: "Мой профиль",
+    rules: "Правила",
+    rulesTitle: "Правила аренды",
+    rulesClose: "Закрыть",
     selectHall: "Зал",
     hallRatesIncomplete: "Зал пока недоступен для брони — студия настраивает тарифы. Обратитесь в студию.",
     free: "Свободно",
@@ -199,6 +202,9 @@ const messages = {
 
     tabSchedule: "Schedule",
     tabMine: "My profile",
+    rules: "Rules",
+    rulesTitle: "Rental rules",
+    rulesClose: "Close",
     selectHall: "Hall",
     hallRatesIncomplete: "This hall is not bookable yet — the studio is finishing rate setup. Please contact the studio.",
     free: "Free",
