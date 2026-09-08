@@ -13,6 +13,7 @@ import { requireSiteUrl } from "../lib/siteUrl";
 import { t, getGuestLocale } from "../lib/i18n";
 import { goTrueCaptchaToken, isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import { isUserAlreadyRegistered } from "./authErrors";
+import { clearOrganizationSelectionAfterLogin } from "../organization/organizationSelectionIntent";
 
 const PASSWORD_RECOVERY_FLAG = "tangodb.password_recovery";
 
@@ -210,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     exitPasswordRecovery();
+    clearOrganizationSelectionAfterLogin();
     setPasswordRecovery(false);
     setSession(null);
     await supabase.auth.signOut();

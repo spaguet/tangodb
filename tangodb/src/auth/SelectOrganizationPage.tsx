@@ -11,7 +11,7 @@ import {
 export default function SelectOrganizationPage() {
   const { t } = useGuestI18n();
   const navigate = useNavigate();
-  const { memberships, setActiveOrganization } = useOrganization();
+  const { memberships, membershipsLoading, setActiveOrganization } = useOrganization();
   const [error, setError] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -32,6 +32,13 @@ export default function SelectOrganizationPage() {
     <AuthLayout title="TangoDB" subtitle={t("auth.selectOrg.subtitle")}>
       <p className="text-sm text-slate-500">{t("auth.selectOrg.hint")}</p>
       <AuthError message={error} />
+
+      {membershipsLoading && (
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <div className="w-4 h-4 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin" />
+          {t("auth.loading.profile")}
+        </div>
+      )}
 
       <div className="space-y-2">
         {memberships.map((membership) => {

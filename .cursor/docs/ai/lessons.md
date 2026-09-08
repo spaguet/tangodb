@@ -11,6 +11,12 @@
 
 ## Записи
 
+### 2026-09-08 — CRM login открывал чужой active tenant
+
+- **Ошибка:** пользователь с несколькими membership попадал в последнюю/чужую CRM без выбора; при `rememberMe=false` клиент мог поднять старую Supabase-сессию из `localStorage` через fallback.
+- **Причина:** `LoginPage` доверял `organization_id` из JWT, который строится от серверной `user_active_organizations`, а `authStorage.getItem()` для session mode читал `sessionStorage ?? localStorage`.
+- **Как избежать:** после email-входа multi-membership всегда вести через явный `/select-organization`; `sessionStorage` и `localStorage` для GoTrue-сессии не смешивать; stale `user_active_organizations` исправлять сбросом active row, не удалением membership.
+
 ### 2026-09-07 — invalid_issuer_signature при выдаче lifetime key
 
 - **Ошибка:** Dev Console → Keys → `invalid_issuer_signature`, хотя секрет `DEV_CONSOLE_ISSUER_SIGNATURE` задан в Supabase.

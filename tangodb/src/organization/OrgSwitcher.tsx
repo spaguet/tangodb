@@ -10,6 +10,7 @@ export default function OrgSwitcher() {
   const { memberships, organization, setActiveOrganization } = useOrganization();
   const [open, setOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const activeMembership = memberships.find((m) => m.organization_id === organization?.id) ?? null;
 
   if (memberships.length <= 1) return null;
 
@@ -30,14 +31,21 @@ export default function OrgSwitcher() {
   };
 
   return (
-    <div className="relative hidden sm:block">
+    <div className="relative block">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 max-w-[220px] rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+        className="flex items-center gap-2 max-w-[170px] sm:max-w-[240px] rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
       >
         <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-        <span className="truncate">{organization?.name ?? t("orgSwitcher.defaultName")}</span>
+        <span className="min-w-0 text-left">
+          <span className="block truncate">{organization?.name ?? t("orgSwitcher.defaultName")}</span>
+          {activeMembership && (
+            <span className="block text-[10px] uppercase tracking-wide text-slate-400">
+              {activeMembership.role}
+            </span>
+          )}
+        </span>
         <ChevronDown className="w-3.5 h-3.5 shrink-0" />
       </button>
 

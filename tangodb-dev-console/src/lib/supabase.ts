@@ -22,6 +22,16 @@ function formatInvokeError(error: unknown, fnName: string): Error {
   return error;
 }
 
+function formatFunctionError(code: string): string {
+  const map: Record<string, string> = {
+    developer_access_required:
+      "developer_access_required — для Dev Console нужен platform developer в Supabase Auth app_metadata или DEV_CONSOLE_ALLOWLIST. Роли owner/admin в CRM недостаточно.",
+    origin_not_allowed:
+      "origin_not_allowed — добавьте https://tangodb-dev-console.vercel.app в ALLOWED_ORIGINS (Supabase Secrets).",
+  };
+  return map[code] ?? code;
+}
+
 async function readFunctionErrorBody(error: unknown): Promise<string | null> {
   const ctx = (error as { context?: Response }).context;
   if (!ctx) return null;
@@ -48,18 +58,13 @@ export async function invokeDevFunction<T>(
 
   if (error) {
     const bodyError = await readFunctionErrorBody(error);
-    if (bodyError === "origin_not_allowed") {
-      throw new Error(
-        "origin_not_allowed — добавьте https://tangodb-dev-console.vercel.app в ALLOWED_ORIGINS (Supabase Secrets)."
-      );
-    }
-    if (bodyError) throw new Error(bodyError);
+    if (bodyError) throw new Error(formatFunctionError(bodyError));
     throw formatInvokeError(error, name);
   }
 
   const payload = data as T & { error?: string };
   if (payload && typeof payload === "object" && payload.error) {
-    throw new Error(payload.error);
+    throw new Error(formatFunctionError(payload.error));
   }
 
   return payload;

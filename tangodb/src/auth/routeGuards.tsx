@@ -124,6 +124,7 @@ export function OrgWorkspaceRoute() {
     organizationId,
     orgLoading,
     needsOnboarding,
+    mustSelectOrganization,
   } = useOrganization();
   useEnsureOwnMemberProfile();
   useApplyScheduledSubscriptionMemberChanges();
@@ -148,6 +149,11 @@ export function OrgWorkspaceRoute() {
     }
     // Email users without an org: create self-service demo first; activate-key only after demo quota is used.
     return <Navigate to="/auth/verify-email" replace />;
+  }
+
+  if (mustSelectOrganization) {
+    if (AUTH_FLOW_PATHS.has(location.pathname)) return <Outlet />;
+    return <Navigate to="/select-organization" replace />;
   }
 
   if (!organizationId) {

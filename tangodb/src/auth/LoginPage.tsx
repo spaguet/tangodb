@@ -12,8 +12,8 @@ import {
 import { parseAuthError } from "./authErrors";
 import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
 import { useGuestI18n } from "../hooks/useI18n";
-import { getOrganizationIdFromSession } from "../lib/authClaims";
 import { getRememberMePreference } from "../lib/supabase";
+import { requestOrganizationSelectionAfterLogin } from "../organization/organizationSelectionIntent";
 
 export default function LoginPage() {
   const { t, locale } = useGuestI18n();
@@ -42,10 +42,7 @@ export default function LoginPage() {
         return;
       }
       const nextSession = await signInWithEmail(email.trim(), password, rememberMe, turnstileToken);
-      if (nextSession.user.email_confirmed_at && !getOrganizationIdFromSession(nextSession)) {
-        navigate("/auth/verify-email", { replace: true });
-        return;
-      }
+      requestOrganizationSelectionAfterLogin(nextSession.user.id);
       goAfterLogin();
     } catch (err) {
       setError(parseAuthError(err, locale));

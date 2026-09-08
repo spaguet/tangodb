@@ -20,6 +20,10 @@ import { reportClientError } from "../lib/reportClientError";
 import { normalizeOrgModules } from "../lib/orgModules";
 import { normalizeTeacherScope } from "../lib/teacherScope";
 import { resetUIStore } from "../store/ui";
+import {
+  clearOrganizationSelectionAfterLogin,
+  shouldSelectOrganizationAfterLogin,
+} from "./organizationSelectionIntent";
 import type {
   MemberRole,
   MemberMeta,
@@ -53,6 +57,7 @@ interface OrganizationContextValue {
   needsOnboarding: boolean;
   isReadOnly: boolean;
   claimsMismatch: boolean;
+  mustSelectOrganization: boolean;
   setActiveOrganization: (organizationId: string) => Promise<void>;
   refreshOrganization: () => Promise<void>;
 }
@@ -195,7 +200,17 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     [memberships, sessionOrganizationId]
   );
 
-  const organizationId = sessionOrganizationId;
+  const userId = session?.user.id ?? null;
+  const jwtOrgWithoutActiveMembership =
+    sessionOrganizationId != null &&
+    !membershipsLoading &&
+    !memberships.some((m) => m.organization_id === sessionOrganizationId);
+  const mustSelectOrganization =
+    !!userId &&
+    !membershipsLoading &&
+    memberships.length > 1 &&
+    (shouldSelectOrganizationAfterLogin(userId) || jwtOrgWithoutActiveMembership);
+  const organizationId = mustSelectOrganization ? null : sessionOrganizationId;
   const memberId = membership?.id ?? getMemberIdFromSession(session) ?? null;
   const role = membership?.role ?? getMemberRoleFromSession(session) ?? null;
 
@@ -208,10 +223,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const roleMismatch = jwtRole != null && dbRole != null && jwtRole !== dbRole;
   const memberIdMismatch =
     jwtMemberId != null && dbMemberId != null && jwtMemberId !== dbMemberId;
-  const jwtOrgWithoutActiveMembership =
-    sessionOrganizationId != null &&
-    !membershipsLoading &&
-    !memberships.some((m) => m.organization_id === sessionOrganizationId);
   const claimsMismatch =
     roleMismatch || memberIdMismatch || jwtOrgWithoutActiveMembership;
 
@@ -304,11 +315,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) throw refreshError;
 
+      clearOrganizationSelectionAfterLogin(session?.user.id);
       queryClient.clear();
       resetUIStore();
       await refetchMemberships();
     },
-    [queryClient, refetchMemberships]
+    [queryClient, refetchMemberships, session?.user.id]
   );
 
   const refreshOrganization = useCallback(async () => {
@@ -318,20 +330,33 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!session?.user.id || membershipsLoading || memberships.length !== 1) return;
-    if (organizationId) return;
+    if (organizationId && !jwtOrgWithoutActiveMembership) return;
     if (autoSelectAttempted.current === session.user.id) return;
 
     autoSelectAttempted.current = session.user.id;
     void setActiveOrganization(memberships[0].organization_id).catch(() => {
       autoSelectAttempted.current = null;
     });
-  }, [session?.user.id, membershipsLoading, memberships, organizationId, setActiveOrganization]);
+  }, [
+    session?.user.id,
+    membershipsLoading,
+    memberships,
+    organizationId,
+    jwtOrgWithoutActiveMembership,
+    setActiveOrganization,
+  ]);
 
   useEffect(() => {
     if (!session?.user.id) {
       autoSelectAttempted.current = null;
+      clearOrganizationSelectionAfterLogin();
     }
   }, [session?.user.id]);
+
+  useEffect(() => {
+    if (!session?.user.id || membershipsLoading || memberships.length !== 1) return;
+    clearOrganizationSelectionAfterLogin(session.user.id);
+  }, [session?.user.id, membershipsLoading, memberships.length]);
 
   useEffect(() => {
     if (!session?.user.id || !organizationId || membershipsLoading) return;
@@ -460,6 +485,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       needsOnboarding,
       isReadOnly,
       claimsMismatch,
+      mustSelectOrganization,
       setActiveOrganization,
       refreshOrganization,
     }),
@@ -479,6 +505,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       needsOnboarding,
       isReadOnly,
       claimsMismatch,
+      mustSelectOrganization,
       setActiveOrganization,
       refreshOrganization,
     ]

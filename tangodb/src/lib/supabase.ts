@@ -39,7 +39,7 @@ const authStorage = {
     if (usePersistentStorage) {
       return localStorage.getItem(key);
     }
-    return sessionStorage.getItem(key) ?? localStorage.getItem(key);
+    return sessionStorage.getItem(key);
   },
   setItem(key: string, value: string): void {
     if (usePersistentStorage) {
