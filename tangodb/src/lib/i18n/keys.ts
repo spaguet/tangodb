@@ -1178,6 +1178,9 @@ export type I18nKey =
   // prices
   | "prices.loading"
   | "prices.tab.group"
+  | "prices.tab.studio"
+  | "prices.tab.hallRent"
+  | "prices.mainSectionLabel"
   | "prices.tab.privateLesson"
   | "prices.tab.singleVisit"
   | "prices.tab.privatePackage"

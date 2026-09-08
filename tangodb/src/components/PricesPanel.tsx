@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Archive, Coins, Edit, RotateCcw, Ticket, X } from "lucide-react";
+import { Archive, Coins, Edit, RotateCcw, Ticket, Warehouse, X } from "lucide-react";
 import {
   useArchivePrice,
   useArchivedPrices,
@@ -68,6 +68,8 @@ import PersonalTariffDurationField, {
   type PersonalTariffDurationSelect,
 } from "./ui/PersonalTariffDurationField";
 import { usePermissions } from "../hooks/usePermissions";
+import { canReadRentalTariffs, canWriteRentalTariffs } from "../lib/permissions";
+import RentalTariffsSettingsPage from "../settings/pages/RentalTariffsSettingsPage";
 import { useI18n } from "../hooks/useI18n";
 import { translateMutationBlockedMessage, useOnlineStatus } from "../hooks/useOnlineStatus";
 import { resolveMutationError } from "../lib/resolveMutationError";
@@ -84,6 +86,7 @@ const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider 
 type CreateTabId = "group" | "privateLesson" | "privatePackage" | "singleVisit";
 type CreateModalStep = "picker" | "form";
 type PriceListView = "active" | "archive";
+type PricesMainSection = "studio" | "hallRent";
 
 function TariffCreateSection({
   title,
@@ -148,8 +151,14 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const personalLessonsEnabled = isModuleEnabled(modules, "personal_lessons");
   const pairSubscriptionsEnabled = modules.pair_subscriptions;
   const trioLessonsEnabled = modules.trio_lessons;
-  const { can } = usePermissions();
+  const { can, role, options } = usePermissions();
+  const canReadStudioPrices = role !== "accountant" && can("prices.read");
   const canWritePrices = can("prices.write");
+  const canReadHallRentTariffs = canReadRentalTariffs(role, options);
+  const canWriteHallRentTariffs = canWriteRentalTariffs(role, options);
+  const showStudioSection = canReadStudioPrices;
+  const showHallRentSection = canReadHallRentTariffs;
+  const [mainSection, setMainSection] = useState<PricesMainSection>("studio");
   const updatePrice = useUpdatePrice();
   const updatePriceMeta = useUpdatePriceMeta();
   const updatePriceTeachers = useUpdatePriceTeachers();
@@ -244,6 +253,33 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const openCreateForm = (tab: CreateTabId) => {
     setActiveCreateTab(tab);
     setCreateModalStep("form");
+  };
+
+  useEffect(() => {
+    const section = searchParams.get("section");
+    if (section === "hall-rent" && showHallRentSection) {
+      setMainSection("hallRent");
+      return;
+    }
+    if (section === "studio" && showStudioSection) {
+      setMainSection("studio");
+    }
+  }, [searchParams, showHallRentSection, showStudioSection]);
+
+  useEffect(() => {
+    if (!showStudioSection && showHallRentSection) {
+      setMainSection("hallRent");
+    } else if (showStudioSection && !showHallRentSection) {
+      setMainSection("studio");
+    }
+  }, [showStudioSection, showHallRentSection]);
+
+  const setMainSectionWithUrl = (section: PricesMainSection) => {
+    setMainSection(section);
+    const next = new URLSearchParams(searchParams);
+    if (section === "hallRent") next.set("section", "hall-rent");
+    else next.delete("section");
+    setSearchParams(next, { replace: true });
   };
 
   useEffect(() => {
@@ -649,9 +685,13 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     />
   );
 
-  if (isLoading || locationsLoading) return <LoadingState label={t("prices.loading")} />;
-  if (isError || locationsError) return <QueryErrorState error={error ?? locationsErr} />;
-  if (locations.length === 0) {
+  if (mainSection === "studio" && showStudioSection && (isLoading || locationsLoading)) {
+    return <LoadingState label={t("prices.loading")} />;
+  }
+  if (mainSection === "studio" && showStudioSection && (isError || locationsError)) {
+    return <QueryErrorState error={error ?? locationsErr} />;
+  }
+  if (mainSection === "studio" && showStudioSection && locations.length === 0 && !showHallRentSection) {
     return (
       <div id="panel-prices" className="panel-page-stack">
         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
@@ -660,9 +700,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               <Coins className="w-5 h-5 text-indigo-600" />
             </div>
             <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("prices.pageTitle")}</h2>
-            <p className="text-slate-400 text-[11px] leading-snug">
-              {t("prices.pageSubtitle")}
-            </p>
+            <p className="text-slate-400 text-[11px] leading-snug">{t("prices.pageSubtitle")}</p>
           </div>
           <div className="text-center py-20 text-slate-400 space-y-3">
             <Ticket className="w-8 h-8 mx-auto text-slate-300" />
@@ -835,10 +873,66 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </div>
           <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("prices.pageTitle")}</h2>
           <p className="text-slate-400 text-[11px] leading-snug">
-            {t("prices.pageSubtitle")}
+            {mainSection === "hallRent" ? t("rentalTariffs.pageSubtitle") : t("prices.pageSubtitle")}
           </p>
         </div>
 
+        {showStudioSection && showHallRentSection ? (
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1" role="tablist" aria-label={t("prices.mainSectionLabel")}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mainSection === "studio"}
+              onClick={() => setMainSectionWithUrl("studio")}
+              className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                mainSection === "studio"
+                  ? "bg-white text-indigo-700 shadow-xs"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <Coins className="w-4 h-4 shrink-0" />
+              {t("prices.tab.studio")}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mainSection === "hallRent"}
+              onClick={() => setMainSectionWithUrl("hallRent")}
+              className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                mainSection === "hallRent"
+                  ? "bg-white text-indigo-700 shadow-xs"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <Warehouse className="w-4 h-4 shrink-0" />
+              {t("prices.tab.hallRent")}
+            </button>
+          </div>
+        ) : null}
+
+        {mainSection === "hallRent" && showHallRentSection ? (
+          <div className="space-y-3 pt-1">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">{t("hallRent.rentersTitle")}</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                {canWriteHallRentTariffs
+                  ? t("hallRent.rentersSubtitle")
+                  : t("hallRent.rentersSubtitleLookup")}
+              </p>
+            </div>
+            <RentalTariffsSettingsPage embedded canWrite={canWriteHallRentTariffs} />
+          </div>
+        ) : null}
+
+        {mainSection === "studio" && showStudioSection ? (
+        <>
+        {locations.length === 0 ? (
+          <div className="text-center py-20 text-slate-400 space-y-3">
+            <Ticket className="w-8 h-8 mx-auto text-slate-300" />
+            <AddLocationsInSettingsHint />
+          </div>
+        ) : (
+        <>
         <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1" role="tablist">
           <button
             type="button"
@@ -991,6 +1085,10 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
             </div>
           )
         )}
+        </>
+        )}
+        </>
+        ) : null}
       </div>
 
       <AnimatePresence>

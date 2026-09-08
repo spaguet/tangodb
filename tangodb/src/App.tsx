@@ -643,7 +643,7 @@ export default function App() {
                     <Route path="disciplines" element={<ErrorBoundary><DisciplinesSettingsPage /></ErrorBoundary>} />
                     <Route path="locations" element={<ErrorBoundary><LocationsSettingsPage /></ErrorBoundary>} />
                     <Route path="hall-rent" element={<ErrorBoundary><HallRentSettingsPage /></ErrorBoundary>} />
-                    <Route path="rental-tariffs" element={<Navigate to="/settings/hall-rent" replace />} />
+                    <Route path="rental-tariffs" element={<Navigate to="/prices?section=hall-rent" replace />} />
                     <Route path="venue-costs" element={<VenueCostsLegacyRedirect />} />
                     <Route path="data" element={<ErrorBoundary><DataExportPage /></ErrorBoundary>} />
                     <Route path="integrations" element={<ErrorBoundary><IntegrationsSettingsPage /></ErrorBoundary>} />

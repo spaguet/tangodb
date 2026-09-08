@@ -7,7 +7,7 @@ export default function RentalTariffLookupLink({ className = "" }: { className?:
 
   return (
     <Link
-      to="/settings/hall-rent"
+      to="/prices?section=hall-rent"
       className={`inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 ${className}`}
     >
       <ExternalLink className="w-3.5 h-3.5 shrink-0" />

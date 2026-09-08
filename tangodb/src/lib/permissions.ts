@@ -622,7 +622,9 @@ export function canAccessPanel(
     case "personal_sell":
       return can(role, "personal_lessons.sell", options);
     case "prices":
-      if (role === "accountant" || role === "teacher") return false;
+      if (role === "teacher") return false;
+      if (canReadRentalTariffs(role, options)) return true;
+      if (role === "accountant") return false;
       return can(role, "prices.read", options);
     case "settings":
       if (role === "teacher") return false;
@@ -949,8 +951,8 @@ export function assertReceptionPermissions(): void {
     throw new Error("full admin must access clients panel");
   }
 
-  if (canAccessPanel("accountant", "prices", adminOpts)) {
-    throw new Error("accountant must not access prices panel (NAV-1)");
+  if (!canAccessPanel("accountant", "prices", adminOpts)) {
+    throw new Error("accountant must access prices panel for rental tariffs (NAV-1)");
   }
   if (!can("accountant", "prices.read", adminOpts)) {
     throw new Error("accountant must retain prices.read for finance (NAV-1)");
