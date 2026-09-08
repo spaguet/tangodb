@@ -2086,6 +2086,7 @@ export type I18nKey =
   | "rentalSeries.noConflicts"
   | "rentalSeries.hasConflict"
   | "rentalSeries.occurrenceCount"
+  | "rentalSeries.occurrenceCountUnit"
   | "rentalSeries.fieldsInvalid"
   | "rentalSeries.dateRangeInvalid"
   | "rentalSeries.patternDaysRequired"

@@ -320,7 +320,7 @@ export default function CreateRentalSeriesDialog({
                   </p>
                   {previewQuery.data?.success ? (
                     <p className="text-xs text-slate-600 mt-1">
-                      {t("rentalSeries.occurrenceCount", { count: previewQuery.data.occurrenceCount })}
+                      {`${previewQuery.data.occurrenceCount} ${t("rentalSeries.occurrenceCountUnit")}`}
                       {canSeeTariffPrices && previewQuery.data.totalAmount != null
                         ? ` · ${formatCurrency(previewQuery.data.totalAmount)}`
                         : ""}

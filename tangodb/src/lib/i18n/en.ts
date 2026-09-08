@@ -1993,6 +1993,7 @@ export const EN: Record<I18nKey, string> = {
   "rentalSeries.noConflicts": "No conflicts — ready to save.",
   "rentalSeries.hasConflict": "Conflict",
   "rentalSeries.occurrenceCount": "{{count}} occurrences",
+  "rentalSeries.occurrenceCountUnit": "occurrences",
   "rentalSeries.fieldsInvalid": "Fill in all required fields.",
   "rentalSeries.dateRangeInvalid": "End date must be on or after start date.",
   "rentalSeries.patternDaysRequired": "Select at least one weekday per pattern.",
