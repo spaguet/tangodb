@@ -2,7 +2,7 @@ import { jsDayToIsoDow } from "./utils";
 import { t, formatDateLocale } from "./i18n";
 import type { I18nKey } from "./i18n/keys";
 import type { TranslateFn } from "./utils";
-import { minutesToTime, normalizeTime, timeToMinutes } from "./scheduleWeek";
+import { isRetiredScheduleSlot, minutesToTime, normalizeTime, timeToMinutes } from "./scheduleWeek";
 
 export interface ScheduleConflict {
   message: string;
@@ -54,6 +54,7 @@ function overlapStartTime(start1: string, end1: string, start2: string, end2: st
 }
 
 function slotValidOnDate(validFrom: string, validTo: string | null | undefined, date: string): boolean {
+  if (isRetiredScheduleSlot(validFrom, validTo)) return false;
   if (validFrom > date) return false;
   if (validTo != null && validTo < date) return false;
   return true;

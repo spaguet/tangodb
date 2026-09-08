@@ -1990,7 +1990,7 @@ export const RU: Record<I18nKey, string> = {
   "rentalSeries.conflictBlocked": "Некоторые слоты пересекаются с существующими бронированиями.",
   "rentalSeries.noConflicts": "Конфликтов нет — можно сохранять.",
   "rentalSeries.hasConflict": "Конфликт",
-  "rentalSeries.occurrenceCount": "{count} слотов",
+  "rentalSeries.occurrenceCount": "{{count}} слотов",
   "rentalSeries.fieldsInvalid": "Заполните все обязательные поля.",
   "rentalSeries.dateRangeInvalid": "Дата окончания не может быть раньше начала.",
   "rentalSeries.patternDaysRequired": "Выберите хотя бы один день недели в каждом шаблоне.",
