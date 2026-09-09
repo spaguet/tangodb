@@ -9,7 +9,7 @@ import {
 import { isPersonalLessonLockedForWrite, toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
 import { personalLessonHasScheduleDebt, personalLessonRemainingAmount } from "../../lib/personalLessonPayment";
-import { formatReopenLessonError } from "../../lib/venueCostDraftErrors";
+import { formatCloseLessonError, formatReopenLessonError } from "../../lib/venueCostDraftErrors";
 import { useI18n } from "../../hooks/useI18n";
 import {
   useClosePersonalLessonOccurrence,
@@ -159,7 +159,7 @@ export default function PersonalLessonRow({
   const handleClose = async () => {
     const res = await closePersonalLesson.mutateAsync({ personalLessonId: lesson.id });
     if (res.success === false) {
-      toast(t("venueCosts.closeLesson.error", { error: res.error }), "error");
+      toast(formatCloseLessonError(res.error, t), "error");
       return;
     }
     if (res.amount != null) {

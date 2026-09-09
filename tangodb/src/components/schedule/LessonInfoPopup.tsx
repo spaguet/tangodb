@@ -30,7 +30,7 @@ import { maxRepeatEndDate } from "../../lib/dateRecurrenceLimits";
 import { personalLessonsInSeriesFromDate } from "../../lib/personalLessonSeries";
 import { toISODateLocal } from "../../lib/scheduleWeek";
 import { formatCurrency } from "../../lib/utils";
-import { formatReopenLessonError } from "../../lib/venueCostDraftErrors";
+import { formatCloseLessonError, formatReopenLessonError } from "../../lib/venueCostDraftErrors";
 import { personalLessonClientEntries } from "../../lib/personalLessonClients";
 import {
   personalLessonHasScheduleDebt,
@@ -305,7 +305,7 @@ export default function LessonInfoPopup({
     if (lesson?.kind !== "personal") return;
     const res = await closePersonalLesson.mutateAsync({ personalLessonId: lesson.lessonId });
     if (res.success === false) {
-      toast(t("venueCosts.closeLesson.error", { error: res.error }), "error");
+      toast(formatCloseLessonError(res.error, t), "error");
       return;
     }
     if (res.amount != null) {
@@ -353,7 +353,7 @@ export default function LessonInfoPopup({
     } else {
       const res = await deletePersonalLesson.mutateAsync({ id: lesson.lessonId, lessonDate: lesson.date });
       if (!res.success) {
-        toast(res.error ?? t("schedule.error.deleteLessonFailed"), "error");
+        toast(resolveMutationError(res.error, "schedule.error.deleteLessonFailed", t), "error");
         return;
       }
       toast(t("schedule.success.personalDeleted"), "success");
@@ -372,7 +372,7 @@ export default function LessonInfoPopup({
       lessonDate: lesson.date,
     });
     if (!res.success) {
-      toast(res.error ?? t("schedule.error.deleteLessonFailed"), "error");
+      toast(resolveMutationError(res.error, "schedule.error.deleteLessonFailed", t), "error");
       return;
     }
 
@@ -395,7 +395,7 @@ export default function LessonInfoPopup({
       editDate: lesson.date,
     });
     if (!res.success) {
-      toast(res.error ?? t("schedule.error.deleteGroupFailed"), "error");
+      toast(resolveMutationError(res.error, "schedule.error.deleteGroupFailed", t), "error");
       return;
     }
 

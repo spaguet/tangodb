@@ -112,7 +112,7 @@ export default function TeacherPayRulesPanel({ memberId, canManage }: TeacherPay
 
   const ruleErrorMessage = (code: string) => {
     const key = TEACHER_PAY_RULE_ERROR_KEYS[code];
-    return key ? t(key) : code;
+    return key ? t(key) : t("teacherPayRules.error.saveFailed");
   };
 
   const openCreate = () => {

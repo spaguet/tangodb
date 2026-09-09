@@ -1,4 +1,5 @@
 import type { I18nKey } from "./i18n/keys";
+import { isI18nKey } from "./resolveMutationError";
 import type { TranslateFn } from "./utils";
 
 export interface VenueCostDraftErrorParsed {
@@ -65,12 +66,32 @@ export function formatVenueCostDraftError(
 const REOPEN_LESSON_ERROR_KEY_MAP: Record<string, I18nKey> = {
   reason_required: "venueCosts.reopenLesson.errorReasonRequired",
   forbidden: "venueCosts.error.forbidden",
+  closure_not_found: "venueCosts.closeLesson.errorClosureNotFound",
+};
+
+const CLOSE_LESSON_ERROR_KEY_MAP: Record<string, I18nKey> = {
+  forbidden: "venueCosts.error.forbidden",
+  invalid_attendees: "venueCosts.closeLesson.errorInvalidAttendees",
+  invalid_occurrence: "venueCosts.closeLesson.errorOccurrenceInvalid",
+  group_occurrence_not_found: "venueCosts.closeLesson.errorOccurrenceNotFound",
+  personal_lesson_not_found: "hooks.error.lessonNotFound",
+  closure_attendee_count_conflict: "venueCosts.closeLesson.errorAttendeeConflict",
+  closure_not_found: "venueCosts.closeLesson.errorClosureNotFound",
+  close_lesson_failed: "venueCosts.closeLesson.errorFailed",
 };
 
 export function formatReopenLessonError(raw: string, translate: TranslateFn): string {
+  if (isI18nKey(raw)) return translate(raw);
   const key = REOPEN_LESSON_ERROR_KEY_MAP[raw];
   if (key) return translate(key);
-  return translate("venueCosts.reopenLesson.error", { error: raw });
+  return translate("venueCosts.reopenLesson.errorFailed");
+}
+
+export function formatCloseLessonError(raw: string, translate: TranslateFn): string {
+  if (isI18nKey(raw)) return translate(raw);
+  const key = CLOSE_LESSON_ERROR_KEY_MAP[raw];
+  if (key) return translate(key);
+  return translate("venueCosts.closeLesson.errorFailed");
 }
 
 export function formatVenueCostDraftErrors(

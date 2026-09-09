@@ -367,7 +367,7 @@ export function useAddGroupSchedule() {
 function mapScheduleMutationError(error: { code?: string; message: string }): string {
   if (error.code === "23505") return "schedule.error.duplicateSlot";
   if (error.message.includes("schedule_slot_overlap")) return "schedule.error.groupOverlap";
-  return error.message;
+  return "schedule.error.updateFailed";
 }
 
 async function findActiveSuccessorSlotId(

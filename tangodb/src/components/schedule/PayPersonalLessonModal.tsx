@@ -19,6 +19,7 @@ import {
   translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import {
   bookingClientsMatchSubscription,
   formatClientName,
@@ -512,7 +513,7 @@ export default function PayPersonalLessonModal({
           if (payAllParticipants && paidCount > 0) {
             await notifyPayAllPartial();
           } else {
-            toast(paymentRes.error ?? t("common.paymentChargeFailed"), "error");
+            toast(resolveMutationError(paymentRes.error, "common.paymentChargeFailed", t), "error");
           }
           return;
         }
@@ -564,7 +565,7 @@ export default function PayPersonalLessonModal({
       });
 
       if (!res.success) {
-        toast(res.error ?? t("common.chargeFailed"), "error");
+        toast(resolveMutationError(res.error, "common.chargeFailed", t), "error");
         return;
       }
 

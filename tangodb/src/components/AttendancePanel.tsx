@@ -80,7 +80,8 @@ import {
   jsDayToIsoDow,
   shiftMonth,
 } from "../lib/utils";
-import { formatReopenLessonError } from "../lib/venueCostDraftErrors";
+import { resolveMutationError } from "../lib/resolveMutationError";
+import { formatCloseLessonError, formatReopenLessonError } from "../lib/venueCostDraftErrors";
 import { useI18n } from "../hooks/useI18n";
 import { useUIStore } from "../store/ui";
 import QueryErrorState from "./ui/QueryErrorState";
@@ -748,7 +749,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       reasonCode: oldStatus != null && oldStatus !== status ? "misclick" : undefined,
     });
     if (!res.success) {
-      toast(res.error || t("common.saveMarkFailed"), "error");
+      toast(resolveMutationError(res.error, "common.saveMarkFailed", t), "error");
     } else {
       setLastAttendanceChangeAt((prev) => ({ ...prev, [changeKey]: Date.now() }));
       if (res.isCorrection && res.correctionId) {
@@ -787,7 +788,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     if (!pendingUndo) return;
     const res = await undoAttendance.mutateAsync({ correctionId: pendingUndo.correctionId });
     if (!res.success) {
-      toast(res.error || t("corrections.error.undoFailed"), "error");
+      toast(resolveMutationError(res.error, "corrections.error.undoFailed", t), "error");
       return;
     }
     setPendingUndo(null);
@@ -809,7 +810,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
     const res = await markPersonalAttendance.mutateAsync({ lessonId, status });
     if (!res.success) {
-      toast(res.error || t("common.saveMarkFailed"), "error");
+      toast(resolveMutationError(res.error, "common.saveMarkFailed", t), "error");
     } else {
       toast(t("attendance.success.marked", { status: attendanceStatusLabel(status, t) }), "success");
     }
@@ -925,7 +926,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         setVenueConfirmStatus(res.venueRuleStatus);
         return;
       }
-      toast(res.error || t("attendance.singleVisit.error.recordFailed"), "error");
+      toast(resolveMutationError(res.error, "attendance.singleVisit.error.recordFailed", t), "error");
       return;
     }
 
@@ -956,7 +957,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     const presentCount =
       closeAttendeeCount.trim() === "" ? presentFromMarks : Number(closeAttendeeCount);
     if (!Number.isFinite(presentCount) || presentCount < 0) {
-      toast(t("venueCosts.closeLesson.error", { error: "invalid_attendees" }), "error");
+      toast(t("venueCosts.closeLesson.errorInvalidAttendees"), "error");
       return;
     }
     const res = await closeGroupLesson.mutateAsync({
@@ -965,7 +966,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       confirmedAttendeeCount: presentCount,
     });
     if (res.success === false) {
-      toast(t("venueCosts.closeLesson.error", { error: res.error }), "error");
+      toast(formatCloseLessonError(res.error, t), "error");
       return;
     }
     if (res.amount != null) {
