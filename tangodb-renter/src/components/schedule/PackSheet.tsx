@@ -210,7 +210,6 @@ export default function PackSheet({
 
   const handleTopup = (amount: number) => {
     onTopup(amount);
-    onSuccess();
   };
 
   if (created) {
@@ -398,10 +397,7 @@ export default function PackSheet({
               walletLoading={walletLoading}
               sessionCount={occurrences.length}
               holdNote={t(locale, "packHoldDuration")}
-              onTopup={(amount) => {
-                onTopup(amount);
-                onClose();
-              }}
+              onTopup={(amount) => onTopup(amount)}
             />
             {hasBusy ? <p className="text-sm text-rose-600">{t(locale, "bookingConflict")}</p> : null}
           </>

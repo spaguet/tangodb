@@ -92,7 +92,7 @@ describe("BookingSheet booking result", () => {
     const topupBtn = screen.getByRole("button", { name: /Пополнить/i });
     await userEvent.click(topupBtn);
     expect(onTopup).toHaveBeenCalledWith(450);
-    expect(onDone).toHaveBeenCalled();
+    expect(onDone).not.toHaveBeenCalled();
   });
 
   it("shows active booking message when lifecycle is active", async () => {

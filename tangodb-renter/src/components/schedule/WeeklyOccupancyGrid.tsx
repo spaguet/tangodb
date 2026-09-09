@@ -66,7 +66,7 @@ export default function WeeklyOccupancyGrid({
   };
 
   return (
-    <div className="overflow-x-auto bg-white [-webkit-overflow-scrolling:touch]">
+    <div className="min-w-[640px] bg-white">
       <div
         className="grid min-w-[640px]"
         style={{

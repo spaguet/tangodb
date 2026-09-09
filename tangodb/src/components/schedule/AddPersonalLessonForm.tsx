@@ -31,7 +31,9 @@ export default function AddPersonalLessonForm({
   useEffect(() => {
     if (!prefill) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (document.querySelector("[data-discipline-modal]")) return;
+      onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

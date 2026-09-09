@@ -5,7 +5,8 @@ import BotBanner from "../components/BotBanner";
 import RentalRulesSheet from "../components/RentalRulesSheet";
 import TabBar, { type CabinetTab } from "../components/TabBar";
 import MineTab from "../components/mine/MineTab";
-import ScheduleTab from "../components/schedule/ScheduleTab";
+import BookingSheet from "../components/schedule/BookingSheet";
+import ScheduleTab, { type PendingBooking } from "../components/schedule/ScheduleTab";
 import { useCabinetLiveRefresh } from "../hooks/useCabinetLiveRefresh";
 import { needsCabinetPolling } from "../lib/cabinetRefresh";
 import { APP_VERSION } from "../lib/appVersion";
@@ -29,6 +30,7 @@ export default function CabinetScreen({
   const [mineRefresh, setMineRefresh] = useState(0);
   const [scheduleRefresh, setScheduleRefresh] = useState(0);
   const [topupPrefillAmount, setTopupPrefillAmount] = useState<number | null>(null);
+  const [pendingBooking, setPendingBooking] = useState<PendingBooking | null>(null);
   const [focusRentalId, setFocusRentalId] = useState<string | null>(null);
   const [pollActive, setPollActive] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -110,16 +112,15 @@ export default function CabinetScreen({
         />
 
         {tab === "schedule" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <ScheduleTab
               locale={locale}
               bootstrap={bootstrap}
-              organizationId={organizationId}
               supabase={supabase}
               refreshKey={scheduleRefresh}
-              onBooked={refreshCabinet}
               onOpenMine={openMine}
               onTopup={openTopup}
+              onOpenBooking={setPendingBooking}
             />
           </div>
         ) : (
@@ -143,6 +144,26 @@ export default function CabinetScreen({
       </footer>
 
       {rulesOpen ? <RentalRulesSheet locale={locale} onClose={() => setRulesOpen(false)} /> : null}
+
+      {pendingBooking ? (
+        <BookingSheet
+          locale={locale}
+          bootstrap={bootstrap}
+          serverNow={bootstrap.serverNow}
+          organizationId={organizationId}
+          supabase={supabase}
+          locationId={pendingBooking.locationId}
+          date={pendingBooking.date}
+          defaultStart={pendingBooking.start}
+          packDays={pendingBooking.packDays}
+          onClose={() => setPendingBooking(null)}
+          onDone={() => {
+            setPendingBooking(null);
+            refreshCabinet();
+          }}
+          onTopup={openTopup}
+        />
+      ) : null}
     </div>
   );
 }

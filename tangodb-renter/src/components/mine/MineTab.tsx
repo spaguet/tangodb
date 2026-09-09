@@ -1104,6 +1104,7 @@ function StudioQrPreview({ locale, asset, refreshUrl, onSaved, onSaveFailed }: S
   const imageRetryUsedRef = useRef(false);
   const refreshUrlRef = useRef(refreshUrl);
   const assetRef = useRef(asset);
+  const [saving, setSaving] = useState(false);
   refreshUrlRef.current = refreshUrl;
   assetRef.current = asset;
 
@@ -1141,25 +1142,31 @@ function StudioQrPreview({ locale, asset, refreshUrl, onSaved, onSaveFailed }: S
   }, [asset.id, asset.signed_url, asset.storage_path, asset.download_url]);
 
   const saveQr = async () => {
-    const displaySrc =
-      src ??
-      (await refreshUrlRef.current(assetRef.current).then((next) => {
-        setSrc(next);
-        setPhase(next ? "ready" : "failed");
-        return next;
-      }));
-    if (!displaySrc) {
-      onSaveFailed();
-      return;
+    if (saving) return;
+    setSaving(true);
+    try {
+      const displaySrc =
+        src ??
+        (await refreshUrlRef.current(assetRef.current).then((next) => {
+          setSrc(next);
+          setPhase(next ? "ready" : "failed");
+          return next;
+        }));
+      if (!displaySrc) {
+        onSaveFailed();
+        return;
+      }
+      const current = assetRef.current;
+      const ok = await downloadQrToDevice(
+        displaySrc,
+        qrDownloadFilename(current.label, current.id),
+        current.download_url
+      );
+      if (ok) onSaved();
+      else onSaveFailed();
+    } finally {
+      setSaving(false);
     }
-    const current = assetRef.current;
-    const ok = await downloadQrToDevice(
-      displaySrc,
-      qrDownloadFilename(current.label, current.id),
-      current.download_url
-    );
-    if (ok) onSaved();
-    else onSaveFailed();
   };
 
   const handleImageError = () => {
@@ -1196,9 +1203,15 @@ function StudioQrPreview({ locale, asset, refreshUrl, onSaved, onSaveFailed }: S
       ) : (
         <p className="text-xs text-amber-800">{t(locale, "topupQrBroken")}</p>
       )}
-      <button type="button" className={`w-full ${btnSecondaryCls}`} onClick={() => void saveQr()}>
-        {t(locale, "topupSaveQr")}
+      <button
+        type="button"
+        className={`w-full ${btnSecondaryCls}`}
+        disabled={saving || phase === "loading"}
+        onClick={() => void saveQr()}
+      >
+        {saving ? t(locale, "topupQrSaving") : t(locale, "topupSaveQr")}
       </button>
+      <p className="text-[10px] leading-relaxed text-slate-400">{t(locale, "topupQrSaveWaitHint")}</p>
     </div>
   );
 }

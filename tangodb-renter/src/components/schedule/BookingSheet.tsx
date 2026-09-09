@@ -279,7 +279,6 @@ export default function BookingSheet({
 
   const handleTopup = (amount: number) => {
     onTopup(amount);
-    onDone();
   };
 
   const sheetCls =
@@ -606,10 +605,7 @@ export default function BookingSheet({
               walletLoading={walletLoading}
               sessionCount={occurrences.length}
               holdNote={t(locale, "packHoldDuration")}
-              onTopup={(amount) => {
-                onTopup(amount);
-                onClose();
-              }}
+              onTopup={(amount) => onTopup(amount)}
             />
             {hasBusy ? <p className="text-sm text-rose-600">{t(locale, "bookingConflict")}</p> : null}
           </>

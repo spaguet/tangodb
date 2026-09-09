@@ -661,9 +661,9 @@ export default function SchedulePageContainer() {
   const miniAppDialogPrefill = addFlow?.mode === "miniapp" ? addFlow.prefill : null;
 
   const isLoading =
-    locationsQuery.isLoading ||
-    disciplinesQuery.isLoading ||
-    teamQuery.isLoading ||
+    (locationsQuery.isLoading && locationsQuery.locations.length === 0) ||
+    (disciplinesQuery.isLoading && disciplinesQuery.data === undefined) ||
+    (teamQuery.isLoading && teamQuery.data === undefined) ||
     (scheduleQuery.isLoading && scheduleQuery.data === undefined);
 
   const isError =

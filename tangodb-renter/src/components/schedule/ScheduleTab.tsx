@@ -18,29 +18,33 @@ import { rpcErrorKey } from "../../lib/rpcErrors";
 import type { LocationRow, OccupancyData, WalletData } from "../../lib/types";
 import { t, tFill, type Locale } from "../../i18n/strings";
 import { useVisibilityRefetch } from "../../hooks/useVisibilityRefetch";
-import BookingSheet from "./BookingSheet";
 import WeeklyOccupancyGrid from "./WeeklyOccupancyGrid";
+
+export type PendingBooking = {
+  locationId: string;
+  date: string;
+  start: string;
+  packDays: string[];
+};
 
 type ScheduleTabProps = {
   locale: Locale;
   bootstrap: BootstrapData;
-  organizationId: string;
   supabase: SupabaseClient;
   refreshKey: number;
-  onBooked: () => void;
   onOpenMine: (rentalId?: string) => void;
   onTopup: (amount: number) => void;
+  onOpenBooking: (booking: PendingBooking) => void;
 };
 
 export default function ScheduleTab({
   locale,
   bootstrap,
-  organizationId,
   supabase,
   refreshKey,
-  onBooked,
   onOpenMine,
   onTopup,
+  onOpenBooking,
 }: ScheduleTabProps) {
   const [locations, setLocations] = useState<LocationRow[]>([]);
   const [locationId, setLocationId] = useState<string>("");
@@ -48,7 +52,6 @@ export default function ScheduleTab({
   const [weekIndex, setWeekIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [bookingSlot, setBookingSlot] = useState<{ date: string; start: string } | null>(null);
   const [wallet, setWallet] = useState<WalletData | null>(null);
 
   const days = occupancy?.window ? occupancyDaysFromWindow(occupancy.window.from) : [];
@@ -170,8 +173,8 @@ export default function ScheduleTab({
   }
 
   return (
-    <div className="flex flex-col gap-3 bg-slate-50 pb-4 text-slate-800">
-      <div className="flex flex-col gap-3 px-4 pt-4">
+    <div className="flex min-h-0 flex-1 flex-col bg-slate-50 text-slate-800">
+      <div className="flex shrink-0 flex-col gap-3 px-4 pt-4 pb-3">
         {!bootstrap.addonActive ? (
           <p className="text-xs leading-relaxed text-slate-500">{t(locale, "addonInactiveCreate")}</p>
         ) : null}
@@ -282,39 +285,23 @@ export default function ScheduleTab({
       </div>
 
       {occupancy && weekDays.length > 0 ? (
-        <div className="border-t border-slate-200">
-          <WeeklyOccupancyGrid
-            locale={locale}
-            timezone={bootstrap.timezone}
-            serverNow={bootstrap.serverNow}
-            weekDays={weekDays}
-            occupancy={occupancy}
-            addonActive={bootstrap.addonActive}
-            onFreeCell={(date, start) => setBookingSlot({ date, start })}
-            onMineCell={(rentalId) => onOpenMine(rentalId)}
-          />
+        <div className="min-h-0 flex-1 border-t border-slate-200">
+          <div className="h-full overflow-auto isolate [-webkit-overflow-scrolling:touch]">
+            <WeeklyOccupancyGrid
+              locale={locale}
+              timezone={bootstrap.timezone}
+              serverNow={bootstrap.serverNow}
+              weekDays={weekDays}
+              occupancy={occupancy}
+              addonActive={bootstrap.addonActive}
+              onFreeCell={(date, start) => {
+                if (!locationId) return;
+                onOpenBooking({ locationId, date, start, packDays: days });
+              }}
+              onMineCell={(rentalId) => onOpenMine(rentalId)}
+            />
+          </div>
         </div>
-      ) : null}
-
-      {bookingSlot && locationId ? (
-        <BookingSheet
-          locale={locale}
-          bootstrap={bootstrap}
-          serverNow={bootstrap.serverNow}
-          organizationId={organizationId}
-          supabase={supabase}
-          locationId={locationId}
-          date={bookingSlot.date}
-          defaultStart={bookingSlot.start}
-          packDays={days}
-          onClose={() => setBookingSlot(null)}
-          onDone={() => {
-            setBookingSlot(null);
-            void refresh();
-            onBooked();
-          }}
-          onTopup={onTopup}
-        />
       ) : null}
 
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { MapPin, Trash2, X } from "lucide-react";
 import { useAddGroupSchedule } from "../../hooks/useSchedule";
@@ -112,9 +112,19 @@ export default function AddGroupLessonForm({
   const [maxCapacity, setMaxCapacity] = useState("");
   const [groupSlotRows, setGroupSlotRows] = useState<GroupSlotRow[]>([]);
   const [repeatConfig, setRepeatConfig] = useState<GroupRepeatConfig>(() => defaultGroupRepeatConfig());
+  const prefillKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!prefill) return;
+    if (!prefill) {
+      prefillKeyRef.current = null;
+      return;
+    }
+    const prefillKey = `${prefill.locationId}:${prefill.date}:${prefill.timeStart}`;
+    if (prefillKeyRef.current === prefillKey) {
+      if (disciplines.length > 0 && !disciplineId) setDisciplineId(disciplines[0].id);
+      return;
+    }
+    prefillKeyRef.current = prefillKey;
     setGroupName("");
     setMaxCapacity("");
     setRepeatConfig(defaultGroupRepeatConfig());
@@ -127,12 +137,14 @@ export default function AddGroupLessonForm({
     } else if (teacherOptions.length > 0) {
       setTeacherMemberId(teacherOptions[0].id);
     }
-  }, [prefill, disciplines, teacherOptions, isTeacher, memberId]);
+  }, [prefill, disciplines, disciplineId, teacherOptions, isTeacher, memberId]);
 
   useEffect(() => {
     if (!prefill) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (document.querySelector("[data-discipline-modal]")) return;
+      onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

@@ -28,10 +28,12 @@ export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      e.stopImmediatePropagation();
+      onClose();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [open, onClose]);
 
   useEffect(() => {
@@ -56,7 +58,12 @@ export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: 
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          data-discipline-modal
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

@@ -122,7 +122,7 @@ async function telegramDownload(url: string, fileName: string): Promise<Telegram
         settled = true;
         resolve(result);
       };
-      const timeout = window.setTimeout(() => finish("failed"), 30_000);
+      const timeout = window.setTimeout(() => finish("failed"), 12_000);
       downloadFile({ url, file_name: fileName }, (status) => {
         window.clearTimeout(timeout);
         if (status === "success") finish("ok");
@@ -148,6 +148,10 @@ export async function downloadQrToDevice(
       : /^https:\/\//i.test(displaySrc)
         ? displaySrc
         : null;
+  const blobSrc = httpsDownload ?? displaySrc;
+  const blob = await blobFromSrc(blobSrc);
+  if (blob && (await shareImageFile(blob, fileName))) return true;
+
   const canProxy = Boolean(httpsDownload && /^https:\/\//i.test(origin));
   const proxyUrl = canProxy && httpsDownload ? miniAppQrProxyUrl(origin, httpsDownload, fileName) : null;
 
@@ -156,10 +160,6 @@ export async function downloadQrToDevice(
     if (telegramResult === "ok") return true;
     if (telegramResult === "cancelled") return false;
   }
-
-  const blobSrc = httpsDownload ?? displaySrc;
-  const blob = await blobFromSrc(blobSrc);
-  if (blob && (await shareImageFile(blob, fileName))) return true;
 
   if (!window.Telegram?.WebApp) {
     if (blob) {

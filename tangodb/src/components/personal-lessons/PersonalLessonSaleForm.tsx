@@ -218,6 +218,7 @@ export default function PersonalLessonSaleForm({
   const lessonPaymentIdempotencyKeys = useRef<Record<string, string>>({});
   const bookingInFlightRef = useRef(false);
   const pendingVenueBookingRef = useRef<{ immediatePaid: boolean } | null>(null);
+  const schedulePrefillKeyRef = useRef<string | null>(null);
 
   const getLessonPaymentIdempotencyKey = (lessonId: string): string => {
     const existing = lessonPaymentIdempotencyKeys.current[lessonId];
@@ -392,7 +393,16 @@ export default function PersonalLessonSaleForm({
 
   useEffect(() => {
     if (isScheduleCell) {
-      if (!prefill) return;
+      if (!prefill) {
+        schedulePrefillKeyRef.current = null;
+        return;
+      }
+      const prefillKey = `${prefill.locationId}:${prefill.date}:${prefill.timeStart}`;
+      if (schedulePrefillKeyRef.current === prefillKey) {
+        if (disciplines.length > 0 && !disciplineId) setDisciplineId(disciplines[0].id);
+        return;
+      }
+      schedulePrefillKeyRef.current = prefillKey;
       setBookingClients([{ query: "", id: "" }]);
       setTimeStart(prefill.timeStart);
       setTimeEnd(computeAutoTimeEnd(prefill.timeStart, []));
@@ -424,6 +434,7 @@ export default function PersonalLessonSaleForm({
   }, [
     isScheduleCell,
     prefill,
+    disciplineId,
     disciplines,
     teacherOptions,
     isTeacher,
