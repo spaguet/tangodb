@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
 import {
@@ -53,6 +53,8 @@ export default function ScheduleTab({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [controlsCollapsed, setControlsCollapsed] = useState(false);
+  const gridScrollRef = useRef<HTMLDivElement>(null);
 
   const days = occupancy?.window ? occupancyDaysFromWindow(occupancy.window.from) : [];
   const weeks = occupancy?.window ? occupancyWeeksFromWindow(occupancy.window.from) : [];
@@ -164,6 +166,16 @@ export default function ScheduleTab({
     return formatWeekRangeLabel(weekDays[0], weekDays[weekDays.length - 1], localeTag);
   }, [weekDays, localeTag]);
 
+  const handleGridScroll = useCallback(() => {
+    const el = gridScrollRef.current;
+    if (!el || el.scrollTop <= 12) return;
+    setControlsCollapsed(true);
+  }, []);
+
+  const expandControls = useCallback(() => {
+    setControlsCollapsed(false);
+  }, []);
+
   if (loading && !occupancy && locations.length === 0) {
     return (
       <div className="flex justify-center bg-slate-50 py-12">
@@ -205,88 +217,114 @@ export default function ScheduleTab({
           </div>
         ) : null}
 
-        {locations.length > 0 ? (
-          <div className="flex flex-col gap-1.5">
-            <span className={labelCls}>{t(locale, "selectHall")}</span>
-            {locations.length > 1 ? (
-              <div className="flex flex-wrap gap-2" role="group" aria-label={t(locale, "selectHall")}>
-                {locations.map((loc) => (
-                  <button
-                    key={loc.id}
-                    type="button"
-                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      locationId === loc.id ? weekChipActiveCls : weekChipCls
-                    }`}
-                    onClick={() => setLocationId(loc.id)}
-                  >
-                    {loc.name}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm font-medium text-slate-700">{locations[0].name}</p>
-            )}
-            {selectedLocation?.bookable === false ? (
-              <p className="text-xs leading-relaxed text-amber-800">{t(locale, "hallRatesIncomplete")}</p>
-            ) : null}
-          </div>
-        ) : null}
-
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
-        {weeks.length > 0 ? (
-          <div className={`flex flex-col gap-2 ${panelCls} p-3`}>
-            <div className="flex min-w-0 flex-col items-center">
-              <span className="text-center text-sm font-semibold text-slate-800 leading-tight">
-                {weekLabel}
-              </span>
-              <span className="text-[10px] text-slate-400">
-                {tFill(locale, "weekOf", { n: safeWeekIndex + 1, total: weeks.length })}
-              </span>
+        {controlsCollapsed && weeks.length > 0 ? (
+          <div className={`flex items-center gap-2 ${panelCls} px-3 py-2`}>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold leading-tight text-slate-800">{weekLabel}</p>
+              <p className="truncate text-[10px] text-slate-500">
+                {selectedLocation?.name ?? tFill(locale, "weekOf", { n: safeWeekIndex + 1, total: weeks.length })}
+              </p>
             </div>
-            <div className="flex gap-1">
-              {weeks.map((week, i) => (
-                <button
-                  key={week[0]}
-                  type="button"
-                  className={`min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-[10px] leading-tight ${
-                    i === safeWeekIndex ? weekChipActiveCls : weekChipCls
-                  }`}
-                  onClick={() => setWeekIndex(i)}
-                >
-                  {formatWeekRangeLabel(week[0], week[week.length - 1], localeTag, false)}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm border border-slate-200 bg-white" />
-                {t(locale, "free")}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-slate-400 ring-1 ring-inset ring-slate-500" />
-                {t(locale, "busy")}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-indigo-600" />
-                {t(locale, "mine")}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="slot-hold h-2.5 w-2.5 rounded-sm border border-slate-700" />
-                {t(locale, "mineHold")}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-rose-600 ring-1 ring-inset ring-rose-700" />
-                {t(locale, "mineDebt")}
-              </span>
-            </div>
+            <button
+              type="button"
+              className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50"
+              aria-label={t(locale, "scheduleControlsExpand")}
+              aria-expanded={false}
+              onClick={expandControls}
+            >
+              <span aria-hidden="true">▼</span>
+            </button>
           </div>
-        ) : null}
+        ) : (
+          <>
+            {locations.length > 0 ? (
+              <div className="flex flex-col gap-1.5">
+                <span className={labelCls}>{t(locale, "selectHall")}</span>
+                {locations.length > 1 ? (
+                  <div className="flex flex-wrap gap-2" role="group" aria-label={t(locale, "selectHall")}>
+                    {locations.map((loc) => (
+                      <button
+                        key={loc.id}
+                        type="button"
+                        className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                          locationId === loc.id ? weekChipActiveCls : weekChipCls
+                        }`}
+                        onClick={() => setLocationId(loc.id)}
+                      >
+                        {loc.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm font-medium text-slate-700">{locations[0].name}</p>
+                )}
+                {selectedLocation?.bookable === false ? (
+                  <p className="text-xs leading-relaxed text-amber-800">{t(locale, "hallRatesIncomplete")}</p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {weeks.length > 0 ? (
+              <div className={`flex flex-col gap-2 ${panelCls} p-3`}>
+                <div className="flex min-w-0 flex-col items-center">
+                  <span className="text-center text-sm font-semibold text-slate-800 leading-tight">
+                    {weekLabel}
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {tFill(locale, "weekOf", { n: safeWeekIndex + 1, total: weeks.length })}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {weeks.map((week, i) => (
+                    <button
+                      key={week[0]}
+                      type="button"
+                      className={`min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-[10px] leading-tight ${
+                        i === safeWeekIndex ? weekChipActiveCls : weekChipCls
+                      }`}
+                      onClick={() => setWeekIndex(i)}
+                    >
+                      {formatWeekRangeLabel(week[0], week[week.length - 1], localeTag, false)}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2.5 w-2.5 rounded-sm border border-slate-200 bg-white" />
+                    {t(locale, "free")}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2.5 w-2.5 rounded-sm bg-slate-400 ring-1 ring-inset ring-slate-500" />
+                    {t(locale, "busy")}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2.5 w-2.5 rounded-sm bg-indigo-600" />
+                    {t(locale, "mine")}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="slot-hold h-2.5 w-2.5 rounded-sm border border-slate-700" />
+                    {t(locale, "mineHold")}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2.5 w-2.5 rounded-sm bg-rose-600 ring-1 ring-inset ring-rose-700" />
+                    {t(locale, "mineDebt")}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+          </>
+        )}
       </div>
 
       {occupancy && weekDays.length > 0 ? (
         <div className="min-h-0 flex-1 border-t border-slate-200">
-          <div className="h-full overflow-auto isolate [-webkit-overflow-scrolling:touch]">
+          <div
+            ref={gridScrollRef}
+            className="h-full overflow-auto isolate [-webkit-overflow-scrolling:touch]"
+            onScroll={handleGridScroll}
+          >
             <WeeklyOccupancyGrid
               locale={locale}
               timezone={bootstrap.timezone}
