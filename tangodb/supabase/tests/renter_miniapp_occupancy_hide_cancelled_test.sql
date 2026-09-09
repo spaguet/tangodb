@@ -120,7 +120,7 @@ BEGIN
   )
   VALUES (
     v_retired_slot, v_org, v_dow, '20:00', '21:00', v_loc,
-    'Retired Group', v_occ_date, v_occ_date
+    'Retired Group', v_occ_date, v_occ_date - 1
   );
 
   INSERT INTO schedule_slots (

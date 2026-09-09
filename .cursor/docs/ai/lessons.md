@@ -7,6 +7,12 @@
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
 
+### 2026-09-09 — Могильник удаления блокирует новую группу в то же время
+
+- **Ошибка:** после удаления группового слота с первой даты (`valid_to = valid_from`) нельзя создать новое занятие — `schedule.error.groupOverlap`, хотя в сетке пусто.
+- **Причина:** CHECK `valid_to >= valid_from` заставил retire занимать стартовую дату; `prevent_schedule_slot_overlap` / `prevent_personal_lesson_overlap` не отличали tombstone от однодневного урока.
+- **Как избежать:** retire = `valid_to = valid_from - 1` (ноль занятых дат); однодневный урок = `valid_to = valid_from`; occupancy через `_schedule_slot_is_retired` / `_schedule_slot_active_on_date`; при закрытии с `closingDate === valid_from` не поднимать `valid_to` обратно до `valid_from`.
+
 ### 2026-09-08 — Mini App: отменённая бронь остаётся в сетке
 
 - **Ошибка:** после отмены слот в Mini App всё ещё был «своим» (indigo), новую бронь поставить нельзя; «Мои записи» показывали «Отменена».
@@ -35,7 +41,7 @@
 
 - **Ошибка:** `closeScheduleSlotByDate` при `closingDate === valid_from` ставил `valid_to = valid_from - 1`, что нарушало CHECK `valid_to >= valid_from` (`schedule_slots_check`).
 - **Причина:** retire-слоты пытались уйти «до» valid_from; `_retire_schedule_slot_locked` в БД делал то же.
-- **Как избежать:** retire = `valid_to = valid_from`; в UI `expandSlotsToWeek` пропускает `valid_to <= valid_from`; не использовать hard DELETE слотов с FK на `single_visits`.
+- **Как избежать (устарело 2026-09-09):** сначала retire кодировали как `valid_to = valid_from` из‑за CHECK. Актуальный контракт: tombstone = `valid_to = valid_from - 1`, однодневный урок = `valid_to = valid_from`; hard DELETE слотов с FK на `single_visits` по-прежнему нельзя.
 - **Причина:** почему это произошло
 - **Как избежать:** что делать иначе
 

@@ -29,15 +29,14 @@ export function addDays(isoDate: string, days: number): string {
   return toISODateLocal(d);
 }
 
-/** Retired slots use valid_to = valid_from (never valid_to < valid_from). */
+/** Retired slots use valid_to = valid_from - 1 (zero occupied dates). One-day class: valid_to = valid_from. */
 export function isRetiredScheduleSlot(validFrom: string, validTo: string | null | undefined): boolean {
-  return validTo != null && validTo <= validFrom;
+  return validTo != null && validTo < validFrom;
 }
 
-/** Close slot before closingDate; returns valid_to satisfying valid_to >= valid_from. */
-export function computeScheduleSlotClosingValidTo(validFrom: string, closingDate: string): string {
-  const closingValidTo = addDays(closingDate, -1);
-  return closingValidTo < validFrom ? validFrom : closingValidTo;
+/** Close slot before closingDate. Closing on valid_from yields a non-occupying tombstone (valid_from - 1). */
+export function computeScheduleSlotClosingValidTo(_validFrom: string, closingDate: string): string {
+  return addDays(closingDate, -1);
 }
 
 /** First calendar date >= fromDate when this ISO day-of-week occurs (school local TZ). */

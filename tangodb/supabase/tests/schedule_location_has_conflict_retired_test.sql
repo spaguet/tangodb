@@ -64,14 +64,14 @@ BEGIN
   DELETE FROM schedule_occurrence_cancellations WHERE organization_id = v_org;
   DELETE FROM schedule_slots WHERE organization_id = v_org;
 
-  -- Retired tombstone: valid_to = valid_from (deleted group slot).
+  -- Retired tombstone: valid_to = valid_from - 1 (deleted group slot occupies no dates).
   INSERT INTO schedule_slots (
     id, organization_id, day_of_week, time, time_end, location_id,
     group_name, valid_from, valid_to
   )
   VALUES (
     v_slot, v_org, v_dow, '20:00', '21:00', v_loc,
-    'Retired Group', v_occ_date, v_occ_date
+    'Retired Group', v_occ_date, v_occ_date - 1
   );
 
   PERFORM _test_assert(

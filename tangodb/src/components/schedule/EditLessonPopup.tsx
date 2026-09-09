@@ -36,7 +36,7 @@ import {
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { durationWarning, billedFromTariff, lessonDurationMinutes, translateDurationWarning } from "../../lib/personalTariffPricing";
 import { expandPersonalLessonWeeklySlots } from "../../lib/personalLessonDates";
-import { addDays, getWeekRange, isScheduleDateLockedForWrite, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
+import { addDays, getWeekRange, isRetiredScheduleSlot, isScheduleDateLockedForWrite, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, canShowPaidStatus, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { useVoidPersonalLessonPayment } from "../../hooks/usePayments";
 import {
@@ -451,6 +451,7 @@ export default function EditLessonPopup({
         if (s.locationId !== locationId) return false;
         if (s.dayOfWeek !== dayOfWeek) return false;
         if (lesson.kind === "group" && s.id === lesson.slotId) return false;
+        if (isRetiredScheduleSlot(s.validFrom ?? "2000-01-01", s.validTo)) return false;
         return true;
       })
       .map((s) => ({ timeStart: s.time, timeEnd: s.timeEnd }));

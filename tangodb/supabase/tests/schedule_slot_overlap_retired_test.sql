@@ -1,4 +1,4 @@
--- Retired schedule_slots must not block new group slot at the same day/time/location.
+-- Retired tombstones (valid_to < valid_from) must not occupy dates or block writes.
 -- Run: npm run test:db:schedule-slot-overlap-retired
 
 BEGIN;
@@ -23,8 +23,12 @@ DECLARE
   v_loc uuid := 'dddddddd-dddd-dddd-dddd-000000000201';
   v_retired uuid := 'dddddddd-dddd-dddd-dddd-000000000301';
   v_new uuid := 'dddddddd-dddd-dddd-dddd-000000000302';
+  v_one_day uuid := 'dddddddd-dddd-dddd-dddd-000000000303';
+  v_blocked uuid := 'dddddddd-dddd-dddd-dddd-000000000304';
+  v_retire_src uuid := 'dddddddd-dddd-dddd-dddd-000000000305';
   v_start date := date '2026-09-15'; -- Monday
   v_caught boolean;
+  v_valid_to date;
 BEGIN
   SELECT id INTO v_version_id FROM crm_product_versions WHERE code = 'v2';
 
@@ -58,13 +62,30 @@ BEGIN
   VALUES (v_loc, v_org, 'Main Hall')
   ON CONFLICT (id) DO NOTHING;
 
-  -- Retired tombstone at Mon 19:00 starting Sep 15
+  PERFORM _test_assert(
+    NOT _schedule_slot_active_on_date(v_start, v_start - 1, v_start),
+    'tombstone must not be active on start date'
+  );
+  PERFORM _test_assert(
+    _schedule_slot_active_on_date(v_start, v_start, v_start),
+    'one-day class must be active on its date'
+  );
+  PERFORM _test_assert(
+    _schedule_slot_is_retired(v_start, v_start - 1),
+    'valid_to = valid_from - 1 is retired'
+  );
+  PERFORM _test_assert(
+    NOT _schedule_slot_is_retired(v_start, v_start),
+    'valid_to = valid_from is a one-day class, not retired'
+  );
+
+  -- Tombstone at Mon 19:00
   INSERT INTO schedule_slots (
     id, organization_id, day_of_week, time, time_end, discipline_id, group_name,
     location_id, valid_from, valid_to
   )
   VALUES (
-    v_retired, v_org, 1, '19:00', '20:00', v_disc, 'Old Group', v_loc, v_start, v_start
+    v_retired, v_org, 1, '19:00', '20:00', v_disc, 'Old Group', v_loc, v_start, v_start - 1
   )
   ON CONFLICT (id) DO NOTHING;
 
@@ -83,10 +104,50 @@ BEGIN
   END;
 
   PERFORM _test_assert(NOT v_caught, 'New group slot must not conflict with retired tombstone');
-
   PERFORM _test_assert(
     EXISTS (SELECT 1 FROM schedule_slots WHERE id = v_new),
     'New group slot insert after retired tombstone must succeed'
+  );
+
+  -- One-day active class must still block the same time
+  INSERT INTO schedule_slots (
+    id, organization_id, day_of_week, time, time_end, discipline_id, group_name,
+    location_id, valid_from, valid_to
+  )
+  VALUES (
+    v_one_day, v_org, 1, '10:00', '11:00', v_disc, 'One Day', v_loc, v_start, v_start
+  );
+
+  v_caught := false;
+  BEGIN
+    INSERT INTO schedule_slots (
+      id, organization_id, day_of_week, time, time_end, discipline_id, group_name,
+      location_id, valid_from, valid_to
+    )
+    VALUES (
+      v_blocked, v_org, 1, '10:00', '11:00', v_disc, 'Blocked', v_loc, v_start, v_start
+    );
+  EXCEPTION
+    WHEN OTHERS THEN
+      v_caught := SQLERRM LIKE '%schedule_slot_overlap%';
+  END;
+  PERFORM _test_assert(v_caught, 'One-day class must still overlap at the same time');
+
+  -- Retire from first date must write valid_to = valid_from - 1 and not fail overlap
+  INSERT INTO schedule_slots (
+    id, organization_id, day_of_week, time, time_end, discipline_id, group_name,
+    location_id, valid_from, valid_to
+  )
+  VALUES (
+    v_retire_src, v_org, 2, '19:00', '20:00', v_disc, 'To Retire', v_loc, v_start + 1, NULL
+  );
+
+  PERFORM _retire_schedule_slot_locked(v_retire_src);
+  SELECT valid_to INTO v_valid_to FROM schedule_slots WHERE id = v_retire_src;
+  PERFORM _test_assert(v_valid_to = v_start, 'retire from start date must set valid_to = valid_from - 1');
+  PERFORM _test_assert(
+    NOT _schedule_slot_active_on_date(v_start + 1, v_valid_to, v_start + 1),
+    'retired slot must occupy no dates'
   );
 
   RAISE NOTICE 'All schedule retired overlap tests passed.';

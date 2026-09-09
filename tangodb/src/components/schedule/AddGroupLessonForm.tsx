@@ -15,7 +15,7 @@ import { resolveMutationError } from "../../lib/resolveMutationError";
 import { computeSlotValidTo, defaultGroupRepeatConfig, type GroupRepeatConfig } from "../../lib/groupLessonRepeat";
 import { parseMaxCapacityInput } from "../../lib/groupCapacity";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
-import { nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
+import { nextOccurrenceOnOrAfter, toISODateLocal, isRetiredScheduleSlot } from "../../lib/scheduleWeek";
 import { dowFullEntries, timesOverlap } from "../../lib/utils";
 import { useI18n } from "../../hooks/useI18n";
 import type { Discipline } from "../../types";
@@ -147,7 +147,12 @@ export default function AddGroupLessonForm({
     const date = nextOccurrenceOnOrAfter(toISODateLocal(new Date()), dayOfWeek);
     return [
       ...scheduleSlots
-        .filter((s) => s.dayOfWeek === dayOfWeek && s.locationId === prefill.locationId)
+        .filter(
+          (s) =>
+            s.dayOfWeek === dayOfWeek &&
+            s.locationId === prefill.locationId &&
+            !isRetiredScheduleSlot(s.validFrom ?? "2000-01-01", s.validTo)
+        )
         .map((s) => ({ timeStart: s.time, timeEnd: s.timeEnd })),
       ...personalLessons
         .filter((l) => l.date === date && l.locationId === prefill.locationId)
