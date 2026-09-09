@@ -191,6 +191,25 @@ BEGIN
      WHERE rental_id = v_slot_w1 AND entry_type = 'surcharge_one_time_recalc') = 0,
     'apply with zero spendable leaves wallet untouched'
   );
+
+  -- Single-arg early_close must hit incremental overload (no auto surcharge, no review)
+  UPDATE rental_series SET status = 'active' WHERE id = v_series_a;
+  DELETE FROM rental_series_surcharge_reviews WHERE rental_series_id = v_series_a;
+  UPDATE rentals SET debt_amount = 0, lifecycle = 'settled' WHERE id = v_slot_w1;
+
+  PERFORM _renter_early_close_pack(v_series_a);
+
+  SELECT count(*) INTO v_review_count
+  FROM rental_series_surcharge_reviews
+  WHERE rental_series_id = v_series_a;
+
+  PERFORM _test_assert(v_review_count = 0, 'legacy single-arg early_close does not queue review');
+
+  SELECT debt_amount INTO v_debt FROM rentals WHERE id = v_slot_w1;
+  PERFORM _test_assert(
+    COALESCE(v_debt, 0) = 0,
+    'legacy single-arg early_close does not auto-apply surcharge'
+  );
 END;
 $body$;
 

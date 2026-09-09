@@ -309,6 +309,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
             rentals={rentalsQuery.data ?? []}
             locationMap={locationMap}
             canWrite={canWriteRentalFinance}
+            canReviewPackSurcharge={canWriteMiniApp || canWriteRentalFinance}
             canWritePayments={canWritePayments}
             canWriteDocuments={canWriteDocuments}
             canManageSettings={canManageSettings}
@@ -811,6 +812,7 @@ function FinanceTab({
   rentals,
   locationMap,
   canWrite,
+  canReviewPackSurcharge,
   canWritePayments,
   canWriteDocuments,
   canManageSettings,
@@ -825,6 +827,7 @@ function FinanceTab({
   rentals: RenterRentalRow[];
   locationMap: Map<string, string>;
   canWrite: boolean;
+  canReviewPackSurcharge: boolean;
   canWritePayments: boolean;
   canWriteDocuments: boolean;
   canManageSettings: boolean;
@@ -1071,6 +1074,7 @@ function FinanceTab({
       <RenterPackSurchargeReviewPanel
         renterId={renterId}
         locationMap={locationMap}
+        enabled={canReviewPackSurcharge}
         toast={toast}
         onChanged={refreshFinance}
       />

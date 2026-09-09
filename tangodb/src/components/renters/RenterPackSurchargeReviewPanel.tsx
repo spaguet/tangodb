@@ -16,6 +16,7 @@ import { fieldCls } from "../ui/AppSelect";
 type Props = {
   renterId: string;
   locationMap: Map<string, string>;
+  enabled: boolean;
   toast: (msg: string, type?: ToastType) => void;
   onChanged?: () => void;
 };
@@ -23,11 +24,12 @@ type Props = {
 export default function RenterPackSurchargeReviewPanel({
   renterId,
   locationMap,
+  enabled,
   toast,
   onChanged,
 }: Props) {
   const { t, formatDate } = useI18n();
-  const reviewsQuery = useRenterPackSurchargeReviews(renterId);
+  const reviewsQuery = useRenterPackSurchargeReviews(renterId, enabled);
   const applyMutation = useApplyRenterPackSurcharge();
   const waiveMutation = useWaiveRenterPackSurcharge();
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -36,6 +38,18 @@ export default function RenterPackSurchargeReviewPanel({
     () => (reviewsQuery.data ?? []).filter((r) => r.status === "pending"),
     [reviewsQuery.data]
   );
+
+  if (!enabled) {
+    return null;
+  }
+
+  if (reviewsQuery.isError) {
+    return (
+      <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+        {t("renter.surchargeReview.loadFailed")}
+      </p>
+    );
+  }
 
   if (reviewsQuery.isLoading || pending.length === 0) {
     return null;
