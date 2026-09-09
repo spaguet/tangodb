@@ -17,6 +17,7 @@ export const mockBootstrap: BootstrapData = {
   serverNow: "2026-09-03T12:00:00.000Z",
   undeliveredNotifications: 0,
   topupMaxAmount: 1_000_000,
+  pendingSurchargeReviews: [],
 };
 
 export function makeWallet(overrides: Partial<WalletData> = {}): WalletData {

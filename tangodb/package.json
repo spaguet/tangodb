@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.10.25",
+  "version": "2.10.26",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -69,6 +69,7 @@
     "test:db:renter-miniapp-r5": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_r5_reliability_test.sql",
     "test:db:renter-miniapp-r6": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_r6_addon_purchase_test.sql",
     "test:db:renter-miniapp-r2": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_r2_channel_topup_test.sql",
+    "test:db:renter-miniapp-pack-surcharge-review": "node scripts/psql-local-test.mjs -f supabase/tests/renter_miniapp_pack_surcharge_review_test.sql",
     "test:db:renter-miniapp-p0": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_p0_reproduction_test.sql",
     "test:db:renter-miniapp-p0-fa2": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_p0_fa2_reproduction_test.sql",
     "test:db:renter-miniapp-fa3": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fa3_create_gates_test.sql && node scripts/fa3-concurrent-race.mjs",

@@ -11217,6 +11217,23 @@ export type Database = {
       renter_bootstrap: { Args: never; Returns: Json }
       renter_cancel_occurrence: { Args: { p_rental_id: string }; Returns: Json }
       renter_cancel_pack: { Args: { p_series_id: string }; Returns: Json }
+      list_renter_pack_surcharge_reviews: {
+        Args: { p_renter_id?: string }
+        Returns: Json
+      }
+      preview_renter_pack_surcharge: { Args: { p_series_id: string }; Returns: Json }
+      apply_renter_pack_surcharge: {
+        Args: {
+          p_series_id: string
+          p_idempotency_key?: string
+          p_notes?: string
+        }
+        Returns: Json
+      }
+      waive_renter_pack_surcharge: {
+        Args: { p_series_id: string; p_notes?: string }
+        Returns: Json
+      }
       renter_create_booking: { Args: { p_payload: Json }; Returns: Json }
       renter_create_recurring_pack: { Args: { p_payload: Json }; Returns: Json }
       renter_delete_hold: { Args: { p_rental_id: string }; Returns: Json }

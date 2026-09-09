@@ -66,6 +66,16 @@ export function assertRenterSession(
   }
 }
 
+export type PendingSurchargeReview = {
+  id: string;
+  rentalSeriesId: string;
+  suggestedAmount: number;
+  currency: string;
+  seriesValidFrom: string;
+  seriesValidTo: string;
+  createdAt: string;
+};
+
 export type BootstrapData = {
   studioName: string;
   timezone: string;
@@ -82,6 +92,7 @@ export type BootstrapData = {
   serverNow: string;
   undeliveredNotifications: number;
   topupMaxAmount: number;
+  pendingSurchargeReviews: PendingSurchargeReview[];
 };
 
 export async function fetchBootstrap(
@@ -122,7 +133,29 @@ export async function fetchBootstrap(
       String(result.currency_code ?? "RUB"),
       result.topup_max_amount != null ? Number(result.topup_max_amount) : null
     ),
+    pendingSurchargeReviews: parsePendingSurchargeReviews(result.pending_surcharge_reviews),
   };
+}
+
+function parsePendingSurchargeReviews(raw: unknown): PendingSurchargeReview[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((row) => {
+      if (!row || typeof row !== "object") return null;
+      const item = row as Record<string, unknown>;
+      const id = item.id != null ? String(item.id) : "";
+      if (!id) return null;
+      return {
+        id,
+        rentalSeriesId: String(item.rental_series_id ?? ""),
+        suggestedAmount: Number(item.suggested_amount ?? 0),
+        currency: String(item.currency ?? "RUB"),
+        seriesValidFrom: String(item.series_valid_from ?? "").slice(0, 10),
+        seriesValidTo: String(item.series_valid_to ?? "").slice(0, 10),
+        createdAt: String(item.created_at ?? ""),
+      };
+    })
+    .filter((row): row is PendingSurchargeReview => row != null);
 }
 
 export function prepareTelegramWebApp(): void {

@@ -805,8 +805,11 @@ BEGIN
   PERFORM _test_assert((v_result ->> 'already_applied')::boolean, 'pack idempotency key lives on series');
 
   -- Early close vs completed
-  v_def := pg_get_functiondef('_renter_early_close_pack(uuid)'::regprocedure);
-  PERFORM _test_assert(v_def LIKE '%surcharge_one_time_recalc%', 'early-close helper does surcharge');
+  v_def := pg_get_functiondef('_renter_early_close_pack(uuid, text)'::regprocedure);
+  PERFORM _test_assert(
+    v_def LIKE '%_renter_maybe_queue_pack_surcharge_review%',
+    'early-close helper queues staff review instead of auto surcharge'
+  );
 
   -- Occupancy / conflicts
   v_dow := EXTRACT(ISODOW FROM v_far)::int;

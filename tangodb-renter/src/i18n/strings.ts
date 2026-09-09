@@ -75,7 +75,11 @@ const messages = {
     deleteHold: "Удалить холд",
     cancelBooking: "Отменить бронь",
     cancelOccurrenceHint:
-      "Можно отменить отдельное занятие. Если до начала больше 24 часов — предоплата вернётся на баланс.",
+      "Можно отменить отдельное занятие. Если до начала больше 24 часов — предоплата вернётся на баланс. При отмене по одному занятию перерасчёт по разовому тарифу не делается.",
+    surchargeReviewPending:
+      "Студия проверяет возможный перерасчёт по разовому тарифу за пакет {from}–{to}. Рекомендуемая сумма: {amount}. Окончательное решение — у администратора.",
+    surchargeReviewPendingGeneric:
+      "Студия проверяет возможный перерасчёт по разовому тарифу за досрочно закрытый пакет. Окончательное решение — у администратора.",
     cancelPack: "Отменить пакет",
     cancelPackNotCancellable: "Пакет нельзя отменить — нет будущих занятий или серия уже завершена.",
     holdExpires: "До автоудаления",
@@ -264,7 +268,11 @@ const messages = {
     deleteHold: "Delete hold",
     cancelBooking: "Cancel booking",
     cancelOccurrenceHint:
-      "You can cancel a single session. If more than 24 hours remain before start, prepayment returns to your balance.",
+      "You can cancel a single session. If more than 24 hours remain before start, prepayment returns to your balance. Cancelling one session at a time does not trigger one-time repricing.",
+    surchargeReviewPending:
+      "The studio is reviewing a possible one-time repricing for pack {from}–{to}. Suggested amount: {amount}. Staff makes the final decision.",
+    surchargeReviewPendingGeneric:
+      "The studio is reviewing a possible one-time repricing for an early-closed pack. Staff makes the final decision.",
     cancelPack: "Cancel pack",
     cancelPackNotCancellable: "This pack cannot be cancelled — no future sessions or the series is already finished.",
     holdExpires: "Auto-delete in",

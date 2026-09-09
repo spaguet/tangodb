@@ -159,8 +159,8 @@ BEGIN
 
   SELECT debt_amount INTO v_debt FROM rentals WHERE id = v_slot_debt;
   PERFORM _test_assert(
-    v_debt = 600,
-    'P0-02: debt=600 after recalc 1000−400 charged (got ' || COALESCE(v_debt::text, 'null') || ')'
+    v_debt = 400,
+    'P0-02: early close no longer auto-applies surcharge (debt stays 400, got ' || COALESCE(v_debt::text, 'null') || ')'
   );
   PERFORM _test_assert(
     (SELECT count(*) FROM renter_wallet_ledger
@@ -177,7 +177,7 @@ BEGIN
   PERFORM _renter_early_close_pack(v_series);
   SELECT debt_amount INTO v_debt FROM rentals WHERE id = v_slot_debt;
   PERFORM _test_assert(
-    v_debt = 600,
+    v_debt = 400,
     'FA1 repeat early-close: debt unchanged on second call'
   );
 
@@ -230,6 +230,7 @@ BEGIN
   ON CONFLICT (id) DO UPDATE SET lifecycle = 'cancelled', cancelled_at = EXCLUDED.cancelled_at;
 
   PERFORM _renter_early_close_pack(v_series_repeat);
+  PERFORM _renter_apply_pack_surcharge(v_series_repeat);
 
   SELECT debt_amount INTO v_debt FROM rentals WHERE id = v_slot_spend;
   PERFORM _test_assert(
@@ -356,6 +357,7 @@ BEGIN
   UPDATE rental_series SET status = 'active', updated_at = now() WHERE id = v_series_chain;
 
   PERFORM _renter_early_close_pack(v_series_chain);
+  PERFORM _renter_apply_pack_surcharge(v_series_chain);
 
   SELECT debt_amount INTO v_debt FROM rentals WHERE id = v_slot_chain;
   PERFORM _test_assert(

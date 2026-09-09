@@ -77,6 +77,7 @@ import SectionPillNav, { type SectionPillNavItem } from "../ui/SectionPillNav";
 import QueryErrorState from "../ui/QueryErrorState";
 import { getWalletEntryLabel } from "../../lib/renterWalletEntryLabels";
 import { openTelegramContact, renterTelegramContactHref } from "../../lib/telegram";
+import RenterPackSurchargeReviewPanel from "./RenterPackSurchargeReviewPanel";
 
 interface RenterDetailPanelProps {
   toast: (msg: string, type?: ToastType) => void;
@@ -1066,6 +1067,13 @@ function FinanceTab({
           ) : null}
         </div>
       ) : null}
+
+      <RenterPackSurchargeReviewPanel
+        renterId={renterId}
+        locationMap={locationMap}
+        toast={toast}
+        onChanged={refreshFinance}
+      />
 
       <div className="rounded-lg border border-slate-100 p-3 space-y-2">
         <h4 className="text-sm font-semibold text-slate-800">{t("renters.detail.reliability")}</h4>
