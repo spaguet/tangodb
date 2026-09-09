@@ -1624,6 +1624,7 @@ export const EN: Record<I18nKey, string> = {
     "The lesson already has payments — the billed amount will not change when you adjust the time slot.",
   "personal.edit.repeatWeeklyHint":
     "New dates are created only when the slot is free. Existing lessons at this time are not duplicated.",
+  "personal.edit.applyToFuture": "Apply changes to all future lessons",
   "schedule.title": "Schedule",
   "schedule.export.png": "Download PNG",
   "schedule.export.pngPickLocationTitle": "Choose location",
@@ -1681,6 +1682,9 @@ export const EN: Record<I18nKey, string> = {
   "schedule.success.lessonMoved": "Class moved successfully",
   "schedule.success.personalDeleted": "Private lesson deleted",
   "schedule.success.personalSeriesDeleted": "Deleted {{count}} lessons",
+  "schedule.success.personalSeriesUpdated": "Updated {{count}} lessons",
+  "schedule.success.personalSeriesUpdatedWithNew":
+    "Updated {{updated}} lessons, added {{added}} new",
   "schedule.popup.newClass": "New class",
   "schedule.popup.newBooking": "New booking",
   "schedule.popup.edit": "Edit",

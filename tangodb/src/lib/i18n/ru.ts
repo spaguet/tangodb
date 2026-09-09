@@ -1622,6 +1622,7 @@ export const RU: Record<I18nKey, string> = {
     "По уроку уже есть платежи — начисленная сумма не изменится при смене времени слота.",
   "personal.edit.repeatWeeklyHint":
     "Новые даты создаются только на свободные слоты. Если на это время занятие уже есть, оно не дублируется.",
+  "personal.edit.applyToFuture": "Изменить все будущие записи",
   "schedule.title": "Расписание",
   "schedule.export.png": "Скачать PNG",
   "schedule.export.pngPickLocationTitle": "Выберите локацию",
@@ -1679,6 +1680,9 @@ export const RU: Record<I18nKey, string> = {
   "schedule.success.lessonMoved": "Занятие перенесено",
   "schedule.success.personalDeleted": "Персональный урок удалён",
   "schedule.success.personalSeriesDeleted": "Удалено уроков: {{count}}",
+  "schedule.success.personalSeriesUpdated": "Обновлено уроков: {{count}}",
+  "schedule.success.personalSeriesUpdatedWithNew":
+    "Обновлено уроков: {{updated}}, добавлено новых: {{added}}",
   "schedule.popup.newClass": "Новое занятие",
   "schedule.popup.newBooking": "Новая запись",
   "schedule.popup.edit": "Редактирование",

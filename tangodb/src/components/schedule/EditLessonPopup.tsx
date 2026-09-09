@@ -36,6 +36,10 @@ import {
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
 import { durationWarning, billedFromTariff, lessonDurationMinutes, translateDurationWarning } from "../../lib/personalTariffPricing";
 import { expandPersonalLessonWeeklySlots } from "../../lib/personalLessonDates";
+import {
+  personalLessonsInSeriesFromDate,
+  type PersonalLessonSeriesFields,
+} from "../../lib/personalLessonSeries";
 import { addDays, getWeekRange, isRetiredScheduleSlot, isScheduleDateLockedForWrite, nextOccurrenceOnOrAfter, toISODateLocal } from "../../lib/scheduleWeek";
 import { canReadLessonClients, canShowPaidStatus, maskClientDisplay } from "../../lib/scheduleLessonAccess";
 import { useVoidPersonalLessonPayment } from "../../hooks/usePayments";
@@ -162,6 +166,23 @@ function makeGroupSlotRow(dayOfWeek = 1, timeStart = "19:00", timeEnd = "20:00")
   return { key: crypto.randomUUID(), dayOfWeek, timeStart, timeEnd };
 }
 
+function buildPersonalSeriesAnchor(lesson: PersonalDisplayLesson): PersonalLessonSeriesFields {
+  const ids = clientIdsFromLesson(lesson);
+  return {
+    type: participantTypeFromCount(ids.length),
+    clientId1: lesson.clientId1 ?? ids[0] ?? "",
+    clientId2: lesson.clientId2 ?? ids[1] ?? "",
+    clientId3: lesson.clientId3 ?? ids[2] ?? "",
+    clientId4: lesson.clientId4 ?? ids[3] ?? "",
+    date: lesson.date,
+    timeStart: lesson.timeStart,
+    timeEnd: lesson.timeEnd,
+    teacherMemberId: lesson.teacherMemberId ?? null,
+    locationId: lesson.locationId ?? null,
+    disciplineId: lesson.disciplineId ?? null,
+  };
+}
+
 function resolveTeacherMemberId(
   lessonTeacherId: string | null | undefined,
   teacherOptions: TeamMemberRosterRow[],
@@ -254,6 +275,10 @@ export default function EditLessonPopup({
   const [personalRepeatConfig, setPersonalRepeatConfig] = useState<GroupRepeatConfig>(() =>
     defaultGroupRepeatConfig()
   );
+  const [editAllFutureRecords, setEditAllFutureRecords] = useState(false);
+  const [personalSeriesAnchor, setPersonalSeriesAnchor] = useState<PersonalLessonSeriesFields | null>(
+    null
+  );
   const [selectedLessonTariffId, setSelectedLessonTariffId] = useState<string | "">("");
 
   const editLessonKey = useMemo(() => {
@@ -312,9 +337,27 @@ export default function EditLessonPopup({
         "";
       setPayerClientId(initialPayer);
       setPersonalRepeatConfig(defaultGroupRepeatConfig());
+      setEditAllFutureRecords(false);
+      setPersonalSeriesAnchor(buildPersonalSeriesAnchor(lesson));
       setSelectedLessonTariffId(lesson.priceId ?? "");
     }
   }, [editLessonKey, lesson, scheduleSlots, teacherOptions, memberId, isTeacher, todayISO, directoryClients]);
+
+  const personalSeriesLookupQuery = usePersonalLessons({
+    dateRange:
+      lesson?.kind === "personal"
+        ? { start: lesson.date, end: addDays(lesson.date, 730) }
+        : undefined,
+    excludeCancelled: true,
+    enabled: lesson?.kind === "personal",
+  });
+
+  const personalSeriesFromDate = useMemo(() => {
+    if (!personalSeriesAnchor || !personalSeriesLookupQuery.data) return [];
+    return personalLessonsInSeriesFromDate(personalSeriesAnchor, personalSeriesLookupQuery.data);
+  }, [personalSeriesAnchor, personalSeriesLookupQuery.data]);
+
+  const canEditAllFutureRecords = personalSeriesFromDate.length >= 2;
 
   useEffect(() => {
     if (!lesson || lesson.kind !== "personal") return;
@@ -531,6 +574,13 @@ export default function EditLessonPopup({
   const freebusySlots = useMemo(() => {
     if (!lesson) return [];
     if (lesson.kind === "personal") {
+      if (editAllFutureRecords && personalSeriesFromDate.length > 0) {
+        return personalSeriesFromDate.map((seriesLesson) => ({
+          date: seriesLesson.id === lesson.lessonId ? personalDate || lesson.date : seriesLesson.date,
+          timeStart,
+          timeEnd,
+        }));
+      }
       const date = personalDate || lesson.date;
       const current = personalOccupancyUnchanged ? [] : [{ date, timeStart, timeEnd }];
       return [...current, ...personalSeriesSlotsToCreate];
@@ -548,6 +598,8 @@ export default function EditLessonPopup({
     groupSlotRows,
     personalOccupancyUnchanged,
     personalSeriesSlotsToCreate,
+    editAllFutureRecords,
+    personalSeriesFromDate,
   ]);
 
   const resolvedTeacherForFreebusy =
@@ -1212,10 +1264,7 @@ export default function EditLessonPopup({
       ? selectedLessonTariffId || null
       : lesson.priceId ?? null;
 
-    const res = await updatePersonalLesson.mutateAsync({
-      id: lesson.lessonId,
-      lessonDate: lesson.date,
-      ...(personalListEdit ? {} : { date: personalDate }),
+    const sharedUpdatePayload = {
       timeStart,
       timeEnd,
       disciplineId,
@@ -1224,6 +1273,122 @@ export default function EditLessonPopup({
       ...(clientPayload ?? {}),
       ...(resolvedPriceId != null ? { priceId: resolvedPriceId } : {}),
       ...payerPayload,
+    };
+
+    if (editAllFutureRecords && canEditAllFutureRecords) {
+      for (const seriesLesson of personalSeriesFromDate) {
+        const seriesDate =
+          seriesLesson.id === lesson.lessonId && !personalListEdit ? personalDate : seriesLesson.date;
+        const seriesConflict = findScheduleConflict(
+          {
+            date: seriesDate,
+            timeStart,
+            timeEnd,
+            locationId: personalListEdit ? locationId : lesson.locationId,
+            excludeLessonId: seriesLesson.id,
+          },
+          lessonsForConflict,
+          scheduleSlots,
+          t,
+          locale
+        );
+        if (seriesConflict) {
+          toast(formatScheduleConflictToast(seriesDate, seriesConflict, t, locale), "error");
+          return;
+        }
+      }
+
+      for (const seriesLesson of personalSeriesFromDate) {
+        const res = await updatePersonalLesson.mutateAsync({
+          id: seriesLesson.id,
+          lessonDate: seriesLesson.date,
+          ...sharedUpdatePayload,
+          ...(seriesLesson.id === lesson.lessonId && !personalListEdit ? { date: personalDate } : {}),
+        });
+        if (!res.success) {
+          toast(resolveMutationError(res.error, "common.saveFailed", t), "error");
+          return;
+        }
+      }
+
+      if (additionalSlots.length > 0) {
+        const repeatClientIds = clientPayload
+          ? [
+              clientPayload.clientId1,
+              clientPayload.clientId2,
+              clientPayload.clientId3,
+              clientPayload.clientId4,
+            ]
+          : clientIdsFromLesson(lesson);
+
+        const repeatType =
+          clientPayload?.type ?? participantTypeFromCount(repeatClientIds.filter(Boolean).length);
+        const repeatPayerId =
+          clientPayload?.type === "solo"
+            ? repeatClientIds[0] ?? ""
+            : canReadClients
+              ? payerClientId || (repeatClientIds[0] ?? "")
+              : lesson.payerClientId ?? lesson.clientId1 ?? repeatClientIds[0] ?? "";
+
+        let repeatLessonPrice = lesson.price ?? 0;
+        if (resolvedPriceId && selectedTariff) {
+          repeatLessonPrice = billedFromTariff(
+            selectedTariff.price,
+            personalLessonMinutes,
+            selectedTariff.durationMinutes
+          );
+        }
+
+        const addRes = await addPersonalLessons.mutateAsync({
+          requireScope: true,
+          type: repeatType,
+          clientId1: repeatClientIds[0] ?? "",
+          clientId2: repeatClientIds[1] ?? "",
+          clientId3: repeatClientIds[2] ?? "",
+          clientId4: repeatClientIds[3] ?? "",
+          dates: additionalSlots.map((slot) => slot.date),
+          timeStart,
+          timeEnd,
+          price: repeatLessonPrice,
+          paid: false,
+          disciplineId,
+          locationId: personalListEdit ? locationId : lesson.locationId,
+          teacherMemberId: resolvedTeacherMemberId,
+          priceId: resolvedPriceId,
+          payerClientId: repeatPayerId || null,
+        });
+
+        if (!addRes.success) {
+          toast(resolveMutationError(addRes.error, "common.saveFailed", t), "error");
+          return;
+        }
+
+        toast(
+          t("schedule.success.personalSeriesUpdatedWithNew", {
+            updated: personalSeriesFromDate.length,
+            added: additionalSlots.length,
+          }),
+          "success"
+        );
+        onSuccess();
+        onClose();
+        return;
+      }
+
+      toast(
+        t("schedule.success.personalSeriesUpdated", { count: personalSeriesFromDate.length }),
+        "success"
+      );
+      onSuccess();
+      onClose();
+      return;
+    }
+
+    const res = await updatePersonalLesson.mutateAsync({
+      id: lesson.lessonId,
+      lessonDate: lesson.date,
+      ...(personalListEdit ? {} : { date: personalDate }),
+      ...sharedUpdatePayload,
     });
 
     if (!res.success) {
@@ -1755,6 +1920,20 @@ export default function EditLessonPopup({
                         <TimeSelect label={t("common.timeEnd")} value={timeEnd} onChange={setTimeEnd} required />
                       </div>
                     )}
+
+                    {canEditAllFutureRecords ? (
+                      <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editAllFutureRecords}
+                          onChange={(e) => setEditAllFutureRecords(e.target.checked)}
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
+                        />
+                        <span className="text-xs leading-snug font-semibold">
+                          {t("personal.edit.applyToFuture")}
+                        </span>
+                      </label>
+                    ) : null}
 
                     {!personalListEdit && (
                       <GroupLessonRepeatFields
