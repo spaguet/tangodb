@@ -330,6 +330,8 @@ export function useRenterDetail(renterId: string | null, enabled = true) {
           nextRentalDate:
             renter.next_rental_date != null ? String(renter.next_rental_date).slice(0, 10) : null,
           telegramId: renter.telegram_id != null ? String(renter.telegram_id) : null,
+          telegramUsername:
+            renter.telegram_username != null ? String(renter.telegram_username) : null,
           onTimeCount: renter.on_time_count != null ? Number(renter.on_time_count) : null,
           untimelyCount: renter.untimely_count != null ? Number(renter.untimely_count) : null,
           bookingBannedAt:

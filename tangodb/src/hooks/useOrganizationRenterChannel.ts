@@ -5,6 +5,8 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const organizationRenterChannelQueryKey = ["organizationRenterChannel"] as const;
 
+export type ReceiptNotifyStatus = "bound" | "need_start" | "need_bot_in_group" | "unconfigured";
+
 export interface OrganizationRenterChannel {
   telegramChatUrl: string | null;
   botUsername: string | null;
@@ -13,9 +15,26 @@ export interface OrganizationRenterChannel {
   tokenSet: boolean;
   tokenLast4: string | null;
   miniappUrl: string | null;
+  telegramReceiptChatId: number | null;
+  telegramReceiptChatBoundAt: string | null;
+  telegramReceiptNotifyStatus: ReceiptNotifyStatus;
+}
+
+function mapNotifyStatus(value: unknown): ReceiptNotifyStatus {
+  if (
+    value === "bound" ||
+    value === "need_start" ||
+    value === "need_bot_in_group" ||
+    value === "unconfigured"
+  ) {
+    return value;
+  }
+  return "unconfigured";
 }
 
 function mapChannel(row: Record<string, unknown>): OrganizationRenterChannel {
+  const chatIdRaw = row.telegram_receipt_chat_id;
+  const chatId = chatIdRaw != null && chatIdRaw !== "" ? Number(chatIdRaw) : null;
   return {
     telegramChatUrl: row.telegram_chat_url != null ? String(row.telegram_chat_url) : null,
     botUsername: row.bot_username != null ? String(row.bot_username) : null,
@@ -24,6 +43,10 @@ function mapChannel(row: Record<string, unknown>): OrganizationRenterChannel {
     tokenSet: Boolean(row.token_set),
     tokenLast4: row.token_last4 != null ? String(row.token_last4) : null,
     miniappUrl: row.miniapp_url != null ? String(row.miniapp_url) : null,
+    telegramReceiptChatId: chatId != null && Number.isFinite(chatId) && chatId !== 0 ? chatId : null,
+    telegramReceiptChatBoundAt:
+      row.telegram_receipt_chat_bound_at != null ? String(row.telegram_receipt_chat_bound_at) : null,
+    telegramReceiptNotifyStatus: mapNotifyStatus(row.telegram_receipt_notify_status),
   };
 }
 

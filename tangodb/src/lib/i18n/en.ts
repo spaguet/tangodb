@@ -842,6 +842,8 @@ export const EN: Record<I18nKey, string> = {
   "renters.form.email": "Email",
   "renters.form.telegramId": "Telegram ID",
   "renters.form.telegramIdPlaceholder": "Digits only",
+  "renters.form.telegramUsername": "Telegram",
+  "renters.telegram.write": "Message on Telegram",
   "renters.form.notes": "Notes",
   "renters.form.internalNotes": "Internal notes",
   "renters.form.blockedReason": "Block reason",
@@ -1889,8 +1891,16 @@ export const EN: Record<I18nKey, string> = {
   "hallRent.miniapp.webAppUrlCopy": "Copy cabinet URL",
   "hallRent.miniapp.chatUrl": "Chat for top-up receipts",
   "hallRent.miniapp.chatUrlHint":
-    "A studio group or the administrator’s personal chat. Renters send a payment screenshot here.",
+    "A studio group or the administrator’s personal chat. Renters send a payment screenshot here. The studio bot also posts a short top-up alert here.",
   "hallRent.miniapp.chatUrlPlaceholder": "https://t.me/username or a group invite",
+  "hallRent.miniapp.receiptBound":
+    "Chat linked — the bot can duplicate top-up alerts here.",
+  "hallRent.miniapp.receiptNeedStart":
+    "The bot cannot send alerts until this person presses Start on the studio bot.",
+  "hallRent.miniapp.receiptNeedBotInGroup":
+    "Add the studio bot to this chat (permission to send messages).",
+  "hallRent.miniapp.receiptUnconfigured":
+    "Set a receipt chat so the bot can duplicate top-up alerts.",
   "hallRent.miniapp.botToken": "Bot token",
   "hallRent.miniapp.botTokenPlaceholder": "Paste the token from @BotFather",
   "hallRent.miniapp.botTokenHint": "Issued by @BotFather after /newbot. The full token is not shown in the UI.",

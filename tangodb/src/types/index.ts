@@ -676,6 +676,7 @@ export interface RenterDetailCore {
   archivedAt: string | null;
   nextRentalDate: string | null;
   telegramId: string | null;
+  telegramUsername: string | null;
   onTimeCount: number | null;
   untimelyCount: number | null;
   bookingBannedAt: string | null;

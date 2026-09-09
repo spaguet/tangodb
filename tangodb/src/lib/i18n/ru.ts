@@ -839,6 +839,8 @@ export const RU: Record<I18nKey, string> = {
   "renters.form.email": "Email",
   "renters.form.telegramId": "Telegram ID",
   "renters.form.telegramIdPlaceholder": "Только цифры",
+  "renters.form.telegramUsername": "Telegram",
+  "renters.telegram.write": "Написать в Telegram",
   "renters.form.notes": "Заметки",
   "renters.form.internalNotes": "Внутренние примечания",
   "renters.form.blockedReason": "Причина блокировки",
@@ -1887,8 +1889,16 @@ export const RU: Record<I18nKey, string> = {
   "hallRent.miniapp.webAppUrlCopy": "Скопировать адрес кабинета",
   "hallRent.miniapp.chatUrl": "Чат для чеков о пополнении",
   "hallRent.miniapp.chatUrlHint":
-    "Группа студии или личный чат администратора. Сюда арендаторы присылают скрин оплаты.",
+    "Группа студии или личный чат администратора. Сюда арендаторы присылают скрин оплаты. Бот студии дублирует сюда короткий алерт о заявке.",
   "hallRent.miniapp.chatUrlPlaceholder": "https://t.me/username или приглашение в группу",
+  "hallRent.miniapp.receiptBound":
+    "Чат привязан — бот сможет дублировать алерты о заявках на пополнение.",
+  "hallRent.miniapp.receiptNeedStart":
+    "Бот не сможет слать алерты, пока этот человек не нажмёт Start у бота студии.",
+  "hallRent.miniapp.receiptNeedBotInGroup":
+    "Добавьте бота студии в этот чат (права писать сообщения).",
+  "hallRent.miniapp.receiptUnconfigured":
+    "Укажите чат для чеков, чтобы бот мог дублировать алерты о заявках.",
   "hallRent.miniapp.botToken": "Токен бота",
   "hallRent.miniapp.botTokenPlaceholder": "Вставьте токен из @BotFather",
   "hallRent.miniapp.botTokenHint": "Выдаёт @BotFather после /newbot. В интерфейсе целиком не показывается.",

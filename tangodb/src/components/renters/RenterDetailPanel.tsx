@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   MessageSquare,
   Plus,
+  Send,
   Trash2,
 } from "lucide-react";
 import type { ToastType } from "../../App";
@@ -69,12 +70,13 @@ import { translateMutationBlockedMessage } from "../../hooks/useOnlineStatus";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
 import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "../ui/AppSelect";
-import { btnAddCls, btnDestructiveOpenCls } from "../ui/buttonStyles";
+import { btnAddCls, btnDestructiveOpenCls, btnOpenCls } from "../ui/buttonStyles";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import LoadingState from "../ui/LoadingState";
 import SectionPillNav, { type SectionPillNavItem } from "../ui/SectionPillNav";
 import QueryErrorState from "../ui/QueryErrorState";
 import { getWalletEntryLabel } from "../../lib/renterWalletEntryLabels";
+import { openTelegramContact, renterTelegramContactHref } from "../../lib/telegram";
 
 interface RenterDetailPanelProps {
   toast: (msg: string, type?: ToastType) => void;
@@ -102,6 +104,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const canOpenSchedule = useCan("schedule.read");
   const canSeeFinance = useCan("renters.finance.read");
   const canSeeContacts = useCan("renters.contacts.read");
+  const canMessageTelegram = canSeeContacts || canSeeFinance;
   const financeOnlyDetail = canSeeFinance && !canSeeContacts;
   const canWriteRentalFinance = useCan("finance.read");
   const canRecordPayments = useCan("rentals.payments.write");
@@ -179,6 +182,12 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
 
   const detail = detailQuery.data;
   const { renter, contacts, contracts, documents, communications, finance, rentalCounts } = detail;
+  const telegramHref = canMessageTelegram
+    ? renterTelegramContactHref({
+        username: renter.telegramUsername,
+        telegramId: renter.telegramId,
+      })
+    : null;
 
   const handleArchive = async (force = false) => {
     if (connectionState !== "online") {
@@ -227,15 +236,29 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4">
-        <h1 className="text-lg font-semibold text-slate-900">{renter.displayName}</h1>
-        <p className="text-xs text-slate-500 mt-1">
-          {renter.status === "active"
-            ? t("renters.status.active")
-            : renter.status === "archived"
-              ? t("renters.status.archived")
-              : t("renters.status.blocked")}
-          {renter.nextRentalDate ? ` · ${t("renters.detail.nextRental")}: ${formatDate(renter.nextRentalDate)}` : ""}
-        </p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-lg font-semibold text-slate-900">{renter.displayName}</h1>
+            <p className="text-xs text-slate-500 mt-1">
+              {renter.status === "active"
+                ? t("renters.status.active")
+                : renter.status === "archived"
+                  ? t("renters.status.archived")
+                  : t("renters.status.blocked")}
+              {renter.nextRentalDate ? ` · ${t("renters.detail.nextRental")}: ${formatDate(renter.nextRentalDate)}` : ""}
+            </p>
+          </div>
+          {telegramHref ? (
+            <button
+              type="button"
+              className={`${btnOpenCls} inline-flex items-center gap-1.5`}
+              onClick={() => openTelegramContact(telegramHref)}
+            >
+              <Send className="w-3.5 h-3.5" />
+              {t("renters.telegram.write")}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <SectionPillNav items={tabs} activeId={activeTab} onChange={(tab) => setActiveTab(tab as DetailTab)} />
@@ -253,6 +276,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
             canWriteContacts={canWriteContacts}
             canSeeFinance={canSeeFinance}
             canSeeContacts={canSeeContacts}
+            canMessageTelegram={canMessageTelegram}
             toast={toast}
             upsertContact={upsertContact}
             deleteContact={deleteContact}
@@ -413,6 +437,7 @@ function OverviewTab({
   canWriteContacts,
   canSeeFinance,
   canSeeContacts,
+  canMessageTelegram,
   toast,
   upsertContact,
   deleteContact,
@@ -428,6 +453,7 @@ function OverviewTab({
   canWriteContacts: boolean;
   canSeeFinance: boolean;
   canSeeContacts: boolean;
+  canMessageTelegram: boolean;
   toast: RenterDetailPanelProps["toast"];
   upsertContact: ReturnType<typeof useUpsertRenterContact>;
   deleteContact: ReturnType<typeof useDeleteRenterContact>;
@@ -516,10 +542,16 @@ function OverviewTab({
               <dd>{renter.contactEmail}</dd>
             </>
           ) : null}
-          {canSeeContacts ? (
+          {canMessageTelegram ? (
             <>
-              <dt className={labelCls}>{t("renters.form.telegramId")}</dt>
-              <dd>
+              <dt className={labelCls}>{t("renters.form.telegramUsername")}</dt>
+              <dd className="space-y-1.5">
+                <p>
+                  {renter.telegramUsername ? `@${renter.telegramUsername}` : "—"}
+                  {renter.telegramId ? (
+                    <span className="text-slate-400"> · ID {renter.telegramId}</span>
+                  ) : null}
+                </p>
                 {canWrite ? (
                   <div className="flex flex-wrap gap-2 items-center">
                     <input
@@ -538,9 +570,7 @@ function OverviewTab({
                       {t("common.save")}
                     </button>
                   </div>
-                ) : (
-                  renter.telegramId ?? "—"
-                )}
+                ) : null}
               </dd>
             </>
           ) : null}

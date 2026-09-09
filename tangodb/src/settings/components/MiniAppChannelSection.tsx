@@ -187,6 +187,23 @@ export default function MiniAppChannelSection() {
           onChange={(e) => setChatUrl(e.target.value)}
         />
         <p className={hintCls}>{t("hallRent.miniapp.chatUrlHint")}</p>
+        {channel ? (
+          <p
+            className={
+              channel.telegramReceiptNotifyStatus === "bound"
+                ? "text-[10px] text-green-700 leading-relaxed"
+                : "text-[10px] text-amber-700 leading-relaxed"
+            }
+          >
+            {channel.telegramReceiptNotifyStatus === "bound"
+              ? t("hallRent.miniapp.receiptBound")
+              : channel.telegramReceiptNotifyStatus === "need_start"
+                ? t("hallRent.miniapp.receiptNeedStart")
+                : channel.telegramReceiptNotifyStatus === "need_bot_in_group"
+                  ? t("hallRent.miniapp.receiptNeedBotInGroup")
+                  : t("hallRent.miniapp.receiptUnconfigured")}
+          </p>
+        ) : null}
       </div>
 
       <div className="field-stack">

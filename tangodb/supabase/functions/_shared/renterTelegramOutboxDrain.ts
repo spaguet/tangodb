@@ -245,6 +245,7 @@ export async function drainRenterTelegramOutbox(
         reason?: string;
         telegram_id?: number;
         text?: string;
+        include_miniapp_button?: boolean;
       } | null;
 
       if (prep?.action === "skip") {
@@ -294,11 +295,17 @@ export async function drainRenterTelegramOutbox(
         continue;
       }
 
+      const chatId = Number(prep.telegram_id);
+      if (!Number.isFinite(chatId) || chatId === 0) {
+        await completeOutbox(admin, row.id, "retry", claimToken, "prepare_invalid", 60);
+        continue;
+      }
+
       const sendResult = await sendTelegramMessage(
         bot.token,
-        prep.telegram_id,
+        chatId,
         prep.text,
-        bot.miniappUrl
+        prep.include_miniapp_button === false ? null : bot.miniappUrl
       );
 
       if (sendResult.ok) {

@@ -33,6 +33,22 @@ export function normalizeTelegramContact(value: string): string | null {
   return null;
 }
 
+/** Prefer public @username; fall back to numeric Telegram user id. */
+export function renterTelegramContactHref(input: {
+  username?: string | null;
+  telegramId?: string | null;
+}): string | null {
+  const rawUser = (input.username ?? "").trim().replace(/^@/, "");
+  if (/^[A-Za-z0-9_]{5,32}$/.test(rawUser)) {
+    return `https://t.me/${rawUser}`;
+  }
+  const id = (input.telegramId ?? "").trim();
+  if (/^\d+$/.test(id)) {
+    return `tg://user?id=${id}`;
+  }
+  return null;
+}
+
 /** Open a direct Telegram chat; uses Mini App API when available. */
 export function openTelegramContact(value: string): void {
   const url = normalizeTelegramContact(value);

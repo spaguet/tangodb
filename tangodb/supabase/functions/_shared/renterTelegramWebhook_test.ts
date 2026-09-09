@@ -5,7 +5,7 @@ Deno.test("private /start sets bot started", () => {
   const flags = classifyTelegramWebhookUpdate({
     update_id: 1,
     message: {
-      from: { id: 42 },
+      from: { id: 42, username: "owner" },
       chat: { type: "private" },
       text: "/start",
     },
@@ -14,6 +14,9 @@ Deno.test("private /start sets bot started", () => {
   assertEquals(flags.isStart, true);
   assertEquals(flags.blocked, false);
   assertEquals(flags.allowsWrite, true);
+  assertEquals(flags.receiptAction, "bind");
+  assertEquals(flags.receiptChatId, 42);
+  assertEquals(flags.fromUsername, "owner");
 });
 
 Deno.test("private my_chat_member member counts as started", () => {
@@ -27,19 +30,38 @@ Deno.test("private my_chat_member member counts as started", () => {
   });
   assertEquals(flags.telegramId, 55);
   assertEquals(flags.isStart, true);
+  assertEquals(flags.receiptAction, "bind");
+  assertEquals(flags.receiptChatId, 55);
 });
 
-Deno.test("group my_chat_member is ignored", () => {
+Deno.test("group my_chat_member binds receipt chat without renter dialog", () => {
   const flags = classifyTelegramWebhookUpdate({
     update_id: 3,
     my_chat_member: {
       from: { id: 77 },
-      chat: { type: "supergroup" },
+      chat: { type: "supergroup", id: -100123456, username: "studiohall" },
       new_chat_member: { status: "member", user: { id: 999 } },
     },
   });
   assertEquals(flags.telegramId, null);
   assertEquals(flags.isStart, false);
+  assertEquals(flags.receiptAction, "bind");
+  assertEquals(flags.receiptChatId, -100123456);
+  assertEquals(flags.receiptChatUsername, "studiohall");
+});
+
+Deno.test("group kick unbinds receipt chat", () => {
+  const flags = classifyTelegramWebhookUpdate({
+    update_id: 6,
+    my_chat_member: {
+      from: { id: 77 },
+      chat: { type: "group", id: -4123 },
+      new_chat_member: { status: "kicked", user: { id: 999 } },
+    },
+  });
+  assertEquals(flags.telegramId, null);
+  assertEquals(flags.receiptAction, "unbind");
+  assertEquals(flags.receiptChatId, -4123);
 });
 
 Deno.test("group /start message is ignored", () => {
@@ -52,6 +74,7 @@ Deno.test("group /start message is ignored", () => {
     },
   });
   assertEquals(flags.telegramId, null);
+  assertEquals(flags.receiptAction, "none");
 });
 
 Deno.test("private blocked clears allows_write", () => {
@@ -66,4 +89,6 @@ Deno.test("private blocked clears allows_write", () => {
   assertEquals(flags.telegramId, 66);
   assertEquals(flags.blocked, true);
   assertEquals(flags.allowsWrite, false);
+  assertEquals(flags.receiptAction, "unbind");
+  assertEquals(flags.receiptChatId, 66);
 });

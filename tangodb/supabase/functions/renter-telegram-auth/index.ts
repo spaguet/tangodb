@@ -191,6 +191,7 @@ Deno.serve(async (req) => {
         organization_id: orgId,
         telegram_id: telegramId,
         display_name: displayName,
+        telegram_username: parsed.user.username ?? null,
         init_data_hash: verified.hash,
         allows_write_to_pm: parsed.allowsWriteToPm,
       },

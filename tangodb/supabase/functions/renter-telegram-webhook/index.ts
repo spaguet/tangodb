@@ -64,25 +64,41 @@ Deno.serve(async (req) => {
   }
 
   const flags = classifyTelegramWebhookUpdate(body);
-  if (flags.telegramId == null) {
-    return new Response("ok", { status: 200 });
+
+  if (flags.telegramId != null) {
+    const { error: ingestError } = await admin.rpc("renter_telegram_webhook_ingest", {
+      p_payload: {
+        organization_id: row.organization_id,
+        telegram_id: String(flags.telegramId),
+        telegram_bot_id: String(row.telegram_bot_id ?? ""),
+        update_id: String(updateId),
+        is_start: flags.isStart,
+        blocked: flags.blocked,
+        allows_write: flags.allowsWrite,
+      },
+    });
+
+    if (ingestError) {
+      logEvent("renter_telegram_webhook_ingest_error", { code: ingestError.code ?? "rpc" });
+      return new Response(null, { status: 500 });
+    }
   }
 
-  const { error: ingestError } = await admin.rpc("renter_telegram_webhook_ingest", {
-    p_payload: {
-      organization_id: row.organization_id,
-      telegram_id: String(flags.telegramId),
-      telegram_bot_id: String(row.telegram_bot_id ?? ""),
-      update_id: String(updateId),
-      is_start: flags.isStart,
-      blocked: flags.blocked,
-      allows_write: flags.allowsWrite,
-    },
-  });
+  if (flags.receiptAction !== "none" && flags.receiptChatId != null) {
+    const { error: receiptError } = await admin.rpc("renter_telegram_receipt_chat_ingest", {
+      p_payload: {
+        organization_id: row.organization_id,
+        chat_id: String(flags.receiptChatId),
+        chat_username: flags.receiptChatUsername,
+        from_username: flags.fromUsername,
+        action: flags.receiptAction,
+      },
+    });
 
-  if (ingestError) {
-    logEvent("renter_telegram_webhook_ingest_error", { code: ingestError.code ?? "rpc" });
-    return new Response(null, { status: 500 });
+    if (receiptError) {
+      logEvent("renter_telegram_receipt_ingest_error", { code: receiptError.code ?? "rpc" });
+      return new Response(null, { status: 500 });
+    }
   }
 
   return new Response("ok", { status: 200 });

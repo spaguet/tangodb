@@ -7,6 +7,12 @@
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
 
+### 2026-09-09 — Group chat_id и Start gate для staff-алерта Mini App
+
+- **Ошибка:** алерт staff в группу Telegram нельзя класть в `renter_telegram_outbox.telegram_id` с CHECK `> 0`; `prepare_send` при `renter_id` переадресует на личку арендатора; без `/start` Bot API отвечает 403 `bot can't initiate conversation`.
+- **Причина:** group/supergroup id отрицательный; FE1 rebind заточен под арендатора; webhook обрабатывал только private chat.
+- **Как избежать:** CHECK ослаблять только для `staff_%`; staff enqueue не ребиндить; группы — `my_chat_member` bind в `telegram_receipt_chat_id`; enqueue staff не должен валить RPC заявки.
+
 ### 2026-09-09 — Могильник удаления блокирует новую группу в то же время
 
 - **Ошибка:** после удаления группового слота с первой даты (`valid_to = valid_from`) нельзя создать новое занятие — `schedule.error.groupOverlap`, хотя в сетке пусто.
