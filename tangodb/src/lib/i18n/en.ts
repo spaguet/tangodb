@@ -1788,6 +1788,8 @@ export const EN: Record<I18nKey, string> = {
     "Enter the short Latin Mini App name from BotFather (letters, digits, hyphen).",
   "renter.channel.botTaken": "This bot is already linked to another organization",
   "renter.channel.botSaveFailed": "Could not save the bot token",
+  "renter.channel.receiptCandidateMissing":
+    "The bot is not in the group yet. Add it to the receipt chat and confirm in CRM.",
   "renter.qr.payloadInvalid": "Invalid QR file",
   "renter.qr.mimeInvalid": "QR must be PNG, JPEG or WebP, not SVG",
   "renter.qr.tooLarge": "QR file is too large",
@@ -1884,6 +1886,8 @@ export const EN: Record<I18nKey, string> = {
     "Optional — “Open” button in the bot chat: @BotFather → your bot → Bot Settings → Configure Mini App (or Menu Button). Use the same cabinet URL. No short name is asked here — it does not replace the renter link from /newapp.",
   "hallRent.miniapp.setup.step4":
     "Receipts chat: a studio group or a personal chat where the renter sends a payment screenshot. Link: https://t.me/username, a group invite (https://t.me/+…), or tg://user?id=…",
+  "hallRent.miniapp.setup.stepStart":
+    "/start command: open the studio bot in Telegram and send /start. Telegram will not let the bot message a person first — top-up alerts will not arrive in a private chat until that person sends /start. For a group, add the same bot (permission to send messages) and, if the link is an invite, confirm the group in CRM.",
   "hallRent.miniapp.setup.step5":
     "Save in CRM: chat, short name from /newapp, and bot token → “Save chat and name”, then “Save token”. A renter link appears — send it to people who book the hall.",
   "hallRent.miniapp.setup.step6":
@@ -1891,16 +1895,24 @@ export const EN: Record<I18nKey, string> = {
   "hallRent.miniapp.webAppUrlCopy": "Copy cabinet URL",
   "hallRent.miniapp.chatUrl": "Chat for top-up receipts",
   "hallRent.miniapp.chatUrlHint":
-    "A studio group or the administrator’s personal chat. Renters send a payment screenshot here. The studio bot also posts a short top-up alert here.",
+    "A studio group or the administrator’s personal chat. Renters send a payment screenshot here. The studio bot also posts a short top-up alert here. For a private chat the recipient must send /start to the bot; for a group, add the bot to the chat.",
   "hallRent.miniapp.chatUrlPlaceholder": "https://t.me/username or a group invite",
   "hallRent.miniapp.receiptBound":
     "Chat linked — the bot can duplicate top-up alerts here.",
   "hallRent.miniapp.receiptNeedStart":
-    "The bot cannot send alerts until this person presses Start on the studio bot.",
+    "Open {{bot}} in Telegram and send /start. Without /start the bot cannot message this person first — the CRM request is still created.",
   "hallRent.miniapp.receiptNeedBotInGroup":
-    "Add the studio bot to this chat (permission to send messages).",
+    "Add {{bot}} to this chat with permission to send messages. For a t.me/+ invite, confirm the group here in CRM after adding the bot.",
+  "hallRent.miniapp.receiptNeedConfirm":
+    "The bot was added to “{{chat}}”. Confirm this is the receipt chat, otherwise alerts will not go to a random group.",
   "hallRent.miniapp.receiptUnconfigured":
     "Set a receipt chat so the bot can duplicate top-up alerts.",
+  "hallRent.miniapp.receiptBotFallback": "the studio bot",
+  "hallRent.miniapp.receiptGroupFallback": "a group",
+  "hallRent.miniapp.receiptConfirm": "This is the receipt chat",
+  "hallRent.miniapp.receiptReject": "Not this chat",
+  "hallRent.miniapp.receiptConfirmed": "Receipt chat confirmed",
+  "hallRent.miniapp.receiptRejected": "Candidate cleared. Add the bot to the correct chat.",
   "hallRent.miniapp.botToken": "Bot token",
   "hallRent.miniapp.botTokenPlaceholder": "Paste the token from @BotFather",
   "hallRent.miniapp.botTokenHint": "Issued by @BotFather after /newbot. The full token is not shown in the UI.",

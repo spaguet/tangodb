@@ -7,7 +7,9 @@ import { btnAddCls, btnCancelCls, btnOpenCls } from "../../components/ui/buttonS
 import { useToast } from "../../App";
 import { useI18n } from "../../hooks/useI18n";
 import {
+  useConfirmOrganizationRenterReceiptChat,
   useOrganizationRenterChannel,
+  useRejectOrganizationRenterReceiptChat,
   useSaveOrganizationRenterBot,
   useUpdateOrganizationRenterChannel,
 } from "../../hooks/useOrganizationRenterChannel";
@@ -54,6 +56,8 @@ export default function MiniAppChannelSection() {
   const channelQuery = useOrganizationRenterChannel();
   const qrQuery = useOrganizationRentalQrAssets();
   const saveChannel = useUpdateOrganizationRenterChannel();
+  const confirmReceipt = useConfirmOrganizationRenterReceiptChat();
+  const rejectReceipt = useRejectOrganizationRenterReceiptChat();
   const saveBot = useSaveOrganizationRenterBot();
   const uploadQr = useUploadOrganizationRentalQr();
   const updateQr = useUpdateOrganizationRentalQr();
@@ -169,6 +173,7 @@ export default function MiniAppChannelSection() {
             </li>
             <li>{t("hallRent.miniapp.setup.step3")}</li>
             <li>{t("hallRent.miniapp.setup.step4")}</li>
+            <li>{t("hallRent.miniapp.setup.stepStart")}</li>
             <li>{t("hallRent.miniapp.setup.step5")}</li>
             <li>{t("hallRent.miniapp.setup.step6")}</li>
           </ol>
@@ -188,21 +193,67 @@ export default function MiniAppChannelSection() {
         />
         <p className={hintCls}>{t("hallRent.miniapp.chatUrlHint")}</p>
         {channel ? (
-          <p
-            className={
-              channel.telegramReceiptNotifyStatus === "bound"
-                ? "text-[10px] text-green-700 leading-relaxed"
-                : "text-[10px] text-amber-700 leading-relaxed"
-            }
-          >
-            {channel.telegramReceiptNotifyStatus === "bound"
-              ? t("hallRent.miniapp.receiptBound")
-              : channel.telegramReceiptNotifyStatus === "need_start"
-                ? t("hallRent.miniapp.receiptNeedStart")
-                : channel.telegramReceiptNotifyStatus === "need_bot_in_group"
-                  ? t("hallRent.miniapp.receiptNeedBotInGroup")
-                  : t("hallRent.miniapp.receiptUnconfigured")}
-          </p>
+          <div className="space-y-2">
+            <p
+              className={
+                channel.telegramReceiptNotifyStatus === "bound"
+                  ? "text-[10px] text-green-700 leading-relaxed"
+                  : "text-[10px] text-amber-700 leading-relaxed"
+              }
+            >
+              {channel.telegramReceiptNotifyStatus === "bound"
+                ? t("hallRent.miniapp.receiptBound")
+                : channel.telegramReceiptNotifyStatus === "need_start"
+                  ? t("hallRent.miniapp.receiptNeedStart", {
+                      bot: channel.botUsername ? `@${channel.botUsername}` : t("hallRent.miniapp.receiptBotFallback"),
+                    })
+                  : channel.telegramReceiptNotifyStatus === "need_confirm"
+                    ? t("hallRent.miniapp.receiptNeedConfirm", {
+                        chat: channel.telegramReceiptCandidateTitle ?? t("hallRent.miniapp.receiptGroupFallback"),
+                      })
+                  : channel.telegramReceiptNotifyStatus === "need_bot_in_group"
+                    ? t("hallRent.miniapp.receiptNeedBotInGroup", {
+                        bot: channel.botUsername ? `@${channel.botUsername}` : t("hallRent.miniapp.receiptBotFallback"),
+                      })
+                    : t("hallRent.miniapp.receiptUnconfigured")}
+            </p>
+            {channel.telegramReceiptNotifyStatus === "need_confirm" ? (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={btnAddCls}
+                  disabled={confirmReceipt.isPending}
+                  onClick={() => {
+                    void confirmReceipt.mutateAsync().then((res) => {
+                      if (!res.success) {
+                        toast(resolveMutationError(res.error, "hallRent.miniapp.error.saveChannel", t), "error");
+                        return;
+                      }
+                      toast(t("hallRent.miniapp.receiptConfirmed"), "success");
+                    });
+                  }}
+                >
+                  {t("hallRent.miniapp.receiptConfirm")}
+                </button>
+                <button
+                  type="button"
+                  className={btnCancelCls}
+                  disabled={rejectReceipt.isPending}
+                  onClick={() => {
+                    void rejectReceipt.mutateAsync().then((res) => {
+                      if (!res.success) {
+                        toast(resolveMutationError(res.error, "hallRent.miniapp.error.saveChannel", t), "error");
+                        return;
+                      }
+                      toast(t("hallRent.miniapp.receiptRejected"), "success");
+                    });
+                  }}
+                >
+                  {t("hallRent.miniapp.receiptReject")}
+                </button>
+              </div>
+            ) : null}
+          </div>
         ) : null}
       </div>
 

@@ -39,7 +39,7 @@ Deno.test("group my_chat_member binds receipt chat without renter dialog", () =>
     update_id: 3,
     my_chat_member: {
       from: { id: 77 },
-      chat: { type: "supergroup", id: -100123456, username: "studiohall" },
+      chat: { type: "supergroup", id: -100123456, username: "studiohall", title: "Studio hall" },
       new_chat_member: { status: "member", user: { id: 999 } },
     },
   });
@@ -48,6 +48,7 @@ Deno.test("group my_chat_member binds receipt chat without renter dialog", () =>
   assertEquals(flags.receiptAction, "bind");
   assertEquals(flags.receiptChatId, -100123456);
   assertEquals(flags.receiptChatUsername, "studiohall");
+  assertEquals(flags.receiptChatTitle, "Studio hall");
 });
 
 Deno.test("group kick unbinds receipt chat", () => {

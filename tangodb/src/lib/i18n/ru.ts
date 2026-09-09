@@ -1786,6 +1786,7 @@ export const RU: Record<I18nKey, string> = {
     "Укажите короткое латинское имя Mini App из BotFather (буквы, цифры, дефис).",
   "renter.channel.botTaken": "Этот бот уже привязан к другой организации",
   "renter.channel.botSaveFailed": "Не удалось сохранить токен бота",
+  "renter.channel.receiptCandidateMissing": "Бот ещё не добавлен в группу. Добавьте его в чат для чеков и подтвердите в CRM.",
   "renter.qr.payloadInvalid": "Некорректный файл QR",
   "renter.qr.mimeInvalid": "QR только PNG, JPEG или WebP, не SVG",
   "renter.qr.tooLarge": "Файл QR слишком большой",
@@ -1882,6 +1883,8 @@ export const RU: Record<I18nKey, string> = {
     "По желанию — кнопка «Open» в чате с ботом: @BotFather → ваш бот → Bot Settings → Configure Mini App (или Menu Button). Укажите тот же URL кабинета. Короткое имя здесь не спрашивается — это отдельная настройка; ссылку для арендаторов она не заменяет.",
   "hallRent.miniapp.setup.step4":
     "Чат для чеков: группа студии или личный чат, куда арендатор пришлёт скрин оплаты. Ссылка: https://t.me/username, приглашение в группу (https://t.me/+…) или tg://user?id=…",
+  "hallRent.miniapp.setup.stepStart":
+    "Команда /start: откройте бота студии в Telegram и отправьте /start. Без этого Telegram не даёт боту первым написать в личку — алерты о заявках не дойдут, пока вы не нажмёте Start. Для группы добавьте этого же бота в чат (право писать сообщения) и, если ссылка приглашение, подтвердите группу в CRM.",
   "hallRent.miniapp.setup.step5":
     "Сохраните в CRM: чат, короткое имя из /newapp и токен бота → «Сохранить чат и имя», затем «Сохранить токен». Появится ссылка для арендаторов — отправьте её тем, кто берёт зал.",
   "hallRent.miniapp.setup.step6":
@@ -1889,16 +1892,24 @@ export const RU: Record<I18nKey, string> = {
   "hallRent.miniapp.webAppUrlCopy": "Скопировать адрес кабинета",
   "hallRent.miniapp.chatUrl": "Чат для чеков о пополнении",
   "hallRent.miniapp.chatUrlHint":
-    "Группа студии или личный чат администратора. Сюда арендаторы присылают скрин оплаты. Бот студии дублирует сюда короткий алерт о заявке.",
+    "Группа студии или личный чат администратора. Сюда арендаторы присылают скрин оплаты. Бот студии дублирует сюда короткий алерт о заявке. Для лички получатель должен отправить боту команду /start; для группы — добавить бота в чат.",
   "hallRent.miniapp.chatUrlPlaceholder": "https://t.me/username или приглашение в группу",
   "hallRent.miniapp.receiptBound":
     "Чат привязан — бот сможет дублировать алерты о заявках на пополнение.",
   "hallRent.miniapp.receiptNeedStart":
-    "Бот не сможет слать алерты, пока этот человек не нажмёт Start у бота студии.",
+    "Откройте {{bot}} в Telegram и отправьте команду /start. Без Start бот не может первым написать в личку — заявка в CRM всё равно создаётся.",
   "hallRent.miniapp.receiptNeedBotInGroup":
-    "Добавьте бота студии в этот чат (права писать сообщения).",
+    "Добавьте {{bot}} в этот чат с правом писать сообщения. Для приглашения t.me/+ после добавления подтвердите группу здесь в CRM.",
+  "hallRent.miniapp.receiptNeedConfirm":
+    "Бот добавлен в «{{chat}}». Подтвердите, что это чат для чеков — иначе алерты не уйдут в случайную группу.",
   "hallRent.miniapp.receiptUnconfigured":
     "Укажите чат для чеков, чтобы бот мог дублировать алерты о заявках.",
+  "hallRent.miniapp.receiptBotFallback": "бота студии",
+  "hallRent.miniapp.receiptGroupFallback": "группу",
+  "hallRent.miniapp.receiptConfirm": "Это чат для чеков",
+  "hallRent.miniapp.receiptReject": "Не этот чат",
+  "hallRent.miniapp.receiptConfirmed": "Чат для чеков подтверждён",
+  "hallRent.miniapp.receiptRejected": "Кандидат сброшен. Добавьте бота в нужный чат.",
   "hallRent.miniapp.botToken": "Токен бота",
   "hallRent.miniapp.botTokenPlaceholder": "Вставьте токен из @BotFather",
   "hallRent.miniapp.botTokenHint": "Выдаёт @BotFather после /newbot. В интерфейсе целиком не показывается.",

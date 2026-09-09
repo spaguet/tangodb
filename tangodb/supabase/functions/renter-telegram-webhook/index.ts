@@ -90,6 +90,7 @@ Deno.serve(async (req) => {
         organization_id: row.organization_id,
         chat_id: String(flags.receiptChatId),
         chat_username: flags.receiptChatUsername,
+        chat_title: flags.receiptChatTitle,
         from_username: flags.fromUsername,
         action: flags.receiptAction,
       },

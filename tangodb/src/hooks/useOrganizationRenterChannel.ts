@@ -5,7 +5,12 @@ import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const organizationRenterChannelQueryKey = ["organizationRenterChannel"] as const;
 
-export type ReceiptNotifyStatus = "bound" | "need_start" | "need_bot_in_group" | "unconfigured";
+export type ReceiptNotifyStatus =
+  | "bound"
+  | "need_start"
+  | "need_bot_in_group"
+  | "need_confirm"
+  | "unconfigured";
 
 export interface OrganizationRenterChannel {
   telegramChatUrl: string | null;
@@ -17,6 +22,8 @@ export interface OrganizationRenterChannel {
   miniappUrl: string | null;
   telegramReceiptChatId: number | null;
   telegramReceiptChatBoundAt: string | null;
+  telegramReceiptCandidateChatId: number | null;
+  telegramReceiptCandidateTitle: string | null;
   telegramReceiptNotifyStatus: ReceiptNotifyStatus;
 }
 
@@ -25,6 +32,7 @@ function mapNotifyStatus(value: unknown): ReceiptNotifyStatus {
     value === "bound" ||
     value === "need_start" ||
     value === "need_bot_in_group" ||
+    value === "need_confirm" ||
     value === "unconfigured"
   ) {
     return value;
@@ -35,6 +43,11 @@ function mapNotifyStatus(value: unknown): ReceiptNotifyStatus {
 function mapChannel(row: Record<string, unknown>): OrganizationRenterChannel {
   const chatIdRaw = row.telegram_receipt_chat_id;
   const chatId = chatIdRaw != null && chatIdRaw !== "" ? Number(chatIdRaw) : null;
+  const candidateRaw = row.telegram_receipt_candidate_chat_id;
+  const candidateId = candidateRaw != null && candidateRaw !== "" ? Number(candidateRaw) : null;
+  const candidateTitle = row.telegram_receipt_candidate_title != null
+    ? String(row.telegram_receipt_candidate_title).trim()
+    : "";
   return {
     telegramChatUrl: row.telegram_chat_url != null ? String(row.telegram_chat_url) : null,
     botUsername: row.bot_username != null ? String(row.bot_username) : null,
@@ -46,8 +59,18 @@ function mapChannel(row: Record<string, unknown>): OrganizationRenterChannel {
     telegramReceiptChatId: chatId != null && Number.isFinite(chatId) && chatId !== 0 ? chatId : null,
     telegramReceiptChatBoundAt:
       row.telegram_receipt_chat_bound_at != null ? String(row.telegram_receipt_chat_bound_at) : null,
+    telegramReceiptCandidateChatId:
+      candidateId != null && Number.isFinite(candidateId) && candidateId !== 0 ? candidateId : null,
+    telegramReceiptCandidateTitle: candidateTitle !== "" ? candidateTitle : null,
     telegramReceiptNotifyStatus: mapNotifyStatus(row.telegram_receipt_notify_status),
   };
+}
+
+function invalidateRenterChannel(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({
+    queryKey: organizationRenterChannelQueryKey,
+    refetchType: "active",
+  });
 }
 
 export function useOrganizationRenterChannel(enabled = true) {
@@ -65,7 +88,14 @@ export function useOrganizationRenterChannel(enabled = true) {
       }
       return mapChannel(result);
     },
-    staleTime: 30 * 1000,
+    staleTime: 10 * 1000,
+    refetchInterval: (query) => {
+      const status = query.state.data?.telegramReceiptNotifyStatus;
+      if (status === "need_start" || status === "need_bot_in_group" || status === "need_confirm") {
+        return 10_000;
+      }
+      return false;
+    },
   });
 }
 
@@ -91,12 +121,42 @@ export function useUpdateOrganizationRenterChannel() {
       return { success: true as const, channel: mapChannel(result) };
     },
     onSuccess: (result) => {
-      if (result.success) {
-        void queryClient.invalidateQueries({
-          queryKey: organizationRenterChannelQueryKey,
-          refetchType: "active",
-        });
-      }
+      if (result.success) invalidateRenterChannel(queryClient);
+    },
+  });
+}
+
+async function invokeReceiptChatDecision(
+  rpcName: "confirm_organization_renter_receipt_chat" | "reject_organization_renter_receipt_chat"
+) {
+  const { data, error } = await supabase.rpc(rpcName as "get_organization_renter_channel");
+  if (error) return { success: false as const, error: error.message };
+  const result = data as Record<string, unknown> | null;
+  if (!result?.success) {
+    return {
+      success: false as const,
+      error: String(result?.error ?? "hallRent.miniapp.error.saveChannel"),
+    };
+  }
+  return { success: true as const, channel: mapChannel(result) };
+}
+
+export function useConfirmOrganizationRenterReceiptChat() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => invokeReceiptChatDecision("confirm_organization_renter_receipt_chat"),
+    onSuccess: (result) => {
+      if (result.success) invalidateRenterChannel(queryClient);
+    },
+  });
+}
+
+export function useRejectOrganizationRenterReceiptChat() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => invokeReceiptChatDecision("reject_organization_renter_receipt_chat"),
+    onSuccess: (result) => {
+      if (result.success) invalidateRenterChannel(queryClient);
     },
   });
 }
@@ -140,12 +200,7 @@ export function useSaveOrganizationRenterBot() {
       return { success: true as const };
     },
     onSuccess: (result) => {
-      if (result.success) {
-        void queryClient.invalidateQueries({
-          queryKey: organizationRenterChannelQueryKey,
-          refetchType: "active",
-        });
-      }
+      if (result.success) invalidateRenterChannel(queryClient);
     },
   });
 }

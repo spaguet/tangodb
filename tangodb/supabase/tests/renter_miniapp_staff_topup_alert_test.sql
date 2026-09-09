@@ -190,15 +190,45 @@ BEGIN
   PERFORM _test_assert((v_result ->> 'cleared')::boolean, 'kick clears matching chat_id');
 
   UPDATE organization_renter_channel
-  SET telegram_chat_url = 'https://t.me/+ht2invite2', telegram_receipt_chat_id = NULL
+  SET telegram_chat_url = 'https://t.me/+ht2invite2',
+      telegram_receipt_chat_id = NULL,
+      telegram_receipt_candidate_chat_id = NULL
   WHERE organization_id = v_org;
 
   v_result := renter_telegram_receipt_chat_ingest(jsonb_build_object(
     'organization_id', v_org,
     'chat_id', '-100211333',
+    'chat_title', 'Studio receipts',
     'action', 'bind'
   ));
-  PERFORM _test_assert((v_result ->> 'bound')::boolean, 'invite first group binds');
+  PERFORM _test_assert((v_result ->> 'bound')::boolean IS DISTINCT FROM true, 'invite does not auto-bind');
+  PERFORM _test_assert((v_result ->> 'candidate')::boolean, 'invite stores candidate');
+
+  v_result := renter_telegram_receipt_chat_ingest(jsonb_build_object(
+    'organization_id', v_org,
+    'chat_id', '-100211334',
+    'chat_title', 'Wrong group',
+    'action', 'bind'
+  ));
+  PERFORM _test_assert((v_result ->> 'bound')::boolean IS DISTINCT FROM true, 'second invite group still not bound');
+  SELECT telegram_receipt_candidate_chat_id INTO v_chat
+  FROM organization_renter_channel WHERE organization_id = v_org;
+  PERFORM _test_assert(v_chat = -100211334, 'latest invite group replaces candidate');
+
+  v_result := confirm_organization_renter_receipt_chat();
+  PERFORM _test_assert((v_result ->> 'success')::boolean, 'staff confirms candidate');
+  PERFORM _test_assert((v_result ->> 'telegram_receipt_chat_id')::bigint = -100211334, 'confirm binds candidate');
+  PERFORM _test_assert(v_result ->> 'telegram_receipt_notify_status' = 'bound', 'status bound after confirm');
+
+  v_result := renter_telegram_receipt_chat_ingest(jsonb_build_object(
+    'organization_id', v_org,
+    'chat_id', '-100211335',
+    'action', 'bind'
+  ));
+  PERFORM _test_assert((v_result ->> 'bound')::boolean IS DISTINCT FROM true, 'invite ignored once already bound');
+  SELECT telegram_receipt_chat_id INTO v_chat
+  FROM organization_renter_channel WHERE organization_id = v_org;
+  PERFORM _test_assert(v_chat = -100211334, 'bound chat_id unchanged by extra group');
 
   -- private Start matching tg://user?id=
   UPDATE organization_renter_channel
@@ -319,6 +349,25 @@ BEGIN
      WHERE o.organization_id = v_org AND o.event_type = 'staff_topup_submitted')
   );
   PERFORM _test_assert(v_prep ->> 'action' = 'gate_wait', 'private staff waits for Start');
+
+  UPDATE renter_telegram_outbox
+  SET status = 'skipped', last_error_code = 'no_bot_started', gate_wait_count = 20
+  WHERE organization_id = v_org AND event_type = 'staff_topup_submitted';
+
+  v_result := renter_telegram_webhook_ingest(jsonb_build_object(
+    'organization_id', v_org,
+    'telegram_id', '55501',
+    'telegram_bot_id', '211001',
+    'update_id', '2119001',
+    'is_start', true,
+    'blocked', false,
+    'allows_write', true
+  ));
+  PERFORM _test_assert((v_result ->> 'success')::boolean, 'Start ingest');
+  SELECT o.status INTO v_status
+  FROM renter_telegram_outbox o
+  WHERE o.organization_id = v_org AND o.event_type = 'staff_topup_submitted';
+  PERFORM _test_assert(v_status = 'pending', 'Start releases skipped staff alert');
 
   PERFORM _hall_rent_test_set_jwt(v_acc_user, v_org, v_acc_member, 'accountant');
   v_result := get_renter_detail(v_renter);

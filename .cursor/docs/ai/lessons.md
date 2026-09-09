@@ -11,7 +11,7 @@
 
 - **Ошибка:** алерт staff в группу Telegram нельзя класть в `renter_telegram_outbox.telegram_id` с CHECK `> 0`; `prepare_send` при `renter_id` переадресует на личку арендатора; без `/start` Bot API отвечает 403 `bot can't initiate conversation`.
 - **Причина:** group/supergroup id отрицательный; FE1 rebind заточен под арендатора; webhook обрабатывал только private chat.
-- **Как избежать:** CHECK ослаблять только для `staff_%`; staff enqueue не ребиндить; группы — `my_chat_member` bind в `telegram_receipt_chat_id`; enqueue staff не должен валить RPC заявки.
+- **Как избежать:** CHECK ослаблять только для `staff_%`; staff enqueue не ребиндить; публичная группа — bind по username; invite — кандидат + Confirm в CRM; `/start` снимает gate_wait у staff-алертов; enqueue staff не должен валить RPC заявки.
 
 ### 2026-09-09 — Могильник удаления блокирует новую группу в то же время
 

@@ -3,12 +3,12 @@ export type TelegramUser = { id?: number; username?: string };
 export type TelegramMessage = {
   from?: TelegramUser;
   text?: string;
-  chat?: { id?: number; type?: string; username?: string };
+  chat?: { id?: number; type?: string; username?: string; title?: string };
 };
 
 export type TelegramChatMemberUpdated = {
   from?: TelegramUser;
-  chat?: { id?: number; type?: string; username?: string };
+  chat?: { id?: number; type?: string; username?: string; title?: string };
   new_chat_member?: { status?: string; user?: TelegramUser };
 };
 
@@ -28,6 +28,7 @@ export type WebhookIngestFlags = {
   receiptChatId: number | null;
   receiptAction: ReceiptChatAction;
   receiptChatUsername: string | null;
+  receiptChatTitle: string | null;
   fromUsername: string | null;
   chatType: string | null;
 };
@@ -40,6 +41,7 @@ const EMPTY_FLAGS: WebhookIngestFlags = {
   receiptChatId: null,
   receiptAction: "none",
   receiptChatUsername: null,
+  receiptChatTitle: null,
   fromUsername: null,
   chatType: null,
 };
@@ -115,6 +117,10 @@ export function classifyTelegramWebhookUpdate(body: TelegramUpdate): WebhookInge
       flags.receiptChatUsername =
         typeof member?.chat?.username === "string" && member.chat.username.trim() !== ""
           ? member.chat.username.replace(/^@/, "")
+          : null;
+      flags.receiptChatTitle =
+        typeof member?.chat?.title === "string" && member.chat.title.trim() !== ""
+          ? member.chat.title.trim().slice(0, 80)
           : null;
       if (joined) flags.receiptAction = "bind";
       else if (left) flags.receiptAction = "unbind";
