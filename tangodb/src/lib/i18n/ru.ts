@@ -3131,6 +3131,8 @@ export const RU: Record<I18nKey, string> = {
   "schedule.error.duplicateSlot": "Такой день и время уже есть в расписании",
   "schedule.error.slotNotFound": "Слот не найден",
   "schedule.error.groupOverlap": "Пересечение с другим групповым занятием",
+  "schedule.error.groupOverlapSummary":
+    "Пересечение с расписанием: первый конфликт — {{date}} в {{time}} ({{reason}}). Всего конфликтов: {{count}}.",
   "schedule.error.rollbackFailed": "Не удалось сохранить изменения; слот мог остаться закрытым: {{message}}",
 
   "prices.pageTitle": "Тарифы и прайс-лист",

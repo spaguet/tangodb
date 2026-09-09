@@ -3133,6 +3133,8 @@ export const EN: Record<I18nKey, string> = {
   "schedule.error.duplicateSlot": "This day and time already exists in the schedule",
   "schedule.error.slotNotFound": "Slot not found",
   "schedule.error.groupOverlap": "Overlaps with another group class",
+  "schedule.error.groupOverlapSummary":
+    "Schedule conflict: first overlap on {{date}} at {{time}} ({{reason}}). Total conflicts: {{count}}.",
   "schedule.error.rollbackFailed": "Failed to save changes; the slot may remain closed: {{message}}",
 
   "prices.pageTitle": "Tariffs and price list",

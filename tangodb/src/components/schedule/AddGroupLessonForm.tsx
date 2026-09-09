@@ -7,7 +7,11 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import { usePermissions } from "../../hooks/usePermissions";
 import { normalizeOrgModules, shouldShowLocationPicker } from "../../lib/orgModules";
 import { memberDisplayName, memberListLabel, type TeamMemberRosterRow } from "../../hooks/useTeamMembers";
-import { findScheduleConflict } from "../../lib/scheduleConflicts";
+import {
+  collectGroupScheduleRangeConflicts,
+  formatScheduleConflictSummaryToast,
+} from "../../lib/scheduleConflicts";
+import { resolveMutationError } from "../../lib/resolveMutationError";
 import { computeSlotValidTo, defaultGroupRepeatConfig, type GroupRepeatConfig } from "../../lib/groupLessonRepeat";
 import { parseMaxCapacityInput } from "../../lib/groupCapacity";
 import { computeAutoTimeEnd, validateTimeRange } from "../../lib/scheduleTime";
@@ -177,7 +181,7 @@ export default function AddGroupLessonForm({
     if (!prefill) return new Map<string, string>();
 
     const conflicts = new Map<string, string>();
-    const today = toISODateLocal(new Date());
+    const baseDate = prefill.date;
     const formDuplicateLabel = t("utils.conflict.formDuplicate");
     for (const row of groupSlotRows) {
       const internal = findInternalSlotConflict(groupSlotRows, row.key, formDuplicateLabel);
@@ -197,26 +201,29 @@ export default function AddGroupLessonForm({
         continue;
       }
 
-      const conflictDate = nextOccurrenceOnOrAfter(today, row.dayOfWeek);
-      const external = findScheduleConflict(
+      const validFrom = nextOccurrenceOnOrAfter(baseDate, row.dayOfWeek);
+      const validTo = computeSlotValidTo(validFrom, repeatConfig);
+      const summary = collectGroupScheduleRangeConflicts(
         {
-          date: conflictDate,
+          dayOfWeek: row.dayOfWeek,
           timeStart: row.timeStart,
           timeEnd: row.timeEnd,
           locationId: prefill.locationId,
+          validFrom,
+          validTo,
         },
         personalLessons,
         scheduleSlots,
         t,
         locale
       );
-      if (external) {
-        conflicts.set(row.key, `${external.conflictTime}: ${external.message}`);
+      if (summary) {
+        conflicts.set(row.key, formatScheduleConflictSummaryToast(summary, t, locale));
       }
     }
 
     return conflicts;
-  }, [prefill, groupSlotRows, personalLessons, scheduleSlots, t, locale]);
+  }, [prefill, groupSlotRows, repeatConfig, personalLessons, scheduleSlots, t, locale]);
 
   const freebusySlots = useMemo(() => {
     if (!prefill) return [];
@@ -257,7 +264,7 @@ export default function AddGroupLessonForm({
       return;
     }
     if (groupSlotConflicts.size > 0) {
-      toast(t("schedule.error.fixConflictsAdd"), "error");
+      toast(groupSlotConflicts.values().next().value ?? t("schedule.error.fixConflictsAdd"), "error");
       return;
     }
 
@@ -294,7 +301,7 @@ export default function AddGroupLessonForm({
     });
 
     if (!res.success) {
-      toast(res.error ?? t("schedule.error.addFailed"), "error");
+      toast(resolveMutationError(res.error, "schedule.error.addFailed", t), "error");
       return;
     }
 

@@ -3031,6 +3031,7 @@ export type I18nKey =
   | "schedule.error.duplicateSlot"
   | "schedule.error.slotNotFound"
   | "schedule.error.groupOverlap"
+  | "schedule.error.groupOverlapSummary"
   | "schedule.error.rollbackFailed"
   // prices (extended)
   | "prices.pageTitle"
