@@ -8,6 +8,7 @@ import MineTab from "../components/mine/MineTab";
 import ScheduleTab from "../components/schedule/ScheduleTab";
 import { useCabinetLiveRefresh } from "../hooks/useCabinetLiveRefresh";
 import { needsCabinetPolling } from "../lib/cabinetRefresh";
+import { APP_VERSION } from "../lib/appVersion";
 import { rpcGetWallet } from "../lib/rpc";
 import { t, type Locale } from "../i18n/strings";
 
@@ -136,6 +137,10 @@ export default function CabinetScreen({
           </div>
         )}
       </main>
+
+      <footer className="shrink-0 border-t border-slate-100 bg-slate-50 px-4 py-1.5 text-center">
+        <p className="text-[10px] tabular-nums text-slate-400">{APP_VERSION}</p>
+      </footer>
 
       {rulesOpen ? <RentalRulesSheet locale={locale} onClose={() => setRulesOpen(false)} /> : null}
     </div>

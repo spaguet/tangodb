@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
 import {
-  btnOpenCls,
   labelCls,
   panelCls,
   weekChipActiveCls,
@@ -20,7 +19,6 @@ import type { LocationRow, OccupancyData, WalletData } from "../../lib/types";
 import { t, tFill, type Locale } from "../../i18n/strings";
 import { useVisibilityRefetch } from "../../hooks/useVisibilityRefetch";
 import BookingSheet from "./BookingSheet";
-import PackSheet from "./PackSheet";
 import WeeklyOccupancyGrid from "./WeeklyOccupancyGrid";
 
 type ScheduleTabProps = {
@@ -51,7 +49,6 @@ export default function ScheduleTab({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bookingSlot, setBookingSlot] = useState<{ date: string; start: string } | null>(null);
-  const [packOpen, setPackOpen] = useState(false);
   const [wallet, setWallet] = useState<WalletData | null>(null);
 
   const days = occupancy?.window ? occupancyDaysFromWindow(occupancy.window.from) : [];
@@ -232,12 +229,6 @@ export default function ScheduleTab({
           </div>
         ) : null}
 
-        {bootstrap.addonActive ? (
-          <button type="button" className={btnOpenCls} onClick={() => setPackOpen(true)}>
-            {t(locale, "recurringPack")}
-          </button>
-        ) : null}
-
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
         {weeks.length > 0 ? (
@@ -326,23 +317,6 @@ export default function ScheduleTab({
         />
       ) : null}
 
-      {packOpen && locationId ? (
-        <PackSheet
-          locale={locale}
-          bootstrap={bootstrap}
-          organizationId={organizationId}
-          supabase={supabase}
-          locationId={locationId}
-          days={days}
-          onClose={() => setPackOpen(false)}
-          onSuccess={() => {
-            setPackOpen(false);
-            void refresh();
-            onBooked();
-          }}
-          onTopup={onTopup}
-        />
-      ) : null}
     </div>
   );
 }
