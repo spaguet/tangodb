@@ -33,7 +33,7 @@ function buildMonthGrid(viewMonth: Date): (Date | null)[] {
   for (let d = 1; d <= daysInMonth; d += 1) {
     cells.push(new Date(year, month, d));
   }
-  while (cells.length % 7 !== 0) {
+  while (cells.length < 42) {
     cells.push(null);
   }
   return cells;
@@ -97,19 +97,20 @@ export default function DatePickerField({
     if (!button) return;
 
     const rect = button.getBoundingClientRect();
-    const width = Math.max(rect.width, CALENDAR_MIN_WIDTH);
+    const viewportWidth = window.innerWidth;
+    const maxWidth = viewportWidth - 2 * MENU_GAP;
+    const width = Math.min(Math.max(rect.width, CALENDAR_MIN_WIDTH), maxWidth);
     const spaceBelow = window.innerHeight - rect.bottom - MENU_GAP;
     const spaceAbove = rect.top - MENU_GAP;
     const openUp = spaceBelow < CALENDAR_ESTIMATED_HEIGHT && spaceAbove > spaceBelow;
-    const panelHeight = panelRef.current?.offsetHeight ?? CALENDAR_ESTIMATED_HEIGHT;
 
-    let left = rect.left;
-    if (left + width > window.innerWidth - MENU_GAP) {
-      left = Math.max(MENU_GAP, window.innerWidth - width - MENU_GAP);
-    }
+    const maxLeft = viewportWidth - width - MENU_GAP;
+    const left = Math.max(MENU_GAP, Math.min(rect.left, maxLeft));
 
     setPanelStyle({
-      top: openUp ? rect.top - MENU_GAP - panelHeight : rect.bottom + MENU_GAP,
+      top: openUp
+        ? rect.top - MENU_GAP - CALENDAR_ESTIMATED_HEIGHT
+        : rect.bottom + MENU_GAP,
       left,
       width,
     });
@@ -136,11 +137,6 @@ export default function DatePickerField({
       window.removeEventListener("resize", updatePanelPosition);
     };
   }, [open, updatePanelPosition]);
-
-  useEffect(() => {
-    if (!open) return;
-    updatePanelPosition();
-  }, [open, viewMonth, updatePanelPosition]);
 
   useEffect(() => {
     if (!value) return;
