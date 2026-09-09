@@ -104,7 +104,6 @@ export default function RenterPackSurchargeReviewPanel({
               <p className="text-xs text-slate-600">
                 {t("renter.surchargeReview.suggested", {
                   amount: formatCurrency(review.suggestedAmount),
-                  currency: review.currency,
                 })}
               </p>
               <p className="text-xs text-slate-500">{t("renter.surchargeReview.reasonWeek1Bulk")}</p>

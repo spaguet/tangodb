@@ -21,13 +21,17 @@ DECLARE
   v_loc uuid := 'a1c00000-0000-4000-8000-000000000201';
   v_renter_a uuid := 'a1c00000-0000-4000-8000-000000000301';
   v_renter_b uuid := 'a1c00000-0000-4000-8000-000000000302';
+  v_renter_c uuid := 'a1c00000-0000-4000-8000-000000000303';
   v_series_a uuid := 'a1c00000-0000-4000-8000-000000000401';
   v_series_b uuid := 'a1c00000-0000-4000-8000-000000000402';
+  v_series_c uuid := 'a1c00000-0000-4000-8000-000000000403';
   v_slot_w1 uuid := 'a1c00000-0000-4000-8000-000000000501';
   v_slot_w2 uuid := 'a1c00000-0000-4000-8000-000000000502';
   v_slot_term uuid := 'a1c00000-0000-4000-8000-000000000503';
   v_slot_b1 uuid := 'a1c00000-0000-4000-8000-000000000504';
   v_slot_b_term uuid := 'a1c00000-0000-4000-8000-000000000505';
+  v_slot_c1 uuid := 'a1c00000-0000-4000-8000-000000000506';
+  v_slot_c_term uuid := 'a1c00000-0000-4000-8000-000000000507';
   v_past date;
   v_review_count integer;
   v_debt numeric;
@@ -49,7 +53,8 @@ BEGIN
   INSERT INTO renters (id, organization_id, display_name, status)
   VALUES
     (v_renter_a, v_org, 'Pack Review A', 'active'),
-    (v_renter_b, v_org, 'Pack Review B', 'active')
+    (v_renter_b, v_org, 'Pack Review B', 'active'),
+    (v_renter_c, v_org, 'Pack Review C', 'active')
   ON CONFLICT (id) DO NOTHING;
 
   INSERT INTO organization_addons (organization_id, addon_code, status, period_start, period_end)
@@ -210,6 +215,60 @@ BEGIN
     COALESCE(v_debt, 0) = 0,
     'legacy single-arg early_close does not auto-apply surcharge'
   );
+
+  -- renter_cancel_pack race: incremental per-slot close then bulk_pack
+  PERFORM _renter_early_close_pack(v_series_a, 'bulk_pack');
+  SELECT count(*) INTO v_review_count
+  FROM rental_series_surcharge_reviews
+  WHERE rental_series_id = v_series_a AND status = 'pending';
+  PERFORM _test_assert(
+    v_review_count = 1,
+    'bulk_pack still queues after series already cancelled incrementally'
+  );
+
+  -- Used time only in week 2 of the pack → no review
+  INSERT INTO rental_series (
+    id, organization_id, renter_id, location_id, valid_from, valid_to, status, channel
+  )
+  VALUES (
+    v_series_c, v_org, v_renter_c, v_loc, v_past - 7, v_past + 14, 'active', 'miniapp'
+  )
+  ON CONFLICT (id) DO UPDATE SET status = 'active';
+
+  INSERT INTO rentals (
+    id, organization_id, renter_id, location_id, rental_date, time_start, time_end,
+    booking_status, channel, lifecycle, rental_series_id,
+    prepay_amount, remainder_amount, fixed_amount, calculated_amount, currency,
+    prepay_charged_at, remainder_charged_at
+  )
+  VALUES (
+    v_slot_c1, v_org, v_renter_c, v_loc, v_past, '10:00', '11:00',
+    'confirmed', 'miniapp', 'settled', v_series_c,
+    400, 400, 800, 800, 'RUB',
+    now() - interval '5 days', now() - interval '4 days'
+  )
+  ON CONFLICT (id) DO UPDATE SET lifecycle = 'settled';
+
+  INSERT INTO rentals (
+    id, organization_id, renter_id, location_id, rental_date, time_start, time_end,
+    booking_status, channel, lifecycle, rental_series_id,
+    prepay_amount, remainder_amount, fixed_amount, calculated_amount, currency,
+    cancelled_at, cancelled_reason
+  )
+  VALUES (
+    v_slot_c_term, v_org, v_renter_c, v_loc, v_past + 7, '10:00', '11:00',
+    'cancelled', 'miniapp', 'cancelled', v_series_c,
+    400, 400, 800, 800, 'RUB',
+    now(), 'miniapp_cancel_refund'
+  )
+  ON CONFLICT (id) DO UPDATE SET lifecycle = 'cancelled';
+
+  DELETE FROM rental_series_surcharge_reviews WHERE rental_series_id = v_series_c;
+  PERFORM _renter_early_close_pack(v_series_c, 'bulk_pack');
+  SELECT count(*) INTO v_review_count
+  FROM rental_series_surcharge_reviews
+  WHERE rental_series_id = v_series_c;
+  PERFORM _test_assert(v_review_count = 0, 'used week-2-only of pack skips review queue');
 END;
 $body$;
 

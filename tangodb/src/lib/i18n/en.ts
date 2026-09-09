@@ -1811,7 +1811,7 @@ export const EN: Record<I18nKey, string> = {
   "renter.surchargeReview.title": "Recurring pack recalculation",
   "renter.surchargeReview.subtitle":
     "The renter closed the pack early after week one. Review and apply one-time pricing or waive.",
-  "renter.surchargeReview.suggested": "Suggested surcharge: {amount} {currency}",
+  "renter.surchargeReview.suggested": "Suggested surcharge: {amount}",
   "renter.surchargeReview.reasonWeek1Bulk":
     "Future repetitions did not occur — pack pricing may have been misused. Waive if there is a valid reason.",
   "renter.surchargeReview.notesPlaceholder": "Notes (optional)",

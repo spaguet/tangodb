@@ -1808,7 +1808,7 @@ export const RU: Record<I18nKey, string> = {
   "renter.surchargeReview.title": "Перерасчёт постоянной аренды",
   "renter.surchargeReview.subtitle":
     "Арендатор досрочно закрыл пакет после первой недели. Проверьте и примените перерасчёт по разовому тарифу или откажите.",
-  "renter.surchargeReview.suggested": "Рекомендуемая доплата: {amount} {currency}",
+  "renter.surchargeReview.suggested": "Рекомендуемая доплата: {amount}",
   "renter.surchargeReview.reasonWeek1Bulk":
     "Повторения в будущем не состоялись — возможна экономия пакетного тарифа. При уважительной причине можно отказать.",
   "renter.surchargeReview.notesPlaceholder": "Комментарий (необязательно)",
