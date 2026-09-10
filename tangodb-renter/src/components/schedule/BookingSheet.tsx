@@ -53,6 +53,7 @@ type BookingSheetProps = {
   date: string;
   defaultStart: string;
   packDays: string[];
+  walletRefreshKey?: number;
   onClose: () => void;
   onDone: () => void;
   onTopup: (amount: number) => void;
@@ -72,6 +73,7 @@ export default function BookingSheet({
   date,
   defaultStart,
   packDays,
+  walletRefreshKey = 0,
   onClose,
   onDone,
   onTopup,
@@ -131,7 +133,7 @@ export default function BookingSheet({
     return () => {
       cancelled = true;
     };
-  }, [supabase]);
+  }, [supabase, walletRefreshKey]);
 
   useEffect(() => {
     if (mode !== "one_time" || !timeEnd) return;

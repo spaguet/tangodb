@@ -5,6 +5,7 @@ import BotBanner from "../components/BotBanner";
 import RentalRulesSheet from "../components/RentalRulesSheet";
 import TabBar, { type CabinetTab } from "../components/TabBar";
 import MineTab from "../components/mine/MineTab";
+import TopupSheet from "../components/mine/TopupSheet";
 import BookingSheet from "../components/schedule/BookingSheet";
 import ScheduleTab, { type PendingBooking } from "../components/schedule/ScheduleTab";
 import { useCabinetLiveRefresh } from "../hooks/useCabinetLiveRefresh";
@@ -29,7 +30,8 @@ export default function CabinetScreen({
   const [tab, setTab] = useState<CabinetTab>("schedule");
   const [mineRefresh, setMineRefresh] = useState(0);
   const [scheduleRefresh, setScheduleRefresh] = useState(0);
-  const [topupPrefillAmount, setTopupPrefillAmount] = useState<number | null>(null);
+  const [walletRefresh, setWalletRefresh] = useState(0);
+  const [topupSheetAmount, setTopupSheetAmount] = useState<number | null>(null);
   const [pendingBooking, setPendingBooking] = useState<PendingBooking | null>(null);
   const [focusRentalId, setFocusRentalId] = useState<string | null>(null);
   const [pollActive, setPollActive] = useState(false);
@@ -66,9 +68,17 @@ export default function CabinetScreen({
   }, [supabase, mineRefresh]);
 
   const openTopup = (amount: number) => {
-    setTopupPrefillAmount(amount);
-    setMineRefresh((n) => n + 1);
-    setTab("mine");
+    setTopupSheetAmount(amount);
+  };
+
+  const closeTopupSheet = () => {
+    setTopupSheetAmount(null);
+  };
+
+  const finishTopupSheet = () => {
+    setTopupSheetAmount(null);
+    setWalletRefresh((n) => n + 1);
+    refreshCabinet();
   };
 
   const openMine = (rentalId?: string) => {
@@ -131,8 +141,6 @@ export default function CabinetScreen({
               supabase={supabase}
               refreshKey={mineRefresh}
               focusRentalId={focusRentalId}
-              topupPrefillAmount={topupPrefillAmount}
-              onTopupPrefillConsumed={() => setTopupPrefillAmount(null)}
               onRefreshAll={refreshCabinet}
             />
           </div>
@@ -156,12 +164,27 @@ export default function CabinetScreen({
           date={pendingBooking.date}
           defaultStart={pendingBooking.start}
           packDays={pendingBooking.packDays}
+          walletRefreshKey={walletRefresh}
           onClose={() => setPendingBooking(null)}
           onDone={() => {
             setPendingBooking(null);
             refreshCabinet();
           }}
           onTopup={openTopup}
+        />
+      ) : null}
+
+      {topupSheetAmount != null && topupSheetAmount > 0 ? (
+        <TopupSheet
+          locale={locale}
+          bootstrap={bootstrap}
+          supabase={supabase}
+          initialAmount={topupSheetAmount}
+          closeLabel={
+            pendingBooking ? t(locale, "topupBackToBooking") : t(locale, "topupSheetClose")
+          }
+          onClose={closeTopupSheet}
+          onFinished={finishTopupSheet}
         />
       ) : null}
     </div>

@@ -502,6 +502,21 @@ describe("MineTab stage B surfaces", () => {
     expect(rpc.rpcSubmitTopup).not.toHaveBeenCalled();
   });
 
+  it("warns that a CRM request is required after sending a receipt or paying cash", async () => {
+    mockLoadedMine();
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/иначе студия не увидит заявку/i)
+      ).toBeTruthy();
+    });
+    expect(screen.getByRole("button", { name: /Отправить чек \/ написать администратору/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Отправить заявку в CRM/i })).toBeTruthy();
+  });
+
   it("shows popup after successful top-up submit", async () => {
     mockLoadedMine();
     vi.mocked(rpc.rpcSubmitTopup).mockResolvedValue({
@@ -525,7 +540,7 @@ describe("MineTab stage B surfaces", () => {
       expect(screen.getByText("Заявка отправлена")).toBeTruthy();
     });
     expect(screen.getByText(/TDB-ABC/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Отправить чек/i })).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: /Отправить чек/i }).length).toBeGreaterThan(0);
     expect(rpc.rpcSubmitTopup).toHaveBeenCalledWith(supabase, {
       amount: 250000,
       method: "cash",
