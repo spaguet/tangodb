@@ -1894,7 +1894,7 @@ export const EN: Record<I18nKey, string> = {
     "Connect Telegram so renters can book the hall and send payment receipts. You do not need to build your own Mini App — the cabinet is already hosted.",
   "hallRent.miniapp.setup.title": "How to set this up",
   "hallRent.miniapp.setup.intro":
-    "The renter cabinet is already hosted in TangoDB — you do not build your own app. You need: a Telegram bot, /newapp registration (for the renter link), a chat where the renter sends a payment screenshot, and a separate chat where the bot posts the CRM alert.",
+    "The renter cabinet is already hosted — you do not build your own app. You need a Telegram bot and two different chats: one where the renter sends a payment photo, and another where the bot tells admins that a request arrived.",
   "hallRent.miniapp.setup.step1":
     "Create a bot: @BotFather → /newbot → name and username (e.g. mystudio_bot). Copy the token — a long string — and paste it later into “Bot token”.",
   "hallRent.miniapp.setup.step2":
@@ -1902,11 +1902,11 @@ export const EN: Record<I18nKey, string> = {
   "hallRent.miniapp.setup.step3":
     "Optional — “Open” button in the bot chat: @BotFather → your bot → Bot Settings → Configure Mini App (or Menu Button). Use the same cabinet URL. No short name is asked here — it does not replace the renter link from /newapp.",
   "hallRent.miniapp.setup.step4":
-    "Receipts chat: the administrator’s personal chat or a group where the renter sends a payment screenshot. Link: https://t.me/username, a group invite (https://t.me/+…), or tg://user?id=…. You do not need to add the bot here — the renter just opens the link.",
+    "Receipts chat — where the renter sends a payment photo. Usually one administrator’s private chat. Paste a link like https://t.me/their_username. You do not need to add the bot here.",
   "hallRent.miniapp.setup.step4Alert":
-    "CRM notifications chat: an admins group or a private chat. The studio bot posts a short top-up alert here. This link can differ from the receipts chat.",
+    "Notifications chat — where the bot writes that a request arrived. Usually a private admins group. This must be a different link from the receipts chat. Copy only a link that starts with https://t.me/. Do not paste a web.telegram.org browser address or the digits from the address bar — CRM will not accept them. For a private group: open the group → tap the title → Invite links → copy https://t.me/+… and paste it into “Chat for CRM notifications”.",
   "hallRent.miniapp.setup.stepStart":
-    "So the bot can write to the notifications chat: for a private chat open the studio bot and send /start; for a group add the same bot (permission to send messages) and, if the link is a t.me/+ invite, confirm the group in CRM.",
+    "Save both chats with the button below. Then add the studio bot to the notifications group and allow it to send messages. If the bot is already in the group, remove it and add it again, or CRM may not see the chat. When the “This is the notifications chat” button appears, press it. If alerts go to a private chat instead of a group, open the bot and send /start.",
   "hallRent.miniapp.setup.step5":
     "Save in CRM: both chats, the short name from /newapp, and the bot token → “Save chats and name”, then “Save token”. A renter link appears — send it to people who book the hall.",
   "hallRent.miniapp.setup.step6":
@@ -1914,18 +1914,18 @@ export const EN: Record<I18nKey, string> = {
   "hallRent.miniapp.webAppUrlCopy": "Copy cabinet URL",
   "hallRent.miniapp.chatUrl": "Chat for top-up receipts",
   "hallRent.miniapp.chatUrlHint":
-    "Where the renter sends a payment screenshot: a specific administrator’s private chat or a group. Mini App opens this link. The bot does not need to be added here.",
-  "hallRent.miniapp.chatUrlPlaceholder": "https://t.me/admin-username or an invite",
+    "Where the renter sends a payment photo. Usually the administrator’s private chat: https://t.me/their_username. Do not paste a web.telegram.org browser link. You do not need to add the bot here.",
+  "hallRent.miniapp.chatUrlPlaceholder": "https://t.me/admin_username",
   "hallRent.miniapp.staffAlertChatUrl": "Chat for CRM notifications",
   "hallRent.miniapp.staffAlertChatUrlHint":
-    "Where the studio bot posts a short top-up alert: an admins group or a private chat. It can differ from the receipts chat. For a private chat the recipient must send /start; for a group, add the bot to the chat.",
-  "hallRent.miniapp.staffAlertChatUrlPlaceholder": "https://t.me/group-username or a t.me/+ invite",
+    "Where the bot writes that a renter submitted a request. Usually a private admins group — this can be a different chat from receipts. Paste https://t.me/group_name or an invite https://t.me/+…. A web.telegram.org address or the digits from the browser bar will not work. For a private group: open the group → tap the title → Invite links → copy. Save, add the bot to the group (if it is already there, remove it and add it again), then press “This is the notifications chat” if the button appears.",
+  "hallRent.miniapp.staffAlertChatUrlPlaceholder": "https://t.me/+group_invite",
   "hallRent.miniapp.receiptBound":
     "Notifications chat linked — the bot can duplicate top-up alerts here.",
   "hallRent.miniapp.receiptNeedStart":
     "Open {{bot}} in Telegram and send /start. Without /start the bot cannot message this person first — the CRM request is still created.",
   "hallRent.miniapp.receiptNeedBotInGroup":
-    "Add {{bot}} to the notifications chat with permission to send messages. For a t.me/+ invite, confirm the group here in CRM after adding the bot.",
+    "The link is saved. Now add {{bot}} to this group and allow it to send messages. If the bot is already in the group, remove it and add it again. For a t.me/+ invite, then press “This is the notifications chat”. Do not use a web.telegram.org link — only https://t.me/… or https://t.me/+….",
   "hallRent.miniapp.receiptNeedConfirm":
     "The bot was added to “{{chat}}”. Confirm this is the CRM notifications chat, otherwise alerts will not go to a random group.",
   "hallRent.miniapp.receiptUnconfigured":
