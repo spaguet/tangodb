@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   addCalendarDays,
+  formatLongDate,
   formatWeekRangeLabel,
   isFreeSlotBookable,
   occupancyDaysFromWindow,
   occupancyWeeksFromWindow,
+  orgIsoWeekday,
+  resolveIsoDateFromSelect,
 } from "./orgTime";
 
 describe("occupancy weeks", () => {
@@ -31,6 +34,42 @@ describe("occupancy weeks", () => {
     const label = formatWeekRangeLabel("2026-08-31", "2026-09-06", "ru");
     expect(label).toMatch(/31/);
     expect(label).toMatch(/6/);
+  });
+});
+
+describe("orgIsoWeekday", () => {
+  it("uses calendar Y-M-D, not Intl weekday names", () => {
+    expect(orgIsoWeekday("Europe/Moscow", "2026-09-10")).toBe(4);
+    expect(orgIsoWeekday("Asia/Bangkok", "2026-07-03")).toBe(5);
+    expect(orgIsoWeekday("UTC", "2026-09-07")).toBe(1);
+    expect(orgIsoWeekday("UTC", "2026-09-13")).toBe(7);
+  });
+});
+
+describe("formatLongDate", () => {
+  it("formats Russian as 03 июля 2026", () => {
+    expect(formatLongDate("2026-07-03", "ru")).toBe("03 июля 2026");
+  });
+
+  it("formats English as 03 July 2026", () => {
+    expect(formatLongDate("2026-07-03", "en")).toBe("03 July 2026");
+  });
+});
+
+describe("resolveIsoDateFromSelect", () => {
+  const days = ["2026-07-03", "2026-07-04", "2026-07-05"];
+
+  it("keeps an ISO value that is in the list", () => {
+    expect(resolveIsoDateFromSelect("2026-07-04", days, 0)).toBe("2026-07-04");
+  });
+
+  it("maps iOS localized option text via selectedIndex", () => {
+    expect(resolveIsoDateFromSelect("03 июля 2026", days, 0)).toBe("2026-07-03");
+    expect(resolveIsoDateFromSelect("4 июля 2026 г.", days, 1)).toBe("2026-07-04");
+  });
+
+  it("accepts ISO prefix from a datetime string", () => {
+    expect(resolveIsoDateFromSelect("2026-07-05T00:00:00.000Z", days, 0)).toBe("2026-07-05");
   });
 });
 

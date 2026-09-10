@@ -31,7 +31,12 @@ const ERROR_MAP: Record<string, MessageKey> = {
 export function rpcErrorKey(err: unknown): MessageKey {
   const raw = err instanceof Error ? err.message : String(err);
   if (ERROR_MAP[raw]) return ERROR_MAP[raw];
-  if (raw.startsWith("renter.booking.")) return "bookingConflict";
-  if (raw.startsWith("renter.topup.")) return "topupFailed";
+  const nested = raw.match(/renter\.(?:booking|topup|cancel|profile)\.[A-Za-z]+/);
+  if (nested?.[0] && ERROR_MAP[nested[0]]) return ERROR_MAP[nested[0]];
+  if (raw.startsWith("renter.booking.") || raw.includes("renter.booking.")) return "bookingConflict";
+  if (raw.startsWith("renter.topup.") || raw.includes("renter.topup.")) return "topupFailed";
+  if (/invalid input syntax for type date/i.test(raw) || /Invalid time (format|values)/i.test(raw)) {
+    return "bookingInvalid";
+  }
   return "rpcFailed";
 }

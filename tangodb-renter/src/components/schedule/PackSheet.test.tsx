@@ -91,7 +91,8 @@ describe("PackSheet weekday form", () => {
       expect(screen.getByText(/Стоимость/i)).toBeTruthy();
     });
 
-    const select = screen.getByDisplayValue("2026-09-07");
+    const select = screen.getByLabelText(/Дата первого занятия/i);
+    expect(screen.getByRole("option", { name: "07 сентября 2026" })).toBeTruthy();
     await userEvent.selectOptions(select, "2026-09-08");
 
     await waitFor(() => {

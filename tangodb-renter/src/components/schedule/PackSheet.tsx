@@ -10,7 +10,14 @@ import {
   getOrCreateIdempotencyKey,
   packScope,
 } from "../../lib/idempotency";
-import { formatShortDate, formatTimeRange, orgIsoWeekday } from "../../lib/orgTime";
+import {
+  formatLongDate,
+  formatShortDate,
+  formatTimeRange,
+  isIsoDate,
+  orgIsoWeekday,
+  resolveIsoDateFromSelect,
+} from "../../lib/orgTime";
 import { validFromInWeekdays, weekdaysIncludingDate } from "../../lib/packWeekdays";
 import {
   DEFAULT_RECURRING_PACK_WEEKS,
@@ -119,7 +126,7 @@ export default function PackSheet({
   }, [supabase]);
 
   useEffect(() => {
-    if (weekdays.length === 0) return;
+    if (weekdays.length === 0 || !timeEnd || !isIsoDate(validFrom)) return;
     let cancelled = false;
     (async () => {
       setQuoting(true);
@@ -167,7 +174,8 @@ export default function PackSheet({
   const validFromOk = validFromInWeekdays(bootstrap.timezone, validFrom, weekdays);
   const sessionCount = created?.occurrence_count ?? occurrences?.length ?? 0;
 
-  const handleValidFromChange = (next: string) => {
+  const handleValidFromChange = (raw: string, selectedIndex: number) => {
+    const next = resolveIsoDateFromSelect(raw, days, selectedIndex);
     setValidFrom(next);
     setWeekdays((prev) => weekdaysIncludingDate(prev, bootstrap.timezone, next));
   };
@@ -320,10 +328,14 @@ export default function PackSheet({
 
         <label className="flex flex-col gap-1">
           <span className={labelCls}>{t(locale, "packStart")}</span>
-          <select className={fieldCls} value={validFrom} onChange={(e) => handleValidFromChange(e.target.value)}>
+          <select
+            className={fieldCls}
+            value={validFrom}
+            onChange={(e) => handleValidFromChange(e.target.value, e.target.selectedIndex)}
+          >
             {days.map((d) => (
               <option key={d} value={d}>
-                {d}
+                {formatLongDate(d, localeTag)}
               </option>
             ))}
           </select>

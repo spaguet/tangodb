@@ -1,35 +1,79 @@
-/** Calendar date YYYY-MM-DD in organization timezone. */
+const ISO_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+export function isIsoDate(value: string): boolean {
+  return ISO_DATE_RE.test(value.trim());
+}
+
+function partValue(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes): string {
+  return parts.find((part) => part.type === type)?.value ?? "";
+}
+
+/** Calendar date YYYY-MM-DD in organization timezone (formatToParts: iOS ignores en-CA). */
 export function orgLocalDate(timezone: string, at: Date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", {
+  const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(at);
+  }).formatToParts(at);
+  const y = partValue(parts, "year");
+  const m = partValue(parts, "month");
+  const d = partValue(parts, "day");
+  return `${y}-${m}-${d}`;
 }
 
-/** ISO weekday 1=Mon … 7=Sun for a calendar date in org TZ. */
-export function orgIsoWeekday(timezone: string, isoDate: string): number {
+/**
+ * ISO weekday 1=Mon … 7=Sun for a calendar YYYY-MM-DD.
+ * Uses UTC Y-M-D arithmetic — iOS Intl weekday names are not stable (Mon. / пн / Thu.).
+ */
+export function orgIsoWeekday(_timezone: string, isoDate: string): number {
   const noon = dateAtUtcNoon(isoDate);
-  const wd = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    weekday: "short",
-  }).format(noon);
-  const map: Record<string, number> = {
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-    Sun: 7,
-  };
-  return map[wd] ?? 1;
+  const dow = noon.getUTCDay();
+  return dow === 0 ? 7 : dow;
 }
 
 function dateAtUtcNoon(isoDate: string): Date {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  return new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1, 12, 0, 0));
+  const match = ISO_DATE_RE.exec(isoDate.trim().slice(0, 10));
+  if (!match) return new Date(NaN);
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
+  return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+}
+
+/** Human date for Mini App selects: «03 июля 2026» / «03 July 2026». */
+export function formatLongDate(isoDate: string, locale: string): string {
+  const noon = dateAtUtcNoon(isoDate);
+  if (Number.isNaN(noon.getTime())) return isoDate;
+  const loc = locale.toLowerCase().startsWith("en") ? "en-GB" : "ru-RU";
+  const parts = new Intl.DateTimeFormat(loc, {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).formatToParts(noon);
+  const day = partValue(parts, "day").padStart(2, "0");
+  const month = partValue(parts, "month");
+  const year = partValue(parts, "year");
+  if (!day || !month || !year) return isoDate;
+  return `${day} ${month} ${year}`;
+}
+
+/**
+ * iOS WKWebView may return option text («03 июля 2026») instead of value (YYYY-MM-DD).
+ * Prefer an ISO match, then the selected index into `days`.
+ */
+export function resolveIsoDateFromSelect(
+  raw: string,
+  days: string[],
+  selectedIndex: number
+): string {
+  const trimmed = raw.trim();
+  if (isIsoDate(trimmed) && (days.length === 0 || days.includes(trimmed))) return trimmed;
+  const sliced = trimmed.slice(0, 10);
+  if (isIsoDate(sliced) && (days.length === 0 || days.includes(sliced))) return sliced;
+  if (selectedIndex >= 0 && selectedIndex < days.length) return days[selectedIndex];
+  return days[0] ?? (isIsoDate(sliced) ? sliced : trimmed);
 }
 
 export function addCalendarDays(isoDate: string, days: number): string {

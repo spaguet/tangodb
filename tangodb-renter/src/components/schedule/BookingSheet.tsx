@@ -12,9 +12,12 @@ import {
   packScope,
 } from "../../lib/idempotency";
 import {
+  formatLongDate,
   formatShortDate,
   formatTimeRange,
+  isIsoDate,
   orgIsoWeekday,
+  resolveIsoDateFromSelect,
 } from "../../lib/orgTime";
 import { validFromInWeekdays, weekdaysIncludingDate } from "../../lib/packWeekdays";
 import {
@@ -161,7 +164,7 @@ export default function BookingSheet({
   }, [supabase, locationId, date, timeStart, timeEnd, locale, mode]);
 
   useEffect(() => {
-    if (mode !== "recurring" || weekdays.length === 0) return;
+    if (mode !== "recurring" || weekdays.length === 0 || !timeEnd || !isIsoDate(validFrom)) return;
     let cancelled = false;
     (async () => {
       setQuoting(true);
@@ -215,7 +218,8 @@ export default function BookingSheet({
     );
   };
 
-  const handleValidFromChange = (next: string) => {
+  const handleValidFromChange = (raw: string, selectedIndex: number) => {
+    const next = resolveIsoDateFromSelect(raw, packDays, selectedIndex);
     setValidFrom(next);
     setWeekdays((prev) => weekdaysIncludingDate(prev, timezone, next));
   };
@@ -506,10 +510,14 @@ export default function BookingSheet({
         {mode === "recurring" ? (
           <label className="flex flex-col gap-1">
             <span className={labelCls}>{t(locale, "packStart")}</span>
-            <select className={fieldCls} value={validFrom} onChange={(e) => handleValidFromChange(e.target.value)}>
+            <select
+              className={fieldCls}
+              value={validFrom}
+              onChange={(e) => handleValidFromChange(e.target.value, e.target.selectedIndex)}
+            >
               {packDays.map((d) => (
                 <option key={d} value={d}>
-                  {d}
+                  {formatLongDate(d, localeTag)}
                 </option>
               ))}
             </select>

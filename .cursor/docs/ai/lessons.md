@@ -7,6 +7,12 @@
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
 
+### 2026-09-10 — Mini App iPhone: постоянная аренда → «Ошибка сервера»
+
+- **Ошибка:** на iPhone quote/create пакета падали с `rpcFailed` («Ошибка сервера»), на Android/desktop тот же сценарий работал.
+- **Причина:** `<select>` с `value="YYYY-MM-DD"` в iOS WKWebView часто возвращает видимый текст опции (локализованную дату). `(payload->>'valid_from')::date` даёт `invalid_datetime_format`, а RPC ловил только `invalid_text_representation` / `P0001`. Плюс `orgIsoWeekday` через Intl `weekday: short` на ru-iOS даёт «пн»/«Mon.» и молча подставляет понедельник.
+- **Как избежать:** ISO-дату брать из `selectedIndex`/`days[]`, не из сырого `event.target.value`; weekday — `getUTCDay` от календарной даты; сервер — `_renter_parse_iso_date` и remap немеченых PG-ошибок в `renter.booking.fieldsInvalid`.
+
 ### 2026-09-10 — Mini App: «Пополнить» из брони открывает профиль под попапом
 
 - **Ошибка:** при создании записи кнопка «Пополнить» переключала вкладку на «Мой профиль», а попап брони оставался поверх — форму пополнения нельзя было заполнить.
