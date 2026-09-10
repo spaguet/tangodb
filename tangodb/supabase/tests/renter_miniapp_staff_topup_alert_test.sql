@@ -263,6 +263,60 @@ BEGIN
   v_result := get_organization_renter_channel();
   PERFORM _test_assert(v_result ->> 'telegram_receipt_notify_status' = 'need_start', 'dm url need_start');
 
+  -- Split: receipts stay private; CRM alerts bind a public group independently.
+  UPDATE organization_renter_channel
+  SET telegram_chat_url = 'tg://user?id=55501',
+      telegram_staff_alert_chat_url = 'https://t.me/ht2studio',
+      telegram_receipt_chat_id = NULL,
+      telegram_receipt_candidate_chat_id = NULL
+  WHERE organization_id = v_org;
+
+  v_result := renter_telegram_receipt_chat_ingest(jsonb_build_object(
+    'organization_id', v_org,
+    'chat_id', '55501',
+    'from_username', 'owner',
+    'action', 'bind'
+  ));
+  PERFORM _test_assert((v_result ->> 'bound')::boolean IS DISTINCT FROM true, 'receipts DM does not bind staff group');
+
+  v_result := renter_telegram_receipt_chat_ingest(jsonb_build_object(
+    'organization_id', v_org,
+    'chat_id', '-100211666',
+    'chat_username', 'ht2studio',
+    'action', 'bind'
+  ));
+  PERFORM _test_assert((v_result ->> 'bound')::boolean, 'staff group username binds while receipts stay DM');
+  SELECT telegram_receipt_chat_id INTO v_chat
+  FROM organization_renter_channel WHERE organization_id = v_org;
+  PERFORM _test_assert(v_chat = -100211666, 'staff bind stored');
+
+  v_result := update_organization_renter_channel(jsonb_build_object(
+    'telegram_chat_url', 'https://t.me/adminperson',
+    'telegram_staff_alert_chat_url', 'https://t.me/ht2studio',
+    'app_short_name', 'hall'
+  ));
+  PERFORM _test_assert((v_result ->> 'success')::boolean, 'receipts URL change saved');
+  PERFORM _test_assert(
+    (v_result ->> 'telegram_receipt_chat_id')::bigint = -100211666,
+    'changing receipts URL does not clear staff bind'
+  );
+  PERFORM _test_assert(v_result ->> 'telegram_chat_url' = 'https://t.me/adminperson', 'receipts URL updated');
+  PERFORM _test_assert(
+    v_result ->> 'telegram_staff_alert_chat_url' = 'https://t.me/ht2studio',
+    'staff URL unchanged'
+  );
+
+  v_result := update_organization_renter_channel(jsonb_build_object(
+    'telegram_chat_url', 'https://t.me/adminperson',
+    'telegram_staff_alert_chat_url', 'https://t.me/+ht2otherstaff',
+    'app_short_name', 'hall'
+  ));
+  PERFORM _test_assert(v_result ->> 'telegram_receipt_chat_id' IS NULL, 'staff URL change clears bind');
+  PERFORM _test_assert(
+    v_result ->> 'telegram_receipt_notify_status' = 'need_bot_in_group',
+    'cleared staff invite → need_bot_in_group'
+  );
+
   -- CHECK: renter events cannot use negative chat_id
   v_raised := false;
   BEGIN
@@ -278,7 +332,9 @@ BEGIN
 
   -- submit without bind (invite URL) — request ok, no staff row
   UPDATE organization_renter_channel
-  SET telegram_chat_url = 'https://t.me/+ht2nobind', telegram_receipt_chat_id = NULL
+  SET telegram_chat_url = 'https://t.me/+ht2nobind',
+      telegram_staff_alert_chat_url = NULL,
+      telegram_receipt_chat_id = NULL
   WHERE organization_id = v_org;
 
   DELETE FROM renter_telegram_outbox WHERE organization_id = v_org;
@@ -334,7 +390,9 @@ BEGIN
 
   -- resolve from URL tg://user?id= without stored bind
   UPDATE organization_renter_channel
-  SET telegram_chat_url = 'tg://user?id=55501', telegram_receipt_chat_id = NULL
+  SET telegram_chat_url = 'tg://user?id=55501',
+      telegram_staff_alert_chat_url = NULL,
+      telegram_receipt_chat_id = NULL
   WHERE organization_id = v_org;
 
   v_result := renter_submit_topup(jsonb_build_object('amount', 150, 'method', 'cash'));

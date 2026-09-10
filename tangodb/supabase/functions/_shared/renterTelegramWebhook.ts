@@ -52,7 +52,7 @@ function usernameOf(user?: TelegramUser): string | null {
     : null;
 }
 
-/** Private Start/block as before; group/supergroup my_chat_member for receipt-chat bind only. */
+/** Private Start/block as before; group/supergroup my_chat_member for staff-alert chat bind only. */
 export function classifyTelegramWebhookUpdate(body: TelegramUpdate): WebhookIngestFlags {
   const message = body.message;
   const member = body.my_chat_member;

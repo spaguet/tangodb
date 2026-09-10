@@ -14,6 +14,7 @@ export type ReceiptNotifyStatus =
 
 export interface OrganizationRenterChannel {
   telegramChatUrl: string | null;
+  telegramStaffAlertChatUrl: string | null;
   botUsername: string | null;
   telegramBotId: string | null;
   appShortName: string | null;
@@ -50,6 +51,8 @@ function mapChannel(row: Record<string, unknown>): OrganizationRenterChannel {
     : "";
   return {
     telegramChatUrl: row.telegram_chat_url != null ? String(row.telegram_chat_url) : null,
+    telegramStaffAlertChatUrl:
+      row.telegram_staff_alert_chat_url != null ? String(row.telegram_staff_alert_chat_url) : null,
     botUsername: row.bot_username != null ? String(row.bot_username) : null,
     telegramBotId: row.telegram_bot_id != null ? String(row.telegram_bot_id) : null,
     appShortName: row.app_short_name != null ? String(row.app_short_name) : null,
@@ -103,10 +106,15 @@ export function useUpdateOrganizationRenterChannel() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { telegramChatUrl: string; appShortName: string }) => {
+    mutationFn: async (input: {
+      telegramChatUrl: string;
+      telegramStaffAlertChatUrl: string;
+      appShortName: string;
+    }) => {
       const { data, error } = await supabase.rpc("update_organization_renter_channel", {
         p_payload: asJson({
           telegram_chat_url: input.telegramChatUrl,
+          telegram_staff_alert_chat_url: input.telegramStaffAlertChatUrl,
           app_short_name: input.appShortName,
         }),
       });

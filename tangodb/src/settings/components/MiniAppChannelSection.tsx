@@ -65,6 +65,7 @@ export default function MiniAppChannelSection() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [chatUrl, setChatUrl] = useState<string | null>(null);
+  const [staffAlertChatUrl, setStaffAlertChatUrl] = useState<string | null>(null);
   const [shortName, setShortName] = useState<string | null>(null);
   const [botToken, setBotToken] = useState("");
   const [qrLabel, setQrLabel] = useState("");
@@ -72,11 +73,13 @@ export default function MiniAppChannelSection() {
 
   const channel = channelQuery.data;
   const shownChat = chatUrl ?? channel?.telegramChatUrl ?? "";
+  const shownStaffAlert = staffAlertChatUrl ?? channel?.telegramStaffAlertChatUrl ?? "";
   const shownShort = shortName ?? channel?.appShortName ?? "";
 
   const handleSaveChannel = async () => {
     const res = await saveChannel.mutateAsync({
       telegramChatUrl: shownChat,
+      telegramStaffAlertChatUrl: shownStaffAlert,
       appShortName: shownShort,
     });
     if (!res.success) {
@@ -173,6 +176,7 @@ export default function MiniAppChannelSection() {
             </li>
             <li>{t("hallRent.miniapp.setup.step3")}</li>
             <li>{t("hallRent.miniapp.setup.step4")}</li>
+            <li>{t("hallRent.miniapp.setup.step4Alert")}</li>
             <li>{t("hallRent.miniapp.setup.stepStart")}</li>
             <li>{t("hallRent.miniapp.setup.step5")}</li>
             <li>{t("hallRent.miniapp.setup.step6")}</li>
@@ -192,6 +196,20 @@ export default function MiniAppChannelSection() {
           onChange={(e) => setChatUrl(e.target.value)}
         />
         <p className={hintCls}>{t("hallRent.miniapp.chatUrlHint")}</p>
+      </div>
+
+      <div className="field-stack">
+        <label className={labelCls} htmlFor="renter-staff-alert-url">
+          {t("hallRent.miniapp.staffAlertChatUrl")}
+        </label>
+        <input
+          id="renter-staff-alert-url"
+          className={inputCls}
+          value={shownStaffAlert}
+          placeholder={t("hallRent.miniapp.staffAlertChatUrlPlaceholder")}
+          onChange={(e) => setStaffAlertChatUrl(e.target.value)}
+        />
+        <p className={hintCls}>{t("hallRent.miniapp.staffAlertChatUrlHint")}</p>
         {channel ? (
           <div className="space-y-2">
             <p
