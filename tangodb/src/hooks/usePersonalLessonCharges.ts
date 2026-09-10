@@ -52,6 +52,13 @@ type RpcChargeRow = {
   remaining_amount?: unknown;
 };
 
+export async function fetchPersonalLessonChargeBalances(
+  lessonIds: string[]
+): Promise<PersonalLessonChargeBalance[]> {
+  if (!lessonIds.length) return [];
+  return fetchChargeBalancesViaRpc(lessonIds);
+}
+
 async function fetchChargeBalancesViaRpc(
   lessonIds: string[]
 ): Promise<PersonalLessonChargeBalance[]> {

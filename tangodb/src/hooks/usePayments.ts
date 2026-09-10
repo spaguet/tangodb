@@ -284,7 +284,7 @@ function applyPersonalLessonPaymentToCaches(
         return {
           ...lesson,
           paidAmount,
-          paid: price > 0 && paidAmount >= price ? "yes" : lesson.paid,
+          paid: price > 0 && paidAmount + 0.005 >= price ? "yes" : lesson.paid,
         };
       })
     );

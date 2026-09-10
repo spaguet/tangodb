@@ -3,8 +3,15 @@ import { CalendarDays, MapPin, Ticket, Trash2 } from "lucide-react";
 import { useClients, useClientDirectory } from "../../hooks/useClients";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useAccessibleLocations } from "../../hooks/useLocations";
-import { useAddPersonalLessons, usePersonalLessons } from "../../hooks/usePersonalLessons";
+import {
+  invalidatePersonalLessonRelatedQueries,
+  useAddPersonalLessons,
+  usePersonalLessons,
+} from "../../hooks/usePersonalLessons";
+import { fetchPersonalLessonChargeBalances } from "../../hooks/usePersonalLessonCharges";
 import { useRecordPersonalLessonPayment } from "../../hooks/usePayments";
+import { useOrgQueryScope } from "../../hooks/useOrgQueryScope";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePrices } from "../../hooks/usePrices";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -138,6 +145,141 @@ interface TariffBilling {
   tariffUnits: number | null;
 }
 
+interface LessonPaymentPlan {
+  lessonId: string;
+  date: string;
+  amount: number;
+  billing: TariffBilling | null;
+}
+
+type RecordLessonPaymentsResult =
+  | { success: true; paidCount: number; expectedCount: number }
+  | {
+      success: false;
+      error: string;
+      errorCode?: string;
+      venueRuleStatus?: VenueCostRuleStatus;
+      paidCount: number;
+      expectedCount: number;
+    };
+
+type RecordPaymentMutate = ReturnType<typeof useRecordPersonalLessonPayment>["mutateAsync"];
+
+async function recordImmediateLessonPayments(input: {
+  plans: LessonPaymentPlan[];
+  payerId: string;
+  payerDisplay: string;
+  billingSplitMode: "single_payer" | "equal";
+  selectedTariff: Price | null;
+  clientMap: Record<string, Client>;
+  venueRuleAcknowledged: boolean;
+  getLessonPaymentIdempotencyKey: (lessonId: string, chargeId?: string) => string;
+  recordPayment: RecordPaymentMutate;
+  t: (key: I18nKey, params?: Record<string, string | number>) => string;
+  locale: string;
+}): Promise<RecordLessonPaymentsResult> {
+  const payablePlans = input.plans.filter((plan) => plan.amount > 0);
+  if (!payablePlans.length) {
+    return { success: false, error: "common.invalidLessonCost", paidCount: 0, expectedCount: 0 };
+  }
+
+  const lessonIds = payablePlans.map((plan) => plan.lessonId);
+  const charges = await fetchPersonalLessonChargeBalances(lessonIds);
+  const chargesByLesson = new Map<string, typeof charges>();
+  for (const charge of charges) {
+    const list = chargesByLesson.get(charge.personalLessonId) ?? [];
+    list.push(charge);
+    chargesByLesson.set(charge.personalLessonId, list);
+  }
+
+  let paidCount = 0;
+  let expectedCount = 0;
+
+  for (const plan of payablePlans) {
+    const lessonCharges = chargesByLesson.get(plan.lessonId) ?? [];
+    const unpaidCharges =
+      input.billingSplitMode === "equal"
+        ? lessonCharges.filter((charge) => charge.remainingAmount > 0.005)
+        : lessonCharges.filter(
+            (charge) => charge.clientId === input.payerId && charge.remainingAmount > 0.005
+          );
+
+    const targets =
+      unpaidCharges.length > 0
+        ? unpaidCharges.map((charge) => ({
+            chargeId: charge.id,
+            clientId: charge.clientId,
+            amount: charge.remainingAmount,
+          }))
+        : [
+            {
+              chargeId: undefined as string | undefined,
+              clientId: input.payerId,
+              amount: plan.amount,
+            },
+          ];
+
+    for (const target of targets) {
+      expectedCount += 1;
+      const client = input.clientMap[target.clientId];
+      const clientDisplay = client
+        ? formatClientName(client.lastName, client.firstName)
+        : target.clientId === input.payerId
+          ? input.payerDisplay
+          : input.payerDisplay;
+
+      const paymentRes = await input.recordPayment({
+        lessonId: plan.lessonId,
+        clientId: target.clientId,
+        clientDisplay,
+        amount: target.amount,
+        method: "cash",
+        idempotencyKey: input.getLessonPaymentIdempotencyKey(plan.lessonId, target.chargeId),
+        venueRuleAcknowledged: input.venueRuleAcknowledged,
+        lessonDate: plan.date,
+        priceId: input.selectedTariff?.id ?? null,
+        tariffUnits: plan.billing?.tariffUnits ?? null,
+        tariffDurationMinutes: input.selectedTariff?.durationMinutes ?? null,
+        tariffPrice: input.selectedTariff?.price ?? null,
+        tariffLabel: input.selectedTariff ? getPriceLabel(input.selectedTariff, input.t) : null,
+        lessonDurationMinutes: plan.billing?.lessonMinutes ?? null,
+        chargeId: target.chargeId ?? null,
+      });
+
+      if (!paymentRes.success) {
+        if (
+          "errorCode" in paymentRes &&
+          paymentRes.errorCode === "venue_rule_ack_required" &&
+          "venueRuleStatus" in paymentRes
+        ) {
+          return {
+            success: false,
+            error: paymentRes.error ?? "venue_rule_ack_required",
+            errorCode: paymentRes.errorCode,
+            venueRuleStatus: paymentRes.venueRuleStatus,
+            paidCount,
+            expectedCount,
+          };
+        }
+        return {
+          success: false,
+          error: paymentRes.error ?? "common.bookedPaymentFailed",
+          errorCode: "errorCode" in paymentRes ? paymentRes.errorCode : undefined,
+          paidCount,
+          expectedCount,
+        };
+      }
+      paidCount += 1;
+    }
+  }
+
+  if (expectedCount === 0) {
+    return { success: false, error: "common.invalidLessonCost", paidCount: 0, expectedCount: 0 };
+  }
+
+  return { success: true, paidCount, expectedCount };
+}
+
 function computeTariffBilling(
   tariff: Pick<Price, "price" | "durationMinutes">,
   timeStart: string,
@@ -213,6 +355,8 @@ export default function PersonalLessonSaleForm({
   const { locations: accessibleLocations = [] } = useAccessibleLocations();
   const orgModules = normalizeOrgModules(settings?.modules);
   const showLocationInForm = shouldShowLocationPicker(orgModules, accessibleLocations.length);
+  const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
   const addPersonalLessons = useAddPersonalLessons();
   const recordPersonalLessonPayment = useRecordPersonalLessonPayment();
   const lessonPaymentIdempotencyKeys = useRef<Record<string, string>>({});
@@ -220,19 +364,21 @@ export default function PersonalLessonSaleForm({
   const pendingVenueBookingRef = useRef<{ immediatePaid: boolean } | null>(null);
   const schedulePrefillKeyRef = useRef<string | null>(null);
 
-  const getLessonPaymentIdempotencyKey = (lessonId: string): string => {
-    const existing = lessonPaymentIdempotencyKeys.current[lessonId];
+  const getLessonPaymentIdempotencyKey = (lessonId: string, chargeId?: string): string => {
+    const cacheKey = chargeId ? `${lessonId}:${chargeId}` : lessonId;
+    const existing = lessonPaymentIdempotencyKeys.current[cacheKey];
     if (existing) return existing;
     const key = crypto.randomUUID();
-    lessonPaymentIdempotencyKeys.current[lessonId] = key;
+    lessonPaymentIdempotencyKeys.current[cacheKey] = key;
     return key;
   };
   const [venueConfirmStatus, setVenueConfirmStatus] = useState<VenueCostRuleStatus | null>(null);
   const [pendingVenuePayment, setPendingVenuePayment] = useState<{
-    payments: Array<{ lessonId: string; date: string; amount: number; billing: TariffBilling | null }>;
+    payments: LessonPaymentPlan[];
     clientId: string;
     clientDisplay: string;
     tariff: Price | null;
+    billingSplitMode: "single_payer" | "equal";
   } | null>(null);
 
   const isTeacher = role === "teacher";
@@ -787,12 +933,8 @@ export default function PersonalLessonSaleForm({
       }
     }
     const slotGroups = groupSlotsByTime(slots);
-    const createdPaymentPlans: Array<{
-      lessonId: string;
-      date: string;
-      amount: number;
-      billing: TariffBilling | null;
-    }> = [];
+    const createdPaymentPlans: LessonPaymentPlan[] = [];
+    const resolvedBillingSplitMode = showPayerSelect ? billingSplitMode : "single_payer";
 
     bookingInFlightRef.current = true;
     try {
@@ -822,7 +964,8 @@ export default function PersonalLessonSaleForm({
           subscriptionId: isPackageBooking ? linkedSubscriptionId || undefined : undefined,
           priceId: isPackageBooking ? null : selectedTariff?.id ?? null,
           payerClientId: payerId,
-          billingSplitMode: showPayerSelect ? billingSplitMode : "single_payer",
+          billingSplitMode: resolvedBillingSplitMode,
+          skipInvalidation: willRecordCashPayments,
         });
 
         if (!res.success) {
@@ -858,44 +1001,51 @@ export default function PersonalLessonSaleForm({
       }
 
       if (willRecordCashPayments && createdPaymentPlans.length) {
-        for (const plan of createdPaymentPlans) {
-          if (plan.amount <= 0) continue;
-          const paymentRes = await recordPersonalLessonPayment.mutateAsync({
-            lessonId: plan.lessonId,
-            clientId: payerId,
-            clientDisplay: payerDisplay,
-            amount: plan.amount,
-            method: "cash",
-            idempotencyKey: getLessonPaymentIdempotencyKey(plan.lessonId),
-            venueRuleAcknowledged,
-            lessonDate: plan.date,
-            priceId: selectedTariff?.id ?? null,
-            tariffUnits: plan.billing?.tariffUnits ?? null,
-            tariffDurationMinutes: selectedTariff?.durationMinutes ?? null,
-            tariffPrice: selectedTariff?.price ?? null,
-            tariffLabel: selectedTariff ? getPriceLabel(selectedTariff, t) : null,
-            lessonDurationMinutes: plan.billing?.lessonMinutes ?? null,
-          });
-          if (!paymentRes.success) {
-            if (
-              "errorCode" in paymentRes &&
-              paymentRes.errorCode === "venue_rule_ack_required" &&
-              "venueRuleStatus" in paymentRes
-            ) {
-              setPendingVenuePayment({
-                payments: createdPaymentPlans.filter((p) => p.amount > 0),
-                clientId: payerId,
-                clientDisplay: payerDisplay,
-                tariff: selectedTariff,
-              });
-              setVenueConfirmStatus(paymentRes.venueRuleStatus);
-              return;
-            }
-            toast(resolveMutationError(paymentRes.error, "common.bookedPaymentFailed", t), "error");
-            onSuccess();
-            onClose?.();
+        const paymentResult = await recordImmediateLessonPayments({
+          plans: createdPaymentPlans,
+          payerId,
+          payerDisplay,
+          billingSplitMode: resolvedBillingSplitMode,
+          selectedTariff,
+          clientMap,
+          venueRuleAcknowledged,
+          getLessonPaymentIdempotencyKey,
+          recordPayment: recordPersonalLessonPayment.mutateAsync,
+          t,
+          locale,
+        });
+
+        invalidatePersonalLessonRelatedQueries(queryClient, organizationId, {
+          refetchType: "active",
+          kickCalendar: true,
+        });
+
+        if (paymentResult.success === false) {
+          if (paymentResult.errorCode === "venue_rule_ack_required" && paymentResult.venueRuleStatus) {
+            setPendingVenuePayment({
+              payments: createdPaymentPlans.filter((plan) => plan.amount > 0),
+              clientId: payerId,
+              clientDisplay: payerDisplay,
+              tariff: selectedTariff,
+              billingSplitMode: resolvedBillingSplitMode,
+            });
+            setVenueConfirmStatus(paymentResult.venueRuleStatus);
             return;
           }
+          if (paymentResult.paidCount > 0 && paymentResult.paidCount < paymentResult.expectedCount) {
+            toast(
+              t("personal.pay.partialAll", {
+                paid: paymentResult.paidCount,
+                total: paymentResult.expectedCount,
+              }),
+              "error"
+            );
+          } else {
+            toast(resolveMutationError(paymentResult.error, "common.bookedPaymentFailed", t), "error");
+          }
+          onSuccess();
+          onClose?.();
+          return;
         }
       }
     } finally {
@@ -928,27 +1078,38 @@ export default function PersonalLessonSaleForm({
       return;
     }
     const pending = pendingVenuePayment;
-    for (const plan of pending.payments) {
-      const paymentRes = await recordPersonalLessonPayment.mutateAsync({
-        lessonId: plan.lessonId,
-        clientId: pending.clientId,
-        clientDisplay: pending.clientDisplay,
-        amount: plan.amount,
-        method: "cash",
-        idempotencyKey: getLessonPaymentIdempotencyKey(plan.lessonId),
-        venueRuleAcknowledged: true,
-        lessonDate: plan.date,
-        priceId: pending.tariff?.id ?? null,
-        tariffUnits: plan.billing?.tariffUnits ?? null,
-        tariffDurationMinutes: pending.tariff?.durationMinutes ?? null,
-        tariffPrice: pending.tariff?.price ?? null,
-        tariffLabel: pending.tariff ? getPriceLabel(pending.tariff, t) : null,
-        lessonDurationMinutes: plan.billing?.lessonMinutes ?? null,
-      });
-      if (!paymentRes.success) {
-        toast(resolveMutationError(paymentRes.error, "common.bookedPaymentFailed", t), "error");
-        return;
+    const paymentResult = await recordImmediateLessonPayments({
+      plans: pending.payments,
+      payerId: pending.clientId,
+      payerDisplay: pending.clientDisplay,
+      billingSplitMode: pending.billingSplitMode,
+      selectedTariff: pending.tariff,
+      clientMap,
+      venueRuleAcknowledged: true,
+      getLessonPaymentIdempotencyKey,
+      recordPayment: recordPersonalLessonPayment.mutateAsync,
+      t,
+      locale,
+    });
+
+    invalidatePersonalLessonRelatedQueries(queryClient, organizationId, {
+      refetchType: "active",
+      kickCalendar: true,
+    });
+
+    if (paymentResult.success === false) {
+      if (paymentResult.paidCount > 0 && paymentResult.paidCount < paymentResult.expectedCount) {
+        toast(
+          t("personal.pay.partialAll", {
+            paid: paymentResult.paidCount,
+            total: paymentResult.expectedCount,
+          }),
+          "error"
+        );
+      } else {
+        toast(resolveMutationError(paymentResult.error, "common.bookedPaymentFailed", t), "error");
       }
+      return;
     }
     setPendingVenuePayment(null);
     setVenueConfirmStatus(null);

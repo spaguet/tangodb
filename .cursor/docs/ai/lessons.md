@@ -53,6 +53,12 @@
 
 ## Записи
 
+### 2026-09-10 — Персональный урок «С оплатой» остаётся неоплаченным в расписании
+
+- **Ошибка:** после брони из расписания с кнопкой «С оплатой» уроки в сетке показывались с красной рамкой долга, хотя платёж проходил.
+- **Причина:** `useAddPersonalLessons` инвалидировал кэш сразу после insert (`paid=no`), refetch мог завершиться уже после RPC оплаты и перезаписать свежие `paid_amount`/`paid=yes` устаревшими данными; при равном делении оплачивалась только доля первого клиента; idempotency key был один на урок, а не на charge.
+- **Как избежать:** при create+pay в одном UX-потоке откладывать `invalidatePersonalLessonRelatedQueries` до успешной оплаты; проводить платёж по charge balances с `p_charge_id`; для equal split при «С оплатой» закрывать все начисления.
+
 ### 2026-09-08 — Dev Console developer_access_required при верном app_metadata
 
 - **Ошибка:** `albertkoall@gmail.com` с `platform_role: developer` в `auth.users` получал `developer_access_required` в Dev Console.

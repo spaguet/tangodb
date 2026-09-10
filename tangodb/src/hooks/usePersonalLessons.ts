@@ -364,6 +364,7 @@ export function useAddPersonalLessons() {
       priceId,
       payerClientId,
       billingSplitMode,
+      skipInvalidation,
     }: {
       requireScope?: boolean;
       type: string;
@@ -383,6 +384,7 @@ export function useAddPersonalLessons() {
       priceId?: string | null;
       payerClientId?: string | null;
       billingSplitMode?: "single_payer" | "equal";
+      skipInvalidation?: boolean;
     }) => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
@@ -429,10 +431,14 @@ export function useAddPersonalLessons() {
         if (overlap) return { success: false as const, error: overlap };
         return { success: false as const, error: error.message };
       }
-      return { success: true as const, ids: rows.map((row) => row.id as string) };
+      return {
+        success: true as const,
+        ids: rows.map((row) => row.id as string),
+        skipInvalidation: skipInvalidation ?? false,
+      };
     },
     onSuccess: (result) => {
-      if (result.success) {
+      if (result.success && !result.skipInvalidation) {
         invalidatePersonalLessonRelatedQueries(queryClient, organizationId, { includePayments: false, kickCalendar: true });
       }
     },
