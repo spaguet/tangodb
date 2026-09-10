@@ -529,6 +529,8 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 | Аренда зала | `slate-600` / `slate-700` | белый текст | без полоски |
 | Долг (ring) | `#FFFFF5` | `#F3A0AA` | `#B93645` | `#D64554` |
 | Аренда Mini App, холд | slate + диагональные полосы, без rose ring | | | |
+| Mini App occupancy, чужое | group pastel | group border | group text | group accent; подпись «Занято» |
+| Mini App occupancy, своя бронь | `slate-600` | `slate-700` | белый | без полоски; холд — диагонали; долг — conflict |
 | Выделение (focus) | ring `#5663D6` (`indigo-600`) | | | |
 
 ---
@@ -553,6 +555,7 @@ Empty state внутри секций: `text-slate-400 text-xs py-3 text-center`
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-09-10 | Mini App occupancy-сетка зеркалит CRM week grid: group pastel / rental slate / conflict. |
 | 2026-09-05 | Структура выручки: rental `slate-600` (не violet); ссылка на `crm_color_migration.md`. |
 | 2026-09-05 | Миграция палитры Studio Controller: тёплый indigo, rose/amber, green для успеха, мягкие блоки расписания. Токены в `index.css` `@theme`. |
 | 2026-08-01 | Компактные контролы h-8 (32px): поля, select, кнопки — эталон Telegram в header; add/save/open без uppercase по всему CRM. |

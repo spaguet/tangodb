@@ -446,13 +446,13 @@ function TopupSubmittedSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-900/40"
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-900/40 backdrop-blur-xs"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl"
+        className="max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold text-slate-900">{t(locale, "topupSubmittedTitle")}</h2>

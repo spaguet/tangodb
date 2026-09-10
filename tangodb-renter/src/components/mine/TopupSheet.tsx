@@ -48,14 +48,14 @@ export default function TopupSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/40"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/40 backdrop-blur-xs"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="topup-sheet-title"
     >
       <div
-        className="max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl [-webkit-overflow-scrolling:touch]"
+        className="max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl [-webkit-overflow-scrolling:touch]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">

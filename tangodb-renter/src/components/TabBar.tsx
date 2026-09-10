@@ -9,36 +9,46 @@ type TabBarProps = {
 };
 
 export default function TabBar({ locale, active, onChange }: TabBarProps) {
-  const base =
-    "flex-1 py-3 text-sm font-semibold transition-colors border-b-2 bg-white";
   return (
-    <nav className="flex shrink-0 border-b border-slate-200 shadow-xs" role="tablist">
-      <button
-        type="button"
-        role="tab"
-        aria-selected={active === "schedule"}
-        className={`${base} ${
-          active === "schedule"
-            ? "border-indigo-600 text-indigo-700"
-            : "border-transparent text-slate-500 hover:text-slate-700"
-        }`}
+    <nav
+      className="grid w-full shrink-0 grid-cols-2 items-end gap-0.5 border-b border-slate-200 bg-slate-50 px-2 pt-1"
+      role="tablist"
+    >
+      <TabButton
+        selected={active === "schedule"}
         onClick={() => onChange("schedule")}
       >
         {t(locale, "tabSchedule")}
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={active === "mine"}
-        className={`${base} ${
-          active === "mine"
-            ? "border-indigo-600 text-indigo-700"
-            : "border-transparent text-slate-500 hover:text-slate-700"
-        }`}
-        onClick={() => onChange("mine")}
-      >
+      </TabButton>
+      <TabButton selected={active === "mine"} onClick={() => onChange("mine")}>
         {t(locale, "tabMine")}
-      </button>
+      </TabButton>
     </nav>
+  );
+}
+
+function TabButton({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={selected}
+      onClick={onClick}
+      className={`flex w-full items-center justify-center rounded-t-lg border px-3 py-1.5 text-xs font-semibold transition-all ${
+        selected
+          ? "relative z-10 -mb-px border-slate-200 border-b-white bg-white text-indigo-700"
+          : "mb-px border-transparent bg-slate-100/70 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

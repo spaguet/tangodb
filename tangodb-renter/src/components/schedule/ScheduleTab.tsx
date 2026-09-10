@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
 import {
+  btnWeekNavCls,
   labelCls,
+  occupancyLegendSwatchClass,
   panelCls,
   weekChipActiveCls,
   weekChipCls,
@@ -239,76 +241,79 @@ export default function ScheduleTab({
           </div>
         ) : (
           <>
-            {locations.length > 0 ? (
+            {locations.length > 1 ? (
               <div className="flex flex-col gap-1.5">
                 <span className={labelCls}>{t(locale, "selectHall")}</span>
-                {locations.length > 1 ? (
-                  <div className="flex flex-wrap gap-2" role="group" aria-label={t(locale, "selectHall")}>
-                    {locations.map((loc) => (
-                      <button
-                        key={loc.id}
-                        type="button"
-                        className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                          locationId === loc.id ? weekChipActiveCls : weekChipCls
-                        }`}
-                        onClick={() => setLocationId(loc.id)}
-                      >
-                        {loc.name}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm font-medium text-slate-700">{locations[0].name}</p>
-                )}
-                {selectedLocation?.bookable === false ? (
-                  <p className="text-xs leading-relaxed text-amber-800">{t(locale, "hallRatesIncomplete")}</p>
-                ) : null}
-              </div>
-            ) : null}
-
-            {weeks.length > 0 ? (
-              <div className={`flex flex-col gap-2 ${panelCls} p-3`}>
-                <div className="flex min-w-0 flex-col items-center">
-                  <span className="text-center text-sm font-semibold text-slate-800 leading-tight">
-                    {weekLabel}
-                  </span>
-                  <span className="text-[10px] text-slate-400">
-                    {tFill(locale, "weekOf", { n: safeWeekIndex + 1, total: weeks.length })}
-                  </span>
-                </div>
-                <div className="flex gap-1">
-                  {weeks.map((week, i) => (
+                <div className="flex flex-wrap gap-2" role="group" aria-label={t(locale, "selectHall")}>
+                  {locations.map((loc) => (
                     <button
-                      key={week[0]}
+                      key={loc.id}
                       type="button"
-                      className={`min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-[10px] leading-tight ${
-                        i === safeWeekIndex ? weekChipActiveCls : weekChipCls
+                      className={`h-8 rounded-lg px-3 text-xs font-semibold transition-colors ${
+                        locationId === loc.id ? weekChipActiveCls : weekChipCls
                       }`}
-                      onClick={() => setWeekIndex(i)}
+                      onClick={() => setLocationId(loc.id)}
                     >
-                      {formatWeekRangeLabel(week[0], week[week.length - 1], localeTag, false)}
+                      {loc.name}
                     </button>
                   ))}
                 </div>
+              </div>
+            ) : null}
+
+            {selectedLocation?.bookable === false ? (
+              <p className="text-xs leading-relaxed text-amber-800">{t(locale, "hallRatesIncomplete")}</p>
+            ) : null}
+
+            {weeks.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className={btnWeekNavCls}
+                    aria-label={t(locale, "prevWeek")}
+                    disabled={safeWeekIndex <= 0}
+                    onClick={() => setWeekIndex(Math.max(0, safeWeekIndex - 1))}
+                  >
+                    <ChevronIcon direction="left" />
+                  </button>
+                  <div className="flex min-w-0 flex-1 flex-col items-center">
+                    <span className="text-center text-sm font-semibold leading-tight text-slate-800">
+                      {weekLabel}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {tFill(locale, "weekOf", { n: safeWeekIndex + 1, total: weeks.length })}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={btnWeekNavCls}
+                    aria-label={t(locale, "nextWeek")}
+                    disabled={safeWeekIndex >= weeks.length - 1}
+                    onClick={() => setWeekIndex(Math.min(weeks.length - 1, safeWeekIndex + 1))}
+                  >
+                    <ChevronIcon direction="right" />
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
                   <span className="inline-flex items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-sm border border-slate-200 bg-white" />
+                    <span className={occupancyLegendSwatchClass("free")} />
                     {t(locale, "free")}
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-sm bg-slate-400 ring-1 ring-inset ring-slate-500" />
+                    <span className={occupancyLegendSwatchClass("busy")} />
                     {t(locale, "busy")}
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-sm bg-indigo-600" />
+                    <span className={occupancyLegendSwatchClass("mine")} />
                     {t(locale, "mine")}
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <span className="slot-hold h-2.5 w-2.5 rounded-sm border border-slate-700" />
+                    <span className={occupancyLegendSwatchClass("mine_hold")} />
                     {t(locale, "mineHold")}
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-sm bg-rose-600 ring-1 ring-inset ring-rose-700" />
+                    <span className={occupancyLegendSwatchClass("mine_debt")} />
                     {t(locale, "mineDebt")}
                   </span>
                 </div>
@@ -319,29 +324,47 @@ export default function ScheduleTab({
       </div>
 
       {occupancy && weekDays.length > 0 ? (
-        <div className="min-h-0 flex-1 border-t border-slate-200">
-          <div
-            ref={gridScrollRef}
-            className="h-full overflow-auto isolate [-webkit-overflow-scrolling:touch]"
-            onScroll={handleGridScroll}
-          >
-            <WeeklyOccupancyGrid
-              locale={locale}
-              timezone={bootstrap.timezone}
-              serverNow={bootstrap.serverNow}
-              weekDays={weekDays}
-              occupancy={occupancy}
-              addonActive={bootstrap.addonActive}
-              onFreeCell={(date, start) => {
-                if (!locationId) return;
-                onOpenBooking({ locationId, date, start, packDays: days });
-              }}
-              onMineCell={(rentalId) => onOpenMine(rentalId)}
-            />
-          </div>
+        <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
+          <section className={`${panelCls} flex min-h-0 flex-1 flex-col overflow-hidden`}>
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/60 px-4 py-3">
+              <h3 className="min-w-0 truncate text-sm font-semibold tracking-tight text-slate-800">
+                {selectedLocation?.name ?? t(locale, "selectHall")}
+              </h3>
+            </div>
+            <div
+              ref={gridScrollRef}
+              className="isolate min-h-0 flex-1 overflow-auto [-webkit-overflow-scrolling:touch]"
+              onScroll={handleGridScroll}
+            >
+              <WeeklyOccupancyGrid
+                locale={locale}
+                timezone={bootstrap.timezone}
+                serverNow={bootstrap.serverNow}
+                weekDays={weekDays}
+                occupancy={occupancy}
+                addonActive={bootstrap.addonActive}
+                onFreeCell={(date, start) => {
+                  if (!locationId) return;
+                  onOpenBooking({ locationId, date, start, packDays: days });
+                }}
+                onMineCell={(rentalId) => onOpenMine(rentalId)}
+              />
+            </div>
+          </section>
         </div>
       ) : null}
-
     </div>
+  );
+}
+
+function ChevronIcon({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      {direction === "left" ? (
+        <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+      ) : (
+        <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+    </svg>
   );
 }

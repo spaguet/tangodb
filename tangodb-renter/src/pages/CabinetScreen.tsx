@@ -94,7 +94,7 @@ export default function CabinetScreen({
   }, [focusRentalId]);
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-slate-50 text-slate-800">
+    <div className="flex h-[100dvh] flex-col bg-slate-50 font-sans text-slate-800 antialiased">
       <header className="flex shrink-0 items-start justify-between gap-2 border-b border-slate-200 bg-white px-4 py-2 shadow-xs">
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -104,7 +104,7 @@ export default function CabinetScreen({
         </div>
         <button
           type="button"
-          className="mt-1 shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          className="mt-0.5 flex h-8 shrink-0 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
           onClick={() => setRulesOpen(true)}
         >
           {t(locale, "rules")}

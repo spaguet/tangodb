@@ -284,7 +284,7 @@ export default function BookingSheet({
   };
 
   const sheetCls =
-    "max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl [-webkit-overflow-scrolling:touch]";
+    "max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl [-webkit-overflow-scrolling:touch]";
 
   if (created) {
     const currency = created.currency ?? quote?.currency ?? "RUB";
@@ -296,7 +296,7 @@ export default function BookingSheet({
       wallet && isHold ? topupAmountFromWallet(wallet, prepay) : prepay > 0 ? prepay : 0;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40" onClick={onClose}>
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-xs" onClick={onClose}>
         <div className={sheetCls} onClick={(e) => e.stopPropagation()}>
           <h2 className="text-lg font-semibold text-slate-900">{t(locale, "bookingResultTitle")}</h2>
           <p className="text-sm text-slate-500">
@@ -367,7 +367,7 @@ export default function BookingSheet({
     const topupAmount = wallet && isHold ? topupAmountFromWallet(wallet, prepay) : prepay > 0 ? prepay : 0;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40" onClick={onClose}>
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-xs" onClick={onClose}>
         <div className={sheetCls} onClick={(e) => e.stopPropagation()}>
           <h2 className="text-lg font-semibold text-slate-900">{t(locale, "packResultTitle")}</h2>
           <p className="text-sm text-slate-500">
@@ -447,7 +447,7 @@ export default function BookingSheet({
     !occurrences?.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-xs" onClick={onClose}>
       <div className={sheetCls} onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-semibold text-slate-900">{t(locale, "bookSlot")}</h2>
 
