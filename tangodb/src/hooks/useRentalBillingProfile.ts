@@ -12,12 +12,12 @@ import { rentalInvoicesQueryKey } from "./useRentalInvoices";
 
 export const rentalBillingProfileQueryKey = ["rental-billing-profile"] as const;
 
-export function useRentalBillingProfile() {
-  const { organizationId, enabled } = useOrgQueryScope();
+export function useRentalBillingProfile(enabled = true) {
+  const { organizationId, enabled: orgEnabled } = useOrgQueryScope();
 
   return useQuery({
     queryKey: [...rentalBillingProfileQueryKey, organizationId],
-    enabled,
+    enabled: orgEnabled && enabled,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_rental_billing_profile");
       if (error) throw error;

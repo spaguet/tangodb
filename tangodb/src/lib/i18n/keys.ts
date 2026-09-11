@@ -2818,6 +2818,8 @@ export type I18nKey =
   | "settings.org.role.adminExport"
   | "settings.org.role.adminManageTeam"
   | "settings.org.role.adminAcceptPayments"
+  | "settings.org.role.adminManageRenterBalance"
+  | "settings.org.role.adminManageRenterBalanceHint"
   | "settings.org.role.teachersRecordSingleVisits"
   | "settings.org.role.adminRecordSingleVisits"
   | "settings.org.role.adminEditSchedule"

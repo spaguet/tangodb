@@ -94,6 +94,8 @@ export type PermissionAction =
   | "renters.documents.read"
   | "renters.documents.write"
   | "renters.finance.read"
+  /** Org override: full admin Mini App wallet topup / payout / reversal. */
+  | "renters.balance.write"
   /** Cash desk: record rental payment + see amount/paid/remaining (not full finance). */
   | "rentals.payments.write"
   /** Create/edit rental slots without full schedule.write (accountant narrow path). */
@@ -117,6 +119,7 @@ export interface PermissionOptions {
   adminCanExport?: boolean;
   adminCanManageTeam?: boolean;
   adminCanAcceptPayments?: boolean;
+  adminCanManageRenterBalance?: boolean;
   adminCanEditSchedule?: boolean;
   teachersCanRecordSingleVisits?: boolean;
   teachersCanAcceptPayments?: boolean;
@@ -156,6 +159,7 @@ const WRITE_ACTIONS = new Set<PermissionAction>([
   "renters.contacts.write",
   "renters.contracts.write",
   "renters.documents.write",
+  "renters.balance.write",
   "rentals.payments.write",
   "rentals.write",
 ]);
@@ -315,6 +319,7 @@ export function permissionOptionsFromSettings(
     admin_can_export?: boolean;
     admin_can_manage_team?: boolean;
     admin_can_accept_payments?: boolean;
+    admin_can_manage_renter_balance?: boolean;
     admin_can_edit_schedule?: boolean;
     teachers_can_record_single_visits?: boolean;
     teachers_can_accept_payments?: boolean;
@@ -337,6 +342,7 @@ export function permissionOptionsFromSettings(
     adminCanExport: settings?.admin_can_export ?? false,
     adminCanManageTeam: settings?.admin_can_manage_team ?? false,
     adminCanAcceptPayments: settings?.admin_can_accept_payments ?? true,
+    adminCanManageRenterBalance: settings?.admin_can_manage_renter_balance ?? false,
     adminCanEditSchedule: settings?.admin_can_edit_schedule ?? true,
     teachersCanRecordSingleVisits: settings?.teachers_can_record_single_visits ?? false,
     teachersCanAcceptPayments: settings?.teachers_can_accept_payments ?? false,
@@ -543,6 +549,7 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
 
     case "renters.read":
       if (can(role, "schedule.write", options)) return true;
+      if (can(role, "renters.balance.write", options)) return true;
       return FINANCIAL_READ_ROLES.includes(role);
 
     case "renters.write":
@@ -561,6 +568,13 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return false;
 
     case "renters.finance.read":
+      return FINANCIAL_READ_ROLES.includes(role);
+
+    case "renters.balance.write":
+      if (isRestrictedReceptionAdmin(role, options)) return false;
+      if (role === "admin" && isFullOperationalAdmin(role, options)) {
+        return options?.adminCanManageRenterBalance ?? false;
+      }
       return FINANCIAL_READ_ROLES.includes(role);
 
     case "rentals.payments.write":
@@ -839,6 +853,10 @@ export function isRentalInboxOnly(role: MemberRole | null, options?: PermissionO
   return can(role, "rentals.payments.write", options) && !can(role, "finance.read", options);
 }
 
+export function canSeeRenterFinance(role: MemberRole | null, options?: PermissionOptions): boolean {
+  return can(role, "renters.finance.read", options) || can(role, "renters.balance.write", options);
+}
+
 /** Main nav / finance workspace: full finance, rental inbox only, or payroll-only teacher. */
 export function canAccessFinanceNav(
   role: MemberRole | null,
@@ -925,6 +943,21 @@ export function assertReceptionPermissions(): void {
   }
   if (can("admin", "renters.finance.read", adminOpts)) {
     throw new Error("full admin must not have renters.finance.read (FC4 inbox+preview path)");
+  }
+  if (can("admin", "renters.balance.write", adminOpts)) {
+    throw new Error("full admin must not manage renter balance by default");
+  }
+  if (!can("admin", "renters.balance.write", { ...adminOpts, adminCanManageRenterBalance: true })) {
+    throw new Error("full admin with renter-balance flag must write renter wallet");
+  }
+  if (can("admin", "renters.finance.read", { ...adminOpts, adminCanManageRenterBalance: true })) {
+    throw new Error("renter-balance flag must not grant renters.finance.read");
+  }
+  if (can("admin", "renters.balance.write", { ...receptionOpts, adminCanManageRenterBalance: true })) {
+    throw new Error("reception must not manage renter balance");
+  }
+  if (!can("admin", "renters.read", { ...adminOpts, adminCanEditSchedule: false, adminCanManageRenterBalance: true })) {
+    throw new Error("full admin with renter-balance flag must read renters without schedule.write");
   }
   if (can("admin", "renters.contacts.read", { ...adminOpts, adminCanEditSchedule: false })) {
     throw new Error("full admin must not read renter contacts without schedule.write (FC4)");

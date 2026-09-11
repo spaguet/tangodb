@@ -2927,6 +2927,8 @@ export const RU: Record<I18nKey, string> = {
   "settings.org.role.adminExport": "Администратор может экспортировать CSV",
   "settings.org.role.adminManageTeam": "Администратор может управлять командой",
   "settings.org.role.adminAcceptPayments": "Администратор может принимать платежи",
+  "settings.org.role.adminManageRenterBalance": "Администратор может изменять баланс арендаторов",
+  "settings.org.role.adminManageRenterBalanceHint": "Пополнение и возврат Mini App-кошелька на карточке арендатора. Для приёма оплаты за уроки и аренду включите «принимать платежи».",
   "settings.org.role.teachersRecordSingleVisits": "Преподаватели могут отмечать разовые посещения",
   "settings.org.role.adminRecordSingleVisits": "Администратор может отмечать разовые посещения",
   "settings.org.role.adminEditSchedule": "Администратор может изменять расписание",

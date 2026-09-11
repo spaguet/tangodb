@@ -51,6 +51,7 @@ const ROLE_OVERRIDE_KEYS: {
     | "admin_can_export"
     | "admin_can_manage_team"
     | "admin_can_accept_payments"
+    | "admin_can_manage_renter_balance"
     | "admin_can_edit_schedule"
     | "teachers_can_record_single_visits"
     | "admin_can_record_single_visits";
@@ -81,6 +82,11 @@ const ROLE_OVERRIDE_KEYS: {
     key: "admin_can_accept_payments",
     labelKey: "settings.org.role.adminAcceptPayments",
     hintKey: "common.defaultOn",
+  },
+  {
+    key: "admin_can_manage_renter_balance",
+    labelKey: "settings.org.role.adminManageRenterBalance",
+    hintKey: "settings.org.role.adminManageRenterBalanceHint",
   },
   {
     key: "admin_can_record_single_visits",
@@ -124,6 +130,7 @@ export default function OrganizationSettingsPage() {
   const [adminCanExport, setAdminCanExport] = useState(false);
   const [adminCanManageTeam, setAdminCanManageTeam] = useState(false);
   const [adminCanAcceptPayments, setAdminCanAcceptPayments] = useState(true);
+  const [adminCanManageRenterBalance, setAdminCanManageRenterBalance] = useState(false);
   const [adminCanEditSchedule, setAdminCanEditSchedule] = useState(true);
   const [teachersCanRecordSingleVisits, setTeachersCanRecordSingleVisits] = useState(false);
   const [adminCanRecordSingleVisits, setAdminCanRecordSingleVisits] = useState(true);
@@ -147,6 +154,7 @@ export default function OrganizationSettingsPage() {
     setAdminCanExport(settings.admin_can_export);
     setAdminCanManageTeam(settings.admin_can_manage_team);
     setAdminCanAcceptPayments(settings.admin_can_accept_payments);
+    setAdminCanManageRenterBalance(settings.admin_can_manage_renter_balance);
     setAdminCanEditSchedule(settings.admin_can_edit_schedule);
     setTeachersCanRecordSingleVisits(settings.teachers_can_record_single_visits);
     setAdminCanRecordSingleVisits(settings.admin_can_record_single_visits);
@@ -188,6 +196,7 @@ export default function OrganizationSettingsPage() {
       admin_can_export: adminCanExport,
       admin_can_manage_team: adminCanManageTeam,
       admin_can_accept_payments: adminCanAcceptPayments,
+      admin_can_manage_renter_balance: adminCanManageRenterBalance,
       admin_can_edit_schedule: adminCanEditSchedule,
       teachers_can_record_single_visits: teachersCanRecordSingleVisits,
       admin_can_record_single_visits: adminCanRecordSingleVisits,
@@ -285,6 +294,7 @@ export default function OrganizationSettingsPage() {
                 admin_can_export: adminCanExport,
                 admin_can_manage_team: adminCanManageTeam,
                 admin_can_accept_payments: adminCanAcceptPayments,
+                admin_can_manage_renter_balance: adminCanManageRenterBalance,
                 admin_can_edit_schedule: adminCanEditSchedule,
                 teachers_can_record_single_visits: teachersCanRecordSingleVisits,
                 admin_can_record_single_visits: adminCanRecordSingleVisits,
@@ -302,6 +312,7 @@ export default function OrganizationSettingsPage() {
                 admin_can_export: setAdminCanExport,
                 admin_can_manage_team: setAdminCanManageTeam,
                 admin_can_accept_payments: setAdminCanAcceptPayments,
+                admin_can_manage_renter_balance: setAdminCanManageRenterBalance,
                 admin_can_edit_schedule: setAdminCanEditSchedule,
                 teachers_can_record_single_visits: setTeachersCanRecordSingleVisits,
                 admin_can_record_single_visits: setAdminCanRecordSingleVisits,

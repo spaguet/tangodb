@@ -26,7 +26,7 @@ import type {
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { isMiniAppRentalChannel, miniAppLifecycleI18nKey } from "../../lib/rentalMiniAppDisplay";
 import { parseTelegramIdInput } from "../../lib/renterNormalize";
-import { canManageMiniAppRentals, canWriteRentals } from "../../lib/permissions";
+import { canManageMiniAppRentals, canSeeRenterFinance, canWriteRentals } from "../../lib/permissions";
 import { useI18n } from "../../hooks/useI18n";
 import { useCan, usePermissions } from "../../hooks/usePermissions";
 import { useStaffRenterWalletTopup, useStaffTopupPreview, useReverseRenterWalletTopup } from "../../hooks/useRenterTopupInbox";
@@ -103,7 +103,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const canWriteRentalsSlot = canWriteRentals(role, options);
   const canWriteMiniApp = canManageMiniAppRentals(role, options);
   const canOpenSchedule = useCan("schedule.read");
-  const canSeeFinance = useCan("renters.finance.read");
+  const canSeeFinance = canSeeRenterFinance(role, options);
   const canSeeContacts = useCan("renters.contacts.read");
   const canMessageTelegram = canSeeContacts || canSeeFinance;
   const financeOnlyDetail = canSeeFinance && !canSeeContacts;
@@ -837,11 +837,11 @@ function FinanceTab({
   formatDateTime: (iso: string | Date) => string;
 }) {
   const monthRange = monthDateRange(currentYearMonth());
-  const rentalFinanceQuery = useRenterRentalFinance(renterId);
-  const invoicesQuery = useRenterRentalInvoices(renterId);
-  const advancesQuery = useRenterRentalAdvances(renterId);
-  const allocationsQuery = useRenterRentalAdvanceAllocations(renterId);
-  const billingProfileQuery = useRentalBillingProfile();
+  const rentalFinanceQuery = useRenterRentalFinance(renterId, canWrite);
+  const invoicesQuery = useRenterRentalInvoices(renterId, canWrite);
+  const advancesQuery = useRenterRentalAdvances(renterId, canWrite);
+  const allocationsQuery = useRenterRentalAdvanceAllocations(renterId, canWrite);
+  const billingProfileQuery = useRentalBillingProfile(canWrite);
   const issueDocument = useIssueRentalInvoiceDocument();
   const staffTopup = useStaffRenterWalletTopup();
   const reverseTopup = useReverseRenterWalletTopup();
@@ -1224,7 +1224,7 @@ function FinanceTab({
         </div>
       ) : null}
 
-      {extended ? (
+      {canWrite && extended ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <StatBox label={t("rentalInvoices.totalDebt")} value={formatCurrency(extended.totalDebt)} highlight={extended.totalDebt > 0} />
           <StatBox label={t("rentalInvoices.advanceBalance")} value={formatCurrency(extended.advanceBalance)} />
@@ -1233,10 +1233,11 @@ function FinanceTab({
           <StatBox label={t("rentalInvoices.uninvoicedDebt")} value={formatCurrency(extended.uninvoicedRentalDebt)} />
           <StatBox label={t("rentalInvoices.overdueAmount")} value={formatCurrency(extended.overdueAmount)} highlight={extended.overdueAmount > 0} />
         </div>
-      ) : rentalFinanceQuery.isLoading ? (
+      ) : canWrite && rentalFinanceQuery.isLoading ? (
         <p className="text-xs text-slate-400">{t("common.loading.default")}</p>
       ) : null}
 
+      {canWrite ? (
       <div>
         <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("rentalInvoices.title")}</h4>
         {invoices.length === 0 ? (
@@ -1316,8 +1317,9 @@ function FinanceTab({
           </div>
         )}
       </div>
+      ) : null}
 
-      {advances.length > 0 ? (
+      {canWrite && advances.length > 0 ? (
         <div>
           <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("rentalInvoices.advancesTitle")}</h4>
           <ul className="text-xs space-y-1">
@@ -1336,6 +1338,7 @@ function FinanceTab({
         </div>
       ) : null}
 
+      {canWrite ? (
       <RentalAdvanceAllocationHistory
         allocations={allocations}
         canWrite={canWrite}
@@ -1344,6 +1347,7 @@ function FinanceTab({
         formatDate={formatDate}
         t={t}
       />
+      ) : null}
 
       {withDebt.length > 0 ? (
         <div>

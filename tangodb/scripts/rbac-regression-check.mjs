@@ -188,6 +188,11 @@ assert(
   "admin no schedule.write when flag off (FC4)"
 );
 assert(!can("admin", "renters.finance.read", optsFor("admin")), "admin no renters.finance.read (FC4)");
+assert(!can("admin", "renters.balance.write", optsFor("admin")), "admin no renter balance by default");
+assert(
+  can("admin", "renters.balance.write", { ...optsFor("admin"), adminCanManageRenterBalance: true }),
+  "admin renter balance when flag on"
+);
 assert(!can("teacher", "rentals.payments.write", optsFor("teacher")), "teacher no rental cash");
 assert(canAccessRentalInboxRoute("admin", defaultModules, optsFor("admin")), "admin rental inbox route");
 assert(canAccessRentalInboxRoute("accountant", defaultModules, optsFor("accountant")), "accountant rental inbox route");

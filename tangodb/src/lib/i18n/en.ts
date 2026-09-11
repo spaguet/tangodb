@@ -2930,6 +2930,8 @@ export const EN: Record<I18nKey, string> = {
   "settings.org.role.adminExport": "Admin can export CSV",
   "settings.org.role.adminManageTeam": "Admin can manage team",
   "settings.org.role.adminAcceptPayments": "Admin can accept payments",
+  "settings.org.role.adminManageRenterBalance": "Admin can change renter balances",
+  "settings.org.role.adminManageRenterBalanceHint": "Top up and refund the Mini App wallet on the renter card. Lesson and hall-rental cash still need “accept payments”.",
   "settings.org.role.teachersRecordSingleVisits": "Teachers can record single visits",
   "settings.org.role.adminRecordSingleVisits": "Admin can record single visits",
   "settings.org.role.adminEditSchedule": "Admin can edit schedule",

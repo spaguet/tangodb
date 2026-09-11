@@ -80,6 +80,21 @@ BEGIN
     'method', 'cash'
   ));
   PERFORM _test_assert((v_preview ->> 'success')::boolean, 'FC4 admin preview topup effect');
+  PERFORM _test_assert(NOT member_can_manage_renter_balance(), 'FC4 admin no wallet flag by default');
+
+  UPDATE organization_settings
+  SET admin_can_manage_renter_balance = true
+  WHERE organization_id = v_org;
+
+  PERFORM _test_assert(member_can_manage_renter_balance(), 'FC4 admin wallet flag on');
+  PERFORM _test_assert(member_can_read_renter_finance(), 'FC4 admin finance-read via wallet flag');
+  PERFORM _test_assert(member_can_read_renter_directory(), 'FC4 admin directory via wallet flag');
+
+  UPDATE organization_settings
+  SET admin_can_manage_renter_balance = false
+  WHERE organization_id = v_org;
+
+  PERFORM _test_assert(NOT member_can_read_renter_finance(), 'FC4 admin finance-read off when wallet flag off');
 
   -- Payment flag off → no payments
   UPDATE organization_settings

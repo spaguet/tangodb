@@ -111,6 +111,7 @@ export interface OrganizationSettings {
   admin_can_export: boolean;
   admin_can_manage_team: boolean;
   admin_can_accept_payments: boolean;
+  admin_can_manage_renter_balance: boolean;
   admin_can_edit_schedule: boolean;
   teachers_can_record_single_visits: boolean;
   admin_can_record_single_visits: boolean;

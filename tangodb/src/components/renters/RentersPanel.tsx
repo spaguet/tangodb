@@ -13,8 +13,9 @@ import {
 import type { ToastType } from "../../App";
 import type { RenterCounterpartyType, RenterDebtFilter, RenterDuplicateMatch, RenterStatus } from "../../types";
 import { parseTelegramIdInput } from "../../lib/renterNormalize";
+import { canSeeRenterFinance } from "../../lib/permissions";
 import { useI18n } from "../../hooks/useI18n";
-import { useCan } from "../../hooks/usePermissions";
+import { useCan, usePermissions } from "../../hooks/usePermissions";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import {
   useCheckRenterDuplicates,
@@ -44,8 +45,9 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
   const { t, formatDate } = useI18n();
   const navigate = useNavigate();
   const { connectionState } = useOnlineStatus();
+  const { role, options } = usePermissions();
   const canOpenContacts = useCan("renters.contacts.read");
-  const canSeeFinance = useCan("renters.finance.read");
+  const canSeeFinance = canSeeRenterFinance(role, options);
   const canNavigateToDetail = canOpenContacts || canSeeFinance;
   const financeOnlyList = canSeeFinance && !canOpenContacts;
 

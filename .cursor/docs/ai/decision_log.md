@@ -12,6 +12,15 @@
 
 ## Записи
 
+### HALL-RENT-ADMIN-BALANCE — admin wallet override (2026-09-11)
+
+- **Дата:** 2026-09-11
+- **Решение:** Отдельный org-флаг `admin_can_manage_renter_balance` (default off). UI: `renters.balance.write` открывает вкладку Финансы и кошелёк на карточке арендатора, не выдаёт `renters.finance.read` (счета/авансы остаются у owner/director/accountant). SQL: `member_can_read_renter_finance()` = `can_read_financial() OR member_can_manage_renter_balance()`. Запись кошелька по-прежнему через `member_can_record_rental_payment()` (`admin_can_accept_payments`). Reception/teacher не входят.
+- **Контекст:** FC4 оставил admin на inbox+preview без карточки кошелька. Владелец просит явно выдать администратору пополнение/возврат баланса в настройках организации.
+- **Альтернативы:** (1) расширить `admin_can_accept_payments` (default on — все админы сразу видят финансы); (2) выдать полный `renters.finance.read`.
+- **Почему так:** opt-in не ломает FC4; occupancy и контакты не открываются вместе с кошельком; счета/авансы остаются финансовым контуром.
+
+
 ### HALL-RENT-TOPUP-3 — чеки и алерты CRM в разных чатах (2026-09-10)
 
 - **Дата:** 2026-09-10

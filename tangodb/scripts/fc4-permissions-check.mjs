@@ -26,6 +26,14 @@ if (can("admin", "renters.finance.read", adminOpts)) {
   console.error("FAIL: admin must not have renters.finance.read");
   process.exit(1);
 }
+if (can("admin", "renters.balance.write", adminOpts)) {
+  console.error("FAIL: admin must not have renters.balance.write by default");
+  process.exit(1);
+}
+if (!can("admin", "renters.balance.write", { ...adminOpts, adminCanManageRenterBalance: true })) {
+  console.error("FAIL: admin with renter-balance flag must have renters.balance.write");
+  process.exit(1);
+}
 if (can("admin", "renters.contacts.read", paymentOnlyAdmin)) {
   console.error("FAIL: admin payment-only must not have renters.contacts.read");
   process.exit(1);
