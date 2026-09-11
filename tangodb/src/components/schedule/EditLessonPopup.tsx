@@ -5,7 +5,6 @@ import {
   useAddGroupSchedule,
   useDeleteScheduleSlot,
   useEditGroupSchedule,
-  useUpdateGroupScheduleMetadata,
   useUpdateGroupScheduleValidity,
 } from "../../hooks/useSchedule";
 import { useAddPersonalLessons, usePersonalLessons, useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
@@ -234,7 +233,6 @@ export default function EditLessonPopup({
   const { role, can, canEditPastSchedule } = usePermissions();
   const { connectionState } = useOnlineStatus();
   const editGroupSchedule = useEditGroupSchedule();
-  const updateGroupScheduleMetadata = useUpdateGroupScheduleMetadata();
   const updateGroupScheduleValidity = useUpdateGroupScheduleValidity();
   const addGroupSchedule = useAddGroupSchedule();
   const deleteScheduleSlot = useDeleteScheduleSlot();
@@ -311,7 +309,7 @@ export default function EditLessonPopup({
       setTimeStart(lesson.timeStart);
       setTimeEnd(lesson.timeEnd);
 
-      const rows = pickGroupSlotsForEdit(lesson, scheduleSlots, todayISO);
+      const rows = pickGroupSlotsForEdit(lesson, scheduleSlots, lesson.date);
 
       setGroupSlotRows(rows);
       setOriginalGroupSlots(rows.map((row) => ({ ...row })));
@@ -341,7 +339,7 @@ export default function EditLessonPopup({
       setPersonalSeriesAnchor(buildPersonalSeriesAnchor(lesson));
       setSelectedLessonTariffId(lesson.priceId ?? "");
     }
-  }, [editLessonKey, lesson, scheduleSlots, teacherOptions, memberId, isTeacher, todayISO, directoryClients]);
+  }, [editLessonKey, lesson, scheduleSlots, teacherOptions, memberId, isTeacher, directoryClients]);
 
   const personalSeriesLookupQuery = usePersonalLessons({
     dateRange:
@@ -432,7 +430,7 @@ export default function EditLessonPopup({
         continue;
       }
 
-      const conflictDate = dateForDayOfWeekInWeek(todayISO, row.dayOfWeek);
+      const conflictDate = dateForDayOfWeekInWeek(lesson.date, row.dayOfWeek);
       const external = findScheduleConflict(
         {
           date: conflictDate,
@@ -452,7 +450,7 @@ export default function EditLessonPopup({
     }
 
     return conflicts;
-  }, [lesson, groupSlotRows, personalLessons, scheduleSlots, t, locale, todayISO]);
+  }, [lesson, groupSlotRows, personalLessons, scheduleSlots, t, locale]);
 
   const hasGroupSlotConflicts = groupSlotConflicts.size > 0;
 
@@ -891,28 +889,6 @@ export default function EditLessonPopup({
       return;
     }
 
-    if (metadataChanged && !anySlotStructureChanged && !repeatChanged) {
-      const slotIds = groupSlotRows.map((row) => row.id).filter((id): id is string => Boolean(id));
-      const res = await updateGroupScheduleMetadata.mutateAsync({
-        slotIds,
-        groupName: trimmedGroup,
-        disciplineId,
-        teacherMemberId: resolvedTeacherMemberId,
-      });
-
-      if (!res.success) {
-        toast(resolveMutationError(res.error, "schedule.error.updateFailed", t), "error");
-        return;
-      }
-
-      if (!(await persistGroupMaxCapacity())) return;
-
-      toast(t("schedule.success.groupUpdated"), "success");
-      onSuccess();
-      onClose();
-      return;
-    }
-
     if (!anySlotStructureChanged && repeatChanged && !metadataChanged) {
       const slotIds = groupSlotRows.map((row) => row.id).filter((id): id is string => Boolean(id));
       const updates = slotIds.map((slotId) => {
@@ -929,7 +905,7 @@ export default function EditLessonPopup({
           slotIds: [update.slotId],
           validTo: update.validTo,
         });
-        if (!res.success) {
+        if (res.success === false) {
           toast(resolveMutationError(res.error, "schedule.error.updateFailed", t), "error");
           return;
         }
@@ -943,39 +919,8 @@ export default function EditLessonPopup({
       return;
     }
 
-    if (metadataChanged && !anySlotStructureChanged && repeatChanged) {
-      const slotIds = groupSlotRows.map((row) => row.id).filter((id): id is string => Boolean(id));
-      const metaRes = await updateGroupScheduleMetadata.mutateAsync({
-        slotIds,
-        groupName: trimmedGroup,
-        disciplineId,
-        teacherMemberId: resolvedTeacherMemberId,
-      });
-      if (!metaRes.success) {
-        toast(resolveMutationError(metaRes.error, "schedule.error.updateFailed", t), "error");
-        return;
-      }
-
-      for (const slotId of slotIds) {
-        const slot = scheduleSlots.find((item) => item.id === slotId);
-        const validFrom = slot?.validFrom ?? lesson.date;
-        const res = await updateGroupScheduleValidity.mutateAsync({
-          slotIds: [slotId],
-          validTo: computeSlotValidTo(validFrom, repeatConfig),
-        });
-        if (!res.success) {
-          toast(resolveMutationError(res.error, "schedule.error.updateFailed", t), "error");
-          return;
-        }
-      }
-
-      if (!(await persistGroupMaxCapacity())) return;
-
-      toast(t("schedule.success.groupUpdated"), "success");
-      onSuccess();
-      onClose();
-      return;
-    }
+    const versionedSlotIds = new Set<string>();
+    const versionFromDate = lesson.date;
 
     for (const row of groupSlotRows) {
       if (!row.id) continue;
@@ -988,9 +933,10 @@ export default function EditLessonPopup({
 
       if (!slotChanged && !metadataChanged) continue;
 
+      const currentSlot = scheduleSlots.find((item) => item.id === row.id);
       const res = await editGroupSchedule.mutateAsync({
         slotId: row.id,
-        editDate: todayISO,
+        editDate: versionFromDate,
         dayOfWeek: row.dayOfWeek,
         time: row.timeStart,
         timeEnd: row.timeEnd,
@@ -998,17 +944,21 @@ export default function EditLessonPopup({
         disciplineId,
         locationId: lesson.locationId,
         teacherMemberId: resolvedTeacherMemberId,
+        validTo: repeatChanged
+          ? computeSlotValidTo(versionFromDate, repeatConfig)
+          : (currentSlot?.validTo ?? lesson.validTo ?? null),
       });
 
-      if (!res.success) {
+      if (res.success === false) {
         toast(resolveMutationError(res.error, "schedule.error.updateFailed", t), "error");
         return;
       }
+      versionedSlotIds.add(row.id);
     }
 
     for (const row of removedSlots) {
       if (!row.id) continue;
-      const res = await deleteScheduleSlot.mutateAsync({ id: row.id, editDate: todayISO });
+      const res = await deleteScheduleSlot.mutateAsync({ id: row.id, editDate: versionFromDate });
       if (!res.success) {
         toast(resolveMutationError(res.error, "schedule.error.deleteScheduleFailed", t), "error");
         return;
@@ -1040,7 +990,9 @@ export default function EditLessonPopup({
     }
 
     if (repeatChanged) {
-      const slotIds = groupSlotRows.map((row) => row.id).filter((id): id is string => Boolean(id));
+      const slotIds = groupSlotRows
+        .map((row) => row.id)
+        .filter((id): id is string => Boolean(id) && !versionedSlotIds.has(id));
       for (const slotId of slotIds) {
         const slot = scheduleSlots.find((item) => item.id === slotId);
         const validFrom = slot?.validFrom ?? lesson.date;
@@ -1048,7 +1000,7 @@ export default function EditLessonPopup({
           slotIds: [slotId],
           validTo: computeSlotValidTo(validFrom, repeatConfig),
         });
-        if (!res.success) {
+        if (res.success === false) {
           toast(resolveMutationError(res.error, "schedule.error.updateFailed", t), "error");
           return;
         }
@@ -1463,7 +1415,7 @@ export default function EditLessonPopup({
 
   const groupVersionNote =
     lesson?.kind === "group"
-      ? t("schedule.hint.newVersionFrom", { date: formatDate(todayISO) })
+      ? t("schedule.hint.newVersionFrom", { date: formatDate(lesson.date) })
       : null;
 
   const personalEditNote = personalListEdit
@@ -1493,7 +1445,6 @@ export default function EditLessonPopup({
 
   const savePending =
     editGroupSchedule.isPending ||
-    updateGroupScheduleMetadata.isPending ||
     updateGroupScheduleValidity.isPending ||
     addGroupSchedule.isPending ||
     deleteScheduleSlot.isPending ||

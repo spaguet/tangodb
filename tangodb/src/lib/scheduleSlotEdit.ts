@@ -1,4 +1,4 @@
-import { addDays } from "./scheduleWeek";
+import { isRetiredScheduleSlot, isScheduleSlotLiveOnDate } from "./scheduleWeek";
 import type { GroupDisplayLesson, ScheduleSlot } from "../types";
 import type { ScheduleSlotRef } from "./scheduleConflicts";
 
@@ -23,11 +23,11 @@ function slotCoversDate(slot: ScheduleSlot, date: string): boolean {
   return true;
 }
 
-function isActiveSlot(slot: ScheduleSlot): boolean {
-  return slot.validTo == null;
+function isLiveOnEditDate(slot: ScheduleSlot, editDate: string): boolean {
+  return isScheduleSlotLiveOnDate(slot.validFrom ?? "2000-01-01", slot.validTo, editDate);
 }
 
-/** Prefer the slot that should be edited for a given day (active successor > active current > closed). */
+/** Prefer the slot that should be edited for a given day (live successor > covering live > any covering). */
 export function pickBestSlotForDay(
   slots: ScheduleSlot[],
   dayOfWeek: number,
@@ -39,17 +39,18 @@ export function pickBestSlotForDay(
   const successorFrom = editDate;
 
   const activeSuccessor = daySlots.find(
-    (slot) => isActiveSlot(slot) && slot.validFrom === successorFrom
+    (slot) => isLiveOnEditDate(slot, editDate) && slot.validFrom === successorFrom
   );
   if (activeSuccessor) return activeSuccessor;
 
-  const activeCurrent = daySlots.find(
-    (slot) => isActiveSlot(slot) && (slot.validFrom ?? "2000-01-01") <= editDate
-  );
+  const activeCurrent = daySlots.find((slot) => isLiveOnEditDate(slot, editDate));
   if (activeCurrent) return activeCurrent;
 
-  const anyActive = daySlots.find((slot) => isActiveSlot(slot));
-  if (anyActive) return anyActive;
+  const anyFutureLive = daySlots.find((slot) => {
+    const validFrom = slot.validFrom ?? "2000-01-01";
+    return !isRetiredScheduleSlot(validFrom, slot.validTo) && validFrom > editDate;
+  });
+  if (anyFutureLive) return anyFutureLive;
 
   return daySlots.find((slot) => slotCoversDate(slot, editDate));
 }

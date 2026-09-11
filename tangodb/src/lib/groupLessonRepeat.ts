@@ -58,11 +58,15 @@ export function inferGroupRepeatConfig(validFrom: string, validTo: string | null
     };
   }
 
-  const weekCount = Math.floor(daysBetween(validFrom, validTo) / 7) + 1;
+  const spanDays = daysBetween(validFrom, validTo);
+  const weekCount = Math.max(2, Math.floor(spanDays / 7) + 1);
+  // weeks mode stores valid_to = validFrom + N*7 - 1 (day before the next occurrence).
+  const alignsToWeekCountEnd = spanDays >= 6 && (spanDays + 1) % 7 === 0;
+
   return {
     repeatWeekly: true,
-    endMode: "weeks",
-    weekCount: Math.max(2, weekCount),
+    endMode: alignsToWeekCountEnd ? "weeks" : "date",
+    weekCount,
     endDate: validTo,
   };
 }

@@ -157,7 +157,7 @@ export default function ScheduleMissingTeachersBlock({
           disciplineId,
           teacherMemberId: teacherId,
         });
-        if (!res.success) {
+        if (res.success === false) {
           const message = res.error && isI18nKey(res.error) ? t(res.error) : res.error;
           toast(message ?? t("schedule.error.updateFailed"), "error");
           return;

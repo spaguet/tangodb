@@ -5,8 +5,10 @@ import {
   addDays,
   computeScheduleSlotClosingValidTo,
   expandSlotsToWeek,
+  isScheduleSlotLiveOnDate,
   nextOccurrenceOnOrAfter,
   normalizeTime,
+  successorVersionValidTo,
   toISODateLocal,
 } from "../lib/scheduleWeek";
 import type { DisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, ScheduleSlot, EventDisplayLesson, RentalDisplayLesson } from "../types";
@@ -370,20 +372,33 @@ function mapScheduleMutationError(error: { code?: string; message: string }): st
   return "schedule.error.updateFailed";
 }
 
+type ScheduleWriteResult = { success: true } | { success: false; error: string };
+
+type ScheduleSlotPatch = {
+  group_name?: string;
+  discipline_id?: string | null;
+  teacher_member_id?: string | null;
+  day_of_week?: number;
+  time?: string;
+  time_end?: string;
+  location_id?: string | null;
+  valid_to?: string | null;
+};
+
 async function findActiveSuccessorSlotId(
   organizationId: string,
   editDate: string,
   dayOfWeek: number,
-  locationId: string | null
+  locationId: string | null,
+  classId?: string | null
 ): Promise<string | null> {
-  const newValidFrom = editDate;
   let query = supabase
     .from(scheduleTable)
-    .select("id")
+    .select("id, valid_from, valid_to")
     .eq("organization_id", organizationId)
     .eq("day_of_week", dayOfWeek)
-    .eq("valid_from", newValidFrom)
-    .is("valid_to", null);
+    .eq("valid_from", editDate)
+    .or(`valid_to.is.null,valid_to.gte.${editDate}`);
 
   if (locationId) {
     query = query.eq("location_id", locationId);
@@ -391,9 +406,45 @@ async function findActiveSuccessorSlotId(
     query = query.is("location_id", null);
   }
 
-  const { data, error } = await query.maybeSingle();
+  if (classId) {
+    query = query.eq("class_id", classId);
+  }
+
+  const { data, error } = await query.limit(8);
   if (error) throw error;
-  return data?.id != null ? String(data.id) : null;
+
+  const match = (data ?? []).find((row) =>
+    isScheduleSlotLiveOnDate(
+      String(row.valid_from ?? editDate).slice(0, 10),
+      row.valid_to != null ? String(row.valid_to).slice(0, 10) : null,
+      editDate
+    )
+  );
+  return match?.id != null ? String(match.id) : null;
+}
+
+async function updateScheduleSlotsByIds(
+  slotIds: string[],
+  payload: ScheduleSlotPatch
+): Promise<ScheduleWriteResult> {
+  const uniqueIds = [...new Set(slotIds)];
+  if (uniqueIds.length === 0) {
+    return { success: false as const, error: "schedule.error.slotNotFound" };
+  }
+
+  const { data, error } = await supabase
+    .from(scheduleTable)
+    .update(payload)
+    .in("id", uniqueIds)
+    .select("id");
+
+  if (error) {
+    return { success: false as const, error: mapScheduleMutationError(error) };
+  }
+  if (!data?.length) {
+    return { success: false as const, error: "schedule.error.slotNotFound" };
+  }
+  return { success: true as const };
 }
 
 export function useUpdateGroupScheduleMetadata() {
@@ -411,25 +462,12 @@ export function useUpdateGroupScheduleMetadata() {
       groupName: string;
       disciplineId: string;
       teacherMemberId: string | null;
-    }) => {
-      if (slotIds.length === 0) {
-        return { success: false as const, error: "schedule.error.slotNotFound" };
-      }
-
-      const { error } = await supabase
-        .from(scheduleTable)
-        .update({
-          group_name: groupName.trim(),
-          discipline_id: disciplineId,
-          teacher_member_id: teacherMemberId,
-        })
-        .in("id", slotIds)
-        .is("valid_to", null);
-
-      if (error) {
-        return { success: false as const, error: mapScheduleMutationError(error) };
-      }
-      return { success: true as const };
+    }): Promise<ScheduleWriteResult> => {
+      return updateScheduleSlotsByIds(slotIds, {
+        group_name: groupName.trim(),
+        discipline_id: disciplineId,
+        teacher_member_id: teacherMemberId,
+      });
     },
     onSuccess: (result) => {
       if (result.success) invalidateScheduleQueries(queryClient, organizationId);
@@ -452,6 +490,7 @@ export function useEditGroupSchedule() {
       disciplineId,
       locationId,
       teacherMemberId,
+      validTo,
     }: {
       slotId: string;
       editDate: string;
@@ -462,7 +501,8 @@ export function useEditGroupSchedule() {
       disciplineId: string;
       locationId: string | null;
       teacherMemberId: string | null;
-    }) => {
+      validTo?: string | null;
+    }): Promise<ScheduleWriteResult> => {
       if (!organizationId) {
         return { success: false as const, error: "onboarding.error.noOrgSelected" };
       }
@@ -481,7 +521,7 @@ export function useEditGroupSchedule() {
 
       const { data: existing, error: fetchError } = await supabase
         .from(scheduleTable)
-        .select("valid_to")
+        .select("valid_from, valid_to, class_id")
         .eq("id", slotId)
         .maybeSingle();
 
@@ -492,72 +532,53 @@ export function useEditGroupSchedule() {
         return { success: false as const, error: "schedule.error.slotNotFound" };
       }
 
+      const existingValidFrom = String(existing.valid_from ?? "2000-01-01").slice(0, 10);
       const existingValidTo =
         existing.valid_to != null ? String(existing.valid_to).slice(0, 10) : null;
+      const classId = existing.class_id != null ? String(existing.class_id) : null;
+      const nextValidTo = successorVersionValidTo(existingValidTo, editDate, validTo);
+      const liveOnEditDate = isScheduleSlotLiveOnDate(
+        existingValidFrom,
+        existingValidTo,
+        editDate
+      );
+      const writePayload = { ...versionPayload, valid_to: nextValidTo };
 
-      if (existingValidTo != null) {
-        const successorId = await findActiveSuccessorSlotId(
-          organizationId,
-          editDate,
-          dayOfWeek,
-          locationId
-        );
-
-        if (successorId) {
-          const { error: updateError } = await supabase
-            .from(scheduleTable)
-            .update(versionPayload)
-            .eq("id", successorId);
-
-          if (updateError) {
-            return { success: false as const, error: mapScheduleMutationError(updateError) };
-          }
-          return { success: true as const };
-        }
-
+      const insertSuccessor = async () => {
         const { error: insertError } = await supabase.from(scheduleTable).insert({
           organization_id: organizationId,
           ...versionPayload,
           valid_from: newValidFrom,
+          valid_to: nextValidTo,
+          ...(classId ? { class_id: classId } : {}),
         });
-
         if (insertError) {
           return { success: false as const, error: mapScheduleMutationError(insertError) };
         }
         return { success: true as const };
+      };
+
+      const rollbackClose = async () => {
+        await supabase.from(scheduleTable).update({ valid_to: existingValidTo }).eq("id", slotId);
+      };
+
+      if (liveOnEditDate && existingValidFrom === editDate) {
+        return updateScheduleSlotsByIds([slotId], writePayload);
       }
 
       const successorId = await findActiveSuccessorSlotId(
         organizationId,
         editDate,
         dayOfWeek,
-        locationId
+        locationId,
+        classId
       );
 
-      if (successorId) {
-        const closeResult = await closeScheduleSlotByDate(slotId, editDate);
-        if (closeResult.success === false) {
-          return { success: false as const, error: closeResult.error };
+      if (!liveOnEditDate) {
+        if (successorId && successorId !== slotId) {
+          return updateScheduleSlotsByIds([successorId], writePayload);
         }
-
-        const { error: updateError } = await supabase
-          .from(scheduleTable)
-          .update(versionPayload)
-          .eq("id", successorId);
-
-        if (updateError) {
-          const { error: rollbackError } = await supabase
-            .from(scheduleTable)
-            .update({ valid_to: null })
-            .eq("id", slotId);
-
-          if (rollbackError) {
-            return { success: false as const, error: mapScheduleMutationError(updateError) };
-          }
-
-          return { success: false as const, error: mapScheduleMutationError(updateError) };
-        }
-        return { success: true as const };
+        return insertSuccessor();
       }
 
       const closeResult = await closeScheduleSlotByDate(slotId, editDate);
@@ -565,25 +586,20 @@ export function useEditGroupSchedule() {
         return { success: false as const, error: closeResult.error };
       }
 
-      const { error: insertError } = await supabase.from(scheduleTable).insert({
-        organization_id: organizationId,
-        ...versionPayload,
-        valid_from: newValidFrom,
-      });
-
-      if (insertError) {
-        const { error: rollbackError } = await supabase
-          .from(scheduleTable)
-          .update({ valid_to: null })
-          .eq("id", slotId);
-
-        if (rollbackError) {
-          return { success: false as const, error: mapScheduleMutationError(insertError) };
+      if (successorId && successorId !== slotId) {
+        const updated = await updateScheduleSlotsByIds([successorId], writePayload);
+        if (!updated.success) {
+          await rollbackClose();
+          return updated;
         }
-
-        return { success: false as const, error: mapScheduleMutationError(insertError) };
+        return { success: true as const };
       }
 
+      const inserted = await insertSuccessor();
+      if (!inserted.success) {
+        await rollbackClose();
+        return inserted;
+      }
       return { success: true as const };
     },
     onSuccess: (result) => {
@@ -603,20 +619,8 @@ export function useUpdateGroupScheduleValidity() {
     }: {
       slotIds: string[];
       validTo: string | null;
-    }) => {
-      if (slotIds.length === 0) {
-        return { success: false as const, error: "schedule.error.slotNotFound" };
-      }
-
-      const { error } = await supabase
-        .from(scheduleTable)
-        .update({ valid_to: validTo })
-        .in("id", slotIds);
-
-      if (error) {
-        return { success: false as const, error: mapScheduleMutationError(error) };
-      }
-      return { success: true as const };
+    }): Promise<ScheduleWriteResult> => {
+      return updateScheduleSlotsByIds(slotIds, { valid_to: validTo });
     },
     onSuccess: (result) => {
       if (result.success) invalidateScheduleQueries(queryClient, organizationId);

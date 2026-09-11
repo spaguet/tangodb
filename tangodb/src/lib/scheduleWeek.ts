@@ -34,6 +34,33 @@ export function isRetiredScheduleSlot(validFrom: string, validTo: string | null 
   return validTo != null && validTo < validFrom;
 }
 
+/** Slot occupies `date` (not a tombstone; inclusive valid_from…valid_to, null valid_to = open-ended). */
+export function isScheduleSlotLiveOnDate(
+  validFrom: string,
+  validTo: string | null | undefined,
+  date: string
+): boolean {
+  if (isRetiredScheduleSlot(validFrom, validTo)) return false;
+  if (validFrom > date) return false;
+  if (validTo != null && validTo < date) return false;
+  return true;
+}
+
+/**
+ * valid_to for a new version starting on editDate.
+ * Finite series keep their end date; `requestedValidTo` wins when the user changed recurrence.
+ */
+export function successorVersionValidTo(
+  existingValidTo: string | null,
+  editDate: string,
+  requestedValidTo?: string | null
+): string | null {
+  if (requestedValidTo !== undefined) return requestedValidTo;
+  if (existingValidTo == null) return null;
+  if (existingValidTo < editDate) return null;
+  return existingValidTo;
+}
+
 /** Close slot before closingDate. Closing on valid_from yields a non-occupying tombstone (valid_from - 1). */
 export function computeScheduleSlotClosingValidTo(_validFrom: string, closingDate: string): string {
   return addDays(closingDate, -1);
