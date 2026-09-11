@@ -382,7 +382,7 @@ Deno.serve(async (req) => {
   let lifetimeKeyHash: string | null = null;
   let plaintextKey: string | null = null;
 
-  if (requestKind === "crm_license") {
+  if (requestKind === "crm_license" && purchaseRequest.status !== "activated") {
     const pepper = Deno.env.get("ACCESS_KEY_PEPPER");
     if (!pepper) {
       return jsonResponse({ error: "Service unavailable" }, 500, req);
