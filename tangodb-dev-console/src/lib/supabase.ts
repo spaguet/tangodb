@@ -86,10 +86,22 @@ export async function loadPaymentConfig(): Promise<{ config: unknown; updatedAt:
   };
 }
 
-export async function savePaymentConfig(config: unknown): Promise<string | null> {
-  const result = await invokeDevFunction<{ updated_at: string | null }>("dev-console-payment-methods", {
+export async function savePaymentConfig(
+  config: unknown,
+  expectedPricingRevision: number
+): Promise<{ updatedAt: string | null; pricingRevision: number; config: unknown }> {
+  const result = await invokeDevFunction<{
+    updated_at: string | null;
+    pricing_revision?: number;
+    config?: unknown;
+  }>("dev-console-payment-methods", {
     action: "update",
     config,
+    expected_pricing_revision: expectedPricingRevision,
   });
-  return result.updated_at ?? null;
+  return {
+    updatedAt: result.updated_at ?? null,
+    pricingRevision: result.pricing_revision ?? expectedPricingRevision,
+    config: result.config ?? config,
+  };
 }

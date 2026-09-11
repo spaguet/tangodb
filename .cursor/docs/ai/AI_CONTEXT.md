@@ -38,5 +38,6 @@ project/
 | Аудит безопасности CRM 2026-08-22 + промпты S01–S40 + хвост восьмой сверки | `.cursor/docs/ai/crm_security_audit_2026-08-22.md` |
 | Самообслуживание арендаторов (Telegram Mini App, кошелёк, холды) | `.cursor/docs/ai/renter_telegram_miniapp.md` (§1–§7 спека; **§8 промпты R0–R6**) |
 | Аудит Mini App 2026-09-03 + промпты починки F0a–FZ | `.cursor/docs/ai/renter_miniapp_audit_2026-09-03.md` (§1–§10 аудит; **§11 промпты F0a–FZ**) |
+| Месячная подписка CRM + платформенный бот поддержки | `.cursor/docs/ai/crm_monthly_subscription_and_support_bot.md` (§1–§15 спека; **§16 промпты S0–S7** с чекбоксами) |
 
 Не загружай остальные файлы без необходимости.

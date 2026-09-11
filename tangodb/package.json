@@ -1,13 +1,14 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.10.39",
+  "version": "2.11.1",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
+    "test:platform-payment-contract": "node scripts/platform-payment-contract-check.mjs",
     "migrate": "node scripts/migrate.mjs",
     "import:org:dry-run": "node scripts/import-org.mjs --dry-run",
     "import:org": "node scripts/import-org.mjs --apply",

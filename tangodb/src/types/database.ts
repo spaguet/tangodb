@@ -2598,6 +2598,7 @@ export type Database = {
       }
       organization_subscriptions: {
         Row: {
+          billing_anchor_day: number | null
           billing_period: string
           created_at: string
           current_period_end: string | null
@@ -2612,6 +2613,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          billing_anchor_day?: number | null
           billing_period: string
           created_at?: string
           current_period_end?: string | null
@@ -2626,6 +2628,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          billing_anchor_day?: number | null
           billing_period?: string
           created_at?: string
           current_period_end?: string | null
@@ -2728,6 +2731,7 @@ export type Database = {
           name: string
           owner_user_id: string | null
           payment_ref: string | null
+          purchase_review_hold_until: string | null
           schema_version_locked: boolean
           slug: string | null
           status: string
@@ -2743,6 +2747,7 @@ export type Database = {
           name: string
           owner_user_id?: string | null
           payment_ref?: string | null
+          purchase_review_hold_until?: string | null
           schema_version_locked?: boolean
           slug?: string | null
           status?: string
@@ -2758,6 +2763,7 @@ export type Database = {
           name?: string
           owner_user_id?: string | null
           payment_ref?: string | null
+          purchase_review_hold_until?: string | null
           schema_version_locked?: boolean
           slug?: string | null
           status?: string
@@ -3424,20 +3430,85 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_purchase_quotes: {
+        Row: {
+          amount: string
+          consumed_at: string | null
+          created_at: string
+          currency: string
+          expires_at: string
+          id: string
+          method_code: string
+          organization_id: string
+          payment_details_snapshot: string
+          pricing_revision: number
+          qr_sha256: string | null
+          requester_user_id: string
+          sku: string
+        }
+        Insert: {
+          amount: string
+          consumed_at?: string | null
+          created_at?: string
+          currency: string
+          expires_at: string
+          id?: string
+          method_code: string
+          organization_id: string
+          payment_details_snapshot: string
+          pricing_revision: number
+          qr_sha256?: string | null
+          requester_user_id: string
+          sku: string
+        }
+        Update: {
+          amount?: string
+          consumed_at?: string | null
+          created_at?: string
+          currency?: string
+          expires_at?: string
+          id?: string
+          method_code?: string
+          organization_id?: string
+          payment_details_snapshot?: string
+          pricing_revision?: number
+          qr_sha256?: string | null
+          requester_user_id?: string
+          sku?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_purchase_quotes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_purchase_requests: {
         Row: {
           access_key_id: string | null
           activated_at: string | null
           activated_by: string | null
+          activated_period_end: string | null
+          activated_period_start: string | null
+          amount: string | null
+          client_request_id: string | null
           closed_at: string | null
           contact_email: string | null
           contact_telegram: string | null
           created_at: string
+          currency: string | null
           email_sent: boolean
           id: string
+          method_code: string | null
           organization_id: string
           organization_name: string
           payment_comment: string
+          payment_details_fingerprint: string | null
+          pricing_revision: number | null
+          quote_id: string | null
           request_kind: string
           requester_email: string | null
           requester_user_id: string
@@ -3448,15 +3519,24 @@ export type Database = {
           access_key_id?: string | null
           activated_at?: string | null
           activated_by?: string | null
+          activated_period_end?: string | null
+          activated_period_start?: string | null
+          amount?: string | null
+          client_request_id?: string | null
           closed_at?: string | null
           contact_email?: string | null
           contact_telegram?: string | null
           created_at?: string
+          currency?: string | null
           email_sent?: boolean
           id?: string
+          method_code?: string | null
           organization_id: string
           organization_name: string
           payment_comment: string
+          payment_details_fingerprint?: string | null
+          pricing_revision?: number | null
+          quote_id?: string | null
           request_kind?: string
           requester_email?: string | null
           requester_user_id: string
@@ -3467,15 +3547,24 @@ export type Database = {
           access_key_id?: string | null
           activated_at?: string | null
           activated_by?: string | null
+          activated_period_end?: string | null
+          activated_period_start?: string | null
+          amount?: string | null
+          client_request_id?: string | null
           closed_at?: string | null
           contact_email?: string | null
           contact_telegram?: string | null
           created_at?: string
+          currency?: string | null
           email_sent?: boolean
           id?: string
+          method_code?: string | null
           organization_id?: string
           organization_name?: string
           payment_comment?: string
+          payment_details_fingerprint?: string | null
+          pricing_revision?: number | null
+          quote_id?: string | null
           request_kind?: string
           requester_email?: string | null
           requester_user_id?: string
@@ -3495,6 +3584,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_purchase_requests_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "platform_purchase_quotes"
             referencedColumns: ["id"]
           },
         ]

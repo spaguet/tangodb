@@ -1,10 +1,23 @@
+import {
+  parsePlatformPaymentConfig,
+  resolvePaymentQuote as resolvePlatformPaymentQuote,
+  type CrmPrice,
+  type PaymentQuoteResult,
+  type PlatformPaymentSku,
+} from "./platformPaymentContract.ts";
+
+export type { CrmPrice, PaymentQuoteResult, PlatformPaymentSku };
+
 export interface CryptoPaymentMethod {
+  id?: string;
   coin: string;
   network: string;
   address: string;
   uriTemplate?: string;
   amount?: string;
   currency?: string;
+  monthlyAmount?: string;
+  monthlyCurrency?: string;
   qrImageUrl?: string;
 }
 
@@ -17,6 +30,8 @@ export interface BankTransferConfig {
   note: string;
   amount?: string;
   currency?: string;
+  monthlyAmount?: string;
+  monthlyCurrency?: string;
   qrImageUrl?: string;
 }
 
@@ -27,6 +42,8 @@ export interface MirPaymentConfig {
   note: string;
   amount?: string;
   currency?: string;
+  monthlyAmount?: string;
+  monthlyCurrency?: string;
   qrImageUrl?: string;
 }
 
@@ -37,6 +54,8 @@ export interface VietnameseBankTransferConfig {
   note: string;
   amount?: string;
   currency?: string;
+  monthlyAmount?: string;
+  monthlyCurrency?: string;
   qrImageUrl?: string;
 }
 
@@ -52,6 +71,10 @@ export interface RenterMiniappAddonPrice {
 }
 
 export interface ManualPaymentConfig {
+  schemaVersion?: number;
+  pricingRevision?: number;
+  crmLifetime?: CrmPrice | null;
+  crmMonthly?: CrmPrice | null;
   crypto?: CryptoPaymentMethod[];
   bankTransfer?: BankTransferConfig | null;
   vietnameseBankTransfer?: VietnameseBankTransferConfig | null;
@@ -62,24 +85,31 @@ export interface ManualPaymentConfig {
 
 const EMPTY_CONFIG: ManualPaymentConfig = {};
 
+export function resolvePaymentQuote(
+  rawConfig: unknown,
+  sku: PlatformPaymentSku,
+  methodCode: string
+): PaymentQuoteResult {
+  return resolvePlatformPaymentQuote(rawConfig, sku, methodCode);
+}
+
 export function parseManualPaymentConfig(raw: unknown): ManualPaymentConfig {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return EMPTY_CONFIG;
+  const parsed = parsePlatformPaymentConfig(raw);
   const value = raw as Record<string, unknown>;
 
-  const crypto = Array.isArray(value.crypto)
-    ? value.crypto
-        .filter((row): row is Record<string, unknown> => !!row && typeof row === "object")
-        .map((row) => ({
-          coin: String(row.coin ?? "").trim(),
-          network: String(row.network ?? "").trim(),
-          address: String(row.address ?? "").trim(),
-          uriTemplate: row.uriTemplate ? String(row.uriTemplate).trim() : undefined,
-          amount: row.amount ? String(row.amount).trim() : undefined,
-          currency: row.currency ? String(row.currency).trim() : undefined,
-          qrImageUrl: row.qrImageUrl ? String(row.qrImageUrl).trim() : undefined,
-        }))
-        .filter((row) => row.coin && row.address)
-    : undefined;
+  const crypto = parsed.crypto?.map((row) => ({
+    id: row.id,
+    coin: row.coin,
+    network: row.network,
+    address: row.address,
+    uriTemplate: row.uriTemplate,
+    amount: row.amount,
+    currency: row.currency,
+    monthlyAmount: row.monthlyAmount,
+    monthlyCurrency: row.monthlyCurrency,
+    qrImageUrl: row.qrImageUrl,
+  }));
 
   const bankTransfer =
     value.bankTransfer && typeof value.bankTransfer === "object" && !Array.isArray(value.bankTransfer)
@@ -111,6 +141,10 @@ export function parseManualPaymentConfig(raw: unknown): ManualPaymentConfig {
       : null;
 
   return {
+    schemaVersion: parsed.schemaVersion,
+    pricingRevision: parsed.pricingRevision,
+    crmLifetime: parsed.crmLifetime,
+    crmMonthly: parsed.crmMonthly,
     crypto: crypto?.length ? crypto : undefined,
     bankTransfer: bankTransfer?.beneficiary || bankTransfer?.ibanOrAccount ? bankTransfer : null,
     vietnameseBankTransfer:
@@ -133,6 +167,8 @@ function normalizeBankTransfer(row: Record<string, unknown>): BankTransferConfig
     note: String(row.note ?? "").trim(),
     amount: row.amount ? String(row.amount).trim() : undefined,
     currency: row.currency ? String(row.currency).trim() : undefined,
+    monthlyAmount: row.monthlyAmount ? String(row.monthlyAmount).trim() : undefined,
+    monthlyCurrency: row.monthlyCurrency ? String(row.monthlyCurrency).trim() : undefined,
     qrImageUrl: row.qrImageUrl ? String(row.qrImageUrl).trim() : undefined,
   };
 }
@@ -145,6 +181,8 @@ function normalizeMir(row: Record<string, unknown>): MirPaymentConfig {
     note: String(row.note ?? "").trim(),
     amount: row.amount ? String(row.amount).trim() : undefined,
     currency: row.currency ? String(row.currency).trim() : undefined,
+    monthlyAmount: row.monthlyAmount ? String(row.monthlyAmount).trim() : undefined,
+    monthlyCurrency: row.monthlyCurrency ? String(row.monthlyCurrency).trim() : undefined,
     qrImageUrl: row.qrImageUrl ? String(row.qrImageUrl).trim() : undefined,
   };
 }
@@ -157,6 +195,8 @@ function normalizeVietnameseBankTransfer(row: Record<string, unknown>): Vietname
     note: String(row.note ?? "").trim(),
     amount: row.amount ? String(row.amount).trim() : undefined,
     currency: row.currency ? String(row.currency).trim() : undefined,
+    monthlyAmount: row.monthlyAmount ? String(row.monthlyAmount).trim() : undefined,
+    monthlyCurrency: row.monthlyCurrency ? String(row.monthlyCurrency).trim() : undefined,
     qrImageUrl: row.qrImageUrl ? String(row.qrImageUrl).trim() : undefined,
   };
 }

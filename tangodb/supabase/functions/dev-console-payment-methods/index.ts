@@ -5,6 +5,7 @@ import {
   jsonResponse,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { preparePaymentConfigForSave } from "../_shared/platformPaymentContract.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 30;
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "developer_access_required" }, 403, req);
   }
 
-  let body: { action?: string; config?: unknown };
+  let body: { action?: string; config?: unknown; expected_pricing_revision?: number };
   try {
     body = await req.json();
   } catch {
@@ -72,7 +73,28 @@ Deno.serve(async (req) => {
     );
   }
 
-  const config = sanitizeConfig(body.config);
+  const { data: existingRow, error: existingError } = await admin
+    .from("platform_payment_methods")
+    .select("config")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (existingError) {
+    logEvent("dev_console_payment_load_error", { code: existingError.code ?? "unknown" });
+    return jsonResponse({ error: "Load failed" }, 500, req);
+  }
+
+  const prepared = preparePaymentConfigForSave(
+    sanitizeConfig(body.config),
+    existingRow?.config ?? {},
+    body.expected_pricing_revision
+  );
+
+  if (!prepared.ok) {
+    return jsonResponse({ error: "pricing_revision_conflict" }, 409, req);
+  }
+
+  const config = prepared.config;
   const { data: row, error: updateError } = await admin
     .from("platform_payment_methods")
     .upsert(
@@ -109,6 +131,9 @@ Deno.serve(async (req) => {
           !Array.isArray(config.renterMiniappAddon) &&
           Boolean((config.renterMiniappAddon as { amount?: unknown }).amount)
       ),
+      pricing_revision: prepared.pricingRevision,
+      pricing_changed: prepared.pricingChanged,
+      schema_version: config.schemaVersion,
     },
   });
 
@@ -117,6 +142,7 @@ Deno.serve(async (req) => {
       ok: true,
       config: row.config,
       updated_at: row.updated_at,
+      pricing_revision: prepared.pricingRevision,
     },
     200,
     req

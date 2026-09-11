@@ -12,6 +12,34 @@ import { loadPaymentConfig, savePaymentConfig, supabaseEnvError } from "../lib/s
 
 const MAX_QR_IMAGE_BYTES = 250 * 1024;
 
+const SHARED_AMOUNT_HINT =
+  "QR и номер счёта общие для lifetime и месяца. Меняется только сумма на экране покупки.";
+
+function MonthlyPriceFields({
+  amount,
+  currency,
+  onAmount,
+  onCurrency,
+}: {
+  amount: string;
+  currency: string;
+  onAmount: (value: string) => void;
+  onCurrency: (value: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <Field
+        label="Сумма / месяц"
+        type="number"
+        value={amount}
+        onChange={onAmount}
+        placeholder="29"
+      />
+      <Field label="Валюта / месяц" value={currency} onChange={onCurrency} placeholder="USD" />
+    </div>
+  );
+}
+
 function QrImageUpload({
   value,
   onChange,
@@ -112,8 +140,9 @@ export default function PaymentMethodsPage() {
     setSuccess("");
     try {
       const config = formStateToConfig(form);
-      const nextUpdatedAt = await savePaymentConfig(config);
-      setUpdatedAt(nextUpdatedAt);
+      const saved = await savePaymentConfig(config, form.pricingRevision);
+      setUpdatedAt(saved.updatedAt);
+      setForm(configToFormState(saved.config));
       setSuccess("Реквизиты сохранены — CRM подхватит их на странице покупки.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
@@ -153,6 +182,58 @@ export default function PaymentMethodsPage() {
             </p>
           </Section>
 
+          <Section
+            title="CRM — пожизненно"
+            description="Каноническая цена lifetime для витрины. Пер-способные поля ниже могут переопределять сумму для конкретного рельса."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field
+                label="Сумма"
+                type="number"
+                value={form.crmLifetime.amount}
+                onChange={(amount) =>
+                  setForm((prev) => ({ ...prev, crmLifetime: { ...prev.crmLifetime, amount } }))
+                }
+                placeholder="199"
+              />
+              <Field
+                label="Валюта"
+                value={form.crmLifetime.currency}
+                onChange={(currency) =>
+                  setForm((prev) => ({ ...prev, crmLifetime: { ...prev.crmLifetime, currency } }))
+                }
+                placeholder="USD"
+              />
+            </div>
+          </Section>
+
+          <Section
+            title="CRM — ежемесячно"
+            description="Каноническая цена месяца CRM. Пока не заполнена, server quote для monthly остаётся fail-closed."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field
+                label="Сумма"
+                type="number"
+                value={form.crmMonthly.amount}
+                onChange={(amount) =>
+                  setForm((prev) => ({ ...prev, crmMonthly: { ...prev.crmMonthly, amount } }))
+                }
+                placeholder="29"
+              />
+              <Field
+                label="Валюта"
+                value={form.crmMonthly.currency}
+                onChange={(currency) =>
+                  setForm((prev) => ({ ...prev, crmMonthly: { ...prev.crmMonthly, currency } }))
+                }
+                placeholder="USD"
+              />
+            </div>
+          </Section>
+
+          <p className="text-xs text-slate-500 border border-slate-800 rounded-lg px-3 py-2">{SHARED_AMOUNT_HINT}</p>
+
           <Section title="Криптовалюта" description="Один блок = одна монета/сеть. QR строится из адреса или URI template.">
             <div className="space-y-4">
               {form.crypto.map((row, index) => (
@@ -175,6 +256,12 @@ export default function PaymentMethodsPage() {
                       </button>
                     )}
                   </div>
+                  {row.id && (
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase">Method code (crypto id)</p>
+                      <p className="text-sm text-slate-300 font-mono break-all">{row.id}</p>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field
                       label="Монета"
@@ -203,19 +290,25 @@ export default function PaymentMethodsPage() {
                   />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field
-                      label="Сумма к оплате"
+                      label="Сумма к оплате (lifetime)"
                       type="number"
                       value={row.amount}
                       onChange={(amount) => updateCrypto(index, { amount })}
                       placeholder="100"
                     />
                     <Field
-                      label="Валюта"
+                      label="Валюта (lifetime)"
                       value={row.currency}
                       onChange={(currency) => updateCrypto(index, { currency })}
                       placeholder="USD, USDT, VND"
                     />
                   </div>
+                  <MonthlyPriceFields
+                    amount={row.monthlyAmount}
+                    currency={row.monthlyCurrency}
+                    onAmount={(monthlyAmount) => updateCrypto(index, { monthlyAmount })}
+                    onCurrency={(monthlyCurrency) => updateCrypto(index, { monthlyCurrency })}
+                  />
                   <QrImageUpload value={row.qrImageUrl} onChange={(qrImageUrl) => updateCrypto(index, { qrImageUrl })} />
                 </div>
               ))}
@@ -274,7 +367,7 @@ export default function PaymentMethodsPage() {
                 placeholder="1234"
               />
               <Field
-                label="Сумма к оплате"
+                label="Сумма к оплате (lifetime)"
                 type="number"
                 value={form.bankTransfer.amount}
                 onChange={(amount) =>
@@ -283,7 +376,7 @@ export default function PaymentMethodsPage() {
                 placeholder="100"
               />
               <Field
-                label="Валюта"
+                label="Валюта (lifetime)"
                 value={form.bankTransfer.currency}
                 onChange={(currency) =>
                   setForm((prev) => ({ ...prev, bankTransfer: { ...prev.bankTransfer, currency } }))
@@ -291,6 +384,16 @@ export default function PaymentMethodsPage() {
                 placeholder="USD"
               />
             </div>
+            <MonthlyPriceFields
+              amount={form.bankTransfer.monthlyAmount}
+              currency={form.bankTransfer.monthlyCurrency}
+              onAmount={(monthlyAmount) =>
+                setForm((prev) => ({ ...prev, bankTransfer: { ...prev.bankTransfer, monthlyAmount } }))
+              }
+              onCurrency={(monthlyCurrency) =>
+                setForm((prev) => ({ ...prev, bankTransfer: { ...prev.bankTransfer, monthlyCurrency } }))
+              }
+            />
             <Field
               label="Комментарий к переводу"
               value={form.bankTransfer.note}
@@ -339,7 +442,7 @@ export default function PaymentMethodsPage() {
                 }
               />
               <Field
-                label="Сумма к оплате"
+                label="Сумма к оплате (lifetime)"
                 type="number"
                 value={form.vietnameseBankTransfer.amount}
                 onChange={(amount) =>
@@ -351,7 +454,7 @@ export default function PaymentMethodsPage() {
                 placeholder="2500000"
               />
               <Field
-                label="Валюта"
+                label="Валюта (lifetime)"
                 value={form.vietnameseBankTransfer.currency}
                 onChange={(currency) =>
                   setForm((prev) => ({
@@ -362,6 +465,22 @@ export default function PaymentMethodsPage() {
                 placeholder="VND"
               />
             </div>
+            <MonthlyPriceFields
+              amount={form.vietnameseBankTransfer.monthlyAmount}
+              currency={form.vietnameseBankTransfer.monthlyCurrency}
+              onAmount={(monthlyAmount) =>
+                setForm((prev) => ({
+                  ...prev,
+                  vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, monthlyAmount },
+                }))
+              }
+              onCurrency={(monthlyCurrency) =>
+                setForm((prev) => ({
+                  ...prev,
+                  vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, monthlyCurrency },
+                }))
+              }
+            />
             <Field
               label="Комментарий"
               value={form.vietnameseBankTransfer.note}
@@ -403,19 +522,27 @@ export default function PaymentMethodsPage() {
                 onChange={(bankName) => setForm((prev) => ({ ...prev, mir: { ...prev.mir, bankName } }))}
               />
               <Field
-                label="Сумма к оплате"
+                label="Сумма к оплате (lifetime)"
                 type="number"
                 value={form.mir.amount}
                 onChange={(amount) => setForm((prev) => ({ ...prev, mir: { ...prev.mir, amount } }))}
                 placeholder="10000"
               />
               <Field
-                label="Валюта"
+                label="Валюта (lifetime)"
                 value={form.mir.currency}
                 onChange={(currency) => setForm((prev) => ({ ...prev, mir: { ...prev.mir, currency } }))}
                 placeholder="RUB"
               />
             </div>
+            <MonthlyPriceFields
+              amount={form.mir.monthlyAmount}
+              currency={form.mir.monthlyCurrency}
+              onAmount={(monthlyAmount) => setForm((prev) => ({ ...prev, mir: { ...prev.mir, monthlyAmount } }))}
+              onCurrency={(monthlyCurrency) =>
+                setForm((prev) => ({ ...prev, mir: { ...prev.mir, monthlyCurrency } }))
+              }
+            />
             <Field
               label="Комментарий"
               value={form.mir.note}
