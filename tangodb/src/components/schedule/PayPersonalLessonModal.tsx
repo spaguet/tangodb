@@ -35,7 +35,7 @@ import {
   tariffUnitsSnapshot,
   translateDurationWarning,
 } from "../../lib/personalTariffPricing";
-import type { PaymentMethod, Price, Subscription } from "../../types";
+import type { PaymentMethod, PersonalDisplayLesson, Price, Subscription } from "../../types";
 import AppSelect, { fieldCls } from "../ui/AppSelect";
 import { btnAddCls } from "../ui/buttonStyles";
 import { useDisciplines } from "../../hooks/useDisciplines";
@@ -70,6 +70,70 @@ export interface PayPersonalLessonTarget {
   paymentMode?: PersonalLessonPaymentMode;
   /** Hide package option (e.g. opened from financial debtors). */
   hidePackage?: boolean;
+}
+
+type PersonalLessonPaySource = {
+  id: string;
+  date: string;
+  timeStart: string;
+  timeEnd: string;
+  clientId1: string;
+  clientId2: string;
+  clientId3: string;
+  clientId4?: string;
+  clientDisplay: string;
+  payerClientId?: string | null;
+  priceId?: string | null;
+  price: number;
+  paidAmount?: number;
+  locationId?: string | null;
+  disciplineId?: string | null;
+  teacherMemberId?: string | null;
+};
+
+export function payTargetFromPersonalLesson(lesson: PersonalLessonPaySource): PayPersonalLessonTarget {
+  return {
+    lessonId: lesson.id,
+    date: lesson.date,
+    timeStart: lesson.timeStart,
+    timeEnd: lesson.timeEnd,
+    clientId1: lesson.clientId1,
+    clientId2: lesson.clientId2,
+    clientId3: lesson.clientId3,
+    clientId4: lesson.clientId4,
+    clientDisplay: lesson.clientDisplay,
+    payerClientId: lesson.payerClientId,
+    priceId: lesson.priceId,
+    price: lesson.price,
+    paidAmount: lesson.paidAmount,
+    locationId: lesson.locationId ?? null,
+    disciplineId: lesson.disciplineId ?? null,
+    teacherMemberId: lesson.teacherMemberId ?? null,
+  };
+}
+
+export function payTargetFromPersonalDisplayLesson(
+  lesson: PersonalDisplayLesson
+): PayPersonalLessonTarget | null {
+  if (!lesson.clientId1) return null;
+  return {
+    lessonId: lesson.lessonId,
+    date: lesson.date,
+    timeStart: lesson.timeStart,
+    timeEnd: lesson.timeEnd,
+    clientId1: lesson.clientId1,
+    clientId2: lesson.clientId2 ?? "",
+    clientId3: lesson.clientId3 ?? "",
+    clientId4: lesson.clientId4,
+    clientDisplay: lesson.clientDisplay ?? "",
+    payerClientId: lesson.payerClientId,
+    priceId: lesson.priceId,
+    price: lesson.price ?? 0,
+    paidAmount: lesson.paidAmount,
+    locationId: lesson.locationId ?? null,
+    disciplineId: lesson.disciplineId ?? null,
+    teacherMemberId: lesson.teacherMemberId ?? null,
+  };
 }
 
 interface PayPersonalLessonModalProps {

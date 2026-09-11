@@ -42,7 +42,11 @@ import ClientCardModal from "../ClientCardModal";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import { btnAddCls, btnCancelCls, btnDestructiveCls, btnDestructiveOpenCls, btnOpenCls } from "../ui/buttonStyles";
 import RequirePermission from "../RequirePermission";
-import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "./PayPersonalLessonModal";
+import PayPersonalLessonModal, {
+  payTargetFromPersonalDisplayLesson,
+  payTargetFromPersonalLesson,
+  type PayPersonalLessonTarget,
+} from "./PayPersonalLessonModal";
 import PersonalLessonDebtBreakdown from "./PersonalLessonDebtBreakdown";
 import AdjustDebtorAmountDialog from "../finance/AdjustDebtorAmountDialog";
 import type { DebtorEntry } from "../../lib/financeReports";
@@ -277,28 +281,14 @@ export default function LessonInfoPopup({
   const handleOpenPay = () => {
     if (lesson?.kind !== "personal") return;
     const fullLesson = personalLessonsQuery.data?.find((row) => row.id === lesson.lessonId);
-    if (!fullLesson) {
+    const payTarget = fullLesson
+      ? payTargetFromPersonalLesson(fullLesson)
+      : payTargetFromPersonalDisplayLesson(lesson);
+    if (!payTarget) {
       toast(t("schedule.error.loadLessonFailed"), "error");
       return;
     }
-    setPayTarget({
-      lessonId: fullLesson.id,
-      date: fullLesson.date,
-      timeStart: fullLesson.timeStart,
-      timeEnd: fullLesson.timeEnd,
-      clientId1: fullLesson.clientId1,
-      clientId2: fullLesson.clientId2,
-      clientId3: fullLesson.clientId3,
-      clientId4: fullLesson.clientId4,
-      clientDisplay: fullLesson.clientDisplay,
-      payerClientId: fullLesson.payerClientId,
-      priceId: fullLesson.priceId,
-      price: fullLesson.price,
-      paidAmount: fullLesson.paidAmount,
-      locationId: fullLesson.locationId ?? null,
-      disciplineId: fullLesson.disciplineId ?? null,
-      teacherMemberId: fullLesson.teacherMemberId ?? null,
-    });
+    setPayTarget(payTarget);
   };
 
   const handleClosePersonal = async () => {
