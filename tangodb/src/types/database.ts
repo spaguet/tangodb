@@ -9571,6 +9571,10 @@ export type Database = {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: number
       }
+      _renter_wallet_earmarked_remainder: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: number
+      }
       _renter_wallet_entries_detail_json: {
         Args: { p_limit?: number; p_org_id: string; p_renter_id: string }
         Returns: Json
@@ -9624,6 +9628,14 @@ export type Database = {
       _renter_wallet_payout_quote: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: Json
+      }
+      _renter_wallet_remainder_coverable: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: number
+      }
+      _renter_wallet_reserved_active_prepay: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: number
       }
       _renter_wallet_reserved_prepay: {
         Args: { p_org_id: string; p_renter_id: string }

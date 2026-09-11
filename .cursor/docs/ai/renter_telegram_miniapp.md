@@ -324,12 +324,16 @@ Occupancy (`booking_status = confirmed`): `awaiting_payment`, `active`, `prepaid
 ```
 wallet_balance     = сумма ledger (topup − prepay_charge − remainder_charge − debt_settle − surcharge + refund …)
                      (при включении контура: + backfill нераспределённых кассовых авансов, §3 п.3)
-reserved_prepay    = Σ prepay по lifecycle = active и prepay_charged_at IS NULL
+reserved_active    = Σ prepay по lifecycle = active и prepay_charged_at IS NULL
+earmarked_remainder = Σ remainder по lifecycle = prepaid_charged и remainder_charged_at IS NULL
+reserved_prepay    = LEAST(wallet_balance, reserved_active + earmarked_remainder)  // UI «Резерв 50%»
 debt_outstanding   = Σ debt_amount по Mini App rentals этого renter
-spendable          = wallet_balance − reserved_prepay     // не отрицательный; для debt_settle, surcharge и remainder
+spendable          = GREATEST(wallet_balance − reserved_active − earmarked_remainder, 0)
+                   // UI «Доступно», FIFO, debt_settle, surcharge — не тратить вторую 50% уже списанного слота
+remainder @ time_end = GREATEST(wallet_balance − reserved_active, 0)  // свою earmark; не чужой active-резерв
 available          = 0, если debt_outstanding > 0
                    = spendable  иначе
-инвариант          = wallet_balance >= reserved_prepay
+инвариант          = wallet_balance >= reserved_active
 ```
 
 Брони арендатора в `awaiting_payment` или `active` без списанной предоплаты, сортировка `(rental_date, time_start, created_at)`. **Пропуск:** `now ≥ time_start` или `now ≥ hold_expires_at` (не активировать просроченное; worker §4.1). Также пропуск, если `available = 0` из‑за долга (новые активации).

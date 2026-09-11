@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.10.36",
+  "version": "2.10.37",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -88,6 +88,7 @@
     "test:db:renter-miniapp-fa6": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fa6_topup_review_reversal_test.sql",
     "test:db:renter-miniapp-wallet-payout": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_wallet_payout_test.sql",
     "test:db:renter-miniapp-wallet-adjust": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_wallet_adjust_test.sql",
+    "test:db:renter-miniapp-wallet-earmark-remainder": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_wallet_earmark_remainder_test.sql",
     "test:db:renter-miniapp-fa7": "node scripts/fa2-concurrent-topup.mjs",
     "test:db:cleanup-miniapp-fixtures": "node scripts/cleanup-miniapp-concurrent-fixtures.mjs",
     "test:renter-miniapp-fz": "node scripts/fz-audit-check.mjs",
