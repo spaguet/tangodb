@@ -40,9 +40,10 @@ const messages = {
     remainder: "Остаток 50%",
     availableBalance: "Доступно для активации",
     shortage: "Не хватает",
+    amountDue: "К оплате",
     topupAmountCta: "Пополнить {amount}",
     topupDebtThenActivate:
-      "Сначала погасится долг {debt}, затем для активации нужно ещё {prepay} на предоплату.",
+      "Сначала погасится долг {debt}, затем на аренду нужно ещё {cost}.",
     bookingResultTitle: "Бронь создана",
     bookingNeedPrepay: "Нужно пополнить {amount}",
     bookingNeedPrepayBy: "Нужно {amount} до {time}",
@@ -232,9 +233,10 @@ const messages = {
     remainder: "Remaining 50%",
     availableBalance: "Available to activate",
     shortage: "Shortfall",
+    amountDue: "Amount due",
     topupAmountCta: "Top up {amount}",
     topupDebtThenActivate:
-      "{debt} will pay off debt first; another {prepay} is needed for the prepay.",
+      "{debt} will pay off debt first; another {cost} is needed for the rental.",
     bookingResultTitle: "Booking created",
     bookingNeedPrepay: "Top up {amount}",
     bookingNeedPrepayBy: "Need {amount} by {time}",

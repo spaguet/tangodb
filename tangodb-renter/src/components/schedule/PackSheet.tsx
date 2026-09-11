@@ -29,7 +29,8 @@ import { rpcCreatePack, rpcGetWallet, rpcQuotePack } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
 import type { PackCreateResult, QuotePackOccurrence, WalletData } from "../../lib/types";
 import { t, tFill, WEEKDAY_LABELS, type Locale } from "../../i18n/strings";
-import QuoteSummary, { topupAmountFromWallet } from "./QuoteSummary";
+import { suggestedTopupAmount } from "../../lib/quoteBalance";
+import QuoteSummary from "./QuoteSummary";
 
 type PackSheetProps = {
   locale: Locale;
@@ -222,10 +223,10 @@ export default function PackSheet({
 
   if (created) {
     const currency = totals.currency;
-    const prepay = totals.prepay;
+    const cost = totals.cost;
     const active = created.series_status === "active";
     const deadline = formatHoldDeadline(created.hold_expires_at ?? null, localeTag, bootstrap.timezone);
-    const topupAmount = wallet && isHold ? topupAmountFromWallet(wallet, prepay) : prepay > 0 ? prepay : 0;
+    const topupAmount = isHold ? suggestedTopupAmount(cost, wallet) : 0;
 
     return (
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-xs" onClick={onClose}>
@@ -260,7 +261,7 @@ export default function PackSheet({
                 <p className="text-xs leading-relaxed">
                   {tFill(locale, "topupDebtThenActivate", {
                     debt: formatMoney(wallet.debt_amount, currency, locale),
-                    prepay: formatMoney(prepay, currency, locale),
+                    cost: formatMoney(cost, currency, locale),
                   })}
                 </p>
               ) : null}

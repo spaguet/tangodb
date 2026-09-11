@@ -42,7 +42,8 @@ import type {
   WalletData,
 } from "../../lib/types";
 import { t, tFill, WEEKDAY_LABELS, type Locale } from "../../i18n/strings";
-import QuoteSummary, { topupAmountFromWallet } from "./QuoteSummary";
+import { rentalQuoteCoverage, suggestedTopupAmount } from "../../lib/quoteBalance";
+import QuoteSummary from "./QuoteSummary";
 
 type BookingMode = "one_time" | "recurring";
 
@@ -293,11 +294,17 @@ export default function BookingSheet({
   if (created) {
     const currency = created.currency ?? quote?.currency ?? "RUB";
     const prepay = created.prepay_amount ?? quote?.prepay ?? 0;
+    const remainder = created.remainder_amount ?? quote?.remainder ?? 0;
+    const cost = rentalQuoteCoverage({
+      fixedAmount: created.fixed_amount,
+      cost: quote?.cost,
+      prepay,
+      remainder,
+    });
     const isHold = created.lifecycle === "awaiting_payment";
     const isActive = ACTIVE_LIFECYCLES.has(created.lifecycle);
     const deadline = formatHoldDeadline(created.hold_expires_at, localeTag, timezone);
-    const topupAmount =
-      wallet && isHold ? topupAmountFromWallet(wallet, prepay) : prepay > 0 ? prepay : 0;
+    const topupAmount = isHold ? suggestedTopupAmount(cost, wallet) : 0;
 
     return (
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-xs" onClick={onClose}>
@@ -328,7 +335,7 @@ export default function BookingSheet({
                 <p className="text-xs leading-relaxed">
                   {tFill(locale, "topupDebtThenActivate", {
                     debt: formatMoney(wallet.debt_amount, currency, locale),
-                    prepay: formatMoney(prepay, currency, locale),
+                    cost: formatMoney(cost, currency, locale),
                   })}
                 </p>
               ) : null}
@@ -364,11 +371,11 @@ export default function BookingSheet({
 
   if (createdPack) {
     const currency = packTotals.currency;
-    const prepay = packTotals.prepay;
+    const cost = packTotals.cost;
     const isHold = createdPack.series_status === "awaiting_payment";
     const active = createdPack.series_status === "active";
     const deadline = formatHoldDeadline(createdPack.hold_expires_at ?? null, localeTag, timezone);
-    const topupAmount = wallet && isHold ? topupAmountFromWallet(wallet, prepay) : prepay > 0 ? prepay : 0;
+    const topupAmount = isHold ? suggestedTopupAmount(cost, wallet) : 0;
 
     return (
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-xs" onClick={onClose}>
@@ -400,7 +407,7 @@ export default function BookingSheet({
                 <p className="text-xs leading-relaxed">
                   {tFill(locale, "topupDebtThenActivate", {
                     debt: formatMoney(wallet.debt_amount, currency, locale),
-                    prepay: formatMoney(prepay, currency, locale),
+                    cost: formatMoney(cost, currency, locale),
                   })}
                 </p>
               ) : null}

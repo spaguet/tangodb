@@ -1,6 +1,6 @@
 import { btnPrimaryCls, panelCls } from "../../lib/crmUi";
 import { formatMoney } from "../../lib/format";
-import { quoteAvailable, quoteShortage } from "../../lib/quoteBalance";
+import { quoteAvailable, suggestedTopupAmount, topupSuggestAmount } from "../../lib/quoteBalance";
 import type { WalletData } from "../../lib/types";
 import { t, tFill, type Locale } from "../../i18n/strings";
 
@@ -30,13 +30,8 @@ export default function QuoteSummary({
   onTopup,
 }: QuoteSummaryProps) {
   const available = wallet ? quoteAvailable(wallet) : null;
-  const shortage = wallet && available !== null ? quoteShortage(prepay, available) : null;
-  const topupAmount =
-    wallet && shortage !== null && shortage > 0
-      ? wallet.debt_amount > 0
-        ? wallet.debt_amount + prepay
-        : shortage
-      : 0;
+  const debt = wallet?.debt_amount ?? 0;
+  const topupAmount = wallet ? suggestedTopupAmount(cost, wallet) : 0;
 
   return (
     <div className={`${panelCls} space-y-1 p-3 text-sm`}>
@@ -56,19 +51,24 @@ export default function QuoteSummary({
         <p className="text-slate-500">{t(locale, "quoteLoading")}</p>
       ) : wallet ? (
         <>
+          {debt > 0 ? (
+            <p className="font-medium text-rose-700">
+              {t(locale, "debt")}: {formatMoney(debt, currency, locale)}
+            </p>
+          ) : null}
           <p className="text-slate-600">
             {t(locale, "availableBalance")}: {formatMoney(available ?? 0, currency, locale)}
           </p>
-          {shortage !== null && shortage > 0 ? (
+          {topupAmount > 0 ? (
             <p className="font-medium text-amber-800">
-              {t(locale, "shortage")}: {formatMoney(shortage, currency, locale)}
+              {t(locale, "amountDue")}: {formatMoney(topupAmount, currency, locale)}
             </p>
           ) : null}
-          {wallet.debt_amount > 0 && shortage !== null && shortage > 0 ? (
+          {debt > 0 && topupAmount > 0 ? (
             <p className="text-xs leading-relaxed text-amber-800">
               {tFill(locale, "topupDebtThenActivate", {
-                debt: formatMoney(wallet.debt_amount, currency, locale),
-                prepay: formatMoney(prepay, currency, locale),
+                debt: formatMoney(debt, currency, locale),
+                cost: formatMoney(cost, currency, locale),
               })}
             </p>
           ) : null}
@@ -94,10 +94,7 @@ export default function QuoteSummary({
 
 export function topupAmountFromWallet(
   wallet: WalletData,
-  requiredPrepay: number
+  requiredCoverage: number
 ): number {
-  const available = quoteAvailable(wallet);
-  const shortage = quoteShortage(requiredPrepay, available);
-  if (shortage <= 0) return 0;
-  return wallet.debt_amount > 0 ? wallet.debt_amount + requiredPrepay : shortage;
+  return topupSuggestAmount(wallet, requiredCoverage);
 }

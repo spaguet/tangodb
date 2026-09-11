@@ -91,7 +91,7 @@ describe("BookingSheet booking result", () => {
 
     const topupBtn = screen.getByRole("button", { name: /Пополнить/i });
     await userEvent.click(topupBtn);
-    expect(onTopup).toHaveBeenCalledWith(450);
+    expect(onTopup).toHaveBeenCalledWith(950);
     expect(onDone).not.toHaveBeenCalled();
   });
 
