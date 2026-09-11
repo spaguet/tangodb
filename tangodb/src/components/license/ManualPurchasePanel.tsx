@@ -1,6 +1,8 @@
+import { useMemo, useState } from "react";
 import LoadingState from "../ui/LoadingState";
 import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
 import { useI18n } from "../../hooks/useI18n";
+import { listPaymentMethodChoices } from "../../lib/paymentMethodChoices";
 import CryptoPaymentCards from "./CryptoPaymentCards";
 import {
   BankTransferSection,
@@ -13,6 +15,8 @@ import PurchaseRequestPanel from "./PurchaseRequestPanel";
 export default function ManualPurchasePanel() {
   const { t } = useI18n();
   const { config, hasContent, isLoading, isError } = usePlatformPaymentConfig(true);
+  const [selectedMethodCode, setSelectedMethodCode] = useState("");
+  const methodChoices = useMemo(() => listPaymentMethodChoices(config), [config]);
 
   if (isLoading) {
     return <LoadingState label={t("license.purchase.loadingMethods")} />;
@@ -21,7 +25,12 @@ export default function ManualPurchasePanel() {
   return (
     <div className="space-y-4 border-t border-slate-100 pt-4">
       <PurchaseActivationInstructions />
-      <PurchaseRequestPanel contacts={config.contacts} />
+      <PurchaseRequestPanel
+        contacts={config.contacts}
+        methodChoices={methodChoices}
+        selectedMethodCode={selectedMethodCode}
+        onMethodCodeChange={setSelectedMethodCode}
+      />
 
       {isError && (
         <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">

@@ -7,8 +7,10 @@ import {
   normalizeEmail,
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
-import { isRenterActor, renterActorForbidden } from "../_shared/staffAuth.ts";
+import { loadLicensePurchaseOrg } from "../_shared/purchaseMembership.ts";
+import { isUuid } from "../_shared/purchaseQuotePolicy.ts";
 import { PURCHASE_REQUEST_COMMENT_MIN_LENGTH } from "../_shared/purchaseRequest.ts";
+import { isRenterActor, renterActorForbidden } from "../_shared/staffAuth.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 5;
@@ -22,18 +24,47 @@ function resolveDeveloperNotifyEmail(configEmail: unknown): string | null {
   return null;
 }
 
-type PurchaseRequestKind = "crm_license" | "renter_miniapp_addon";
-
 interface SubmitPurchaseRequestBody {
   organization_id?: string;
   payment_comment?: string;
   contact_email?: string;
   contact_telegram?: string;
-  request_kind?: PurchaseRequestKind;
+  quote_id?: string;
+  client_request_id?: string;
+  request_kind?: string;
+  payment_method_code?: string;
+  amount?: string;
+  currency?: string;
 }
 
 function trimText(value: unknown, max = 4000): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function mapSubmitRpcError(message: string): { status: number; code: string } {
+  const m = message.toLowerCase();
+  if (m.includes("quote_forbidden")) return { status: 403, code: "quote_forbidden" };
+  if (m.includes("lifetime_org_monthly_forbidden")) {
+    return { status: 403, code: "lifetime_org_monthly_forbidden" };
+  }
+  if (m.includes("demo_purge_deadline_passed")) {
+    return { status: 403, code: "demo_purge_deadline_passed" };
+  }
+  if (m.includes("quote_not_found")) return { status: 400, code: "quote_not_found" };
+  if (m.includes("quote_expired")) return { status: 400, code: "quote_expired" };
+  if (m.includes("quote_already_consumed")) return { status: 400, code: "quote_already_consumed" };
+  if (m.includes("payment_comment_required") || m.includes("payment_comment_too_short")) {
+    return { status: 400, code: "payment_comment_too_short" };
+  }
+  if (m.includes("invalid_submit_payload")) return { status: 400, code: "quote_required" };
+  return { status: 500, code: "request_save_failed" };
+}
+
+function requestKindEmailSubject(kind: string, orgName: string): string {
+  if (kind === "crm_subscription") {
+    return `TangoDB: заявка на месячную подписку CRM — ${orgName}`;
+  }
+  return `TangoDB: заявка на полную версию — ${orgName}`;
 }
 
 Deno.serve(async (req) => {
@@ -63,15 +94,30 @@ Deno.serve(async (req) => {
   const paymentComment = trimText(body.payment_comment);
   const contactEmail = normalizeEmail(trimText(body.contact_email, 160));
   const contactTelegram = trimText(body.contact_telegram, 160);
-  const requestKindRaw = trimText(body.request_kind, 40);
-  const requestKind: PurchaseRequestKind =
-    requestKindRaw === "renter_miniapp_addon" ? "renter_miniapp_addon" : "crm_license";
+  const quoteId = trimText(body.quote_id, 80);
+  const clientRequestId = trimText(body.client_request_id, 80);
+
+  if (trimText(body.request_kind, 40) === "renter_miniapp_addon") {
+    return jsonResponse({ error: "addon_purchase_disabled" }, 403, req);
+  }
+
+  if (
+    trimText(body.request_kind, 40) ||
+    trimText(body.payment_method_code, 120) ||
+    trimText(body.amount, 80) ||
+    trimText(body.currency, 20)
+  ) {
+    return jsonResponse({ error: "quote_required" }, 400, req);
+  }
 
   if (!organizationId) {
     return jsonResponse({ error: "organization_required" }, 400, req);
   }
-  if (requestKindRaw && requestKindRaw !== requestKind) {
-    return jsonResponse({ error: "invalid_request_kind" }, 400, req);
+  if (!quoteId || !isUuid(quoteId)) {
+    return jsonResponse({ error: "quote_required" }, 400, req);
+  }
+  if (!clientRequestId || !isUuid(clientRequestId)) {
+    return jsonResponse({ error: "client_request_id_required" }, 400, req);
   }
   if (paymentComment.length < PURCHASE_REQUEST_COMMENT_MIN_LENGTH) {
     return jsonResponse({ error: "payment_comment_too_short" }, 400, req);
@@ -90,30 +136,57 @@ Deno.serve(async (req) => {
   }
 
   const admin = createServiceClient();
-  const { data: membership, error: membershipError } = await admin
-    .from("organization_members")
-    .select("role, is_active, organization:organizations(id, name, status)")
-    .eq("organization_id", organizationId)
-    .eq("user_id", userData.user.id)
+  const membership = await loadLicensePurchaseOrg(admin, organizationId, userData.user.id);
+  if (!membership.ok) {
+    return jsonResponse({ error: membership.code }, membership.httpStatus, req);
+  }
+
+  const { data: quoteRow, error: quoteError } = await admin
+    .from("platform_purchase_quotes")
+    .select(
+      "id, organization_id, requester_user_id, sku, method_code, amount, currency, pricing_revision, payment_details_snapshot, expires_at, consumed_at"
+    )
+    .eq("id", quoteId)
     .maybeSingle();
 
-  const org = Array.isArray(membership?.organization)
-    ? membership?.organization[0]
-    : membership?.organization;
-
-  if (
-    membershipError ||
-    !membership ||
-    !membership.is_active ||
-    !["owner", "director"].includes(membership.role) ||
-    !org
-  ) {
-    return jsonResponse({ error: "license_permission_required" }, 403, req);
+  if (quoteError || !quoteRow) {
+    return jsonResponse({ error: "quote_not_found" }, 400, req);
   }
 
-  if (requestKind === "renter_miniapp_addon") {
-    return jsonResponse({ error: "addon_purchase_disabled" }, 403, req);
+  const requesterEmail = userData.user.email ?? (contactEmail || null);
+
+  const { data: rpcResult, error: rpcError } = await admin.rpc("submit_platform_purchase_request", {
+    p_quote_id: quoteId,
+    p_client_request_id: clientRequestId,
+    p_organization_id: organizationId,
+    p_requester_user_id: userData.user.id,
+    p_requester_email: requesterEmail,
+    p_organization_name: membership.org.name,
+    p_contact_email: contactEmail || requesterEmail,
+    p_contact_telegram: contactTelegram || null,
+    p_payment_comment: paymentComment,
+  });
+
+  if (rpcError) {
+    const mapped = mapSubmitRpcError(rpcError.message ?? "");
+    logEvent("purchase_request_rpc_failed", { code: mapped.code });
+    return jsonResponse({ error: mapped.code }, mapped.status, req);
   }
+
+  const payload = rpcResult as {
+    ok?: boolean;
+    idempotent?: boolean;
+    request_id?: string;
+    request_kind?: string;
+  };
+
+  if (!payload?.ok || !payload.request_id) {
+    return jsonResponse({ error: "request_save_failed" }, 500, req);
+  }
+
+  const requestId = payload.request_id;
+  const requestKind = payload.request_kind ?? quoteRow.sku ?? "crm_license";
+  const idempotent = payload.idempotent === true;
 
   const { data: paymentConfig } = await admin
     .from("platform_payment_methods")
@@ -124,100 +197,67 @@ Deno.serve(async (req) => {
   const developerEmail = resolveDeveloperNotifyEmail(
     (paymentConfig?.config as { contacts?: { email?: string } } | null)?.contacts?.email
   );
-  const addonPriceRaw = (paymentConfig?.config as {
-    renterMiniappAddon?: { amount?: string; currency?: string };
-  } | null)?.renterMiniappAddon;
-  const addonPriceLabel = [addonPriceRaw?.amount, addonPriceRaw?.currency]
-    .map((part) => (typeof part === "string" ? part.trim() : ""))
-    .filter(Boolean)
-    .join(" ");
 
-  const requesterEmail = userData.user.email ?? (contactEmail || null);
-  const { data: requestRow, error: insertError } = await admin
-    .from("platform_purchase_requests")
-    .insert({
-      organization_id: organizationId,
-      requester_user_id: userData.user.id,
-      requester_email: requesterEmail,
-      organization_name: org.name,
-      contact_email: contactEmail || requesterEmail,
-      contact_telegram: contactTelegram || null,
-      payment_comment: paymentComment,
-      request_kind: requestKind,
-      status: "new",
-    })
-    .select("id, created_at")
-    .single();
-
-  if (insertError || !requestRow) {
-    logEvent("purchase_request_insert_failed", { code: insertError?.code ?? "unknown" });
-    return jsonResponse({ error: "request_save_failed" }, 500, req);
-  }
-
-  const isAddonRequest = requestKind === "renter_miniapp_addon";
   let emailSent = false;
-  if (developerEmail) {
+  if (!idempotent && developerEmail) {
     emailSent = await sendTransactionalEmail({
       to: developerEmail,
-      subject: isAddonRequest
-        ? `TangoDB: заявка на модуль Mini App — ${org.name}`
-        : `TangoDB: заявка на полную версию — ${org.name}`,
-      text: isAddonRequest
-        ? [
-            "Новая заявка на оплату модуля Mini App (аренда зала, ежемесячно).",
-            "",
-            `Request ID: ${requestRow.id}`,
-            `Kind: renter_miniapp_addon`,
-            `Configured monthly price: ${addonPriceLabel || "not configured"}`,
-            `Organization: ${org.name} (${organizationId})`,
-            `Requester email: ${requesterEmail ?? "not provided"}`,
-            `Contact email: ${contactEmail || requesterEmail || "not provided"}`,
-            `Telegram: ${contactTelegram || "not provided"}`,
-            "",
-            "Комментарий пользователя:",
-            paymentComment,
-            "",
-            "Проверьте поступление средств и активируйте период add-on в Dev Console → Inbox.",
-            "Не активировать lifetime CRM — только organization_addons.",
-          ].join("\n")
-        : [
-            "Новая заявка на покупку полной версии TangoDB.",
-            "",
-            `Request ID: ${requestRow.id}`,
-            `Organization: ${org.name} (${organizationId})`,
-            `Requester email: ${requesterEmail ?? "not provided"}`,
-            `Contact email: ${contactEmail || requesterEmail || "not provided"}`,
-            `Telegram: ${contactTelegram || "not provided"}`,
-            "",
-            "Комментарий пользователя:",
-            paymentComment,
-            "",
-            "Проверьте поступление средств и активируйте доступ в Dev Console → Inbox.",
-          ].join("\n"),
+      subject: requestKindEmailSubject(requestKind, membership.org.name),
+      text: [
+        requestKind === "crm_subscription"
+          ? "Новая заявка на месячную подписку CRM."
+          : "Новая заявка на покупку полной версии TangoDB.",
+        "",
+        `Request ID: ${requestId}`,
+        `Kind: ${requestKind}`,
+        `Quote ID: ${quoteId}`,
+        `Method: ${quoteRow.method_code}`,
+        `Amount: ${quoteRow.amount} ${quoteRow.currency}`,
+        `Pricing revision: ${quoteRow.pricing_revision}`,
+        `Organization: ${membership.org.name} (${organizationId})`,
+        `Requester email: ${requesterEmail ?? "not provided"}`,
+        `Contact email: ${contactEmail || requesterEmail || "not provided"}`,
+        `Telegram: ${contactTelegram || "not provided"}`,
+        "",
+        "Payment details (quote snapshot):",
+        quoteRow.payment_details_snapshot,
+        "",
+        "Комментарий пользователя:",
+        paymentComment,
+        "",
+        "Проверьте поступление средств и активируйте доступ в Dev Console → Inbox.",
+      ].join("\n"),
     });
-  } else {
-    logEvent("purchase_request_notify_email_missing", { request_id: requestRow.id });
+  } else if (!idempotent && !developerEmail) {
+    logEvent("purchase_request_notify_email_missing", { request_id: requestId });
   }
 
   if (emailSent) {
     await admin
       .from("platform_purchase_requests")
       .update({ email_sent: true, updated_at: new Date().toISOString() })
-      .eq("id", requestRow.id);
+      .eq("id", requestId);
   }
 
-  await admin.from("platform_audit_log").insert({
-    actor_user_id: userData.user.id,
-    action: "purchase_request.submit",
-    target_type: "platform_purchase_request",
-    target_id: requestRow.id,
-    metadata: {
-      organization_id: organizationId,
-      request_kind: requestKind,
-      email_sent: emailSent,
-      requester_domain: requesterEmail?.split("@")[1] ?? null,
-    },
-  });
+  if (!idempotent) {
+    await admin.from("platform_audit_log").insert({
+      actor_user_id: userData.user.id,
+      action: "purchase_request.submit",
+      target_type: "platform_purchase_request",
+      target_id: requestId,
+      metadata: {
+        organization_id: organizationId,
+        request_kind: requestKind,
+        quote_id: quoteId,
+        email_sent: emailSent,
+        requester_domain: requesterEmail?.split("@")[1] ?? null,
+      },
+    });
+  }
 
-  return jsonResponse({ ok: true, id: requestRow.id, email_sent: emailSent }, 200, req);
+  return jsonResponse(
+    { ok: true, id: requestId, email_sent: emailSent, idempotent },
+    200,
+    req
+  );
 });

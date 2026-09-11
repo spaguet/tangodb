@@ -3,10 +3,11 @@ import { supabase } from "../lib/supabase";
 
 interface SubmitPurchaseRequestInput {
   organizationId: string;
+  quoteId: string;
+  clientRequestId: string;
   paymentComment: string;
   contactEmail?: string;
   contactTelegram?: string;
-  requestKind?: "crm_license" | "renter_miniapp_addon";
 }
 
 export function useSubmitPurchaseRequest() {
@@ -15,10 +16,11 @@ export function useSubmitPurchaseRequest() {
       const { data, error } = await supabase.functions.invoke("submit-purchase-request", {
         body: {
           organization_id: input.organizationId,
+          quote_id: input.quoteId,
+          client_request_id: input.clientRequestId,
           payment_comment: input.paymentComment,
           contact_email: input.contactEmail || undefined,
           contact_telegram: input.contactTelegram || undefined,
-          request_kind: input.requestKind ?? "crm_license",
         },
       });
 

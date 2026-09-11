@@ -372,6 +372,13 @@ export const EN: Record<I18nKey, string> = {
   "license.purchase.request.error": "Failed to send payment information",
   "license.purchase.request.commentTooShort": "Add more details for payment verification (at least 10 characters).",
   "license.purchase.request.commentMinHint": "At least {{min}} characters · {{current}} now",
+  "license.purchase.request.methodLabel": "Payment method for this request",
+  "license.purchase.request.methodRequired": "Select the payment method you used before submitting.",
+  "license.purchase.request.quoteError": "The payment quote expired or is no longer valid. Select the method again and resubmit.",
+  "license.purchase.method.bankTransfer": "Bank transfer (IBAN / account)",
+  "license.purchase.method.vietnameseBankTransfer": "Vietnamese bank transfer",
+  "license.purchase.method.mir": "MIR / Russian card",
+  "license.purchase.method.crypto": "Crypto · {{coin}}",
   "license.waitlist.stripeSoon":
     "Monthly subscription is coming soon. Stripe checkout is not available yet. Leave your email and we will notify you at launch.",
   "license.waitlist.month": "Month",

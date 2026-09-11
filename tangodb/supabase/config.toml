@@ -501,6 +501,12 @@ verify_jwt = true
 [functions.google-calendar-set-freebusy-config]
 verify_jwt = true
 
+[functions.create-purchase-quote]
+verify_jwt = true
+
+[functions.submit-purchase-request]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
