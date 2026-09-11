@@ -64,6 +64,7 @@ import {
   RecordRentalAdvanceModal,
   RentalAdvanceAllocationHistory,
   RenterWalletPayoutModal,
+  RenterWalletAdjustModal,
 } from "./RenterFinanceModals";
 import type { RentalInvoice } from "../../types";
 import { translateMutationBlockedMessage } from "../../hooks/useOnlineStatus";
@@ -75,7 +76,7 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 import LoadingState from "../ui/LoadingState";
 import SectionPillNav, { type SectionPillNavItem } from "../ui/SectionPillNav";
 import QueryErrorState from "../ui/QueryErrorState";
-import { getWalletEntryLabel } from "../../lib/renterWalletEntryLabels";
+import { getWalletEntryLabel, isWalletLedgerDebit } from "../../lib/renterWalletEntryLabels";
 import { openTelegramContact, renterTelegramContactHref } from "../../lib/telegram";
 import RenterPackSurchargeReviewPanel from "./RenterPackSurchargeReviewPanel";
 
@@ -110,6 +111,8 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const canWriteRentalFinance = useCan("finance.read");
   const canRecordPayments = useCan("rentals.payments.write");
   const canWritePayments = !isReadOnly && canRecordPayments;
+  const canWriteBalance = useCan("renters.balance.write");
+  const canAdjustWallet = !isReadOnly && canWriteBalance;
   const canSeeDocuments = useCan("renters.documents.read");
   const canWriteDocuments = useCan("renters.documents.write");
   const canWriteContacts = useCan("renters.contacts.write");
@@ -311,6 +314,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
             canWrite={canWriteRentalFinance}
             canReviewPackSurcharge={canWriteMiniApp || canWriteRentalFinance}
             canWritePayments={canWritePayments}
+            canAdjustWallet={canAdjustWallet}
             canWriteDocuments={canWriteDocuments}
             canManageSettings={canManageSettings}
             toast={toast}
@@ -814,6 +818,7 @@ function FinanceTab({
   canWrite,
   canReviewPackSurcharge,
   canWritePayments,
+  canAdjustWallet,
   canWriteDocuments,
   canManageSettings,
   toast,
@@ -829,6 +834,7 @@ function FinanceTab({
   canWrite: boolean;
   canReviewPackSurcharge: boolean;
   canWritePayments: boolean;
+  canAdjustWallet: boolean;
   canWriteDocuments: boolean;
   canManageSettings: boolean;
   toast: RenterDetailPanelProps["toast"];
@@ -848,6 +854,7 @@ function FinanceTab({
   const resetReliability = useResetRenterReliability();
   const payoutPreviewQuery = usePreviewRenterWalletPayout({ renterId }, canWritePayments);
   const [payoutOpen, setPayoutOpen] = useState(false);
+  const [adjustOpen, setAdjustOpen] = useState(false);
   const [staffAmount, setStaffAmount] = useState("");
   const [staffMethod, setStaffMethod] = useState<"cash" | "qr">("cash");
   const [staffReference, setStaffReference] = useState("");
@@ -1045,6 +1052,15 @@ function FinanceTab({
         />
       </div>
 
+      {canAdjustWallet ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 p-3">
+          <p className="text-xs text-slate-500">{t("renters.detail.walletAdjustHint")}</p>
+          <button type="button" className={btnOpenCls} onClick={() => setAdjustOpen(true)}>
+            {t("renters.detail.walletAdjustAction")}
+          </button>
+        </div>
+      ) : null}
+
       {canWritePayments ? (
         <div className="rounded-lg border border-slate-100 p-3 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1163,6 +1179,11 @@ function FinanceTab({
               <li key={entry.id} className="flex justify-between items-start gap-2 border-b border-slate-50 py-1">
                 <span className="min-w-0">
                   {formatDateTime(entry.createdAt)} · {getWalletEntryLabel(entry.entryType, t)}
+                  {entry.createdByName ? (
+                    <span className="block text-slate-400 truncate">
+                      {t("renters.detail.walletAdjustBy", { name: entry.createdByName })}
+                    </span>
+                  ) : null}
                   {entry.externalReference ? (
                     <span className="block text-slate-400 truncate">
                       {t("renters.detail.staffTopupReference")}: {entry.externalReference}
@@ -1180,13 +1201,9 @@ function FinanceTab({
                 </span>
                 <span className="flex items-center gap-2 shrink-0">
                   <span
-                    className={
-                      entry.entryType === "topup_reversal" || entry.entryType === "wallet_payout"
-                        ? "text-rose-600"
-                        : "text-slate-700"
-                    }
+                    className={isWalletLedgerDebit(entry.entryType) ? "text-rose-600" : "text-slate-700"}
                   >
-                    {entry.entryType === "topup_reversal" || entry.entryType === "wallet_payout" ? "−" : ""}
+                    {isWalletLedgerDebit(entry.entryType) ? "−" : ""}
                     {formatCurrency(entry.amount)}
                   </span>
                   {canWritePayments && entry.canReverse ? (
@@ -1412,6 +1429,15 @@ function FinanceTab({
         renterName={renter.displayName}
         canWriteDocuments={canWriteDocuments}
         onClose={() => setPayoutOpen(false)}
+        onSuccess={refreshFinance}
+        toast={toast}
+      />
+      <RenterWalletAdjustModal
+        open={adjustOpen}
+        renterId={renterId}
+        renterName={renter.displayName}
+        currentWallet={finance.walletBalance}
+        onClose={() => setAdjustOpen(false)}
         onSuccess={refreshFinance}
         toast={toast}
       />

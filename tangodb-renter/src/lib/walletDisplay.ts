@@ -8,7 +8,9 @@ export type WalletEntryMessageKey =
   | "walletEntryRefund"
   | "walletEntryDebtSettle"
   | "walletEntrySurcharge"
-  | "walletEntryWalletPayout";
+  | "walletEntryWalletPayout"
+  | "walletEntryWalletCorrectionCredit"
+  | "walletEntryWalletCorrectionDebit";
 
 const entryLabelKey: Record<string, WalletEntryMessageKey> = {
   topup: "walletEntryTopup",
@@ -19,6 +21,8 @@ const entryLabelKey: Record<string, WalletEntryMessageKey> = {
   debt_settle: "walletEntryDebtSettle",
   surcharge_one_time_recalc: "walletEntrySurcharge",
   wallet_payout: "walletEntryWalletPayout",
+  wallet_correction_credit: "walletEntryWalletCorrectionCredit",
+  wallet_correction_debit: "walletEntryWalletCorrectionDebit",
 };
 
 export function walletEntryLabelKey(entryType: string): WalletEntryMessageKey | null {
@@ -28,7 +32,11 @@ export function walletEntryLabelKey(entryType: string): WalletEntryMessageKey | 
 export function walletEntryIsCredit(entry: Pick<WalletEntry, "direction" | "entry_type">): boolean {
   if (entry.direction === "credit") return true;
   if (entry.direction === "debit") return false;
-  return entry.entry_type === "topup" || entry.entry_type === "refund";
+  return (
+    entry.entry_type === "topup" ||
+    entry.entry_type === "refund" ||
+    entry.entry_type === "wallet_correction_credit"
+  );
 }
 
 export function walletEntryAmountClass(entry: Pick<WalletEntry, "direction" | "entry_type">): string {

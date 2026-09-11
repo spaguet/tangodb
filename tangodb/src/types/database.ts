@@ -11022,6 +11022,7 @@ export type Database = {
       preview_rental_pricing: { Args: { p_payload: Json }; Returns: Json }
       preview_rental_series: { Args: { p_payload: Json }; Returns: Json }
       preview_renter_wallet_payout: { Args: { p_payload: Json }; Returns: Json }
+      preview_staff_renter_wallet_adjust: { Args: { p_payload: Json }; Returns: Json }
       preview_staff_renter_wallet_topup: {
         Args: { p_payload: Json }
         Returns: Json
@@ -11456,6 +11457,7 @@ export type Database = {
         Args: { p_count: number; p_total: number }
         Returns: number[]
       }
+      staff_renter_wallet_adjust: { Args: { p_payload: Json }; Returns: Json }
       staff_renter_wallet_payout: { Args: { p_payload: Json }; Returns: Json }
       staff_renter_wallet_topup: { Args: { p_payload: Json }; Returns: Json }
       store_operation_idempotency: {

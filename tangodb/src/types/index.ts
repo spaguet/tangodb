@@ -741,6 +741,8 @@ export interface RenterWalletLedgerEntry {
   correctionReason?: string | null;
   correctsLedgerId?: string | null;
   payoutMethod?: string | null;
+  createdBy?: string | null;
+  createdByName?: string | null;
   canReverse?: boolean;
 }
 

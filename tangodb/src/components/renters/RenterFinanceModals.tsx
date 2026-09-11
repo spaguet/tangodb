@@ -18,6 +18,10 @@ import {
   useStaffRenterWalletPayout,
   type RenterWalletPayoutMethod,
 } from "../../hooks/useRenterWalletPayout";
+import {
+  usePreviewRenterWalletAdjust,
+  useStaffRenterWalletAdjust,
+} from "../../hooks/useRenterWalletAdjust";
 import { minOpenOperationDate, orgLocalDateString } from "../../lib/orgFinanceDate";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
@@ -807,6 +811,163 @@ export function RenterWalletPayoutModal({
           className={btnAddCls}
         >
           {t("renters.detail.payoutConfirm")}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+export function RenterWalletAdjustModal({
+  open,
+  renterId,
+  renterName,
+  currentWallet,
+  onClose,
+  onSuccess,
+  toast,
+}: {
+  open: boolean;
+  renterId: string;
+  renterName: string;
+  currentWallet: number;
+  onClose: () => void;
+  onSuccess: () => void;
+  toast: ToastFn;
+}) {
+  const { t } = useI18n();
+  const adjust = useStaffRenterWalletAdjust();
+  const [targetAmount, setTargetAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setTargetAmount(String(currentWallet));
+    setReason("");
+    setIdempotencyKey(crypto.randomUUID());
+  }, [open, renterId, currentWallet]);
+
+  const parsedTarget = Number(String(targetAmount).replace(",", "."));
+  const previewQuery = usePreviewRenterWalletAdjust(
+    {
+      renterId,
+      targetAmount: Number.isFinite(parsedTarget) ? parsedTarget : null,
+    },
+    open
+  );
+  const preview = previewQuery.data;
+  const pending = adjust.isPending;
+
+  const handleSubmit = async () => {
+    if (!reason.trim() || reason.trim().length < 3) {
+      toast(t("renter.walletAdjust.reasonRequired"), "error");
+      return;
+    }
+    if (!Number.isFinite(parsedTarget) || parsedTarget < 0) {
+      toast(t("renter.walletAdjust.amountInvalid"), "error");
+      return;
+    }
+    if (preview && parsedTarget < preview.minAmount) {
+      toast(t("renter.walletAdjust.belowFloor"), "error");
+      return;
+    }
+
+    const res = await adjust.mutateAsync({
+      renterId,
+      targetAmount: parsedTarget,
+      reason: reason.trim(),
+      idempotencyKey,
+    });
+    if (!res.success) {
+      if (res.error === "idempotency_conflict") {
+        setIdempotencyKey(crypto.randomUUID());
+      }
+      toast(resolveMutationError(res.error, "renter.walletAdjust.failed", t), "error");
+      return;
+    }
+    toast(
+      res.alreadyApplied
+        ? t("renter.walletAdjust.alreadyApplied")
+        : t("renters.detail.walletAdjustSuccess", { amount: formatCurrency(res.walletBalanceAfter) }),
+      res.alreadyApplied ? "info" : "success"
+    );
+    onSuccess();
+    onClose();
+  };
+
+  return (
+    <ModalShell
+      open={open}
+      title={t("renters.detail.walletAdjustTitle")}
+      icon={Wallet}
+      onClose={onClose}
+      pending={pending}
+      t={t}
+    >
+      <p className="text-xs text-slate-500">{t("renters.detail.walletAdjustHint")}</p>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+        <dt className="text-slate-400">{t("renters.detail.staffTopupReviewRenter")}</dt>
+        <dd className="font-medium text-slate-800 truncate">{renterName}</dd>
+        <dt className="text-slate-400">{t("renters.detail.walletAdjustCurrent")}</dt>
+        <dd className="font-medium text-slate-800">{formatCurrency(currentWallet)}</dd>
+        {preview ? (
+          <>
+            <dt className="text-slate-400">{t("renters.detail.walletAdjustMin")}</dt>
+            <dd className="font-medium text-slate-800">{formatCurrency(preview.minAmount)}</dd>
+          </>
+        ) : null}
+      </dl>
+      <div>
+        <label className={labelCls}>{t("renters.detail.walletAdjustNewAmount")}</label>
+        <input
+          className={fieldCls}
+          inputMode="decimal"
+          value={targetAmount}
+          onChange={(e) => setTargetAmount(e.target.value)}
+          disabled={pending}
+        />
+      </div>
+      <div>
+        <label className={labelCls}>{t("renters.detail.walletAdjustReason")}</label>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={3}
+          className={`${fieldCls} resize-y min-h-[4rem]`}
+          placeholder={t("renters.detail.walletAdjustReasonPlaceholder")}
+          disabled={pending}
+        />
+      </div>
+      {previewQuery.isLoading ? (
+        <p className="text-xs text-slate-400">{t("common.loading.default")}</p>
+      ) : previewQuery.isError ? (
+        <p className="text-xs text-rose-600">
+          {resolveMutationError(
+            previewQuery.error instanceof Error ? previewQuery.error.message : null,
+            "renter.walletAdjust.previewFailed",
+            t
+          )}
+        </p>
+      ) : preview && preview.direction !== "none" ? (
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-1 text-xs">
+          <p>
+            {preview.direction === "debit"
+              ? t("renters.detail.walletAdjustDeltaDebit", { amount: formatCurrency(preview.delta) })
+              : t("renters.detail.walletAdjustDeltaCredit", { amount: formatCurrency(preview.delta) })}
+          </p>
+          {preview.direction === "credit" ? (
+            <p className="text-slate-500">{t("renters.detail.walletAdjustCreditHint")}</p>
+          ) : (
+            <p className="text-slate-500">{t("renters.detail.walletAdjustDebitHint")}</p>
+          )}
+        </div>
+      ) : null}
+      <div className="flex gap-2 pt-1">
+        <button type="button" onClick={onClose} disabled={pending} className={btnCancelCls}>
+          {t("common.cancel")}
+        </button>
+        <button type="button" onClick={() => void handleSubmit()} disabled={pending} className={btnAddCls}>
+          {t("renters.detail.walletAdjustConfirm")}
         </button>
       </div>
     </ModalShell>
