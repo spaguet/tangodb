@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.11.2",
+  "version": "2.11.3",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -25,6 +25,8 @@
     "test:db:rls": "node scripts/psql-local-test.mjs -f supabase/tests/v2_business_rls_test.sql",
     "test:db:migration": "node scripts/psql-local-test.mjs -f supabase/tests/v2_version_migration_test.sql",
     "test:db:subscription": "node scripts/psql-local-test.mjs -f supabase/tests/v2_subscription_test.sql",
+    "test:db:crm-monthly-s2a": "node scripts/psql-local-test.mjs -f supabase/tests/crm_monthly_subscription_s2a_test.sql",
+    "test:db:crm-monthly-s2c": "node scripts/psql-local-test.mjs -f supabase/tests/crm_monthly_subscription_s2c_test.sql",
     "test:db:schedule-overlap": "node scripts/psql-local-test.mjs -f supabase/tests/schedule_overlap_test.sql",
     "test:db:schedule-slot-overlap-retired": "node scripts/psql-local-test.mjs -f supabase/tests/schedule_slot_overlap_retired_test.sql",
     "test:db:schedule-location-conflict": "node scripts/psql-local-test.mjs -f supabase/tests/schedule_location_has_conflict_retired_test.sql",

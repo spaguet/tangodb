@@ -10,10 +10,13 @@ const RATE_WINDOW_MS = 15 * 60_000;
 type InboxAction =
   | "list"
   | "activate"
+  | "preview_activate"
   | "close"
   | "pause_addon"
   | "resume_addon"
   | "update_addon_period";
+
+type InboxKindFilter = "lifetime" | "monthly" | "addon" | "all";
 
 interface PurchaseInboxBody {
   action?: InboxAction;
@@ -21,6 +24,7 @@ interface PurchaseInboxBody {
   organization_id?: string;
   note?: string;
   status?: string;
+  kind?: InboxKindFilter;
   period_start?: string;
   period_end?: string;
 }
@@ -35,6 +39,14 @@ function parseIsoDate(value: unknown): string | null {
   return raw;
 }
 
+function parseIsoDateTime(value: unknown): string | null {
+  const raw = asString(value, 64);
+  if (!raw) return null;
+  const ms = Date.parse(raw);
+  if (Number.isNaN(ms)) return null;
+  return new Date(ms).toISOString();
+}
+
 function defaultAddonPeriod(): { periodStart: string; periodEnd: string } {
   const now = new Date();
   const year = now.getUTCFullYear();
@@ -42,6 +54,33 @@ function defaultAddonPeriod(): { periodStart: string; periodEnd: string } {
   const periodStart = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
   const periodEnd = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10);
   return { periodStart, periodEnd };
+}
+
+function kindToRequestKind(kind: InboxKindFilter): string | null {
+  if (kind === "lifetime") return "crm_license";
+  if (kind === "monthly") return "crm_subscription";
+  if (kind === "addon") return "renter_miniapp_addon";
+  return null;
+}
+
+function mapRpcActivateError(message: string, req: Request) {
+  const lower = message.toLowerCase();
+  if (lower.includes("request_not_found")) {
+    return jsonResponse({ error: "request_not_found" }, 404, req);
+  }
+  if (lower.includes("month_on_lifetime_forbidden") || lower.includes("already_lifetime")) {
+    return jsonResponse({ error: "activation_forbidden" }, 400, req);
+  }
+  if (lower.includes("period_override_note_required")) {
+    return jsonResponse({ error: "period_override_note_required" }, 400, req);
+  }
+  if (lower.includes("invalid_period")) {
+    return jsonResponse({ error: "invalid_period" }, 400, req);
+  }
+  if (lower.includes("request_not_new")) {
+    return jsonResponse({ error: "request_not_new" }, 400, req);
+  }
+  return jsonResponse({ error: "activation_failed" }, 500, req);
 }
 
 async function requireDeveloper(req: Request) {
@@ -115,15 +154,19 @@ Deno.serve(async (req) => {
 
   if (action === "list") {
     const status = asString(body.status, 40);
+    const kindFilter = asString(body.kind, 20) as InboxKindFilter;
+    const requestKind = kindToRequestKind(kindFilter);
+
     let query = admin
       .from("platform_purchase_requests")
       .select(
-        "id, organization_id, requester_email, organization_name, contact_email, contact_telegram, payment_comment, request_kind, status, email_sent, access_key_id, activated_at, closed_at, created_at, updated_at, organization:organizations(status)"
+        "id, organization_id, requester_email, organization_name, contact_email, contact_telegram, payment_comment, request_kind, status, email_sent, access_key_id, activated_at, activated_period_start, activated_period_end, closed_at, created_at, updated_at, organization:organizations(status)"
       )
       .order("created_at", { ascending: false })
       .limit(100);
 
     if (status && status !== "all") query = query.eq("status", status);
+    if (requestKind) query = query.eq("request_kind", requestKind);
 
     const { data, error } = await query;
     if (error) {
@@ -132,6 +175,25 @@ Deno.serve(async (req) => {
     }
 
     return jsonResponse({ ok: true, requests: data ?? [] }, 200, req);
+  }
+
+  const requestId = asString(body.request_id, 80);
+
+  if (action === "preview_activate") {
+    if (!requestId) {
+      return jsonResponse({ error: "request_id_required" }, 400, req);
+    }
+
+    const { data, error } = await admin.rpc("preview_activate_platform_purchase_request", {
+      p_request_id: requestId,
+    });
+
+    if (error) {
+      logEvent("dev_console_purchase_preview_failed", { code: error.code ?? "unknown" });
+      return mapRpcActivateError(error.message ?? "", req);
+    }
+
+    return jsonResponse({ ok: true, preview: data }, 200, req);
   }
 
   if (action === "pause_addon" || action === "resume_addon" || action === "update_addon_period") {
@@ -207,7 +269,6 @@ Deno.serve(async (req) => {
     );
   }
 
-  const requestId = asString(body.request_id, 80);
   if (!requestId) {
     return jsonResponse({ error: "request_id_required" }, 400, req);
   }
@@ -252,13 +313,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "unknown_action" }, 400, req);
   }
 
-  if (purchaseRequest.status === "activated") {
-    return jsonResponse({ error: "request_already_activated" }, 400, req);
-  }
-
-  const requestKind = purchaseRequest.request_kind === "renter_miniapp_addon"
-    ? "renter_miniapp_addon"
-    : "crm_license";
+  const requestKind = purchaseRequest.request_kind as string;
 
   if (requestKind === "renter_miniapp_addon") {
     const defaults = defaultAddonPeriod();
@@ -320,120 +375,96 @@ Deno.serve(async (req) => {
     );
   }
 
-  const pepper = Deno.env.get("ACCESS_KEY_PEPPER");
-  if (!pepper) {
-    return jsonResponse({ error: "Service unavailable" }, 500, req);
+  const periodStartOverride = parseIsoDateTime(body.period_start);
+  const periodEndOverride = parseIsoDateTime(body.period_end);
+  const note = asString(body.note, 300) || null;
+
+  let lifetimeKeyHash: string | null = null;
+  let plaintextKey: string | null = null;
+
+  if (requestKind === "crm_license") {
+    const pepper = Deno.env.get("ACCESS_KEY_PEPPER");
+    if (!pepper) {
+      return jsonResponse({ error: "Service unavailable" }, 500, req);
+    }
+    plaintextKey = generateAccessKey("lifetime");
+    lifetimeKeyHash = await hashAccessKey(plaintextKey, pepper);
   }
 
-  const versionCode = Deno.env.get("CRM_VERSION_CODE") ?? "v2";
-  const { data: version, error: versionError } = await admin
-    .from("crm_product_versions")
-    .select("id")
-    .eq("is_current", true)
-    .eq("code", versionCode)
-    .maybeSingle();
+  const recipientEmail =
+    purchaseRequest.contact_email || purchaseRequest.requester_email || null;
 
-  if (versionError || !version) {
-    return jsonResponse({ error: "Service unavailable" }, 500, req);
-  }
+  const { data: rpcResult, error: rpcError } = await admin.rpc(
+    "activate_platform_purchase_request",
+    {
+      p_request_id: requestId,
+      p_actor_id: auth.user.id,
+      p_period_start: periodStartOverride,
+      p_period_end: periodEndOverride,
+      p_note: note,
+      p_lifetime_key_hash: lifetimeKeyHash,
+      p_lifetime_recipient_email: recipientEmail,
+    }
+  );
 
-  const plaintextKey = generateAccessKey("lifetime");
-  const keyHash = await hashAccessKey(plaintextKey, pepper);
-  const now = new Date().toISOString();
-  const recipientEmail = purchaseRequest.contact_email || purchaseRequest.requester_email || null;
-
-  const { data: keyRow, error: keyError } = await admin
-    .from("access_keys")
-    .insert({
-      key_hash: keyHash,
-      key_type: "lifetime",
-      status: "consumed",
-      crm_version_id: version.id,
-      email: recipientEmail,
-      organization_id: purchaseRequest.organization_id,
-      activated_at: now,
-      created_by: auth.user.id,
-    })
-    .select("id")
-    .single();
-
-  if (keyError || !keyRow) {
-    logEvent("dev_console_purchase_key_failed", { code: keyError?.code ?? "unknown" });
-    return jsonResponse({ error: "activation_key_failed" }, 500, req);
-  }
-
-  const { error: orgError } = await admin
-    .from("organizations")
-    .update({
-      status: "licensed",
-      access_key_id: keyRow.id,
-      data_purge_at: null,
-      demo_expires_at: null,
-    })
-    .eq("id", purchaseRequest.organization_id);
-
-  if (orgError) {
-    logEvent("dev_console_purchase_org_failed", { code: orgError.code ?? "unknown" });
-    return jsonResponse({ error: "organization_activation_failed" }, 500, req);
-  }
-
-  const { error: licenseError } = await admin
-    .from("organization_licenses")
-    .upsert(
-      {
-        organization_id: purchaseRequest.organization_id,
-        crm_version_id: version.id,
-        license_type: "lifetime",
-        access_key_id: keyRow.id,
-        activated_at: now,
-        expires_at: null,
-      },
-      { onConflict: "organization_id" }
-    );
-
-  if (licenseError) {
-    logEvent("dev_console_purchase_license_failed", { code: licenseError.code ?? "unknown" });
-    return jsonResponse({ error: "license_activation_failed" }, 500, req);
-  }
-
-  const { error: updateRequestError } = await admin
-    .from("platform_purchase_requests")
-    .update({
-      status: "activated",
-      access_key_id: keyRow.id,
-      activated_by: auth.user.id,
-      activated_at: now,
-      updated_at: now,
-    })
-    .eq("id", requestId);
-
-  if (updateRequestError) {
-    logEvent("dev_console_purchase_request_update_failed", {
-      code: updateRequestError.code ?? "unknown",
+  if (rpcError) {
+    logEvent("dev_console_purchase_activate_rpc_failed", {
+      code: rpcError.code ?? "unknown",
+      kind: requestKind,
     });
+    return mapRpcActivateError(rpcError.message ?? "", req);
   }
+
+  const result = rpcResult as Record<string, unknown>;
+  const alreadyActivated = result.already_activated === true;
+
+  const auditAction =
+    requestKind === "crm_subscription"
+      ? "purchase_request.activate_month"
+      : "purchase_request.activate_lifetime";
 
   await admin.from("platform_audit_log").insert({
     actor_user_id: auth.user.id,
-    action: "purchase_request.activate_lifetime",
+    action: auditAction,
     target_type: "platform_purchase_request",
     target_id: requestId,
     metadata: {
       organization_id: purchaseRequest.organization_id,
-      access_key_id: keyRow.id,
-      recipient_domain: recipientEmail?.split("@")[1] ?? null,
-      note: asString(body.note, 300) || null,
+      request_kind: requestKind,
+      already_activated: alreadyActivated,
+      activated_period_start: result.activated_period_start ?? null,
+      activated_period_end: result.activated_period_end ?? null,
+      access_key_id: result.access_key_id ?? null,
+      note,
+      period_override: periodStartOverride || periodEndOverride ? true : false,
     },
   });
+
+  if (requestKind === "crm_subscription") {
+    return jsonResponse(
+      {
+        ok: true,
+        request_kind: requestKind,
+        already_activated: alreadyActivated,
+        organization_id: purchaseRequest.organization_id,
+        period_start: result.activated_period_start,
+        period_end: result.activated_period_end,
+        message: alreadyActivated ? "Month already activated" : "CRM month activated",
+      },
+      200,
+      req
+    );
+  }
 
   return jsonResponse(
     {
       ok: true,
       request_kind: requestKind,
-      key: plaintextKey,
-      key_id: keyRow.id,
+      already_activated: alreadyActivated,
+      key: alreadyActivated ? undefined : plaintextKey,
+      key_id: result.access_key_id,
       organization_id: purchaseRequest.organization_id,
-      message: "Lifetime access activated",
+      message: alreadyActivated ? "Lifetime already activated" : "Lifetime access activated",
     },
     200,
     req

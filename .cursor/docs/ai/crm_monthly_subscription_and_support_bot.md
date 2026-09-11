@@ -2,7 +2,7 @@
 
 Спека узла: **ручная ежемесячная подписка на CRM** тем же рельсом, что пожизненная лицензия, плюс **outbound-бот разработчику** для уведомлений о заявках на оплату, новой базе и обращениях поддержки из CRM.
 
-Статус: **S2b закрыт, можно S2c** — проверенный черновик + промпты **§16** (сверка с кодом **2.10.39**, повтор 2026-09-11: RLS `suspended` только owner, «S9»≠аудит S09, quote без выбора способа, T−7 только S4; **S0** 2026-09-11: §11 п. 1–3, 8–9, 12 + дефолты 4–5, 10–11; **S1** 2026-09-11: контракт цен v2 + Dev Console). Снимок: `APP_VERSION` / `package.json` = **2.11.2** (после S2b). Подверсия **2.11** открыта (VER-1); каждый следующий код-номер — микропатч `2.11.y`; S7 — лендинг + `decision_log.md` + `architecture.md`. **Платформенный Telegram-бот — в скоупе v1, подключать в S5a+S5b** (решение владельца 2026-09-11; отдельный бот BotFather, не студийный): outbound-only в один `telegram_chat_id` (группа предпочтительна, личка допустима), без webhook и без чата с пользователями CRM; до настройки бота заявки и email не блокируются (Telegram-строка outbox = `blocked`). Паттерн outbox: `renter_telegram_miniapp.md` (§ outbox), но таблицы/токен/worker — отдельно (§1.4). Промпты агента — **§16** (один новый чат = один номер S*).
+Статус: **S2c закрыт, можно S2d** — проверенный черновик + промпты **§16** (сверка с кодом **2.10.39**, повтор 2026-09-11: RLS `suspended` только owner, «S9»≠аудит S09, quote без выбора способа, T−7 только S4; **S0** 2026-09-11: §11 п. 1–3, 8–9, 12 + дефолты 4–5, 10–11; **S1** 2026-09-11: контракт цен v2 + Dev Console). Снимок: `APP_VERSION` / `package.json` = **2.11.3** (после S2c). Подверсия **2.11** открыта (VER-1); каждый следующий код-номер — микропатч `2.11.y`; S7 — лендинг + `decision_log.md` + `architecture.md`. **Платформенный Telegram-бот — в скоупе v1, подключать в S5a+S5b** (решение владельца 2026-09-11; отдельный бот BotFather, не студийный): outbound-only в один `telegram_chat_id` (группа предпочтительна, личка допустима), без webhook и без чата с пользователями CRM; до настройки бота заявки и email не блокируются (Telegram-строка outbox = `blocked`). Паттерн outbox: `renter_telegram_miniapp.md` (§ outbox), но таблицы/токен/worker — отдельно (§1.4). Промпты агента — **§16** (один новый чат = один номер S*).
 
 **Очередь §16** (линейно: следующий номер только после DoD предыдущего; «Этап 2/3/5» — заголовки, не параллельный запуск). Галочку после DoD ставь **здесь и в §16 «Последовательность промптов»**:
 
@@ -10,7 +10,7 @@
 - [x] **S1** — контракт цены v2 + Dev Console/backfill + **2.11.0**
 - [x] **S2a** — SQL: quotes, kind, hold, anchor, submit/activate RPC
 - [x] **S2b** — Edge `create-purchase-quote` + `submit-purchase-request`
-- [ ] **S2c** — атомарный Inbox Activate month/lifetime + Billing
+- [x] **S2c** — атомарный Inbox Activate month/lifetime + Billing
 - [ ] **S2d** — RLS: отозвать authenticated INSERT заявок
 - [ ] **S3a** — RBAC/гейты/waitlist/`LicenseRequired` (панель покупки ещё не monthly)
 - [ ] **S3b** — CRM UI: SKU → quote → submit
@@ -1140,7 +1140,7 @@ S1 — контракт цены (без продажи месяца в CRM). S2
 Не переходи к S2c. DoD закрыт — стоп.
 ```
 
-- [ ] **S2c** — атомарный Inbox Activate month/lifetime + Billing
+- [x] **S2c** — атомарный Inbox Activate month/lifetime + Billing
 
 ```
 Прочитай .cursor/docs/ai/AI_CONTEXT.md, затем .cursor/docs/ai/crm_monthly_subscription_and_support_bot.md §4.3–4.4, §8.21–8.22, §8.26, §8.36, §8.39, §8.45, §16 #### S2c. codegraph: PurchaseInboxPage defaultPeriod dev-console-purchase-inbox dev-console-adjust-subscription (tangodb-dev-console + Edge).
@@ -1394,7 +1394,7 @@ DoD:
 
 #### S2c — Inbox Activate month/lifetime + Billing
 
-- [ ] DoD закрыт
+- [x] DoD закрыт
 
 ```
 Задача: S2c. Dev Console Inbox и Billing на atomic RPC. Без CRM витрины месяца.
