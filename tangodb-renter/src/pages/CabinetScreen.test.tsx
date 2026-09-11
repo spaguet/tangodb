@@ -15,10 +15,6 @@ vi.mock("../lib/rpc", () => ({
   }),
 }));
 
-vi.mock("../components/BotBanner", () => ({
-  default: () => null,
-}));
-
 vi.mock("../components/schedule/ScheduleTab", () => ({
   default: ({
     onOpenBooking,

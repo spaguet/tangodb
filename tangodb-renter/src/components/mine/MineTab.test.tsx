@@ -118,7 +118,7 @@ describe("MineTab stage B surfaces", () => {
     expect(onConsumed).toHaveBeenCalled();
   });
 
-  it("shows undelivered Telegram notification summary", async () => {
+  it("acks undelivered Telegram notifications without showing a banner", async () => {
     mockLoadedMine();
     vi.mocked(rpc.rpcAckOutboxSkipped).mockResolvedValue();
 
@@ -132,9 +132,9 @@ describe("MineTab stage B surfaces", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Не доставлено уведомлений в Telegram: 3/i)).toBeTruthy();
+      expect(rpc.rpcAckOutboxSkipped).toHaveBeenCalled();
     });
-    expect(rpc.rpcAckOutboxSkipped).toHaveBeenCalled();
+    expect(screen.queryByText(/Не доставлено уведомлений/i)).toBeNull();
   });
 
   it("initializes profile fields from bootstrap", async () => {

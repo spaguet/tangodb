@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../lib/auth";
-import BotBanner from "../components/BotBanner";
 import RentalRulesSheet from "../components/RentalRulesSheet";
 import TabBar, { type CabinetTab } from "../components/TabBar";
 import MineTab from "../components/mine/MineTab";
@@ -114,13 +113,6 @@ export default function CabinetScreen({
       <TabBar locale={locale} active={tab} onChange={setTab} />
 
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <BotBanner
-          locale={locale}
-          botStarted={bootstrap.botStarted}
-          allowsWrite={bootstrap.allowsWrite}
-          botUrl={bootstrap.botUrl}
-        />
-
         {tab === "schedule" ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <ScheduleTab

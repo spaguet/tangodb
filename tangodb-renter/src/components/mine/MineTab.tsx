@@ -242,14 +242,6 @@ export default function MineTab({
     <div className="flex flex-col gap-4 bg-slate-50 px-4 pb-8 pt-3 text-slate-800">
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
-      {bootstrap.undeliveredNotifications > 0 ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          {tFill(locale, "undeliveredNotifications", {
-            count: bootstrap.undeliveredNotifications,
-          })}
-        </p>
-      ) : null}
-
       {bootstrap.pendingSurchargeReviews.length > 0 ? (
         <div className="space-y-2">
           {bootstrap.pendingSurchargeReviews.map((review) => (

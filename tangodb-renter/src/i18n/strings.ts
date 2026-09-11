@@ -157,13 +157,6 @@ const messages = {
     topupPendingHint:
       "Студия проверяет перевод. После подтверждения баланс и холды обновятся автоматически — нажмите «Обновить», если статус не сменился.",
     topupPendingBlocked: "Новая заявка недоступна, пока студия не обработает текущую.",
-  botBanner: "Откройте бота студии в Telegram и нажмите Start — иначе уведомления не придут.",
-    botBlockedBanner:
-      "Вы заблокировали бота студии — уведомления не доставляются. Разблокируйте бота в Telegram.",
-    botOpenCta: "Открыть бота",
-    botUnblockCta: "Разблокировать бота",
-    undeliveredNotifications:
-      "Не доставлено уведомлений в Telegram: {count}. Откройте бота студии и нажмите Start.",
     addonInactiveCreate: "Бронирование временно недоступно. Отмена холдов и просмотр записей доступны.",
     addonInactiveTopup: "Заявки на пополнение недоступны — обратитесь в студию.",
     weekOf: "Неделя {n} из {total}",
@@ -356,13 +349,6 @@ const messages = {
     topupPendingHint:
       "The studio is reviewing your transfer. After confirmation, balance and holds update automatically — tap Refresh if the status has not changed.",
     topupPendingBlocked: "A new request is unavailable until the studio resolves the current one.",
-    botBanner: "Open the studio bot in Telegram and tap Start — otherwise you won't get notifications.",
-    botBlockedBanner:
-      "You blocked the studio bot — notifications cannot be delivered. Unblock the bot in Telegram.",
-    botUnblockCta: "Unblock bot",
-    botOpenCta: "Open bot",
-    undeliveredNotifications:
-      "Undelivered Telegram notifications: {count}. Open the studio bot and tap Start.",
     addonInactiveCreate: "Booking is temporarily unavailable. You can still view bookings and delete holds.",
     addonInactiveTopup: "Top-up requests are unavailable — contact the studio.",
     weekOf: "Week {n} of {total}",
