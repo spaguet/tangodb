@@ -15,6 +15,7 @@ import {
 import { useUpdatePersonalLesson } from "../../hooks/usePersonalLessons";
 import { useUpdateGroupScheduleMetadata } from "../../hooks/useSchedule";
 import { resolveMutationError, isI18nKey } from "../../lib/resolveMutationError";
+import { dowShort } from "../../lib/utils";
 import { canViewScheduleMissingTeachersBlock } from "../../lib/scheduleLessonAccess";
 
 interface ScheduleMissingTeachersBlockProps {

@@ -864,7 +864,7 @@ export default function PayPersonalLessonModal({
                   {bookingPaymentMode === "tariff" && (
                     <>
                       {needsBookedTariffLookup && !bookedPriceByIdFetched ? (
-                        <p className="text-xs text-slate-500">{t("common.loading")}</p>
+                        <p className="text-xs text-slate-500">{t("common.loading.data")}</p>
                       ) : lessonTariffs.length > 0 ? (
                         <AppSelect
                           label={t("common.tariffPerLesson")}

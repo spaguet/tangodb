@@ -660,7 +660,7 @@ export default function EditLessonPopup({
       !prices.some((price) => price.id === lesson.priceId)
   );
   const { data: bookedPriceById } = usePriceById(
-    needsBookedTariffLookup ? lesson?.priceId ?? null : null
+    needsBookedTariffLookup && lesson?.kind === "personal" ? lesson.priceId ?? null : null
   );
 
   const activeLessonTariffs = useMemo(
