@@ -181,7 +181,23 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
 
   if (detailQuery.isLoading) return <LoadingState label={t("renters.loading")} />;
   if (detailQuery.isError || !detailQuery.data) {
-    return <QueryErrorState error={detailQuery.error} />;
+    return (
+      <div className="space-y-4">
+        <button
+          type="button"
+          onClick={() => navigate("/renters")}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          {t("renters.detail.back")}
+        </button>
+        <QueryErrorState
+          message={detailQuery.isError ? undefined : t("renters.error.notFound")}
+          error={detailQuery.error}
+          onRetry={detailQuery.isError ? () => void detailQuery.refetch() : undefined}
+        />
+      </div>
+    );
   }
 
   const detail = detailQuery.data;

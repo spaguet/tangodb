@@ -174,7 +174,11 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
   };
 
   if (listQuery.isLoading) return <LoadingState label={t("renters.loading")} />;
-  if (listQuery.isError) return <QueryErrorState error={listQuery.error} />;
+  if (listQuery.isError) {
+    return (
+      <QueryErrorState error={listQuery.error} onRetry={() => void listQuery.refetch()} />
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">

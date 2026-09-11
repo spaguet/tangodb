@@ -1,22 +1,23 @@
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
+import { queryErrorDetail, queryErrorTitle } from "../../lib/queryError";
 
 interface QueryErrorStateProps {
   message?: string;
-  error?: Error | null;
+  error?: unknown;
   onRetry?: () => void;
 }
 
 export default function QueryErrorState({ message, error, onRetry }: QueryErrorStateProps) {
   const { t } = useI18n();
+  const title = queryErrorTitle(error, t, message);
+  const detail = queryErrorDetail(error, t, title);
 
   return (
     <div className="p-6 text-center text-rose-600">
       <AlertCircle className="w-8 h-8 mx-auto mb-2" />
-      <p className="font-semibold">{message ?? t("common.error.loadFailed")}</p>
-      {error?.message ? (
-        <p className="text-xs text-slate-500 mt-1">{error.message}</p>
-      ) : null}
+      <p className="font-semibold">{title}</p>
+      {detail ? <p className="text-xs text-slate-500 mt-1">{detail}</p> : null}
       {onRetry ? (
         <button
           type="button"

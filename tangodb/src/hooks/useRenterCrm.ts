@@ -47,6 +47,9 @@ export function renterRentalsQueryKey(renterId: string) {
   return [...rentersQueryKey, "rentals", renterId] as const;
 }
 
+const RENTER_UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function mapListItem(row: Record<string, unknown>): RenterListItem {
   return {
     id: String(row.id),
@@ -294,6 +297,10 @@ export function useRenterDetail(renterId: string | null, enabled = true) {
     queryKey: withOrgId(renterDetailQueryKey(renterId ?? "")),
     enabled: orgEnabled && enabled && !!renterId,
     queryFn: async () => {
+      if (!renterId || !RENTER_UUID_RE.test(renterId)) {
+        return null;
+      }
+
       const { data, error } = await supabase.rpc("get_renter_detail", {
         p_renter_id: renterId,
       });
@@ -302,7 +309,9 @@ export function useRenterDetail(renterId: string | null, enabled = true) {
 
       const result = data as Record<string, unknown> | null;
       if (!result?.success) {
-        throw new Error(String(result?.error ?? "renters.error.loadFailed"));
+        const rpcError = String(result?.error ?? "renters.error.loadFailed");
+        if (rpcError === "renters.error.notFound") return null;
+        throw new Error(rpcError);
       }
 
       const renter = result.renter as Record<string, unknown>;
