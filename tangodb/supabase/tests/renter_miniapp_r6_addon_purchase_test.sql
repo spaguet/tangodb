@@ -87,12 +87,22 @@ BEGIN
   END;
   PERFORM _test_assert(v_raised, 'authenticated INSERT renter_miniapp_addon must fail');
 
-  INSERT INTO platform_purchase_requests (
-    id, organization_id, requester_user_id, organization_name, payment_comment
-  )
-  VALUES (
-    gen_random_uuid(), v_org_licensed, v_owner, 'Licensed', 'crm license request long enough'
-  );
+  v_raised := false;
+  BEGIN
+    INSERT INTO platform_purchase_requests (
+      id, organization_id, requester_user_id, organization_name, payment_comment
+    )
+    VALUES (
+      gen_random_uuid(), v_org_licensed, v_owner, 'Licensed', 'crm license request long enough'
+    );
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      v_raised := true;
+    WHEN OTHERS THEN
+      v_raised := SQLERRM LIKE '%permission denied%'
+        OR SQLERRM LIKE '%purchase_request_kind_forbidden%';
+  END;
+  PERFORM _test_assert(v_raised, 'authenticated INSERT crm_license must fail (S2d)');
 
   PERFORM set_config('request.jwt.claim.role', 'service_role', true);
   PERFORM set_config('role', 'service_role', true);
