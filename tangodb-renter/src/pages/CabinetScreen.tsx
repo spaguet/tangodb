@@ -32,7 +32,6 @@ export default function CabinetScreen({
   const [walletRefresh, setWalletRefresh] = useState(0);
   const [topupSheetAmount, setTopupSheetAmount] = useState<number | null>(null);
   const [pendingBooking, setPendingBooking] = useState<PendingBooking | null>(null);
-  const [focusRentalId, setFocusRentalId] = useState<string | null>(null);
   const [pollActive, setPollActive] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const prevTabRef = useRef<CabinetTab>(tab);
@@ -80,18 +79,6 @@ export default function CabinetScreen({
     refreshCabinet();
   };
 
-  const openMine = (rentalId?: string) => {
-    refreshCabinet();
-    if (rentalId) setFocusRentalId(rentalId);
-    setTab("mine");
-  };
-
-  useEffect(() => {
-    if (!focusRentalId) return;
-    const id = window.setTimeout(() => setFocusRentalId(null), 2500);
-    return () => window.clearTimeout(id);
-  }, [focusRentalId]);
-
   return (
     <div className="flex h-[100dvh] flex-col bg-slate-50 font-sans text-slate-800 antialiased">
       <header className="flex shrink-0 items-start justify-between gap-2 border-b border-slate-200 bg-white px-4 py-2 shadow-xs">
@@ -120,9 +107,9 @@ export default function CabinetScreen({
               bootstrap={bootstrap}
               supabase={supabase}
               refreshKey={scheduleRefresh}
-              onOpenMine={openMine}
               onTopup={openTopup}
               onOpenBooking={setPendingBooking}
+              onRefreshAll={refreshCabinet}
             />
           </div>
         ) : (
@@ -132,7 +119,6 @@ export default function CabinetScreen({
               bootstrap={bootstrap}
               supabase={supabase}
               refreshKey={mineRefresh}
-              focusRentalId={focusRentalId}
               onRefreshAll={refreshCabinet}
             />
           </div>

@@ -21,7 +21,7 @@ import {
   type SlotState,
 } from "../../lib/occupancyMerge";
 import { computeServerOffsetMs, serverNowMs } from "../../lib/serverTime";
-import type { OccupancyData } from "../../lib/types";
+import type { MineSlot, OccupancyData } from "../../lib/types";
 import { t, WEEKDAY_LABELS, type Locale, type MessageKey } from "../../i18n/strings";
 
 type WeeklyOccupancyGridProps = {
@@ -32,7 +32,7 @@ type WeeklyOccupancyGridProps = {
   occupancy: OccupancyData;
   addonActive: boolean;
   onFreeCell: (date: string, start: string) => void;
-  onMineCell: (rentalId: string) => void;
+  onMineCell: (slot: MineSlot) => void;
 };
 
 const HOLD_STRIPES =
@@ -125,7 +125,7 @@ export default function WeeklyOccupancyGrid({
   const onCell = (date: string, start: string, state: SlotState) => {
     if (state === "mine" || state === "mine_hold" || state === "mine_debt") {
       const rental = findOverlappingMine(date, start, occupancy.mine);
-      if (rental) onMineCell(rental.id);
+      if (rental) onMineCell(rental);
       return;
     }
     if (state === "free" && addonActive && isFreeSlotBookable(timezone, date, start, nowMs)) {

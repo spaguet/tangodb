@@ -17,9 +17,10 @@ import {
 } from "../../lib/orgTime";
 import { rpcGetOccupancy, rpcGetWallet, rpcListLocations } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
-import type { LocationRow, OccupancyData, WalletData } from "../../lib/types";
+import type { LocationRow, MineSlot, OccupancyData, WalletData } from "../../lib/types";
 import { t, tFill, type Locale } from "../../i18n/strings";
 import { useVisibilityRefetch } from "../../hooks/useVisibilityRefetch";
+import CancelMineBookingSheet from "./CancelMineBookingSheet";
 import WeeklyOccupancyGrid from "./WeeklyOccupancyGrid";
 
 export type PendingBooking = {
@@ -34,9 +35,9 @@ type ScheduleTabProps = {
   bootstrap: BootstrapData;
   supabase: SupabaseClient;
   refreshKey: number;
-  onOpenMine: (rentalId?: string) => void;
   onTopup: (amount: number) => void;
   onOpenBooking: (booking: PendingBooking) => void;
+  onRefreshAll?: () => void;
 };
 
 export default function ScheduleTab({
@@ -44,13 +45,14 @@ export default function ScheduleTab({
   bootstrap,
   supabase,
   refreshKey,
-  onOpenMine,
   onTopup,
   onOpenBooking,
+  onRefreshAll,
 }: ScheduleTabProps) {
   const [locations, setLocations] = useState<LocationRow[]>([]);
   const [locationId, setLocationId] = useState<string>("");
   const [occupancy, setOccupancy] = useState<OccupancyData | null>(null);
+  const [cancelSlot, setCancelSlot] = useState<MineSlot | null>(null);
   const [weekIndex, setWeekIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -347,11 +349,27 @@ export default function ScheduleTab({
                   if (!locationId) return;
                   onOpenBooking({ locationId, date, start, packDays: days });
                 }}
-                onMineCell={(rentalId) => onOpenMine(rentalId)}
+                onMineCell={setCancelSlot}
               />
             </div>
           </section>
         </div>
+      ) : null}
+
+      {cancelSlot ? (
+        <CancelMineBookingSheet
+          locale={locale}
+          timezone={bootstrap.timezone}
+          serverNow={bootstrap.serverNow}
+          supabase={supabase}
+          slot={cancelSlot}
+          onClose={() => setCancelSlot(null)}
+          onDone={() => {
+            setCancelSlot(null);
+            onRefreshAll?.();
+            void refresh();
+          }}
+        />
       ) : null}
     </div>
   );

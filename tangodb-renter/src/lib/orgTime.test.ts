@@ -7,6 +7,7 @@ import {
   occupancyDaysFromWindow,
   occupancyWeeksFromWindow,
   orgIsoWeekday,
+  orgZonedDateTimeMs,
   resolveIsoDateFromSelect,
 } from "./orgTime";
 
@@ -89,5 +90,13 @@ describe("isFreeSlotBookable", () => {
   it("allows future dates regardless of hour", () => {
     const serverNowMs = Date.parse("2026-09-03T09:30:00.000Z");
     expect(isFreeSlotBookable(tz, "2026-09-05", "08:00", serverNowMs)).toBe(true);
+  });
+});
+
+describe("orgZonedDateTimeMs", () => {
+  it("maps Moscow wall time to UTC", () => {
+    expect(orgZonedDateTimeMs("Europe/Moscow", "2026-09-14", "14:00")).toBe(
+      Date.parse("2026-09-14T11:00:00.000Z")
+    );
   });
 });

@@ -16,4 +16,10 @@ describe("rpcErrorKey", () => {
   it("keeps renter.* codes", () => {
     expect(rpcErrorKey(new Error("renter.booking.packWindow"))).toBe("packInvalid");
   });
+
+  it("maps cancel RPC codes", () => {
+    expect(rpcErrorKey(new Error("renter.booking.notCancellable"))).toBe("cancelNotAllowed");
+    expect(rpcErrorKey(new Error("renter.booking.alreadyStarted"))).toBe("cancelAlreadyStarted");
+    expect(rpcErrorKey(new Error("renter.cancel.notHold"))).toBe("cancelNotHold");
+  });
 });

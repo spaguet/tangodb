@@ -26,6 +26,10 @@ const ERROR_MAP: Record<string, MessageKey> = {
   "renter.profile.displayNameInvalid": "profileNameInvalid",
   "renter.forbidden": "actionForbidden",
   "renter.cancel.packNotCancellable": "cancelPackNotCancellable",
+  "renter.booking.notCancellable": "cancelNotAllowed",
+  "renter.booking.alreadyStarted": "cancelAlreadyStarted",
+  "renter.cancel.useDeleteHold": "cancelNotAllowed",
+  "renter.cancel.notHold": "cancelNotHold",
 };
 
 export function rpcErrorKey(err: unknown): MessageKey {

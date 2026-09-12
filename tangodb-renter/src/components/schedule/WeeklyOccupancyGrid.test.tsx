@@ -53,7 +53,7 @@ describe("WeeklyOccupancyGrid", () => {
     expect(screen.getByText("Моя бронь")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /Моя бронь/ }));
-    expect(onMineCell).toHaveBeenCalledWith("mine-1");
+    expect(onMineCell).toHaveBeenCalledWith(occupancy.mine[0]);
 
     await user.click(screen.getByRole("button", { name: /14, 12:00, Свободно/ }));
     expect(onFreeCell).toHaveBeenCalledWith("2026-09-14", "12:00");

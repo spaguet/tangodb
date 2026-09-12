@@ -23,6 +23,7 @@ function session(telegramId: string): Session {
       created_at: "",
       role: "authenticated",
       updated_at: "",
+      user_metadata: {},
     },
   };
 }

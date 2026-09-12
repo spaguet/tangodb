@@ -75,6 +75,15 @@ const messages = {
     cancel: "Отмена",
     deleteHold: "Удалить холд",
     cancelBooking: "Отменить бронь",
+    cancelHoldHint: "Неоплаченный холд будет снят, слот освободится. Деньги не списывались.",
+    cancelPaidRefundHint:
+      "Зарезервированные средства вернутся на доступный баланс. Вторая половина не списывается.",
+    cancelPaidRetainHint:
+      "До начала меньше 24 часов — студия удержит предоплату 50%. Вторая половина не списывается.",
+    cancelNotAllowedHint: "Эту бронь нельзя отменить: занятие уже началось или завершено.",
+    cancelAlreadyStarted: "Занятие уже началось — отменить нельзя.",
+    cancelNotAllowed: "Эту бронь нельзя отменить.",
+    cancelNotHold: "Это не холд ожидания оплаты.",
     cancelOccurrenceHint:
       "Можно отменить отдельное занятие. Если до начала больше 24 часов — предоплата вернётся на баланс. При отмене по одному занятию перерасчёт по разовому тарифу не делается.",
     surchargeReviewPending:
@@ -270,6 +279,15 @@ const messages = {
     cancel: "Cancel",
     deleteHold: "Delete hold",
     cancelBooking: "Cancel booking",
+    cancelHoldHint: "The unpaid hold will be released and the slot will free up. Nothing was charged.",
+    cancelPaidRefundHint:
+      "Reserved funds return to your available balance. The remaining 50% is not charged.",
+    cancelPaidRetainHint:
+      "Less than 24 hours before start — the studio keeps the 50% prepay. The remainder is not charged.",
+    cancelNotAllowedHint: "This booking cannot be cancelled: the session has already started or finished.",
+    cancelAlreadyStarted: "The session has already started — it cannot be cancelled.",
+    cancelNotAllowed: "This booking cannot be cancelled.",
+    cancelNotHold: "This is not an awaiting-payment hold.",
     cancelOccurrenceHint:
       "You can cancel a single session. If more than 24 hours remain before start, prepayment returns to your balance. Cancelling one session at a time does not trigger one-time repricing.",
     surchargeReviewPending:

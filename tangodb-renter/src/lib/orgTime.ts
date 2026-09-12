@@ -198,3 +198,32 @@ export function isFreeSlotBookable(
   const slotMin = Number(slotStart.slice(0, 2)) * 60 + Number(slotStart.slice(3, 5));
   return slotMin >= orgLocalTimeMinutes(timezone, serverNowMs) + ONE_HOUR_MINUTES;
 }
+
+function wallClockAsUtcMs(timezone: string, instantMs: number): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(instantMs));
+  const n = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const hour = n("hour") === 24 ? 0 : n("hour");
+  return Date.UTC(n("year"), n("month") - 1, n("day"), hour, n("minute"), n("second"));
+}
+
+/** UTC ms of calendar `YYYY-MM-DD` + `HH:MM` in the organization timezone. */
+export function orgZonedDateTimeMs(timezone: string, isoDate: string, timeHhMm: string): number {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const [hh, mm] = timeHhMm.slice(0, 5).split(":").map(Number);
+  const desiredAsUtc = Date.UTC(y, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0, 0);
+  let utc = desiredAsUtc;
+  for (let i = 0; i < 3; i++) {
+    utc += desiredAsUtc - wallClockAsUtcMs(timezone, utc);
+  }
+  return utc;
+}
