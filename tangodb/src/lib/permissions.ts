@@ -84,6 +84,7 @@ export type PermissionAction =
   | "settings.manage"
   | "team.manage"
   | "license.view"
+  | "license.purchase"
   | "license.activate"
   | "renters.read"
   | "renters.write"
@@ -154,7 +155,6 @@ const WRITE_ACTIONS = new Set<PermissionAction>([
   "payroll.rates.manage",
   "settings.manage",
   "team.manage",
-  "license.activate",
   "renters.write",
   "renters.contacts.write",
   "renters.contracts.write",
@@ -542,6 +542,9 @@ export function can(role: MemberRole | null, action: PermissionAction, options?:
       return false;
 
     case "license.view":
+      return STRATEGIC_ROLES.includes(role);
+
+    case "license.purchase":
       return STRATEGIC_ROLES.includes(role);
 
     case "license.activate":

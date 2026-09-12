@@ -154,8 +154,6 @@ export const EN: Record<I18nKey, string> = {
   "auth.activateKey.demoKeyHint": "Demo key — the account email must match the request email.",
   "auth.activateKey.lifetimeKeyHint": "Lifetime key — lifetime access (from the purchase email).",
   "auth.activateKey.purchaseHint": "Buy the full version — payment details and instructions are on the purchase page.",
-  "auth.activateKey.stripeSoonHint":
-    "Stripe subscription (month/year) is coming soon; you can leave a notification request in Settings → License.",
   "auth.activateKey.settingsLicensePath": "Settings → License",
   "auth.activateKey.accessKeyLabel": "Access key",
   "auth.activateKey.goToCrm": "Open CRM",
@@ -291,6 +289,16 @@ export const EN: Record<I18nKey, string> = {
   "license.required.purgeScheduled": "Data will be deleted on {{date}}.",
   "license.required.activateKey": "Activate license key",
   "license.required.backToReadOnlyCrm": "Back to CRM (read-only)",
+  "license.required.suspendedTitle": "CRM access suspended",
+  "license.required.suspendedHint":
+    "This organization is suspended. The owner or director can renew the CRM subscription or buy a lifetime license.",
+  "license.required.subscriptionEndedTitle": "CRM subscription ended",
+  "license.required.subscriptionEndedHint":
+    "The paid period has ended and edits are blocked. Renew monthly or buy lifetime access.",
+  "license.required.payMonthCta": "Pay for a month",
+  "license.required.buyLifetimeCta": "Buy lifetime",
+  "license.required.accessPausedContact":
+    "Access is paused. Contact the studio owner or director — or reach the developer:",
   "license.activate.errorGeneric": "Failed to activate key",
   "license.activate.invalidKey": "Invalid or already used key",
   "license.activate.sessionExpired": "Session expired — sign out and sign in again.",

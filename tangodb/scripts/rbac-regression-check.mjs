@@ -86,6 +86,17 @@ try {
 // §10.1 role spot checks
 assert(can("owner", "license.activate", optsFor("owner")), "owner must activate license");
 assert(!can("director", "license.activate", optsFor("director")), "director must not activate");
+assert(can("owner", "license.purchase", optsFor("owner")), "owner must purchase license");
+assert(can("director", "license.purchase", optsFor("director")), "director must purchase license");
+assert(!can("teacher", "license.purchase", optsFor("teacher")), "teacher must not purchase license");
+assert(
+  can("owner", "license.purchase", { ...optsFor("owner"), isReadOnly: true }),
+  "read-only owner must purchase license (S3a)",
+);
+assert(
+  can("owner", "license.activate", { ...optsFor("owner"), isReadOnly: true }),
+  "read-only owner must activate license (S3a)",
+);
 assert(can("director", "team.manage", optsFor("director")), "director must manage team");
 assert(can("admin", "clients.write", optsFor("admin")), "admin CRM write");
 assert(!can("admin", "settings.manage", optsFor("admin")), "admin no settings");

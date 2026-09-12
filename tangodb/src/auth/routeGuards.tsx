@@ -122,6 +122,7 @@ export function OrgWorkspaceRoute() {
     memberships,
     membershipsLoading,
     organizationId,
+    organization,
     orgLoading,
     needsOnboarding,
     mustSelectOrganization,
@@ -169,6 +170,15 @@ export function OrgWorkspaceRoute() {
 
   if (!needsOnboarding && location.pathname === "/onboarding") {
     return <Navigate to="/" replace />;
+  }
+
+  if (organization?.status === "suspended") {
+    const path = location.pathname;
+    const licenseRecovery =
+      path === "/license-required" || path === "/settings/license";
+    if (!licenseRecovery) {
+      return <Navigate to="/license-required" replace />;
+    }
   }
 
   return <Outlet />;

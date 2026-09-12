@@ -154,8 +154,6 @@ export const RU: Record<I18nKey, string> = {
   "auth.activateKey.demoKeyHint": "Демо-ключ — email аккаунта должен совпадать с email заявки.",
   "auth.activateKey.lifetimeKeyHint": "Lifetime-ключ — пожизненный доступ (из письма после покупки).",
   "auth.activateKey.purchaseHint": "Покупка полной версии — реквизиты и инструкция на странице покупки.",
-  "auth.activateKey.stripeSoonHint":
-    "Подписка Stripe (месяц/год) — скоро; уведомление можно оставить в Настройки → Лицензия.",
   "auth.activateKey.settingsLicensePath": "Настройки → Лицензия",
   "auth.activateKey.accessKeyLabel": "Ключ доступа",
   "auth.activateKey.goToCrm": "В CRM",
@@ -290,6 +288,16 @@ export const RU: Record<I18nKey, string> = {
   "license.required.purgeScheduled": "Данные будут удалены {{date}}.",
   "license.required.activateKey": "Активировать лицензионный ключ",
   "license.required.backToReadOnlyCrm": "Вернуться в CRM (только просмотр)",
+  "license.required.suspendedTitle": "Доступ к CRM приостановлен",
+  "license.required.suspendedHint":
+    "Организация заблокирована. Владелец или руководитель может продлить подписку на CRM или купить пожизненную лицензию.",
+  "license.required.subscriptionEndedTitle": "Подписка на CRM истекла",
+  "license.required.subscriptionEndedHint":
+    "Период оплаты закончился, запись и изменения недоступны. Продлите месячную подписку или купите пожизненный доступ.",
+  "license.required.payMonthCta": "Оплатить месяц",
+  "license.required.buyLifetimeCta": "Купить lifetime",
+  "license.required.accessPausedContact":
+    "Доступ приостановлен. Обратитесь к владельцу или руководителю студии — или свяжитесь с разработчиком:",
   "license.activate.errorGeneric": "Не удалось активировать ключ",
   "license.activate.invalidKey": "Неверный или уже использованный ключ",
   "license.activate.sessionExpired": "Сессия истекла — выйдите и войдите снова.",

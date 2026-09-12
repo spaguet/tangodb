@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, KeyRound, LifeBuoy, Shield } from "lucide-react";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
 import DeveloperContacts from "../../components/license/DeveloperContacts";
 import ManualPurchasePanel from "../../components/license/ManualPurchasePanel";
-import SubscriptionWaitlistCard from "../../components/license/SubscriptionWaitlistCard";
 import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
 import { useToast } from "../../App";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -45,27 +44,13 @@ const BILLING_PERIOD_KEYS: Record<string, I18nKey> = {
 export default function LicenseSettingsPage() {
   const { t, formatDate } = useI18n();
   const toast = useToast();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { organization, orgLoading, license, subscription, refreshOrganization } = useOrganization();
   const { config: paymentConfig } = usePlatformPaymentConfig(true);
   const activateKey = useActivateAccessKey();
   const [key, setKey] = useState("");
   const [error, setError] = useState<string | null>(null);
   const loading = activateKey.isPending;
-
-  useEffect(() => {
-    const checkout = searchParams.get("checkout");
-    if (checkout === "success") {
-      toast(t("license.checkout.success"), "success");
-      void refreshOrganization();
-      searchParams.delete("checkout");
-      setSearchParams(searchParams, { replace: true });
-    } else if (checkout === "cancelled" || checkout === "canceled") {
-      toast(t("license.checkout.cancelled"), "info");
-      searchParams.delete("checkout");
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams, toast, refreshOrganization, t]);
 
   if (orgLoading || !organization) return <LoadingState label={t("license.loading")} />;
 
@@ -76,7 +61,6 @@ export default function LicenseSettingsPage() {
   const isDemo = isDemoOrgStatus(organization.status);
   const isPurchaseFlow = searchParams.get("purchase") === "1";
   const showManualPurchase = isPurchaseFlow && isDemo;
-  const canSubscribe = !isLifetime && organization.status !== "suspended";
 
   const forgotPasswordLinkText = t("license.ownerRecovery.forgotPasswordLink");
   const forgotPasswordParts = t("license.ownerRecovery.forgotPassword").split(forgotPasswordLinkText);
@@ -170,14 +154,8 @@ export default function LicenseSettingsPage() {
         </div>
 
         {showManualPurchase && (
-          <RequirePermission action="license.activate" mode="hide">
+          <RequirePermission action="license.purchase" mode="hide">
             <ManualPurchasePanel />
-          </RequirePermission>
-        )}
-
-        {canSubscribe && !isLifetime && (
-          <RequirePermission action="license.activate" mode="hide">
-            <SubscriptionWaitlistCard />
           </RequirePermission>
         )}
 

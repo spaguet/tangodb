@@ -124,7 +124,6 @@ export default function ActivateKeyPage() {
             </Link>
             .
           </li>
-          <li>{t("auth.activateKey.stripeSoonHint")}</li>
         </ul>
       </div>
 
