@@ -1,9 +1,25 @@
+import type { I18nKey } from "./i18n/keys";
 import type { ManualPaymentConfig } from "./paymentConfig";
 import { FIXED_PAYMENT_METHOD_CODES } from "./platformPaymentContract";
 
 export interface PaymentMethodChoice {
   methodCode: string;
   label: string;
+}
+
+export function methodChoiceLabel(
+  choice: PaymentMethodChoice,
+  t: (key: I18nKey, vars?: { coin?: string }) => string
+): string {
+  if (choice.label === "bankTransfer") return t("license.purchase.method.bankTransfer");
+  if (choice.label === "vietnameseBankTransfer") {
+    return t("license.purchase.method.vietnameseBankTransfer");
+  }
+  if (choice.label === "mir") return t("license.purchase.method.mir");
+  if (choice.label.startsWith("crypto:")) {
+    return t("license.purchase.method.crypto", { coin: choice.label.slice("crypto:".length) });
+  }
+  return choice.methodCode;
 }
 
 function bankConfigured(row: { ibanOrAccount?: string; accountNumber?: string } | null | undefined): boolean {
@@ -13,7 +29,7 @@ function bankConfigured(row: { ibanOrAccount?: string; accountNumber?: string } 
   return Boolean(iban || account);
 }
 
-/** Selectable payment rails for lifetime quote (crm_license) until S3b monthly SKU UI. */
+/** Selectable payment rails for a CRM SKU quote (lifetime or monthly). */
 export function listPaymentMethodChoices(config: ManualPaymentConfig): PaymentMethodChoice[] {
   const choices: PaymentMethodChoice[] = [];
 

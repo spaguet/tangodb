@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, KeyRound, LifeBuoy, Shield } from "lucide-react";
+import { AlertTriangle, CheckCircle2, KeyRound, LifeBuoy, Shield, ShoppingBag } from "lucide-react";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
 import DeveloperContacts from "../../components/license/DeveloperContacts";
@@ -10,9 +10,15 @@ import { useToast } from "../../App";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useActivateAccessKey } from "../../hooks/useActivateAccessKey";
 import { isDemoOrgStatus } from "../../lib/demoLicense";
+import {
+  canShowManualPurchasePanel,
+  MONTHLY_PURCHASE_PATH,
+  purchaseSkuLock,
+} from "../../lib/crmLicensePurchase";
 import DemoPurchaseCta from "../../components/demo/DemoPurchaseCta";
 import { useI18n } from "../../hooks/useI18n";
 import type { I18nKey } from "../../lib/i18n/keys";
+import { btnAddCls } from "../../components/ui/buttonStyles";
 
 const STATUS_TONES: Record<string, string> = {
   demo_active: "text-indigo-700 bg-indigo-50 border-indigo-100",
@@ -42,7 +48,7 @@ const BILLING_PERIOD_KEYS: Record<string, I18nKey> = {
 };
 
 export default function LicenseSettingsPage() {
-  const { t, formatDate } = useI18n();
+  const { t, formatDate, formatDateTime } = useI18n();
   const toast = useToast();
   const [searchParams] = useSearchParams();
   const { organization, orgLoading, license, subscription, refreshOrganization } = useOrganization();
@@ -60,7 +66,18 @@ export default function LicenseSettingsPage() {
   const statusTone = STATUS_TONES[organization.status] ?? STATUS_TONES.suspended;
   const isDemo = isDemoOrgStatus(organization.status);
   const isPurchaseFlow = searchParams.get("purchase") === "1";
-  const showManualPurchase = isPurchaseFlow && isDemo;
+  const showManualPurchase = canShowManualPurchasePanel({
+    isPurchaseFlow,
+    orgStatus: organization.status,
+    licenseType: license?.license_type,
+    subscriptionStatus: subscription?.status,
+    dataPurgeAt: organization.data_purge_at,
+  });
+  const skuLock = purchaseSkuLock({
+    orgStatus: organization.status,
+    licenseType: license?.license_type,
+    subscriptionStatus: subscription?.status,
+  });
 
   const forgotPasswordLinkText = t("license.ownerRecovery.forgotPasswordLink");
   const forgotPasswordParts = t("license.ownerRecovery.forgotPassword").split(forgotPasswordLinkText);
@@ -101,6 +118,17 @@ export default function LicenseSettingsPage() {
           </p>
         </div>
         {isDemo && !isPurchaseFlow && <DemoPurchaseCta variant="banner" />}
+        {hasSubscription && !isPurchaseFlow && (
+          <RequirePermission action="license.purchase" mode="hide">
+            <Link to={MONTHLY_PURCHASE_PATH} className={btnAddCls}>
+              <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+              {t("license.plan.payNextMonth")}
+            </Link>
+          </RequirePermission>
+        )}
+        {organization.status === "suspended" && !isLifetime && !isPurchaseFlow && !hasSubscription && (
+          <DemoPurchaseCta variant="banner" />
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
@@ -139,7 +167,7 @@ export default function LicenseSettingsPage() {
             {hasSubscription && subscription?.current_period_end && (
               <p className="text-xs opacity-80">
                 {t("license.subscription.periodUntil", {
-                  date: formatDate(subscription.current_period_end),
+                  date: formatDateTime(subscription.current_period_end),
                   period:
                     t(BILLING_PERIOD_KEYS[subscription.billing_period] ?? "license.billing.monthly"),
                 })}
@@ -155,7 +183,7 @@ export default function LicenseSettingsPage() {
 
         {showManualPurchase && (
           <RequirePermission action="license.purchase" mode="hide">
-            <ManualPurchasePanel />
+            <ManualPurchasePanel skuLock={skuLock} planPrefill={searchParams.get("plan")} />
           </RequirePermission>
         )}
 

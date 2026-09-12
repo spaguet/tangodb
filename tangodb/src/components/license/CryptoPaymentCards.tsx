@@ -6,9 +6,10 @@ import { QrImagePreview } from "./QrImagePreview";
 
 interface CryptoPaymentCardsProps {
   methods: CryptoPaymentMethod[];
+  defaultOpen?: boolean;
 }
 
-function CryptoCard({ method }: { method: CryptoPaymentMethod }) {
+function CryptoCard({ method, defaultOpen = false }: { method: CryptoPaymentMethod; defaultOpen?: boolean }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
 
@@ -20,7 +21,7 @@ function CryptoCard({ method }: { method: CryptoPaymentMethod }) {
   const amountLabel = [method.amount, method.currency].filter(Boolean).join(" ");
 
   return (
-    <details className="group rounded-lg border border-slate-200 bg-white">
+    <details className="group rounded-lg border border-slate-200 bg-white" {...(defaultOpen ? { open: true } : {})}>
       <summary className="flex items-start justify-between gap-3 px-3 py-3 cursor-pointer list-none">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900">{method.coin}</p>
@@ -56,7 +57,7 @@ function CryptoCard({ method }: { method: CryptoPaymentMethod }) {
   );
 }
 
-export default function CryptoPaymentCards({ methods }: CryptoPaymentCardsProps) {
+export default function CryptoPaymentCards({ methods, defaultOpen = false }: CryptoPaymentCardsProps) {
   const { t } = useI18n();
 
   if (!methods.length) return null;
@@ -68,7 +69,11 @@ export default function CryptoPaymentCards({ methods }: CryptoPaymentCardsProps)
       </p>
       <div className="space-y-2">
         {methods.map((method) => (
-          <CryptoCard key={`${method.coin}-${method.network}-${method.address}`} method={method} />
+          <CryptoCard
+            key={method.id || `${method.coin}-${method.network}-${method.address}`}
+            method={method}
+            defaultOpen={defaultOpen}
+          />
         ))}
       </div>
     </div>

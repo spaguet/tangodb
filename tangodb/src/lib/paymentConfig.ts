@@ -300,13 +300,14 @@ import type { I18nKey } from "./i18n/keys";
 
 type TranslateFn = (key: I18nKey) => string;
 
-export function getPurchaseActivationSteps(t: TranslateFn): string[] {
+export function getPurchaseActivationSteps(t: TranslateFn, sku?: PlatformPaymentSku | ""): string[] {
+  const monthly = sku === "crm_subscription";
   return [
     t("license.purchase.step1"),
     t("license.purchase.step2"),
     t("license.purchase.step3"),
     t("license.purchase.step4"),
-    t("license.purchase.step5"),
-    t("license.purchase.step6"),
+    t(monthly ? "license.purchase.step5Monthly" : "license.purchase.step5"),
+    t(monthly ? "license.purchase.step6Monthly" : "license.purchase.step6"),
   ];
 }

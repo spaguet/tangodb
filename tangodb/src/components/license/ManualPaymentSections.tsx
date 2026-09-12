@@ -27,14 +27,16 @@ function AmountRow({ amount, currency }: { amount?: string; currency?: string })
 function PaymentDetails({
   title,
   subtitle,
+  defaultOpen = false,
   children,
 }: {
   title: string;
   subtitle?: string;
+  defaultOpen?: boolean;
   children: ReactNode;
 }) {
   return (
-    <details className="group rounded-lg border border-slate-200 bg-white">
+    <details className="group rounded-lg border border-slate-200 bg-white" {...(defaultOpen ? { open: true } : {})}>
       <summary className="flex items-center justify-between gap-3 px-3 py-3 cursor-pointer list-none">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</p>
@@ -47,13 +49,19 @@ function PaymentDetails({
   );
 }
 
-export function BankTransferSection({ config }: { config: BankTransferConfig | null | undefined }) {
+export function BankTransferSection({
+  config,
+  defaultOpen = false,
+}: {
+  config: BankTransferConfig | null | undefined;
+  defaultOpen?: boolean;
+}) {
   const { t } = useI18n();
 
   if (!config?.beneficiary && !config?.ibanOrAccount) return null;
 
   return (
-    <PaymentDetails title={t("license.payment.bankTransfer.title")} subtitle={config.bankName}>
+    <PaymentDetails title={t("license.payment.bankTransfer.title")} subtitle={config.bankName} defaultOpen={defaultOpen}>
       <AmountRow amount={config.amount} currency={config.currency} />
       <DetailRow label={t("license.payment.field.beneficiary")} value={config.beneficiary} />
       <DetailRow label={t("license.payment.field.bank")} value={config.bankName} />
@@ -69,13 +77,19 @@ export function BankTransferSection({ config }: { config: BankTransferConfig | n
   );
 }
 
-export function MirPaymentSection({ config }: { config: MirPaymentConfig | null | undefined }) {
+export function MirPaymentSection({
+  config,
+  defaultOpen = false,
+}: {
+  config: MirPaymentConfig | null | undefined;
+  defaultOpen?: boolean;
+}) {
   const { t } = useI18n();
 
   if (!config?.recipient && !config?.phoneOrCard) return null;
 
   return (
-    <PaymentDetails title={t("license.payment.mir.title")} subtitle={config.bankName}>
+    <PaymentDetails title={t("license.payment.mir.title")} subtitle={config.bankName} defaultOpen={defaultOpen}>
       <AmountRow amount={config.amount} currency={config.currency} />
       <DetailRow label={t("license.payment.field.beneficiary")} value={config.recipient} />
       <DetailRow label={t("license.payment.field.phoneOrCard")} value={config.phoneOrCard} />
@@ -88,15 +102,21 @@ export function MirPaymentSection({ config }: { config: MirPaymentConfig | null 
 
 export function VietnameseBankTransferSection({
   config,
+  defaultOpen = false,
 }: {
   config: VietnameseBankTransferConfig | null | undefined;
+  defaultOpen?: boolean;
 }) {
   const { t } = useI18n();
 
   if (!config?.beneficiary && !config?.accountNumber) return null;
 
   return (
-    <PaymentDetails title={t("license.payment.vietnameseBankTransfer.title")} subtitle={config.bankName}>
+    <PaymentDetails
+      title={t("license.payment.vietnameseBankTransfer.title")}
+      subtitle={config.bankName}
+      defaultOpen={defaultOpen}
+    >
       <AmountRow amount={config.amount} currency={config.currency} />
       <DetailRow label={t("license.payment.field.beneficiary")} value={config.beneficiary} />
       <DetailRow label={t("license.payment.field.bank")} value={config.bankName} />

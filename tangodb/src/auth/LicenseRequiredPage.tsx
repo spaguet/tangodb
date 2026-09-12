@@ -4,12 +4,13 @@ import DeveloperContacts from "../components/license/DeveloperContacts";
 import { usePlatformPaymentConfig } from "../hooks/usePlatformPaymentConfig";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { DEMO_PURCHASE_PATH, isDemoOrgStatus } from "../lib/demoLicense";
+import {
+  LIFETIME_PURCHASE_PATH,
+  MONTHLY_PURCHASE_PATH,
+} from "../lib/crmLicensePurchase";
 import { formatDateLocale } from "../lib/i18n";
 import { useGuestI18n } from "../hooks/useI18n";
 import { AuthLayout, AuthLink } from "./AuthLayout";
-
-const MONTHLY_RECOVERY_PATH = "/settings/license?purchase=1&plan=monthly";
-const LIFETIME_RECOVERY_PATH = "/settings/license?purchase=1&plan=lifetime";
 
 export default function LicenseRequiredPage() {
   const { t, locale } = useGuestI18n();
@@ -65,14 +66,14 @@ export default function LicenseRequiredPage() {
       {isStrategic && isSuspended && (
         <div className="space-y-2">
           <Link
-            to={MONTHLY_RECOVERY_PATH}
+            to={MONTHLY_PURCHASE_PATH}
             className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
           >
             <ShoppingBag className="w-4 h-4" />
             {t("license.required.payMonthCta")}
           </Link>
           <Link
-            to={LIFETIME_RECOVERY_PATH}
+            to={LIFETIME_PURCHASE_PATH}
             className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition-colors"
           >
             <ShoppingBag className="w-4 h-4" />

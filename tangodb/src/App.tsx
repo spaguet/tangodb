@@ -96,7 +96,7 @@ import { normalizeOrgModules } from "./lib/orgModules";
 import DemoBrandBadge from "./components/demo/DemoBrandBadge";
 import LocaleDocumentSync from "./components/LocaleDocumentSync";
 import DemoPurchaseCta from "./components/demo/DemoPurchaseCta";
-import { useDemoLicenseUi } from "./hooks/useDemoLicenseUi";
+import { useCrmLicensePurchaseUi } from "./hooks/useCrmLicensePurchaseUi";
 import { usePlatformPaymentConfig } from "./hooks/usePlatformPaymentConfig";
 import DeveloperContacts from "./components/license/DeveloperContacts";
 import { btnHeaderSignOutCls } from "./components/ui/buttonStyles";
@@ -195,7 +195,7 @@ function AppLayout() {
   const personalTab = useUIStore((s) => s.personalTab);
   const setPersonalTab = useUIStore((s) => s.setPersonalTab);
   const { settings, claimsMismatch } = useOrganization();
-  const { showPurchaseCta } = useDemoLicenseUi();
+  const { showPurchaseCta } = useCrmLicensePurchaseUi();
   const { config: paymentConfig } = usePlatformPaymentConfig(true);
   const orgModules = normalizeOrgModules(settings?.modules);
   const permissionOptions = permissionOptionsFromSettings(settings, scope, {

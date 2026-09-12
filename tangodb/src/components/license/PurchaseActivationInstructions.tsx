@@ -1,13 +1,18 @@
 import { ListOrdered, MessageCircle } from "lucide-react";
 import { getPurchaseActivationSteps } from "../../lib/paymentConfig";
+import type { PlatformPaymentSku } from "../../lib/paymentConfig";
 import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
 import { useI18n } from "../../hooks/useI18n";
 import DeveloperContacts from "./DeveloperContacts";
 
-export default function PurchaseActivationInstructions() {
+export default function PurchaseActivationInstructions({
+  sku,
+}: {
+  sku?: PlatformPaymentSku | "";
+}) {
   const { t } = useI18n();
   const { config } = usePlatformPaymentConfig(true);
-  const steps = getPurchaseActivationSteps(t);
+  const steps = getPurchaseActivationSteps(t, sku || undefined);
 
   return (
     <div className="space-y-3">

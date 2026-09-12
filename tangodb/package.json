@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.11.5",
+  "version": "2.11.6",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "test:platform-payment-contract": "node scripts/platform-payment-contract-check.mjs",
+    "test:crm-license-purchase-ui": "npx tsx --test src/lib/crmLicensePurchase.test.ts",
     "test:edge:purchase-quote": "npx --yes deno test supabase/functions/_shared/purchaseQuotePolicy_test.ts",
     "migrate": "node scripts/migrate.mjs",
     "import:org:dry-run": "node scripts/import-org.mjs --dry-run",
