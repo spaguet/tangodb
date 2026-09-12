@@ -10,13 +10,12 @@ import {
 } from "./telegramToken.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logEvent } from "./supabase.ts";
+import { sendTelegramMessagePlain } from "./telegramSend.ts";
 
-const TELEGRAM_API = "https://api.telegram.org";
 const DEFAULT_BATCH_SIZE = 10;
 const GATE_WAIT_SECONDS = 300;
 /** Must stay below claim lease (120s) so a hung fetch cannot outlive the lock. */
 const LEASE_SECONDS = 120;
-const FETCH_TIMEOUT_MS = 90_000;
 
 export type OutboxRow = {
   id: string;
@@ -106,68 +105,33 @@ async function sendTelegramMessage(
   text: string,
   miniappUrl: string | null
 ): Promise<{ ok: true } | { ok: false; fatal: boolean; code: string; retryAfter?: number }> {
-  const body: Record<string, unknown> = {
-    chat_id: chatId,
-    text,
-  };
-  if (miniappUrl) {
-    body.reply_markup = {
-      inline_keyboard: [[{ text: "Открыть кабинет", url: miniappUrl }]],
-    };
+  const extra = miniappUrl
+    ? {
+        reply_markup: {
+          inline_keyboard: [[{ text: "Открыть кабинет", url: miniappUrl }]],
+        },
+      }
+    : undefined;
+  const result = await sendTelegramMessagePlain(token, chatId, text, extra);
+  if (result.ok) return { ok: true };
+  if (result.status === 429 || result.code === "rate_limited") {
+    return { ok: false, fatal: false, code: "rate_limited", retryAfter: result.retryAfter ?? 60 };
   }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-  let res: Response;
-  try {
-    res = await fetch(`${TELEGRAM_API}/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-  } catch (err) {
-    const aborted = err instanceof Error && err.name === "AbortError";
+  if (result.code === "fetch_timeout" || result.code === "send_failed") {
     return {
       ok: false,
       fatal: false,
-      code: aborted ? "fetch_timeout" : "send_failed",
-      retryAfter: 60,
+      code: result.code,
+      retryAfter: result.retryAfter ?? 60,
     };
-  } finally {
-    clearTimeout(timeout);
   }
-
-  if (res.ok) {
-    return { ok: true };
-  }
-
-  let description = `HTTP ${res.status}`;
-  let retryAfter: number | undefined;
-  try {
-    const payload = (await res.json()) as {
-      description?: string;
-      parameters?: { retry_after?: number };
-    };
-    if (payload.description) description = payload.description;
-    if (res.status === 429 && payload.parameters?.retry_after) {
-      retryAfter = payload.parameters.retry_after;
-    }
-  } catch {
-    // ignore JSON parse failure
-  }
-
-  if (res.status === 429) {
-    return { ok: false, fatal: false, code: "rate_limited", retryAfter: retryAfter ?? 60 };
-  }
-
-  const fatal = isFatalTelegramError(res.status, description);
+  const status = result.status ?? 0;
+  const fatal = isFatalTelegramError(status, result.description);
   return {
     ok: false,
     fatal,
-    code: fatal ? fatalErrorCode(res.status, description) : "send_failed",
-    retryAfter,
+    code: fatal ? fatalErrorCode(status, result.description) : "send_failed",
+    retryAfter: result.retryAfter,
   };
 }
 

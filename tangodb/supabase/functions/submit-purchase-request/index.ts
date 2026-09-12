@@ -1,4 +1,3 @@
-import { sendTransactionalEmail } from "../_shared/email.ts";
 import {
   getClientIp,
   handleOptions,
@@ -15,14 +14,6 @@ import { createServiceClient, createUserClient, logEvent } from "../_shared/supa
 
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 15 * 60_000;
-
-function resolveDeveloperNotifyEmail(configEmail: unknown): string | null {
-  const fromConfig = typeof configEmail === "string" ? configEmail.trim() : "";
-  if (isValidEmail(fromConfig)) return fromConfig;
-  const fromEnv = (Deno.env.get("DEVELOPER_NOTIFY_EMAIL") ?? "").trim();
-  if (isValidEmail(fromEnv)) return fromEnv;
-  return null;
-}
 
 interface SubmitPurchaseRequestBody {
   organization_id?: string;
@@ -58,13 +49,6 @@ function mapSubmitRpcError(message: string): { status: number; code: string } {
   }
   if (m.includes("invalid_submit_payload")) return { status: 400, code: "quote_required" };
   return { status: 500, code: "request_save_failed" };
-}
-
-function requestKindEmailSubject(kind: string, orgName: string): string {
-  if (kind === "crm_subscription") {
-    return `TangoDB: заявка на месячную подписку CRM — ${orgName}`;
-  }
-  return `TangoDB: заявка на полную версию — ${orgName}`;
 }
 
 Deno.serve(async (req) => {
@@ -188,57 +172,6 @@ Deno.serve(async (req) => {
   const requestKind = payload.request_kind ?? quoteRow.sku ?? "crm_license";
   const idempotent = payload.idempotent === true;
 
-  const { data: paymentConfig } = await admin
-    .from("platform_payment_methods")
-    .select("config")
-    .eq("id", 1)
-    .maybeSingle();
-
-  const developerEmail = resolveDeveloperNotifyEmail(
-    (paymentConfig?.config as { contacts?: { email?: string } } | null)?.contacts?.email
-  );
-
-  let emailSent = false;
-  if (!idempotent && developerEmail) {
-    emailSent = await sendTransactionalEmail({
-      to: developerEmail,
-      subject: requestKindEmailSubject(requestKind, membership.org.name),
-      text: [
-        requestKind === "crm_subscription"
-          ? "Новая заявка на месячную подписку CRM."
-          : "Новая заявка на покупку полной версии TangoDB.",
-        "",
-        `Request ID: ${requestId}`,
-        `Kind: ${requestKind}`,
-        `Quote ID: ${quoteId}`,
-        `Method: ${quoteRow.method_code}`,
-        `Amount: ${quoteRow.amount} ${quoteRow.currency}`,
-        `Pricing revision: ${quoteRow.pricing_revision}`,
-        `Organization: ${membership.org.name} (${organizationId})`,
-        `Requester email: ${requesterEmail ?? "not provided"}`,
-        `Contact email: ${contactEmail || requesterEmail || "not provided"}`,
-        `Telegram: ${contactTelegram || "not provided"}`,
-        "",
-        "Payment details (quote snapshot):",
-        quoteRow.payment_details_snapshot,
-        "",
-        "Комментарий пользователя:",
-        paymentComment,
-        "",
-        "Проверьте поступление средств и активируйте доступ в Dev Console → Inbox.",
-      ].join("\n"),
-    });
-  } else if (!idempotent && !developerEmail) {
-    logEvent("purchase_request_notify_email_missing", { request_id: requestId });
-  }
-
-  if (emailSent) {
-    await admin
-      .from("platform_purchase_requests")
-      .update({ email_sent: true, updated_at: new Date().toISOString() })
-      .eq("id", requestId);
-  }
-
   if (!idempotent) {
     await admin.from("platform_audit_log").insert({
       actor_user_id: userData.user.id,
@@ -249,14 +182,25 @@ Deno.serve(async (req) => {
         organization_id: organizationId,
         request_kind: requestKind,
         quote_id: quoteId,
-        email_sent: emailSent,
+        notify: "outbox",
         requester_domain: requesterEmail?.split("@")[1] ?? null,
       },
     });
   }
 
+  const { data: requestRow } = await admin
+    .from("platform_purchase_requests")
+    .select("email_sent")
+    .eq("id", requestId)
+    .maybeSingle();
+
   return jsonResponse(
-    { ok: true, id: requestId, email_sent: emailSent, idempotent },
+    {
+      ok: true,
+      id: requestId,
+      email_sent: requestRow?.email_sent === true,
+      idempotent,
+    },
     200,
     req
   );
