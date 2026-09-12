@@ -311,7 +311,7 @@ export default function BookingSheet({
         <div className={sheetCls} onClick={(e) => e.stopPropagation()}>
           <h2 className="text-lg font-semibold text-slate-900">{t(locale, "bookingResultTitle")}</h2>
           <p className="text-sm text-slate-500">
-            {date} · {formatTimeRange(created.time_start, created.time_end)}
+            {formatLongDate(date, localeTag)} · {formatTimeRange(created.time_start, created.time_end)}
           </p>
 
           {isHold ? (
@@ -485,7 +485,7 @@ export default function BookingSheet({
 
         {mode === "one_time" ? (
           <p className="text-sm text-slate-500">
-            {date} · {formatTimeRange(timeStart, timeEnd || "…")}
+            {formatLongDate(date, localeTag)} · {formatTimeRange(timeStart, timeEnd || "…")}
           </p>
         ) : (
           <>
