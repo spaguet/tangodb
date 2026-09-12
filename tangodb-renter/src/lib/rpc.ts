@@ -81,6 +81,7 @@ export async function rpcQuotePack(
     time_start: string;
     time_end: string;
     weekdays: number[];
+    day_slots: { weekday: number; time_start: string; time_end: string }[];
   }
 ): Promise<{
   kind: string;
@@ -134,6 +135,7 @@ export async function rpcCreatePack(
     time_start: string;
     time_end: string;
     weekdays: number[];
+    day_slots: { weekday: number; time_start: string; time_end: string }[];
     idempotency_key: string;
   }
 ): Promise<PackCreateResult> {

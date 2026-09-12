@@ -194,4 +194,59 @@ describe("BookingSheet booking result", () => {
       expect(screen.getByText(/Даты пакета/i)).toBeTruthy();
     });
   });
+
+  it("quotes pack with different hours per weekday", async () => {
+    const packOccurrence = {
+      kind: "pack_occurrence",
+      date: "2026-09-10",
+      time_start: "18:00",
+      time_end: "19:00",
+      hours: 1,
+      rate: 400,
+      cost: 400,
+      prepay: 200,
+      remainder: 200,
+      currency: "RUB",
+      busy: false,
+      can_create: true,
+    };
+    vi.mocked(rpc.rpcQuotePack).mockResolvedValue({
+      kind: "pack",
+      valid_from: "2026-09-10",
+      valid_to: "2026-10-07",
+      occurrences: [packOccurrence],
+      can_create: true,
+    });
+
+    render(
+      <BookingSheet
+        locale="ru"
+        bootstrap={mockBootstrap}
+        serverNow="2026-09-03T12:00:00.000Z"
+        organizationId="org-1"
+        supabase={supabase}
+        locationId="loc-1"
+        date="2026-09-10"
+        defaultStart="18:00"
+        packDays={packDays}
+        onClose={onClose}
+        onDone={onDone}
+        onTopup={onTopup}
+      />
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /Постоянная/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Пн" }));
+
+    const mondayStart = await screen.findByLabelText("Пн · Начало");
+    await userEvent.selectOptions(mondayStart, "09:00");
+
+    await waitFor(() => {
+      const payloads = vi.mocked(rpc.rpcQuotePack).mock.calls.map((c) => c[1]);
+      expect(payloads.some((p) => p.day_slots?.some((s) => s.weekday === 1 && s.time_start === "09:00"))).toBe(
+        true
+      );
+      expect(payloads.some((p) => p.day_slots?.some((s) => s.weekday === 4))).toBe(true);
+    });
+  });
 });

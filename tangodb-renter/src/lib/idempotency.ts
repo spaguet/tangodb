@@ -59,9 +59,11 @@ export function packScope(
   locationId: string,
   validFrom: string,
   validTo: string,
-  timeStart: string,
-  timeEnd: string,
-  weekdays: number[]
+  daySlots: { weekday: number; time_start: string; time_end: string }[]
 ): string {
-  return `${organizationId}:${locationId}:${validFrom}:${validTo}:${timeStart}:${timeEnd}:${[...weekdays].sort((a, b) => a - b).join(",")}`;
+  const slotKey = [...daySlots]
+    .sort((a, b) => a.weekday - b.weekday)
+    .map((s) => `${s.weekday}:${s.time_start}-${s.time_end}`)
+    .join(",");
+  return `${organizationId}:${locationId}:${validFrom}:${validTo}:${slotKey}`;
 }

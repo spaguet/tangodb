@@ -10,7 +10,14 @@ import {
   miniAppTimeOptions,
   snapMiniAppTime,
 } from "../../lib/miniAppBookingGrid";
-import { validFromInWeekdays, weekdaysIncludingDate } from "../../lib/packWeekdays";
+import { isoWeekdayFromDate, validFromInWeekdays, weekdaysIncludingDate } from "../../lib/packWeekdays";
+import {
+  allMiniAppPackDaySlotsValid,
+  ensureMiniAppDayTimes,
+  miniAppFallbackEnd,
+  toMiniAppPackDaySlots,
+  type MiniAppPackDayTimes,
+} from "../../lib/packDaySlots";
 import {
   DEFAULT_RECURRING_PACK_WEEKS,
   packValidToFromWeekCount,
@@ -121,6 +128,9 @@ export default function CreateMiniAppBookingDialog({
   const [newRenterName, setNewRenterName] = useState("");
   const [newRenterTelegramId, setNewRenterTelegramId] = useState("");
   const [weekdays, setWeekdays] = useState<number[]>([1]);
+  const [dayTimes, setDayTimes] = useState<Record<number, MiniAppPackDayTimes>>({
+    1: { timeStart: "12:00", timeEnd: "13:00" },
+  });
   const [packWeekCount, setPackWeekCount] = useState<RecurringPackWeekCount>(DEFAULT_RECURRING_PACK_WEEKS);
   const [quote, setQuote] = useState<StaffQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
@@ -141,16 +151,21 @@ export default function CreateMiniAppBookingDialog({
 
   const startOptions = useMemo(() => miniAppTimeOptions(), []);
   const endOptions = useMemo(() => miniAppEndOptions(timeStart), [timeStart]);
+  const daySlots = useMemo(() => toMiniAppPackDaySlots(weekdays, dayTimes), [weekdays, dayTimes]);
+  const packSlotsValid = allMiniAppPackDaySlotsValid(weekdays, dayTimes);
+  const fallbackTimes: MiniAppPackDayTimes = {
+    timeStart,
+    timeEnd: miniAppFallbackEnd(timeStart, timeEnd),
+  };
 
   const quoteReady =
     channelReady &&
     !!renterId &&
     !!locationId &&
     !!rentalDate &&
-    !!timeStart &&
-    !!timeEnd &&
-    isMiniAppDurationValid(timeStart, timeEnd) &&
-    (mode === "one_time" || (weekdays.length > 0 && packWeekdaysValid));
+    (mode === "one_time"
+      ? !!timeStart && !!timeEnd && isMiniAppDurationValid(timeStart, timeEnd)
+      : weekdays.length > 0 && packWeekdaysValid && packSlotsValid);
 
   const handleCreateRenter = async () => {
     const name = newRenterName.trim();
@@ -182,7 +197,9 @@ export default function CreateMiniAppBookingDialog({
   const handleRentalDateChange = (next: string) => {
     setRentalDate(next);
     if (mode === "pack" && next) {
-      setWeekdays((prev) => weekdaysIncludingDate(prev, next));
+      const wds = weekdaysIncludingDate(weekdays, next);
+      setWeekdays(wds);
+      setDayTimes((prev) => ensureMiniAppDayTimes(wds, prev, fallbackTimes));
     }
   };
 
@@ -206,8 +223,17 @@ export default function CreateMiniAppBookingDialog({
     setPackWeekCount(DEFAULT_RECURRING_PACK_WEEKS);
     setQuote(null);
     idempotencyKeyRef.current = crypto.randomUUID();
+    const seedEnd =
+      prefill?.timeEnd && isMiniAppDurationValid(start, snapMiniAppTime(prefill.timeEnd))
+        ? snapMiniAppTime(prefill.timeEnd)
+        : (ends[0] ?? "13:00");
     if (prefill?.date) {
+      const wd = isoWeekdayFromDate(prefill.date);
       setWeekdays(weekdaysIncludingDate([], prefill.date));
+      setDayTimes({ [wd]: { timeStart: start, timeEnd: seedEnd } });
+    } else {
+      setWeekdays([1]);
+      setDayTimes({ 1: { timeStart: start, timeEnd: seedEnd } });
     }
   }, [open, prefill, preselectedRenterId, channelLocations]);
 
@@ -228,11 +254,12 @@ export default function CreateMiniAppBookingDialog({
               ? {
                   renter_id: renterId,
                   location_id: locationId,
-                  time_start: timeStart,
-                  time_end: timeEnd,
+                  time_start: daySlots[0]?.time_start,
+                  time_end: daySlots[0]?.time_end,
                   valid_from: rentalDate,
                   valid_to: packValidToFromWeekCount(rentalDate, packWeekCount),
                   weekdays: [...weekdays].sort((a, b) => a - b).map(String),
+                  day_slots: daySlots,
                 }
               : {
                   renter_id: renterId,
@@ -260,7 +287,7 @@ export default function CreateMiniAppBookingDialog({
       window.clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- quoteMutation stable; re-quote on form fields only
-  }, [open, mode, renterId, locationId, rentalDate, timeStart, timeEnd, weekdays, packWeekCount, quoteReady, toast, t]);
+  }, [open, mode, renterId, locationId, rentalDate, timeStart, timeEnd, weekdays, dayTimes, packWeekCount, quoteReady, toast, t]);
 
   const addonActive = ratesQuery.data?.addonActive ?? false;
   const pending = createMutation.isPending || packMutation.isPending;
@@ -292,7 +319,11 @@ export default function CreateMiniAppBookingDialog({
       toast(t("schedule.rental.fieldsInvalid"), "error");
       return;
     }
-    if (!isMiniAppDurationValid(timeStart, timeEnd)) {
+    if (mode === "one_time" && !isMiniAppDurationValid(timeStart, timeEnd)) {
+      toast(t("renter.booking.timeInvalid"), "error");
+      return;
+    }
+    if (mode === "pack" && !packSlotsValid) {
       toast(t("renter.booking.timeInvalid"), "error");
       return;
     }
@@ -320,11 +351,12 @@ export default function CreateMiniAppBookingDialog({
       const res = await packMutation.mutateAsync({
         renter_id: renterId,
         location_id: locationId,
-        time_start: timeStart,
-        time_end: timeEnd,
+        time_start: daySlots[0]?.time_start ?? timeStart,
+        time_end: daySlots[0]?.time_end ?? timeEnd,
         valid_from: rentalDate,
         valid_to: packValidToFromWeekCount(rentalDate, packWeekCount),
         weekdays: [...weekdays].sort((a, b) => a - b).map(String),
+        day_slots: daySlots,
         idempotency_key: idempotencyKey,
       });
       if (!res.success) {
@@ -396,7 +428,10 @@ export default function CreateMiniAppBookingDialog({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMode("pack")}
+                  onClick={() => {
+                    setMode("pack");
+                    setDayTimes((prev) => ensureMiniAppDayTimes(weekdays, prev, fallbackTimes));
+                  }}
                   className={`px-3 py-2 text-xs font-semibold rounded-lg border cursor-pointer ${
                     mode === "pack" ? "border-indigo-300 bg-indigo-50 text-indigo-800" : "border-slate-200 text-slate-600"
                   }`}
@@ -410,6 +445,7 @@ export default function CreateMiniAppBookingDialog({
                 value={rentalDate}
                 onChange={handleRentalDateChange}
               />
+              {mode === "one_time" ? (
               <div className="grid grid-cols-2 gap-3">
                 <AppSelect label={t("common.timeStart")} value={timeStart} onChange={(e) => {
                   const next = e.target.value;
@@ -427,6 +463,7 @@ export default function CreateMiniAppBookingDialog({
                   ))}
                 </AppSelect>
               </div>
+              ) : null}
               {channelReady ? (
                 <AppSelect label={t("schedule.form.location")} value={locationId} onChange={(e) => setLocationId(e.target.value)}>
                   {channelLocations.map((loc) => (
@@ -523,9 +560,11 @@ export default function CreateMiniAppBookingDialog({
                           type="checkbox"
                           checked={weekdays.includes(day)}
                           onChange={(e) => {
-                            setWeekdays((prev) =>
-                              e.target.checked ? [...prev, day] : prev.filter((d) => d !== day)
-                            );
+                            const next = e.target.checked
+                              ? [...weekdays, day].sort((a, b) => a - b)
+                              : weekdays.filter((d) => d !== day);
+                            setWeekdays(next);
+                            setDayTimes((prev) => ensureMiniAppDayTimes(next, prev, fallbackTimes));
                           }}
                         />
                         {t(`schedule.miniapp.dow.${day}` as "schedule.miniapp.dow.1")}
@@ -536,6 +575,55 @@ export default function CreateMiniAppBookingDialog({
                   {!packWeekdaysValid ? (
                     <p className="text-xs text-rose-600 mt-1">{t("schedule.miniapp.packStartWeekdayMismatch")}</p>
                   ) : null}
+                </div>
+              ) : null}
+
+              {mode === "pack" && weekdays.length > 0 ? (
+                <div className="space-y-2">
+                  <span className={labelCls}>{t("schedule.miniapp.dayHours")}</span>
+                  {weekdays.map((day) => {
+                    const slot = dayTimes[day] ?? fallbackTimes;
+                    const dayEnds = miniAppEndOptions(slot.timeStart);
+                    return (
+                      <div key={day} className="grid grid-cols-[2.5rem_1fr_1fr] items-end gap-2">
+                        <span className="pb-2 text-xs font-semibold text-slate-600">
+                          {t(`schedule.miniapp.dow.${day}` as "schedule.miniapp.dow.1")}
+                        </span>
+                        <AppSelect
+                          label={t("common.timeStart")}
+                          value={slot.timeStart}
+                          onChange={(e) => {
+                            const nextStart = e.target.value;
+                            setDayTimes((prev) => ({
+                              ...prev,
+                              [day]: {
+                                timeStart: nextStart,
+                                timeEnd: miniAppFallbackEnd(nextStart, slot.timeEnd),
+                              },
+                            }));
+                          }}
+                        >
+                          {startOptions.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </AppSelect>
+                        <AppSelect
+                          label={t("common.timeEnd")}
+                          value={dayEnds.includes(slot.timeEnd) ? slot.timeEnd : (dayEnds[0] ?? "")}
+                          onChange={(e) => {
+                            setDayTimes((prev) => ({
+                              ...prev,
+                              [day]: { timeStart: slot.timeStart, timeEnd: e.target.value },
+                            }));
+                          }}
+                        >
+                          {dayEnds.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </AppSelect>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
 

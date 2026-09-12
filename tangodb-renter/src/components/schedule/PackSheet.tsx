@@ -4,7 +4,14 @@ import type { BootstrapData } from "../../lib/auth";
 import { btnPrimaryCls, btnSecondaryCls, fieldCls, labelCls, successBannerCls, weekChipActiveCls, weekChipCls } from "../../lib/crmUi";
 import { formatHoldDeadline, formatMoney } from "../../lib/format";
 import { useHoldCountdown } from "../../hooks/useServerClock";
-import { slotEndOptions, slotStartOptions } from "../../lib/grid";
+import {
+  allPackDaySlotsValid,
+  ensureDayTimes,
+  fallbackEnd,
+  packDaySlotsHaveMixedHours,
+  toPackDaySlots,
+  type PackDayTimes,
+} from "../../lib/packDaySlots";
 import {
   clearIdempotencyKey,
   getOrCreateIdempotencyKey,
@@ -30,6 +37,7 @@ import { rpcErrorKey } from "../../lib/rpcErrors";
 import type { PackCreateResult, QuotePackOccurrence, WalletData } from "../../lib/types";
 import { t, tFill, WEEKDAY_LABELS, type Locale } from "../../i18n/strings";
 import { suggestedTopupAmount } from "../../lib/quoteBalance";
+import PackDayHoursFields from "./PackDayHoursFields";
 import QuoteSummary from "./QuoteSummary";
 
 type PackSheetProps = {
@@ -66,10 +74,13 @@ export default function PackSheet({
 }: PackSheetProps) {
   const initialValidFrom = defaultValidFrom ?? days[0] ?? "";
   const initialStart = defaultTimeStart ?? "18:00";
+  const initialEnd = defaultTimeEnd ?? fallbackEnd(initialStart);
+  const initialWeekday = orgIsoWeekday(bootstrap.timezone, initialValidFrom);
   const [validFrom, setValidFrom] = useState(initialValidFrom);
-  const [weekdays, setWeekdays] = useState<number[]>([orgIsoWeekday(bootstrap.timezone, initialValidFrom)]);
-  const [timeStart, setTimeStart] = useState(initialStart);
-  const [timeEnd, setTimeEnd] = useState(defaultTimeEnd ?? "");
+  const [weekdays, setWeekdays] = useState<number[]>([initialWeekday]);
+  const [dayTimes, setDayTimes] = useState<Record<number, PackDayTimes>>({
+    [initialWeekday]: { timeStart: initialStart, timeEnd: initialEnd },
+  });
   const [occurrences, setOccurrences] = useState<QuotePackOccurrence[] | null>(null);
   const [packCanCreate, setPackCanCreate] = useState(true);
   const [wallet, setWallet] = useState<WalletData | null>(null);
@@ -84,9 +95,9 @@ export default function PackSheet({
     () => packValidToFromWeekCount(validFrom, packWeekCount),
     [validFrom, packWeekCount]
   );
-  const endOptions = useMemo(() => slotEndOptions(timeStart), [timeStart]);
-  const starts = useMemo(() => slotStartOptions(), []);
   const localeTag = locale === "en" ? "en" : "ru";
+  const daySlots = useMemo(() => toPackDaySlots(weekdays, dayTimes), [weekdays, dayTimes]);
+  const slotsReady = allPackDaySlotsValid(weekdays, dayTimes);
 
   const isHold = created?.series_status === "awaiting_payment";
   const countdown = useHoldCountdown(
@@ -96,17 +107,20 @@ export default function PackSheet({
     onSuccess
   );
 
-  const toggleWeekday = (d: number) => {
-    setWeekdays((prev) =>
-      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b)
-    );
+  const fallbackTimes: PackDayTimes = {
+    timeStart: initialStart,
+    timeEnd: fallbackEnd(initialStart, initialEnd),
   };
 
-  useEffect(() => {
-    if (!timeEnd && endOptions.length > 0) {
-      setTimeEnd(endOptions[0]);
-    }
-  }, [endOptions, timeEnd]);
+  const toggleWeekday = (d: number) => {
+    setWeekdays((prev) => {
+      const next = prev.includes(d)
+        ? prev.filter((x) => x !== d)
+        : [...prev, d].sort((a, b) => a - b);
+      setDayTimes((times) => ensureDayTimes(next, times, fallbackTimes));
+      return next;
+    });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -127,7 +141,7 @@ export default function PackSheet({
   }, [supabase]);
 
   useEffect(() => {
-    if (weekdays.length === 0 || !timeEnd || !isIsoDate(validFrom)) return;
+    if (!slotsReady || !isIsoDate(validFrom) || daySlots.length === 0) return;
     let cancelled = false;
     (async () => {
       setQuoting(true);
@@ -137,9 +151,10 @@ export default function PackSheet({
           location_id: locationId,
           valid_from: validFrom,
           valid_to: validTo,
-          time_start: timeStart,
-          time_end: timeEnd,
+          time_start: daySlots[0].time_start,
+          time_end: daySlots[0].time_end,
           weekdays,
+          day_slots: daySlots,
         });
         if (!cancelled) {
           setOccurrences(q.occurrences ?? []);
@@ -154,7 +169,7 @@ export default function PackSheet({
     return () => {
       cancelled = true;
     };
-  }, [supabase, locationId, validFrom, validTo, timeStart, timeEnd, weekdays, locale]);
+  }, [supabase, locationId, validFrom, validTo, daySlots, weekdays, locale, slotsReady]);
 
   const totals = useMemo(() => {
     if (!occurrences?.length) {
@@ -178,31 +193,28 @@ export default function PackSheet({
   const handleValidFromChange = (raw: string, selectedIndex: number) => {
     const next = resolveIsoDateFromSelect(raw, days, selectedIndex);
     setValidFrom(next);
-    setWeekdays((prev) => weekdaysIncludingDate(prev, bootstrap.timezone, next));
+    setWeekdays((prev) => {
+      const wds = weekdaysIncludingDate(prev, bootstrap.timezone, next);
+      setDayTimes((times) => ensureDayTimes(wds, times, fallbackTimes));
+      return wds;
+    });
   };
 
   const submit = async () => {
-    if (weekdays.length === 0 || !validFromOk || hasBusy || !packCanCreate) return;
+    if (weekdays.length === 0 || !validFromOk || hasBusy || !packCanCreate || !slotsReady) return;
     setSubmitting(true);
     setError(null);
-    const scope = packScope(
-      organizationId,
-      locationId,
-      validFrom,
-      validTo,
-      timeStart,
-      timeEnd,
-      weekdays
-    );
+    const scope = packScope(organizationId, locationId, validFrom, validTo, daySlots);
     const idem = getOrCreateIdempotencyKey(scope);
     try {
       const result = await rpcCreatePack(supabase, {
         location_id: locationId,
         valid_from: validFrom,
         valid_to: validTo,
-        time_start: timeStart,
-        time_end: timeEnd,
+        time_start: daySlots[0]?.time_start ?? initialStart,
+        time_end: daySlots[0]?.time_end ?? initialEnd,
         weekdays,
+        day_slots: daySlots,
         idempotency_key: idem,
       });
       clearIdempotencyKey(scope);
@@ -236,8 +248,10 @@ export default function PackSheet({
         >
           <h2 className="text-lg font-semibold text-slate-900">{t(locale, "packResultTitle")}</h2>
           <p className="text-sm text-slate-500">
-            {formatTimeRange(timeStart, timeEnd)} · {sessionCount}{" "}
-            {locale === "en" ? "sessions" : "занятий"}
+            {packDaySlotsHaveMixedHours(daySlots)
+              ? null
+              : `${formatTimeRange(daySlots[0]?.time_start ?? initialStart, daySlots[0]?.time_end ?? initialEnd)} · `}
+            {sessionCount} {locale === "en" ? "sessions" : "занятий"}
           </p>
 
           {isHold ? (
@@ -363,28 +377,14 @@ export default function PackSheet({
           ) : null}
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <label className="flex flex-col gap-1">
-            <span className={labelCls}>{t(locale, "startTime")}</span>
-            <select className={fieldCls} value={timeStart} onChange={(e) => setTimeStart(e.target.value)}>
-              {starts.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className={labelCls}>{t(locale, "endTime")}</span>
-            <select className={fieldCls} value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)}>
-              {endOptions.map((te) => (
-                <option key={te} value={te}>
-                  {te}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        <PackDayHoursFields
+          locale={locale}
+          weekdays={weekdays}
+          timesByDay={dayTimes}
+          onChange={(weekday, next) =>
+            setDayTimes((prev) => ({ ...prev, [weekday]: next }))
+          }
+        />
 
         {quoting ? (
           <p className="text-sm text-slate-500">{t(locale, "quoteLoading")}</p>
@@ -425,7 +425,13 @@ export default function PackSheet({
           <button
             type="button"
             disabled={
-              submitting || quoting || hasBusy || weekdays.length === 0 || !validFromOk || !packCanCreate
+              submitting ||
+              quoting ||
+              hasBusy ||
+              weekdays.length === 0 ||
+              !validFromOk ||
+              !packCanCreate ||
+              !slotsReady
             }
             className={`flex-1 ${btnPrimaryCls}`}
             onClick={() => void submit()}

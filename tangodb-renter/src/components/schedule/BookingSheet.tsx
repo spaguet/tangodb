@@ -6,6 +6,14 @@ import { formatHoldDeadline, formatMoney } from "../../lib/format";
 import { useHoldCountdown } from "../../hooks/useServerClock";
 import { slotEndOptions, slotStartOptions, snapTime } from "../../lib/grid";
 import {
+  allPackDaySlotsValid,
+  ensureDayTimes,
+  fallbackEnd,
+  packDaySlotsHaveMixedHours,
+  toPackDaySlots,
+  type PackDayTimes,
+} from "../../lib/packDaySlots";
+import {
   bookingScope,
   clearIdempotencyKey,
   getOrCreateIdempotencyKey,
@@ -43,6 +51,7 @@ import type {
 } from "../../lib/types";
 import { t, tFill, WEEKDAY_LABELS, type Locale } from "../../i18n/strings";
 import { rentalQuoteCoverage, suggestedTopupAmount } from "../../lib/quoteBalance";
+import PackDayHoursFields from "./PackDayHoursFields";
 import QuoteSummary from "./QuoteSummary";
 
 type BookingMode = "one_time" | "recurring";
@@ -88,7 +97,9 @@ export default function BookingSheet({
   const [timeEnd, setTimeEnd] = useState("");
   const [quote, setQuote] = useState<QuoteOneTime | null>(null);
   const [validFrom, setValidFrom] = useState(date);
-  const [weekdays, setWeekdays] = useState<number[]>([orgIsoWeekday(timezone, date)]);
+  const initialWeekday = orgIsoWeekday(timezone, date);
+  const [weekdays, setWeekdays] = useState<number[]>([initialWeekday]);
+  const [dayTimes, setDayTimes] = useState<Record<number, PackDayTimes>>({});
   const [occurrences, setOccurrences] = useState<QuotePackOccurrence[] | null>(null);
   const [packCanCreate, setPackCanCreate] = useState(true);
   const [wallet, setWallet] = useState<WalletData | null>(null);
@@ -114,12 +125,23 @@ export default function BookingSheet({
   const starts = useMemo(() => slotStartOptions(), []);
   const endOptions = useMemo(() => slotEndOptions(timeStart), [timeStart]);
   const localeTag = locale === "en" ? "en" : "ru";
+  const fallbackTimes: PackDayTimes = {
+    timeStart,
+    timeEnd: fallbackEnd(timeStart, timeEnd),
+  };
+  const daySlots = useMemo(() => toPackDaySlots(weekdays, dayTimes), [weekdays, dayTimes]);
+  const slotsReady = allPackDaySlotsValid(weekdays, dayTimes);
 
   useEffect(() => {
     if (!timeEnd && endOptions.length > 0) {
       setTimeEnd(endOptions[0]);
     }
   }, [endOptions, timeEnd]);
+
+  useEffect(() => {
+    if (mode !== "recurring" || !timeEnd) return;
+    setDayTimes((prev) => ensureDayTimes(weekdays, prev, fallbackTimes));
+  }, [mode, weekdays, timeStart, timeEnd, fallbackTimes.timeStart, fallbackTimes.timeEnd]);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +187,7 @@ export default function BookingSheet({
   }, [supabase, locationId, date, timeStart, timeEnd, locale, mode]);
 
   useEffect(() => {
-    if (mode !== "recurring" || weekdays.length === 0 || !timeEnd || !isIsoDate(validFrom)) return;
+    if (mode !== "recurring" || !slotsReady || !isIsoDate(validFrom) || daySlots.length === 0) return;
     let cancelled = false;
     (async () => {
       setQuoting(true);
@@ -175,9 +197,10 @@ export default function BookingSheet({
           location_id: locationId,
           valid_from: validFrom,
           valid_to: validTo,
-          time_start: timeStart,
-          time_end: timeEnd,
+          time_start: daySlots[0].time_start,
+          time_end: daySlots[0].time_end,
           weekdays,
+          day_slots: daySlots,
         });
         if (!cancelled) {
           setOccurrences(q.occurrences ?? []);
@@ -192,7 +215,7 @@ export default function BookingSheet({
     return () => {
       cancelled = true;
     };
-  }, [supabase, locationId, validFrom, validTo, timeStart, timeEnd, weekdays, locale, mode, packWeekCount]);
+  }, [supabase, locationId, validFrom, validTo, daySlots, weekdays, locale, mode, packWeekCount, slotsReady]);
 
   const packTotals = useMemo(() => {
     if (!occurrences?.length) {
@@ -214,15 +237,23 @@ export default function BookingSheet({
   const sessionCount = createdPack?.occurrence_count ?? occurrences?.length ?? 0;
 
   const toggleWeekday = (d: number) => {
-    setWeekdays((prev) =>
-      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b)
-    );
+    setWeekdays((prev) => {
+      const next = prev.includes(d)
+        ? prev.filter((x) => x !== d)
+        : [...prev, d].sort((a, b) => a - b);
+      setDayTimes((times) => ensureDayTimes(next, times, fallbackTimes));
+      return next;
+    });
   };
 
   const handleValidFromChange = (raw: string, selectedIndex: number) => {
     const next = resolveIsoDateFromSelect(raw, packDays, selectedIndex);
     setValidFrom(next);
-    setWeekdays((prev) => weekdaysIncludingDate(prev, timezone, next));
+    setWeekdays((prev) => {
+      const wds = weekdaysIncludingDate(prev, timezone, next);
+      setDayTimes((times) => ensureDayTimes(wds, times, fallbackTimes));
+      return wds;
+    });
   };
 
   const submitOneTime = async () => {
@@ -249,27 +280,20 @@ export default function BookingSheet({
   };
 
   const submitRecurring = async () => {
-    if (weekdays.length === 0 || !validFromOk || hasBusy || !packCanCreate || !timeEnd) return;
+    if (weekdays.length === 0 || !validFromOk || hasBusy || !packCanCreate || !slotsReady) return;
     setSubmitting(true);
     setError(null);
-    const scope = packScope(
-      organizationId,
-      locationId,
-      validFrom,
-      validTo,
-      timeStart,
-      timeEnd,
-      weekdays
-    );
+    const scope = packScope(organizationId, locationId, validFrom, validTo, daySlots);
     const idem = getOrCreateIdempotencyKey(scope);
     try {
       const result = await rpcCreatePack(supabase, {
         location_id: locationId,
         valid_from: validFrom,
         valid_to: validTo,
-        time_start: timeStart,
-        time_end: timeEnd,
+        time_start: daySlots[0]?.time_start ?? timeStart,
+        time_end: daySlots[0]?.time_end ?? timeEnd,
         weekdays,
+        day_slots: daySlots,
         idempotency_key: idem,
       });
       clearIdempotencyKey(scope);
@@ -382,8 +406,10 @@ export default function BookingSheet({
         <div className={sheetCls} onClick={(e) => e.stopPropagation()}>
           <h2 className="text-lg font-semibold text-slate-900">{t(locale, "packResultTitle")}</h2>
           <p className="text-sm text-slate-500">
-            {formatTimeRange(timeStart, timeEnd)} · {sessionCount}{" "}
-            {locale === "en" ? "sessions" : "занятий"}
+            {packDaySlotsHaveMixedHours(daySlots)
+              ? null
+              : `${formatTimeRange(daySlots[0]?.time_start ?? timeStart, daySlots[0]?.time_end ?? timeEnd)} · `}
+            {sessionCount} {locale === "en" ? "sessions" : "занятий"}
           </p>
 
           {isHold ? (
@@ -454,7 +480,7 @@ export default function BookingSheet({
     weekdays.length === 0 ||
     !validFromOk ||
     !packCanCreate ||
-    !timeEnd ||
+    !slotsReady ||
     !occurrences?.length;
 
   return (
@@ -477,7 +503,10 @@ export default function BookingSheet({
             className={`min-w-0 flex-1 rounded-md px-2 py-2 text-xs font-semibold ${
               mode === "recurring" ? weekChipActiveCls : weekChipCls
             }`}
-            onClick={() => setMode("recurring")}
+            onClick={() => {
+              setMode("recurring");
+              setDayTimes((prev) => ensureDayTimes(weekdays, prev, fallbackTimes));
+            }}
           >
             {t(locale, "bookingModeRecurring")}
           </button>
@@ -554,6 +583,7 @@ export default function BookingSheet({
           </div>
         ) : null}
 
+        {mode === "one_time" ? (
         <div className="grid grid-cols-2 gap-2">
           <label className="flex flex-col gap-1">
             <span className={labelCls}>{t(locale, "startTime")}</span>
@@ -583,6 +613,16 @@ export default function BookingSheet({
             </select>
           </label>
         </div>
+        ) : (
+          <PackDayHoursFields
+            locale={locale}
+            weekdays={weekdays}
+            timesByDay={dayTimes}
+            onChange={(weekday, next) =>
+              setDayTimes((prev) => ({ ...prev, [weekday]: next }))
+            }
+          />
+        )}
 
         {quoting ? (
           <p className="text-sm text-slate-500">{t(locale, "quoteLoading")}</p>

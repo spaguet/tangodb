@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.11.10",
+  "version": "2.11.12",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -103,6 +103,7 @@
     "test:db:renter-miniapp-fa7": "node scripts/fa2-concurrent-topup.mjs",
     "test:db:cleanup-miniapp-fixtures": "node scripts/cleanup-miniapp-concurrent-fixtures.mjs",
     "test:renter-miniapp-fz": "node scripts/fz-audit-check.mjs",
+    "test:db:renter-miniapp-pack-day-slots": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_pack_day_slots_test.sql",
     "test:db:renter-miniapp-ios-pack-date": "node scripts/psql-local-test.mjs -f supabase/tests/renter_miniapp_ios_pack_date_payload_test.sql",
     "test:db:renter-miniapp-fb2": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fb2_quote_validator_test.sql",
     "test:db:renter-miniapp-fb3": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fb3_pending_wallet_test.sql",

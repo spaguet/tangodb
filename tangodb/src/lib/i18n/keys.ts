@@ -1884,6 +1884,7 @@ export type I18nKey =
   | "schedule.miniapp.needTelegram"
   | "schedule.miniapp.telegramRequired"
   | "schedule.miniapp.weekdays"
+  | "schedule.miniapp.dayHours"
   | "schedule.miniapp.packHint"
   | "schedule.miniapp.packStartWeekdayMismatch"
   | "schedule.miniapp.noChannelLocations"

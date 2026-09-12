@@ -101,6 +101,41 @@ describe("PackSheet weekday form", () => {
     expect(screen.queryByText(/должна попадать в выбранные дни/i)).toBeNull();
   });
 
+  it("sends different hours per selected weekday", async () => {
+    render(
+      <PackSheet
+        locale="ru"
+        bootstrap={mockBootstrap}
+        organizationId="org-1"
+        supabase={supabase}
+        locationId="loc-1"
+        days={packDays}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        onTopup={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Пн · Начало")).toBeTruthy();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Ср" }));
+    const wedStart = await screen.findByLabelText("Ср · Начало");
+    await userEvent.selectOptions(wedStart, "10:00");
+
+    await waitFor(() => {
+      const payloads = vi.mocked(rpc.rpcQuotePack).mock.calls.map((c) => c[1]);
+      expect(
+        payloads.some(
+          (p) =>
+            p.day_slots?.some((s) => s.weekday === 1) &&
+            p.day_slots?.some((s) => s.weekday === 3 && s.time_start === "10:00")
+        )
+      ).toBe(true);
+    });
+  });
+
   it("shows hold result after pack create", async () => {
     vi.mocked(rpc.rpcGetWallet).mockResolvedValue(
       makeWallet({ wallet_balance: 0, spendable: 0, reserved_prepay: 0 })
