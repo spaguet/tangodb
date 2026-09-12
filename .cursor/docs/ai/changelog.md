@@ -1,4 +1,4 @@
-2026-09-12 — feat(hall-rent): микропатч **2.11.12** / Mini App **0.1.19** — постоянная аренда: у каждого выбранного дня свои начало и конец (пн 9:00–10:00, ср 10:00–12:00). RPC `renter_quote_booking` / `renter_create_recurring_pack` принимают `day_slots`; старый payload с одними часами на все дни работает. UI в Mini App (`BookingSheet`, `PackSheet`) и CRM (`CreateMiniAppBookingDialog`). Миграция `20261120000001`.
+2026-09-12 — feat(hall-rent): микропатч **2.11.12** / Mini App **0.1.19** — постоянная аренда: у каждого выбранного дня свои начало и конец (пн 9:00–10:00, ср 10:00–12:00). RPC `renter_quote_booking` / `renter_create_recurring_pack` принимают `day_slots`; старый payload с одними часами на все дни работает. UI в Mini App (`BookingSheet`, `PackSheet`) и CRM (`CreateMiniAppBookingDialog`). Миграция `20261122000001`.
 
 2026-09-12 — feat(hall-rent): Mini App **0.1.18** — в сетке расписания колонки прошедших дней (до «сегодня» в TZ студии по `server_now`) подсвечены светло-серым (`bg-slate-100`), чтобы было видно, что бронь на эти дни недоступна.
 
