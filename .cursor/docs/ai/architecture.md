@@ -12,12 +12,15 @@
 
 ## Platform payment config
 
-- `platform_payment_methods.config` — единый публично читаемый JSON-конфиг ручных способов оплаты для страницы лицензии CRM (и, когда вернут, модуля Mini App).
+- `platform_payment_methods.config` — единый публично читаемый JSON-конфиг ручных способов оплаты для страницы лицензии CRM (и, когда вернут, модуля Mini App). **schemaVersion 2:** канон цен `crmLifetime` / `crmMonthly`, per-method override по stable `methodCode`, `pricingRevision` для compare-and-swap в Dev Console. Резолв суммы — `resolvePaymentQuote` (CRM `tangodb/src/lib/paymentQuote.ts`, Edge `_shared/paymentQuote.ts`).
 - `config.renterMiniappAddon` — `{ amount, currency }` ежемесячная цена add-on; **временно не используется** (HALL-RENT-SELF-2): Mini App входит в купленный CRM.
 - Dev Console (`/payment-methods`) обновляет конфиг через Edge Function `dev-console-payment-methods` с developer-доступом.
 - Загруженные QR оплаты хранятся в конфиге как небольшие `data:image/...` строки; CRM только отображает загруженные изображения и не генерирует QR на клиенте.
-- `platform_purchase_requests` — входящие заявки из CRM после самостоятельной оплаты. CRM создаёт заявку через Edge Function `submit-purchase-request` (`request_kind`: `crm_license`; `renter_miniapp_addon` временно отклоняется).
-- Dev Console (`/inbox`) читает заявки через `dev-console-purchase-inbox`. Lifetime CRM: consumed key + `organization_licenses`. Ветка Mini App add-on в Inbox сохранена, новых заявок нет.
+- **Quote:** `platform_purchase_quotes` — server-side snapshot суммы/валюты/SKU; Edge `create-purchase-quote` (JWT, purge window). Заявка без quote и без суммы с клиента — fail-closed.
+- `platform_purchase_requests` — входящие заявки из CRM после самостоятельной оплаты. Kind: `crm_license` (lifetime) и `crm_subscription` (ручной месяц). CRM: Edge `submit-purchase-request` → RPC `submit_platform_purchase_request` (idempotent `client_request_id`, хранит quote snapshot, `purchase_review_hold_until` для demo purge). Прямой INSERT authenticated отозван (RLS).
+- Dev Console (`/inbox`) — `dev-console-purchase-inbox`; активация одной транзакцией через RPC `activate_platform_purchase_request` (month: `organization_subscriptions` + период в заявке; lifetime: consumed key + `organization_licenses`). `/billing` — ручная корректировка подписки (`dev_console_adjust_organization_subscription`). Support-тикеты — отдельная вкладка Inbox, не путать с purchase.
+- **Истечение месяца:** cron `expire-crm-subscriptions` → `past_due` / grace 7д → `suspended`; UI `isReadOnly` с `period_end` без ожидания cron.
+- **Notification outbox (платформа):** `platform_notification_outbox` + `platform_notification_settings` (`telegram_chat_id` в БД, токен бота — secret). Worker Edge `platform-notification-worker` (email + Telegram в одной TX с заявкой/тикетом/org_created). **Платформенный бот** — отдельный BotFather-бот, outbound-only, без webhook, username не показывается в CRM; до настройки Telegram-строка = `blocked`, email жив. **Студийный бот** арендаторов и `renter-booking-worker` / `renter_telegram_outbox` — другой токен и другие чаты; не смешивать.
 - Гейт Mini App fail-closed: `renter_miniapp_addon_is_active` — `organizations.status = licensed` **и** (lifetime **или** активная подписка CRM). Демо / нет купленного доступа = выкл (бронь канала и исходящий бот). `organization_addons` не источник истины, пока действует HALL-RENT-SELF-2.
 
 ## Слои (tangodb/)

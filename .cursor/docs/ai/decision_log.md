@@ -391,6 +391,14 @@
 - **Альтернативы:** Два клиентских вызова `cancelGroupLessonOccurrence` + `useAddGroupSchedule`; отдельная таблица исключений/связей.
 - **Почему так:** Транзакция на сервере устраняет частичный сбой; минимальные nullable-колонки на `schedule_slots` дают типобезопасную связь без новой таблицы.
 
+### CRM-SUB-2.11 — Ручной месяц CRM, quote, outbox, платформенный бот (2026-09-12)
+
+- **Дата:** 2026-09-12
+- **Решение:** Подверсия **2.11** (промпты S0–S7, спека `.cursor/docs/ai/crm_monthly_subscription_and_support_bot.md`): (1) продажа **ручного месяца** тем же рельсом, что lifetime — `crm_subscription`, server quote (`platform_purchase_quotes` + `create-purchase-quote`), idempotent submit/activate RPC, Inbox Activate month; (2) цены в `platform_payment_methods.config` v2 (`crmLifetime` / `crmMonthly`, per-method override); (3) без Stripe и без автосписания с карты в v1; (4) **платформенный Telegram-бот** — отдельный от студийного Mini App, outbound-only в один `telegram_chat_id`, без webhook, доставка через `platform_notification_outbox` + worker (заявки, `org_created`, support tickets, digest); (5) гостевые support-тикеты с Turnstile; (6) публичный копирайт лендинга en+ru — два тарифа CRM, без просроченного early bird (S7).
+- **Контекст:** Lifetime-only витрина и inbox не отражали месячный SaaS-доступ; email-only алерты терялись при сбоях; нужен единый канон активации и уведомлений без смешения с `renter-booking-worker`.
+- **Альтернативы:** Stripe subscription в v1; webhook-бот с inline Activate; таблица quotes не нужна была отклонена в S1 — snapshot quote в заявке обязателен.
+- **Почему так:** Ручной рельс сохраняет Dev Console как единственную точку доверия; outbox развязывает каналы; отдельный бот не ломает студийные интеграции (HALL-RENT не дублируем здесь).
+
 ### PAY-INBOX-1 — Ручная оплата через platform inbox (2026-06-28)
 
 - **Дата:** 2026-06-28

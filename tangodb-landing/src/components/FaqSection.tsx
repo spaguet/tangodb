@@ -13,7 +13,6 @@ const itemKeys = [
   { id: "after-trial", q: "faq.q6" as const, a: "faq.a6" as const },
   { id: "card", q: "faq.qCard" as const, a: "faq.aCard" as const },
   { id: "lifetime", q: "faq.q7" as const, a: "faq.a7" as const },
-  { id: "early-birds", q: "faq.q8" as const, a: "faq.a8" as const },
   { id: "demo", q: "faq.q9" as const, a: "faq.a9" as const },
   { id: "app", q: "faq.q1" as const, a: "faq.a1" as const },
   { id: "data", q: "faq.q2" as const, a: "faq.a2" as const },

@@ -8,7 +8,7 @@ export const en = {
   "cta.startFree": "Start free",
   "cta.getInstructions": "Get setup instructions",
   "cta.startFreeHint": "",
-  "hero.badge": "Your 70% discount on lifetime access",
+  "hero.badge": "30 days free — then monthly or lifetime",
   "hero.title": "CRM for dance studios and teachers",
   "hero.subtitle":
     "Schedule, passes, attendance, finance and team roles in one CRM. Start free.",
@@ -101,19 +101,22 @@ export const en = {
   "crmCaps.customizeDesc": "enable the sections and roles you need — from solo teacher to full team",
   "pricing.title": "Start free, decide after 30 days",
   "pricing.subtitle":
-    "Full access first, no payment upfront. Early birds — 70% off lifetime access for those who buy before August 31.",
+    "Full access first, no payment upfront. After the trial, choose monthly CRM access or a one-time lifetime license.",
   "pricing.step.register": "Step one: sign up — enter your email and password",
   "pricing.step.email": "Step two: sign in to your CRM. Your database is created automatically.",
   "pricing.step.trial":
     "Step three: configure the CRM for your needs — lesson types, team, pricing, schedule and more.",
   "pricing.step.decide":
-    "Step four: use your 70% discount on lifetime CRM access — pay any way that suits you.",
-  "pricing.earlyBird.title": "Early birds: 70% off lifetime access",
-  "pricing.earlyBird.text":
-    "For early users until August 31, 2026 — a discount on lifetime access. Lifetime access costs one monthly studio pass.",
-  "pricing.afterTrial.title": "No monthly subscription",
+    "Step four: choose monthly or lifetime CRM access and pay manually — bank transfer, crypto, or other methods shown in the app. No card at signup.",
+  "pricing.monthly.title": "Monthly CRM access",
+  "pricing.monthly.text":
+    "Extend each period manually in Settings → License. Same payment rails as lifetime — no automatic charges and no card on file.",
+  "pricing.lifetime.title": "Lifetime CRM license",
+  "pricing.lifetime.text":
+    "One-time purchase for ongoing use of your licensed CRM version, with free updates within that version.",
+  "pricing.afterTrial.title": "No auto-billing",
   "pricing.afterTrial.text":
-    "No automatic charges — no card at signup. Full license and lifetime access.",
+    "No Stripe and no recurring card charges. You pay manually when you extend monthly access or buy lifetime — the app shows the exact amount and payment details.",
   "pricing.note": "",
   "faq.title": "FAQ",
   "faq.q1": "Do I need to install an app?",
@@ -135,18 +138,16 @@ export const en = {
     "Register and get the full CRM: schedule, passes, finance and team — not the view-only demo on this page.",
   "faq.q6": "What happens after 30 days?",
   "faq.a6":
-    "Full access ends and all data is automatically deleted from the server. Then — purchase a license and lifetime access.",
+    "Full access ends and demo data is purged from the server. To keep working, purchase monthly CRM access or a lifetime license from Settings → License.",
   "faq.q7": "What does lifetime access mean?",
   "faq.a7":
     "A one-time purchase for ongoing use of the CRM version you licensed, with free updates within that version.",
-  "faq.q8": "What is the early birds offer?",
-  "faq.a8":
-    "70% off lifetime access for early users until August 31, 2026. It adds to the free 30-day trial — it does not replace it.",
   "faq.q9": "Can I try without signing up?",
   "faq.a9":
     "Yes — scroll to “Explore the CRM in detail”: view-only demo there. To run your studio — just register.",
   "faq.q10": "How does support work?",
-  "faq.a10": "Telegram and email. A real person replies, not a bot.",
+  "faq.a10":
+    "For you as a customer, a person replies on Telegram or email. Our team also gets automated platform alerts — those are for us, not a chatbot for you, and we do not publish bot usernames here.",
   "footer.tagline": "Clients, classes, money and team — one workspace.",
   "footer.byTeacher": "Built by a dance teacher for dance teachers",
   "footer.navigation": "Navigation",
@@ -154,7 +155,7 @@ export const en = {
   "footer.nav.audience": "Who it's for",
   "footer.nav.demo": "Live demo",
   "footer.nav.crmSections": "CRM sections",
-  "footer.nav.pricing": "Trial & early birds",
+  "footer.nav.pricing": "Trial & pricing",
   "footer.nav.faq": "FAQ",
   "footer.support": "Support",
   "footer.supportHint": "Problems, access recovery, feature ideas — we're here.",
