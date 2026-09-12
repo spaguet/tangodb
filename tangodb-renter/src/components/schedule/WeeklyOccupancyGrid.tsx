@@ -48,6 +48,18 @@ function weekdayKey(columnIndex: number): MessageKey {
   return WEEKDAY_LABELS[columnIndex + 1] ?? "mon";
 }
 
+function dayHeaderBgClass(isToday: boolean, isPastDay: boolean): string {
+  if (isToday) return "bg-slate-200";
+  if (isPastDay) return "bg-slate-100";
+  return "bg-slate-50";
+}
+
+function dayColumnBgClass(isToday: boolean, isPastDay: boolean): string {
+  if (isToday) return "bg-slate-100/80";
+  if (isPastDay) return "bg-slate-100";
+  return "bg-white";
+}
+
 function clipBlock(
   block: OccupancyBlock,
   rangeStartMin: number,
@@ -70,8 +82,8 @@ export default function WeeklyOccupancyGrid({
   onMineCell,
 }: WeeklyOccupancyGridProps) {
   const slotStarts = useMemo(() => slotStartOptions(), []);
-  const todayIso = orgLocalDate(timezone);
   const nowMs = serverNowMs(computeServerOffsetMs(serverNow));
+  const todayIso = orgLocalDate(timezone, new Date(nowMs));
 
   const statesByDate = useMemo(() => {
     const map = new Map<string, Map<string, SlotState>>();
@@ -171,22 +183,32 @@ export default function WeeklyOccupancyGrid({
             .filter((block): block is OccupiedBlock => block != null && isOccupiedBlock(block));
 
           return (
-            <div key={date} className="min-w-0 flex-1 border-l border-slate-100 first:border-l-0">
+            <div
+              key={date}
+              data-past-day={isPastDay ? "true" : undefined}
+              className="min-w-0 flex-1 border-l border-slate-100 first:border-l-0"
+            >
               <div
-                className={`sticky top-0 z-30 flex h-9 flex-col items-center justify-center border-b border-slate-100 px-0.5 shadow-[0_2px_4px_-2px_rgba(15,23,42,0.08)] backdrop-blur-[2px] sm:h-11 sm:px-1 ${
-                  isToday ? "bg-slate-200" : "bg-slate-50"
-                }`}
+                className={`sticky top-0 z-30 flex h-9 flex-col items-center justify-center border-b border-slate-100 px-0.5 shadow-[0_2px_4px_-2px_rgba(15,23,42,0.08)] backdrop-blur-[2px] sm:h-11 sm:px-1 ${dayHeaderBgClass(isToday, isPastDay)}`}
               >
-                <span className="text-[10px] leading-none font-semibold tracking-wider text-slate-400 uppercase">
+                <span
+                  className={`text-[10px] leading-none font-semibold tracking-wider uppercase ${
+                    isPastDay ? "text-slate-400/80" : "text-slate-400"
+                  }`}
+                >
                   {t(locale, weekdayKey(columnIndex))}
                 </span>
-                <span className="text-xs leading-tight font-semibold text-slate-800 tabular-nums sm:text-sm">
+                <span
+                  className={`text-xs leading-tight font-semibold tabular-nums sm:text-sm ${
+                    isPastDay ? "text-slate-500" : "text-slate-800"
+                  }`}
+                >
                   {calendarDayNumber(date)}
                 </span>
               </div>
 
               <div
-                className={`relative ${isToday ? "bg-slate-100/80" : "bg-white"}`}
+                className={`relative ${dayColumnBgClass(isToday, isPastDay)}`}
                 style={{ height: gridHeight }}
               >
                 {Array.from({ length: rowCount }, (_, i) => (

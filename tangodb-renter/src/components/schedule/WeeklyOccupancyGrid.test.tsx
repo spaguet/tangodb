@@ -58,4 +58,23 @@ describe("WeeklyOccupancyGrid", () => {
     await user.click(screen.getByRole("button", { name: /14, 12:00, Свободно/ }));
     expect(onFreeCell).toHaveBeenCalledWith("2026-09-14", "12:00");
   });
+
+  it("marks past day columns as unavailable (light gray)", () => {
+    const { container } = render(
+      <WeeklyOccupancyGrid
+        locale="ru"
+        timezone="Europe/Moscow"
+        serverNow="2026-09-17T08:00:00.000Z"
+        weekDays={WEEK}
+        occupancy={occupancy}
+        addonActive
+        onFreeCell={vi.fn()}
+        onMineCell={vi.fn()}
+      />
+    );
+
+    const pastColumns = container.querySelectorAll('[data-past-day="true"]');
+    expect(pastColumns).toHaveLength(3);
+    expect(pastColumns[0]?.querySelector(".bg-slate-100")).toBeTruthy();
+  });
 });
