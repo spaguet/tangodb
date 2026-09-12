@@ -1,4 +1,3 @@
-import { FIXED_PAYMENT_METHOD_CODES } from "../../lib/platformPaymentContract";
 import type { ManualPaymentConfig } from "../../lib/paymentConfig";
 import { useI18n } from "../../hooks/useI18n";
 import CryptoPaymentCards from "./CryptoPaymentCards";
@@ -36,13 +35,13 @@ export default function QuotedPaymentDetails({
         <p className="text-[11px] text-slate-500 mt-1">{t("license.purchase.detailsFromQuote")}</p>
       </div>
 
-      {methodCode === FIXED_PAYMENT_METHOD_CODES.bankTransfer ? (
+      {methodCode === "bankTransfer" ? (
         <BankTransferSection
           defaultOpen
           config={config.bankTransfer ? { ...config.bankTransfer, amount, currency } : null}
         />
       ) : null}
-      {methodCode === FIXED_PAYMENT_METHOD_CODES.vietnameseBankTransfer ? (
+      {methodCode === "vietnameseBankTransfer" ? (
         <VietnameseBankTransferSection
           defaultOpen
           config={
@@ -52,7 +51,7 @@ export default function QuotedPaymentDetails({
           }
         />
       ) : null}
-      {methodCode === FIXED_PAYMENT_METHOD_CODES.mir ? (
+      {methodCode === "mir" ? (
         <MirPaymentSection
           defaultOpen
           config={config.mir ? { ...config.mir, amount, currency } : null}

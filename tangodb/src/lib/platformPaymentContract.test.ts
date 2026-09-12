@@ -5,14 +5,21 @@ import {
   parsePlatformPaymentConfig,
   preparePaymentConfigForSave,
   resolvePaymentQuote,
+  sha256Hex,
 } from "./platformPaymentContract.ts";
-import { parseManualPaymentConfig, resolvePaymentQuote as resolveFromPaymentConfig } from "./paymentConfig.ts";
+import { parseManualPaymentConfig } from "./paymentConfig.ts";
 import {
   configToFormState,
   formStateToConfig,
 } from "../../../tangodb-dev-console/src/lib/paymentConfig.ts";
 
 describe("platformPaymentContract", () => {
+  it("sha256Hex matches FIPS 180-4 abc vector", () => {
+    assert.equal(
+      sha256Hex("abc"),
+      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    );
+  });
   it("v1 lifetime uses per-method amount", () => {
     const quote = resolvePaymentQuote(v1ConfigFixture, "crm_license", "bankTransfer");
     assert.equal(quote.ok, true);
@@ -85,12 +92,6 @@ describe("platformPaymentContract", () => {
     assert.equal(parsed.crmLifetime?.amount, "199");
     assert.equal(parsed.crmMonthly?.amount, "29");
     assert.equal(parsed.crypto?.[0]?.id, "a1111111-1111-4111-8111-111111111111");
-  });
-
-  it("resolvePaymentQuote matches CRM adapter", () => {
-    const a = resolvePaymentQuote(v2ConfigFixture, "crm_license", "bankTransfer");
-    const b = resolveFromPaymentConfig(v2ConfigFixture, "crm_license", "bankTransfer");
-    assert.deepEqual(a, b);
   });
 
   it("Dev Console round-trip preserves pricing fields", () => {

@@ -1,6 +1,5 @@
 import {
   parsePlatformPaymentConfig,
-  resolvePaymentQuote as resolvePlatformPaymentQuote,
   type CrmPrice,
   type PaymentQuoteResult,
   type PlatformPaymentSku,
@@ -84,14 +83,6 @@ export interface ManualPaymentConfig {
 }
 
 const EMPTY_CONFIG: ManualPaymentConfig = {};
-
-export function resolvePaymentQuote(
-  rawConfig: unknown,
-  sku: PlatformPaymentSku,
-  methodCode: string
-): PaymentQuoteResult {
-  return resolvePlatformPaymentQuote(rawConfig, sku, methodCode);
-}
 
 export function parseManualPaymentConfig(raw: unknown): ManualPaymentConfig {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return EMPTY_CONFIG;

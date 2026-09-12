@@ -1,6 +1,6 @@
 import type { LicenseType, OrgStatus, SubscriptionStatus } from "../types/organization";
 import { isDemoOrgStatus } from "./demoLicense";
-import type { PlatformPaymentSku } from "./platformPaymentContract";
+import type { PlatformPaymentSku } from "./paymentConfig";
 
 export const LICENSE_PURCHASE_PATH = "/settings/license?purchase=1";
 export const MONTHLY_PURCHASE_PATH = "/settings/license?purchase=1&plan=monthly";
