@@ -74,6 +74,9 @@ const messages = {
     sun: "Вс",
     cancel: "Отмена",
     deleteHold: "Удалить холд",
+    deletePackHold: "Удалить холд пакета",
+    deletePackHoldHint:
+      "Можно снять неоплаченный холд с одной даты или со всего пакета. Слоты освободятся, деньги не списывались.",
     cancelBooking: "Отменить бронь",
     cancelHoldHint: "Неоплаченный холд будет снят, слот освободится. Деньги не списывались.",
     cancelPaidRefundHint:
@@ -278,6 +281,9 @@ const messages = {
     sun: "Sun",
     cancel: "Cancel",
     deleteHold: "Delete hold",
+    deletePackHold: "Delete pack hold",
+    deletePackHoldHint:
+      "You can release the unpaid hold for one date or the whole pack. The slots free up; nothing was charged.",
     cancelBooking: "Cancel booking",
     cancelHoldHint: "The unpaid hold will be released and the slot will free up. Nothing was charged.",
     cancelPaidRefundHint:

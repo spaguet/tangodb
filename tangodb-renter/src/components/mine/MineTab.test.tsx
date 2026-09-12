@@ -220,6 +220,56 @@ describe("MineTab stage B surfaces", () => {
     ).toBeTruthy();
   });
 
+  it("lets a renter delete an unpaid recurring pack hold", async () => {
+    const user = userEvent.setup();
+    mockLoadedMine({
+      bookings: [
+        makeRental({
+          id: "hold-a",
+          rental_series_id: "series-hold",
+          rental_date: "2026-09-08",
+          series_occurrence_count: 2,
+          series_status: "awaiting_payment",
+          lifecycle: "awaiting_payment",
+          can_delete_hold: true,
+          can_cancel_occurrence: false,
+          can_cancel_pack: false,
+        }),
+        makeRental({
+          id: "hold-b",
+          rental_series_id: "series-hold",
+          rental_date: "2026-09-15",
+          series_occurrence_count: 2,
+          series_status: "awaiting_payment",
+          lifecycle: "awaiting_payment",
+          can_delete_hold: true,
+          can_cancel_occurrence: false,
+          can_cancel_pack: false,
+        }),
+      ],
+    });
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Удалить холд пакета")).toBeTruthy();
+    });
+    expect(screen.getAllByText("Удалить холд")).toHaveLength(2);
+    expect(screen.queryByText("Отменить пакет")).toBeNull();
+
+    await user.click(screen.getAllByText("Удалить холд")[0]!);
+    await waitFor(() => {
+      expect(rpc.rpcDeleteHold).toHaveBeenCalledWith(supabase, "hold-a");
+    });
+
+    await user.click(screen.getByText("Удалить холд пакета"));
+    await waitFor(() => {
+      expect(rpc.rpcCancelPack).toHaveBeenCalledWith(supabase, "series-hold");
+    });
+  });
+
   it("hides cancelled bookings from Мои записи", async () => {
     mockLoadedMine({
       bookings: [

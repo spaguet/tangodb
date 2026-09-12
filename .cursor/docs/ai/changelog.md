@@ -1,3 +1,5 @@
+2026-09-12 — fix(hall-rent): Mini App **0.1.16** — неоплаченный пакет-холд в «Мой профиль» можно снять: кнопка на каждую дату (`renter_delete_hold`) и «Удалить холд пакета» (`renter_cancel_pack`). Раньше `PackSeriesCard` не показывал `can_delete_hold`, а `can_cancel_pack` у холда ложно.
+
 2026-09-12 — feat(hall-rent): Mini App **0.1.15** — в расписании клик по своей брони открывает попап «Отменить бронь»: неоплаченный холд снимается (`renter_delete_hold`), оплаченная бронь до старта отменяется (`renter_cancel_occurrence`) с возвратом резерва на доступный баланс (>24 ч) или удержанием 50% (<24 ч).
 
 2026-09-12 — docs(billing): узел **2.11** закрыт (S7) — лендинг `tangodb-landing` en+ru: два тарифа CRM (month + lifetime), без early bird и без смысла «месяца нет»; FAQ a6/a10; `architecture.md` (quote, kind `crm_subscription`, platform outbox vs студийный бот, activate RPC); `decision_log.md` `CRM-SUB-2.11`; спека §16 S7. CRM `APP_VERSION` без бампа (только лендинг + docs).
