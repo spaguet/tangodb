@@ -100,6 +100,7 @@ import DemoPurchaseCta from "./components/demo/DemoPurchaseCta";
 import { useCrmLicensePurchaseUi } from "./hooks/useCrmLicensePurchaseUi";
 import { usePlatformPaymentConfig } from "./hooks/usePlatformPaymentConfig";
 import DeveloperContacts from "./components/license/DeveloperContacts";
+import SupportDeveloperMessageButton from "./components/support/SupportDeveloperMessageButton";
 import { btnHeaderSignOutCls } from "./components/ui/buttonStyles";
 
 export type ToastType = "success" | "error" | "info";
@@ -441,6 +442,7 @@ function AppLayout() {
                   {t("nav.supportLabel")}
                 </span>
                 <DeveloperContacts contacts={paymentConfig.contacts} embedded />
+                <SupportDeveloperMessageButton ticketKind="other" pagePath={location.pathname} />
               </div>
               <button
                 onClick={() => signOut()}

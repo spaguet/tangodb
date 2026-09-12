@@ -7,6 +7,13 @@ export function developerInboxUrl(): string | null {
   return `${base}/inbox`;
 }
 
+export function developerSupportTicketUrl(ticketId: string): string | null {
+  const inbox = developerInboxUrl();
+  if (!inbox || !ticketId.trim()) return null;
+  const id = ticketId.trim();
+  return `${inbox}?tab=support&ticket=${encodeURIComponent(id)}`;
+}
+
 export function appendInboxLine(text: string, inboxUrl: string | null): string {
   const body = (text ?? "").trimEnd();
   if (!inboxUrl) return body.slice(0, TELEGRAM_TEXT_MAX);

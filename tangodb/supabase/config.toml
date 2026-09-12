@@ -519,6 +519,13 @@ verify_jwt = true
 [functions.submit-purchase-request]
 verify_jwt = true
 
+[functions.submit-support-ticket]
+verify_jwt = false
+# Public guest login/forgot + optional JWT for license_help/other. Turnstile fail-closed for guests.
+
+[functions.dev-console-support-inbox]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

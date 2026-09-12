@@ -14,6 +14,7 @@ import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/Turns
 import { useGuestI18n } from "../hooks/useI18n";
 import { getRememberMePreference } from "../lib/supabase";
 import { requestOrganizationSelectionAfterLogin } from "../organization/organizationSelectionIntent";
+import AuthSupportHelpBlock from "../components/support/AuthSupportHelpBlock";
 
 export default function LoginPage() {
   const { t, locale } = useGuestI18n();
@@ -105,6 +106,7 @@ export default function LoginPage() {
         {t("auth.login.noAccount")}{" "}
         <AuthLink to="/register">{t("auth.login.registerLink")}</AuthLink>
       </p>
+      <AuthSupportHelpBlock ticketKind="login_help" pagePath="/login" />
       <AuthDeveloperContact />
     </AuthLayout>
   );

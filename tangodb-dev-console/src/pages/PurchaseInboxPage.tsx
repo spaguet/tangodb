@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Calendar, Check, Copy, Inbox, KeyRound, Pause, Play, RefreshCw, Smartphone, XCircle } from "lucide-react";
 import { invokeDevFunction } from "../lib/supabase";
+import SupportInboxPanel from "./SupportInboxPanel";
 
 type PurchaseRequestKind = "crm_license" | "crm_subscription" | "renter_miniapp_addon";
 
@@ -74,6 +76,10 @@ function fromDatetimeLocalValue(value: string): string | null {
 }
 
 export default function PurchaseInboxPage() {
+  const [searchParams] = useSearchParams();
+  const inboxTab = searchParams.get("tab") === "support" ? "support" : "purchases";
+  const highlightTicket = searchParams.get("ticket");
+
   const [status, setStatus] = useState<InboxStatus>("new");
   const [kind, setKind] = useState<InboxKind>("all");
   const [rows, setRows] = useState<PurchaseRequestRow[]>([]);
@@ -260,6 +266,13 @@ export default function PurchaseInboxPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  useEffect(() => {
+    if (inboxTab === "support" && highlightTicket) {
+      const el = document.getElementById(`support-ticket-${highlightTicket}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [inboxTab, highlightTicket, rows.length]);
+
   return (
     <div className="space-y-4 max-w-6xl">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -269,20 +282,45 @@ export default function PurchaseInboxPage() {
             Inbox
           </h2>
           <p className="text-sm text-slate-400">
-            Заявки на оплату CRM (lifetime / monthly) и legacy Mini App add-on.
+            Purchases and support tickets (separate from org_created alerts).
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        {inboxTab === "purchases" && (
+          <button
+            type="button"
+            onClick={() => void load()}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        )}
       </div>
 
+      <div className="flex gap-2 border-b border-slate-800 pb-2">
+        <a
+          href="/inbox"
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+            inboxTab === "purchases" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          Purchases
+        </a>
+        <a
+          href="/inbox?tab=support"
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+            inboxTab === "support" ? "bg-sky-600 text-white" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          Support
+        </a>
+      </div>
+
+      {inboxTab === "support" ? (
+        <SupportInboxPanel highlightTicketId={highlightTicket} />
+      ) : (
+        <>
       <div className="flex flex-wrap gap-2">
         {(["new", "activated", "closed", "all"] as const).map((value) => (
           <button
@@ -594,6 +632,8 @@ export default function PurchaseInboxPage() {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

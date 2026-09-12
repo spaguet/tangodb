@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, KeyRound, LifeBuoy, Shield, ShoppingBag } 
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
 import DeveloperContacts from "../../components/license/DeveloperContacts";
+import SupportDeveloperMessageButton from "../../components/support/SupportDeveloperMessageButton";
 import ManualPurchasePanel from "../../components/license/ManualPurchasePanel";
 import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
 import { useToast } from "../../App";
@@ -232,7 +233,10 @@ export default function LicenseSettingsPage() {
           </p>
         )}
 
-        <DeveloperContacts contacts={paymentConfig.contacts} />
+        <div className="flex flex-wrap items-center gap-2">
+          <DeveloperContacts contacts={paymentConfig.contacts} embedded />
+          <SupportDeveloperMessageButton ticketKind="license_help" pagePath="/settings/license" />
+        </div>
 
         <div className="border-t border-slate-100 pt-4 space-y-2">
           <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">

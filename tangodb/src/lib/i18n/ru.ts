@@ -435,6 +435,27 @@ export const RU: Record<I18nKey, string> = {
   "license.payment.qr.download": "Скачать QR",
   "license.contacts.title": "Контакты разработчика",
   "nav.supportLabel": "Написать в поддержку:",
+  "support.ticket.modalTitle": "Сообщение разработчику",
+  "support.ticket.modalHint": "Опишите проблему. Ответ придёт на email или в Telegram.",
+  "support.ticket.emailLabel": "Ваш email",
+  "support.ticket.telegramLabel": "Telegram (необязательно)",
+  "support.ticket.messageLabel": "Сообщение",
+  "support.ticket.send": "Отправить",
+  "support.ticket.sending": "Отправка…",
+  "support.ticket.cancel": "Отмена",
+  "support.ticket.close": "Закрыть",
+  "support.ticket.success":
+    "Сообщение отправлено. Если есть чек или скриншот — продублируйте в Telegram или на email.",
+  "support.ticket.successHint":
+    "Используйте те же контакты, что и кнопки выше — при необходимости продублируйте важные детали там.",
+  "support.ticket.submitError": "Не удалось отправить. Попробуйте снова или напишите напрямую в email/Telegram.",
+  "support.ticket.captchaRequired": "Подтвердите captcha",
+  "support.ticket.buttonTitle": "Сообщение разработчику",
+  "support.ticket.buttonShort": "Разработчик",
+  "support.ticket.loginHelpTitle": "Не получается войти?",
+  "support.ticket.forgotHelpTitle": "Письмо для сброса не пришло?",
+  "support.ticket.authHelpHint": "Расскажите, что происходит при входе или сбросе пароля.",
+  "support.ticket.openForm": "Написать разработчику",
 
   // settings
   "settings.nav": "Настройки CRM",

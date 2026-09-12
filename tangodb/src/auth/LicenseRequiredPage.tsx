@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { AlertTriangle, KeyRound, ShoppingBag } from "lucide-react";
 import DeveloperContacts from "../components/license/DeveloperContacts";
+import SupportDeveloperMessageButton from "../components/support/SupportDeveloperMessageButton";
 import { usePlatformPaymentConfig } from "../hooks/usePlatformPaymentConfig";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { DEMO_PURCHASE_PATH, isDemoOrgStatus } from "../lib/demoLicense";
@@ -109,7 +110,10 @@ export default function LicenseRequiredPage() {
       {!isStrategic && (
         <div className="space-y-3 text-sm text-slate-600">
           <p>{t("license.required.accessPausedContact")}</p>
-          <DeveloperContacts contacts={paymentConfig.contacts} embedded />
+          <div className="flex flex-wrap gap-2">
+            <DeveloperContacts contacts={paymentConfig.contacts} embedded />
+            <SupportDeveloperMessageButton ticketKind="license_help" pagePath="/license-required" />
+          </div>
         </div>
       )}
 

@@ -14,6 +14,7 @@ import {
   AuthLink,
   AuthSuccess,
 } from "./AuthLayout";
+import AuthSupportHelpBlock from "../components/support/AuthSupportHelpBlock";
 
 export default function ForgotPasswordPage() {
   const { t, locale } = useGuestI18n();
@@ -83,6 +84,7 @@ export default function ForgotPasswordPage() {
         <p className="text-sm text-slate-500 text-center">
           <AuthLink to="/login">{t("auth.forgotPassword.backToLogin")}</AuthLink>
         </p>
+        <AuthSupportHelpBlock ticketKind="forgot_password" pagePath="/auth/forgot-password" />
         <AuthDeveloperContact />
       </AuthLayout>
     );
@@ -113,6 +115,7 @@ export default function ForgotPasswordPage() {
       <p className="text-sm text-slate-500 text-center">
         <AuthLink to="/login">{t("auth.forgotPassword.backToLogin")}</AuthLink>
       </p>
+      <AuthSupportHelpBlock ticketKind="forgot_password" pagePath="/auth/forgot-password" />
       <AuthDeveloperContact />
     </AuthLayout>
   );

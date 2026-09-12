@@ -1,7 +1,7 @@
 {
   "name": "tangodb",
   "private": true,
-  "version": "2.11.9",
+  "version": "2.11.10",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -32,6 +32,7 @@
     "test:db:crm-monthly-s4": "node scripts/psql-local-test.mjs -f supabase/tests/crm_monthly_subscription_s4_test.sql",
     "test:db:crm-monthly-s5a": "node scripts/psql-local-test.mjs -f supabase/tests/crm_monthly_subscription_s5a_test.sql",
     "test:db:crm-monthly-s5b": "node scripts/psql-local-test.mjs -f supabase/tests/crm_monthly_subscription_s5b_test.sql",
+    "test:db:crm-monthly-s6": "node scripts/psql-local-test.mjs -f supabase/tests/crm_monthly_subscription_s6_test.sql",
     "test:edge:platform-notification": "npx --yes deno test --allow-read supabase/functions/_shared/platformNotification_test.ts supabase/functions/_shared/platformTelegramDetect_test.ts",
     "test:db:schedule-overlap": "node scripts/psql-local-test.mjs -f supabase/tests/schedule_overlap_test.sql",
     "test:db:schedule-slot-overlap-retired": "node scripts/psql-local-test.mjs -f supabase/tests/schedule_slot_overlap_retired_test.sql",

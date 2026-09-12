@@ -5,7 +5,12 @@
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { sendTransactionalEmail } from "./email.ts";
-import { appendInboxLine, developerInboxUrl, retryDelaySeconds } from "./platformNotification.ts";
+import {
+  appendInboxLine,
+  developerInboxUrl,
+  developerSupportTicketUrl,
+  retryDelaySeconds,
+} from "./platformNotification.ts";
 import { logEvent } from "./supabase.ts";
 import {
   isTelegramBlockedError,
@@ -156,7 +161,12 @@ export async function drainPlatformNotificationOutbox(
           continue;
         }
 
-        const text = appendInboxLine(payloadString(payload, "telegram_text"), inboxUrl);
+        const ticketInbox =
+          row.source_type === "support_ticket" && row.source_id
+            ? developerSupportTicketUrl(row.source_id)
+            : null;
+        const linkTarget = ticketInbox ?? inboxUrl;
+        const text = appendInboxLine(payloadString(payload, "telegram_text"), linkTarget);
         if (!text) {
           await completeOutbox(admin, row.id, "dead", claimToken, "empty_payload");
           result.dead += 1;
