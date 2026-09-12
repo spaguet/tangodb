@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { Key, LayoutDashboard, Building2, ArrowLeftRight, LogOut, CreditCard, TriangleAlert, Wallet, Users, Inbox, BarChart3 } from "lucide-react";
+import { Key, LayoutDashboard, Building2, ArrowLeftRight, LogOut, CreditCard, TriangleAlert, Wallet, Users, Inbox, BarChart3, Bot } from "lucide-react";
 import { supabaseEnvError } from "../lib/supabase";
 
 interface LayoutProps {
@@ -33,6 +33,9 @@ export default function Layout({ onSignOut }: LayoutProps) {
         </NavLink>
         <NavLink to="/payment-methods" className={linkCls}>
           <Wallet className="w-4 h-4" /> Payment methods
+        </NavLink>
+        <NavLink to="/platform-bot" className={linkCls}>
+          <Bot className="w-4 h-4" /> Platform bot
         </NavLink>
         <NavLink to="/orgs" className={linkCls}>
           <Building2 className="w-4 h-4" /> Tenants

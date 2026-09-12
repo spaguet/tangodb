@@ -8,6 +8,7 @@ import DashboardPage from "./pages/DashboardPage";
 import LandingAnalyticsPage from "./pages/LandingAnalyticsPage";
 import KeysPage from "./pages/KeysPage";
 import PaymentMethodsPage from "./pages/PaymentMethodsPage";
+import PlatformBotPage from "./pages/PlatformBotPage";
 import OrgsPage from "./pages/OrgsPage";
 import UsersPage from "./pages/UsersPage";
 import MigrationsPage from "./pages/MigrationsPage";
@@ -63,6 +64,7 @@ function App() {
             <Route path="inbox" element={<PurchaseInboxPage />} />
             <Route path="keys" element={<KeysPage />} />
             <Route path="payment-methods" element={<PaymentMethodsPage />} />
+            <Route path="platform-bot" element={<PlatformBotPage />} />
             <Route path="orgs" element={<OrgsPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="billing" element={<BillingPage />} />

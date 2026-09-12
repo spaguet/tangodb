@@ -421,6 +421,10 @@ verify_jwt = false
 verify_jwt = false
 # Cron: CRON_SECRET. Outbound email/Telegram drain. Never getUpdates.
 
+[functions.dev-console-platform-bot]
+verify_jwt = true
+# Developer JWT. Detect = getMe + one-shot getUpdates. Never setWebhook.
+
 [functions.create-subscription-checkout]
 verify_jwt = true
 

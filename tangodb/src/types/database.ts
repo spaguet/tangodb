@@ -2433,6 +2433,12 @@ export type Database = {
           organization_id: string
           telegram_bot_id: number | null
           telegram_chat_url: string | null
+          telegram_receipt_candidate_at: string | null
+          telegram_receipt_candidate_chat_id: number | null
+          telegram_receipt_candidate_title: string | null
+          telegram_receipt_chat_bound_at: string | null
+          telegram_receipt_chat_id: number | null
+          telegram_staff_alert_chat_url: string | null
           updated_at: string
           webhook_secret: string | null
           webhook_token: string | null
@@ -2445,6 +2451,12 @@ export type Database = {
           organization_id: string
           telegram_bot_id?: number | null
           telegram_chat_url?: string | null
+          telegram_receipt_candidate_at?: string | null
+          telegram_receipt_candidate_chat_id?: number | null
+          telegram_receipt_candidate_title?: string | null
+          telegram_receipt_chat_bound_at?: string | null
+          telegram_receipt_chat_id?: number | null
+          telegram_staff_alert_chat_url?: string | null
           updated_at?: string
           webhook_secret?: string | null
           webhook_token?: string | null
@@ -2457,6 +2469,12 @@ export type Database = {
           organization_id?: string
           telegram_bot_id?: number | null
           telegram_chat_url?: string | null
+          telegram_receipt_candidate_at?: string | null
+          telegram_receipt_candidate_chat_id?: number | null
+          telegram_receipt_candidate_title?: string | null
+          telegram_receipt_chat_bound_at?: string | null
+          telegram_receipt_chat_id?: number | null
+          telegram_staff_alert_chat_url?: string | null
           updated_at?: string
           webhook_secret?: string | null
           webhook_token?: string | null
@@ -3377,6 +3395,90 @@ export type Database = {
           metadata?: Json
           target_id?: string | null
           target_type?: string
+        }
+        Relationships: []
+      }
+      platform_notification_outbox: {
+        Row: {
+          attempts: number
+          available_at: string
+          channel: string
+          claim_token: string | null
+          created_at: string
+          dedupe_key: string
+          event_kind: string
+          id: string
+          last_error_code: string | null
+          lease_owner: string | null
+          lease_until: string | null
+          max_attempts: number
+          payload: Json
+          sent_at: string | null
+          source_id: string | null
+          source_type: string
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          channel: string
+          claim_token?: string | null
+          created_at?: string
+          dedupe_key: string
+          event_kind: string
+          id?: string
+          last_error_code?: string | null
+          lease_owner?: string | null
+          lease_until?: string | null
+          max_attempts?: number
+          payload?: Json
+          sent_at?: string | null
+          source_id?: string | null
+          source_type: string
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          channel?: string
+          claim_token?: string | null
+          created_at?: string
+          dedupe_key?: string
+          event_kind?: string
+          id?: string
+          last_error_code?: string | null
+          lease_owner?: string | null
+          lease_until?: string | null
+          max_attempts?: number
+          payload?: Json
+          sent_at?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      platform_notification_settings: {
+        Row: {
+          id: number
+          telegram_chat_id: number | null
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          telegram_chat_id?: number | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          telegram_chat_id?: number | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -4745,6 +4847,99 @@ export type Database = {
           },
         ]
       }
+      rental_series_surcharge_reviews: {
+        Row: {
+          applied_at: string | null
+          cancel_mode: string
+          created_at: string
+          currency: string
+          id: string
+          idempotency_key: string | null
+          organization_id: string
+          reason_code: string
+          rental_series_id: string
+          renter_id: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_amount: number
+          used_week_count: number
+        }
+        Insert: {
+          applied_at?: string | null
+          cancel_mode: string
+          created_at?: string
+          currency: string
+          id?: string
+          idempotency_key?: string | null
+          organization_id: string
+          reason_code?: string
+          rental_series_id: string
+          renter_id: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_amount?: number
+          used_week_count?: number
+        }
+        Update: {
+          applied_at?: string | null
+          cancel_mode?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          idempotency_key?: string | null
+          organization_id?: string
+          reason_code?: string
+          rental_series_id?: string
+          renter_id?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_amount?: number
+          used_week_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_series_surcharge_reviews_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_series_surcharge_reviews_rental_series_id_fkey"
+            columns: ["rental_series_id"]
+            isOneToOne: true
+            referencedRelation: "rental_series"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_series_surcharge_reviews_renter_id_fkey"
+            columns: ["renter_id"]
+            isOneToOne: false
+            referencedRelation: "renters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_series_surcharge_reviews_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_series_surcharge_reviews_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "organization_members_roster_v"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rental_tariff_rules: {
         Row: {
           created_at: string
@@ -6034,6 +6229,7 @@ export type Database = {
           status: string
           tax_id: string | null
           telegram_id: number | null
+          telegram_username: string | null
           untimely_count: number
           updated_at: string
         }
@@ -6067,6 +6263,7 @@ export type Database = {
           status?: string
           tax_id?: string | null
           telegram_id?: number | null
+          telegram_username?: string | null
           untimely_count?: number
           updated_at?: string
         }
@@ -6100,6 +6297,7 @@ export type Database = {
           status?: string
           tax_id?: string | null
           telegram_id?: number | null
+          telegram_username?: string | null
           untimely_count?: number
           updated_at?: string
         }
@@ -8812,23 +9010,6 @@ export type Database = {
         }
         Returns: string[]
       }
-      _fdb4_find_pack_monday: {
-        Args: { p_org: string }
-        Returns: {
-          pack_from: string
-          pack_to: string
-          slot_te: string
-          slot_ts: string
-        }[]
-      }
-      _fdb4_pack_slot: {
-        Args: { p_ahead: string; p_org: string }
-        Returns: {
-          d: string
-          te: string
-          ts: string
-        }[]
-      }
       _finance_period_closed_until: {
         Args: { p_org_id: string }
         Returns: string
@@ -8871,15 +9052,6 @@ export type Database = {
         Args: { p_type: string }
         Returns: number
       }
-      _hall_rent_test_set_jwt: {
-        Args: {
-          p_member: string
-          p_org: string
-          p_role?: string
-          p_user: string
-        }
-        Returns: undefined
-      }
       _hhmm_to_minutes: { Args: { p_time: string }; Returns: number }
       _is_finance_period_closed: {
         Args: { p_operation_date: string; p_org_id: string }
@@ -8901,12 +9073,36 @@ export type Database = {
         Returns: boolean
       }
       _org_timezone: { Args: { p_org_id: string }; Returns: string }
+      _organization_has_eligible_purchase_review_new: {
+        Args: { p_org_id: string }
+        Returns: boolean
+      }
       _payment_operation_date: {
         Args: {
           p_org_id: string
           p_payment: Database["public"]["Tables"]["payments"]["Row"]
         }
         Returns: string
+      }
+      _platform_notification_plain: {
+        Args: { p_text: string }
+        Returns: string
+      }
+      _platform_notification_sanitize_payload: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
+      _platform_notification_short_id: {
+        Args: { p_id: string }
+        Returns: string
+      }
+      _preview_crm_month_activation_period: {
+        Args: {
+          p_organization_id: string
+          p_period_end_override?: string
+          p_period_start_override?: string
+        }
+        Returns: Json
       }
       _purge_demo_organization_core: {
         Args: {
@@ -8963,6 +9159,10 @@ export type Database = {
           p_subscription_id: string
         }
         Returns: Json
+      }
+      _refresh_organization_purchase_review_hold: {
+        Args: { p_org_id: string }
+        Returns: undefined
       }
       _reject_renter_staff_jwt: { Args: never; Returns: undefined }
       _rental_acquire_location_date_locks: {
@@ -9065,7 +9265,7 @@ export type Database = {
         }[]
       }
       _renter_after_pack_slot_terminal: {
-        Args: { p_series_id: string }
+        Args: { p_cancel_mode?: string; p_series_id: string }
         Returns: undefined
       }
       _renter_allocate_topup_correlation_code: {
@@ -9076,6 +9276,10 @@ export type Database = {
       _renter_apply_booking_ban: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: undefined
+      }
+      _renter_apply_pack_surcharge: {
+        Args: { p_series_id: string }
+        Returns: number
       }
       _renter_apply_reliability: {
         Args: { p_allowed: boolean; p_phase: string; p_rental_id: string }
@@ -9160,9 +9364,17 @@ export type Database = {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: undefined
       }
+      _renter_clear_receipt_candidate: {
+        Args: { p_org: string }
+        Returns: undefined
+      }
       _renter_compute_hold_expires_at: {
         Args: { p_created_at: string; p_time_start_ts: string }
         Returns: string
+      }
+      _renter_compute_pack_surcharge: {
+        Args: { p_series_id: string }
+        Returns: Json
       }
       _renter_compute_series_hold_expires_at: {
         Args: { p_org_id: string; p_series_id: string }
@@ -9171,6 +9383,20 @@ export type Database = {
       _renter_create_gates: {
         Args: { p_need_addon: boolean; p_org_id: string; p_renter_id: string }
         Returns: undefined
+      }
+      _renter_create_recurring_pack_inner: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
+      _renter_credit_wallet_correction: {
+        Args: {
+          p_amount: number
+          p_member_id: string
+          p_org_id: string
+          p_reason: string
+          p_renter_id: string
+        }
+        Returns: string
       }
       _renter_credit_wallet_topup: {
         Args: {
@@ -9205,7 +9431,7 @@ export type Database = {
       _renter_document_max_bytes: { Args: never; Returns: number }
       _renter_drain_telegram_outbox: { Args: never; Returns: undefined }
       _renter_early_close_pack: {
-        Args: { p_series_id: string }
+        Args: { p_cancel_mode?: string; p_series_id: string }
         Returns: undefined
       }
       _renter_effective_kind: {
@@ -9266,6 +9492,29 @@ export type Database = {
       }
       _renter_enqueue_staff_cancelled: {
         Args: { p_rental_id: string }
+        Returns: string
+      }
+      _renter_enqueue_staff_telegram: {
+        Args: {
+          p_chat_id: number
+          p_dedupe_key?: string
+          p_event_type: string
+          p_org_id: string
+          p_renter_id: string
+          p_text: string
+          p_topup_request_id?: string
+        }
+        Returns: string
+      }
+      _renter_enqueue_staff_topup_submitted: {
+        Args: {
+          p_amount: number
+          p_code: string
+          p_method: string
+          p_org_id: string
+          p_renter_id: string
+          p_request_id: string
+        }
         Returns: string
       }
       _renter_enqueue_telegram: {
@@ -9413,6 +9662,10 @@ export type Database = {
         Args: { p_series_id: string }
         Returns: undefined
       }
+      _renter_maybe_queue_pack_surcharge_review: {
+        Args: { p_cancel_mode?: string; p_series_id: string }
+        Returns: undefined
+      }
       _renter_miniapp_direct_link: {
         Args: { p_org_id: string }
         Returns: string
@@ -9423,6 +9676,14 @@ export type Database = {
       }
       _renter_next_rental_date: {
         Args: { p_org_id: string; p_renter_id: string }
+        Returns: string
+      }
+      _renter_normalize_booking_payload: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
+      _renter_normalize_telegram_username: {
+        Args: { p_username: string }
         Returns: string
       }
       _renter_occupancy_window: {
@@ -9469,6 +9730,24 @@ export type Database = {
         Args: { p_series_id: string }
         Returns: string
       }
+      _renter_pack_span_days_ok: {
+        Args: { p_valid_from: string; p_valid_to: string }
+        Returns: boolean
+      }
+      _renter_pack_used_outside_first_week: {
+        Args: { p_series_id: string }
+        Returns: boolean
+      }
+      _renter_pack_used_week_count: {
+        Args: { p_series_id: string }
+        Returns: number
+      }
+      _renter_parse_iso_date: { Args: { p_text: string }; Returns: string }
+      _renter_parse_weekdays: { Args: { p_payload: Json }; Returns: number[] }
+      _renter_pending_surcharge_reviews_json: {
+        Args: { p_org_id: string; p_renter_id: string }
+        Returns: Json
+      }
       _renter_place_series_on_hold: {
         Args: { p_org_id: string; p_series_id: string }
         Returns: string
@@ -9483,6 +9762,7 @@ export type Database = {
         Args: { p_expires_in?: number; p_storage_path: string }
         Returns: string
       }
+      _renter_quote_booking_inner: { Args: { p_payload: Json }; Returns: Json }
       _renter_quote_slot_amounts: {
         Args: {
           p_date: string
@@ -9507,6 +9787,11 @@ export type Database = {
         Args: { p_reasons: string[] }
         Returns: undefined
       }
+      _renter_receipt_chat_title: { Args: { p_title: string }; Returns: string }
+      _renter_receipt_notify_status: {
+        Args: { p_candidate: number; p_chat_id: number; p_url: string }
+        Returns: string
+      }
       _renter_record_maintenance_failure: {
         Args: {
           p_message: string
@@ -9522,6 +9807,10 @@ export type Database = {
         Returns: undefined
       }
       _renter_refund_prepay: { Args: { p_rental_id: string }; Returns: boolean }
+      _renter_release_staff_outbox_gate: {
+        Args: { p_chat_id: number; p_org_id: string }
+        Returns: number
+      }
       _renter_reliability_tick_allowed: {
         Args: { p_org_id: string }
         Returns: boolean
@@ -9538,11 +9827,19 @@ export type Database = {
           telegram_id: number
         }[]
       }
+      _renter_resolve_staff_alert_chat_id: {
+        Args: { p_org_id: string }
+        Returns: number
+      }
       _renter_round_money: {
         Args: { p_amount: number; p_currency: string }
         Returns: number
       }
       _renter_rpc_caught: { Args: never; Returns: Json }
+      _renter_rpc_fields_invalid_if_unmapped: {
+        Args: { p: Json }
+        Returns: Json
+      }
       _renter_series_anchor_rental: {
         Args: { p_series_id: string }
         Returns: string
@@ -9572,6 +9869,11 @@ export type Database = {
         Args: { p_date: string; p_org_id: string; p_time: string }
         Returns: string
       }
+      _renter_staff_alert_url: {
+        Args: { p_receipt_url: string; p_staff_url: string }
+        Returns: string
+      }
+      _renter_staff_can_review_pack_surcharge: { Args: never; Returns: boolean }
       _renter_staff_create_renter_ok: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: undefined
@@ -9601,6 +9903,15 @@ export type Database = {
         Returns: string
       }
       _renter_telegram_plain: { Args: { p_text: string }; Returns: string }
+      _renter_telegram_url_is_invite: {
+        Args: { p_url: string }
+        Returns: boolean
+      }
+      _renter_telegram_url_user_id: { Args: { p_url: string }; Returns: number }
+      _renter_telegram_url_username: {
+        Args: { p_url: string }
+        Returns: string
+      }
       _renter_topup_amount_max: {
         Args: { p_currency: string }
         Returns: number
@@ -9764,6 +10075,14 @@ export type Database = {
         }
         Returns: number
       }
+      _schedule_slot_active_on_date: {
+        Args: { p_date: string; p_valid_from: string; p_valid_to: string }
+        Returns: boolean
+      }
+      _schedule_slot_is_retired: {
+        Args: { p_valid_from: string; p_valid_to: string }
+        Returns: boolean
+      }
       _storno_all_rental_payments_for_cancel: {
         Args: {
           p_member_id: string
@@ -9816,38 +10135,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      _test_assert: {
-        Args: { p_condition: boolean; p_message: string }
-        Returns: undefined
-      }
-      _test_fa3_hold_wallet_mutate: {
-        Args: {
-          p_debt: number
-          p_org: string
-          p_renter: string
-          p_sleep_seconds?: number
-          p_slot: string
-        }
-        Returns: undefined
-      }
-      _test_fa7_parallel_topup_sql: { Args: { p_key: string }; Returns: Json }
-      _test_fdb4_cancel_race: { Args: never; Returns: Json }
-      _test_fdb4_expire_race_hold: {
-        Args: { p_sleep_seconds?: number }
-        Returns: undefined
-      }
-      _test_fdb4_parallel_pack_create: {
-        Args: { p_key: string; p_renter_suffix: string }
-        Returns: Json
-      }
-      _test_fdb4_topup_race: {
-        Args: { p_amount: number; p_key: string }
-        Returns: Json
-      }
-      _test_fdb4_topup_race_cancel: {
-        Args: { p_amount: number; p_key: string }
-        Returns: Json
-      }
       _validate_tariff_rules_no_ambiguous_overlap: {
         Args: { p_org_id: string; p_tariff_id: string }
         Returns: string
@@ -9864,6 +10151,22 @@ export type Database = {
         Args: { p_key_hash: string; p_org_name?: string; p_user_id?: string }
         Returns: Json
       }
+      activate_platform_purchase_request: {
+        Args: {
+          p_actor_id: string
+          p_lifetime_key_hash?: string
+          p_lifetime_recipient_email?: string
+          p_note?: string
+          p_period_end?: string
+          p_period_start?: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      add_calendar_month: {
+        Args: { p_anchor_day: number; p_start: string }
+        Returns: string
+      }
       add_group_waitlist_entry: {
         Args: { p_class_id: string; p_client_id: string; p_comment?: string }
         Returns: Json
@@ -9875,6 +10178,14 @@ export type Database = {
       }
       apply_rental_pricing_adjustment: {
         Args: { p_new_amount: number; p_reason: string; p_rental_id: string }
+        Returns: Json
+      }
+      apply_renter_pack_surcharge: {
+        Args: {
+          p_idempotency_key?: string
+          p_notes?: string
+          p_series_id: string
+        }
         Returns: Json
       }
       apply_scheduled_subscription_member_changes: {
@@ -10073,6 +10384,38 @@ export type Database = {
             }
             Returns: Json
           }
+      claim_platform_notification_outbox: {
+        Args: {
+          p_batch_size?: number
+          p_lease_seconds?: number
+          p_worker_id?: string
+        }
+        Returns: {
+          attempts: number
+          available_at: string
+          channel: string
+          claim_token: string | null
+          created_at: string
+          dedupe_key: string
+          event_kind: string
+          id: string
+          last_error_code: string | null
+          lease_owner: string | null
+          lease_until: string | null
+          max_attempts: number
+          payload: Json
+          sent_at: string | null
+          source_id: string | null
+          source_type: string
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "platform_notification_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_renter_booking_maintenance: {
         Args: { p_batch_size?: number }
         Returns: {
@@ -10115,6 +10458,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      cleanup_expired_platform_purchase_quotes: {
+        Args: { p_batch_size?: number }
+        Returns: Json
       }
       clear_lesson_substitute: {
         Args: {
@@ -10159,6 +10506,16 @@ export type Database = {
         }
         Returns: Json
       }
+      complete_platform_notification_outbox: {
+        Args: {
+          p_claim_token?: string
+          p_error_code?: string
+          p_id: string
+          p_outcome: string
+          p_retry_seconds?: number
+        }
+        Returns: undefined
+      }
       complete_renter_telegram_outbox: {
         Args: {
           p_claim_token?: string
@@ -10173,6 +10530,7 @@ export type Database = {
         Args: { p_operation_date?: string; p_refund_id: string }
         Returns: Json
       }
+      confirm_organization_renter_receipt_chat: { Args: never; Returns: Json }
       confirm_venue_cost_rule_gap: {
         Args: {
           p_gap_from: string
@@ -10336,6 +10694,19 @@ export type Database = {
         Args: { p_idempotency_key?: string; p_rule_version_id: string }
         Returns: Json
       }
+      dev_console_adjust_organization_subscription: {
+        Args: {
+          p_actor_id: string
+          p_extend_one_month?: boolean
+          p_note?: string
+          p_organization_id: string
+          p_period_end?: string
+          p_period_start?: string
+          p_provider?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       dev_console_cleanup_orphan_auth_users: {
         Args: {
           p_actor_user_id: string
@@ -10409,6 +10780,31 @@ export type Database = {
           p_slot: Database["public"]["Tables"]["schedule_slots"]["Row"]
         }
         Returns: undefined
+      }
+      enqueue_platform_crm_subscription_digest: {
+        Args: { p_as_of?: string }
+        Returns: Json
+      }
+      enqueue_platform_notification: {
+        Args: {
+          p_channel: string
+          p_dedupe_key: string
+          p_error_code?: string
+          p_event_kind: string
+          p_payload: Json
+          p_source_id: string
+          p_source_type: string
+          p_status?: string
+        }
+        Returns: string
+      }
+      enqueue_platform_org_created_notifications: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      enqueue_platform_purchase_request_notifications: {
+        Args: { p_request_id: string }
+        Returns: Json
       }
       ensure_own_member_profile: { Args: never; Returns: boolean }
       ensure_schedule_group: {
@@ -10743,6 +11139,10 @@ export type Database = {
         Args: { p_location_id?: string; p_status?: string }
         Returns: Json
       }
+      list_renter_pack_surcharge_reviews: {
+        Args: { p_renter_id?: string }
+        Returns: Json
+      }
       list_renter_rental_advance_allocations: {
         Args: { p_renter_id: string }
         Returns: Json
@@ -10803,6 +11203,7 @@ export type Database = {
       member_can_accept_payments: { Args: never; Returns: boolean }
       member_can_access_attendance_journal: { Args: never; Returns: boolean }
       member_can_adjust_rental_amount: { Args: never; Returns: boolean }
+      member_can_adjust_renter_wallet: { Args: never; Returns: boolean }
       member_can_assign_lesson_substitute: {
         Args: { p_original_teacher_id: string }
         Returns: boolean
@@ -10823,17 +11224,21 @@ export type Database = {
         Args: { p_personal_lesson_id: string }
         Returns: boolean
       }
+      member_can_conduct_lessons: {
+        Args: { p_member_id: string; p_org_id: string }
+        Returns: boolean
+      }
       member_can_correct_payments: { Args: never; Returns: boolean }
       member_can_create_rental: { Args: never; Returns: boolean }
       member_can_issue_refunds: { Args: never; Returns: boolean }
       member_can_manage_calendar_events: { Args: never; Returns: boolean }
       member_can_manage_group_waitlist: { Args: never; Returns: boolean }
       member_can_manage_rentals: { Args: never; Returns: boolean }
+      member_can_manage_renter_balance: { Args: never; Returns: boolean }
       member_can_manage_subscription_freeze: {
         Args: { p_sub_id: string }
         Returns: boolean
       }
-      member_can_manage_renter_balance: { Args: never; Returns: boolean }
       member_can_manage_venue_cost_rules: { Args: never; Returns: boolean }
       member_can_override_group_capacity: { Args: never; Returns: boolean }
       member_can_read_corrections: { Args: never; Returns: boolean }
@@ -11130,6 +11535,10 @@ export type Database = {
         }
         Returns: Json
       }
+      preview_activate_platform_purchase_request: {
+        Args: { p_request_id: string }
+        Returns: Json
+      }
       preview_calendar_event_conflicts: {
         Args: { p_exclude_event_id?: string; p_sessions: Json }
         Returns: Json
@@ -11146,8 +11555,15 @@ export type Database = {
       }
       preview_rental_pricing: { Args: { p_payload: Json }; Returns: Json }
       preview_rental_series: { Args: { p_payload: Json }; Returns: Json }
+      preview_renter_pack_surcharge: {
+        Args: { p_series_id: string }
+        Returns: Json
+      }
       preview_renter_wallet_payout: { Args: { p_payload: Json }; Returns: Json }
-      preview_staff_renter_wallet_adjust: { Args: { p_payload: Json }; Returns: Json }
+      preview_staff_renter_wallet_adjust: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       preview_staff_renter_wallet_topup: {
         Args: { p_payload: Json }
         Returns: Json
@@ -11323,6 +11739,7 @@ export type Database = {
         }
         Returns: string
       }
+      reject_organization_renter_receipt_chat: { Args: never; Returns: Json }
       remove_orphan_payment_storno: {
         Args: {
           p_idempotency_key?: string
@@ -11347,23 +11764,6 @@ export type Database = {
       renter_bootstrap: { Args: never; Returns: Json }
       renter_cancel_occurrence: { Args: { p_rental_id: string }; Returns: Json }
       renter_cancel_pack: { Args: { p_series_id: string }; Returns: Json }
-      list_renter_pack_surcharge_reviews: {
-        Args: { p_renter_id?: string }
-        Returns: Json
-      }
-      preview_renter_pack_surcharge: { Args: { p_series_id: string }; Returns: Json }
-      apply_renter_pack_surcharge: {
-        Args: {
-          p_series_id: string
-          p_idempotency_key?: string
-          p_notes?: string
-        }
-        Returns: Json
-      }
-      waive_renter_pack_surcharge: {
-        Args: { p_series_id: string; p_notes?: string }
-        Returns: Json
-      }
       renter_create_booking: { Args: { p_payload: Json }; Returns: Json }
       renter_create_recurring_pack: { Args: { p_payload: Json }; Returns: Json }
       renter_delete_hold: { Args: { p_rental_id: string }; Returns: Json }
@@ -11404,6 +11804,10 @@ export type Database = {
         Args: { p_org_id: string; p_telegram_id: number }
         Returns: Json
       }
+      renter_telegram_receipt_chat_ingest: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       renter_telegram_webhook_ingest: {
         Args: { p_payload: Json }
         Returns: Json
@@ -11436,6 +11840,14 @@ export type Database = {
       request_organization_rentals_calendar_reconcile: {
         Args: never
         Returns: Json
+      }
+      requeue_all_blocked_platform_notifications: {
+        Args: never
+        Returns: number
+      }
+      requeue_blocked_platform_notification: {
+        Args: { p_id: string }
+        Returns: boolean
       }
       reset_renter_reliability:
         | { Args: { p_renter_id: string }; Returns: Json }
@@ -11534,6 +11946,10 @@ export type Database = {
         Args: { p_dry_run?: boolean; p_organization_id: string }
         Returns: Json
       }
+      save_platform_notification_settings: {
+        Args: { p_chat_id: number; p_title?: string; p_updated_by: string }
+        Returns: Json
+      }
       save_teacher_pay_rate: { Args: { p_payload: Json }; Returns: Json }
       save_teacher_pay_rule: {
         Args: { p_idempotency_key?: string; p_payload: Json }
@@ -11621,6 +12037,20 @@ export type Database = {
           p_payment_id: string
           p_reason_code?: string
           p_reason_comment?: string
+        }
+        Returns: Json
+      }
+      submit_platform_purchase_request: {
+        Args: {
+          p_client_request_id: string
+          p_contact_email: string
+          p_contact_telegram: string
+          p_organization_id: string
+          p_organization_name: string
+          p_payment_comment: string
+          p_quote_id: string
+          p_requester_email: string
+          p_requester_user_id: string
         }
         Returns: Json
       }
@@ -12217,6 +12647,10 @@ export type Database = {
           p_reason_code?: string
           p_reason_comment?: string
         }
+        Returns: Json
+      }
+      waive_renter_pack_surcharge: {
+        Args: { p_notes?: string; p_series_id: string }
         Returns: Json
       }
       write_off_personal_lesson_debt: {
