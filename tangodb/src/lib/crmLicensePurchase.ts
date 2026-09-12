@@ -1,6 +1,7 @@
 import type { LicenseType, OrgStatus, SubscriptionStatus } from "../types/organization";
 import { isDemoOrgStatus } from "./demoLicense";
 import type { PlatformPaymentSku } from "./paymentConfig";
+import { isCrmSubscriptionTMinus7, isCrmSubscriptionWriteClosed } from "./crmSubscriptionState";
 
 export const LICENSE_PURCHASE_PATH = "/settings/license?purchase=1";
 export const MONTHLY_PURCHASE_PATH = "/settings/license?purchase=1&plan=monthly";
@@ -95,11 +96,12 @@ export function resolveSelectedSku(
   return prefillSkuFromPlan(prefill);
 }
 
-/** Nav/header CTA: demo buy, past_due/suspended renew. Monthly active has in-page button only. */
+/** Nav/header CTA: demo buy; T−7 / past_due / expired month / suspended renew. */
 export function purchaseCtaKind(input: {
   orgStatus: OrgStatus | string | null | undefined;
   licenseType: LicenseType | string | null | undefined;
   subscriptionStatus?: SubscriptionStatus | string | null;
+  currentPeriodEnd?: string | null;
   dataPurgeAt?: string | null;
   now?: Date;
 }): PurchaseCtaKind | null {
@@ -110,7 +112,26 @@ export function purchaseCtaKind(input: {
     return "buy";
   }
   if (input.orgStatus === "suspended") return "renew";
-  if (input.subscriptionStatus === "past_due") return "renew";
+  if (
+    isCrmSubscriptionWriteClosed({
+      licenseType: input.licenseType,
+      subscriptionStatus: input.subscriptionStatus,
+      currentPeriodEnd: input.currentPeriodEnd,
+      now,
+    })
+  ) {
+    return "renew";
+  }
+  if (
+    isCrmSubscriptionTMinus7({
+      licenseType: input.licenseType,
+      subscriptionStatus: input.subscriptionStatus,
+      currentPeriodEnd: input.currentPeriodEnd,
+      now,
+    })
+  ) {
+    return "renew";
+  }
   return null;
 }
 

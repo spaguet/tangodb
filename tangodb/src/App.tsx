@@ -61,6 +61,7 @@ import FinancePage from "./pages/FinancePage";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import OfflineBanner from "./components/ui/OfflineBanner";
 import ReadOnlyBanner from "./components/ui/ReadOnlyBanner";
+import CrmSubscriptionRenewalBanner from "./components/license/CrmSubscriptionRenewalBanner";
 import GoogleCalendarSyncStoppedNotifier from "./components/integrations/GoogleCalendarSyncStoppedNotifier";
 import ClaimsMismatchBanner from "./components/ui/ClaimsMismatchBanner";
 import OfflineReconciliationDialog from "./components/offline/OfflineReconciliationDialog";
@@ -459,6 +460,7 @@ function AppLayout() {
             onOpenReconciliation={openReconciliation}
           />
           <ReadOnlyBanner />
+          <CrmSubscriptionRenewalBanner />
           <GoogleCalendarSyncStoppedNotifier />
           <ClaimsMismatchBanner />
 

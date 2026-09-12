@@ -16,6 +16,7 @@ import {
   purchaseSkuLock,
 } from "../../lib/crmLicensePurchase";
 import DemoPurchaseCta from "../../components/demo/DemoPurchaseCta";
+import { useCrmSubscriptionUi } from "../../hooks/useCrmSubscriptionUi";
 import { useI18n } from "../../hooks/useI18n";
 import type { I18nKey } from "../../lib/i18n/keys";
 import { btnAddCls } from "../../components/ui/buttonStyles";
@@ -52,6 +53,7 @@ export default function LicenseSettingsPage() {
   const toast = useToast();
   const [searchParams] = useSearchParams();
   const { organization, orgLoading, license, subscription, refreshOrganization } = useOrganization();
+  const { tMinus7, writeClosed, graceDaysLeft } = useCrmSubscriptionUi();
   const { config: paymentConfig } = usePlatformPaymentConfig(true);
   const activateKey = useActivateAccessKey();
   const [key, setKey] = useState("");
@@ -173,9 +175,16 @@ export default function LicenseSettingsPage() {
                 })}
               </p>
             )}
-            {hasSubscription && subscription?.status === "past_due" && (
+            {hasSubscription && (subscription?.status === "past_due" || writeClosed) && (
               <p className="text-xs opacity-80 text-amber-800">
-                {t("license.subscription.pastDueReadOnly")}
+                {graceDaysLeft && graceDaysLeft > 0
+                  ? t("common.readOnly.subscriptionGrace", { count: graceDaysLeft })
+                  : t("license.subscription.pastDueReadOnly")}
+              </p>
+            )}
+            {hasSubscription && tMinus7 && !writeClosed && subscription?.current_period_end && (
+              <p className="text-xs opacity-80 text-amber-800">
+                {t("license.renewal.tMinus7Body", { date: formatDateTime(subscription.current_period_end) })}
               </p>
             )}
           </div>

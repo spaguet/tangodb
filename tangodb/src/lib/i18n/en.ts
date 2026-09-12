@@ -247,6 +247,10 @@ export const EN: Record<I18nKey, string> = {
   "common.readOnly.demoExpired": "Demo period expired — CRM is in read-only mode",
   "common.readOnly.untilPurge": "until data deletion on {{date}}",
   "common.readOnly.activateLicense": "Activate license",
+  "common.readOnly.subscriptionExpired": "CRM subscription expired — CRM is in read-only mode",
+  "common.readOnly.subscriptionGrace":
+    "CRM subscription expired. Pay within {{count}} days to keep read access",
+  "common.readOnly.renewSubscription": "Renew CRM subscription",
   "common.claimsMismatch.banner":
     "Your access rights are being updated. The interface shows your role from the database until your session syncs.",
   "common.error.loadFailed": "Failed to load data",
@@ -348,6 +352,8 @@ export const EN: Record<I18nKey, string> = {
   "license.subscription.title": "Subscription — {{status}}",
   "license.subscription.periodUntil": "Period until {{date}} ({{period}})",
   "license.subscription.pastDueReadOnly": "The CRM is read-only until payment is restored.",
+  "license.renewal.tMinus7Title": "CRM subscription ends soon.",
+  "license.renewal.tMinus7Body": "Writing stays open until {{date}}. Renew to keep access after that.",
   "license.readOnlyLearnMore": "Learn more about read-only mode",
   "license.ownerRecovery.title": "Owner access recovery",
   "license.ownerRecovery.forgotPassword":

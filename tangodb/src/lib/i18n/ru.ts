@@ -246,6 +246,10 @@ export const RU: Record<I18nKey, string> = {
   "common.readOnly.demoExpired": "Срок демо истёк — CRM в режиме только чтения",
   "common.readOnly.untilPurge": "до удаления данных {{date}}",
   "common.readOnly.activateLicense": "Активировать лицензию",
+  "common.readOnly.subscriptionExpired": "Подписка на CRM истекла — CRM в режиме только чтения",
+  "common.readOnly.subscriptionGrace":
+    "Подписка на CRM истекла. Оплатите в течение {{count}} дн., чтобы сохранить доступ для чтения",
+  "common.readOnly.renewSubscription": "Продлить подписку на CRM",
   "common.claimsMismatch.banner":
     "Права доступа обновляются. Интерфейс показывает роль из базы до синхронизации сессии.",
   "common.error.loadFailed": "Не удалось загрузить данные",
@@ -346,6 +350,8 @@ export const RU: Record<I18nKey, string> = {
   "license.subscription.title": "Подписка — {{status}}",
   "license.subscription.periodUntil": "Период до {{date}} ({{period}})",
   "license.subscription.pastDueReadOnly": "CRM доступна только для просмотра до восстановления оплаты.",
+  "license.renewal.tMinus7Title": "Подписка на CRM скоро закончится.",
+  "license.renewal.tMinus7Body": "Запись открыта до {{date}}. Продлите доступ, чтобы не потерять её.",
   "license.readOnlyLearnMore": "Подробнее о режиме только для чтения",
   "license.ownerRecovery.title": "Восстановление доступа владельца",
   "license.ownerRecovery.forgotPassword":

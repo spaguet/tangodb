@@ -22,6 +22,7 @@ export function useCrmLicensePurchaseUi() {
           orgStatus,
           licenseType,
           subscriptionStatus,
+          currentPeriodEnd: subscription?.current_period_end,
           dataPurgeAt: organization?.data_purge_at,
         })
       : null;

@@ -413,6 +413,10 @@ verify_jwt = false
 verify_jwt = false
 # Cron: CRON_SECRET. JWT would block scheduled purge.
 
+[functions.expire-crm-subscriptions]
+verify_jwt = false
+# Cron: CRON_SECRET. JWT would block scheduled CRM month expiry (S4).
+
 [functions.create-subscription-checkout]
 verify_jwt = true
 

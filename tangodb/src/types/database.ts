@@ -10454,6 +10454,10 @@ export type Database = {
         }
         Returns: Json
       }
+      expire_crm_organization_subscriptions: {
+        Args: { p_as_of?: string; p_batch_size?: number }
+        Returns: Json
+      }
       expire_monthly_subscriptions: {
         Args: { p_org_id?: string }
         Returns: undefined
@@ -10705,6 +10709,19 @@ export type Database = {
         }[]
       }
       list_organization_rental_qr_assets: { Args: never; Returns: Json }
+      list_platform_crm_subscription_digest: {
+        Args: { p_as_of?: string }
+        Returns: {
+          current_period_end: string
+          digest_type: string
+          grace_end: string
+          organization_id: string
+          organization_name: string
+          organization_status: string
+          provider: string
+          subscription_status: string
+        }[]
+      }
       list_rental_money_register: {
         Args: { p_date_from?: string; p_date_to?: string }
         Returns: Json

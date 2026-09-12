@@ -16,6 +16,7 @@ import {
   getOrganizationIdFromSession,
 } from "../lib/authClaims";
 import { supabase } from "../lib/supabase";
+import { isCrmSubscriptionWriteClosed } from "../lib/crmSubscriptionState";
 import { reportClientError } from "../lib/reportClientError";
 import { normalizeOrgModules } from "../lib/orgModules";
 import { normalizeTeacherScope } from "../lib/teacherScope";
@@ -466,8 +467,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       !!organization.demo_expires_at &&
       new Date(organization.demo_expires_at) <= new Date()) ||
     (organization?.status === "licensed" &&
-      license?.license_type === "subscription" &&
-      subscription?.status === "past_due");
+      isCrmSubscriptionWriteClosed({
+        licenseType: license?.license_type,
+        subscriptionStatus: subscription?.status,
+        currentPeriodEnd: subscription?.current_period_end,
+      }));
 
   const value = useMemo(
     () => ({

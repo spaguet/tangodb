@@ -140,6 +140,7 @@ describe("crmLicensePurchase", () => {
         orgStatus: "licensed",
         licenseType: "subscription",
         subscriptionStatus: "active",
+        currentPeriodEnd: "2099-01-01T00:00:00.000Z",
       }),
       null
     );
@@ -152,5 +153,29 @@ describe("crmLicensePurchase", () => {
       "renew"
     );
     assert.equal(purchaseCtaPath("renew").includes("plan=monthly"), true);
+  });
+
+  it("CTA renews on T−7 and on an expired period while status is still active", () => {
+    const now = new Date("2026-09-12T12:00:00.000Z");
+    assert.equal(
+      purchaseCtaKind({
+        orgStatus: "licensed",
+        licenseType: "subscription",
+        subscriptionStatus: "active",
+        currentPeriodEnd: "2026-09-15T12:00:00.000Z",
+        now,
+      }),
+      "renew"
+    );
+    assert.equal(
+      purchaseCtaKind({
+        orgStatus: "licensed",
+        licenseType: "subscription",
+        subscriptionStatus: "active",
+        currentPeriodEnd: "2026-09-12T12:00:00.000Z",
+        now,
+      }),
+      "renew"
+    );
   });
 });
