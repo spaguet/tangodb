@@ -76,6 +76,20 @@ export default function CreateRentalChannelDialog({
             </div>
 
             <div className="grid grid-cols-1 gap-2">
+              {canMiniApp ? (
+                <button
+                  type="button"
+                  onClick={() => onSelect("miniapp")}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors cursor-pointer text-left"
+                >
+                  <Smartphone className="w-5 h-5 text-indigo-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{t("schedule.miniapp.action")}</p>
+                    <p className="text-xs text-slate-500">{t("schedule.rental.channelMiniappHint")}</p>
+                  </div>
+                </button>
+              ) : null}
+
               {canCashier ? (
                 <>
                   <button
@@ -101,20 +115,6 @@ export default function CreateRentalChannelDialog({
                     </div>
                   </button>
                 </>
-              ) : null}
-
-              {canMiniApp ? (
-                <button
-                  type="button"
-                  onClick={() => onSelect("miniapp")}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors cursor-pointer text-left"
-                >
-                  <Smartphone className="w-5 h-5 text-indigo-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">{t("schedule.miniapp.action")}</p>
-                    <p className="text-xs text-slate-500">{t("schedule.rental.channelMiniappHint")}</p>
-                  </div>
-                </button>
               ) : null}
             </div>
           </motion.div>

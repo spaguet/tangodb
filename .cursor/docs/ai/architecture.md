@@ -22,6 +22,7 @@
 - **Истечение месяца:** cron `expire-crm-subscriptions` → `past_due` / grace 7д → `suspended`; UI `isReadOnly` с `period_end` без ожидания cron.
 - **Notification outbox (платформа):** `platform_notification_outbox` + `platform_notification_settings` (`telegram_chat_id` в БД, токен бота — secret). Worker Edge `platform-notification-worker` (email + Telegram в одной TX с заявкой/тикетом/org_created). **Платформенный бот** — отдельный BotFather-бот, outbound-only, без webhook, username не показывается в CRM; до настройки Telegram-строка = `blocked`, email жив. **Студийный бот** арендаторов и `renter-booking-worker` / `renter_telegram_outbox` — другой токен и другие чаты; не смешивать.
 - Гейт Mini App fail-closed: `renter_miniapp_addon_is_active` — `organizations.status = licensed` **и** (lifetime **или** активная подписка CRM). Демо / нет купленного доступа = выкл (бронь канала и исходящий бот). `organization_addons` не источник истины, пока действует HALL-RENT-SELF-2.
+- **Касса персонала → кошелёк:** `create_rental` / `create_rental_series` для арендатора с `telegram_id` и достаточным `available` промотят неоплаченный слот в `channel = miniapp` (резерв 50%, remainder после `time_end`). Оплата при создании, счета и арендаторы без Telegram остаются кассой 2.5. Helper `_renter_attach_wallet_to_staff_cashier_rentals`.
 
 ## Слои (tangodb/)
 
