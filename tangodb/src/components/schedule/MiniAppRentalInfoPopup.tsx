@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Building2, X } from "lucide-react";
+import { Building2, Pencil, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -13,9 +13,11 @@ import { canManageMiniAppRentals } from "../../lib/permissions";
 import { formatCurrency } from "../../lib/utils";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { miniAppLifecycleI18nKey } from "../../lib/rentalMiniAppDisplay";
+import { useRentalDetail } from "../../hooks/useRentals";
 import type { RentalDisplayLesson } from "../../types";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import type { LocationOption } from "./CreateRentalDialog";
+import EditRentalSlotModal from "./EditRentalSlotModal";
 
 interface MiniAppRentalInfoPopupProps {
   lesson: RentalDisplayLesson | null;
@@ -40,8 +42,10 @@ export default function MiniAppRentalInfoPopup({
   const deleteHold = useRenterDeleteHold();
   const cancelOccurrence = useRenterCancelOccurrence();
   const cancelPack = useRenterCancelPack();
+  const detailQuery = useRentalDetail(lesson?.rentalId ?? null, !!lesson);
 
   const [confirm, setConfirm] = useState<"hold" | "occurrence" | "pack" | null>(null);
+  const [editSlotOpen, setEditSlotOpen] = useState(false);
 
   if (!lesson) return null;
 
@@ -51,7 +55,11 @@ export default function MiniAppRentalInfoPopup({
   const canDeleteHold = canManage && lesson.canDeleteHold === true;
   const canCancelSlot = canManage && lesson.canCancelOccurrence === true;
   const canCancelPack = canManage && lesson.canCancelPack === true;
+  const canEditSlot = canManage && lesson.bookingStatus === "confirmed";
   const pending = deleteHold.isPending || cancelOccurrence.isPending || cancelPack.isPending;
+  const displayTitle = lesson.purpose
+    ? [lesson.purpose, lesson.renterName].filter(Boolean).join(" · ")
+    : (lesson.renterName ?? t("schedule.miniapp.blockTitle"));
 
   const runAction = async () => {
     if (!confirm) return;
@@ -89,9 +97,7 @@ export default function MiniAppRentalInfoPopup({
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
               <div className="flex items-center gap-2 min-w-0">
                 <Building2 className="w-4 h-4 text-slate-600 shrink-0" />
-                <h3 className="text-base font-semibold text-slate-900 truncate">
-                  {lesson.renterName ?? t("schedule.miniapp.blockTitle")}
-                </h3>
+                <h3 className="text-base font-semibold text-slate-900 truncate">{displayTitle}</h3>
               </div>
               <button type="button" onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer" aria-label={t("common.close")}>
                 <X className="w-4 h-4" />
@@ -112,6 +118,18 @@ export default function MiniAppRentalInfoPopup({
                   <p className="text-slate-800">{locationName}</p>
                 </div>
               ) : null}
+              {lesson.purpose ? (
+                <div>
+                  <span className={labelCls}>{t("schedule.rental.purposeLabel")}</span>
+                  <p className="text-slate-800">{lesson.purpose}</p>
+                </div>
+              ) : null}
+              {lesson.renterName ? (
+                <div>
+                  <span className={labelCls}>{t("schedule.rental.renterLabel")}</span>
+                  <p className="text-slate-800">{lesson.renterName}</p>
+                </div>
+              ) : null}
               <div>
                 <span className={labelCls}>{t("schedule.miniapp.lifecycleLabel")}</span>
                 <p className="text-slate-800">{t(miniAppLifecycleI18nKey(lifecycle))}</p>
@@ -128,6 +146,16 @@ export default function MiniAppRentalInfoPopup({
             </div>
 
             <div className="flex flex-wrap gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
+              {canEditSlot ? (
+                <button
+                  type="button"
+                  onClick={() => setEditSlotOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  {t("schedule.rental.editSlotAction")}
+                </button>
+              ) : null}
               {canDeleteHold ? (
                 <button
                   type="button"
@@ -159,6 +187,18 @@ export default function MiniAppRentalInfoPopup({
           </motion.div>
         </div>
       </AnimatePresence>
+
+      <EditRentalSlotModal
+        lesson={lesson}
+        locations={locations}
+        open={editSlotOpen}
+        toast={toast}
+        onClose={() => setEditSlotOpen(false)}
+        onSuccess={() => {
+          onSuccess();
+          void detailQuery.refetch();
+        }}
+      />
 
       <ConfirmDialog
         open={!!confirm}
