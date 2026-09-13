@@ -125,6 +125,10 @@ function participantTypeFromCount(count: number): "solo" | "pair" | "trio" | "qu
 
 const WEEK_COUNT_OPTIONS = [2, 3, 4, 6, 8, 12] as const;
 
+function clientFieldHasValue(client: BookingClientField): boolean {
+  return Boolean(client.id || client.query.trim());
+}
+
 function validateBookingClients(
   clients: BookingClientField[],
   t: (key: I18nKey, params?: Record<string, string | number>) => string
@@ -625,7 +629,9 @@ export default function PersonalLessonSaleForm({
     setBookingClients((prev) => {
       const next = [...prev];
       while (next.length < neededFields) next.push({ query: "", id: "" });
-      while (next.length > neededFields) next.pop();
+      while (next.length > neededFields && !clientFieldHasValue(next[next.length - 1])) {
+        next.pop();
+      }
       return next;
     });
   };
