@@ -24,6 +24,8 @@ const HEADER_H = 62;
 const DAY_HEADER_H = 44;
 const TIME_COL_W = 48;
 const FONT = 'Inter, ui-sans-serif, system-ui, sans-serif';
+const CELL_FONT_PX = 12;
+const CELL_LINE_HEIGHT = 15;
 
 const COLOR = {
   white: "#ffffff",
@@ -155,6 +157,71 @@ function ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number
     else high = mid - 1;
   }
   return low <= 0 ? "…" : `${text.slice(0, low)}…`;
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const trimmed = text.trim();
+  if (!trimmed || maxWidth <= 0) return [];
+  if (ctx.measureText(trimmed).width <= maxWidth) return [trimmed];
+
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  const flush = () => {
+    if (current) {
+      lines.push(current);
+      current = "";
+    }
+  };
+
+  const takePrefix = (word: string): { chunk: string; rest: string } => {
+    if (ctx.measureText(word).width <= maxWidth) return { chunk: word, rest: "" };
+    let lo = 1;
+    let hi = word.length;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      if (ctx.measureText(word.slice(0, mid)).width <= maxWidth) lo = mid;
+      else hi = mid - 1;
+    }
+    const take = Math.max(lo, 1);
+    return { chunk: word.slice(0, take), rest: word.slice(take) };
+  };
+
+  for (const token of tokens) {
+    const trial = current ? `${current} ${token}` : token;
+    if (ctx.measureText(trial).width <= maxWidth) {
+      current = trial;
+      continue;
+    }
+    flush();
+    let rest = token;
+    while (rest) {
+      const { chunk, rest: next } = takePrefix(rest);
+      if (!next) {
+        current = chunk;
+        break;
+      }
+      lines.push(chunk);
+      rest = next;
+    }
+  }
+  flush();
+  return lines;
+}
+
+function fitWrappedLines(
+  ctx: CanvasRenderingContext2D,
+  lines: string[],
+  maxWidth: number,
+  maxLines: number
+): string[] {
+  if (maxLines <= 0 || lines.length === 0) return [];
+  if (lines.length <= maxLines) return lines;
+  if (maxLines === 1) return [ellipsize(ctx, lines.join(" "), maxWidth)];
+  const head = lines.slice(0, maxLines - 1);
+  const rest = lines.slice(maxLines - 1).join(" ");
+  return [...head, ellipsize(ctx, rest, maxWidth)];
 }
 
 function roundRect(
@@ -349,19 +416,47 @@ export async function exportSchedulePng(input: SchedulePngExportInput): Promise<
         ctx.globalAlpha = 1;
 
         const textX = x + 4;
-        const textMax = w - 8;
+        const textMax = Math.max(w - 8, 4);
+        const topPad = 3;
+        const bottomPad = 3;
+        const available = Math.max(h - topPad - bottomPad, CELL_FONT_PX);
+        const maxLines = Math.max(1, Math.floor(available / CELL_LINE_HEIGHT));
+        const subtitle = input.getLessonSubtitle(item.lesson);
+
+        ctx.save();
+        ctx.textBaseline = "top";
         ctx.fillStyle = COLOR.white;
-        ctx.font = `600 10px ${FONT}`;
-        ctx.fillText(ellipsize(ctx, input.getLessonTitle(item.lesson), textMax), textX, y + 12);
-        if (h >= ROW_HEIGHT_PX * 2) {
-          const subtitle = input.getLessonSubtitle(item.lesson);
-          if (subtitle) {
-            ctx.globalAlpha = 0.85;
-            ctx.font = `400 10px ${FONT}`;
-            ctx.fillText(ellipsize(ctx, subtitle, textMax), textX, y + 24);
-            ctx.globalAlpha = 1;
-          }
+
+        ctx.font = `600 ${CELL_FONT_PX}px ${FONT}`;
+        const titleLines = wrapText(ctx, input.getLessonTitle(item.lesson), textMax);
+        ctx.font = `400 ${CELL_FONT_PX}px ${FONT}`;
+        const subtitleLines = subtitle ? wrapText(ctx, subtitle, textMax) : [];
+        const showTitle = maxLines > 1 || subtitleLines.length === 0;
+        const titleBudget = showTitle
+          ? subtitleLines.length > 0
+            ? Math.min(titleLines.length, Math.max(1, maxLines - 1))
+            : maxLines
+          : 0;
+        ctx.font = `600 ${CELL_FONT_PX}px ${FONT}`;
+        const titleFit = showTitle ? fitWrappedLines(ctx, titleLines, textMax, titleBudget) : [];
+        let cursorY = y + topPad;
+        for (const line of titleFit) {
+          ctx.fillText(line, textX, cursorY);
+          cursorY += CELL_LINE_HEIGHT;
         }
+
+        const remaining = maxLines - titleFit.length;
+        if (subtitleLines.length > 0 && remaining > 0) {
+          ctx.globalAlpha = 0.9;
+          ctx.font = `400 ${CELL_FONT_PX}px ${FONT}`;
+          const subFit = fitWrappedLines(ctx, subtitleLines, textMax, remaining);
+          for (const line of subFit) {
+            ctx.fillText(line, textX, cursorY);
+            cursorY += CELL_LINE_HEIGHT;
+          }
+          ctx.globalAlpha = 1;
+        }
+        ctx.restore();
       }
     });
   }

@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Building2,
   Coins,
+  Edit,
   FileText,
   LayoutGrid,
   MessageSquare,
@@ -129,6 +130,8 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveForce, setArchiveForce] = useState(false);
   const [archiveReason, setArchiveReason] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [displayNameDraft, setDisplayNameDraft] = useState("");
   const [createRentalOpen, setCreateRentalOpen] = useState(false);
   const [createRentalSeriesOpen, setCreateRentalSeriesOpen] = useState(false);
   const [createMiniAppOpen, setCreateMiniAppOpen] = useState(false);
@@ -142,7 +145,13 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
     setActiveTab(resolveInitialTab());
   }, [renterId, canSeeFinance, financeOnlyDetail, locationState?.initialTab]);
 
+  useEffect(() => {
+    setRenaming(false);
+    setDisplayNameDraft(detailQuery.data?.renter.displayName ?? "");
+  }, [renterId, detailQuery.data?.renter.displayName]);
+
   const archiveRenter = useArchiveRenter();
+  const upsertRenter = useUpsertRenter();
   const upsertContact = useUpsertRenterContact();
   const deleteContact = useDeleteRenterContact();
   const upsertContract = useUpsertRenterContract();
@@ -233,6 +242,31 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
     navigate("/renters");
   };
 
+  const handleSaveDisplayName = async () => {
+    if (connectionState !== "online") {
+      const blocked = translateMutationBlockedMessage(connectionState, t);
+      if (blocked) toast(blocked, "error");
+      return;
+    }
+    const nextName = displayNameDraft.trim();
+    if (!nextName) {
+      toast(t("renters.error.displayNameRequired"), "error");
+      return;
+    }
+    const res = await upsertRenter.mutateAsync({
+      renterId,
+      displayName: nextName,
+      counterpartyType: renter.counterpartyType ?? "individual",
+      status: renter.status,
+    });
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "renters.error.saveFailed", t), "error");
+      return;
+    }
+    toast(t("renters.success.updated"), "success");
+    setRenaming(false);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -258,7 +292,64 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">{renter.displayName}</h1>
+            {renaming && canWrite ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  className={`${inputCls} max-w-xs`}
+                  value={displayNameDraft}
+                  onChange={(e) => setDisplayNameDraft(e.target.value)}
+                  aria-label={t("renters.form.displayName")}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleSaveDisplayName();
+                    }
+                    if (e.key === "Escape") {
+                      setDisplayNameDraft(renter.displayName);
+                      setRenaming(false);
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={connectionState !== "online" || upsertRenter.isPending}
+                  onClick={() => void handleSaveDisplayName()}
+                  className="text-xs font-semibold text-indigo-600 cursor-pointer disabled:opacity-50"
+                >
+                  {t("common.save")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDisplayNameDraft(renter.displayName);
+                    setRenaming(false);
+                  }}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
+                >
+                  {t("common.cancel")}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h1 className="text-lg font-semibold text-slate-900 truncate">{renter.displayName}</h1>
+                {canWrite ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDisplayNameDraft(renter.displayName);
+                      setRenaming(true);
+                    }}
+                    disabled={connectionState !== "online"}
+                    className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer disabled:opacity-40 shrink-0"
+                    aria-label={t("common.change")}
+                    title={t("renters.form.displayName")}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                ) : null}
+              </div>
+            )}
             <p className="text-xs text-slate-500 mt-1">
               {renter.status === "active"
                 ? t("renters.status.active")
@@ -488,6 +579,7 @@ function OverviewTab({
   const [contactRole, setContactRole] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactPrimary, setContactPrimary] = useState(false);
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [telegramId, setTelegramId] = useState(renter.telegramId ?? "");
 
   const warnings: string[] = [];
@@ -495,13 +587,30 @@ function OverviewTab({
     warnings.push(renter.blockedReason);
   }
 
+  const resetContactForm = () => {
+    setEditingContactId(null);
+    setContactName("");
+    setContactRole("");
+    setContactPhone("");
+    setContactPrimary(false);
+  };
+
+  const startEditContact = (contact: RenterContact) => {
+    setEditingContactId(contact.id);
+    setContactName(contact.fullName);
+    setContactRole(contact.roleTitle ?? "");
+    setContactPhone(contact.phone ?? "");
+    setContactPrimary(contact.isPrimary);
+  };
+
   const handleAddContact = async () => {
     if (!contactName.trim()) return;
     const res = await upsertContact.mutateAsync({
       renterId,
+      contactId: editingContactId ?? undefined,
       fullName: contactName.trim(),
-      roleTitle: contactRole.trim() || undefined,
-      phone: contactPhone.trim() || undefined,
+      roleTitle: contactRole.trim(),
+      phone: contactPhone.trim(),
       isPrimary: contactPrimary,
     });
     if (!res.success) {
@@ -509,10 +618,7 @@ function OverviewTab({
       return;
     }
     toast(t("renters.success.contactSaved"), "success");
-    setContactName("");
-    setContactRole("");
-    setContactPhone("");
-    setContactPrimary(false);
+    resetContactForm();
   };
 
   const handleSaveTelegram = async () => {
@@ -668,17 +774,29 @@ function OverviewTab({
                     <p className="text-xs text-slate-500">{[c.roleTitle, c.phone, c.email].filter(Boolean).join(" · ")}</p>
                   </div>
                   {canWriteContacts ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void deleteContact.mutateAsync({ contactId: c.id, renterId }).then((res) => {
-                          if (!res.success) toast(resolveMutationError(res.error, "renters.error.contactSaveFailed", t), "error");
-                        })
-                      }
-                      className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => startEditContact(c)}
+                        className="p-1 text-slate-400 hover:text-indigo-600 cursor-pointer"
+                        aria-label={t("common.change")}
+                        title={t("common.change")}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void deleteContact.mutateAsync({ contactId: c.id, renterId }).then((res) => {
+                            if (!res.success) toast(resolveMutationError(res.error, "renters.error.contactSaveFailed", t), "error");
+                            if (res.success && editingContactId === c.id) resetContactForm();
+                          })
+                        }
+                        className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   ) : null}
                 </li>
               ))}
@@ -699,8 +817,17 @@ function OverviewTab({
                 onClick={() => void handleAddContact()}
                 className="col-span-full py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50"
               >
-                {t("renters.contact.add")}
+                {editingContactId ? t("common.save") : t("renters.contact.add")}
               </button>
+              {editingContactId ? (
+                <button
+                  type="button"
+                  onClick={resetContactForm}
+                  className="col-span-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
+                >
+                  {t("common.cancel")}
+                </button>
+              ) : null}
             </div>
           ) : null}
         </section>
