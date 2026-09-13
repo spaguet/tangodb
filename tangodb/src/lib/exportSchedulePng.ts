@@ -20,12 +20,12 @@ import type { DisplayLesson } from "../types";
 const SCALE = 2;
 const CANVAS_WIDTH = 1120;
 const PAGE_PAD = 16;
-const HEADER_H = 62;
-const DAY_HEADER_H = 44;
-const TIME_COL_W = 48;
+const HEADER_H = 68;
+const DAY_HEADER_H = 48;
+const TIME_COL_W = 54;
 const FONT = 'Inter, ui-sans-serif, system-ui, sans-serif';
-const CELL_FONT_PX = 12;
-const CELL_LINE_HEIGHT = 15;
+const CELL_FONT_PX = 16;
+const CELL_LINE_HEIGHT = 20;
 
 const COLOR = {
   white: "#ffffff",
@@ -313,17 +313,17 @@ export async function exportSchedulePng(input: SchedulePngExportInput): Promise<
   ctx.textBaseline = "alphabetic";
 
   ctx.fillStyle = COLOR.slate800;
-  ctx.font = `600 16px ${FONT}`;
+  ctx.font = `600 18px ${FONT}`;
   const headerMax = CANVAS_WIDTH - PAGE_PAD * 2;
-  ctx.fillText(ellipsize(ctx, input.title, headerMax), PAGE_PAD, PAGE_PAD + 22);
+  ctx.fillText(ellipsize(ctx, input.title, headerMax), PAGE_PAD, PAGE_PAD + 24);
 
   ctx.fillStyle = COLOR.slate700;
-  ctx.font = `600 13px ${FONT}`;
-  ctx.fillText(ellipsize(ctx, input.locationLabel, headerMax), PAGE_PAD, PAGE_PAD + 40);
+  ctx.font = `600 15px ${FONT}`;
+  ctx.fillText(ellipsize(ctx, input.locationLabel, headerMax), PAGE_PAD, PAGE_PAD + 44);
 
   ctx.fillStyle = COLOR.slate500;
-  ctx.font = `400 12px ${FONT}`;
-  ctx.fillText(ellipsize(ctx, input.weekLabel, headerMax), PAGE_PAD, PAGE_PAD + 56);
+  ctx.font = `400 14px ${FONT}`;
+  ctx.fillText(ellipsize(ctx, input.weekLabel, headerMax), PAGE_PAD, PAGE_PAD + 62);
 
   ctx.strokeStyle = COLOR.slate200;
   ctx.lineWidth = 1;
@@ -342,12 +342,12 @@ export async function exportSchedulePng(input: SchedulePngExportInput): Promise<
     }
 
     ctx.fillStyle = COLOR.slate400;
-    ctx.font = `600 10px ${FONT}`;
+    ctx.font = `600 12px ${FONT}`;
     ctx.textAlign = "center";
-    ctx.fillText(dowShort(col.dayOfWeek, input.locale).toUpperCase(), x + dayW / 2, PAGE_PAD + HEADER_H + 16);
+    ctx.fillText(dowShort(col.dayOfWeek, input.locale).toUpperCase(), x + dayW / 2, PAGE_PAD + HEADER_H + 18);
     ctx.fillStyle = COLOR.slate800;
-    ctx.font = `600 14px ${FONT}`;
-    ctx.fillText(String(col.dayNumber), x + dayW / 2, PAGE_PAD + HEADER_H + 34);
+    ctx.font = `600 16px ${FONT}`;
+    ctx.fillText(String(col.dayNumber), x + dayW / 2, PAGE_PAD + HEADER_H + 38);
     ctx.textAlign = "left";
 
     ctx.strokeStyle = COLOR.slate100;
@@ -375,7 +375,7 @@ export async function exportSchedulePng(input: SchedulePngExportInput): Promise<
   }
 
   ctx.fillStyle = COLOR.slate400;
-  ctx.font = `600 10px ${FONT}`;
+  ctx.font = `600 13px ${FONT}`;
   ctx.textAlign = "right";
   for (let min = rangeStartMin; min < rangeEndMin; min += 60) {
     const y = gridTop + ((min - rangeStartMin) / SLOT_MINUTES) * ROW_HEIGHT_PX;
@@ -385,7 +385,7 @@ export async function exportSchedulePng(input: SchedulePngExportInput): Promise<
 
   if (input.lessons.length === 0) {
     ctx.fillStyle = COLOR.slate400;
-    ctx.font = `400 13px ${FONT}`;
+    ctx.font = `400 16px ${FONT}`;
     ctx.textAlign = "center";
     ctx.fillText(input.emptyLabel, PAGE_PAD + (CANVAS_WIDTH - PAGE_PAD * 2) / 2, gridTop + gridH / 2);
     ctx.textAlign = "left";
