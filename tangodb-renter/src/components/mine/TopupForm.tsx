@@ -9,7 +9,7 @@ import { resolveTopupAmountMax } from "../../lib/topupLimits";
 import { formatTopupAmount } from "../../lib/quoteBalance";
 import { qrDownloadFilename, resolveOrgRentalQrUrl } from "../../lib/qrUrl";
 import { isStudioQrSignedUrl } from "../../lib/qrProxy";
-import { copyText, downloadQrToDevice, openStudioChat, topupDraftMessage } from "../../lib/studioChat";
+import { downloadQrToDevice, openTopupStudioHandoff, topupDraftMessage } from "../../lib/studioChat";
 import type { PendingTopup, QrAsset } from "../../lib/types";
 import { t, tFill, type Locale } from "../../i18n/strings";
 
@@ -53,7 +53,6 @@ export default function TopupForm({
     method: "qr" | "cash";
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const lastOpenedChatMessageRef = useRef<string | null>(null);
   const topupFormRef = useRef<HTMLDivElement | null>(null);
 
   const resolveQrAssetUrl = useCallback(
@@ -139,9 +138,6 @@ export default function TopupForm({
     onInitialAmountConsumed?.();
   }, [initialAmount, onInitialAmountConsumed]);
 
-  const draftForAmount = (amountLabel: string, correlationCode?: string) =>
-    topupDraftMessage({ locale, amountLabel, method: topupMethod, correlationCode });
-
   const resolveActiveQrId = useCallback(
     () => topupQrId || qrs[0]?.id || "",
     [topupQrId, qrs]
@@ -169,32 +165,37 @@ export default function TopupForm({
     setTopupMethod(method);
   };
 
-  const openChatWithMessage = async (message: string) => {
+  const openHandoffChat = async (input: {
+    amountLabel: string;
+    method: "qr" | "cash";
+    correlationCode: string;
+  }) => {
     const url = bootstrap.chatUrl;
     if (!url) {
       setError(t(locale, "topupNeedChat"));
       return false;
     }
-    if (lastOpenedChatMessageRef.current === message) {
-      return true;
-    }
-    const copied = await copyText(message);
-    openStudioChat(url);
-    lastOpenedChatMessageRef.current = message;
-    setTopupMsg(copied ? t(locale, "topupCopied") : null);
-    setTopupMsgIsError(false);
-    return true;
-  };
-
-  const openReceiptChat = async () => {
     setError(null);
-    const amount = parsedAmount();
-    if (amount == null) {
-      showTopupValidation(t(locale, "topupAmountRequired"));
-      return;
+    try {
+      const copied = await openTopupStudioHandoff({
+        chatUrl: url,
+        locale,
+        amountLabel: input.amountLabel,
+        method: input.method,
+        correlationCode: input.correlationCode,
+      });
+      setTopupMsg(
+        copied
+          ? t(locale, input.method === "qr" ? "topupCopiedQr" : "topupCopiedCash")
+          : t(locale, "topupCopyFailed")
+      );
+      setTopupMsgIsError(false);
+      return true;
+    } catch {
+      setTopupMsg(t(locale, "topupCopyFailed"));
+      setTopupMsgIsError(false);
+      return false;
     }
-    const amountLabel = formatMoney(amount, bootstrap.currencyCode, locale);
-    await openChatWithMessage(draftForAmount(amountLabel));
   };
 
   const refreshQrUrl = useCallback(
@@ -217,7 +218,6 @@ export default function TopupForm({
       showTopupValidation(t(locale, "topupAmountRequired"));
       return;
     }
-    const amountLabel = formatMoney(amount, bootstrap.currencyCode, locale);
     const topupMax = resolveTopupAmountMax(bootstrap.currencyCode, bootstrap.topupMaxAmount);
     if (amount > topupMax) {
       showTopupValidation(
@@ -246,14 +246,35 @@ export default function TopupForm({
         method: topupMethod,
         ...(topupMethod === "qr" ? { qr_asset_id: activeQrId } : {}),
       });
+      const settledAmount = Number(result.amount);
+      const submittedAmountLabel = formatMoney(
+        Number.isFinite(settledAmount) ? settledAmount : amount,
+        bootstrap.currencyCode,
+        locale
+      );
       setTopupAmount("");
-      lastOpenedChatMessageRef.current = null;
       setTopupSubmitted({
         correlationCode: result.correlation_code,
-        amountLabel,
+        amountLabel: submittedAmountLabel,
         method: topupMethod,
       });
-      await onSubmitted?.();
+      if (bootstrap.chatUrl) {
+        try {
+          await openHandoffChat({
+            amountLabel: submittedAmountLabel,
+            method: topupMethod,
+            correlationCode: result.correlation_code,
+          });
+        } catch {
+          setTopupMsg(t(locale, "topupCopyFailed"));
+          setTopupMsgIsError(false);
+        }
+      }
+      try {
+        await onSubmitted?.();
+      } catch {
+        /* pending already created */
+      }
     } catch (err) {
       const key = rpcErrorKey(err);
       const message = t(locale, key);
@@ -291,10 +312,24 @@ export default function TopupForm({
 
   const openSubmittedTopupChat = async () => {
     if (!topupSubmitted) return;
-    const message = draftForAmount(topupSubmitted.amountLabel, topupSubmitted.correlationCode);
-    const opened = await openChatWithMessage(message);
-    if (opened) finishSubmitted();
+    const opened = await openHandoffChat({
+      amountLabel: topupSubmitted.amountLabel,
+      method: topupSubmitted.method,
+      correlationCode: topupSubmitted.correlationCode,
+    });
+    if (opened) setTopupSubmitted(null);
   };
+
+  const openPendingHandoffChat = async () => {
+    if (!pendingTopup) return;
+    await openHandoffChat({
+      amountLabel: formatMoney(pendingTopup.amount, bootstrap.currencyCode, locale),
+      method: pendingTopup.method,
+      correlationCode: pendingTopup.correlation_code,
+    });
+  };
+
+  const submitLabel = bootstrap.chatUrl ? t(locale, "topupSubmit") : t(locale, "topupSubmitNoChat");
 
   const methodActiveCls = "bg-indigo-600 text-white border border-indigo-600";
   const methodIdleCls = "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50";
@@ -303,11 +338,45 @@ export default function TopupForm({
       {showTitle ? <h2 className={sectionTitleCls}>{t(locale, "topup")}</h2> : null}
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
       {pendingTopup ? (
-        <p className="rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1.5 text-xs leading-relaxed text-indigo-900">
-          {t(locale, "topupPendingBlocked")}
-        </p>
-      ) : null}
-      {!bootstrap.addonActive ? (
+        <div className="space-y-2">
+          <p className="rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1.5 text-xs leading-relaxed text-indigo-900">
+            {t(locale, "topupPendingBlocked")}
+          </p>
+          {pendingTopup.method === "qr"
+            ? qrs.map((q) => (
+                <StudioQrPreview
+                  key={q.id}
+                  locale={locale}
+                  asset={q}
+                  refreshUrl={refreshQrUrl}
+                  onSaved={() => {
+                    setTopupMsg(t(locale, "topupQrSaved"));
+                    setTopupMsgIsError(false);
+                  }}
+                  onSaveFailed={() => setError(t(locale, "topupQrSaveFailed"))}
+                />
+              ))
+            : null}
+          {!showTitle && bootstrap.chatUrl ? (
+            <button
+              type="button"
+              className={`w-full ${btnPrimaryCls}`}
+              onClick={() => void openPendingHandoffChat()}
+            >
+              {t(locale, "topupOpenChat")}
+            </button>
+          ) : null}
+          {topupMsg ? (
+            <p
+              className={`text-xs font-medium ${
+                topupMsgIsError ? "text-amber-800" : "text-indigo-600"
+              }`}
+            >
+              {topupMsg}
+            </p>
+          ) : null}
+        </div>
+      ) : !bootstrap.addonActive ? (
         <p className="text-xs text-slate-500">{t(locale, "addonInactiveTopup")}</p>
       ) : (
         <>
@@ -375,30 +444,25 @@ export default function TopupForm({
             ) : null
           )}
           <p className="text-xs leading-relaxed text-slate-600">
-            {t(locale, topupMethod === "qr" ? "topupReceiptHint" : "topupCashHint")}
+            {t(
+              locale,
+              topupMethod === "qr"
+                ? "topupReceiptHint"
+                : bootstrap.chatUrl
+                  ? "topupCashHint"
+                  : "topupCashHintNoChat"
+            )}
           </p>
-          <p className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs font-medium leading-relaxed text-amber-900">
-            {t(locale, "topupMustSubmitCrm")}
-          </p>
-          {bootstrap.chatUrl ? (
-            <button
-              type="button"
-              className={`w-full ${btnSecondaryCls}`}
-              onClick={() => void openReceiptChat()}
-              disabled={Boolean(pendingTopup) || topupSubmitting}
-            >
-              {t(locale, "topupOpenChat")}
-            </button>
-          ) : topupMethod === "qr" ? (
+          {bootstrap.chatUrl ? null : topupMethod === "qr" ? (
             <p className="text-xs leading-relaxed text-amber-800">{t(locale, "topupNeedChat")}</p>
           ) : null}
           <button
             type="button"
             className={`w-full ${btnPrimaryCls}`}
             onClick={() => void submitTopup()}
-            disabled={Boolean(pendingTopup) || topupSubmitting}
+            disabled={topupSubmitting}
           >
-            {topupSubmitting ? t(locale, "topupSubmitting") : t(locale, "topupSubmit")}
+            {topupSubmitting ? t(locale, "topupSubmitting") : submitLabel}
           </button>
           {topupMsg ? (
             <p
@@ -435,6 +499,19 @@ type TopupSubmittedSheetProps = {
   onClose: () => void;
 };
 
+export function TopupDraftPreview({ locale, message }: { locale: Locale; message: string }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+        {t(locale, "topupDraftLabel")}
+      </p>
+      <p className="select-all rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs leading-relaxed text-slate-800">
+        {message}
+      </p>
+    </div>
+  );
+}
+
 function TopupSubmittedSheet({
   locale,
   submitted,
@@ -450,12 +527,15 @@ function TopupSubmittedSheet({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="topup-submitted-title"
     >
       <div
         className="max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-slate-900">{t(locale, "topupSubmittedTitle")}</h2>
+        <h2 id="topup-submitted-title" className="text-lg font-semibold text-slate-900">
+          {t(locale, "topupSubmittedTitle")}
+        </h2>
         <p className="text-sm font-semibold text-indigo-700">
           {tFill(locale, "topupSubmittedCode", { code: submitted.correlationCode })}
         </p>
@@ -467,6 +547,15 @@ function TopupSubmittedSheet({
         ) : (
           <p className="text-xs leading-relaxed text-amber-800">{t(locale, "topupNeedChat")}</p>
         )}
+        <TopupDraftPreview
+          locale={locale}
+          message={topupDraftMessage({
+            locale,
+            amountLabel: submitted.amountLabel,
+            method: submitted.method,
+            correlationCode: submitted.correlationCode,
+          })}
+        />
         <button type="button" className={`w-full ${btnSecondaryCls}`} onClick={onClose}>
           {t(locale, "topupSubmittedDone")}
         </button>

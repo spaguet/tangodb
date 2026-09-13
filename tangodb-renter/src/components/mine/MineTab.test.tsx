@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as rpc from "../../lib/rpc";
 import * as qrUrl from "../../lib/qrUrl";
 import { mockBootstrap, makeRental, makeWallet } from "../../test/fixtures";
@@ -57,6 +57,11 @@ describe("MineTab stage B surfaces", () => {
     );
   });
 
+  afterEach(() => {
+    delete window.Telegram;
+    vi.unstubAllGlobals();
+  });
+
   it("renders pending top-up request card", async () => {
     mockLoadedMine({
       wallet: makeWallet({
@@ -77,9 +82,43 @@ describe("MineTab stage B surfaces", () => {
     await waitFor(() => {
       expect(screen.getByText("Заявка на пополнение")).toBeTruthy();
     });
-    expect(screen.getByText(/1\s*500/)).toBeTruthy();
+    expect(screen.getAllByText(/1\s*500/).length).toBeGreaterThan(0);
     expect(screen.getByText(/отправлена 10 мин назад/i)).toBeTruthy();
-    expect(screen.getByText(/TDB-TEST/)).toBeTruthy();
+    expect(screen.getAllByText(/TDB-TEST/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Написать администратору" })).toBeTruthy();
+  });
+
+  it("opens studio chat with the pending request code from the card", async () => {
+    mockLoadedMine({
+      wallet: makeWallet({
+        pending_topup: {
+          id: "topup-1",
+          amount: 1500,
+          method: "cash",
+          created_at: new Date(Date.now() - 10 * 60_000).toISOString(),
+          correlation_code: "TDB-TEST",
+        },
+      }),
+    });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    const openTelegramLink = vi.fn();
+    window.Telegram = { WebApp: { openTelegramLink } } as never;
+
+    render(
+      <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Написать администратору" })).toBeTruthy();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Написать администратору" }));
+
+    await waitFor(() => {
+      expect(openTelegramLink).toHaveBeenCalledWith("https://t.me/teststudio");
+    });
+    expect(String(writeText.mock.calls[0]?.[0] ?? "")).toContain("TDB-TEST");
   });
 
   it("prefills top-up amount from schedule CTA", async () => {
@@ -363,8 +402,7 @@ describe("MineTab stage B surfaces", () => {
       ).toBeTruthy();
     });
 
-    const submit = screen.getByRole("button", { name: /Отправить заявку/i });
-    expect(submit).toHaveProperty("disabled", true);
+    expect(screen.queryByRole("button", { name: /Отправить заявку/i })).toBeNull();
   });
 
   it("keeps QR preview visible when the active QR asset changes", async () => {
@@ -552,7 +590,7 @@ describe("MineTab stage B surfaces", () => {
     expect(rpc.rpcSubmitTopup).not.toHaveBeenCalled();
   });
 
-  it("warns that a CRM request is required after sending a receipt or paying cash", async () => {
+  it("uses one submit button that also opens studio chat — no separate receipt CTA", async () => {
     mockLoadedMine();
     render(
       <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
@@ -560,11 +598,11 @@ describe("MineTab stage B surfaces", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/иначе студия не увидит заявку/i)
+        screen.getByRole("button", { name: /Отправить заявку и написать администратору/i })
       ).toBeTruthy();
     });
-    expect(screen.getByRole("button", { name: /Отправить чек \/ написать администратору/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Отправить заявку в CRM/i })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Отправить чек/i })).toBeNull();
+    expect(screen.queryByText(/иначе студия не увидит заявку/i)).toBeNull();
   });
 
   it("shows popup after successful top-up submit", async () => {
@@ -574,6 +612,10 @@ describe("MineTab stage B surfaces", () => {
       amount: 250000,
       correlation_code: "TDB-ABC",
     });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    const openTelegramLink = vi.fn();
+    window.Telegram = { WebApp: { openTelegramLink } } as never;
 
     render(
       <MineTab locale="ru" bootstrap={mockBootstrap} supabase={supabase} refreshKey={0} />
@@ -589,12 +631,16 @@ describe("MineTab stage B surfaces", () => {
     await waitFor(() => {
       expect(screen.getByText("Заявка отправлена")).toBeTruthy();
     });
-    expect(screen.getByText(/TDB-ABC/)).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: /Отправить чек/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/TDB-ABC/).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Написать администратору" }).length).toBeGreaterThan(0);
     expect(rpc.rpcSubmitTopup).toHaveBeenCalledWith(supabase, {
       amount: 250000,
       method: "cash",
     });
+    await waitFor(() => {
+      expect(openTelegramLink).toHaveBeenCalledWith("https://t.me/teststudio");
+    });
+    expect(String(writeText.mock.calls[0]?.[0] ?? "")).toContain("TDB-ABC");
   });
 
   it("submits QR top-up with qr_asset_id when QR is auto-selected", async () => {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { downloadQrToDevice, topupDraftMessage } from "./studioChat";
+import { downloadQrToDevice, openTopupStudioHandoff, topupDraftMessage } from "./studioChat";
 
 describe("topupDraftMessage", () => {
   it("includes correlation code and QR wording in Russian", () => {
@@ -49,6 +49,54 @@ describe("topupDraftMessage", () => {
     });
     expect(text.toLowerCase()).toContain("receipt");
     expect(text).toContain("TDB-1A2B");
+  });
+});
+
+describe("openTopupStudioHandoff", () => {
+  afterEach(() => {
+    delete window.Telegram;
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("copies the draft with correlation code and opens the studio chat", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    const openTelegramLink = vi.fn();
+    window.Telegram = { WebApp: { openTelegramLink } } as never;
+
+    const copied = await openTopupStudioHandoff({
+      chatUrl: "https://t.me/teststudio",
+      locale: "ru",
+      amountLabel: "1 500 ₽",
+      method: "cash",
+      correlationCode: "TDB-TEST",
+    });
+
+    expect(copied).toBe(true);
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(String(writeText.mock.calls[0]?.[0])).toContain("TDB-TEST");
+    expect(openTelegramLink).toHaveBeenCalledWith("https://t.me/teststudio");
+  });
+
+  it("opens chat even if clipboard write fails", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+    const openTelegramLink = vi.fn();
+    window.Telegram = { WebApp: { openTelegramLink } } as never;
+
+    const copied = await openTopupStudioHandoff({
+      chatUrl: "https://t.me/teststudio",
+      locale: "ru",
+      amountLabel: "1 500 ₽",
+      method: "qr",
+      correlationCode: "TDB-FAIL",
+    });
+
+    expect(copied).toBe(false);
+    expect(openTelegramLink).toHaveBeenCalledWith("https://t.me/teststudio");
   });
 });
 

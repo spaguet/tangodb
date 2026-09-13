@@ -109,19 +109,18 @@ const messages = {
     topupAmount: "Сумма",
     topupMethodQr: "QR студии",
     topupMethodCash: "Наличные",
-    topupSubmit: "Отправить заявку в CRM",
+    topupSubmit: "Отправить заявку и написать администратору",
+    topupSubmitNoChat: "Отправить заявку",
     topupSubmitting: "Отправка…",
-    topupOpenChat: "Отправить чек / написать администратору",
-    topupMustSubmitCrm:
-      "После отправки чека об оплате или оплаты наличными обязательно нажмите «Отправить заявку в CRM» — иначе студия не увидит заявку.",
+    topupOpenChat: "Написать администратору",
     topupSheetClose: "Закрыть",
     topupBackToBooking: "Назад к брони",
     topupSubmittedTitle: "Заявка отправлена",
     topupSubmittedCode: "Код заявки: {code}",
     topupSubmittedQrBody:
-      "Заявка принята в CRM. Оплатите по QR студии и отправьте чек администратору в Telegram. Если платите наличными — напишите об этом в чат.",
+      "Заявка уже в CRM. Если чат не открылся — напишите администратору, вставьте скопированный текст и приложите чек.",
     topupSubmittedCashBody:
-      "Заявка принята в CRM. Напишите администратору в Telegram об оплате наличными или отправьте чек, если уже перевели.",
+      "Заявка уже в CRM. Если чат не открылся — напишите администратору об оплате наличными.",
     topupSubmittedDone: "Готово",
     topupAmountRequired: "Укажите сумму для пополнения баланса.",
     topupSaveQr: "Сохранить QR",
@@ -131,12 +130,15 @@ const messages = {
     topupQrSaveFailed: "Не удалось сохранить QR. Разрешите загрузку файлов в Telegram и повторите.",
     topupQrBroken: "Не удалось показать QR. Сохраните макет в настройках студии или выберите другой.",
     topupReceiptHint:
-      "Оплатите по QR студии и отправьте чек администратору в Telegram. Затем обязательно нажмите «Отправить заявку в CRM».",
+      "Оплатите по QR студии. Одна кнопка отправит заявку в CRM и откроет чат — вставьте текст и приложите чек.",
     topupCashHint:
-      "Оплатите наличными в студии или напишите об этом администратору в Telegram. Затем обязательно нажмите «Отправить заявку в CRM».",
-    topupCopied: "Текст скопирован — вставьте его в чат и приложите чек.",
-    topupSuccess:
-      "Заявка создана. Код {code}. Откройте чат студии и отправьте текст с чеком, если ещё не отправили.",
+      "Одна кнопка отправит заявку в CRM и откроет чат со студией. Чек не нужен, если платите наличными в зале.",
+    topupCashHintNoChat:
+      "Заявка уйдёт в CRM. Напишите студии напрямую или оплатите наличными в зале.",
+    topupCopiedQr: "Текст скопирован — вставьте его в чат и приложите чек.",
+    topupCopiedCash: "Текст скопирован — вставьте его в чат.",
+    topupCopyFailed: "Не удалось скопировать автоматически — выделите текст ниже и вставьте в чат.",
+    topupDraftLabel: "Текст для чата",
     topupNeedChat: "Студия не указала чат для чеков. Напишите ей напрямую или оплатите наличными в зале.",
     topupNoQr: "Нет действующих QR — выберите наличные или свяжитесь со студией.",
     profile: "Профиль",
@@ -173,7 +175,7 @@ const messages = {
     topupPendingMeta: "{method} · отправлена {age}",
     topupPendingCode: "Код заявки: {code}",
     topupPendingHint:
-      "Студия проверяет перевод. После подтверждения баланс и холды обновятся автоматически — нажмите «Обновить», если статус не сменился.",
+      "Студия проверяет перевод. После подтверждения баланс и холды обновятся автоматически — нажмите «Обновить», если статус не сменился. Если ещё не написали администратору — откройте чат с кодом заявки.",
     topupPendingBlocked: "Новая заявка недоступна, пока студия не обработает текущую.",
     addonInactiveCreate: "Бронирование временно недоступно. Отмена холдов и просмотр записей доступны.",
     addonInactiveTopup: "Заявки на пополнение недоступны — обратитесь в студию.",
@@ -319,19 +321,18 @@ const messages = {
     topupAmount: "Amount",
     topupMethodQr: "Studio QR",
     topupMethodCash: "Cash",
-    topupSubmit: "Submit CRM request",
+    topupSubmit: "Submit request and message admin",
+    topupSubmitNoChat: "Submit request",
     topupSubmitting: "Submitting…",
-    topupOpenChat: "Send receipt / message admin",
-    topupMustSubmitCrm:
-      "After you send a payment receipt or pay in cash, you must tap “Submit CRM request” — otherwise the studio will not see the request.",
+    topupOpenChat: "Message admin",
     topupSheetClose: "Close",
     topupBackToBooking: "Back to booking",
     topupSubmittedTitle: "Request submitted",
     topupSubmittedCode: "Request code: {code}",
     topupSubmittedQrBody:
-      "Your request is in CRM. Pay via the studio QR and send the receipt to the admin in Telegram. For cash, let them know in the chat.",
+      "Your request is already in CRM. If chat did not open, message the admin, paste the copied text, and attach the receipt.",
     topupSubmittedCashBody:
-      "Your request is in CRM. Message the admin in Telegram about cash payment or attach a receipt if you already transferred.",
+      "Your request is already in CRM. If chat did not open, message the admin about paying in cash.",
     topupSubmittedDone: "Done",
     topupAmountRequired: "Enter the amount you want to top up.",
     topupSaveQr: "Save QR",
@@ -341,12 +342,15 @@ const messages = {
     topupQrSaveFailed: "Could not save the QR. Allow file downloads in Telegram and try again.",
     topupQrBroken: "Could not show the QR. Ask the studio to re-upload it, or pick another.",
     topupReceiptHint:
-      "Pay via the studio QR and send the receipt to the admin in Telegram. Then you must tap “Submit CRM request”.",
+      "Pay via the studio QR. One button submits the CRM request and opens chat — paste the text and attach the receipt.",
     topupCashHint:
-      "Pay cash at the studio or message the admin in Telegram. Then you must tap “Submit CRM request”.",
-    topupCopied: "Text copied — paste it in the chat and attach the receipt.",
-    topupSuccess:
-      "Request created. Code {code}. Open the studio chat and send the text with receipt if you have not yet.",
+      "One button submits the CRM request and opens studio chat. No receipt needed if you pay cash on site.",
+    topupCashHintNoChat:
+      "The request goes to CRM. Message the studio directly or pay cash on site.",
+    topupCopiedQr: "Text copied — paste it in the chat and attach the receipt.",
+    topupCopiedCash: "Text copied — paste it in the chat.",
+    topupCopyFailed: "Could not copy automatically — select the text below and paste it in the chat.",
+    topupDraftLabel: "Text for chat",
     topupNeedChat: "The studio has no receipt chat configured. Contact them directly or pay cash on site.",
     topupNoQr: "No active QR codes — choose cash or contact the studio.",
     profile: "Profile",
@@ -383,7 +387,7 @@ const messages = {
     topupPendingMeta: "{method} · submitted {age}",
     topupPendingCode: "Request code: {code}",
     topupPendingHint:
-      "The studio is reviewing your transfer. After confirmation, balance and holds update automatically — tap Refresh if the status has not changed.",
+      "The studio is reviewing your transfer. After confirmation, balance and holds update automatically — tap Refresh if the status has not changed. If you have not messaged the admin yet, open chat with the request code.",
     topupPendingBlocked: "A new request is unavailable until the studio resolves the current one.",
     addonInactiveCreate: "Booking is temporarily unavailable. You can still view bookings and delete holds.",
     addonInactiveTopup: "Top-up requests are unavailable — contact the studio.",

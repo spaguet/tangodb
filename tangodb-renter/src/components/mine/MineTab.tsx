@@ -3,12 +3,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BootstrapData } from "../../lib/auth";
 import {
   btnDestructiveOpenCls,
+  btnPrimaryCls,
   btnSecondaryCls,
   fieldCls,
   labelCls,
   panelCls,
   sectionTitleCls,
 } from "../../lib/crmUi";
+import { openTopupStudioHandoff, topupDraftMessage } from "../../lib/studioChat";
 import { formatMoney } from "../../lib/format";
 import { formatRequestAge } from "../../lib/cabinetRefresh";
 import { useHoldCountdown } from "../../hooks/useServerClock";
@@ -32,7 +34,7 @@ import {
   walletEntryLabelKey,
 } from "../../lib/walletDisplay";
 import { t, tFill, type Locale } from "../../i18n/strings";
-import TopupForm from "./TopupForm";
+import TopupForm, { TopupDraftPreview } from "./TopupForm";
 
 const PAGE = 20;
 
@@ -262,7 +264,12 @@ export default function MineTab({
       ) : null}
 
       {pendingTopup ? (
-        <PendingTopupCard locale={locale} pending={pendingTopup} currency={currency} />
+        <PendingTopupCard
+          locale={locale}
+          pending={pendingTopup}
+          currency={currency}
+          chatUrl={bootstrap.chatUrl}
+        />
       ) : null}
 
       {wallet ? (
@@ -493,21 +500,51 @@ type PendingTopupCardProps = {
   locale: Locale;
   pending: PendingTopup;
   currency: string;
+  chatUrl: string | null;
 };
 
-function PendingTopupCard({ locale, pending, currency }: PendingTopupCardProps) {
+function PendingTopupCard({ locale, pending, currency, chatUrl }: PendingTopupCardProps) {
   const localeTag = locale === "en" ? "en" : "ru";
   const methodLabel =
     pending.method === "qr" ? t(locale, "topupMethodQr") : t(locale, "topupMethodCash");
+  const amountLabel = formatMoney(pending.amount, currency, locale);
+  const draftMessage = topupDraftMessage({
+    locale,
+    amountLabel,
+    method: pending.method,
+    correlationCode: pending.correlation_code,
+  });
+  const [chatHint, setChatHint] = useState<string | null>(null);
+
+  const openChat = async () => {
+    if (!chatUrl) {
+      setChatHint(t(locale, "topupNeedChat"));
+      return;
+    }
+    try {
+      const copied = await openTopupStudioHandoff({
+        chatUrl,
+        locale,
+        amountLabel,
+        method: pending.method,
+        correlationCode: pending.correlation_code,
+      });
+      setChatHint(
+        copied
+          ? t(locale, pending.method === "qr" ? "topupCopiedQr" : "topupCopiedCash")
+          : t(locale, "topupCopyFailed")
+      );
+    } catch {
+      setChatHint(t(locale, "topupCopyFailed"));
+    }
+  };
 
   return (
     <section className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-sm shadow-xs">
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
         {t(locale, "topupPendingStatus")}
       </p>
-      <p className="mt-1 font-semibold text-slate-800">
-        {formatMoney(pending.amount, currency, locale)}
-      </p>
+      <p className="mt-1 font-semibold text-slate-800">{amountLabel}</p>
       <p className="mt-1 text-xs text-slate-600">
         {tFill(locale, "topupPendingMeta", {
           method: methodLabel,
@@ -518,6 +555,17 @@ function PendingTopupCard({ locale, pending, currency }: PendingTopupCardProps) 
         {tFill(locale, "topupPendingCode", { code: pending.correlation_code })}
       </p>
       <p className="mt-2 text-xs leading-relaxed text-indigo-900">{t(locale, "topupPendingHint")}</p>
+      <div className="mt-2">
+        <TopupDraftPreview locale={locale} message={draftMessage} />
+      </div>
+      {chatUrl ? (
+        <button type="button" className={`mt-2 w-full ${btnPrimaryCls}`} onClick={() => void openChat()}>
+          {t(locale, "topupOpenChat")}
+        </button>
+      ) : (
+        <p className="mt-2 text-xs leading-relaxed text-amber-800">{t(locale, "topupNeedChat")}</p>
+      )}
+      {chatHint ? <p className="mt-2 text-xs font-medium text-indigo-700">{chatHint}</p> : null}
     </section>
   );
 }

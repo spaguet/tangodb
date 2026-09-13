@@ -51,6 +51,28 @@ export async function copyText(value: string): Promise<boolean> {
   }
 }
 
+/**
+ * Start copying the pending-request draft and open the studio chat without waiting on clipboard.
+ * Clipboard in Telegram WebView often fails after `await` (lost user-gesture); the UI must still show the draft.
+ */
+export async function openTopupStudioHandoff(input: {
+  chatUrl: string;
+  locale: Locale;
+  amountLabel: string;
+  method: "qr" | "cash";
+  correlationCode: string;
+}): Promise<boolean> {
+  const message = topupDraftMessage({
+    locale: input.locale,
+    amountLabel: input.amountLabel,
+    method: input.method,
+    correlationCode: input.correlationCode,
+  });
+  const copyPromise = copyText(message);
+  openStudioChat(input.chatUrl);
+  return await copyPromise;
+}
+
 function triggerAnchorDownload(url: string, fileName: string): boolean {
   try {
     const link = document.createElement("a");
