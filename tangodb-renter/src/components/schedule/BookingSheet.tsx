@@ -110,6 +110,7 @@ export default function BookingSheet({
   const [created, setCreated] = useState<RentalItem | null>(null);
   const [createdPack, setCreatedPack] = useState<PackCreateResult | null>(null);
   const [packWeekCount, setPackWeekCount] = useState<RecurringPackWeekCount>(DEFAULT_RECURRING_PACK_WEEKS);
+  const [purpose, setPurpose] = useState("");
 
   const validTo = useMemo(
     () => packValidToFromWeekCount(validFrom, packWeekCount),
@@ -263,12 +264,14 @@ export default function BookingSheet({
     const scope = bookingScope(organizationId, locationId, date, timeStart, timeEnd);
     const idem = getOrCreateIdempotencyKey(scope);
     try {
+      const purposeTrimmed = purpose.trim();
       const result = await rpcCreateBooking(supabase, {
         location_id: locationId,
         rental_date: date,
         time_start: timeStart,
         time_end: timeEnd,
         idempotency_key: idem,
+        ...(purposeTrimmed ? { purpose: purposeTrimmed } : {}),
       });
       clearIdempotencyKey(scope);
       setCreated(result.rental);
@@ -286,6 +289,7 @@ export default function BookingSheet({
     const scope = packScope(organizationId, locationId, validFrom, validTo, daySlots);
     const idem = getOrCreateIdempotencyKey(scope);
     try {
+      const purposeTrimmed = purpose.trim();
       const result = await rpcCreatePack(supabase, {
         location_id: locationId,
         valid_from: validFrom,
@@ -295,6 +299,7 @@ export default function BookingSheet({
         weekdays,
         day_slots: daySlots,
         idempotency_key: idem,
+        ...(purposeTrimmed ? { purpose: purposeTrimmed } : {}),
       });
       clearIdempotencyKey(scope);
       setCreatedPack({
@@ -522,6 +527,17 @@ export default function BookingSheet({
             <p className="text-xs text-slate-500">{t(locale, "packInsufficientHint")}</p>
           </>
         )}
+
+        <label className="flex flex-col gap-1">
+          <span className={labelCls}>{t(locale, "bookingPurposeLabel")}</span>
+          <input
+            className={fieldCls}
+            value={purpose}
+            onChange={(e) => setPurpose(e.target.value)}
+            placeholder={t(locale, "bookingPurposePlaceholder")}
+            maxLength={200}
+          />
+        </label>
 
         {mode === "recurring" ? (
           <div>

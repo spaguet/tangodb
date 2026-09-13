@@ -119,6 +119,7 @@ export async function rpcCreateBooking(
     time_start: string;
     time_end: string;
     idempotency_key: string;
+    purpose?: string;
   }
 ): Promise<{ rental: RentalItem; already_applied?: boolean }> {
   const { data, error } = await supabase.rpc("renter_create_booking", { p_payload: payload });
@@ -137,6 +138,7 @@ export async function rpcCreatePack(
     weekdays: number[];
     day_slots: { weekday: number; time_start: string; time_end: string }[];
     idempotency_key: string;
+    purpose?: string;
   }
 ): Promise<PackCreateResult> {
   const { data, error } = await supabase.rpc("renter_create_recurring_pack", {

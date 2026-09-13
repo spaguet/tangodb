@@ -134,6 +134,7 @@ export default function CreateMiniAppBookingDialog({
   const [packWeekCount, setPackWeekCount] = useState<RecurringPackWeekCount>(DEFAULT_RECURRING_PACK_WEEKS);
   const [quote, setQuote] = useState<StaffQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
+  const [purpose, setPurpose] = useState("");
 
   const channelLocations = useMemo(() => {
     return (ratesQuery.data?.locations ?? [])
@@ -222,6 +223,7 @@ export default function CreateMiniAppBookingDialog({
     setMode("one_time");
     setPackWeekCount(DEFAULT_RECURRING_PACK_WEEKS);
     setQuote(null);
+    setPurpose("");
     idempotencyKeyRef.current = crypto.randomUUID();
     const seedEnd =
       prefill?.timeEnd && isMiniAppDurationValid(start, snapMiniAppTime(prefill.timeEnd))
@@ -334,6 +336,8 @@ export default function CreateMiniAppBookingDialog({
 
     const idempotencyKey = idempotencyKeyRef.current ?? crypto.randomUUID();
 
+    const purposeTrimmed = purpose.trim();
+
     if (mode === "one_time") {
       const res = await createMutation.mutateAsync({
         renter_id: renterId,
@@ -342,6 +346,7 @@ export default function CreateMiniAppBookingDialog({
         time_start: timeStart,
         time_end: timeEnd,
         idempotency_key: idempotencyKey,
+        ...(purposeTrimmed ? { purpose: purposeTrimmed } : {}),
       });
       if (!res.success) {
         toast(resolveMutationError(res.error, "renter.booking.createFailed", t), "error");
@@ -358,6 +363,7 @@ export default function CreateMiniAppBookingDialog({
         weekdays: [...weekdays].sort((a, b) => a - b).map(String),
         day_slots: daySlots,
         idempotency_key: idempotencyKey,
+        ...(purposeTrimmed ? { purpose: purposeTrimmed } : {}),
       });
       if (!res.success) {
         toast(resolveMutationError(res.error, "renter.booking.packFailed", t), "error");
@@ -490,6 +496,15 @@ export default function CreateMiniAppBookingDialog({
                     <Plus className="w-3.5 h-3.5" />
                     {t("schedule.rental.addRenter")}
                   </button>
+                  <div>
+                    <span className={labelCls}>{t("schedule.rental.purposeLabel")}</span>
+                    <input
+                      className={fieldCls}
+                      value={purpose}
+                      onChange={(e) => setPurpose(e.target.value)}
+                      placeholder={t("schedule.rental.purposePlaceholder")}
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-2 rounded-lg border border-amber-100 bg-amber-50/50 p-3">

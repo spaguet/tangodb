@@ -468,7 +468,11 @@ export default function CreateRentalDialog({
                 <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">{t("schedule.rental.previewTitle")}</p>
                   <p className="mt-1 font-semibold text-slate-800">{previewSummary}</p>
-                  {renterLabel ? <p className="text-slate-600 mt-1">{renterLabel}{purpose ? ` · ${purpose}` : ""}</p> : null}
+                  {purpose || renterLabel ? (
+                    <p className="text-slate-600 mt-1">
+                      {[purpose.trim(), renterLabel].filter(Boolean).join(" · ")}
+                    </p>
+                  ) : null}
                   {canSeeTariffPrices && enteredAmount > 0 ? (
                     <p className="text-slate-600 mt-1">
                       {t("schedule.rental.fixedAmountLabel")}: {formatCurrency(enteredAmount)}

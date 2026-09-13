@@ -381,12 +381,14 @@ export default function SchedulePageContainer() {
       } else if (lesson.kind === "rental") {
         if (lesson.bookingStatus === "cancelled") {
           parts.push(t("schedule.rental.statusCancelled"));
-        } else if (lesson.renterName) {
-          parts.push(lesson.renterName);
         } else {
-          parts.push(t("schedule.rental.blockTitle"));
+          if (lesson.purpose) parts.push(lesson.purpose);
+          if (lesson.renterName) {
+            parts.push(lesson.renterName);
+          } else if (!lesson.purpose) {
+            parts.push(t("schedule.rental.blockTitle"));
+          }
         }
-        if (lesson.purpose) parts.push(lesson.purpose);
         if (lesson.paymentStatus && lesson.renterName && !isMiniAppRentalChannel(lesson)) {
           const statusKey =
             lesson.paymentStatus === "paid"

@@ -49,6 +49,7 @@ export default function EditRentalSlotModal({
   const [timeEnd, setTimeEnd] = useState("16:00");
   const [locationId, setLocationId] = useState("");
   const [renterId, setRenterId] = useState("");
+  const [purpose, setPurpose] = useState("");
 
   useEffect(() => {
     if (!open || !lesson) return;
@@ -57,7 +58,8 @@ export default function EditRentalSlotModal({
     setTimeEnd(lesson.timeEnd);
     setLocationId(lesson.locationId ?? locations[0]?.id ?? "");
     setRenterId(detailQuery.data?.renter.id ?? "");
-  }, [open, lesson, locations, detailQuery.data?.renter.id]);
+    setPurpose(lesson.purpose ?? detailQuery.data?.purpose ?? "");
+  }, [open, lesson, locations, detailQuery.data?.renter.id, detailQuery.data?.purpose, lesson?.purpose]);
 
   const handleSubmit = async () => {
     if (!lesson) return;
@@ -74,6 +76,7 @@ export default function EditRentalSlotModal({
       timeEnd,
       locationId,
       renterId,
+      purpose: purpose.trim(),
     });
 
     if (!res.success) {
@@ -152,6 +155,15 @@ export default function EditRentalSlotModal({
                   <option key={renter.id} value={renter.id}>{renter.displayName}</option>
                 ))}
               </AppSelect>
+              <div>
+                <span className={labelCls}>{t("schedule.rental.purposeLabel")}</span>
+                <input
+                  className={fieldCls}
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value)}
+                  placeholder={t("schedule.rental.purposePlaceholder")}
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
               <button
