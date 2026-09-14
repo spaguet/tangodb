@@ -1,3 +1,5 @@
+2026-09-14 — feat(landing): палитра Studio Controller в `tangodb-landing` (`@theme` как в CRM), демо-CRM — расписание pastel+accent, структура выручки, оболочка (nav, sign out, версия), кнопки primary без `/50`.
+
 2026-09-13 — fix(hall-rent): Mini App **0.1.22** — follow-up одной кнопки пополнения: чат открывается до refresh кошелька; в текст идёт сумма с сервера; черновик для вставки виден на шите и карточке pending; ошибка clipboard/чата не маскирует успешный submit; retry чата не закрывает TopupSheet.
 
 2026-09-13 — feat(hall-rent): Mini App **0.1.21** — пополнение одной кнопкой: `renter_submit_topup` (pending + `TDB-XXXX`) → копирует текст → открывает чат студии. Убраны две параллельные CTA «чек» / «заявка в CRM». Fallback — шит после submit и «Написать администратору» на карточке pending. Спека §1.9 слой 1, `HALL-RENT-TOPUP-4`.

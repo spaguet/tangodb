@@ -89,7 +89,7 @@ export function SettingsPanel({ locale, initialSection }: Props) {
                 </div>
               ))}
               <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">{p.currencyPreview}</p>
-              <button type="button" disabled className="w-full py-2.5 bg-indigo-600/50 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-not-allowed">
+              <button type="button" disabled className="w-full py-2.5 bg-indigo-600 opacity-60 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-not-allowed">
                 {locale === "ru" ? "Сохранить" : "Save"}
               </button>
             </div>
@@ -151,7 +151,7 @@ export function SettingsPanel({ locale, initialSection }: Props) {
                   {p.policySummary.replace("{max}", "1").replace("{min}", "8")}
                 </p>
               </div>
-              <button type="button" disabled className="w-full py-2.5 bg-indigo-600/50 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-not-allowed">
+              <button type="button" disabled className="w-full py-2.5 bg-indigo-600 opacity-60 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-not-allowed">
                 {locale === "ru" ? "Сохранить" : "Save"}
               </button>
             </div>
@@ -191,7 +191,7 @@ export function SettingsPanel({ locale, initialSection }: Props) {
             <h2 className="text-base font-semibold text-slate-900">{p.dataTitle}</h2>
             <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
               <p className="text-sm text-slate-600">{p.dataHint}</p>
-              <button type="button" disabled className="px-4 py-2 bg-indigo-600/50 text-white text-xs font-semibold rounded-lg cursor-not-allowed">
+              <button type="button" disabled className="px-4 py-2 bg-indigo-600 opacity-60 text-white text-xs font-semibold rounded-lg cursor-not-allowed">
                 {p.exportBtn}
               </button>
             </div>

@@ -39,7 +39,7 @@ export function TeamPanel({ locale }: Props) {
             <input disabled className={fieldCls} />
           </label>
         </div>
-        <button type="button" disabled className="px-4 py-2 bg-indigo-600/50 text-white text-xs font-semibold rounded-lg cursor-not-allowed">
+        <button type="button" disabled className="px-4 py-2 bg-indigo-600 opacity-60 text-white text-xs font-semibold rounded-lg cursor-not-allowed">
           {p.sendInvite}
         </button>
       </form>

@@ -89,7 +89,7 @@ export function ClientsPanel({ locale }: Props) {
             <label className={labelCls}>{p.email}</label>
             <input disabled className={fieldCls} />
           </div>
-          <button type="button" disabled className="w-full py-3 bg-indigo-600/50 text-white text-xs font-semibold uppercase tracking-widest rounded-lg cursor-not-allowed">
+          <button type="button" disabled className="w-full py-3 bg-indigo-600 opacity-60 text-white text-xs font-semibold uppercase tracking-widest rounded-lg cursor-not-allowed">
             {p.addSubmit}
           </button>
         </div>

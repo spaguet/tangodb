@@ -2,6 +2,7 @@ import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-rea
 import { useMemo, useState } from "react";
 import type { Locale } from "../../i18n";
 import { dowShort, scheduleLessons, STUDIO_LOCATION } from "../data";
+import { GROUP_LESSON_COLOR, PERSONAL_LESSON_COLOR } from "../scheduleColors";
 
 const ROW_H = 16;
 const SLOT_MIN = 15;
@@ -132,14 +133,11 @@ export function SchedulePanel({ locale }: Props) {
                             ((toMin(lesson.end) - toMin(lesson.start)) / SLOT_MIN) * ROW_H
                           );
                           const isPersonal = lesson.kind === "personal";
+                          const colors = isPersonal ? PERSONAL_LESSON_COLOR : GROUP_LESSON_COLOR;
                           return (
                             <div
                               key={`${lesson.start}-${lesson.title}`}
-                              className={`absolute left-0.5 right-0.5 overflow-hidden rounded-md border px-1 py-0.5 text-[10px] leading-tight font-semibold text-white shadow-xs ${
-                                isPersonal
-                                  ? "border-sky-700 bg-sky-500"
-                                  : "border-indigo-700 bg-indigo-600"
-                              }`}
+                              className={`absolute left-0.5 right-0.5 overflow-hidden rounded-md border px-1 py-0.5 text-[10px] leading-tight font-semibold shadow-xs relative ${colors.bg} ${colors.text} ${colors.border} ${colors.accent}`}
                               style={{ top, height, zIndex: 1 }}
                             >
                               <span className="block truncate">{lesson.title}</span>

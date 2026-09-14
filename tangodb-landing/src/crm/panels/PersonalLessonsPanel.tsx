@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Locale } from "../../i18n";
 import { formatMoney, personalLessons, personalSellForm, type DemoPersonalLesson } from "../data";
 import PageTabs, { pageTabPanelCls } from "../PageTabs";
+import { PERSONAL_LESSON_COLOR } from "../scheduleColors";
 import { crmStrings } from "../strings";
 import { panelStrings } from "../panelStrings";
 import { fieldCls, labelCls } from "../styles";
@@ -164,7 +165,7 @@ export function PersonalLessonsPanel({ locale, initialTab = "view" }: Props) {
                 <div
                   key={date}
                   className={`bg-white rounded-xl shadow-xs overflow-hidden ${
-                    isCurrentOrFuture ? "border-2 border-sky-200" : "border border-slate-200"
+                    isCurrentOrFuture ? `border-2 ${PERSONAL_LESSON_COLOR.border}` : "border border-slate-200"
                   }`}
                 >
                   <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center gap-2">
@@ -254,7 +255,7 @@ export function PersonalLessonsPanel({ locale, initialTab = "view" }: Props) {
           <button
             type="button"
             disabled
-            className="mt-4 w-full max-w-md py-3 bg-indigo-600/50 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-not-allowed"
+            className="mt-4 w-full max-w-md py-3 bg-indigo-600 opacity-60 text-white text-xs font-semibold uppercase tracking-wider rounded-lg cursor-not-allowed"
           >
             {ps.saveLesson}
           </button>

@@ -271,7 +271,7 @@ export function SubscriptionsPanel({ locale, initialTab = "active" }: Props) {
             <button
               type="button"
               disabled
-              className="w-full py-3 bg-indigo-600/50 text-white text-sm font-semibold rounded-xl cursor-not-allowed mt-2 panel-form-full-row-md"
+              className="w-full py-3 bg-indigo-600 opacity-60 text-white text-sm font-semibold rounded-xl cursor-not-allowed mt-2 panel-form-full-row-md"
             >
               {s.subs.save}
             </button>

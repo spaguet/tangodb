@@ -28,7 +28,7 @@ export function CrmDesktopPreview({ locale, alt }: Props) {
         <div className="flex gap-1.5" aria-hidden="true">
           <span className="h-2.5 w-2.5 rounded-full bg-red-300/80" />
           <span className="h-2.5 w-2.5 rounded-full bg-amber-300/80" />
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-300/80" />
+          <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
         <span className="mx-auto truncate text-[10px] text-slate-400">tangodb.app · {STUDIO_NAME}</span>
       </div>
@@ -45,7 +45,7 @@ export function CrmDesktopPreview({ locale, alt }: Props) {
                 <TdbLogo size="sm" />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-800">TangoDB</p>
-                  <p className="text-[9px] uppercase tracking-wider text-slate-400">Studio Controller</p>
+                  <p className="text-[11px] font-sans tracking-widest text-slate-400 uppercase mt-0.5">STUDIO CONTROLLER</p>
                 </div>
               </div>
               <nav className="flex-1 space-y-0.5 px-2 py-3">

@@ -18,6 +18,8 @@ import { useEffect, useState } from "react";
 import type { Locale } from "../i18n";
 import { parseDemoDeepLink, scrollToDemoSection, type SettingsSection } from "../lib/demoDeepLink";
 import { TdbLogo } from "../components/TdbLogo";
+import { btnDrawerSignOutCls, btnHeaderSignOutCls } from "./buttonStyles";
+import { DEMO_CRM_VERSION } from "./demoVersion";
 import { AttendancePanel } from "./panels/AttendancePanel";
 import { ClientsPanel } from "./panels/ClientsPanel";
 import { DashboardPanel } from "./panels/DashboardPanel";
@@ -264,7 +266,7 @@ export function CrmDemoApp({ locale }: Props) {
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                 }`}
               >
-                <Icon className="w-4 h-4 shrink-0" />
+                <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span className="min-w-0 leading-snug">{item.label}</span>
               </button>
             );
@@ -276,7 +278,7 @@ export function CrmDemoApp({ locale }: Props) {
 
   return (
     <div className="crm-demo relative flex flex-col md:flex-row bg-slate-50 text-slate-800 antialiased font-sans h-[min(780px,88vh)] min-h-[560px] overflow-hidden rounded-xl border border-slate-200 shadow-xl">
-      <aside className="hidden md:flex flex-col w-64 shrink-0 bg-white text-slate-700 border-r border-slate-200 shadow-xs">
+      <aside className="hidden md:flex flex-col w-64 shrink-0 bg-white text-slate-700 border-r border-slate-200 relative z-30 shadow-xs">
         <button
           type="button"
           onClick={() => go("dashboard")}
@@ -290,7 +292,8 @@ export function CrmDemoApp({ locale }: Props) {
         </button>
         <div className="flex-1 min-h-0">{renderNav()}</div>
         <div className="p-4 border-t border-slate-100 text-center text-[10px] text-slate-400 font-sans">
-          © TangoDB Studio Controller
+          <p>v{DEMO_CRM_VERSION}</p>
+          <p>© TangoDB Studio Controller</p>
         </div>
       </aside>
 
@@ -308,11 +311,7 @@ export function CrmDemoApp({ locale }: Props) {
             <h2 className="text-base font-semibold text-slate-800 tracking-tight leading-tight truncate">{title}</h2>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              disabled
-              className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-500 px-3 py-1.5 rounded-lg border border-slate-200 cursor-not-allowed opacity-60"
-            >
+            <button type="button" disabled className={`hidden sm:inline-flex ${btnHeaderSignOutCls}`}>
               <LogOut className="w-3.5 h-3.5" />
               {s.nav.signOut}
             </button>
@@ -323,7 +322,7 @@ export function CrmDemoApp({ locale }: Props) {
           <div key={panel}>{renderPanelContent(panel, locale, go, settingsSection)}</div>
         </section>
 
-        <div className="md:hidden absolute bottom-0 left-0 right-0 h-14 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-0.5 shadow-md">
+        <div className="md:hidden absolute bottom-0 left-0 right-0 h-14 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-0.5 shadow-md pb-[env(safe-area-inset-bottom)]">
           {mobileTabs.map((item) => {
             const active = isMobileTabActive(panel, item.id);
             const Icon = item.icon;
@@ -377,11 +376,7 @@ export function CrmDemoApp({ locale }: Props) {
             </div>
             <div className="flex-1 min-h-0 overflow-hidden">{renderNav(() => setDrawerOpen(false))}</div>
             <div className="p-3 border-t border-slate-100">
-              <button
-                type="button"
-                disabled
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-semibold text-rose-600 opacity-60 cursor-not-allowed"
-              >
+              <button type="button" disabled className={btnDrawerSignOutCls}>
                 <LogOut className="w-3.5 h-3.5" /> {s.nav.signOut}
               </button>
             </div>

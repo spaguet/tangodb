@@ -32,6 +32,14 @@ import {
 import PageTabs, { pageTabPanelCls } from "../PageTabs";
 import { crmStrings } from "../strings";
 
+const SPLIT_COLORS: Record<string, string> = {
+  subscription: "bg-indigo-500",
+  personal: "bg-indigo-700",
+  single_visit: "bg-indigo-400",
+  other: "bg-slate-400",
+  rental: "bg-slate-600",
+};
+
 type Props = {
   locale: Locale;
   onNavigate: (panel: string) => void;
@@ -55,6 +63,19 @@ export function DashboardPanel({ locale, onNavigate }: Props) {
   const paymentMethodLabel = (row: (typeof paymentByMethod)[number]) =>
     locale === "ru" ? row.methodRu : row.methodEn;
   const [tab, setTab] = useState<"operational" | "financial">("operational");
+  const [statsMonthOffset, setStatsMonthOffset] = useState(0);
+  const statsMonthLabel =
+    locale === "ru"
+      ? statsMonthOffset === 0
+        ? "Июнь 2026"
+        : statsMonthOffset < 0
+          ? "Май 2026"
+          : "Июль 2026"
+      : statsMonthOffset === 0
+        ? "June 2026"
+        : statsMonthOffset < 0
+          ? "May 2026"
+          : "July 2026";
   const tabs = [
     { id: "operational", label: s.dashboard.operational, icon: BarChart3 },
     { id: "financial", label: s.dashboard.financial, icon: TrendingUp },
@@ -169,7 +190,36 @@ export function DashboardPanel({ locale, onNavigate }: Props) {
                     <ClipboardCheck className="w-4 h-4 text-indigo-500" />
                     {s.dashboard.attendance}
                   </h2>
-                  <span className="text-xs font-semibold text-slate-800">June 2026</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setStatsMonthOffset((o) => o - 1)}
+                      className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                      aria-label="Previous month"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <div className="flex flex-col items-center min-w-0">
+                      <span className="text-xs font-semibold text-slate-800">{statsMonthLabel}</span>
+                      {statsMonthOffset !== 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setStatsMonthOffset(0)}
+                          className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer whitespace-nowrap"
+                        >
+                          {locale === "ru" ? "Текущий месяц" : "Current month"}
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setStatsMonthOffset((o) => o + 1)}
+                      className="p-1 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                      aria-label="Next month"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-px bg-slate-200/70 rounded-lg overflow-hidden border border-slate-200/70">
                   <div className="bg-white px-3 py-2.5 text-center">
@@ -317,25 +367,39 @@ export function DashboardPanel({ locale, onNavigate }: Props) {
                 </div>
                 <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
                   <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{s.dashboard.revenueSplit}</p>
-                  <div className="space-y-2 pt-1">
-                    {revenueSplit.map((seg) => {
-                      const label =
-                        seg.key === "subscription"
-                          ? s.dashboard.subscriptions
-                          : seg.key === "personal"
-                            ? s.dashboard.personal
-                            : s.dashboard.singleVisits;
-                      return (
-                      <div key={seg.key} className="space-y-1">
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-600">{label}</span>
-                          <span className="font-semibold text-slate-800">{seg.pct}%</span>
-                        </div>
-                        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${seg.pct}%` }} />
-                        </div>
-                      </div>
-                    );})}
+                  <div className="space-y-3 pt-1">
+                    <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                      {revenueSplit.map((seg) => (
+                        <div
+                          key={seg.key}
+                          className={`${SPLIT_COLORS[seg.key] ?? "bg-slate-400"} transition-all`}
+                          style={{ width: `${seg.pct}%` }}
+                          title={`${seg.pct}%`}
+                        />
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      {revenueSplit.map((seg) => {
+                        const label =
+                          seg.key === "subscription"
+                            ? s.dashboard.subscriptions
+                            : seg.key === "personal"
+                              ? s.dashboard.personal
+                              : s.dashboard.singleVisits;
+                        return (
+                          <div key={seg.key} className="flex items-center justify-between gap-2 text-xs font-sans">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${SPLIT_COLORS[seg.key] ?? "bg-slate-400"}`} />
+                              <span className="text-slate-600 truncate">{label}</span>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-semibold text-slate-800">{money(seg.amount)}</span>
+                              <span className="text-slate-400 ml-1.5">{seg.pct}%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
