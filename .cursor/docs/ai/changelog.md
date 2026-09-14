@@ -1,3 +1,7 @@
+2026-09-14 — fix(schedule): легенда цветов — две строки в заданном порядке (`ScheduleColorLegend`).
+
+2026-09-14 — feat(schedule): легенда цветов ячеек под тулбаром недели (`ScheduleColorLegend`, i18n `schedule.legend.*`, **2.11.19**).
+
 2026-09-14 — copy(landing): дисклеймер рядом с демо-CRM — пример может отличаться от актуальной версии (`demo.disclaimer`, `DemoSection.tsx`, ru/en).
 
 2026-09-14 — fix(landing): версия в footer демо-CRM — re-export `APP_VERSION` из `tangodb/src/lib/appVersion.ts` (alias `@crm-app-version`), без дублирования в `demoVersion.ts`.

@@ -31,6 +31,7 @@ import LoadingState from "../ui/LoadingState";
 import AddLocationsInSettingsHint from "../ui/AddLocationsInSettingsHint";
 import QueryErrorState from "../ui/QueryErrorState";
 import ScheduleToolbar from "./ScheduleToolbar";
+import ScheduleColorLegend from "./ScheduleColorLegend";
 import LocationScheduleSection from "./LocationScheduleSection";
 import LessonInfoPopup from "./LessonInfoPopup";
 import AddLessonTypePopup, { type ScheduleCellPrefill } from "./AddLessonTypePopup";
@@ -711,6 +712,7 @@ export default function SchedulePageContainer() {
           exportingPng={exportingPng}
           exportPngDisabled={pngExportLocationOptions.length === 0}
         />
+        <ScheduleColorLegend modules={scheduleGridAddOptions.modules} />
       </div>
 
       {!hasLocations && noLocationLessons.length === 0 && !hasAnyLessons ? (
