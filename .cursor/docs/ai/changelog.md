@@ -1,3 +1,5 @@
+2026-09-14 — copy(landing): дисклеймер рядом с демо-CRM — пример может отличаться от актуальной версии (`demo.disclaimer`, `DemoSection.tsx`, ru/en).
+
 2026-09-14 — fix(landing): версия в footer демо-CRM — re-export `APP_VERSION` из `tangodb/src/lib/appVersion.ts` (alias `@crm-app-version`), без дублирования в `demoVersion.ts`.
 
 2026-09-14 — feat(landing): палитра Studio Controller в `tangodb-landing` (`@theme` как в CRM), демо-CRM — расписание pastel+accent, структура выручки, оболочка (nav, sign out, версия), кнопки primary без `/50`.

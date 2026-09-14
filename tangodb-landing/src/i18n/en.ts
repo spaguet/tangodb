@@ -67,6 +67,7 @@ export const en = {
   "demo.subtitle":
     "The landing demo is an example only. After signup you get the full CRM: finance, schedule, clients, module settings and team roles.",
   "demo.actionHint": "Try opening “Finance” or “Settings”",
+  "demo.disclaimer": "The example’s look and behavior may differ from the current live CRM.",
   "demo.badge": "Demo",
   "demo.readOnly": "View only",
   "demo.tab.overview": "Overview",
