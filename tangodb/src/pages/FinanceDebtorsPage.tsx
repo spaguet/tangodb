@@ -21,11 +21,15 @@ import {
   formatDebtorLessonDuration,
   debtorAgingDays,
   debtorSchedulePath,
+  filterDebtorsByPeriod,
+  debtorPeriodYears,
+  debtorPeriodYearMonths,
   type DebtorEntry,
   type DebtorListItem,
   type DebtorSortKey,
+  type DebtorPeriodMode,
 } from "../lib/financeReports";
-import { formatCurrency } from "../lib/utils";
+import { currentYearMonth, formatCurrency, formatMonthTitle } from "../lib/utils";
 import { toISODateLocal } from "../lib/scheduleWeek";
 import PayPersonalLessonModal, { type PayPersonalLessonTarget } from "../components/schedule/PayPersonalLessonModal";
 import AdjustDebtorAmountDialog from "../components/finance/AdjustDebtorAmountDialog";
@@ -346,6 +350,9 @@ export default function FinanceDebtorsPage() {
   const [tab, setTab] = useState<DebtorTab>("all");
   const [sortKey, setSortKey] = useState<DebtorSortKey>("dateAsc");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [periodMode, setPeriodMode] = useState<DebtorPeriodMode>("all");
+  const [periodYear, setPeriodYear] = useState(() => new Date().getFullYear());
+  const [periodYearMonth, setPeriodYearMonth] = useState(() => currentYearMonth());
 
   const debtorsQuery = useFinancialDebtors();
   const allDebtors = useMemo(() => {
@@ -353,18 +360,26 @@ export default function FinanceDebtorsPage() {
     return personalLessonsEnabled ? rows : rows.filter((entry) => entry.kind !== "personal");
   }, [debtorsQuery.data, personalLessonsEnabled]);
 
+  const yearOptions = useMemo(() => debtorPeriodYears(allDebtors), [allDebtors]);
+  const monthOptions = useMemo(() => debtorPeriodYearMonths(allDebtors), [allDebtors]);
+
+  const periodDebtors = useMemo(
+    () => filterDebtorsByPeriod(allDebtors, periodMode, periodYear, periodYearMonth),
+    [allDebtors, periodMode, periodYear, periodYearMonth]
+  );
+
   const debtors = useMemo(() => {
-    let rows = allDebtors;
+    let rows = periodDebtors;
     if (tab === "clients") rows = rows.filter((e) => e.kind !== "rental");
     else if (tab === "rentals") rows = rows.filter((e) => e.kind === "rental");
     const sorted = sortDebtors(rows, sortKey, locale);
     return groupPersonalLessonDebtors(sorted);
-  }, [allDebtors, tab, sortKey, locale]);
+  }, [periodDebtors, tab, sortKey, locale]);
 
   const totalDebt = useMemo(() => sumDebtorListAmounts(debtors), [debtors]);
   const rentalDebtTotal = useMemo(
-    () => sumDebtorAmounts(allDebtors.filter((e) => e.kind === "rental")),
-    [allDebtors]
+    () => sumDebtorAmounts(periodDebtors.filter((e) => e.kind === "rental")),
+    [periodDebtors]
   );
 
   const locationNameById = useMemo(() => {
@@ -439,6 +454,18 @@ export default function FinanceDebtorsPage() {
     { id: "rentals", label: t("finance.debtors.tab.rentals") },
   ];
 
+  const periodModes: { id: DebtorPeriodMode; label: string }[] = [
+    { id: "all", label: t("finance.debtors.period.all") },
+    { id: "year", label: t("finance.debtors.period.year") },
+    { id: "month", label: t("finance.debtors.period.month") },
+  ];
+
+  const yearSuffix = t("common.yearSuffix");
+  const emptyLabel =
+    periodMode !== "all" && allDebtors.length > 0
+      ? t("finance.debtors.emptyPeriod")
+      : t("finance.debtors.empty");
+
   return (
     <div className="panel-page-stack">
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
@@ -454,6 +481,73 @@ export default function FinanceDebtorsPage() {
         <p className="px-4 py-2 text-[11px] leading-snug text-slate-500 border-b border-slate-100">
           {t("finance.debtors.scopeHint")}
         </p>
+
+        <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap items-end justify-between gap-2">
+          <div className="flex flex-wrap items-end gap-2">
+            <div
+              className="flex flex-wrap bg-slate-100 rounded-lg p-1 text-xs font-semibold gap-1"
+              role="group"
+              aria-label={t("finance.debtors.period.label")}
+            >
+              {periodModes.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  aria-pressed={periodMode === mode.id}
+                  onClick={() => {
+                    setPeriodMode(mode.id);
+                    if (mode.id === "year") {
+                      const y = Number(periodYearMonth.slice(0, 4));
+                      if (yearOptions.includes(y)) setPeriodYear(y);
+                    }
+                    if (mode.id === "month") {
+                      const mm = periodYearMonth.slice(5, 7);
+                      const candidate = `${periodYear}-${mm}`;
+                      if (monthOptions.includes(candidate)) setPeriodYearMonth(candidate);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-md cursor-pointer transition-all ${
+                    periodMode === mode.id
+                      ? "bg-white text-slate-900 shadow-xs font-semibold"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+            {periodMode === "year" ? (
+              <div className="w-[8.5rem]">
+                <AppSelect
+                  label={t("finance.debtors.period.selectYear")}
+                  value={String(periodYear)}
+                  onChange={(e) => setPeriodYear(Number(e.target.value))}
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {yearSuffix ? `${year}\u00A0${yearSuffix}` : String(year)}
+                    </option>
+                  ))}
+                </AppSelect>
+              </div>
+            ) : null}
+            {periodMode === "month" ? (
+              <div className="w-[12.5rem]">
+                <AppSelect
+                  label={t("finance.debtors.period.selectMonth")}
+                  value={periodYearMonth}
+                  onChange={(e) => setPeriodYearMonth(e.target.value)}
+                >
+                  {monthOptions.map((yearMonth) => (
+                    <option key={yearMonth} value={yearMonth}>
+                      {formatMonthTitle(yearMonth, locale)}
+                    </option>
+                  ))}
+                </AppSelect>
+              </div>
+            ) : null}
+          </div>
+        </div>
 
         <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap items-end justify-between gap-2">
           <div className="flex flex-wrap gap-2">
@@ -493,7 +587,7 @@ export default function FinanceDebtorsPage() {
         {debtors.length === 0 ? (
           <div className="py-20 text-center">
             <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm text-slate-500">{t("finance.debtors.empty")}</p>
+            <p className="text-sm text-slate-500">{emptyLabel}</p>
           </div>
         ) : (
           <>

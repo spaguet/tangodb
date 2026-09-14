@@ -494,6 +494,56 @@ function compareNullableDate(
   return ascending ? cmp : -cmp;
 }
 
+export type DebtorPeriodMode = "all" | "year" | "month";
+
+const YEAR_MONTH_RE = /^\d{4}-\d{2}$/;
+
+export function debtorLessonYearMonth(lessonDate: string | null | undefined): string | null {
+  const raw = lessonDate?.slice(0, 7) ?? "";
+  return YEAR_MONTH_RE.test(raw) ? raw : null;
+}
+
+export function filterDebtorsByPeriod(
+  entries: DebtorEntry[],
+  mode: DebtorPeriodMode,
+  year: number,
+  yearMonth: string
+): DebtorEntry[] {
+  if (mode === "all") return entries;
+  return entries.filter((entry) => {
+    const ym = debtorLessonYearMonth(entry.lessonDate);
+    if (!ym) return false;
+    if (mode === "year") return ym.startsWith(`${year}-`);
+    return ym === yearMonth;
+  });
+}
+
+export function debtorPeriodYears(entries: DebtorEntry[], now = new Date()): number[] {
+  const current = now.getFullYear();
+  const years = new Set<number>();
+  for (let y = current; y >= current - 5; y -= 1) years.add(y);
+  for (const entry of entries) {
+    const ym = debtorLessonYearMonth(entry.lessonDate);
+    if (ym) years.add(Number(ym.slice(0, 4)));
+  }
+  return [...years].sort((a, b) => b - a);
+}
+
+export function debtorPeriodYearMonths(entries: DebtorEntry[], now = new Date()): string[] {
+  const months = new Set<string>();
+  let cursor = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  months.add(cursor);
+  for (let i = 0; i < 24; i += 1) {
+    cursor = shiftMonth(cursor, -1);
+    months.add(cursor);
+  }
+  for (const entry of entries) {
+    const ym = debtorLessonYearMonth(entry.lessonDate);
+    if (ym) months.add(ym);
+  }
+  return [...months].sort((a, b) => b.localeCompare(a));
+}
+
 export function sortDebtors(
   entries: DebtorEntry[],
   sortKey: DebtorSortKey,
