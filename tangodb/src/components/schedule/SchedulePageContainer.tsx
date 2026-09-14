@@ -16,7 +16,6 @@ import { formatCurrency } from "../../lib/utils";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { canAddPersonalFromGrid, canClickEmptyCell, canOfferGroupLessonAdd, isLessonInTeacherScope } from "../../lib/scheduleLessonAccess";
 import { hasLocationAccess } from "../../lib/teacherScope";
-import { canManageMiniAppRentals } from "../../lib/permissions";
 import { isActiveLessonConductingMember } from "../../lib/lessonTeacherRoles";
 import { isMiniAppRentalChannel } from "../../lib/rentalMiniAppDisplay";
 import {
@@ -45,7 +44,6 @@ import TeacherVacationDialog from "./TeacherVacationDialog";
 import CreateCalendarEventDialog from "./CreateCalendarEventDialog";
 import CreateRentalDialog from "./CreateRentalDialog";
 import CreateRentalSeriesDialog from "./CreateRentalSeriesDialog";
-import CreateMiniAppBookingDialog from "./CreateMiniAppBookingDialog";
 import CreateRentalChannelDialog, { type RentalChannelChoice } from "./CreateRentalChannelDialog";
 import EventInfoPopup from "./EventInfoPopup";
 import RentalInfoPopup from "./RentalInfoPopup";
@@ -61,7 +59,6 @@ type AddFlow =
   | { mode: "personal"; prefill: ScheduleCellPrefill }
   | { mode: "rental"; prefill: ScheduleCellPrefill }
   | { mode: "rental-series"; prefill: ScheduleCellPrefill }
-  | { mode: "miniapp"; prefill: ScheduleCellPrefill }
   | null;
 
 export default function SchedulePageContainer() {
@@ -80,7 +77,6 @@ export default function SchedulePageContainer() {
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [createRentalOpen, setCreateRentalOpen] = useState(false);
   const [createRentalSeriesOpen, setCreateRentalSeriesOpen] = useState(false);
-  const [createMiniAppOpen, setCreateMiniAppOpen] = useState(false);
   const [rentalChannelOpen, setRentalChannelOpen] = useState(false);
   const [rentalChannelPrefill, setRentalChannelPrefill] = useState<ScheduleCellPrefill | null>(null);
   const [preselectedRenterId, setPreselectedRenterId] = useState<string | null>(null);
@@ -119,8 +115,7 @@ export default function SchedulePageContainer() {
   const canAddGroup = canOfferGroupLessonAdd(role, can, scheduleGridAddOptions);
   const canAddPersonal = canAddPersonalFromGrid(role, can, scheduleGridAddOptions);
   const canAddRental = canManageRentals;
-  const canAddMiniApp = canManageMiniAppRentals(role, options);
-  const canAddRentalChannel = canAddRental || canAddMiniApp;
+  const canAddRentalChannel = canAddRental;
   const canClickEmpty = canAddGroup || canAddPersonal || canAddRentalChannel;
 
   const openRentalChannel = useCallback((prefill: ScheduleCellPrefill | null) => {
@@ -135,13 +130,9 @@ export default function SchedulePageContainer() {
       if (choice === "cashier-once") {
         if (prefill) setAddFlow({ mode: "rental", prefill });
         else setCreateRentalOpen(true);
-      } else if (choice === "cashier-series") {
+      } else {
         if (prefill) setAddFlow({ mode: "rental-series", prefill });
         else setCreateRentalSeriesOpen(true);
-      } else if (prefill) {
-        setAddFlow({ mode: "miniapp", prefill });
-      } else {
-        setCreateMiniAppOpen(true);
       }
       setRentalChannelPrefill(null);
     },
@@ -661,7 +652,6 @@ export default function SchedulePageContainer() {
   const personalPrefill = addFlow?.mode === "personal" ? addFlow.prefill : null;
   const rentalDialogPrefill = addFlow?.mode === "rental" ? addFlow.prefill : null;
   const rentalSeriesDialogPrefill = addFlow?.mode === "rental-series" ? addFlow.prefill : null;
-  const miniAppDialogPrefill = addFlow?.mode === "miniapp" ? addFlow.prefill : null;
 
   const isLoading =
     (locationsQuery.isLoading && locationsQuery.locations.length === 0) ||
@@ -851,20 +841,6 @@ export default function SchedulePageContainer() {
         onSuccess={handleScheduleRefresh}
       />
 
-      <CreateMiniAppBookingDialog
-        open={createMiniAppOpen || !!miniAppDialogPrefill}
-        prefill={miniAppDialogPrefill}
-        preselectedRenterId={preselectedRenterId}
-        locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
-        toast={toast}
-        onClose={() => {
-          setCreateMiniAppOpen(false);
-          setPreselectedRenterId(null);
-          if (addFlow?.mode === "miniapp") closeAddFlow();
-        }}
-        onSuccess={handleScheduleRefresh}
-      />
-
       <CreateRentalChannelDialog
         open={rentalChannelOpen}
         contextLabel={
@@ -873,7 +849,6 @@ export default function SchedulePageContainer() {
             : undefined
         }
         canCashier={canAddRental}
-        canMiniApp={canAddMiniApp}
         onClose={() => {
           setRentalChannelOpen(false);
           setRentalChannelPrefill(null);

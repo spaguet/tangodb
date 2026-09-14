@@ -181,8 +181,42 @@ BEGIN
   ));
   PERFORM _test_assert(COALESCE((v_result ->> 'success')::boolean, false), 'short wallet create succeeds');
   v_short_id := (v_result ->> 'rental_id')::uuid;
-  SELECT channel INTO v_channel FROM rentals WHERE id = v_short_id;
-  PERFORM _test_assert(v_channel = 'cashier', 'not enough wallet keeps cashier unpaid');
+  SELECT channel, lifecycle INTO v_channel, v_life FROM rentals WHERE id = v_short_id;
+  PERFORM _test_assert(v_channel = 'miniapp', 'not enough wallet still promotes to miniapp');
+  PERFORM _test_assert(v_life = 'debt', 'not enough wallet becomes Mini App debt');
+  PERFORM _test_assert(_renter_wallet_debt_outstanding(v_org, v_renter) = 5000, 'Mini App debt is full cost');
+  PERFORM _test_assert(_renter_debt_total(v_renter, v_org) = 0, 'cashier debt ignores miniapp unpaid');
+
+  v_result := renter_delete_hold(v_short_id);
+  PERFORM _test_assert(COALESCE((v_result ->> 'success')::boolean, false), 'staff can release unpaid Mini App debt before start');
+  PERFORM _test_assert(
+    (SELECT booking_status FROM rentals WHERE id = v_short_id) = 'cancelled',
+    'released debt slot is cancelled'
+  );
+  PERFORM _test_assert(
+    NOT _renter_location_slot_busy(v_org, v_day + 3, '16:00', '18:00', v_loc),
+    'released slot is free for a new rental'
+  );
+
+  v_result := preview_rental_conflicts(v_day + 3, '16:00', '18:00', v_loc);
+  PERFORM _test_assert(COALESCE((v_result ->> 'success')::boolean, false), 'preview after release succeeds');
+  PERFORM _test_assert(
+    jsonb_array_length(COALESCE(v_result -> 'conflicts', '[]'::jsonb)) = 0,
+    'preview has no leftover hold after release'
+  );
+
+  v_result := create_rental(jsonb_build_object(
+    'idempotency_key', 'staff-wallet-recreate-' || gen_random_uuid()::text,
+    'rental_date', v_day + 3,
+    'time_start', '16:00',
+    'time_end', '18:00',
+    'location_id', v_loc,
+    'renter_id', v_renter,
+    'fixed_amount', 5000
+  ));
+  PERFORM _test_assert(COALESCE((v_result ->> 'success')::boolean, false), 'recreate after released debt succeeds');
+  SELECT channel, lifecycle INTO v_channel, v_life FROM rentals WHERE id = (v_result ->> 'rental_id')::uuid;
+  PERFORM _test_assert(v_channel = 'miniapp' AND v_life = 'debt', 'recreate with short wallet is Mini App debt again');
 END;
 $$;
 

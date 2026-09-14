@@ -1,15 +1,14 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Building2, CalendarRange, Smartphone, X } from "lucide-react";
+import { Building2, CalendarRange, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 
-export type RentalChannelChoice = "cashier-once" | "cashier-series" | "miniapp";
+export type RentalChannelChoice = "cashier-once" | "cashier-series";
 
 interface CreateRentalChannelDialogProps {
   open: boolean;
   contextLabel?: string;
   canCashier: boolean;
-  canMiniApp: boolean;
   onSelect: (choice: RentalChannelChoice) => void;
   onClose: () => void;
 }
@@ -18,7 +17,6 @@ export default function CreateRentalChannelDialog({
   open,
   contextLabel,
   canCashier,
-  canMiniApp,
   onSelect,
   onClose,
 }: CreateRentalChannelDialogProps) {
@@ -76,20 +74,6 @@ export default function CreateRentalChannelDialog({
             </div>
 
             <div className="grid grid-cols-1 gap-2">
-              {canMiniApp ? (
-                <button
-                  type="button"
-                  onClick={() => onSelect("miniapp")}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors cursor-pointer text-left"
-                >
-                  <Smartphone className="w-5 h-5 text-indigo-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">{t("schedule.miniapp.action")}</p>
-                    <p className="text-xs text-slate-500">{t("schedule.rental.channelMiniappHint")}</p>
-                  </div>
-                </button>
-              ) : null}
-
               {canCashier ? (
                 <>
                   <button

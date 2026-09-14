@@ -33,7 +33,6 @@ import { useCan, usePermissions } from "../../hooks/usePermissions";
 import { useStaffRenterWalletTopup, useStaffTopupPreview, useReverseRenterWalletTopup } from "../../hooks/useRenterTopupInbox";
 import { usePreviewRenterWalletPayout } from "../../hooks/useRenterWalletPayout";
 import CreateRentalDialog from "../schedule/CreateRentalDialog";
-import CreateMiniAppBookingDialog from "../schedule/CreateMiniAppBookingDialog";
 import CreateRentalChannelDialog, { type RentalChannelChoice } from "../schedule/CreateRentalChannelDialog";
 import CreateRentalSeriesDialog from "../schedule/CreateRentalSeriesDialog";
 import { useLocations } from "../../hooks/useLocations";
@@ -134,7 +133,6 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const [displayNameDraft, setDisplayNameDraft] = useState("");
   const [createRentalOpen, setCreateRentalOpen] = useState(false);
   const [createRentalSeriesOpen, setCreateRentalSeriesOpen] = useState(false);
-  const [createMiniAppOpen, setCreateMiniAppOpen] = useState(false);
   const [rentalChannelOpen, setRentalChannelOpen] = useState(false);
 
   const detailQuery = useRenterDetail(renterId);
@@ -404,8 +402,6 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
             formatDate={formatDate}
             t={t}
             canWriteRentals={canWriteRentalsSlot}
-            canWriteMiniApp={canWriteMiniApp}
-            hasTelegram={Boolean(renter.telegramId)}
             canOpenSchedule={canOpenSchedule}
             onCreateRental={() => setRentalChannelOpen(true)}
           />
@@ -474,18 +470,6 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
         }}
       />
 
-      <CreateMiniAppBookingDialog
-        open={createMiniAppOpen}
-        preselectedRenterId={renterId}
-        locations={locationOptions}
-        toast={toast}
-        onClose={() => setCreateMiniAppOpen(false)}
-        onSuccess={() => {
-          setCreateMiniAppOpen(false);
-          void rentalsQuery.refetch();
-        }}
-      />
-
       <CreateRentalSeriesDialog
         open={createRentalSeriesOpen}
         preselectedRenterId={renterId}
@@ -502,13 +486,11 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
         open={rentalChannelOpen}
         contextLabel={renter.displayName}
         canCashier={canWriteRentalsSlot}
-        canMiniApp={canWriteMiniApp && Boolean(renter.telegramId)}
         onClose={() => setRentalChannelOpen(false)}
         onSelect={(choice: RentalChannelChoice) => {
           setRentalChannelOpen(false);
           if (choice === "cashier-once") setCreateRentalOpen(true);
-          else if (choice === "cashier-series") setCreateRentalSeriesOpen(true);
-          else setCreateMiniAppOpen(true);
+          else setCreateRentalSeriesOpen(true);
         }}
       />
 
@@ -853,8 +835,6 @@ function RentalsTab({
   formatDate,
   t,
   canWriteRentals,
-  canWriteMiniApp,
-  hasTelegram,
   canOpenSchedule,
   onCreateRental,
 }: {
@@ -865,12 +845,10 @@ function RentalsTab({
   formatDate: (d: string) => string;
   t: (key: import("../../lib/i18n/keys").I18nKey) => string;
   canWriteRentals: boolean;
-  canWriteMiniApp: boolean;
-  hasTelegram: boolean;
   canOpenSchedule: boolean;
   onCreateRental: () => void;
 }) {
-  const canCreate = canWriteRentals || (canWriteMiniApp && hasTelegram);
+  const canCreate = canWriteRentals;
 
   return (
     <div className="space-y-3">

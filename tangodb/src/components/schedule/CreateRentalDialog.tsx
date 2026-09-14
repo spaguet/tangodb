@@ -12,10 +12,12 @@ import {
   needsRentalAmountOverrideReason,
 } from "../../lib/rentalTariffPricing";
 import { formatCurrency } from "../../lib/utils";
+import type { I18nKey } from "../../lib/i18n/keys";
+import type { TranslateParams } from "../../lib/i18n/core";
 import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useCreateRenter, useRenters } from "../../hooks/useRenters";
-import { useCreateRental, useRentalConflictsPreview } from "../../hooks/useRentals";
+import { useCreateRental, useRentalConflictsPreview, type RentalConflict } from "../../hooks/useRentals";
 import { useRentalTariffs } from "../../hooks/useRentalTariffs";
 import { getPaymentMethodLabel } from "../../hooks/usePayments";
 import { canReadRentalTariffs, canSeeRentalTariffPrices } from "../../lib/permissions";
@@ -49,6 +51,27 @@ function defaultTimeEnd(timeStart: string): string {
   } catch {
     return "16:00";
   }
+}
+
+function rentalConflictLabel(
+  conflict: RentalConflict,
+  formatDate: (iso: string) => string,
+  t: (key: I18nKey, params?: TranslateParams) => string
+): string {
+  const when = `${formatDate(conflict.occurrenceDate)} · ${conflict.timeStart}–${conflict.timeEnd}`;
+  if (conflict.kind === "group") {
+    return t("schedule.rental.conflictItem.group", { when, name: conflict.groupName || t("common.groupLesson") });
+  }
+  if (conflict.kind === "personal") {
+    return t("schedule.rental.conflictItem.personal", {
+      when,
+      name: conflict.clientDisplay || t("common.personalLabel"),
+    });
+  }
+  if (conflict.kind === "event") {
+    return t("schedule.rental.conflictItem.event", { when, name: conflict.title || t("schedule.event.title") });
+  }
+  return t("schedule.rental.conflictItem.rental", { when, name: conflict.purpose || t("schedule.rental.blockTitle") });
 }
 
 export default function CreateRentalDialog({
@@ -486,7 +509,16 @@ export default function CreateRentalDialog({
                     {resolveMutationError(conflictsQuery.data.error, "schedule.rental.previewFailed", t)}
                   </p>
                 ) : conflictsQuery.data?.conflicts.length ? (
-                  <p className="text-rose-600 text-xs">{t("schedule.rental.conflictBlocked")}</p>
+                  <div className="space-y-1">
+                    <p className="text-rose-600 text-xs">{t("schedule.rental.conflictBlocked")}</p>
+                    <ul className="text-xs text-rose-700 space-y-0.5">
+                      {conflictsQuery.data.conflicts.map((conflict) => (
+                        <li key={`${conflict.kind}-${conflict.occurrenceDate}-${conflict.timeStart}-${conflict.timeEnd}`}>
+                          {rentalConflictLabel(conflict, formatDate, t)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : (
                   <p className="text-indigo-600 text-xs">{t("schedule.rental.noConflicts")}</p>
                 )}
