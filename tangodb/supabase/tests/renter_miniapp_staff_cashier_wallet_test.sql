@@ -26,15 +26,22 @@ DECLARE
   v_loc uuid := 'f9910000-0000-4000-8000-000000000031';
   v_renter uuid := 'f9910000-0000-4000-8000-000000000041';
   v_renter_cash uuid := 'f9910000-0000-4000-8000-000000000042';
+  v_renter_pair uuid := 'f9910000-0000-4000-8000-000000000043';
   v_result jsonb;
   v_id uuid;
   v_paid_id uuid;
   v_cash_id uuid;
   v_short_id uuid;
+  v_near_id uuid;
+  v_far_id uuid;
   v_day date;
   v_life text;
   v_channel text;
   v_tz text;
+  v_near_ts timestamp;
+  v_near_date date;
+  v_near_start text;
+  v_near_end text;
 BEGIN
   SELECT id INTO v_version_id FROM crm_product_versions WHERE code = 'v2';
 
@@ -91,6 +98,10 @@ BEGIN
   INSERT INTO renters (id, organization_id, display_name, status)
   VALUES (v_renter_cash, v_org, 'Cashier Only', 'active')
   ON CONFLICT (id) DO UPDATE SET status = 'active';
+
+  INSERT INTO renters (id, organization_id, display_name, status, telegram_id)
+  VALUES (v_renter_pair, v_org, 'Two Slot Renter', 'active', 99102)
+  ON CONFLICT (id) DO UPDATE SET status = 'active', telegram_id = 99102;
 
   DELETE FROM rental_payments WHERE organization_id = v_org;
   DELETE FROM rentals WHERE organization_id = v_org;
@@ -217,6 +228,57 @@ BEGIN
   PERFORM _test_assert(COALESCE((v_result ->> 'success')::boolean, false), 'recreate after released debt succeeds');
   SELECT channel, lifecycle INTO v_channel, v_life FROM rentals WHERE id = (v_result ->> 'rental_id')::uuid;
   PERFORM _test_assert(v_channel = 'miniapp' AND v_life = 'debt', 'recreate with short wallet is Mini App debt again');
+
+  INSERT INTO renter_wallet_ledger (organization_id, renter_id, entry_type, amount)
+  VALUES (v_org, v_renter_pair, 'topup', 5000);
+
+  v_near_ts := (now() AT TIME ZONE v_tz) + interval '6 hours';
+  v_near_date := v_near_ts::date;
+  v_near_start := to_char(date_trunc('minute', v_near_ts), 'HH24:MI');
+  IF (v_near_ts + interval '1 hour')::date = v_near_date THEN
+    v_near_end := to_char(date_trunc('minute', v_near_ts + interval '1 hour'), 'HH24:MI');
+  ELSE
+    v_near_end := '23:45';
+  END IF;
+  PERFORM _test_assert(v_near_end > v_near_start, 'near staff slot has a valid time range');
+
+  v_result := create_rental(jsonb_build_object(
+    'idempotency_key', 'staff-wallet-near-' || gen_random_uuid()::text,
+    'rental_date', v_near_date,
+    'time_start', v_near_start,
+    'time_end', v_near_end,
+    'location_id', v_loc,
+    'renter_id', v_renter_pair,
+    'fixed_amount', 2500
+  ));
+  PERFORM _test_assert(COALESCE((v_result ->> 'success')::boolean, false), 'near T-24 staff create succeeds');
+  v_near_id := (v_result ->> 'rental_id')::uuid;
+
+  v_result := create_rental(jsonb_build_object(
+    'idempotency_key', 'staff-wallet-far-' || gen_random_uuid()::text,
+    'rental_date', v_day + 8,
+    'time_start', '16:00',
+    'time_end', '18:00',
+    'location_id', v_loc,
+    'renter_id', v_renter_pair,
+    'fixed_amount', 2500
+  ));
+  PERFORM _test_assert(COALESCE((v_result ->> 'success')::boolean, false), 'far staff create succeeds');
+  v_far_id := (v_result ->> 'rental_id')::uuid;
+
+  SELECT lifecycle INTO v_life FROM rentals WHERE id = v_near_id;
+  PERFORM _test_assert(v_life = 'active', 'staff slot inside T-24 stays 50% hold');
+  SELECT lifecycle INTO v_life FROM rentals WHERE id = v_far_id;
+  PERFORM _test_assert(v_life = 'active', 'staff slot outside T-24 is 50% hold');
+  PERFORM _test_assert(_renter_wallet_balance(v_org, v_renter_pair) = 5000, 'two staff holds do not charge wallet');
+  PERFORM _test_assert(_renter_wallet_reserved_prepay(v_org, v_renter_pair) = 2500, 'reserved 50% of both slots');
+  PERFORM _test_assert(_renter_wallet_spendable(v_org, v_renter_pair) = 2500, 'leftover after two 50% holds');
+
+  PERFORM _renter_expire_and_catchup(v_org, v_renter_pair);
+  SELECT lifecycle INTO v_life FROM rentals WHERE id = v_near_id;
+  PERFORM _test_assert(v_life = 'active', 'worker does not T-24-charge staff holds');
+  PERFORM _test_assert(_renter_wallet_balance(v_org, v_renter_pair) = 5000, 'wallet unchanged after worker tick');
+  PERFORM _test_assert(_renter_wallet_spendable(v_org, v_renter_pair) = 2500, 'spendable still leftover 50%');
 END;
 $$;
 
