@@ -1,3 +1,5 @@
+2026-09-14 — fix(landing): версия в footer демо-CRM — re-export `APP_VERSION` из `tangodb/src/lib/appVersion.ts` (alias `@crm-app-version`), без дублирования в `demoVersion.ts`.
+
 2026-09-14 — feat(landing): палитра Studio Controller в `tangodb-landing` (`@theme` как в CRM), демо-CRM — расписание pastel+accent, структура выручки, оболочка (nav, sign out, версия), кнопки primary без `/50`.
 
 2026-09-13 — fix(hall-rent): Mini App **0.1.22** — follow-up одной кнопки пополнения: чат открывается до refresh кошелька; в текст идёт сумма с сервера; черновик для вставки виден на шите и карточке pending; ошибка clipboard/чата не маскирует успешный submit; retry чата не закрывает TopupSheet.

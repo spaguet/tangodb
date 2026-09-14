@@ -1,2 +1,2 @@
-/** CRM version shown in demo shell footer — keep in sync with tangodb/src/lib/appVersion.ts */
-export const DEMO_CRM_VERSION = "2.11.18";
+/** Demo footer version — re-export from CRM source of truth. */
+export { APP_VERSION as DEMO_CRM_VERSION } from "@crm-app-version";
