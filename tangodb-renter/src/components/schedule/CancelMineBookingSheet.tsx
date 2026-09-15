@@ -5,7 +5,7 @@ import { btnDestructiveOpenCls, btnSecondaryCls } from "../../lib/crmUi";
 import { miniAppLifecycleKey } from "../../lib/lifecycle";
 import { mineCancelKind, mineCancelRetainsPrepay } from "../../lib/mineCancel";
 import { formatShortDate, formatTimeRange } from "../../lib/orgTime";
-import { rpcCancelOccurrence, rpcCancelPackFromDate, rpcDeleteHold } from "../../lib/rpc";
+import { cancelMineSlot } from "../../lib/cancelMineSlot";
 import { rpcErrorKey } from "../../lib/rpcErrors";
 import { computeServerOffsetMs, serverNowMs } from "../../lib/serverTime";
 import type { MineSlot } from "../../lib/types";
@@ -68,15 +68,13 @@ export default function CancelMineBookingSheet({
         : "cancelNotAllowedHint";
 
   const confirm = async () => {
-    if (kind === "none") return;
+    if (kind === "none" && slot.can_delete_hold !== true && slot.can_cancel_occurrence !== true) {
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      if (kind === "delete_hold") {
-        await rpcDeleteHold(supabase, slot.id);
-      } else {
-        await rpcCancelOccurrence(supabase, slot.id);
-      }
+      await cancelMineSlot(supabase, slot, timezone, nowMs);
       onDone();
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
@@ -86,11 +84,16 @@ export default function CancelMineBookingSheet({
   };
 
   const confirmPackBatch = async () => {
-    if (!seriesId) return;
+    if (packFromDateSlots.length === 0) return;
     setSubmitting(true);
     setError(null);
     try {
-      await rpcCancelPackFromDate(supabase, seriesId, slot.date);
+      const ordered = [...packFromDateSlots].sort(
+        (a, b) => a.date.localeCompare(b.date) || a.time_start.localeCompare(b.time_start)
+      );
+      for (const s of ordered) {
+        await cancelMineSlot(supabase, s, timezone, nowMs);
+      }
       onDone();
     } catch (err) {
       setError(t(locale, rpcErrorKey(err)));
@@ -143,7 +146,7 @@ export default function CancelMineBookingSheet({
             >
               {t(locale, "cancel")}
             </button>
-            {kind !== "none" ? (
+            {kind !== "none" || slot.can_delete_hold === true || slot.can_cancel_occurrence === true ? (
               <button
                 type="button"
                 className={`flex-1 ${btnDestructiveOpenCls}`}
