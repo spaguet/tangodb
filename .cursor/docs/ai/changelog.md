@@ -1,3 +1,5 @@
+2026-09-15 — fix(hall-rent): Mini App **0.1.25** — долг кошелька не учитывает отменённые слоты; при отмене долгового слота `debt_amount` обнуляется; backfill старых cancelled. Миграция `20261128000003`, тест `renter_miniapp_debt_cancel_wallet_test.sql`.
+
 2026-09-15 — fix(hall-rent): Mini App **0.1.24** — пакетная отмена с даты через поштучные RPC (без `renter.forbidden` на серии); авторизация `renter_cancel_pack_from_date` по rentals. Миграция `20261128000002`.
 
 2026-09-15 — fix(hall-rent): Mini App **0.1.23** — отмена будущих слотов по серверным флагам в сетке; долг до начала занятия снова отменяем; `renter_cancel_pack_from_date` и кнопка «Снять все с {date}» в расписании. Миграция `20261128000001`.
