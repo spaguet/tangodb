@@ -1,3 +1,5 @@
+2026-09-15 — fix(schedule): микропатч **2.11.23** — загрузка недели расписания: `cannot cast type record to rentals` в `_renter_series_has_cancellable_pack_slots` (rowtype вместо `record`). Миграция `20261128000005`.
+
 2026-09-15 — fix(hall-rent): Mini App **0.1.26** — `renter_cancel_pack` и снятие холда отменяют слоты `lifecycle=debt` (CRM-постоянка без кошелька); арендатор может снять staff-debt до начала. Миграция `20261128000004`.
 
 2026-09-15 — fix(hall-rent): Mini App **0.1.25** — долг кошелька не учитывает отменённые слоты; при отмене долгового слота `debt_amount` обнуляется; backfill старых cancelled. Миграция `20261128000003`, тест `renter_miniapp_debt_cancel_wallet_test.sql`.
