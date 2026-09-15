@@ -7,13 +7,28 @@ export type MineCancelKind = "delete_hold" | "cancel_occurrence" | "none";
 
 type MineCancelSlot = Pick<MineSlot, "lifecycle" | "date" | "time_start">;
 
+type MineCancelSlotWithFlags = MineCancelSlot & {
+  can_delete_hold?: boolean;
+  can_cancel_occurrence?: boolean;
+};
+
 export function mineCancelKind(
-  slot: MineCancelSlot,
+  slot: MineCancelSlotWithFlags,
   timezone: string,
   nowMs: number
 ): MineCancelKind {
+  if (slot.can_delete_hold === true) return "delete_hold";
+  if (slot.can_cancel_occurrence === true) return "cancel_occurrence";
+  if (slot.can_delete_hold === false && slot.can_cancel_occurrence === false) {
+    return "none";
+  }
+
   if (slot.lifecycle === "awaiting_payment") return "delete_hold";
-  if (slot.lifecycle === "active" || slot.lifecycle === "prepaid_charged") {
+  if (
+    slot.lifecycle === "active" ||
+    slot.lifecycle === "prepaid_charged" ||
+    slot.lifecycle === "debt"
+  ) {
     const startMs = orgZonedDateTimeMs(timezone, slot.date, slot.time_start);
     if (nowMs < startMs) return "cancel_occurrence";
     return "none";

@@ -89,14 +89,36 @@ describe("CancelMineBookingSheet", () => {
     expect(screen.getByText(/студия удержит предоплату/)).toBeTruthy();
   });
 
-  it("hides confirm for a started or debt slot", () => {
+  it("allows cancel for future debt when server flag is set", async () => {
+    const user = userEvent.setup();
+    render(
+      <CancelMineBookingSheet
+        locale="ru"
+        timezone="Europe/Moscow"
+        serverNow="2026-09-10T08:00:00.000Z"
+        supabase={supabase}
+        slot={slot({ lifecycle: "debt", can_cancel_occurrence: true })}
+        onClose={onClose}
+        onDone={onDone}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Отменить бронь" }));
+    expect(rpc.rpcCancelOccurrence).toHaveBeenCalledWith(supabase, "mine-1");
+  });
+
+  it("hides confirm when server denies cancel", () => {
     render(
       <CancelMineBookingSheet
         locale="ru"
         timezone="Europe/Moscow"
         serverNow="2026-09-14T12:00:00.000Z"
         supabase={supabase}
-        slot={slot({ lifecycle: "debt" })}
+        slot={slot({
+          lifecycle: "debt",
+          can_delete_hold: false,
+          can_cancel_occurrence: false,
+        })}
         onClose={onClose}
         onDone={onDone}
       />

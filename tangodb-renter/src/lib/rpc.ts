@@ -212,6 +212,19 @@ export async function rpcCancelPack(supabase: SupabaseClient, seriesId: string):
   unwrap(data);
 }
 
+export async function rpcCancelPackFromDate(
+  supabase: SupabaseClient,
+  seriesId: string,
+  fromDate: string
+): Promise<void> {
+  const { data, error } = await supabase.rpc("renter_cancel_pack_from_date", {
+    p_series_id: seriesId,
+    p_from_date: fromDate,
+  });
+  if (error) throw new Error(error.message);
+  unwrap(data);
+}
+
 export async function rpcDeleteHold(supabase: SupabaseClient, rentalId: string): Promise<void> {
   const { data, error } = await supabase.rpc("renter_delete_hold", {
     p_rental_id: rentalId,

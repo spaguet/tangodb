@@ -11764,6 +11764,10 @@ export type Database = {
       renter_bootstrap: { Args: never; Returns: Json }
       renter_cancel_occurrence: { Args: { p_rental_id: string }; Returns: Json }
       renter_cancel_pack: { Args: { p_series_id: string }; Returns: Json }
+      renter_cancel_pack_from_date: {
+        Args: { p_from_date: string; p_series_id: string }
+        Returns: Json
+      }
       renter_create_booking: { Args: { p_payload: Json }; Returns: Json }
       renter_create_recurring_pack: { Args: { p_payload: Json }; Returns: Json }
       renter_delete_hold: { Args: { p_rental_id: string }; Returns: Json }

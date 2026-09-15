@@ -37,14 +37,31 @@ describe("mineCancelKind", () => {
     ).toBe("none");
   });
 
-  it("does not cancel debt or settled slots", () => {
+  it("cancels future debt slots before start", () => {
+    const start = orgZonedDateTimeMs(tz, "2026-09-14", "14:00");
     expect(
       mineCancelKind(
         { lifecycle: "debt", date: "2026-09-14", time_start: "14:00" },
         tz,
-        Date.parse("2026-09-10T08:00:00.000Z")
+        start - 60 * 60 * 1000
       )
-    ).toBe("none");
+    ).toBe("cancel_occurrence");
+  });
+
+  it("prefers server cancel flags over lifecycle", () => {
+    expect(
+      mineCancelKind(
+        {
+          lifecycle: "debt",
+          date: "2026-09-14",
+          time_start: "14:00",
+          can_delete_hold: false,
+          can_cancel_occurrence: true,
+        },
+        tz,
+        Date.parse("2026-09-14T15:00:00.000Z")
+      )
+    ).toBe("cancel_occurrence");
   });
 });
 

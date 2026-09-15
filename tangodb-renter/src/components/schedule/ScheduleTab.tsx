@@ -363,6 +363,7 @@ export default function ScheduleTab({
           serverNow={bootstrap.serverNow}
           supabase={supabase}
           slot={cancelSlot}
+          allMine={occupancy?.mine ?? []}
           onClose={() => setCancelSlot(null)}
           onDone={() => {
             setCancelSlot(null);

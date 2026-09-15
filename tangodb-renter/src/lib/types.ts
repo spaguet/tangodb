@@ -10,6 +10,9 @@ export type MineSlot = {
   time_start: string;
   time_end: string;
   lifecycle: string;
+  rental_series_id?: string | null;
+  can_delete_hold?: boolean;
+  can_cancel_occurrence?: boolean;
 };
 
 export type OccupancyData = {

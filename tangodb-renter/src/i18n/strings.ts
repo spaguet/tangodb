@@ -97,6 +97,10 @@ const messages = {
     surchargeReviewPendingGeneric:
       "Студия проверяет возможный перерасчёт по разовому тарифу за досрочно закрытый пакет. Окончательное решение — у администратора.",
     cancelPack: "Отменить пакет",
+    cancelPackFromDate: "Снять все с {date}",
+    cancelPackFromDateHint:
+      "Отменит или снимет холды пакета начиная с выбранной даты. Более ранние занятия останутся.",
+    cancelPackFromDateConfirm: "Снять все будущие занятия пакета с {date}? ({count})",
     cancelPackNotCancellable: "Пакет нельзя отменить — нет будущих занятий или серия уже завершена.",
     holdExpires: "До автоудаления",
     walletBalance: "Баланс",
@@ -310,6 +314,10 @@ const messages = {
       "The studio is reviewing a possible one-time repricing for an early-closed pack. Staff makes the final decision.",
     cancelPack: "Cancel pack",
     cancelPackNotCancellable: "This pack cannot be cancelled — no future sessions or the series is already finished.",
+    cancelPackFromDate: "Remove all from {date}",
+    cancelPackFromDateHint:
+      "Cancels or removes pack holds from the selected date onward. Earlier sessions stay booked.",
+    cancelPackFromDateConfirm: "Remove all pack sessions from {date}? ({count})",
     holdExpires: "Auto-delete in",
     walletBalance: "Balance",
     spendable: "Spendable",

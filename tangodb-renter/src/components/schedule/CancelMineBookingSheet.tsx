@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { t, type Locale } from "../../i18n/strings";
+import { t, tFill, type Locale } from "../../i18n/strings";
 import { btnDestructiveOpenCls, btnSecondaryCls } from "../../lib/crmUi";
 import { miniAppLifecycleKey } from "../../lib/lifecycle";
 import { mineCancelKind, mineCancelRetainsPrepay } from "../../lib/mineCancel";
 import { formatShortDate, formatTimeRange } from "../../lib/orgTime";
-import { rpcCancelOccurrence, rpcDeleteHold } from "../../lib/rpc";
+import { rpcCancelOccurrence, rpcCancelPackFromDate, rpcDeleteHold } from "../../lib/rpc";
 import { rpcErrorKey } from "../../lib/rpcErrors";
 import { computeServerOffsetMs, serverNowMs } from "../../lib/serverTime";
 import type { MineSlot } from "../../lib/types";
@@ -16,6 +16,7 @@ type CancelMineBookingSheetProps = {
   serverNow: string;
   supabase: SupabaseClient;
   slot: MineSlot;
+  allMine?: MineSlot[];
   onClose: () => void;
   onDone: () => void;
 };
@@ -23,21 +24,39 @@ type CancelMineBookingSheetProps = {
 const sheetCls =
   "max-h-[90dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-xl border border-slate-200 bg-white p-4 pb-8 text-slate-800 shadow-xl [-webkit-overflow-scrolling:touch]";
 
+function isPackSlotCancellable(m: MineSlot): boolean {
+  return m.can_delete_hold === true || m.can_cancel_occurrence === true;
+}
+
 export default function CancelMineBookingSheet({
   locale,
   timezone,
   serverNow,
   supabase,
   slot,
+  allMine = [],
   onClose,
   onDone,
 }: CancelMineBookingSheetProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmPackFromDate, setConfirmPackFromDate] = useState(false);
   const nowMs = serverNowMs(computeServerOffsetMs(serverNow));
   const kind = mineCancelKind(slot, timezone, nowMs);
   const retain = mineCancelRetainsPrepay(slot, timezone, nowMs);
   const localeTag = locale === "en" ? "en" : "ru";
+
+  const seriesId = slot.rental_series_id ?? null;
+  const packFromDateSlots = useMemo(() => {
+    if (!seriesId) return [];
+    return allMine.filter(
+      (m) =>
+        m.rental_series_id === seriesId && m.date >= slot.date && isPackSlotCancellable(m)
+    );
+  }, [allMine, seriesId, slot.date]);
+
+  const showPackFromDate = Boolean(seriesId) && packFromDateSlots.length > 1;
+  const packBatchTotal = packFromDateSlots.length;
 
   const hintKey =
     kind === "delete_hold"
@@ -66,6 +85,21 @@ export default function CancelMineBookingSheet({
     }
   };
 
+  const confirmPackBatch = async () => {
+    if (!seriesId) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await rpcCancelPackFromDate(supabase, seriesId, slot.date);
+      onDone();
+    } catch (err) {
+      setError(t(locale, rpcErrorKey(err)));
+    } finally {
+      setSubmitting(false);
+      setConfirmPackFromDate(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-xs"
@@ -87,24 +121,60 @@ export default function CancelMineBookingSheet({
           {t(locale, miniAppLifecycleKey(slot.lifecycle))}
         </p>
         <p className="text-sm leading-relaxed text-slate-600">{t(locale, hintKey)}</p>
+        {showPackFromDate ? (
+          <p className="text-xs leading-relaxed text-slate-500">{t(locale, "cancelPackFromDateHint")}</p>
+        ) : null}
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-        <div className="flex gap-2 pt-1">
-          <button
-            type="button"
-            className={`flex-1 ${btnSecondaryCls}`}
-            disabled={submitting}
-            onClick={onClose}
-          >
-            {t(locale, "cancel")}
-          </button>
-          {kind !== "none" ? (
+        {confirmPackFromDate ? (
+          <p className="text-sm font-medium text-rose-800">
+            {tFill(locale, "cancelPackFromDateConfirm", {
+              date: formatShortDate(slot.date, localeTag),
+              count: String(packBatchTotal),
+            })}
+          </p>
+        ) : null}
+        <div className="flex flex-col gap-2 pt-1">
+          <div className="flex gap-2">
             <button
               type="button"
-              className={`flex-1 ${btnDestructiveOpenCls}`}
+              className={`flex-1 ${btnSecondaryCls}`}
               disabled={submitting}
-              onClick={() => void confirm()}
+              onClick={onClose}
             >
-              {t(locale, "cancelBooking")}
+              {t(locale, "cancel")}
+            </button>
+            {kind !== "none" ? (
+              <button
+                type="button"
+                className={`flex-1 ${btnDestructiveOpenCls}`}
+                disabled={submitting}
+                onClick={() => void confirm()}
+              >
+                {t(locale, "cancelBooking")}
+              </button>
+            ) : null}
+          </div>
+          {showPackFromDate ? (
+            <button
+              type="button"
+              className={btnDestructiveOpenCls}
+              disabled={submitting}
+              onClick={() => {
+                if (confirmPackFromDate) {
+                  void confirmPackBatch();
+                } else {
+                  setConfirmPackFromDate(true);
+                }
+              }}
+            >
+              {confirmPackFromDate
+                ? tFill(locale, "cancelPackFromDateConfirm", {
+                    date: formatShortDate(slot.date, localeTag),
+                    count: String(packBatchTotal),
+                  })
+                : tFill(locale, "cancelPackFromDate", {
+                    date: formatShortDate(slot.date, localeTag),
+                  })}
             </button>
           ) : null}
         </div>
