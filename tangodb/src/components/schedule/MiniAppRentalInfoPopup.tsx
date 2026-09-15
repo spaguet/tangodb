@@ -7,6 +7,7 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import {
   useRenterCancelOccurrence,
   useRenterCancelPack,
+  useRenterCancelBookingsFromDate,
   useRenterCancelPackFromDate,
   useRenterDeleteHold,
 } from "../../hooks/useRenterMiniAppStaff";
@@ -44,9 +45,12 @@ export default function MiniAppRentalInfoPopup({
   const cancelOccurrence = useRenterCancelOccurrence();
   const cancelPack = useRenterCancelPack();
   const cancelPackFromDate = useRenterCancelPackFromDate();
+  const cancelRenterFromDate = useRenterCancelBookingsFromDate();
   const detailQuery = useRentalDetail(lesson?.rentalId ?? null, !!lesson);
 
-  const [confirm, setConfirm] = useState<"hold" | "occurrence" | "pack" | "packFromDate" | null>(null);
+  const [confirm, setConfirm] = useState<
+    "hold" | "occurrence" | "pack" | "packFromDate" | "renterFromDate" | null
+  >(null);
   const [editSlotOpen, setEditSlotOpen] = useState(false);
 
   if (!lesson) return null;
@@ -57,13 +61,18 @@ export default function MiniAppRentalInfoPopup({
   const canDeleteHold = canManage && lesson.canDeleteHold === true;
   const canCancelSlot = canManage && lesson.canCancelOccurrence === true;
   const canCancelPack = canManage && lesson.canCancelPack === true;
-  const canCancelPackFromDate = canManage && lesson.canCancelPackFromDate === true;
+  const renterId = lesson.renterId ?? detailQuery.data?.renter.id ?? null;
+  const canCancelRenterFromDate =
+    canManage && lesson.canCancelRenterFromDate === true && renterId != null;
+  const canCancelPackFromDate =
+    canManage && lesson.canCancelPackFromDate === true && !canCancelRenterFromDate;
   const canEditSlot = canManage && lesson.bookingStatus === "confirmed";
   const pending =
     deleteHold.isPending ||
     cancelOccurrence.isPending ||
     cancelPack.isPending ||
-    cancelPackFromDate.isPending;
+    cancelPackFromDate.isPending ||
+    cancelRenterFromDate.isPending;
   const displayTitle = lesson.purpose
     ? [lesson.purpose, lesson.renterName].filter(Boolean).join(" · ")
     : (lesson.renterName ?? t("schedule.miniapp.blockTitle"));
@@ -80,7 +89,12 @@ export default function MiniAppRentalInfoPopup({
                 seriesId: lesson.rentalSeriesId ?? "",
                 fromDate: lesson.date,
               })
-            : await cancelOccurrence.mutateAsync(lesson.rentalId);
+            : confirm === "renterFromDate"
+              ? await cancelRenterFromDate.mutateAsync({
+                  renterId: renterId ?? "",
+                  fromDate: lesson.date,
+                })
+              : await cancelOccurrence.mutateAsync(lesson.rentalId);
     if (!res.success) {
       toast(resolveMutationError(res.error, "renter.cancel.failed", t), "error");
       return;
@@ -93,7 +107,9 @@ export default function MiniAppRentalInfoPopup({
             ? "schedule.miniapp.packCancelled"
             : confirm === "packFromDate"
               ? "schedule.miniapp.packFromDateCancelled"
-              : "schedule.miniapp.occurrenceCancelled"
+              : confirm === "renterFromDate"
+                ? "schedule.miniapp.renterFromDateCancelled"
+                : "schedule.miniapp.occurrenceCancelled"
       ),
       "success"
     );
@@ -188,6 +204,15 @@ export default function MiniAppRentalInfoPopup({
                   {t("schedule.miniapp.cancelOccurrence")}
                 </button>
               ) : null}
+              {canCancelRenterFromDate ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirm("renterFromDate")}
+                  className="px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg cursor-pointer"
+                >
+                  {t("schedule.miniapp.cancelRenterFromDate", { date: formatDate(lesson.date) })}
+                </button>
+              ) : null}
               {canCancelPackFromDate ? (
                 <button
                   type="button"
@@ -232,7 +257,9 @@ export default function MiniAppRentalInfoPopup({
               ? t("schedule.miniapp.cancelPack")
               : confirm === "packFromDate"
                 ? t("schedule.miniapp.cancelPackFromDate", { date: formatDate(lesson.date) })
-                : t("schedule.miniapp.cancelOccurrence")
+                : confirm === "renterFromDate"
+                  ? t("schedule.miniapp.cancelRenterFromDate", { date: formatDate(lesson.date) })
+                  : t("schedule.miniapp.cancelOccurrence")
         }
         description={
           confirm === "hold"
@@ -241,7 +268,12 @@ export default function MiniAppRentalInfoPopup({
               ? t("schedule.miniapp.cancelPackConfirm")
               : confirm === "packFromDate"
                 ? t("schedule.miniapp.cancelPackFromDateConfirm", { date: formatDate(lesson.date) })
-                : t("schedule.miniapp.cancelOccurrenceConfirm")
+                : confirm === "renterFromDate"
+                  ? t("schedule.miniapp.cancelRenterFromDateConfirm", {
+                      date: formatDate(lesson.date),
+                      name: lesson.renterName ?? t("schedule.miniapp.blockTitle"),
+                    })
+                  : t("schedule.miniapp.cancelOccurrenceConfirm")
         }
         pending={pending}
         onConfirm={() => void runAction()}

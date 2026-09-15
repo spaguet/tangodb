@@ -1779,6 +1779,10 @@ export const RU: Record<I18nKey, string> = {
   "schedule.miniapp.cancelPackFromDateConfirm":
     "Снять все будущие слоты пакета Mini App начиная с {date}?",
   "schedule.miniapp.packFromDateCancelled": "Слоты пакета сняты",
+  "schedule.miniapp.cancelRenterFromDate": "Снять все записи арендатора с {date}",
+  "schedule.miniapp.cancelRenterFromDateConfirm":
+    "Снять все будущие слоты Mini App арендатора «{name}» начиная с {date}?",
+  "schedule.miniapp.renterFromDateCancelled": "Записи арендатора сняты",
   "schedule.miniapp.holdDeleted": "Холд снят",
   "schedule.miniapp.occurrenceCancelled": "Слот отменён",
   "schedule.miniapp.packCancelled": "Пакет отменён",
@@ -1846,6 +1850,8 @@ export const RU: Record<I18nKey, string> = {
   "renter.cancel.failed": "Не удалось отменить слот Mini App",
   "renter.cancel.packFailed": "Не удалось отменить пакет",
   "renter.cancel.packFromDateFailed": "Не удалось снять слоты пакета с даты",
+  "renter.cancel.renterFromDateFailed": "Не удалось снять записи арендатора с даты",
+  "renter.cancel.renterFromDateNotCancellable": "Нет отменяемых записей арендатора с этой даты",
   "renter.cancel.packNotCancellable": "Пакет нельзя отменить — нет будущих занятий или серия уже завершена",
   "renter.cancel.holdFailed": "Не удалось снять холд",
   "renter.rates.priceInvalid": "Цена не может быть отрицательной",

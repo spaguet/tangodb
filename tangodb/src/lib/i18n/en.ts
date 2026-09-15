@@ -1778,6 +1778,10 @@ export const EN: Record<I18nKey, string> = {
   "schedule.miniapp.cancelPackFromDateConfirm":
     "Remove all Mini App pack slots from {date} onward?",
   "schedule.miniapp.packFromDateCancelled": "Pack slots removed",
+  "schedule.miniapp.cancelRenterFromDate": "Remove all renter bookings from {date}",
+  "schedule.miniapp.cancelRenterFromDateConfirm":
+    "Remove all Mini App slots for “{name}” from {date} onward?",
+  "schedule.miniapp.renterFromDateCancelled": "Renter bookings removed",
   "schedule.miniapp.holdDeleted": "Hold released",
   "schedule.miniapp.occurrenceCancelled": "Slot cancelled",
   "schedule.miniapp.packCancelled": "Pack cancelled",
@@ -1845,6 +1849,8 @@ export const EN: Record<I18nKey, string> = {
   "renter.cancel.failed": "Could not cancel the Mini App slot",
   "renter.cancel.packFailed": "Could not cancel the pack",
   "renter.cancel.packFromDateFailed": "Could not remove pack slots from date",
+  "renter.cancel.renterFromDateFailed": "Could not remove renter bookings from date",
+  "renter.cancel.renterFromDateNotCancellable": "No cancellable renter bookings from this date",
   "renter.cancel.packNotCancellable": "This pack cannot be cancelled — no future sessions or the series is already finished",
   "renter.cancel.holdFailed": "Could not release the hold",
   "renter.rates.priceInvalid": "Price cannot be negative",

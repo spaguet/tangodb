@@ -1,3 +1,5 @@
+2026-09-15 — feat(schedule): микропатч **2.11.25** — CRM: «Снять все записи арендатора с {date}» — все Mini App-слоты арендатора с даты (`renter_cancel_bookings_from_date`). Миграция `20261128000007`.
+
 2026-09-15 — fix(schedule): микропатч **2.11.24** — Mini App в CRM: одна кнопка «Снять холд» или «Отменить слот» (не обе); «Снять все с {date}» для пакета через `renter_cancel_pack_from_date`. Миграция `20261128000006`.
 
 2026-09-15 — fix(schedule): микропатч **2.11.23** — загрузка недели расписания: `cannot cast type record to rentals` в `_renter_series_has_cancellable_pack_slots` (rowtype вместо `record`). Миграция `20261128000005`.

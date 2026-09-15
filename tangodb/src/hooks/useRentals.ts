@@ -109,6 +109,7 @@ function mapScheduleRow(row: Record<string, unknown>): RentalDisplayLesson {
     timeEnd: normalizeTime(String(row.time_end)),
     locationId: row.location_id != null ? String(row.location_id) : null,
     rentalSeriesId: row.rental_series_id != null ? String(row.rental_series_id) : null,
+    renterId: row.renter_id != null ? String(row.renter_id) : null,
     bookingStatus: (row.booking_status as "confirmed" | "cancelled") ?? "confirmed",
     purpose: row.purpose != null ? String(row.purpose) : null,
     renterName: row.renter_name != null ? String(row.renter_name) : null,
@@ -122,6 +123,7 @@ function mapScheduleRow(row: Record<string, unknown>): RentalDisplayLesson {
     canCancelOccurrence: row.can_cancel_occurrence === true,
     canCancelPack: row.can_cancel_pack === true,
     canCancelPackFromDate: row.can_cancel_pack_from_date === true,
+    canCancelRenterFromDate: row.can_cancel_renter_from_date === true,
   };
 }
 

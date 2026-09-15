@@ -191,6 +191,7 @@ export interface RentalDisplayLesson {
   timeEnd: string;
   locationId: string | null;
   rentalSeriesId?: string | null;
+  renterId?: string | null;
   bookingStatus: "confirmed" | "cancelled";
   purpose?: string | null;
   renterName?: string | null;
@@ -204,6 +205,7 @@ export interface RentalDisplayLesson {
   canCancelOccurrence?: boolean;
   canCancelPack?: boolean;
   canCancelPackFromDate?: boolean;
+  canCancelRenterFromDate?: boolean;
   scheduleRestricted?: boolean;
 }
 
