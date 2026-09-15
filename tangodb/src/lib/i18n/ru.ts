@@ -1775,13 +1775,13 @@ export const RU: Record<I18nKey, string> = {
   "schedule.miniapp.cancelOccurrenceConfirm": "Отменить этот слот Mini App?",
   "schedule.miniapp.cancelPack": "Отменить пакет",
   "schedule.miniapp.cancelPackConfirm": "Отменить весь пакет Mini App? Будущие даты снимутся, used пересчитается.",
-  "schedule.miniapp.cancelPackFromDate": "Снять все с {date}",
+  "schedule.miniapp.cancelPackFromDate": "Снять все с {{date}}",
   "schedule.miniapp.cancelPackFromDateConfirm":
-    "Снять все будущие слоты пакета Mini App начиная с {date}?",
+    "Снять все будущие слоты пакета Mini App начиная с {{date}}?",
   "schedule.miniapp.packFromDateCancelled": "Слоты пакета сняты",
-  "schedule.miniapp.cancelRenterFromDate": "Снять все записи арендатора с {date}",
+  "schedule.miniapp.cancelRenterFromDate": "Снять все записи арендатора с {{date}}",
   "schedule.miniapp.cancelRenterFromDateConfirm":
-    "Снять все будущие слоты Mini App арендатора «{name}» начиная с {date}?",
+    "Снять все будущие слоты Mini App арендатора «{{name}}» начиная с {{date}}?",
   "schedule.miniapp.renterFromDateCancelled": "Записи арендатора сняты",
   "schedule.miniapp.holdDeleted": "Холд снят",
   "schedule.miniapp.occurrenceCancelled": "Слот отменён",
