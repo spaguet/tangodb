@@ -1774,6 +1774,10 @@ export const EN: Record<I18nKey, string> = {
   "schedule.miniapp.cancelOccurrenceConfirm": "Cancel this Mini App slot?",
   "schedule.miniapp.cancelPack": "Cancel pack",
   "schedule.miniapp.cancelPackConfirm": "Cancel the whole Mini App pack? Future dates are dropped and used time is recalculated.",
+  "schedule.miniapp.cancelPackFromDate": "Remove all from {date}",
+  "schedule.miniapp.cancelPackFromDateConfirm":
+    "Remove all Mini App pack slots from {date} onward?",
+  "schedule.miniapp.packFromDateCancelled": "Pack slots removed",
   "schedule.miniapp.holdDeleted": "Hold released",
   "schedule.miniapp.occurrenceCancelled": "Slot cancelled",
   "schedule.miniapp.packCancelled": "Pack cancelled",
@@ -1840,6 +1844,7 @@ export const EN: Record<I18nKey, string> = {
   "renter.cancel.useDeleteHold": "Use release hold for an unpaid hold",
   "renter.cancel.failed": "Could not cancel the Mini App slot",
   "renter.cancel.packFailed": "Could not cancel the pack",
+  "renter.cancel.packFromDateFailed": "Could not remove pack slots from date",
   "renter.cancel.packNotCancellable": "This pack cannot be cancelled — no future sessions or the series is already finished",
   "renter.cancel.holdFailed": "Could not release the hold",
   "renter.rates.priceInvalid": "Price cannot be negative",

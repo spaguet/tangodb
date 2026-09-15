@@ -7,6 +7,7 @@ import { useOrganization } from "../../organization/OrganizationProvider";
 import {
   useRenterCancelOccurrence,
   useRenterCancelPack,
+  useRenterCancelPackFromDate,
   useRenterDeleteHold,
 } from "../../hooks/useRenterMiniAppStaff";
 import { canManageMiniAppRentals } from "../../lib/permissions";
@@ -42,9 +43,10 @@ export default function MiniAppRentalInfoPopup({
   const deleteHold = useRenterDeleteHold();
   const cancelOccurrence = useRenterCancelOccurrence();
   const cancelPack = useRenterCancelPack();
+  const cancelPackFromDate = useRenterCancelPackFromDate();
   const detailQuery = useRentalDetail(lesson?.rentalId ?? null, !!lesson);
 
-  const [confirm, setConfirm] = useState<"hold" | "occurrence" | "pack" | null>(null);
+  const [confirm, setConfirm] = useState<"hold" | "occurrence" | "pack" | "packFromDate" | null>(null);
   const [editSlotOpen, setEditSlotOpen] = useState(false);
 
   if (!lesson) return null;
@@ -55,8 +57,13 @@ export default function MiniAppRentalInfoPopup({
   const canDeleteHold = canManage && lesson.canDeleteHold === true;
   const canCancelSlot = canManage && lesson.canCancelOccurrence === true;
   const canCancelPack = canManage && lesson.canCancelPack === true;
+  const canCancelPackFromDate = canManage && lesson.canCancelPackFromDate === true;
   const canEditSlot = canManage && lesson.bookingStatus === "confirmed";
-  const pending = deleteHold.isPending || cancelOccurrence.isPending || cancelPack.isPending;
+  const pending =
+    deleteHold.isPending ||
+    cancelOccurrence.isPending ||
+    cancelPack.isPending ||
+    cancelPackFromDate.isPending;
   const displayTitle = lesson.purpose
     ? [lesson.purpose, lesson.renterName].filter(Boolean).join(" · ")
     : (lesson.renterName ?? t("schedule.miniapp.blockTitle"));
@@ -68,7 +75,12 @@ export default function MiniAppRentalInfoPopup({
         ? await deleteHold.mutateAsync(lesson.rentalId)
         : confirm === "pack"
           ? await cancelPack.mutateAsync(lesson.rentalSeriesId ?? "")
-          : await cancelOccurrence.mutateAsync(lesson.rentalId);
+          : confirm === "packFromDate"
+            ? await cancelPackFromDate.mutateAsync({
+                seriesId: lesson.rentalSeriesId ?? "",
+                fromDate: lesson.date,
+              })
+            : await cancelOccurrence.mutateAsync(lesson.rentalId);
     if (!res.success) {
       toast(resolveMutationError(res.error, "renter.cancel.failed", t), "error");
       return;
@@ -79,7 +91,9 @@ export default function MiniAppRentalInfoPopup({
           ? "schedule.miniapp.holdDeleted"
           : confirm === "pack"
             ? "schedule.miniapp.packCancelled"
-            : "schedule.miniapp.occurrenceCancelled"
+            : confirm === "packFromDate"
+              ? "schedule.miniapp.packFromDateCancelled"
+              : "schedule.miniapp.occurrenceCancelled"
       ),
       "success"
     );
@@ -174,6 +188,15 @@ export default function MiniAppRentalInfoPopup({
                   {t("schedule.miniapp.cancelOccurrence")}
                 </button>
               ) : null}
+              {canCancelPackFromDate ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirm("packFromDate")}
+                  className="px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg cursor-pointer"
+                >
+                  {t("schedule.miniapp.cancelPackFromDate", { date: formatDate(lesson.date) })}
+                </button>
+              ) : null}
               {canCancelPack ? (
                 <button
                   type="button"
@@ -207,14 +230,18 @@ export default function MiniAppRentalInfoPopup({
             ? t("schedule.miniapp.deleteHold")
             : confirm === "pack"
               ? t("schedule.miniapp.cancelPack")
-              : t("schedule.miniapp.cancelOccurrence")
+              : confirm === "packFromDate"
+                ? t("schedule.miniapp.cancelPackFromDate", { date: formatDate(lesson.date) })
+                : t("schedule.miniapp.cancelOccurrence")
         }
         description={
           confirm === "hold"
             ? t("schedule.miniapp.deleteHoldConfirm")
             : confirm === "pack"
               ? t("schedule.miniapp.cancelPackConfirm")
-              : t("schedule.miniapp.cancelOccurrenceConfirm")
+              : confirm === "packFromDate"
+                ? t("schedule.miniapp.cancelPackFromDateConfirm", { date: formatDate(lesson.date) })
+                : t("schedule.miniapp.cancelOccurrenceConfirm")
         }
         pending={pending}
         onConfirm={() => void runAction()}

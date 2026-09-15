@@ -115,3 +115,21 @@ export function useRenterDeleteHold() {
     },
   });
 }
+
+export function useRenterCancelPackFromDate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { seriesId: string; fromDate: string }) => {
+      const { data, error } = await supabase.rpc("renter_cancel_pack_from_date", {
+        p_series_id: payload.seriesId,
+        p_from_date: payload.fromDate,
+      });
+      if (error) return { success: false as const, error: error.message };
+      return rpcResult(data, "renter.cancel.packFromDateFailed");
+    },
+    onSuccess: (result) => {
+      if (result.success) invalidateMiniAppBooking(queryClient);
+    },
+  });
+}

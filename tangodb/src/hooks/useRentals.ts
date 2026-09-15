@@ -121,6 +121,7 @@ function mapScheduleRow(row: Record<string, unknown>): RentalDisplayLesson {
     canDeleteHold: row.can_delete_hold === true,
     canCancelOccurrence: row.can_cancel_occurrence === true,
     canCancelPack: row.can_cancel_pack === true,
+    canCancelPackFromDate: row.can_cancel_pack_from_date === true,
   };
 }
 

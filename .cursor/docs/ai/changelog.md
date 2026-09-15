@@ -1,3 +1,5 @@
+2026-09-15 — fix(schedule): микропатч **2.11.24** — Mini App в CRM: одна кнопка «Снять холд» или «Отменить слот» (не обе); «Снять все с {date}» для пакета через `renter_cancel_pack_from_date`. Миграция `20261128000006`.
+
 2026-09-15 — fix(schedule): микропатч **2.11.23** — загрузка недели расписания: `cannot cast type record to rentals` в `_renter_series_has_cancellable_pack_slots` (rowtype вместо `record`). Миграция `20261128000005`.
 
 2026-09-15 — fix(hall-rent): Mini App **0.1.26** — `renter_cancel_pack` и снятие холда отменяют слоты `lifecycle=debt` (CRM-постоянка без кошелька); арендатор может снять staff-debt до начала. Миграция `20261128000004`.

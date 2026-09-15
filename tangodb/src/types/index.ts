@@ -203,6 +203,7 @@ export interface RentalDisplayLesson {
   canDeleteHold?: boolean;
   canCancelOccurrence?: boolean;
   canCancelPack?: boolean;
+  canCancelPackFromDate?: boolean;
   scheduleRestricted?: boolean;
 }
 
