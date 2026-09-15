@@ -86,6 +86,7 @@
     "test:db:renter-miniapp-fa3": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fa3_create_gates_test.sql && node scripts/fa3-concurrent-race.mjs",
     "test:db:renter-miniapp-fa4": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fa4_debt_settled_cancel_fifo_test.sql",
     "test:db:renter-miniapp-debt-cancel-wallet": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_debt_cancel_wallet_test.sql",
+    "test:db:renter-miniapp-cancel-pack-debt": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_cancel_pack_debt_test.sql",
     "test:db:renter-miniapp-fa5": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fa5_pack_fingerprint_test.sql",
     "test:db:renter-miniapp-fdb1": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fdb1_series_hold_test.sql",
     "test:db:renter-miniapp-fdb2": "node scripts/psql-local-test.mjs -f supabase/tests/_hall_rent_test_jwt.sql -f supabase/tests/renter_miniapp_fdb2_series_activation_test.sql",
