@@ -1,0 +1,164 @@
+-- record_rental_advance: sync unallocated remainder to Mini App wallet (R1b backfill parity).
+
+BEGIN;
+
+CREATE OR REPLACE FUNCTION _renter_wallet_sync_advance_to_wallet(p_advance_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_advance rental_advances%ROWTYPE;
+  v_remainder numeric;
+BEGIN
+  IF p_advance_id IS NULL THEN
+    RETURN false;
+  END IF;
+
+  SELECT * INTO v_advance
+  FROM rental_advances ra
+  WHERE ra.id = p_advance_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN false;
+  END IF;
+
+  v_remainder := (v_advance.amount - v_advance.allocated_amount)::numeric(12, 2);
+  IF v_remainder <= 0 THEN
+    RETURN false;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM renter_wallet_ledger l
+    WHERE l.advance_id = p_advance_id
+      AND l.entry_type = 'topup'
+  ) THEN
+    RETURN false;
+  END IF;
+
+  INSERT INTO renter_wallet_ledger (
+    organization_id,
+    renter_id,
+    entry_type,
+    amount,
+    rental_id,
+    advance_id,
+    phase
+  )
+  VALUES (
+    v_advance.organization_id,
+    v_advance.renter_id,
+    'topup',
+    v_remainder,
+    NULL,
+    p_advance_id,
+    NULL
+  );
+
+  UPDATE rental_advances
+  SET allocated_amount = amount
+  WHERE id = p_advance_id;
+
+  RETURN true;
+END;
+$$;
+
+COMMENT ON FUNCTION _renter_wallet_sync_advance_to_wallet(uuid) IS
+  'Move unallocated rental_advance remainder into renter_wallet_ledger topup; mark advance fully allocated. Idempotent.';
+
+CREATE OR REPLACE FUNCTION record_rental_advance(p_payload jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  v_org_id uuid := auth_organization_id();
+  v_member_id uuid := auth_member_id();
+  v_key text := NULLIF(trim(p_payload ->> 'idempotency_key'), '');
+  v_existing rental_advances%ROWTYPE;
+  v_advance_id uuid;
+  v_renter_id uuid := (p_payload ->> 'renter_id')::uuid;
+  v_amount numeric := (p_payload ->> 'amount')::numeric;
+  v_operation_date date;
+  v_today date;
+  v_payload_date text := NULLIF(trim(p_payload ->> 'operation_date'), '');
+BEGIN
+  IF auth.uid() IS NULL OR v_org_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'schedule.error.unauthorized');
+  END IF;
+
+  IF NOT can_read_financial() OR NOT organization_allows_writes(v_org_id) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'schedule.rental.financeForbidden');
+  END IF;
+
+  IF v_renter_id IS NULL OR v_amount IS NULL OR v_amount <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'rental.advance.fieldsInvalid');
+  END IF;
+
+  v_today := _org_local_date(v_org_id);
+  v_operation_date := COALESCE(
+    CASE WHEN v_payload_date IS NOT NULL THEN v_payload_date::date ELSE NULL END,
+    v_today
+  );
+
+  IF v_operation_date > v_today THEN
+    RETURN jsonb_build_object('success', false, 'error', 'finance.error.operationDateFuture');
+  END IF;
+
+  IF _is_finance_period_closed(v_org_id, v_operation_date) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'finance.error.periodClosed');
+  END IF;
+
+  IF v_key IS NOT NULL THEN
+    SELECT * INTO v_existing
+    FROM rental_advances ra
+    WHERE ra.organization_id = v_org_id AND ra.idempotency_key = v_key;
+
+    IF FOUND THEN
+      PERFORM _renter_wallet_sync_advance_to_wallet(v_existing.id);
+      PERFORM _renter_apply_wallet(v_org_id, v_existing.renter_id);
+      RETURN jsonb_build_object('success', true, 'advance_id', v_existing.id, 'already_applied', true);
+    END IF;
+  END IF;
+
+  INSERT INTO rental_advances (
+    organization_id, renter_id, amount, currency, method, idempotency_key, created_by, operation_date
+  )
+  VALUES (
+    v_org_id,
+    v_renter_id,
+    v_amount,
+    COALESCE(NULLIF(p_payload ->> 'currency', ''), 'RUB'),
+    COALESCE(NULLIF(p_payload ->> 'method', ''), 'cash'),
+    v_key,
+    v_member_id,
+    v_operation_date
+  )
+  RETURNING id INTO v_advance_id;
+
+  PERFORM _renter_wallet_sync_advance_to_wallet(v_advance_id);
+  PERFORM _renter_apply_wallet(v_org_id, v_renter_id);
+
+  RETURN jsonb_build_object('success', true, 'advance_id', v_advance_id);
+EXCEPTION
+  WHEN unique_violation THEN
+    IF v_key IS NOT NULL THEN
+      SELECT id INTO v_advance_id FROM rental_advances WHERE organization_id = v_org_id AND idempotency_key = v_key;
+      IF v_advance_id IS NOT NULL THEN
+        PERFORM _renter_wallet_sync_advance_to_wallet(v_advance_id);
+        PERFORM _renter_apply_wallet(v_org_id, v_renter_id);
+        RETURN jsonb_build_object('success', true, 'advance_id', v_advance_id, 'already_applied', true);
+      END IF;
+    END IF;
+    RETURN jsonb_build_object('success', false, 'error', 'schedule.rental.duplicate');
+END;
+$$;
+
+-- Fix advances accepted before this migration (e.g. stuck with allocated_amount = 0).
+SELECT _renter_wallet_backfill_unallocated_advances();
+
+COMMIT;

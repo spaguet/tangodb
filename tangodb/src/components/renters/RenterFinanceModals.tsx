@@ -364,6 +364,7 @@ export function RecordRentalAdvanceModal({
 
   return (
     <ModalShell open={open} title={t("rentalInvoices.advanceTitle")} icon={Wallet} onClose={onClose} pending={recordAdvance.isPending} t={t}>
+      <p className="text-xs text-slate-500 leading-snug">{t("rentalInvoices.advanceHint")}</p>
       <div>
         <label className={labelCls}>{t("schedule.rental.paymentAmountLabel")}</label>
         <input className={fieldCls} type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} />

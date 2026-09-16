@@ -2278,6 +2278,7 @@ export type I18nKey =
   | "rentalInvoices.payTitle"
   | "rentalInvoices.payAction"
   | "rentalInvoices.advanceTitle"
+  | "rentalInvoices.advanceHint"
   | "rentalInvoices.advanceAction"
   | "rentalInvoices.advanceNotes"
   | "rentalInvoices.advancesTitle"
