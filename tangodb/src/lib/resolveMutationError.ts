@@ -46,6 +46,7 @@ function isTechnicalUserMessage(error: string): boolean {
     lower.includes("duplicate key") ||
     lower.includes("row-level security") ||
     lower.includes("audit_log_operation_check") ||
+    lower.includes("could not choose the best candidate function") ||
     lower === "empty response" ||
     lower === "sync failed"
   );
