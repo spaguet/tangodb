@@ -920,6 +920,14 @@ export const EN: Record<I18nKey, string> = {
   "renters.detail.paid": "Paid (cashier)",
   "renters.detail.overpaid": "Overpaid (cashier)",
   "renters.detail.cashierDebt": "Cashier debt",
+  "renters.detail.financeCashierSection": "Cashier (hall rental)",
+  "renters.detail.financeCashierHint":
+    "Confirmed cashier slots: accruals and payments per slot or invoice. Separate from the Mini App wallet.",
+  "renters.detail.financeActionsLegend":
+    "Cashier: Create invoice, Allocate. Mini App: Record advance (wallet).",
+  "renters.detail.financeMiniappSection": "Mini App (wallet)",
+  "renters.detail.financeMiniappHint":
+    "Top-ups, Record advance, 50% holds, and Telegram booking debt. Does not clear cashier debt.",
   "renters.detail.debt": "Debt",
   "renters.detail.nextRental": "Next rental",
   "renters.detail.warnings": "Reminders",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -711,22 +711,15 @@ function OverviewTab({
           <StatBox label={t("renters.detail.completedRentals")} value={String(rentalCounts.completed)} />
           <StatBox label={t("renters.detail.upcomingRentals")} value={String(rentalCounts.upcoming)} />
           {canSeeFinance && finance ? (
-            <>
-              <StatBox label={t("renters.detail.turnover")} value={formatCurrency(finance.fixedTotal)} />
-              <StatBox label={t("renters.detail.paid")} value={formatCurrency(finance.paidTotal)} />
-              <StatBox
-                label={t("renters.detail.cashierDebt")}
-                value={formatCurrency(finance.debtTotal)}
-                highlight={finance.debtTotal > 0}
+            <div className="col-span-2 space-y-3">
+              <RenterFinanceContourStats
+                finance={finance}
+                t={t}
+                formatCurrency={formatCurrency}
+                showCashierOverpaid={false}
+                showWalletBalance={false}
               />
-              <StatBox
-                label={t("renters.detail.miniappDebt")}
-                value={formatCurrency(finance.miniappDebtTotal)}
-                highlight={finance.miniappDebtTotal > 0}
-              />
-              <StatBox label={t("renters.detail.spendable")} value={formatCurrency(finance.spendable)} />
-              <StatBox label={t("renters.detail.reservedPrepay")} value={formatCurrency(finance.reservedPrepay)} />
-            </>
+            </div>
           ) : null}
         </div>
         {warnings.length > 0 ? (
@@ -823,6 +816,89 @@ function StatBox({ label, value, highlight }: { label: string; value: string; hi
     <div className={`rounded-lg border p-2.5 ${highlight ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-slate-50"}`}>
       <p className={labelCls}>{label}</p>
       <p className={`text-sm font-semibold mt-0.5 ${highlight ? "text-rose-700" : "text-slate-800"}`}>{value}</p>
+    </div>
+  );
+}
+
+function FinanceContourSection({
+  title,
+  hint,
+  variant,
+  children,
+}: {
+  title: string;
+  hint: string;
+  variant: "cashier" | "miniapp";
+  children: ReactNode;
+}) {
+  const shell =
+    variant === "cashier" ? "border-amber-200/80 bg-amber-50/40" : "border-indigo-200/80 bg-indigo-50/40";
+  const titleCls = variant === "cashier" ? "text-amber-900" : "text-indigo-900";
+  const hintCls = variant === "cashier" ? "text-amber-800/75" : "text-indigo-800/75";
+
+  return (
+    <section className={`space-y-2 rounded-lg border p-3 ${shell}`}>
+      <div>
+        <h4 className={`text-xs font-semibold ${titleCls}`}>{title}</h4>
+        <p className={`text-[11px] leading-snug mt-0.5 ${hintCls}`}>{hint}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function RenterFinanceContourStats({
+  finance,
+  t,
+  formatCurrency,
+  showCashierOverpaid = true,
+  showWalletBalance = true,
+}: {
+  finance: RenterFinanceSummary;
+  t: (key: import("../../lib/i18n/keys").I18nKey) => string;
+  formatCurrency: (amount: number) => string;
+  showCashierOverpaid?: boolean;
+  showWalletBalance?: boolean;
+}) {
+  return (
+    <div className="space-y-3">
+      <FinanceContourSection
+        title={t("renters.detail.financeCashierSection")}
+        hint={t("renters.detail.financeCashierHint")}
+        variant="cashier"
+      >
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <StatBox label={t("renters.detail.turnover")} value={formatCurrency(finance.fixedTotal)} />
+          <StatBox label={t("renters.detail.paid")} value={formatCurrency(finance.paidTotal)} />
+          <StatBox
+            label={t("renters.detail.cashierDebt")}
+            value={formatCurrency(finance.debtTotal)}
+            highlight={finance.debtTotal > 0}
+          />
+          {showCashierOverpaid ? (
+            <StatBox label={t("renters.detail.overpaid")} value={formatCurrency(finance.overpaidTotal)} />
+          ) : null}
+        </div>
+      </FinanceContourSection>
+
+      <FinanceContourSection
+        title={t("renters.detail.financeMiniappSection")}
+        hint={t("renters.detail.financeMiniappHint")}
+        variant="miniapp"
+      >
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {showWalletBalance ? (
+            <StatBox label={t("renters.detail.walletBalance")} value={formatCurrency(finance.walletBalance)} />
+          ) : null}
+          <StatBox label={t("renters.detail.spendable")} value={formatCurrency(finance.spendable)} />
+          <StatBox label={t("renters.detail.reservedPrepay")} value={formatCurrency(finance.reservedPrepay)} />
+          <StatBox
+            label={t("renters.detail.miniappDebt")}
+            value={formatCurrency(finance.miniappDebtTotal)}
+            highlight={finance.miniappDebtTotal > 0}
+          />
+        </div>
+      </FinanceContourSection>
     </div>
   );
 }
@@ -1142,36 +1218,23 @@ function FinanceTab({
   return (
     <div className="space-y-4">
       {canWrite ? (
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setCreateInvoiceOpen(true)} className="py-1.5 px-3 bg-indigo-600 text-white text-xs font-semibold rounded-lg cursor-pointer">
-            {t("rentalInvoices.createAction")}
-          </button>
-          <button type="button" onClick={() => setAdvanceOpen(true)} className="py-1.5 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer">
-            {t("rentalInvoices.advanceAction")}
-          </button>
-          <button type="button" onClick={() => setAllocateOpen(true)} className="py-1.5 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer">
-            {t("rentalInvoices.allocateAction")}
-          </button>
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setCreateInvoiceOpen(true)} className="py-1.5 px-3 bg-indigo-600 text-white text-xs font-semibold rounded-lg cursor-pointer">
+              {t("rentalInvoices.createAction")}
+            </button>
+            <button type="button" onClick={() => setAdvanceOpen(true)} className="py-1.5 px-3 bg-white border border-indigo-200 text-indigo-800 text-xs font-semibold rounded-lg cursor-pointer">
+              {t("rentalInvoices.advanceAction")}
+            </button>
+            <button type="button" onClick={() => setAllocateOpen(true)} className="py-1.5 px-3 bg-white border border-amber-200 text-amber-900 text-xs font-semibold rounded-lg cursor-pointer">
+              {t("rentalInvoices.allocateAction")}
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-500 leading-snug">{t("renters.detail.financeActionsLegend")}</p>
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <StatBox label={t("renters.detail.turnover")} value={formatCurrency(finance.fixedTotal)} />
-        <StatBox label={t("renters.detail.paid")} value={formatCurrency(finance.paidTotal)} />
-        <StatBox label={t("renters.detail.debt")} value={formatCurrency(finance.debtTotal)} highlight={finance.debtTotal > 0} />
-        <StatBox label={t("renters.detail.overpaid")} value={formatCurrency(finance.overpaidTotal)} />
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <StatBox label={t("renters.detail.walletBalance")} value={formatCurrency(finance.walletBalance)} />
-        <StatBox label={t("renters.detail.spendable")} value={formatCurrency(finance.spendable)} />
-        <StatBox label={t("renters.detail.reservedPrepay")} value={formatCurrency(finance.reservedPrepay)} />
-        <StatBox
-          label={t("renters.detail.miniappDebt")}
-          value={formatCurrency(finance.miniappDebtTotal)}
-          highlight={finance.miniappDebtTotal > 0}
-        />
-      </div>
+      <RenterFinanceContourStats finance={finance} t={t} formatCurrency={formatCurrency} />
 
       {canAdjustWallet ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 p-3">

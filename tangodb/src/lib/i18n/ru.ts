@@ -921,6 +921,14 @@ export const RU: Record<I18nKey, string> = {
   "renters.detail.overpaid": "Переплата (касса)",
   "renters.detail.debt": "Долг",
   "renters.detail.cashierDebt": "Долг кассы",
+  "renters.detail.financeCashierSection": "Касса (аренда зала)",
+  "renters.detail.financeCashierHint":
+    "Подтверждённые слоты кассы: начисление, оплата по слоту или счёту. С кошельком Mini App не смешивается.",
+  "renters.detail.financeActionsLegend":
+    "Касса: «Создать счёт», «Распределить». Mini App: «Принять аванс» (кошелёк).",
+  "renters.detail.financeMiniappSection": "Mini App (кошелёк)",
+  "renters.detail.financeMiniappHint":
+    "Пополнения, «Принять аванс», 50 %, холды и долг по броням в Telegram. Долг кассы отсюда не гасится.",
   "renters.detail.nextRental": "Следующая аренда",
   "renters.detail.warnings": "Напоминания",
   "renters.detail.noContacts": "Контактов пока нет",
