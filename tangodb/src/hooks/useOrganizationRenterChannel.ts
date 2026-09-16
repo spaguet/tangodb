@@ -137,7 +137,7 @@ export function useUpdateOrganizationRenterChannel() {
 async function invokeReceiptChatDecision(
   rpcName: "confirm_organization_renter_receipt_chat" | "reject_organization_renter_receipt_chat"
 ) {
-  const { data, error } = await supabase.rpc(rpcName as "get_organization_renter_channel");
+  const { data, error } = await supabase.rpc(rpcName);
   if (error) return { success: false as const, error: error.message };
   const result = data as Record<string, unknown> | null;
   if (!result?.success) {

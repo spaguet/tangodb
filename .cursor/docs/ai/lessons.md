@@ -7,6 +7,12 @@
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
 
+### 2026-09-16 — Алерт пополнения не приходит в группу админов после «подтверждения» чата
+
+- **Ошибка:** бот не пишет в группу о заявке пополнения; в CRM статус «нужно подтвердить» не исчезает после нажатия «Это чат для уведомлений».
+- **Причина:** `invokeReceiptChatDecision` вызывал `supabase.rpc(rpcName as "get_organization_renter_channel")` — confirm/reject не выполнялись, `telegram_receipt_chat_id` оставался NULL, `_renter_enqueue_staff_topup_submitted` не ставил outbox.
+- **Как избежать:** не подменять имя RPC type-cast’ом; для zero-arg RPC вызывать `supabase.rpc("confirm_organization_renter_receipt_chat")` явно или `supabase.rpc(rpcName)` без cast.
+
 ### 2026-09-14 — Две staff-брони по 50% съели лишние 125000 с «Доступно»
 
 - **Ошибка:** кошелёк 500000, две аренды по 250000; ожидали резерв 250000 и остаток 250000, на карточке «Доступно» 125000.

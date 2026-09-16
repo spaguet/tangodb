@@ -1,3 +1,5 @@
+2026-09-16 — fix(hall-rent): микропатч **2.11.27** — кнопка «Это чат для уведомлений» в настройках Mini App вызывала `get_organization_renter_channel` вместо `confirm_organization_renter_receipt_chat`: приватная группа по invite не привязывалась, алерты `staff_topup_submitted` не уходили в чат админов.
+
 2026-09-15 — fix(schedule): микропатч **2.11.26** — подстановка даты в кнопках «Снять все… с даты» (`{{date}}` в i18n).
 
 2026-09-15 — feat(schedule): микропатч **2.11.25** — CRM: «Снять все записи арендатора с {date}» — все Mini App-слоты арендатора с даты (`renter_cancel_bookings_from_date`). Миграция `20261128000007`.
