@@ -923,8 +923,14 @@ export const EN: Record<I18nKey, string> = {
   "renters.detail.financeCashierSection": "Cashier (hall rental)",
   "renters.detail.financeCashierHint":
     "Confirmed cashier slots: accruals and payments per slot or invoice. Separate from the Mini App wallet.",
-  "renters.detail.financeActionsLegend":
-    "Cashier: Create invoice, Allocate. Mini App: Record advance (wallet).",
+  "renters.detail.financeCashierCreateExplain":
+    "Create invoice — period invoice for cashier rentals not yet on another invoice. Then pay the invoice or use Allocate.",
+  "renters.detail.financeCashierAllocateExplain":
+    "Allocate — apply free cashier advance (not moved to the wallet) to an open invoice.",
+  "renters.detail.financeCashierPaySlotExplain":
+    "Debt on a slot without an invoice: record payment in the rental inbox (Finance) or on the schedule slot.",
+  "renters.detail.financeMiniappTopupExplain":
+    "Credit wallet — in-studio top-up (cash/transfer) with preview and reversal. Telegram requests are confirmed in the top-up inbox, not here.",
   "renters.detail.financeMiniappSection": "Mini App (wallet)",
   "renters.detail.financeMiniappHint":
     "Top-ups, Record advance, 50% holds, and Telegram booking debt. Does not clear cashier debt.",

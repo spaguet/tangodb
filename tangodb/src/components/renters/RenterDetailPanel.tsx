@@ -61,7 +61,6 @@ import {
   AllocateRentalAdvanceModal,
   CreateRentalInvoiceModal,
   PayRentalInvoiceModal,
-  RecordRentalAdvanceModal,
   RentalAdvanceAllocationHistory,
   RenterWalletPayoutModal,
   RenterWalletAdjustModal,
@@ -71,7 +70,7 @@ import { translateMutationBlockedMessage } from "../../hooks/useOnlineStatus";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { formatCurrency } from "../../lib/utils";
 import AppSelect, { descriptionFieldCls, fieldCls as inputCls } from "../ui/AppSelect";
-import { btnAddCls, btnDestructiveOpenCls, btnOpenCls } from "../ui/buttonStyles";
+import { btnDestructiveOpenCls, btnOpenCls } from "../ui/buttonStyles";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import LoadingState from "../ui/LoadingState";
 import SectionPillNav, { type SectionPillNavItem } from "../ui/SectionPillNav";
@@ -820,16 +819,27 @@ function StatBox({ label, value, highlight }: { label: string; value: string; hi
   );
 }
 
+const btnCashierPrimaryCls =
+  "py-1.5 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50";
+const btnCashierSecondaryCls =
+  "py-1.5 px-3 bg-white border border-amber-300 text-amber-900 text-xs font-semibold rounded-lg cursor-pointer hover:bg-amber-50/80 disabled:opacity-50";
+const btnMiniappPrimaryCls =
+  "py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50";
+const btnMiniappSecondaryCls =
+  "py-1.5 px-3 bg-white border border-indigo-200 text-indigo-800 text-xs font-semibold rounded-lg cursor-pointer hover:bg-indigo-50/80 disabled:opacity-50";
+
 function FinanceContourSection({
   title,
   hint,
   variant,
   children,
+  toolbar,
 }: {
   title: string;
   hint: string;
   variant: "cashier" | "miniapp";
   children: ReactNode;
+  toolbar?: ReactNode;
 }) {
   const shell =
     variant === "cashier" ? "border-amber-200/80 bg-amber-50/40" : "border-indigo-200/80 bg-indigo-50/40";
@@ -837,13 +847,42 @@ function FinanceContourSection({
   const hintCls = variant === "cashier" ? "text-amber-800/75" : "text-indigo-800/75";
 
   return (
-    <section className={`space-y-2 rounded-lg border p-3 ${shell}`}>
+    <section className={`space-y-3 rounded-lg border p-3 ${shell}`}>
       <div>
         <h4 className={`text-xs font-semibold ${titleCls}`}>{title}</h4>
         <p className={`text-[11px] leading-snug mt-0.5 ${hintCls}`}>{hint}</p>
       </div>
+      {toolbar}
       {children}
     </section>
+  );
+}
+
+function CashierFinanceToolbar({
+  t,
+  onCreateInvoice,
+  onAllocate,
+}: {
+  t: (key: import("../../lib/i18n/keys").I18nKey) => string;
+  onCreateInvoice: () => void;
+  onAllocate: () => void;
+}) {
+  return (
+    <div className="space-y-2 rounded-lg border border-amber-200/60 bg-white/60 p-3">
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={onCreateInvoice} className={btnCashierPrimaryCls}>
+          {t("rentalInvoices.createAction")}
+        </button>
+        <button type="button" onClick={onAllocate} className={btnCashierSecondaryCls}>
+          {t("rentalInvoices.allocateAction")}
+        </button>
+      </div>
+      <ul className={`text-[11px] leading-snug space-y-1 list-disc pl-4 ${"text-amber-900/80"}`}>
+        <li>{t("renters.detail.financeCashierCreateExplain")}</li>
+        <li>{t("renters.detail.financeCashierAllocateExplain")}</li>
+        <li>{t("renters.detail.financeCashierPaySlotExplain")}</li>
+      </ul>
+    </div>
   );
 }
 
@@ -853,12 +892,16 @@ function RenterFinanceContourStats({
   formatCurrency,
   showCashierOverpaid = true,
   showWalletBalance = true,
+  cashierToolbar,
+  miniappFooter,
 }: {
   finance: RenterFinanceSummary;
   t: (key: import("../../lib/i18n/keys").I18nKey) => string;
   formatCurrency: (amount: number) => string;
   showCashierOverpaid?: boolean;
   showWalletBalance?: boolean;
+  cashierToolbar?: ReactNode;
+  miniappFooter?: ReactNode;
 }) {
   return (
     <div className="space-y-3">
@@ -866,6 +909,7 @@ function RenterFinanceContourStats({
         title={t("renters.detail.financeCashierSection")}
         hint={t("renters.detail.financeCashierHint")}
         variant="cashier"
+        toolbar={cashierToolbar}
       >
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <StatBox label={t("renters.detail.turnover")} value={formatCurrency(finance.fixedTotal)} />
@@ -898,6 +942,7 @@ function RenterFinanceContourStats({
             highlight={finance.miniappDebtTotal > 0}
           />
         </div>
+        {miniappFooter}
       </FinanceContourSection>
     </div>
   );
@@ -1077,7 +1122,6 @@ function FinanceTab({
 
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
   const [payInvoice, setPayInvoice] = useState<RentalInvoice | null>(null);
-  const [advanceOpen, setAdvanceOpen] = useState(false);
   const [allocateOpen, setAllocateOpen] = useState(false);
   const [documentInvoiceId, setDocumentInvoiceId] = useState<string | null>(null);
 
@@ -1215,103 +1259,12 @@ function FinanceTab({
     refreshFinance();
   };
 
-  return (
-    <div className="space-y-4">
-      {canWrite ? (
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setCreateInvoiceOpen(true)} className="py-1.5 px-3 bg-indigo-600 text-white text-xs font-semibold rounded-lg cursor-pointer">
-              {t("rentalInvoices.createAction")}
-            </button>
-            <button type="button" onClick={() => setAdvanceOpen(true)} className="py-1.5 px-3 bg-white border border-indigo-200 text-indigo-800 text-xs font-semibold rounded-lg cursor-pointer">
-              {t("rentalInvoices.advanceAction")}
-            </button>
-            <button type="button" onClick={() => setAllocateOpen(true)} className="py-1.5 px-3 bg-white border border-amber-200 text-amber-900 text-xs font-semibold rounded-lg cursor-pointer">
-              {t("rentalInvoices.allocateAction")}
-            </button>
-          </div>
-          <p className="text-[11px] text-slate-500 leading-snug">{t("renters.detail.financeActionsLegend")}</p>
-        </div>
-      ) : null}
-
-      <RenterFinanceContourStats finance={finance} t={t} formatCurrency={formatCurrency} />
-
-      {canAdjustWallet ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 p-3">
-          <p className="text-xs text-slate-500">{t("renters.detail.walletAdjustHint")}</p>
-          <button type="button" className={btnOpenCls} onClick={() => setAdjustOpen(true)}>
-            {t("renters.detail.walletAdjustAction")}
-          </button>
-        </div>
-      ) : null}
-
+  const miniappFinanceFooter = (
+    <div className="space-y-3 pt-1">
       {canWritePayments ? (
-        <div className="rounded-lg border border-slate-100 p-3 space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h4 className="text-sm font-semibold text-slate-800">{t("renters.detail.payoutTitle")}</h4>
-              <p className="text-xs text-slate-500 mt-0.5">{t("renters.detail.payoutHint")}</p>
-            </div>
-            <button
-              type="button"
-              className={btnDestructiveOpenCls}
-              onClick={() => setPayoutOpen(true)}
-            >
-              {t("renters.detail.payoutAction")}
-            </button>
-          </div>
-          {payoutPreviewQuery.data ? (
-            <p className="text-xs text-slate-600">
-              {t("renters.detail.payoutRefundable")}:{" "}
-              <span className="font-semibold">
-                {formatCurrency(payoutPreviewQuery.data.quote.refundable)}
-              </span>
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
-      <RenterPackSurchargeReviewPanel
-        renterId={renterId}
-        locationMap={locationMap}
-        enabled={canReviewPackSurcharge}
-        toast={toast}
-        onChanged={refreshFinance}
-      />
-
-      <div className="rounded-lg border border-slate-100 p-3 space-y-2">
-        <h4 className="text-sm font-semibold text-slate-800">{t("renters.detail.reliability")}</h4>
-        <p className="text-xs text-slate-600">
-          {t("renters.detail.reliabilityOnTime")}: {onTime}
-          {" · "}
-          {t("renters.detail.reliabilityUntimely")}: {untimely}
-        </p>
-        {renter.penaltyTariffAppliedAt ? (
-          <p className="text-xs font-medium text-amber-700">{t("renters.detail.reliabilityPenalty")}</p>
-        ) : null}
-        {renter.bookingBannedAt ? (
-          <p className="text-xs font-semibold text-rose-600">{t("renters.detail.reliabilityBanned")}</p>
-        ) : null}
-        {showPenaltyGapBanner ? (
-          <p className="text-xs font-medium text-amber-700 rounded-md bg-amber-50 border border-amber-100 px-2 py-1.5">
-            {t("renters.detail.reliabilityPenaltyGap")}
-          </p>
-        ) : null}
-        {canResetReliability ? (
-          <button
-            type="button"
-            className="py-1.5 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50"
-            disabled={resetReliability.isPending}
-            onClick={() => setReliabilityResetOpen(true)}
-          >
-            {t("renters.detail.reliabilityReset")}
-          </button>
-        ) : null}
-      </div>
-
-      {canWritePayments ? (
-        <div className="rounded-lg border border-slate-100 p-3 space-y-2">
-          <h4 className="text-sm font-semibold text-slate-800">{t("renters.detail.staffTopup")}</h4>
+        <div className="rounded-lg border border-indigo-200/60 bg-white/60 p-3 space-y-2">
+          <h4 className="text-xs font-semibold text-indigo-900">{t("renters.detail.staffTopup")}</h4>
+          <p className="text-[11px] text-indigo-900/75 leading-snug">{t("renters.detail.financeMiniappTopupExplain")}</p>
           <div className="flex flex-wrap items-end gap-2">
             <div className="field-stack">
               <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
@@ -1334,7 +1287,7 @@ function FinanceTab({
             </AppSelect>
             <button
               type="button"
-              className={btnAddCls}
+              className={btnMiniappPrimaryCls}
               disabled={staffTopup.isPending}
               onClick={handleStaffTopupReview}
             >
@@ -1355,12 +1308,59 @@ function FinanceTab({
         </div>
       ) : null}
 
+      {canAdjustWallet ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-200/60 bg-white/60 p-3">
+          <p className="text-xs text-indigo-900/75">{t("renters.detail.walletAdjustHint")}</p>
+          <button type="button" className={btnMiniappSecondaryCls} onClick={() => setAdjustOpen(true)}>
+            {t("renters.detail.walletAdjustAction")}
+          </button>
+        </div>
+      ) : null}
+
+      {canWritePayments ? (
+        <div className="rounded-lg border border-indigo-200/60 bg-white/60 p-3 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h4 className="text-xs font-semibold text-indigo-900">{t("renters.detail.payoutTitle")}</h4>
+              <p className="text-[11px] text-indigo-900/75 mt-0.5">{t("renters.detail.payoutHint")}</p>
+            </div>
+            <button type="button" className={btnDestructiveOpenCls} onClick={() => setPayoutOpen(true)}>
+              {t("renters.detail.payoutAction")}
+            </button>
+          </div>
+          {payoutPreviewQuery.data ? (
+            <p className="text-xs text-indigo-900/80">
+              {t("renters.detail.payoutRefundable")}:{" "}
+              <span className="font-semibold">
+                {formatCurrency(payoutPreviewQuery.data.quote.refundable)}
+              </span>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {finance.miniappDebts.length > 0 ? (
+        <div className="rounded-lg border border-indigo-200/60 bg-white/60 p-3">
+          <h4 className="text-xs font-semibold text-indigo-900 mb-2">{t("renters.detail.miniappDebts")}</h4>
+          <ul className="text-xs space-y-1">
+            {finance.miniappDebts.map((debt) => (
+              <li key={debt.rentalId} className="flex justify-between border-b border-indigo-50 py-1">
+                <span>
+                  {formatDate(debt.rentalDate)} · {locationMap.get(debt.locationId ?? "") ?? debt.timeStart}
+                </span>
+                <span className="text-rose-600 font-semibold">{formatCurrency(debt.debtAmount)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {finance.walletEntries.length > 0 ? (
-        <div>
-          <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("renters.detail.walletEntries")}</h4>
+        <div className="rounded-lg border border-indigo-200/60 bg-white/60 p-3">
+          <h4 className="text-xs font-semibold text-indigo-900 mb-2">{t("renters.detail.walletEntries")}</h4>
           <ul className="text-xs space-y-1">
             {finance.walletEntries.map((entry) => (
-              <li key={entry.id} className="flex justify-between items-start gap-2 border-b border-slate-50 py-1">
+              <li key={entry.id} className="flex justify-between items-start gap-2 border-b border-indigo-50 py-1">
                 <span className="min-w-0">
                   {formatDateTime(entry.createdAt)} · {getWalletEntryLabel(entry.entryType, t)}
                   {entry.createdByName ? (
@@ -1408,22 +1408,64 @@ function FinanceTab({
           </ul>
         </div>
       ) : null}
+    </div>
+  );
 
-      {finance.miniappDebts.length > 0 ? (
-        <div>
-          <h4 className="text-sm font-semibold text-slate-800 mb-2">{t("renters.detail.miniappDebts")}</h4>
-          <ul className="text-xs space-y-1">
-            {finance.miniappDebts.map((debt) => (
-              <li key={debt.rentalId} className="flex justify-between border-b border-slate-50 py-1">
-                <span>
-                  {formatDate(debt.rentalDate)} · {locationMap.get(debt.locationId ?? "") ?? debt.timeStart}
-                </span>
-                <span className="text-rose-600 font-semibold">{formatCurrency(debt.debtAmount)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+  return (
+    <div className="space-y-4">
+      <RenterFinanceContourStats
+        finance={finance}
+        t={t}
+        formatCurrency={formatCurrency}
+        cashierToolbar={
+          canWrite ? (
+            <CashierFinanceToolbar
+              t={t}
+              onCreateInvoice={() => setCreateInvoiceOpen(true)}
+              onAllocate={() => setAllocateOpen(true)}
+            />
+          ) : undefined
+        }
+        miniappFooter={miniappFinanceFooter}
+      />
+
+      <RenterPackSurchargeReviewPanel
+        renterId={renterId}
+        locationMap={locationMap}
+        enabled={canReviewPackSurcharge}
+        toast={toast}
+        onChanged={refreshFinance}
+      />
+
+      <div className="rounded-lg border border-slate-100 p-3 space-y-2">
+        <h4 className="text-sm font-semibold text-slate-800">{t("renters.detail.reliability")}</h4>
+        <p className="text-xs text-slate-600">
+          {t("renters.detail.reliabilityOnTime")}: {onTime}
+          {" · "}
+          {t("renters.detail.reliabilityUntimely")}: {untimely}
+        </p>
+        {renter.penaltyTariffAppliedAt ? (
+          <p className="text-xs font-medium text-amber-700">{t("renters.detail.reliabilityPenalty")}</p>
+        ) : null}
+        {renter.bookingBannedAt ? (
+          <p className="text-xs font-semibold text-rose-600">{t("renters.detail.reliabilityBanned")}</p>
+        ) : null}
+        {showPenaltyGapBanner ? (
+          <p className="text-xs font-medium text-amber-700 rounded-md bg-amber-50 border border-amber-100 px-2 py-1.5">
+            {t("renters.detail.reliabilityPenaltyGap")}
+          </p>
+        ) : null}
+        {canResetReliability ? (
+          <button
+            type="button"
+            className="py-1.5 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50"
+            disabled={resetReliability.isPending}
+            onClick={() => setReliabilityResetOpen(true)}
+          >
+            {t("renters.detail.reliabilityReset")}
+          </button>
+        ) : null}
+      </div>
 
       {canWrite && extended ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1589,13 +1631,6 @@ function FinanceTab({
         open={!!documentInvoiceId}
         invoiceId={documentInvoiceId}
         onClose={() => setDocumentInvoiceId(null)}
-      />
-      <RecordRentalAdvanceModal
-        open={advanceOpen}
-        renterId={renterId}
-        onClose={() => setAdvanceOpen(false)}
-        onSuccess={refreshFinance}
-        toast={toast}
       />
       <AllocateRentalAdvanceModal
         open={allocateOpen}

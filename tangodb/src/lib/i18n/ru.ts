@@ -924,8 +924,14 @@ export const RU: Record<I18nKey, string> = {
   "renters.detail.financeCashierSection": "Касса (аренда зала)",
   "renters.detail.financeCashierHint":
     "Подтверждённые слоты кассы: начисление, оплата по слоту или счёту. С кошельком Mini App не смешивается.",
-  "renters.detail.financeActionsLegend":
-    "Касса: «Создать счёт», «Распределить». Mini App: «Принять аванс» (кошелёк).",
+  "renters.detail.financeCashierCreateExplain":
+    "Создать счёт — сводный счёт за период по кассовым арендам, ещё не включённым в другой счёт. Дальше — оплата счёта или «Распределить».",
+  "renters.detail.financeCashierAllocateExplain":
+    "Распределить — зачесть свободный кассовый аванс (не ушедший в кошелёк) на открытый счёт.",
+  "renters.detail.financeCashierPaySlotExplain":
+    "Долг по слоту без счёта: примите оплату в очереди аренды (Финансы) или в карточке слота в расписании.",
+  "renters.detail.financeMiniappTopupExplain":
+    "Зачислить на кошелёк — пополнение в студии (наличные/перевод): сразу на кошелёк Mini App, с предпросмотром и отменой. Подтверждение заявки из Telegram — в очереди пополнений, не здесь.",
   "renters.detail.financeMiniappSection": "Mini App (кошелёк)",
   "renters.detail.financeMiniappHint":
     "Пополнения, «Принять аванс», 50 %, холды и долг по броням в Telegram. Долг кассы отсюда не гасится.",
