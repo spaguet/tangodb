@@ -4,7 +4,7 @@ import { Building2, ChevronDown } from "lucide-react";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useI18n } from "../hooks/useI18n";
 import { memberRoleLabel } from "../hooks/useTeamMembers";
-import { organizationPublicName } from "../lib/organizationDisplayName";
+import { organizationMembershipLabel, organizationPublicName } from "../lib/organizationDisplayName";
 
 export default function OrgSwitcher() {
   const navigate = useNavigate();
@@ -66,7 +66,7 @@ export default function OrgSwitcher() {
           />
           <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1">
             {memberships.map((membership) => {
-              const label = organizationPublicName(membership.organization, membership.branding_name);
+              const label = organizationMembershipLabel(membership);
               const active = membership.organization_id === organization?.id;
               return (
                 <button

@@ -6,7 +6,7 @@ import { useGuestI18n } from "../hooks/useI18n";
 import { useAuth } from "./AuthProvider";
 import { memberRoleLabel } from "../hooks/useTeamMembers";
 import {
-  organizationPublicName,
+  organizationMembershipLabel,
   organizationStatusLabel,
 } from "../lib/organizationDisplayName";
 import {
@@ -69,7 +69,7 @@ export default function SelectOrganizationPage() {
       <div className="space-y-2">
         {memberships.map((membership) => {
           const org = membership.organization;
-          const label = organizationPublicName(org, membership.branding_name);
+          const label = organizationMembershipLabel(membership);
           const status = org?.status ?? "licensed";
           const roleLabel = memberRoleLabel(membership.role, membership.meta, locale);
           const statusLabel = organizationStatusLabel(status, locale);
